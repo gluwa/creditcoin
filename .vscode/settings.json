@@ -1,0 +1,4 @@
+{
+    "rust-analyzer.checkOnSave.enable": false,
+    "editor.formatOnSave": true
+}

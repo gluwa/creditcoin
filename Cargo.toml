@@ -2,8 +2,4 @@
 panic = 'unwind'
 
 [workspace]
-members = [
-    'node',
-    'pallets/template',
-    'runtime',
-]
+members = ['node', 'pallets/template', 'runtime', "sha3pow"]

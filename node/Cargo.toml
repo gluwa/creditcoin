@@ -28,6 +28,9 @@ version = '3.0.0-monthly-2021-10'
 [dependencies]
 jsonrpc-core = '18.0.0'
 structopt = '0.3.8'
+sha3pow = { path = '../sha3pow' }
+num_cpus = "1.13.0"
+futures-lite = "1.12.0"
 
 [dependencies.frame-benchmarking]
 git = 'https://github.com/paritytech/substrate.git'
@@ -65,18 +68,13 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '0.10.0-dev'
 
-[dependencies.sc-consensus-aura]
+[dependencies.sc-consensus-pow]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '0.10.0-dev'
 
 [dependencies.sc-executor]
 features = ['wasmtime']
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
-version = '0.10.0-dev'
-
-[dependencies.sc-finality-grandpa]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '0.10.0-dev'
@@ -137,17 +135,18 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '0.10.0-dev'
 
-[dependencies.sp-consensus-aura]
+[dependencies.sp-consensus-pow]
+default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '0.10.0-dev'
 
-[dependencies.sp-core]
+[dependencies.sp-inherents]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '4.0.0-dev'
 
-[dependencies.sp-finality-grandpa]
+[dependencies.sp-core]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '4.0.0-dev'
@@ -168,5 +167,6 @@ tag = 'monthly-2021-10'
 version = '4.0.0-dev'
 
 [features]
-default = []
+default = ['std']
 runtime-benchmarks = ['node-template-runtime/runtime-benchmarks']
+std = ['sp-consensus-pow/std']
