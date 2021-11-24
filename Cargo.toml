@@ -2,4 +2,10 @@
 panic = 'unwind'
 
 [workspace]
-members = ['node', 'pallets/template', 'runtime', "sha3pow"]
+members = [
+    'node',
+    'pallets/template',
+    'pallets/creditcoin',
+    'runtime',
+    "sha3pow",
+]
