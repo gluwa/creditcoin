@@ -57,7 +57,7 @@ pub fn new_partial(
 	ServiceError,
 > {
 	if config.keystore_remote.is_some() {
-		return Err(ServiceError::Other(format!("Remote Keystores are not supported.")));
+		return Err(ServiceError::Other(format!("Remote Keystores are not supported.")))
 	}
 
 	let telemetry = config
@@ -143,7 +143,7 @@ fn remote_keystore(_url: &String) -> Result<Arc<LocalKeystore>, &'static str> {
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> {
+pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
 		client,
 		backend,
@@ -158,12 +158,11 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	if let Some(url) = &config.keystore_remote {
 		match remote_keystore(url) {
 			Ok(k) => keystore_container.set_remote_keystore(k),
-			Err(e) => {
+			Err(e) =>
 				return Err(ServiceError::Other(format!(
 					"Error hooking up remote keystore for {}: {}",
 					url, e
-				)))
-			}
+				))),
 		};
 	}
 
@@ -189,10 +188,10 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	}
 
 	let role = config.role.clone();
-	let force_authoring = config.force_authoring;
-	let backoff_authoring_blocks: Option<()> = None;
-	let name = config.network.node_name.clone();
-	let enable_grandpa = !config.disable_grandpa;
+	let _force_authoring = config.force_authoring;
+	let _backoff_authoring_blocks: Option<()> = None;
+	let _name = config.network.node_name.clone();
+	let _enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
 
 	let rpc_extensions_builder = {
@@ -256,7 +255,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		let threads = num_cpus::get();
 		for _ in 0..threads {
-			if let Some(keystore) = keystore_container.local_keystore() {
+			if let Some(_keystore) = keystore_container.local_keystore() {
 				let worker = worker.clone();
 				let client = client.clone();
 
@@ -275,8 +274,8 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 									let _ =
 										futures_lite::future::block_on(worker.lock().submit(seal));
 								}
-							}
-							Ok(None) => {}
+							},
+							Ok(None) => {},
 							Err(e) => eprintln!("Mining error: {}", e),
 						}
 					} else {
@@ -289,7 +288,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 	// if the node isn't actively participating in consensus then it doesn't
 	// need a keystore, regardless of which protocol we use below.
-	let keystore =
+	let _keystore =
 		if role.is_authority() { Some(keystore_container.sync_keystore()) } else { None };
 
 	network_starter.start_network();
@@ -297,7 +296,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 }
 
 /// Builds a new service for a light client.
-pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError> {
+pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 	let telemetry = config
 		.telemetry_endpoints
 		.clone()

@@ -1,14 +1,10 @@
 use parity_scale_codec::{Decode, Encode};
-use rand::prelude::SmallRng;
-use rand::SeedableRng;
+use rand::{prelude::SmallRng, SeedableRng};
 use sc_client_api::{AuxStore, HeaderBackend};
 use sc_consensus_pow::{Error, PowAlgorithm};
 use sha3::{Digest, Sha3_256};
-use sp_api::BlockId;
-use sp_api::BlockT;
-use sp_api::ProvideRuntimeApi;
-use sp_consensus_pow::DifficultyApi;
-use sp_consensus_pow::Seal as RawSeal;
+use sp_api::{BlockId, BlockT, ProvideRuntimeApi};
+use sp_consensus_pow::{DifficultyApi, Seal as RawSeal};
 use sp_core::{H256, U256};
 use std::sync::Arc;
 
@@ -89,14 +85,14 @@ impl<B: BlockT<Hash = H256>> PowAlgorithm<B> for MinimalSha3Algorithm {
 
 		// See whether the hash meets the difficulty requirement. If not, fail fast.
 		if !hash_meets_difficulty(&seal.work, difficulty) {
-			return Ok(false);
+			return Ok(false)
 		}
 
 		// Make sure the provided work actually comes from the correct pre_hash
 		let compute = Compute { difficulty, pre_hash: *pre_hash, nonce: seal.nonce };
 
 		if compute.compute() != seal {
-			return Ok(false);
+			return Ok(false)
 		}
 
 		Ok(true)
@@ -157,14 +153,14 @@ where
 
 		// See whether the hash meets the difficulty requirement. If not, fail fast.
 		if !hash_meets_difficulty(&seal.work, difficulty) {
-			return Ok(false);
+			return Ok(false)
 		}
 
 		// Make sure the provided work actually comes from the correct pre_hash
 		let compute = Compute { difficulty, pre_hash: *pre_hash, nonce: seal.nonce };
 
 		if compute.compute() != seal {
-			return Ok(false);
+			return Ok(false)
 		}
 
 		Ok(true)
@@ -172,9 +168,9 @@ where
 }
 
 pub fn mine<B, C>(
-	client: &C,
+	_client: &C,
 	pre_hash: &H256,
-	pre_digest: Option<&[u8]>,
+	_pre_digest: Option<&[u8]>,
 	difficulty: Difficulty,
 ) -> Result<Option<RawSeal>, sc_consensus_pow::Error<B>>
 where
