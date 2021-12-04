@@ -19,6 +19,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 	}
 );
 
@@ -55,6 +56,25 @@ impl system::Config for Test {
 
 impl pallet_template::Config for Test {
 	type Event = Event;
+}
+
+parameter_types! {
+	pub const ExistentialDeposit: u128 = 500;
+	pub const MaxLocks: u32 = 50;
+}
+
+impl pallet_balances::Config for Test {
+	type MaxLocks = MaxLocks;
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
+	/// The type for recording an account's balance.
+	type Balance = u128;
+	/// The ubiquitous event type.
+	type Event = Event;
+	type DustRemoval = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = pallet_balances::weights::SubstrateWeight<Test>;
 }
 
 // Build genesis storage according to the mock runtime.

@@ -1,5 +1,5 @@
 [package]
-name = "creditcoin"
+name = "pallet-creditcoin"
 version = "0.1.0"
 edition = "2018"
 
@@ -34,6 +34,18 @@ tag = 'monthly-2021-10'
 version = '4.0.0-dev'
 
 [dependencies.frame-system]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-10'
+version = '4.0.0-dev'
+
+[dependencies.sp-std]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-10'
+version = '4.0.0-dev'
+
+[dependencies.pallet-balances]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'

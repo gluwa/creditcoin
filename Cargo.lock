@@ -966,20 +966,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "creditcoin"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
-]
-
-[[package]]
 name = "crossbeam-channel"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3566,6 +3552,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "hex-literal",
  "pallet-balances",
+ "pallet-creditcoin",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
  "pallet-template",
@@ -3749,6 +3736,22 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-creditcoin"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]

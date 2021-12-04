@@ -231,9 +231,10 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-/// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
+impl pallet_creditcoin::Config for Runtime {
 	type Event = Event;
+
+	type Randomness = RandomnessCollectiveFlip;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -250,7 +251,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the pallet-template in the runtime.
-		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
+		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
