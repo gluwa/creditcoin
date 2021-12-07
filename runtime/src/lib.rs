@@ -234,6 +234,7 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_creditcoin::Config for Runtime {
 	type Event = Event;
 
+	type Currency = Balances;
 	type Randomness = RandomnessCollectiveFlip;
 }
 
