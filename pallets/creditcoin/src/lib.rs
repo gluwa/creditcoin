@@ -53,12 +53,12 @@ pub struct Offer<AccountId, BlockNum> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct AskOrder<AccountId, Balance, BlockNum> {
+pub struct AskOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
-	pub address: Vec<u8>,
+	pub address: AddressId<Hash>,
 	pub amount: Vec<u8>,
 	pub interest: Vec<u8>,
-	pub maturity: BlockNum,
+	pub maturity: Vec<u8>,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
@@ -66,15 +66,14 @@ pub struct AskOrder<AccountId, Balance, BlockNum> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct Fee<AccountId, BlockNum> {
-	pub sighash: AccountId,
+pub struct Fee<BlockNum> {
 	pub block: BlockNum,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct BidOrder<AccountId, Balance, BlockNum> {
+pub struct BidOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
-	pub address: Vec<u8>,
+	pub address: AddressId<Hash>,
 	pub amount: Vec<u8>,
 	pub interest: Vec<u8>,
 	pub maturity: Vec<u8>,
@@ -99,13 +98,13 @@ pub struct RepaymentOrder<AccountId, BlockNum> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct DealOrder<AccountId, Balance, BlockNum> {
+pub struct DealOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
-	pub src_address: AccountId,
+	pub src_address: AddressId<Hash>,
 	pub dst_address: AccountId,
 	pub amount: Vec<u8>,
 	pub interest: Vec<u8>,
-	pub maturity: BlockNum,
+	pub maturity: Vec<u8>,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
@@ -116,17 +115,25 @@ pub struct DealOrder<AccountId, Balance, BlockNum> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+pub struct AddressId<Hash>(Hash);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+pub struct AskOrderId<Hash>(Hash);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+pub struct BidOrderId<Hash>(Hash);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
 pub struct DealOrderId<Hash>(Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct AddressId<Hash>(Hash);
+pub struct OfferId<Hash>(Hash);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+pub struct TransferId<Hash>(Hash);
 
 impl<H> AddressId<H> {
-	pub fn new<Config>(
-		blockchain: &[u8],
-		address: &[u8],
-		network: &[u8],
-	) -> AddressId<<<Config as frame_system::Config>::Hashing as Hash>::Output>
+	pub fn new<Config>(blockchain: &[u8], address: &[u8], network: &[u8]) -> AddressId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
@@ -136,12 +143,22 @@ impl<H> AddressId<H> {
 	}
 }
 
+impl<H> AskOrderId<H> {
+	pub fn new<Config>(guid: Vec<u8>) -> AskOrderId<H>
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+	{
+		AskOrderId(Config::Hashing::hash(&guid.as_ref()))
+	}
+}
+
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::traits::Randomness;
+	use frame_support::traits::{Currency, LockableCurrency, Randomness};
 	use frame_support::Blake2_128Concat;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
-	use frame_system::pallet_prelude::*;
+	use frame_system::{ensure_signed, pallet_prelude::*};
 
 	use super::*;
 
@@ -152,19 +169,13 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
+
+		type Currency: Currency<Self::AccountId> + LockableCurrency<Self::AccountId>;
 	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
-
-	// The pallet's runtime storage items.
-	// https://substrate.dev/docs/en/knowledgebase/runtime/storage
-	#[pallet::storage]
-	#[pallet::getter(fn something)]
-	// Learn more about declaring storage items:
-	// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
-	pub type Something<T> = StorageValue<_, u32>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn deal_orders)]
@@ -172,13 +183,45 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		DealOrderId<T::Hash>,
-		DealOrder<T::AccountId, T::Balance, T::BlockNumber>,
+		DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
 	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn addresses)]
 	pub type Addresses<T: Config> =
 		StorageMap<_, Blake2_128Concat, AddressId<T::Hash>, Address<T::AccountId>>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn ask_orders)]
+	pub type AskOrders<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		AskOrderId<T::Hash>,
+		AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn bid_orders)]
+	pub type BidOrders<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		BidOrderId<T::Hash>,
+		BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn offers)]
+	pub type Offers<T: Config> =
+		StorageMap<_, Blake2_128Concat, OfferId<T::Hash>, Offer<T::AccountId, T::BlockNumber>>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn transfers)]
+	pub type Transfers<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		TransferId<T::Hash>,
+		Transfer<T::AccountId, T::BlockNumber>,
+	>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -195,6 +238,12 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// The specified address has already been registered to another account
 		AddressAlreadyRegistered,
+
+		NonExistentAddress,
+
+		DuplicateId,
+
+		NotAddressOwner,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -219,6 +268,45 @@ pub mod pallet {
 			<Addresses<T>>::insert(address_id, entry);
 
 			Ok(())
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
+		pub fn add_ask_order(
+			origin: OriginFor<T>,
+			address_id: AddressId<T::Hash>,
+			amount: Vec<u8>,
+			interest: Vec<u8>,
+			maturity: Vec<u8>,
+			fee: <T as pallet_balances::Config>::Balance,
+			expiration: BlockNumberFor<T>,
+			guid: Vec<u8>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let ask_order_id = AskOrderId::new::<T>(guid);
+			let existing_order = Self::ask_orders(&ask_order_id);
+			ensure!(existing_order.is_none(), Error::<T>::DuplicateId);
+
+			let address = Self::addresses(&address_id);
+			if let Some(address) = address {
+				ensure!(address.sighash == who, Error::<T>::NotAddressOwner);
+				let ask_order = AskOrder {
+					blockchain: address.blockchain,
+					address: address_id,
+					amount,
+					interest,
+					maturity,
+					fee,
+					expiration,
+					block: <frame_system::Pallet<T>>::block_number(),
+					sighash: who,
+				};
+
+				AskOrders::<T>::insert(ask_order_id, ask_order);
+				Ok(())
+			} else {
+				Err(Error::<T>::NonExistentAddress.into())
+			}
 		}
 	}
 }
