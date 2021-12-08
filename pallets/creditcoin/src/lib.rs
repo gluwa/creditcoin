@@ -153,6 +153,16 @@ impl<H> AskOrderId<H> {
 	}
 }
 
+impl<H> BidOrderId<H> {
+	pub fn new<Config>(guid: Vec<u8>) -> BidOrderId<H>
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+	{
+		BidOrderId(Config::Hashing::hash(&guid.as_ref()))
+	}
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::traits::{Currency, LockableCurrency, Randomness};
@@ -303,6 +313,45 @@ pub mod pallet {
 				};
 
 				AskOrders::<T>::insert(ask_order_id, ask_order);
+				Ok(())
+			} else {
+				Err(Error::<T>::NonExistentAddress.into())
+			}
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
+		pub fn add_bid_order(
+			origin: OriginFor<T>,
+			address_id: AddressId<T::Hash>,
+			amount: Vec<u8>,
+			interest: Vec<u8>,
+			maturity: Vec<u8>,
+			fee: <T as pallet_balances::Config>::Balance,
+			expiration: BlockNumberFor<T>,
+			guid: Vec<u8>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let bid_order_id = BidOrderId::new::<T>(guid);
+			let existing_order = Self::bid_orders(&bid_order_id);
+			ensure!(existing_order.is_none(), Error::<T>::DuplicateId);
+
+			let address = Self::addresses(&address_id);
+			if let Some(address) = address {
+				ensure!(address.sighash == who, Error::<T>::NotAddressOwner);
+				let bid_order = BidOrder {
+					blockchain: address.blockchain,
+					address: address_id,
+					amount,
+					interest,
+					maturity,
+					fee,
+					expiration,
+					block: <frame_system::Pallet<T>>::block_number(),
+					sighash: who,
+				};
+
+				BidOrders::<T>::insert(bid_order_id, bid_order);
 				Ok(())
 			} else {
 				Err(Error::<T>::NonExistentAddress.into())
