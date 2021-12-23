@@ -163,6 +163,8 @@ impl<H> BidOrderId<H> {
 	}
 }
 
+pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::traits::{Currency, LockableCurrency, Randomness};
@@ -287,7 +289,7 @@ pub mod pallet {
 			amount: Vec<u8>,
 			interest: Vec<u8>,
 			maturity: Vec<u8>,
-			fee: <T as pallet_balances::Config>::Balance,
+			fee: BalanceFor<T>,
 			expiration: BlockNumberFor<T>,
 			guid: Vec<u8>,
 		) -> DispatchResult {
@@ -326,7 +328,7 @@ pub mod pallet {
 			amount: Vec<u8>,
 			interest: Vec<u8>,
 			maturity: Vec<u8>,
-			fee: <T as pallet_balances::Config>::Balance,
+			fee: BalanceFor<T>,
 			expiration: BlockNumberFor<T>,
 			guid: Vec<u8>,
 		) -> DispatchResult {
