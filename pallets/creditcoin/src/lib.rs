@@ -1,15 +1,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use frame_support::sp_runtime;
 
-use frame_support::inherent::Vec;
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// <https://substrate.dev/docs/en/knowledgebase/runtime/frame>
 pub use pallet::*;
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Hash, RuntimeDebug};
+use sp_runtime::{
+	offchain::{
+		http,
+		storage::{MutateStorageError, StorageRetrievalError, StorageValueRef},
+		Duration,
+	},
+	traits::Hash,
+	KeyTypeId, RuntimeDebug,
+};
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -20,6 +23,27 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+
+pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
+
+pub mod crypto {
+	use crate::KEY_TYPE;
+	use sp_core::sr25519::Signature as Sr25519Signature;
+	use sp_runtime::app_crypto::{app_crypto, sr25519};
+	use sp_runtime::{traits::Verify, MultiSignature, MultiSigner};
+
+	app_crypto!(sr25519, KEY_TYPE);
+
+	pub struct CtcAuthId;
+
+	impl frame_system::offchain::AppCrypto<MultiSigner, MultiSignature> for CtcAuthId {
+		type RuntimeAppPublic = Public;
+
+		type GenericPublic = sp_core::sr25519::Public;
+
+		type GenericSignature = sp_core::sr25519::Signature;
+	}
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
 pub struct Address<AccountId> {
@@ -170,19 +194,26 @@ pub mod pallet {
 	use frame_support::traits::{Currency, LockableCurrency, Randomness};
 	use frame_support::Blake2_128Concat;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
+	use frame_system::offchain::{AppCrypto, CreateSignedTransaction};
 	use frame_system::{ensure_signed, pallet_prelude::*};
 
 	use super::*;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_balances::Config {
+	pub trait Config:
+		frame_system::Config + pallet_balances::Config + CreateSignedTransaction<Call<Self>>
+	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		type Call: From<Call<Self>>;
 
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 
 		type Currency: Currency<Self::AccountId> + LockableCurrency<Self::AccountId>;
+
+		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
 	}
 
 	#[pallet::pallet]
@@ -258,9 +289,11 @@ pub mod pallet {
 		NotAddressOwner,
 	}
 
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
-	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn offchain_worker(_block_number: T::BlockNumber) {}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
@@ -361,3 +394,5 @@ pub mod pallet {
 		}
 	}
 }
+
+impl<T: Config> Pallet<T> {}
