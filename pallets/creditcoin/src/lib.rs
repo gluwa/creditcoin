@@ -46,7 +46,9 @@ pub mod crypto {
 	}
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+pub type ExternalAmount = u64;
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct Address<AccountId> {
 	pub blockchain: Vec<u8>,
 	pub value: Vec<u8>,
@@ -54,107 +56,116 @@ pub struct Address<AccountId> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct Transfer<AccountId, BlockNum> {
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
-	pub src_address: Vec<u8>,
-	pub dst_address: Vec<u8>,
-	pub order: Vec<u8>,
-	pub amount: Vec<u8>,
+	pub src_address: AddressId<Hash>,
+	pub dst_address: AddressId<Hash>,
+	pub order: OrderId<Hash>,
+	pub amount: ExternalAmount,
 	pub tx: Vec<u8>,
 	pub block: BlockNum,
 	pub processed: bool,
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct Offer<AccountId, BlockNum> {
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+pub struct Offer<AccountId, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
-	pub ask_order: Vec<u8>,
-	pub bid_order: Vec<u8>,
+	pub ask_order: AskOrderId<Hash>,
+	pub bid_order: BidOrderId<Hash>,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct AskOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
 	pub address: AddressId<Hash>,
-	pub amount: Vec<u8>,
-	pub interest: Vec<u8>,
-	pub maturity: Vec<u8>,
+	pub amount: ExternalAmount,
+	pub interest: ExternalAmount,
+	pub maturity: BlockNum,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct Fee<BlockNum> {
 	pub block: BlockNum,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct BidOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
 	pub address: AddressId<Hash>,
-	pub amount: Vec<u8>,
-	pub interest: Vec<u8>,
-	pub maturity: Vec<u8>,
+	pub amount: ExternalAmount,
+	pub interest: ExternalAmount,
+	pub maturity: BlockNum,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-pub struct RepaymentOrder<AccountId, BlockNum> {
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
-	pub src_address: Vec<u8>,
-	pub dst_address: Vec<u8>,
-	pub amount: Vec<u8>,
+	pub src_address: AddressId<Hash>,
+	pub dst_address: AddressId<Hash>,
+	pub amount: ExternalAmount,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
-	pub deal: Vec<u8>,
+	pub deal: DealOrderId<Hash>,
 	pub previous_owner: AccountId,
-	pub transfer: Vec<u8>,
+	pub transfer: TransferId<Hash>,
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct DealOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
 	pub src_address: AddressId<Hash>,
-	pub dst_address: AccountId,
-	pub amount: Vec<u8>,
-	pub interest: Vec<u8>,
-	pub maturity: Vec<u8>,
+	pub dst_address: AddressId<Hash>,
+	pub amount: ExternalAmount,
+	pub interest: ExternalAmount,
+	pub maturity: BlockNum,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
-	pub loan_transfer: Option<Vec<u8>>,
-	pub repayment_transfer: Option<Vec<u8>>,
+	pub loan_transfer: Option<TransferId<Hash>>,
+	pub repayment_transfer: Option<TransferId<Hash>>,
 	pub lock: Option<AccountId>,
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct AddressId<Hash>(Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct AskOrderId<Hash>(Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct BidOrderId<Hash>(Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct DealOrderId<Hash>(Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+pub struct RepaymentOrderId<Hash>(Hash);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+pub enum OrderId<Hash> {
+	Deal(DealOrderId<Hash>),
+	Repayment(RepaymentOrderId<Hash>),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct OfferId<Hash>(Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct TransferId<Hash>(Hash);
 
 impl<H> AddressId<H> {
