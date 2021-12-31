@@ -275,8 +275,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn offers)]
-	pub type Offers<T: Config> =
-		StorageMap<_, Blake2_128Concat, OfferId<T::Hash>, Offer<T::AccountId, T::BlockNumber>>;
+	pub type Offers<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		OfferId<T::Hash>,
+		Offer<T::AccountId, T::BlockNumber, T::Hash>,
+	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn transfers)]
@@ -284,7 +288,7 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		TransferId<T::Hash>,
-		Transfer<T::AccountId, T::BlockNumber>,
+		Transfer<T::AccountId, T::BlockNumber, T::Hash>,
 	>;
 
 	// Pallets use events to inform users when important changes are made.
