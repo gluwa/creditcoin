@@ -242,6 +242,15 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn repayment_orders)]
+	pub type RepaymentOrders<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		RepaymentOrderId<T::Hash>,
+		RepaymentOrder<T::AccountId, T::BlockNumber, T::Hash>,
+	>;
+
+	#[pallet::storage]
 	#[pallet::getter(fn addresses)]
 	pub type Addresses<T: Config> =
 		StorageMap<_, Blake2_128Concat, AddressId<T::Hash>, Address<T::AccountId>>;
