@@ -2,6 +2,7 @@
 
 use codec::{Decode, Encode};
 
+use frame_system::offchain::{Account, SendSignedTransaction, Signer};
 pub use pallet::*;
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -392,7 +393,22 @@ pub mod pallet {
 				Err(Error::<T>::NonExistentAddress.into())
 			}
 		}
+
+impl<T: Config> Pallet<T> {
+	pub fn offchain_signed_tx(call: impl Fn(&Account<T>) -> Call<T>) -> Result<(), Error<T>> {
+		let signer = Signer::<T, T::AuthorityId>::any_account();
+		let result = signer.send_signed_transaction(call);
+
+		if let Some((acc, res)) = result {
+			if res.is_err() {
+				tracing::error!("failure: offchain_signed_tx: tx sent: {:?}", acc.id);
+				return Err(Error::OffchainSignedTxFailed);
+			} else {
+				return Ok(());
+			}
+		}
+
+		tracing::error!("No local account available");
+		Err(Error::NoLocalAcctForSignedTx)
 	}
 }
-
-impl<T: Config> Pallet<T> {}
