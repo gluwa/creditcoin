@@ -298,7 +298,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
-		AddressRegistered(Address<T::AccountId>),
+		AddressRegistered(AddressId<T::Hash>, Address<T::AccountId>),
 	}
 
 	// Errors inform users that something went wrong.
@@ -312,6 +312,10 @@ pub mod pallet {
 		DuplicateId,
 
 		NotAddressOwner,
+
+		OffchainSignedTxFailed,
+
+		NoLocalAcctForSignedTx,
 	}
 
 	#[pallet::hooks]
@@ -334,7 +338,7 @@ pub mod pallet {
 			ensure!(registration.is_none(), Error::<T>::AddressAlreadyRegistered);
 
 			let entry = Address { blockchain, value: address, network, sighash: who };
-			Self::deposit_event(Event::<T>::AddressRegistered(entry.clone()));
+			Self::deposit_event(Event::<T>::AddressRegistered(address_id.clone(), entry.clone()));
 			<Addresses<T>>::insert(address_id, entry);
 
 			Ok(())
