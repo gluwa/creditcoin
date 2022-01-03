@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, EncodeLike};
 
 use frame_system::{
 	offchain::{Account, SendSignedTransaction, Signer},
@@ -58,7 +58,7 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub network: Vec<u8>,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
-	pub order: OrderId<Hash>,
+	pub order: OrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
 	pub tx: Vec<u8>,
 	pub block: BlockNum,
@@ -75,8 +75,8 @@ pub struct PendingTransfer<AccountId, BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct Offer<AccountId, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
-	pub ask_order: AskOrderId<Hash>,
-	pub bid_order: BidOrderId<Hash>,
+	pub ask_order: AskOrderId<BlockNum, Hash>,
+	pub bid_order: BidOrderId<BlockNum, Hash>,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
@@ -121,7 +121,7 @@ pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 	pub amount: ExternalAmount,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
-	pub deal: DealOrderId<Hash>,
+	pub deal: DealOrderId<BlockNum, Hash>,
 	pub previous_owner: AccountId,
 	pub transfer: TransferId<Hash>,
 	pub sighash: AccountId,
@@ -148,25 +148,25 @@ pub struct DealOrder<AccountId, Balance, BlockNum, Hash> {
 pub struct AddressId<Hash>(Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct AskOrderId<Hash>(Hash);
+pub struct AskOrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct BidOrderId<Hash>(Hash);
+pub struct BidOrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct DealOrderId<Hash>(Hash);
+pub struct DealOrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct RepaymentOrderId<Hash>(Hash);
+pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub enum OrderId<Hash> {
-	Deal(DealOrderId<Hash>),
-	Repayment(RepaymentOrderId<Hash>),
+pub enum OrderId<BlockNum, Hash> {
+	Deal(DealOrderId<BlockNum, Hash>),
+	Repayment(RepaymentOrderId<BlockNum, Hash>),
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct OfferId<Hash>(Hash);
+pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct TransferId<Hash>(Hash);
@@ -179,19 +179,6 @@ fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 		hex.push(HEX_CHARS_LOWER[(byte & 0x0F) as usize]);
 	}
 	hex
-}
-
-macro_rules! impl_to_hex {
-	($id: ident) => {
-		impl<H> $id<H>
-		where
-			H: AsRef<[u8]>,
-		{
-			pub fn to_hex(&self) -> Vec<u8> {
-				bytes_to_hex(self.0.as_ref())
-			}
-		}
-	};
 }
 
 macro_rules! replace_expr {
@@ -232,17 +219,15 @@ macro_rules! concatenate {
 	}
 }
 
-impl_to_hex!(AskOrderId);
-impl_to_hex!(BidOrderId);
 
-impl<H> OrderId<H>
+impl<B, H> OrderId<B, H>
 where
 	H: AsRef<[u8]>,
 {
 	pub fn to_hex(&self) -> Vec<u8> {
 		let bytes = match self {
-			OrderId::Deal(deal) => deal.0.as_ref(),
-			OrderId::Repayment(repay) => repay.0.as_ref(),
+			OrderId::Deal(deal) => deal.1.as_ref(),
+			OrderId::Repayment(repay) => repay.1.as_ref(),
 		};
 		bytes_to_hex(bytes)
 	}
@@ -259,33 +244,33 @@ impl<H> AddressId<H> {
 	}
 }
 
-impl<H> AskOrderId<H> {
-	pub fn new<Config>(guid: &[u8]) -> AskOrderId<H>
+impl<B, H> AskOrderId<B, H> {
+	pub fn new<Config>(expiration_block: B, guid: &[u8]) -> AskOrderId<B, H>
 	where
-		Config: frame_system::Config,
+		Config: frame_system::Config<BlockNumber = B>,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		AskOrderId(Config::Hashing::hash(guid))
+		AskOrderId(expiration_block, Config::Hashing::hash(guid))
 	}
 }
 
-impl<H> BidOrderId<H> {
-	pub fn new<Config>(guid: &[u8]) -> BidOrderId<H>
+impl<B, H> BidOrderId<B, H> {
+	pub fn new<Config>(expiration_block: B, guid: &[u8]) -> BidOrderId<B, H>
 	where
-		Config: frame_system::Config,
+		Config: frame_system::Config<BlockNumber = B>,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		BidOrderId(Config::Hashing::hash(guid))
+		BidOrderId(expiration_block, Config::Hashing::hash(guid))
 	}
 }
 
-impl<H> RepaymentOrderId<H> {
-	pub fn new<Config>(guid: &[u8]) -> RepaymentOrderId<H>
+impl<B, H> RepaymentOrderId<B, H> {
+	pub fn new<Config>(expiration_block: B, guid: &[u8]) -> RepaymentOrderId<B, H>
 	where
-		Config: frame_system::Config,
+		Config: frame_system::Config<BlockNumber = B>,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		RepaymentOrderId(Config::Hashing::hash(guid))
+		RepaymentOrderId(expiration_block, Config::Hashing::hash(guid))
 	}
 }
 
@@ -300,36 +285,139 @@ impl<H> TransferId<H> {
 	}
 }
 
-impl<H> OfferId<H> {
-	pub fn new<Config>(ask_order_id: &AskOrderId<H>, bid_order_id: &BidOrderId<H>) -> Self
+impl<B, H> OfferId<B, H> {
+	pub fn new<Config>(
+		expiration_block: B,
+		ask_order_id: &AskOrderId<BlockNumberFor<Config>, H>,
+		bid_order_id: &BidOrderId<BlockNumberFor<Config>, H>,
+	) -> Self
 	where
-		Config: frame_system::Config,
+		Config: frame_system::Config<BlockNumber = B>,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 		H: AsRef<[u8]>,
 	{
-		let ask_bytes = ask_order_id.0.as_ref();
-		let bid_bytes = bid_order_id.0.as_ref();
+		let ask_bytes = ask_order_id.1.as_ref();
+		let bid_bytes = bid_order_id.1.as_ref();
 		let key = concatenate!(ask_bytes, bid_bytes);
-		OfferId(Config::Hashing::hash(&key))
+		OfferId(expiration_block, Config::Hashing::hash(&key))
 	}
 }
 
-impl<H> DealOrderId<H> {
-	pub fn new<Config>(offer_id: &OfferId<H>) -> Self
+impl<B, H> DealOrderId<B, H> {
+	pub fn new<Config>(expiration_block: B, offer_id: &OfferId<BlockNumberFor<Config>, H>) -> Self
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 		H: AsRef<[u8]>,
 	{
-		DealOrderId(Config::Hashing::hash(offer_id.0.as_ref()))
+		DealOrderId(expiration_block, Config::Hashing::hash(offer_id.1.as_ref()))
+	}
+}
+
+use codec::FullCodec;
+use extend::ext;
+use frame_support::{
+	storage::types::QueryKindTrait,
+	traits::{Get, StorageInstance},
+	StorageHasher,
+};
+
+trait Id<BlockNum, Hash> {
+	fn expiration(&self) -> BlockNum;
+	fn hash(&self) -> Hash;
+}
+
+macro_rules! impl_id {
+	($id: ident) => {
+		impl<BlockNum, Hash> Id<BlockNum, Hash> for $id<BlockNum, Hash>
+		where
+			BlockNum: Clone,
+			Hash: Clone,
+		{
+			fn expiration(&self) -> BlockNum {
+				self.0.clone()
+			}
+			fn hash(&self) -> Hash {
+				self.1.clone()
+			}
+		}
+
+		impl<'a, BlockNum, Hash> Id<BlockNum, Hash> for &'a $id<BlockNum, Hash>
+		where
+			BlockNum: Clone,
+			Hash: Clone,
+		{
+			fn expiration(&self) -> BlockNum {
+				self.0.clone()
+			}
+			fn hash(&self) -> Hash {
+				self.1.clone()
+			}
+		}
+	};
+}
+
+impl_id!(DealOrderId);
+impl_id!(AskOrderId);
+impl_id!(BidOrderId);
+impl_id!(OfferId);
+impl_id!(RepaymentOrderId);
+
+#[ext(name = DoubleMapExt)]
+impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value, QueryKind, OnEmpty, MaxValues, IdTy>
+	frame_support::storage::types::StorageDoubleMap<
+		Prefix,
+		Hasher1,
+		Key1,
+		Hasher2,
+		Key2,
+		Value,
+		QueryKind,
+		OnEmpty,
+		MaxValues,
+	> where
+	Prefix: StorageInstance,
+	Hasher1: StorageHasher,
+	Hasher2: StorageHasher,
+	Key1: FullCodec + Clone,
+	Key2: FullCodec + Clone,
+	Value: FullCodec,
+	QueryKind: QueryKindTrait<Value, OnEmpty>,
+	OnEmpty: Get<QueryKind::Query> + 'static,
+	MaxValues: Get<Option<u32>>,
+	IdTy: Id<Key1, Key2>,
+{
+	fn insert_id<V>(id: IdTy, val: V)
+	where
+		V: EncodeLike<Value>,
+	{
+		Self::insert(id.expiration(), id.hash(), val);
+	}
+
+	fn try_get_id(id: &IdTy) -> frame_support::dispatch::result::Result<Value, ()> {
+		Self::try_get(id.expiration(), id.hash())
+	}
+
+	fn contains_id(id: &IdTy) -> bool {
+		Self::contains_key(id.expiration(), id.hash())
 	}
 }
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
+#[allow(unused_macros)]
 macro_rules! try_get {
 	($storage: ident <$t: ident>, $key: expr, $err: ident) => {
 		crate::pallet::$storage::<$t>::try_get($key).map_err(|()| crate::pallet::Error::<$t>::$err)
+	};
+}
+
+macro_rules! try_get_id {
+	($storage: ident <$t: ident>, $key: expr, $err: ident) => {
+		<crate::pallet::$storage<$t> as DoubleMapExt<_, _, _, _, _, _, _, _, _, _>>::try_get_id(
+			$key,
+		)
+		.map_err(|()| crate::pallet::Error::<$t>::$err)
 	};
 }
 
@@ -393,19 +481,23 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn deal_orders)]
-	pub type DealOrders<T: Config> = StorageMap<
+	pub type DealOrders<T: Config> = StorageDoubleMap<
 		_,
-		Blake2_128Concat,
-		DealOrderId<T::Hash>,
+		Twox128,
+		T::BlockNumber,
+		Identity,
+		T::Hash,
 		DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
 	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn repayment_orders)]
-	pub type RepaymentOrders<T: Config> = StorageMap<
+	pub type RepaymentOrders<T: Config> = StorageDoubleMap<
 		_,
-		Blake2_128Concat,
-		RepaymentOrderId<T::Hash>,
+		Twox128,
+		T::BlockNumber,
+		Identity,
+		T::Hash,
 		RepaymentOrder<T::AccountId, T::BlockNumber, T::Hash>,
 	>;
 
@@ -416,28 +508,34 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn ask_orders)]
-	pub type AskOrders<T: Config> = StorageMap<
+	pub type AskOrders<T: Config> = StorageDoubleMap<
 		_,
-		Blake2_128Concat,
-		AskOrderId<T::Hash>,
+		Twox128,
+		T::BlockNumber,
+		Identity,
+		T::Hash,
 		AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
 	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn bid_orders)]
-	pub type BidOrders<T: Config> = StorageMap<
+	pub type BidOrders<T: Config> = StorageDoubleMap<
 		_,
-		Blake2_128Concat,
-		BidOrderId<T::Hash>,
+		Twox128,
+		T::BlockNumber,
+		Identity,
+		T::Hash,
 		BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
 	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn offers)]
-	pub type Offers<T: Config> = StorageMap<
+	pub type Offers<T: Config> = StorageDoubleMap<
 		_,
-		Blake2_128Concat,
-		OfferId<T::Hash>,
+		Twox128,
+		T::BlockNumber,
+		Identity,
+		T::Hash,
 		Offer<T::AccountId, T::BlockNumber, T::Hash>,
 	>;
 
@@ -445,7 +543,7 @@ pub mod pallet {
 	#[pallet::getter(fn transfers)]
 	pub type Transfers<T: Config> = StorageMap<
 		_,
-		Blake2_128Concat,
+		Identity,
 		TransferId<T::Hash>,
 		Transfer<T::AccountId, T::BlockNumber, T::Hash>,
 	>;
@@ -462,6 +560,11 @@ pub mod pallet {
 		TransferRegistered(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		TransferFinalized(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+
+		AskOrderAdded(
+			AskOrderId<T::BlockNumber, T::Hash>,
+			AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+		),
 	}
 
 	// Errors inform users that something went wrong.
@@ -509,10 +612,12 @@ pub mod pallet {
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
-				log::debug!("Do thing");
 				for PendingTransfer { verify_string: _, transfer } in PendingTransfers::<T>::get() {
 					log::debug!("verifying transfer");
 					// TODO: actually hit gateway to verify given transaction
+					sp_std::if_std! {
+						std::thread::sleep(std::time::Duration::from_secs(10));
+					}
 					if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
 						Call::finalize_transfer { transfer: transfer.clone() }
 					}) {
@@ -520,13 +625,22 @@ pub mod pallet {
 					}
 				}
 			} else {
-				log::debug!("Not authority, skipping off chain work");
+				log::trace!("Not authority, skipping off chain work");
 			}
+		}
+		fn on_finalize(block_number: T::BlockNumber) {
+			log::debug!("Cleaning up expired entries");
+			AskOrders::<T>::remove_prefix(block_number, None);
+			BidOrders::<T>::remove_prefix(block_number, None);
+			DealOrders::<T>::remove_prefix(block_number, None);
+			RepaymentOrders::<T>::remove_prefix(block_number, None);
+			Offers::<T>::remove_prefix(block_number, None);
 		}
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Registers an external address on `blockchain` and `network` with value `address`
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn register_address(
 			origin: OriginFor<T>,
@@ -561,8 +675,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let ask_order_id = AskOrderId::new::<T>(&guid);
-			ensure!(!AskOrders::<T>::contains_key(&ask_order_id), Error::<T>::DuplicateId);
+			let ask_order_id = AskOrderId::new::<T>(Self::block_number() + expiration, &guid);
+			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.sighash == who, Error::<T>::NotAddressOwner);
@@ -578,7 +692,9 @@ pub mod pallet {
 				sighash: who,
 			};
 
-			AskOrders::<T>::insert(ask_order_id, ask_order);
+			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id.clone(), ask_order.clone()));
+
+			AskOrders::<T>::insert_id(ask_order_id, ask_order);
 			Ok(())
 		}
 
@@ -595,8 +711,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let bid_order_id = BidOrderId::new::<T>(&guid);
-			ensure!(!BidOrders::<T>::contains_key(&bid_order_id), Error::<T>::DuplicateId);
+			let bid_order_id = BidOrderId::new::<T>(Self::block_number() + expiration, &guid);
+			ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::addresses(&address_id);
 			if let Some(address) = address {
@@ -613,7 +729,7 @@ pub mod pallet {
 					sighash: who,
 				};
 
-				BidOrders::<T>::insert(bid_order_id, bid_order);
+				BidOrders::<T>::insert_id(bid_order_id, bid_order);
 				Ok(())
 			} else {
 				Err(Error::<T>::NonExistentAddress.into())
@@ -623,23 +739,24 @@ pub mod pallet {
 		#[pallet::weight(10_000)]
 		pub fn add_offer(
 			origin: OriginFor<T>,
-			ask_order_id: AskOrderId<T::Hash>,
-			bid_order_id: BidOrderId<T::Hash>,
+			ask_order_id: AskOrderId<T::BlockNumber, T::Hash>,
+			bid_order_id: BidOrderId<T::BlockNumber, T::Hash>,
 			expiration: BlockNumberFor<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let ask_order = try_get!(AskOrders<T>, &ask_order_id, NonExistentAskOrder)?;
+			let ask_order = try_get_id!(AskOrders<T>, &ask_order_id, NonExistentAskOrder)?;
 
-			let _bid_order = try_get!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
+			let _bid_order = try_get_id!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
 
 			let src_address = Self::get_address(&ask_order.address)?;
 
 			// TODO: Do validation of addresses and parameters here
 
-			let offer_id = OfferId::new::<T>(&ask_order_id, &bid_order_id);
+			let offer_id =
+				OfferId::new::<T>(Self::block_number() + expiration, &ask_order_id, &bid_order_id);
 
-			ensure!(!Offers::<T>::contains_key(&offer_id), Error::<T>::DuplicateOffer);
+			ensure!(!Offers::<T>::contains_id(&offer_id), Error::<T>::DuplicateOffer);
 
 			let offer = Offer {
 				ask_order: ask_order_id,
@@ -650,7 +767,7 @@ pub mod pallet {
 				sighash: who,
 			};
 
-			Offers::<T>::insert(offer_id, offer);
+			Offers::<T>::insert_id(offer_id, offer);
 
 			Ok(())
 		}
@@ -658,19 +775,19 @@ pub mod pallet {
 		#[pallet::weight(10_000)]
 		pub fn add_deal_order(
 			origin: OriginFor<T>,
-			offer_id: OfferId<T::Hash>,
+			offer_id: OfferId<T::BlockNumber, T::Hash>,
 			expiration: BlockNumberFor<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let offer = try_get!(Offers<T>, &offer_id, NonExistentOffer)?;
-			let ask_order = try_get!(AskOrders<T>, &offer.ask_order, NonExistentAskOrder)?;
+			let offer = try_get_id!(Offers<T>, &offer_id, NonExistentOffer)?;
+			let ask_order = try_get_id!(AskOrders<T>, &offer.ask_order, NonExistentAskOrder)?;
 
-			let bid_order = try_get!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
+			let bid_order = try_get_id!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
 
 			// TODO: checks to make sure orders match up
 
-			let deal_order_id = DealOrderId::new::<T>(&offer_id);
+			let deal_order_id = DealOrderId::new::<T>(Self::block_number() + expiration, &offer_id);
 			let deal_order = DealOrder {
 				blockchain: offer.blockchain,
 				src_address: ask_order.address,
@@ -687,7 +804,7 @@ pub mod pallet {
 				repayment_transfer: None,
 			};
 
-			DealOrders::<T>::insert(deal_order_id, deal_order);
+			DealOrders::<T>::insert_id(deal_order_id, deal_order);
 
 			Ok(())
 		}
@@ -696,14 +813,14 @@ pub mod pallet {
 		pub fn register_transfer(
 			origin: OriginFor<T>,
 			gain: ExternalAmount,
-			order_id: OrderId<T::Hash>,
+			order_id: OrderId<T::BlockNumber, T::Hash>,
 			blockchain_tx_id: Vec<u8>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let (src_address_id, dest_address_id, mut amount) = match &order_id {
 				OrderId::Deal(deal_order_id) => {
-					let order = try_get!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
+					let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
 					if gain == 0 {
 						(order.src_address, order.dst_address, order.amount)
@@ -713,8 +830,11 @@ pub mod pallet {
 				},
 				OrderId::Repayment(repay_order_id) => {
 					ensure!(gain == 0, Error::<T>::RepaymentOrderNonZeroGain);
-					let order =
-						try_get!(RepaymentOrders<T>, &repay_order_id, NonExistentRepaymentOrder)?;
+					let order = try_get_id!(
+						RepaymentOrders<T>,
+						&repay_order_id,
+						NonExistentRepaymentOrder
+					)?;
 					(order.src_address, order.dst_address, order.amount)
 				},
 			};

@@ -19,6 +19,7 @@ lexical-core = { version = "0.8.2", features = [
     "write-integers",
 ], default-features = false }
 log = "0.4.14"
+extend = "1.1.2"
 
 [dependencies.codec]
 default-features = false

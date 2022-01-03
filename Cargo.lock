@@ -1334,6 +1334,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "extend"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c5216e387a76eebaaf11f6d871ec8a4aae0b25f05456ee21f228e024b1b3610"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3532,6 +3544,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "futures-lite",
  "jsonrpc-core",
+ "log",
  "node-template-runtime",
  "num_cpus",
  "pallet-transaction-payment-rpc",
@@ -3775,6 +3788,7 @@ dependencies = [
 name = "pallet-creditcoin"
 version = "0.1.0"
 dependencies = [
+ "extend",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -5853,6 +5867,7 @@ dependencies = [
 name = "sha3pow"
 version = "0.1.0"
 dependencies = [
+ "log",
  "parity-scale-codec",
  "rand 0.8.4",
  "sc-client-api",
