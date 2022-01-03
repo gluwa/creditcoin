@@ -8,15 +8,7 @@ use frame_system::{
 };
 pub use pallet::*;
 use scale_info::TypeInfo;
-use sp_runtime::{
-	offchain::{
-		http,
-		storage::{MutateStorageError, StorageRetrievalError, StorageValueRef},
-		Duration,
-	},
-	traits::Hash,
-	KeyTypeId, RuntimeAppPublic, RuntimeDebug,
-};
+use sp_runtime::{traits::Hash, KeyTypeId, RuntimeAppPublic, RuntimeDebug};
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -32,10 +24,8 @@ pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
 
 pub mod crypto {
 	use crate::KEY_TYPE;
-	use sp_core::sr25519::Signature as Sr25519Signature;
 	use sp_runtime::{
 		app_crypto::{app_crypto, sr25519},
-		traits::Verify,
 		MultiSignature, MultiSigner,
 	};
 
@@ -520,7 +510,7 @@ pub mod pallet {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
 				log::debug!("Do thing");
-				for PendingTransfer { verify_string, transfer } in PendingTransfers::<T>::get() {
+				for PendingTransfer { verify_string: _, transfer } in PendingTransfers::<T>::get() {
 					log::debug!("verifying transfer");
 					// TODO: actually hit gateway to verify given transaction
 					if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
@@ -641,7 +631,7 @@ pub mod pallet {
 
 			let ask_order = try_get!(AskOrders<T>, &ask_order_id, NonExistentAskOrder)?;
 
-			let bid_order = try_get!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
+			let _bid_order = try_get!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
 
 			let src_address = Self::get_address(&ask_order.address)?;
 
@@ -784,7 +774,7 @@ pub mod pallet {
 					b"verify",
 					&src_address.value,
 					&dest_address.value,
-					&order_id.to_hex(),
+					&order_id_hex,
 					&*amount_str,
 					&blockchain_tx_id;
 					&src_address.network;
