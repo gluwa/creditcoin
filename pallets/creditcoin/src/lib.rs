@@ -324,6 +324,12 @@ impl<H> DealOrderId<H> {
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
+macro_rules! try_get {
+	($storage: ident <$t: ident>, $key: expr, $err: ident) => {
+		crate::pallet::$storage::<$t>::try_get($key).map_err(|()| crate::pallet::Error::<$t>::$err)
+	};
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::traits::{Currency, LockableCurrency, Randomness};
@@ -432,6 +438,17 @@ pub mod pallet {
 
 		NonExistentAddress,
 
+		NonExistentDealOrder,
+		NonExistentAskOrder,
+		NonExistentBidOrder,
+		NonExistentOffer,
+
+		TransferAlreadyRegistered,
+
+		InsufficientAuthority,
+
+		NonExistentRepaymentOrder,
+
 		DuplicateId,
 
 		NotAddressOwner,
@@ -439,6 +456,14 @@ pub mod pallet {
 		OffchainSignedTxFailed,
 
 		NoLocalAcctForSignedTx,
+
+		RepaymentOrderNonZeroGain,
+
+		AddressPlatformMismatch,
+
+		AlreadyAuthority,
+
+		DuplicateOffer,
 	}
 
 	#[pallet::hooks]
@@ -448,7 +473,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn register_address(
 			origin: OriginFor<T>,
 			blockchain: Vec<u8>,
@@ -457,8 +482,10 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let address_id = AddressId::new::<T>(&blockchain, &address, &network);
-			let registration = Self::addresses(&address_id);
-			ensure!(registration.is_none(), Error::<T>::AddressAlreadyRegistered);
+			ensure!(
+				!Addresses::<T>::contains_key(&address_id),
+				Error::<T>::AddressAlreadyRegistered
+			);
 
 			let entry = Address { blockchain, value: address, network, sighash: who };
 			Self::deposit_event(Event::<T>::AddressRegistered(address_id.clone(), entry.clone()));
@@ -480,33 +507,28 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let ask_order_id = AskOrderId::new::<T>(guid);
-			let existing_order = Self::ask_orders(&ask_order_id);
-			ensure!(existing_order.is_none(), Error::<T>::DuplicateId);
+			let ask_order_id = AskOrderId::new::<T>(&guid);
+			ensure!(!AskOrders::<T>::contains_key(&ask_order_id), Error::<T>::DuplicateId);
 
-			let address = Self::addresses(&address_id);
-			if let Some(address) = address {
-				ensure!(address.sighash == who, Error::<T>::NotAddressOwner);
-				let ask_order = AskOrder {
-					blockchain: address.blockchain,
-					address: address_id,
-					amount,
-					interest,
-					maturity,
-					fee,
-					expiration,
-					block: <frame_system::Pallet<T>>::block_number(),
-					sighash: who,
-				};
+			let address = Self::get_address(&address_id)?;
+			ensure!(address.sighash == who, Error::<T>::NotAddressOwner);
+			let ask_order = AskOrder {
+				blockchain: address.blockchain,
+				address: address_id,
+				amount,
+				interest,
+				maturity,
+				fee,
+				expiration,
+				block: <frame_system::Pallet<T>>::block_number(),
+				sighash: who,
+			};
 
-				AskOrders::<T>::insert(ask_order_id, ask_order);
-				Ok(())
-			} else {
-				Err(Error::<T>::NonExistentAddress.into())
-			}
+			AskOrders::<T>::insert(ask_order_id, ask_order);
+			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
@@ -519,9 +541,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let bid_order_id = BidOrderId::new::<T>(guid);
-			let existing_order = Self::bid_orders(&bid_order_id);
-			ensure!(existing_order.is_none(), Error::<T>::DuplicateId);
+			let bid_order_id = BidOrderId::new::<T>(&guid);
+			ensure!(!BidOrders::<T>::contains_key(&bid_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::addresses(&address_id);
 			if let Some(address) = address {
