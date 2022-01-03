@@ -1,7 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use node_template_runtime::{self, opaque::Block, RuntimeApi};
-use sc_client_api::{ExecutorProvider, RemoteBackend};
+use sc_client_api::ExecutorProvider;
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
@@ -75,6 +75,7 @@ pub fn new_partial(
 		config.wasm_method,
 		config.default_heap_pages,
 		config.max_runtime_instances,
+		config.runtime_cache_size,
 	);
 
 	let (client, backend, keystore_container, task_manager) =
@@ -86,7 +87,7 @@ pub fn new_partial(
 	let client = Arc::new(client);
 
 	let telemetry = telemetry.map(|(worker, telemetry)| {
-		task_manager.spawn_handle().spawn("telemetry", worker.run());
+		task_manager.spawn_handle().spawn("telemetry", "telemetry_tasks", worker.run());
 		telemetry
 	});
 
@@ -173,7 +174,6 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
 			import_queue,
-			on_demand: None,
 			block_announce_validator_builder: None,
 			warp_sync: None,
 		})?;
@@ -213,8 +213,6 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
 		rpc_extensions_builder,
-		on_demand: None,
-		remote_blockchain: None,
 		backend,
 		system_rpc_tx,
 		config,
@@ -251,7 +249,9 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			can_author_with,
 		);
 
-		task_manager.spawn_essential_handle().spawn_blocking("pow", worker_task);
+		task_manager
+			.spawn_essential_handle()
+			.spawn_blocking("pow", "pow_group", worker_task);
 
 		let threads = num_cpus::get();
 		for _ in 0..threads {
@@ -260,7 +260,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 				let client = client.clone();
 
 				thread::spawn(move || loop {
-					let metadata = worker.lock().metadata();
+					let metadata = worker.metadata();
 					if let Some(metadata) = metadata {
 						match sha3pow::mine(
 							client.as_ref(),
@@ -269,10 +269,9 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 							metadata.difficulty,
 						) {
 							Ok(Some(seal)) => {
-								let current_meta = worker.lock().metadata();
+								let current_meta = worker.metadata();
 								if current_meta == Some(metadata) {
-									let _ =
-										futures_lite::future::block_on(worker.lock().submit(seal));
+									let _ = futures_lite::future::block_on(worker.submit(seal));
 								}
 							},
 							Ok(None) => {},
@@ -290,108 +289,6 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 	// need a keystore, regardless of which protocol we use below.
 	let _keystore =
 		if role.is_authority() { Some(keystore_container.sync_keystore()) } else { None };
-
-	network_starter.start_network();
-	Ok(task_manager)
-}
-
-/// Builds a new service for a light client.
-pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
-	let telemetry = config
-		.telemetry_endpoints
-		.clone()
-		.filter(|x| !x.is_empty())
-		.map(|endpoints| -> Result<_, sc_telemetry::Error> {
-			let worker = TelemetryWorker::new(16)?;
-			let telemetry = worker.handle().new_telemetry(endpoints);
-			Ok((worker, telemetry))
-		})
-		.transpose()?;
-
-	let executor = NativeElseWasmExecutor::<ExecutorDispatch>::new(
-		config.wasm_method,
-		config.default_heap_pages,
-		config.max_runtime_instances,
-	);
-
-	let (client, backend, keystore_container, mut task_manager, on_demand) =
-		sc_service::new_light_parts::<Block, RuntimeApi, _>(
-			&config,
-			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-			executor,
-		)?;
-
-	let mut telemetry = telemetry.map(|(worker, telemetry)| {
-		task_manager.spawn_handle().spawn("telemetry", worker.run());
-		telemetry
-	});
-
-	let select_chain = sc_consensus::LongestChain::new(backend.clone());
-
-	let transaction_pool = Arc::new(sc_transaction_pool::BasicPool::new_light(
-		config.transaction_pool.clone(),
-		config.prometheus_registry(),
-		task_manager.spawn_essential_handle(),
-		client.clone(),
-		on_demand.clone(),
-	));
-
-	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
-		client.clone(),
-		client.clone(),
-		MinimalSha3Algorithm,
-		0,
-		select_chain.clone(),
-		move |_, ()| async move {
-			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-			Ok(timestamp)
-		},
-		sp_consensus::AlwaysCanAuthor,
-	);
-
-	let import_queue = sc_consensus_pow::import_queue(
-		Box::new(pow_block_import.clone()),
-		None,
-		MinimalSha3Algorithm,
-		&task_manager.spawn_essential_handle(),
-		config.prometheus_registry(),
-	)?;
-
-	let (network, system_rpc_tx, network_starter) =
-		sc_service::build_network(sc_service::BuildNetworkParams {
-			config: &config,
-			client: client.clone(),
-			transaction_pool: transaction_pool.clone(),
-			spawn_handle: task_manager.spawn_handle(),
-			import_queue,
-			on_demand: Some(on_demand.clone()),
-			block_announce_validator_builder: None,
-			warp_sync: None,
-		})?;
-
-	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
-		);
-	}
-
-	sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-		remote_blockchain: Some(backend.remote_blockchain()),
-		transaction_pool,
-		task_manager: &mut task_manager,
-		on_demand: Some(on_demand),
-		rpc_extensions_builder: Box::new(|_, _| Ok(())),
-		config,
-		client,
-		keystore: keystore_container.sync_keystore(),
-		backend,
-		network,
-		system_rpc_tx,
-		telemetry: telemetry.as_mut(),
-	})?;
 
 	network_starter.start_network();
 	Ok(task_manager)

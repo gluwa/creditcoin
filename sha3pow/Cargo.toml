@@ -13,35 +13,35 @@ scale-info = "1.0.0"
 
 [dependencies.sc-consensus-pow]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
+tag = 'monthly-2022-01'
 version = '0.10.0-dev'
 
 [dependencies.sc-keystore]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.sc-client-api]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.sp-api]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.sp-consensus-pow]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
+tag = 'monthly-2022-01'
 version = '0.10.0-dev'
 
 [dependencies.sp-application-crypto]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.sp-core]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-10'
-version = '4.0.0-dev'
+tag = 'monthly-2022-01'
+version = '4.1.0-dev'

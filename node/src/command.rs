@@ -112,7 +112,7 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(&cli.run)?;
 			runner.run_node_until_exit(|config| async move {
 				match config.role {
-					Role::Light => service::new_light(config),
+					Role::Light => panic!("unsupported"),
 					_ => service::new_full(config),
 				}
 				.map_err(sc_cli::Error::Service)
