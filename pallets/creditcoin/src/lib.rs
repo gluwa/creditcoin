@@ -2,7 +2,10 @@
 
 use codec::{Decode, Encode};
 
-use frame_system::offchain::{Account, SendSignedTransaction, Signer};
+use frame_system::{
+	offchain::{Account, SendSignedTransaction, Signer},
+	pallet_prelude::*,
+};
 pub use pallet::*;
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -12,7 +15,7 @@ use sp_runtime::{
 		Duration,
 	},
 	traits::Hash,
-	KeyTypeId, RuntimeDebug,
+	KeyTypeId, RuntimeAppPublic, RuntimeDebug,
 };
 use sp_std::prelude::*;
 
@@ -30,8 +33,11 @@ pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
 pub mod crypto {
 	use crate::KEY_TYPE;
 	use sp_core::sr25519::Signature as Sr25519Signature;
-	use sp_runtime::app_crypto::{app_crypto, sr25519};
-	use sp_runtime::{traits::Verify, MultiSignature, MultiSigner};
+	use sp_runtime::{
+		app_crypto::{app_crypto, sr25519},
+		traits::Verify,
+		MultiSignature, MultiSigner,
+	};
 
 	app_crypto!(sr25519, KEY_TYPE);
 
@@ -59,6 +65,7 @@ pub struct Address<AccountId> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Vec<u8>,
+	pub network: Vec<u8>,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
 	pub order: OrderId<Hash>,
@@ -67,6 +74,12 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub block: BlockNum,
 	pub processed: bool,
 	pub sighash: AccountId,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+pub struct PendingTransfer<AccountId, BlockNum, Hash> {
+	verify_string: Vec<u8>,
+	transfer: Transfer<AccountId, BlockNum, Hash>,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
@@ -332,11 +345,17 @@ macro_rules! try_get {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::traits::{Currency, LockableCurrency, Randomness};
-	use frame_support::Blake2_128Concat;
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
-	use frame_system::offchain::{AppCrypto, CreateSignedTransaction};
-	use frame_system::{ensure_signed, pallet_prelude::*};
+	use frame_support::{
+		dispatch::DispatchResult,
+		pallet_prelude::*,
+		traits::{Currency, LockableCurrency, Randomness},
+		Blake2_128Concat,
+	};
+	use frame_system::{
+		ensure_signed,
+		offchain::{AppCrypto, CreateSignedTransaction},
+		pallet_prelude::*,
+	};
 
 	use super::*;
 
@@ -355,11 +374,32 @@ pub mod pallet {
 		type Currency: Currency<Self::AccountId> + LockableCurrency<Self::AccountId>;
 
 		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
+
+		type FromAccountId: From<sp_core::sr25519::Public>
+			+ Into<Self::AccountId>
+			+ From<Self::AccountId>
+			+ Clone
+			+ core::fmt::Debug
+			+ PartialEq<Self::FromAccountId>
+			+ AsRef<[u8; 32]>;
+
+		type InternalPublic: sp_core::crypto::UncheckedFrom<[u8; 32]>;
+
+		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
 	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
+
+	#[pallet::storage]
+	#[pallet::getter(fn authorities)]
+	pub type Authorities<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, ()>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn pending_transfers)]
+	pub type PendingTransfers<T: Config> =
+		StorageValue<_, Vec<PendingTransfer<T::AccountId, T::BlockNumber, T::Hash>>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn deal_orders)]
@@ -428,6 +468,10 @@ pub mod pallet {
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		AddressRegistered(AddressId<T::Hash>, Address<T::AccountId>),
+
+		TransferRegistered(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+
+		TransferFinalized(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 	}
 
 	// Errors inform users that something went wrong.
@@ -468,7 +512,27 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn offchain_worker(_block_number: T::BlockNumber) {}
+		fn on_initialize(_block_number: T::BlockNumber) -> Weight {
+			PendingTransfers::<T>::kill();
+			0
+		}
+		fn offchain_worker(_block_number: T::BlockNumber) {
+			if let Some(auth_id) = Self::authority_id() {
+				let auth_id = T::FromAccountId::from(auth_id);
+				log::debug!("Do thing");
+				for PendingTransfer { verify_string, transfer } in PendingTransfers::<T>::get() {
+					log::debug!("verifying transfer");
+					// TODO: actually hit gateway to verify given transaction
+					if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
+						Call::finalize_transfer { transfer: transfer.clone() }
+					}) {
+						log::error!("Failed to send finalize transfer transaction: {:?}", e);
+					}
+				}
+			} else {
+				log::debug!("Not authority, skipping off chain work");
+			}
+		}
 	}
 
 	#[pallet::call]
@@ -637,21 +701,196 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
+		pub fn register_transfer(
+			origin: OriginFor<T>,
+			gain: ExternalAmount,
+			order_id: OrderId<T::Hash>,
+			blockchain_tx_id: Vec<u8>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let (src_address_id, dest_address_id, mut amount) = match &order_id {
+				OrderId::Deal(deal_order_id) => {
+					let order = try_get!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
+
+					if gain == 0 {
+						(order.src_address, order.dst_address, order.amount)
+					} else {
+						(order.dst_address, order.src_address, order.amount)
+					}
+				},
+				OrderId::Repayment(repay_order_id) => {
+					ensure!(gain == 0, Error::<T>::RepaymentOrderNonZeroGain);
+					let order =
+						try_get!(RepaymentOrders<T>, &repay_order_id, NonExistentRepaymentOrder)?;
+					(order.src_address, order.dst_address, order.amount)
+				},
+			};
+
+			let src_address = Self::get_address(&src_address_id)?;
+			let dest_address = Self::get_address(&dest_address_id)?;
+
+			ensure!(src_address.sighash == who, Error::<T>::NotAddressOwner);
+
+			ensure!(
+				src_address.blockchain == dest_address.blockchain &&
+					src_address.network == dest_address.network,
+				Error::<T>::AddressPlatformMismatch
+			);
+
+			let transfer_id = TransferId::new::<T>(
+				&src_address.blockchain,
+				&src_address.network,
+				&blockchain_tx_id,
+			);
+			ensure!(
+				!Transfers::<T>::contains_key(&transfer_id),
+				Error::<T>::TransferAlreadyRegistered
+			);
+
+			if blockchain_tx_id == &*b"0" {
+				amount = 0;
+				let transfer = Transfer {
+					blockchain: src_address.blockchain,
+					network: src_address.network,
+					amount,
+					block: <frame_system::Pallet<T>>::block_number(),
+					src_address: src_address_id,
+					dst_address: dest_address_id,
+					order: order_id,
+					processed: false,
+					sighash: who.clone(),
+					tx: blockchain_tx_id,
+				};
+				Self::deposit_event(Event::<T>::TransferRegistered(
+					transfer_id.clone(),
+					transfer.clone(),
+				));
+				Self::deposit_event(Event::<T>::TransferFinalized(
+					transfer_id.clone(),
+					transfer.clone(),
+				));
+				Transfers::<T>::insert(transfer_id, transfer);
+			} else {
+				amount += gain;
+				let mut buf = [b'0'; lexical_core::BUFFER_SIZE];
+				let amount_str = lexical_core::write(amount, &mut buf);
+				let order_id_hex = order_id.to_hex();
+
+				let verify_string = concatenate!(
+					&src_address.blockchain,
+					b"verify",
+					&src_address.value,
+					&dest_address.value,
+					&order_id.to_hex(),
+					&*amount_str,
+					&blockchain_tx_id;
+					&src_address.network;
+					sep = b' '
+				);
+				let transfer = Transfer {
+					blockchain: src_address.blockchain,
+					network: src_address.network,
+					amount,
+					block: <frame_system::Pallet<T>>::block_number(),
+					src_address: src_address_id,
+					dst_address: dest_address_id,
+					order: order_id,
+					processed: false,
+					sighash: who.clone(),
+					tx: blockchain_tx_id,
+				};
+
+				Self::deposit_event(Event::<T>::TransferRegistered(
+					transfer_id.clone(),
+					transfer.clone(),
+				));
+
+				let pending = PendingTransfer { verify_string, transfer };
+
+				PendingTransfers::<T>::mutate(|transfers| transfers.push(pending));
+			}
+
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn finalize_transfer(
+			origin: OriginFor<T>,
+			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+
+			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.network, &transfer.tx);
+			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
+			let mut transfer = transfer;
+			transfer.block = frame_system::Pallet::<T>::block_number();
+
+			Self::deposit_event(Event::<T>::TransferFinalized(key.clone(), transfer.clone()));
+			Transfers::<T>::insert(key, transfer);
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn add_authority(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+			ensure_root(origin)?;
+
+			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
+
+			Authorities::<T>::insert(who, ());
+
+			Ok(())
+		}
+	}
+}
+
 impl<T: Config> Pallet<T> {
-	pub fn offchain_signed_tx(call: impl Fn(&Account<T>) -> Call<T>) -> Result<(), Error<T>> {
-		let signer = Signer::<T, T::AuthorityId>::any_account();
+	pub fn block_number() -> BlockNumberFor<T> {
+		<frame_system::Pallet<T>>::block_number()
+	}
+	pub fn get_address(address_id: &AddressId<T::Hash>) -> Result<Address<T::AccountId>, Error<T>> {
+		Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)
+	}
+
+	fn authority_id() -> Option<T::AccountId> {
+		let local_keys = crypto::Public::all()
+			.into_iter()
+			.map(|p| sp_core::sr25519::Public::from(p).into())
+			.collect::<Vec<T::FromAccountId>>();
+
+		log::trace!("{:?}", local_keys);
+
+		Authorities::<T>::iter_keys().find_map(|auth| {
+			let acct = auth.clone().into();
+			local_keys.contains(&acct).then(|| auth)
+		})
+	}
+
+	pub fn offchain_signed_tx(
+		auth_id: T::FromAccountId,
+		call: impl Fn(&Account<T>) -> Call<T>,
+	) -> Result<(), Error<T>> {
+		use sp_core::crypto::UncheckedFrom;
+		let auth_bytes: &[u8; 32] = auth_id.as_ref();
+		let public = T::InternalPublic::unchecked_from(*auth_bytes);
+		let public: T::PublicSigning = public.into();
+		let signer = Signer::<T, T::AuthorityId>::any_account().with_filter(vec![public.into()]);
 		let result = signer.send_signed_transaction(call);
 
 		if let Some((acc, res)) = result {
 			if res.is_err() {
-				tracing::error!("failure: offchain_signed_tx: tx sent: {:?}", acc.id);
-				return Err(Error::OffchainSignedTxFailed);
+				log::error!("failure: offchain_signed_tx: tx sent: {:?}", acc.id);
+				return Err(Error::OffchainSignedTxFailed)
 			} else {
-				return Ok(());
+				return Ok(())
 			}
 		}
 
-		tracing::error!("No local account available");
+		log::error!("No local account available");
 		Err(Error::NoLocalAcctForSignedTx)
 	}
 }

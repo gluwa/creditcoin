@@ -237,6 +237,9 @@ impl pallet_creditcoin::Config for Runtime {
 	type Currency = Balances;
 	type Randomness = RandomnessCollectiveFlip;
 	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
+	type FromAccountId = AccountId;
+	type PublicSigning = <Signature as Verify>::Signer;
+	type InternalPublic = sp_core::sr25519::Public;
 }
 
 pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
@@ -247,7 +250,7 @@ where
 {
 	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
 		call: Call,
-		public: <Signature as sp_runtime::traits::Verify>::Signer,
+		public: Self::Public,
 		account: AccountId,
 		nonce: Index,
 	) -> Option<(Call, <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload)> {
@@ -259,7 +262,7 @@ where
 			frame_system::CheckSpecVersion::<Runtime>::new(),
 			frame_system::CheckTxVersion::<Runtime>::new(),
 			frame_system::CheckGenesis::<Runtime>::new(),
-			frame_system::CheckEra::<Runtime>::from(generic::Era::Mortal(period, current_block)),
+			frame_system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
 			frame_system::CheckNonce::<Runtime>::from(nonce),
 			frame_system::CheckWeight::<Runtime>::new(),
 			pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
@@ -474,7 +477,7 @@ impl_runtime_apis! {
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
-	type Public = <Signature as sp_runtime::traits::Verify>::Signer;
+	type Public = <Signature as Verify>::Signer;
 	type Signature = Signature;
 }
 
