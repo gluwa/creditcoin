@@ -566,6 +566,77 @@ pub mod pallet {
 			}
 		}
 
+		#[pallet::weight(10_000)]
+		pub fn add_offer(
+			origin: OriginFor<T>,
+			ask_order_id: AskOrderId<T::Hash>,
+			bid_order_id: BidOrderId<T::Hash>,
+			expiration: BlockNumberFor<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let ask_order = try_get!(AskOrders<T>, &ask_order_id, NonExistentAskOrder);
+
+			let bid_order = try_get!(BidOrders<T>, &bid_order_id, NonExistentBidOrder);
+
+			let src_address = Self::get_address(&ask_order.address)?;
+
+			// TODO: Do validation of addresses and parameters here
+
+			let offer_id = OfferId::new::<T>(&ask_order_id, &bid_order_id);
+
+			ensure!(!Offers::<T>::contains_key(&offer_id), Error::<T>::DuplicateOffer);
+
+			let offer = Offer {
+				ask_order: ask_order_id,
+				bid_order: bid_order_id,
+				block: Self::block_number(),
+				blockchain: src_address.blockchain,
+				expiration,
+				sighash: who,
+			};
+
+			Offers::<T>::insert(offer_id, offer);
+
+			Ok(())
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn add_deal_order(
+			origin: OriginFor<T>,
+			offer_id: OfferId<T::Hash>,
+			expiration: BlockNumberFor<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let offer = try_get!(Offers<T>, &offer_id, NonExistentOffer)?;
+			let ask_order = try_get!(AskOrders<T>, &offer.ask_order, NonExistentAskOrder)?;
+
+			let bid_order = try_get!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
+
+			// TODO: checks to make sure orders match up
+
+			let deal_order_id = DealOrderId::new::<T>(&offer_id);
+			let deal_order = DealOrder {
+				blockchain: offer.blockchain,
+				src_address: ask_order.address,
+				dst_address: bid_order.address,
+				amount: bid_order.amount,
+				interest: bid_order.interest,
+				maturity: bid_order.maturity,
+				fee: bid_order.fee,
+				expiration,
+				block: Self::block_number(),
+				sighash: who,
+				loan_transfer: None,
+				lock: None,
+				repayment_transfer: None,
+			};
+
+			DealOrders::<T>::insert(deal_order_id, deal_order);
+
+			Ok(())
+		}
 impl<T: Config> Pallet<T> {
 	pub fn offchain_signed_tx(call: impl Fn(&Account<T>) -> Call<T>) -> Result<(), Error<T>> {
 		let signer = Signer::<T, T::AuthorityId>::any_account();
