@@ -14,6 +14,12 @@ publish = false
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dependencies]
+lexical-core = { version = "0.8.2", features = [
+    "write-integers",
+], default-features = false }
+log = "0.4.14"
+
 [dependencies.codec]
 default-features = false
 features = ['derive']

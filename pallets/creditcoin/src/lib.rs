@@ -168,34 +168,157 @@ pub struct OfferId<Hash>(Hash);
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct TransferId<Hash>(Hash);
 
+fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
+	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
+	let mut hex = Vec::with_capacity(bytes.len() * 2);
+	for byte in bytes {
+		hex.push(HEX_CHARS_LOWER[(byte >> 4) as usize]);
+		hex.push(HEX_CHARS_LOWER[(byte & 0x0F) as usize]);
+	}
+	hex
+}
+
+macro_rules! impl_to_hex {
+	($id: ident) => {
+		impl<H> $id<H>
+		where
+			H: AsRef<[u8]>,
+		{
+			pub fn to_hex(&self) -> Vec<u8> {
+				bytes_to_hex(self.0.as_ref())
+			}
+		}
+	};
+}
+
+macro_rules! replace_expr {
+	($_t:tt $sub:expr) => {
+		$sub
+	};
+}
+
+macro_rules! count_tts {
+    ($($tts:tt)*) => {<[()]>::len(&[$(replace_expr!($tts ())),*])};
+}
+
+macro_rules! strip_plus {
+    (+ $($rest: tt)*) => {
+        $($rest)*
+    }
+}
+
+macro_rules! concatenate {
+	($($bytes: expr),+) => {
+		{
+			let mut buf = Vec::with_capacity(strip_plus!($(+ $bytes.len())+));
+			$(buf.extend($bytes);)+
+			buf
+		}
+	};
+
+	($($bytes: expr),+; $last_bytes: expr; sep = $sep: literal) => {
+		{
+			let mut buf = Vec::with_capacity(strip_plus!($(+ $bytes.len())+) + count_tts!($($bytes)+) );
+			$(
+				buf.extend($bytes);
+				buf.push($sep);
+			)+
+			buf.extend($last_bytes);
+			buf
+		}
+	}
+}
+
+impl_to_hex!(AskOrderId);
+impl_to_hex!(BidOrderId);
+
+impl<H> OrderId<H>
+where
+	H: AsRef<[u8]>,
+{
+	pub fn to_hex(&self) -> Vec<u8> {
+		let bytes = match self {
+			OrderId::Deal(deal) => deal.0.as_ref(),
+			OrderId::Repayment(repay) => repay.0.as_ref(),
+		};
+		bytes_to_hex(bytes)
+	}
+}
+
 impl<H> AddressId<H> {
 	pub fn new<Config>(blockchain: &[u8], address: &[u8], network: &[u8]) -> AddressId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key: Vec<u8> = blockchain.into_iter().chain(address).chain(network).copied().collect();
-		AddressId(Config::Hashing::hash(&key.as_ref()))
+		let key = concatenate!(blockchain, address, network);
+		AddressId(Config::Hashing::hash(&key))
 	}
 }
 
 impl<H> AskOrderId<H> {
-	pub fn new<Config>(guid: Vec<u8>) -> AskOrderId<H>
+	pub fn new<Config>(guid: &[u8]) -> AskOrderId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		AskOrderId(Config::Hashing::hash(&guid.as_ref()))
+		AskOrderId(Config::Hashing::hash(guid))
 	}
 }
 
 impl<H> BidOrderId<H> {
-	pub fn new<Config>(guid: Vec<u8>) -> BidOrderId<H>
+	pub fn new<Config>(guid: &[u8]) -> BidOrderId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		BidOrderId(Config::Hashing::hash(&guid.as_ref()))
+		BidOrderId(Config::Hashing::hash(guid))
+	}
+}
+
+impl<H> RepaymentOrderId<H> {
+	pub fn new<Config>(guid: &[u8]) -> RepaymentOrderId<H>
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+	{
+		RepaymentOrderId(Config::Hashing::hash(guid))
+	}
+}
+
+impl<H> TransferId<H> {
+	pub fn new<Config>(blockchain: &[u8], network: &[u8], blockchain_tx_id: &[u8]) -> TransferId<H>
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+	{
+		let key = concatenate!(blockchain, network, blockchain_tx_id);
+		TransferId(Config::Hashing::hash(&key))
+	}
+}
+
+impl<H> OfferId<H> {
+	pub fn new<Config>(ask_order_id: &AskOrderId<H>, bid_order_id: &BidOrderId<H>) -> Self
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+		H: AsRef<[u8]>,
+	{
+		let ask_bytes = ask_order_id.0.as_ref();
+		let bid_bytes = bid_order_id.0.as_ref();
+		let key = concatenate!(ask_bytes, bid_bytes);
+		OfferId(Config::Hashing::hash(&key))
+	}
+}
+
+impl<H> DealOrderId<H> {
+	pub fn new<Config>(offer_id: &OfferId<H>) -> Self
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+		H: AsRef<[u8]>,
+	{
+		DealOrderId(Config::Hashing::hash(offer_id.0.as_ref()))
 	}
 }
 
