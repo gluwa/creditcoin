@@ -639,9 +639,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let ask_order = try_get!(AskOrders<T>, &ask_order_id, NonExistentAskOrder);
+			let ask_order = try_get!(AskOrders<T>, &ask_order_id, NonExistentAskOrder)?;
 
-			let bid_order = try_get!(BidOrders<T>, &bid_order_id, NonExistentBidOrder);
+			let bid_order = try_get!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
 
 			let src_address = Self::get_address(&ask_order.address)?;
 
