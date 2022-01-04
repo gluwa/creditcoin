@@ -1,52 +1,60 @@
 use crate::mock::*;
 use bstr::B;
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
+
+#[extend::ext]
+impl<'a, S> &'a [u8]
+where
+	S: Get<u32>,
+{
+	fn try_into_bounded(self) -> Result<BoundedVec<u8, S>, ()> {
+		core::convert::TryFrom::try_from(self.to_vec())
+	}
+	fn into_bounded(self) -> BoundedVec<u8, S> {
+		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
+	}
+}
 
 #[test]
 fn register_address_basic() {
 	new_test_ext().execute_with(|| {
 		let acct: <Test as frame_system::Config>::AccountId = Default::default();
-		let blockchain = B("testblockchain");
-		let value = B("someaddressvalue");
-		let network = B("testnetwork");
+		let blockchain = B("testblockchain").into_bounded();
+		let value = B("someaddressvalue").into_bounded();
+		let network = B("testnetwork").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
-			blockchain.into(),
-			value.into(),
-			network.into()
+			blockchain.clone(),
+			value.clone(),
+			network.clone()
 		));
-		let address_id = crate::AddressId::new::<Test>(blockchain, value, network);
-		let address = crate::Address {
-			blockchain: blockchain.into(),
-			value: value.into(),
-			network: network.into(),
-			sighash: acct,
-		};
+		let address_id = crate::AddressId::new::<Test>(&blockchain, &value, &network);
+		let address = crate::Address { blockchain, value, network, sighash: acct };
 
 		assert_eq!(Creditcoin::addresses(address_id), Some(address));
-	})
+	});
 }
 
 #[test]
 fn register_address_pre_existing() {
 	new_test_ext().execute_with(|| {
 		let acct: <Test as frame_system::Config>::AccountId = Default::default();
-		let blockchain = B("testblockchain");
-		let address = B("someaddressvalue");
-		let network = B("testnetwork");
+		let blockchain = B("testblockchain").into_bounded();
+		let address = B("someaddressvalue").into_bounded();
+		let network = B("testnetwork").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
-			blockchain.into(),
-			address.into(),
-			network.into()
+			blockchain.clone(),
+			address.clone(),
+			network.clone()
 		));
 
 		assert_noop!(
 			Creditcoin::register_address(
 				Origin::signed(acct.clone()),
-				blockchain.into(),
-				address.into(),
-				network.into()
+				blockchain,
+				address,
+				network
 			),
 			crate::Error::<Test>::AddressAlreadyRegistered
 		);
