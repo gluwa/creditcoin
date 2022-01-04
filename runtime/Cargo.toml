@@ -203,6 +203,7 @@ std = [
     'frame-system-rpc-runtime-api/std',
     'frame-system/std',
     'pallet-balances/std',
+    'pallet-creditcoin/std',
     'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
     'pallet-template/std',
