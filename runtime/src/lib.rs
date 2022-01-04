@@ -186,8 +186,6 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = ConstU32<{ u32::MAX }>;
 }
 
-impl pallet_randomness_collective_flip::Config for Runtime {}
-
 parameter_types! {
 	pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
 }
@@ -239,8 +237,6 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_creditcoin::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
-	type Currency = Balances;
-	type Randomness = RandomnessCollectiveFlip;
 	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
 	type FromAccountId = AccountId;
 	type PublicSigning = <Signature as Verify>::Signer;
@@ -296,7 +292,6 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},

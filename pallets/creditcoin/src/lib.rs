@@ -219,7 +219,6 @@ macro_rules! concatenate {
 	}
 }
 
-
 impl<B, H> OrderId<B, H>
 where
 	H: AsRef<[u8]>,
@@ -423,12 +422,7 @@ macro_rules! try_get_id {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{
-		dispatch::DispatchResult,
-		pallet_prelude::*,
-		traits::{Currency, LockableCurrency, Randomness},
-		Blake2_128Concat,
-	};
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, Blake2_128Concat};
 	use frame_system::{
 		ensure_signed,
 		offchain::{AppCrypto, CreateSignedTransaction},
@@ -446,10 +440,6 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		type Call: From<Call<Self>>;
-
-		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
-
-		type Currency: Currency<Self::AccountId> + LockableCurrency<Self::AccountId>;
 
 		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
 
