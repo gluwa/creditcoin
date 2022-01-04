@@ -3832,6 +3832,7 @@ dependencies = [
 name = "pallet-creditcoin"
 version = "0.1.0"
 dependencies = [
+ "bstr",
  "extend",
  "frame-benchmarking",
  "frame-support",
@@ -5866,7 +5867,6 @@ dependencies = [
 name = "sha3pow"
 version = "0.1.0"
 dependencies = [
- "log",
  "parity-scale-codec",
  "rand 0.8.4",
  "sc-client-api",
