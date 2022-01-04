@@ -978,7 +978,8 @@ impl<T: Config> Pallet<T> {
 		let auth_bytes: &[u8; 32] = auth_id.as_ref();
 		let public = T::InternalPublic::unchecked_from(*auth_bytes);
 		let public: T::PublicSigning = public.into();
-		let signer = Signer::<T, T::AuthorityId>::any_account().with_filter(vec![public.into()]);
+		let signer =
+			Signer::<T, T::AuthorityId>::any_account().with_filter(sp_std::vec![public.into()]);
 		let result = signer.send_signed_transaction(call);
 
 		if let Some((acc, res)) = result {
