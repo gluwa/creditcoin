@@ -4,7 +4,8 @@ panic = 'unwind'
 [workspace]
 members = [
     'node',
-    'pallets/template',
+    'pallets/rewards',
+    'pallets/difficulty',
     'pallets/creditcoin',
     'runtime',
     "sha3pow",

@@ -1,5 +1,5 @@
 [package]
-name = 'pallet-template'
+name = 'pallet-difficulty'
 version = '3.0.0-monthly-2022-01'
 description = 'FRAME pallet template for defining custom runtime logic.'
 authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']

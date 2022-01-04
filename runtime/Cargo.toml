@@ -12,9 +12,14 @@ repository = 'https://github.com/substrate-developer-hub/substrate-node-template
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
-[dependencies.pallet-template]
+[dependencies.pallet-rewards]
 default-features = false
-path = '../pallets/template'
+path = '../pallets/rewards'
+version = '3.0.0-monthly-2022-01'
+
+[dependencies.pallet-difficulty]
+default-features = false
+path = '../pallets/difficulty'
 version = '3.0.0-monthly-2022-01'
 
 [dependencies.pallet-creditcoin]
@@ -190,8 +195,10 @@ runtime-benchmarks = [
     'frame-system-benchmarking',
     'frame-system/runtime-benchmarks',
     'hex-literal',
+    'pallet-creditcoin/runtime-benchmarks',
     'pallet-balances/runtime-benchmarks',
-    'pallet-template/runtime-benchmarks',
+    'pallet-rewards/runtime-benchmarks',
+    'pallet-difficulty/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
 ]
@@ -206,7 +213,8 @@ std = [
     'pallet-creditcoin/std',
     'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
-    'pallet-template/std',
+    'pallet-rewards/std',
+    'pallet-difficulty/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
