@@ -43,24 +43,34 @@ pub mod crypto {
 }
 
 pub type ExternalAmount = u64;
+type BlockchainLen = ConstU32<256>;
+pub type Blockchain = BoundedVec<u8, BlockchainLen>;
+type NetworkLen = ConstU32<256>;
+pub type Network = BoundedVec<u8, NetworkLen>;
+type GuidLen = ConstU32<256>;
+pub type Guid = BoundedVec<u8, GuidLen>;
+type ExternalAddressLen = ConstU32<256>;
+pub type ExternalAddress = BoundedVec<u8, ExternalAddressLen>;
+type ExternalTxIdLen = ConstU32<256>;
+pub type ExternalTxId = BoundedVec<u8, ExternalTxIdLen>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct Address<AccountId> {
-	pub blockchain: Vec<u8>,
-	pub value: Vec<u8>,
-	pub network: Vec<u8>,
+	pub blockchain: Blockchain,
+	pub value: ExternalAddress,
+	pub network: Network,
 	pub sighash: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct Transfer<AccountId, BlockNum, Hash> {
-	pub blockchain: Vec<u8>,
-	pub network: Vec<u8>,
+	pub blockchain: Blockchain,
+	pub network: Network,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
 	pub order: OrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
-	pub tx: Vec<u8>,
+	pub tx: ExternalTxId,
 	pub block: BlockNum,
 	pub processed: bool,
 	pub sighash: AccountId,
@@ -74,7 +84,7 @@ pub struct PendingTransfer<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct Offer<AccountId, BlockNum, Hash> {
-	pub blockchain: Vec<u8>,
+	pub blockchain: Blockchain,
 	pub ask_order: AskOrderId<BlockNum, Hash>,
 	pub bid_order: BidOrderId<BlockNum, Hash>,
 	pub expiration: BlockNum,
@@ -84,7 +94,7 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct AskOrder<AccountId, Balance, BlockNum, Hash> {
-	pub blockchain: Vec<u8>,
+	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
 	pub amount: ExternalAmount,
 	pub interest: ExternalAmount,
@@ -102,7 +112,7 @@ pub struct Fee<BlockNum> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct BidOrder<AccountId, Balance, BlockNum, Hash> {
-	pub blockchain: Vec<u8>,
+	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
 	pub amount: ExternalAmount,
 	pub interest: ExternalAmount,
@@ -115,7 +125,7 @@ pub struct BidOrder<AccountId, Balance, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Vec<u8>,
+	pub blockchain: Blockchain,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
 	pub amount: ExternalAmount,
@@ -129,7 +139,7 @@ pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct DealOrder<AccountId, Balance, BlockNum, Hash> {
-	pub blockchain: Vec<u8>,
+	pub blockchain: Blockchain,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
 	pub amount: ExternalAmount,
@@ -317,8 +327,8 @@ use codec::FullCodec;
 use extend::ext;
 use frame_support::{
 	storage::types::QueryKindTrait,
-	traits::{Get, StorageInstance},
-	StorageHasher,
+	traits::{ConstU32, Get, StorageInstance},
+	BoundedVec, StorageHasher,
 };
 
 trait Id<BlockNum, Hash> {
@@ -634,9 +644,9 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn register_address(
 			origin: OriginFor<T>,
-			blockchain: Vec<u8>,
-			address: Vec<u8>,
-			network: Vec<u8>,
+			blockchain: Blockchain,
+			address: ExternalAddress,
+			network: Network,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let address_id = AddressId::new::<T>(&blockchain, &address, &network);
@@ -661,7 +671,7 @@ pub mod pallet {
 			maturity: BlockNumberFor<T>,
 			fee: BalanceFor<T>,
 			expiration: BlockNumberFor<T>,
-			guid: Vec<u8>,
+			guid: Guid,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -697,7 +707,7 @@ pub mod pallet {
 			maturity: BlockNumberFor<T>,
 			fee: BalanceFor<T>,
 			expiration: BlockNumberFor<T>,
-			guid: Vec<u8>,
+			guid: Guid,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -804,7 +814,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			gain: ExternalAmount,
 			order_id: OrderId<T::BlockNumber, T::Hash>,
-			blockchain_tx_id: Vec<u8>,
+			blockchain_tx_id: ExternalTxId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -850,7 +860,7 @@ pub mod pallet {
 				Error::<T>::TransferAlreadyRegistered
 			);
 
-			if blockchain_tx_id == &*b"0" {
+			if &*blockchain_tx_id == &*b"0" {
 				amount = 0;
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
@@ -880,14 +890,14 @@ pub mod pallet {
 				let order_id_hex = order_id.to_hex();
 
 				let verify_string = concatenate!(
-					&src_address.blockchain,
+					&*src_address.blockchain,
 					b"verify",
-					&src_address.value,
-					&dest_address.value,
+					&*src_address.value,
+					&*dest_address.value,
 					&order_id_hex,
 					&*amount_str,
-					&blockchain_tx_id;
-					&src_address.network;
+					&*blockchain_tx_id;
+					&*src_address.network;
 					sep = b' '
 				);
 				let transfer = Transfer {
