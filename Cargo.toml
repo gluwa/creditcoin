@@ -9,4 +9,5 @@ members = [
     'pallets/creditcoin',
     'runtime',
     "sha3pow",
+    "primitives",
 ]

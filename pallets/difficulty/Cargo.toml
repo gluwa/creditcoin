@@ -12,6 +12,19 @@ repository = 'https://github.com/substrate-developer-hub/substrate-node-template
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dependencies]
+log = "0.4.14"
+
+[dependencies.primitives]
+version = "0.1.0"
+path = "../../primitives"
+
+[dependencies.sp-arithmetic]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2022-01'
+version = '4.0.0-dev'
+
 [dependencies.codec]
 default-features = false
 features = ['derive']
@@ -69,5 +82,6 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'frame-benchmarking/std',
+    'sp-arithmetic/std',
 ]
 try-runtime = ['frame-support/try-runtime']

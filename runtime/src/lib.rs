@@ -98,7 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 1000;
+pub const MILLISECS_PER_BLOCK: u64 = 60_000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -184,13 +184,13 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
+	pub const MinimumPeriod: u64 = 1000;
 }
 
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
-	type OnTimestampSet = ();
+	type OnTimestampSet = Difficulty;
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
@@ -238,6 +238,10 @@ impl pallet_creditcoin::Config for Runtime {
 	type FromAccountId = AccountId;
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
+}
+
+impl pallet_difficulty::Config for Runtime {
+	type Moment = u64;
 }
 
 pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
@@ -293,8 +297,8 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
-		// Include the custom logic from the pallet-template in the runtime.
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Event<T>},
+		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
 	}
 );
 
@@ -413,6 +417,18 @@ impl_runtime_apis! {
 			len: u32,
 		) -> pallet_transaction_payment::FeeDetails<Balance> {
 			TransactionPayment::query_fee_details(uxt, len)
+		}
+	}
+
+	impl sp_consensus_pow::TimestampApi<Block, u64> for Runtime {
+		fn timestamp() -> u64 {
+			Timestamp::get()
+		}
+	}
+
+	impl sp_consensus_pow::DifficultyApi<Block, primitives::Difficulty> for Runtime {
+		fn difficulty() -> primitives::Difficulty {
+			Difficulty::difficulty()
 		}
 	}
 

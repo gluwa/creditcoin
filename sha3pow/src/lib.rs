@@ -55,50 +55,6 @@ impl Compute {
 	}
 }
 
-/// A minimal PoW algorithm that uses Sha3 hashing.
-/// Difficulty is fixed at 1_000_000
-#[derive(Clone)]
-pub struct MinimalSha3Algorithm;
-
-// Here we implement the general PowAlgorithm trait for our concrete Sha3Algorithm
-impl<B: BlockT<Hash = H256>> PowAlgorithm<B> for MinimalSha3Algorithm {
-	type Difficulty = Difficulty;
-
-	fn difficulty(&self, _parent: B::Hash) -> Result<Self::Difficulty, Error<B>> {
-		// Fixed difficulty hardcoded here
-		Ok(Difficulty::from(1_000_000))
-	}
-
-	fn verify(
-		&self,
-		_parent: &BlockId<B>,
-		pre_hash: &H256,
-		_pre_digest: Option<&[u8]>,
-		seal: &RawSeal,
-		difficulty: Self::Difficulty,
-	) -> Result<bool, Error<B>> {
-		// Try to construct a seal object by decoding the raw seal given
-		let seal = match Seal::decode(&mut &seal[..]) {
-			Ok(seal) => seal,
-			Err(_) => return Ok(false),
-		};
-
-		// See whether the hash meets the difficulty requirement. If not, fail fast.
-		if !hash_meets_difficulty(&seal.work, difficulty) {
-			return Ok(false)
-		}
-
-		// Make sure the provided work actually comes from the correct pre_hash
-		let compute = Compute { difficulty, pre_hash: *pre_hash, nonce: seal.nonce };
-
-		if compute.compute() != seal {
-			return Ok(false)
-		}
-
-		Ok(true)
-	}
-}
-
 /// A complete PoW Algorithm that uses Sha3 hashing.
 /// Needs a reference to the client so it can grab the difficulty from the runtime.
 pub struct Sha3Algorithm<C> {

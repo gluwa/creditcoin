@@ -12,6 +12,10 @@ repository = 'https://github.com/substrate-developer-hub/substrate-node-template
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dependencies.primitives]
+path = "../primitives"
+version = "0.1.0"
+
 [dependencies.pallet-rewards]
 default-features = false
 path = '../pallets/rewards'

@@ -1,8 +1,9 @@
 use node_template_runtime::{
-	AccountId, BalancesConfig, GenesisConfig, Signature, SudoConfig, SystemConfig, WASM_BINARY,
+	AccountId, BalancesConfig, DifficultyConfig, GenesisConfig, Signature, SudoConfig,
+	SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
-use sp_core::{sr25519, Pair, Public};
+use sp_core::{sr25519, Pair, Public, U256};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
 // The URL for the telemetry server.
@@ -129,6 +130,10 @@ fn testnet_genesis(
 		sudo: SudoConfig {
 			// Assign network admin rights.
 			key: Some(root_key),
+		},
+		difficulty: DifficultyConfig {
+			initial_difficulty: U256::from(1_000_000),
+			target_time: 5 * 1000,
 		},
 	}
 }

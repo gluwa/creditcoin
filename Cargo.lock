@@ -3627,6 +3627,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
+ "primitives",
  "scale-info",
  "sp-api",
  "sp-block-builder",
@@ -3856,8 +3857,11 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "log",
  "parity-scale-codec",
+ "primitives",
  "scale-info",
+ "sp-arithmetic",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -4342,6 +4346,13 @@ dependencies = [
  "impl-serde",
  "scale-info",
  "uint",
+]
+
+[[package]]
+name = "primitives"
+version = "0.1.0"
+dependencies = [
+ "sp-core",
 ]
 
 [[package]]

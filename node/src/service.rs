@@ -6,7 +6,7 @@ pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
-use sha3pow::MinimalSha3Algorithm;
+use sha3pow::Sha3Algorithm;
 use sp_inherents::CreateInherentDataProviders;
 use std::{sync::Arc, thread, time::Duration};
 
@@ -45,7 +45,7 @@ pub fn new_partial(
 				Arc<FullClient>,
 				FullClient,
 				FullSelectChain,
-				MinimalSha3Algorithm,
+				Sha3Algorithm<FullClient>,
 				sp_consensus::CanAuthorWithNativeVersion<
 					<FullClient as ExecutorProvider<Block>>::Executor,
 				>,
@@ -103,10 +103,12 @@ pub fn new_partial(
 
 	let can_author_with = sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
+	let algorithm = Sha3Algorithm::new(client.clone());
+
 	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
 		client.clone(),
 		client.clone(),
-		MinimalSha3Algorithm,
+		algorithm.clone(),
 		0,
 		select_chain.clone(),
 		move |_, ()| async move {
@@ -119,7 +121,7 @@ pub fn new_partial(
 	let import_queue = sc_consensus_pow::import_queue(
 		Box::new(pow_block_import.clone()),
 		None,
-		MinimalSha3Algorithm,
+		algorithm.clone(),
 		&task_manager.spawn_essential_handle(),
 		config.prometheus_registry(),
 	)?;
@@ -231,11 +233,13 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		let can_author_with =
 			sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
+		let algorithm = Sha3Algorithm::new(client.clone());
+
 		let (worker, worker_task) = sc_consensus_pow::start_mining_worker(
 			Box::new(pow_block_import),
 			client.clone(),
 			select_chain,
-			MinimalSha3Algorithm,
+			algorithm.clone(),
 			proposer_factory,
 			network.clone(),
 			network,
@@ -278,7 +282,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 							Err(e) => eprintln!("Mining error: {}", e),
 						}
 					} else {
-						thread::sleep(Duration::from_secs(1));
+						thread::sleep(Duration::from_millis(500));
 					}
 				});
 			}
