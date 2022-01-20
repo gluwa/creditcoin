@@ -29,7 +29,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use primitives::Difficulty;
-	use sp_arithmetic::traits::{BaseArithmetic, UniqueSaturatedInto};
+	use sp_arithmetic::traits::{BaseArithmetic, UniqueSaturatedInto, Zero};
 
 	use crate::DifficultyAndTimestamp;
 
@@ -54,6 +54,7 @@ pub mod pallet {
 	pub struct GenesisConfig<T: Config> {
 		pub initial_difficulty: Difficulty,
 		pub target_time: T::Moment,
+		pub difficulty_adjustment_period: i64,
 	}
 
 	#[cfg(feature = "std")]
@@ -62,8 +63,16 @@ pub mod pallet {
 			Self {
 				initial_difficulty: Difficulty::from(1_000_000),
 				target_time: T::Moment::default(),
+				difficulty_adjustment_period: 28,
 			}
 		}
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {
+		ZeroTargetTime,
+		ZeroAdjustmentPeriod,
+		NegativeAdjustmentPeriod,
 	}
 
 	#[pallet::genesis_build]
@@ -71,6 +80,7 @@ pub mod pallet {
 		fn build(&self) {
 			CurrentDifficulty::<T>::put(self.initial_difficulty);
 			TargetBlockTime::<T>::put(self.target_time);
+			DifficultyAdjustmentPeriod::<T>::put(self.difficulty_adjustment_period);
 		}
 	}
 
@@ -89,6 +99,9 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type TargetBlockTime<T: Config> = StorageValue<_, T::Moment, ValueQuery>;
 
+	#[pallet::storage]
+	pub type DifficultyAdjustmentPeriod<T: Config> = StorageValue<_, i64, ValueQuery>;
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
@@ -96,22 +109,26 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			target_time: T::Moment,
 		) -> DispatchResult {
-			let _who = ensure_root(origin)?;
+			ensure_root(origin)?;
+
+			ensure!(!target_time.is_zero(), Error::<T>::ZeroTargetTime);
 
 			TargetBlockTime::<T>::put(target_time);
 
 			Ok(())
 		}
-	}
-}
+		#[pallet::weight(0)]
+		pub fn set_adjustment_period(origin: OriginFor<T>, period: i64) -> DispatchResult {
+			ensure_root(origin)?;
 
-macro_rules! if_std {
-	($($t: tt)*) => {
-		#[cfg(feature = "std")]
-		{
-			$($t)*
+			ensure!(period != 0, Error::<T>::ZeroAdjustmentPeriod);
+			ensure!(period > 0, Error::<T>::NegativeAdjustmentPeriod);
+
+			DifficultyAdjustmentPeriod::<T>::put(period);
+
+			Ok(())
 		}
-	};
+	}
 }
 
 // Adapted from zawy12's Simple EMA difficulty algorithm, license follows:
@@ -142,6 +159,7 @@ fn next_difficulty<M>(
 	previous: &[DifficultyAndTimestamp<M>],
 	target_time: M,
 	initial_difficulty: Difficulty,
+	adjustment_period: i64,
 ) -> Difficulty
 where
 	M: SaturatedConversion
@@ -150,10 +168,8 @@ where
 		+ UniqueSaturatedInto<i64>
 		+ frame_support::sp_std::fmt::Debug,
 {
-	const N: i64 = 120;
-	if_std! {
-		log::info!("previous {:?}", previous);
-	}
+	let n = adjustment_period;
+	log::debug!("previous {:?}", previous);
 	if previous.len() < 2 {
 		return initial_difficulty
 	}
@@ -162,27 +178,19 @@ where
 	let newest = &previous[1];
 
 	let t = target_time.saturated_into::<i64>() / 1000;
-	if_std! {
-		log::info!("t = {}", t);
-	}
+	log::debug!("t = {}", t);
 	let solve_time = (newest.timestamp.saturated_into::<i64>() -
 		oldest.timestamp.saturated_into::<i64>()) /
 		1000;
 
-	if_std! {
-		log::info!("solve time = {}", solve_time);
-	}
+	log::debug!("solve time = {}", solve_time);
 	let solve_time = i64::max(-5 * t, i64::min(solve_time, 6 * t));
-	if_std! {
-		log::info!("ST = {}", solve_time);
-	}
+	log::debug!("ST = {}", solve_time);
 	let difficulty = newest.difficulty;
 
-	let next_difficulty = (difficulty * N * t) / (N * t - t + solve_time);
+	let next_difficulty = (difficulty * n * t) / (n * t - t + solve_time);
 
-	if_std! {
-		log::info!("next difficulty = {}", next_difficulty);
-	}
+	log::debug!("next difficulty = {}", next_difficulty);
 
 	next_difficulty
 }
@@ -191,6 +199,7 @@ impl<T: Config> OnTimestampSet<T::Moment> for Pallet<T> {
 	fn on_timestamp_set(current_timestamp: T::Moment) {
 		let target_time = TargetBlockTime::<T>::get();
 		let current_difficulty = Self::difficulty();
+		let adjustment_period = DifficultyAdjustmentPeriod::<T>::get();
 
 		let mut previous = PreviousDifficultiesAndTimestamps::<T>::get();
 
@@ -204,7 +213,8 @@ impl<T: Config> OnTimestampSet<T::Moment> for Pallet<T> {
 			previous[1] = current;
 		}
 
-		let next_difficulty = next_difficulty(&previous, target_time, current_difficulty);
+		let next_difficulty =
+			next_difficulty(&previous, target_time, current_difficulty, adjustment_period);
 		CurrentDifficulty::<T>::put(next_difficulty);
 		PreviousDifficultiesAndTimestamps::<T>::put(previous);
 	}

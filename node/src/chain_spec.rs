@@ -134,6 +134,7 @@ fn testnet_genesis(
 		difficulty: DifficultyConfig {
 			initial_difficulty: U256::from(1_000_000),
 			target_time: 5 * 1000,
+			difficulty_adjustment_period: 50,
 		},
 	}
 }
