@@ -1,14 +1,10 @@
-# Substrate Node Template
+# Creditcoin Substrate
 
-[![Try on playground](https://img.shields.io/badge/Playground-Node_Template-brightgreen?logo=Parity%20Substrate)](https://playground.substrate.dev/?deploy=node-template) [![Matrix](https://img.shields.io/matrix/substrate-technical:matrix.org)](https://matrix.to/#/#substrate-technical:matrix.org)
-
-A fresh FRAME-based [Substrate](https://www.substrate.io/) node, ready for hacking :rocket:
+A substrate based creditcoin node.
 
 ## Getting Started
 
-Follow the steps below to get started with the Node Template, or get it up and running right from
-your browser in just a few clicks using [Playground](https://playground.substrate.dev/)
-:hammer_and_wrench:
+Follow the steps below to get started with the node.
 
 ### Using Nix
 
@@ -44,7 +40,7 @@ Once the project has been built, the following command can be used to explore al
 subcommands:
 
 ```sh
-./target/release/node-template -h
+./target/release/creditcoin-node -h
 ```
 
 ## Run
@@ -58,19 +54,19 @@ node.
 This command will start the single-node development chain with persistent state:
 
 ```bash
-./target/release/node-template --dev
+./target/release/creditcoin-node --dev
 ```
 
 Purge the development chain's state:
 
 ```bash
-./target/release/node-template purge-chain --dev
+./target/release/creditcoin-node purge-chain --dev
 ```
 
 Start the development chain with detailed logging:
 
 ```bash
-RUST_BACKTRACE=1 ./target/release/node-template -ldebug --dev
+RUST_BACKTRACE=1 ./target/release/creditcoin-node -ldebug --dev
 ```
 
 ### Connect with Polkadot-JS Apps Front-end
@@ -128,7 +124,7 @@ After the node has been [built](#build), refer to the embedded documentation to 
 capabilities and configuration parameters that it exposes:
 
 ```shell
-./target/release/node-template --help
+./target/release/creditcoin-node --help
 ```
 
 ### Runtime
@@ -189,15 +185,15 @@ Then run the following command to start a single node development chain.
 
 This command will firstly compile your code, and then start a local development network. You can
 also replace the default command
-(`cargo build --release && ./target/release/node-template --dev --ws-external`)
+(`cargo build --release && ./target/release/creditcoin-node --dev --ws-external`)
 by appending your own. A few useful ones are as follow.
 
 ```bash
 # Run Substrate node without re-compiling
-./scripts/docker_run.sh ./target/release/node-template --dev --ws-external
+./scripts/docker_run.sh ./target/release/creditcoin-node --dev --ws-external
 
 # Purge the local dev chain
-./scripts/docker_run.sh ./target/release/node-template purge-chain --dev
+./scripts/docker_run.sh ./target/release/creditcoin-node purge-chain --dev
 
 # Check whether the code is compilable
 ./scripts/docker_run.sh cargo check

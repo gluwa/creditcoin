@@ -9,7 +9,7 @@ use sc_service::PartialComponents;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Substrate Node".into()
+		"Creditcoin Node".into()
 	}
 
 	fn impl_version() -> String {
@@ -105,14 +105,14 @@ pub fn run() -> sc_cli::Result<()> {
 				runner.sync_run(|config| cmd.run::<Block, service::ExecutorDispatch>(config))
 			} else {
 				Err("Benchmarking wasn't enabled when building the node. You can enable it with \
-				     `--features runtime-benchmarks`."
+					`--features runtime-benchmarks`."
 					.into())
 			},
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
 			runner.run_node_until_exit(|config| async move {
 				match config.role {
-					Role::Light => panic!("unsupported"),
+					Role::Light => Err("Light clients are not supported at this time".into()),
 					_ => service::new_full(config),
 				}
 				.map_err(sc_cli::Error::Service)

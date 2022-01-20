@@ -1,5 +1,5 @@
 [package]
-name = 'node-template'
+name = 'creditcoin-node'
 version = '3.0.0-monthly-2022-01'
 description = 'A fresh FRAME-based Substrate node, ready for hacking.'
 authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
@@ -11,7 +11,7 @@ repository = 'https://github.com/substrate-developer-hub/substrate-node-template
 build = 'build.rs'
 
 [[bin]]
-name = 'node-template'
+name = 'creditcoin-node'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
