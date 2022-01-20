@@ -565,6 +565,11 @@ pub mod pallet {
 			AskOrderId<T::BlockNumber, T::Hash>,
 			AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
 		),
+
+		BidOrderAdded(
+			BidOrderId<T::BlockNumber, T::Hash>,
+			BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+		),
 	}
 
 	// Errors inform users that something went wrong.
@@ -742,6 +747,10 @@ pub mod pallet {
 					sighash: who,
 				};
 
+				Self::deposit_event(Event::<T>::BidOrderAdded(
+					bid_order_id.clone(),
+					bid_order.clone(),
+				));
 				BidOrders::<T>::insert_id(bid_order_id, bid_order);
 				Ok(())
 			} else {
