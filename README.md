@@ -81,7 +81,7 @@ local node template.
 If you want to see the multi-node consensus algorithm in action, refer to our
 [Start a Private Network tutorial](https://substrate.dev/docs/en/tutorials/start-a-private-network/).
 
-## Template Structure
+## Repo Structure
 
 A Substrate project such as this consists of a number of components that are spread across a few
 directories.
@@ -155,8 +155,11 @@ the following:
 ### Pallets
 
 The runtime in this project is constructed using many FRAME pallets that ship with the
-[core Substrate repository](https://github.com/paritytech/substrate/tree/master/frame) and a
-template pallet that is [defined in the `pallets`](./pallets/template/src/lib.rs) directory.
+[core Substrate repository](https://github.com/paritytech/substrate/tree/master/frame), the
+[creditcoin pallet](./pallets/creditcoin/src/lib.rs) which contains the core business logic and loan flow,
+the [difficulty pallet](./pallets/difficulty/src/lib.rs) which implements Proof-of-Work difficulty adjustment
+to target a specific block time, and the [rewards pallet](./pallets/rewards/src/lib.rs)(WIP) which provides
+mining reward functionality.
 
 A FRAME pallet is compromised of a number of blockchain primitives:
 
