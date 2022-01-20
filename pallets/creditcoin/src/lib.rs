@@ -579,8 +579,11 @@ pub mod pallet {
 		NonExistentAskOrder,
 		NonExistentBidOrder,
 		NonExistentOffer,
+		NonExistentTransfer,
 
 		TransferAlreadyRegistered,
+		TransferMismatch,
+		TransferAlreadyProcessed,
 
 		InsufficientAuthority,
 
@@ -601,6 +604,19 @@ pub mod pallet {
 		AlreadyAuthority,
 
 		DuplicateOffer,
+
+		DealIncomplete,
+
+		DealOrderAlreadyLocked,
+		DealOrderExpired,
+
+		NotFundraiser,
+
+		MalformedDealOrder,
+
+		NotInvestor,
+
+		ScaleDecodeError,
 	}
 
 	#[pallet::hooks]
@@ -615,9 +631,6 @@ pub mod pallet {
 				for PendingTransfer { verify_string: _, transfer } in PendingTransfers::<T>::get() {
 					log::debug!("verifying transfer");
 					// TODO: actually hit gateway to verify given transaction
-					sp_std::if_std! {
-						std::thread::sleep(std::time::Duration::from_secs(10));
-					}
 					if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
 						Call::finalize_transfer { transfer: transfer.clone() }
 					}) {
@@ -806,6 +819,81 @@ pub mod pallet {
 
 			DealOrders::<T>::insert_id(deal_order_id, deal_order);
 
+			Ok(())
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		pub fn lock_deal_order(
+			origin: OriginFor<T>,
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			DealOrders::<T>::try_mutate(
+				deal_order_id.expiration(),
+				deal_order_id.hash(),
+				|value| {
+					if let Some(deal_order) = value {
+						ensure!(deal_order.lock.is_none(), Error::<T>::DealOrderAlreadyLocked);
+						ensure!(deal_order.loan_transfer.is_some(), Error::<T>::DealIncomplete);
+						ensure!(deal_order.sighash == who, Error::<T>::NotFundraiser);
+						deal_order.lock = Some(who);
+						Ok(())
+					} else {
+						Err(Error::<T>::NonExistentDealOrder)
+					}
+				},
+			)?;
+
+			Ok(())
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(4,2))]
+		pub fn complete_deal_order(
+			origin: OriginFor<T>,
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+			transfer_id: TransferId<T::Hash>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			DealOrders::<T>::try_mutate(
+				deal_order_id.expiration(),
+				deal_order_id.hash(),
+				|value| {
+					if let Some(deal_order) = value {
+						let src_address =
+							try_get!(Addresses<T>, &deal_order.src_address, NonExistentAddress)?;
+
+						ensure!(src_address.sighash == who, Error::<T>::NotInvestor);
+
+						let head = Self::block_number();
+						ensure!(head >= deal_order.block, Error::<T>::MalformedDealOrder);
+
+						let elapsed = head - deal_order.block;
+						ensure!(deal_order.expiration >= elapsed, Error::<T>::DealOrderExpired);
+
+						Transfers::<T>::try_mutate(transfer_id, |transfer| {
+							if let Some(transfer) = transfer {
+								ensure!(
+									transfer.order == OrderId::Deal(deal_order_id),
+									Error::<T>::TransferMismatch
+								);
+								ensure!(
+									transfer.amount == deal_order.amount,
+									Error::<T>::TransferMismatch
+								);
+								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
+								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+								Ok(())
+							} else {
+								Err(Error::<T>::NonExistentTransfer)
+							}
+						})
+					} else {
+						Err(Error::<T>::NonExistentDealOrder)
+					}
+				},
+			)?;
 			Ok(())
 		}
 
