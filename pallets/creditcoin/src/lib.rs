@@ -659,7 +659,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Registers an external address on `blockchain` and `network` with value `address`
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
 		pub fn register_address(
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
@@ -972,10 +972,6 @@ pub mod pallet {
 					tx: blockchain_tx_id,
 				};
 				Self::deposit_event(Event::<T>::TransferRegistered(
-					transfer_id.clone(),
-					transfer.clone(),
-				));
-				Self::deposit_event(Event::<T>::TransferFinalized(
 					transfer_id.clone(),
 					transfer.clone(),
 				));
