@@ -10,5 +10,5 @@ edition = "2021"
 [dependencies.sp-core]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
+rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
 version = '4.1.0-dev'
