@@ -34,6 +34,7 @@ frame_support::construct_runtime!(
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
+	pub const PendingTxLimit: u32 = 10000;
 }
 
 impl system::Config for Test {
@@ -75,6 +76,8 @@ impl pallet_creditcoin::Config for Test {
 	type InternalPublic = sp_core::sr25519::Public;
 
 	type PublicSigning = <Signature as Verify>::Signer;
+
+	type PendingTransferLimit = PendingTxLimit;
 }
 
 impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> for Test {

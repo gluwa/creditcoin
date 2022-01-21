@@ -2,6 +2,7 @@
 
 use codec::{Decode, Encode, EncodeLike};
 
+use frame_support::pallet_prelude::*;
 use frame_system::{
 	offchain::{Account, SendSignedTransaction, Signer},
 	pallet_prelude::*,
@@ -53,8 +54,9 @@ type ExternalAddressLen = ConstU32<256>;
 pub type ExternalAddress = BoundedVec<u8, ExternalAddressLen>;
 type ExternalTxIdLen = ConstU32<256>;
 pub type ExternalTxId = BoundedVec<u8, ExternalTxIdLen>;
+type VerifyStringLen = ConstU32<2560>;
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Address<AccountId> {
 	pub blockchain: Blockchain,
 	pub value: ExternalAddress,
@@ -62,7 +64,7 @@ pub struct Address<AccountId> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub network: Network,
@@ -76,13 +78,13 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct PendingTransfer<AccountId, BlockNum, Hash> {
-	verify_string: Vec<u8>,
+	verify_string: BoundedVec<u8, VerifyStringLen>,
 	transfer: Transfer<AccountId, BlockNum, Hash>,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Offer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub ask_order: AskOrderId<BlockNum, Hash>,
@@ -92,7 +94,7 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AskOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
@@ -105,12 +107,12 @@ pub struct AskOrder<AccountId, Balance, BlockNum, Hash> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Fee<BlockNum> {
 	pub block: BlockNum,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct BidOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
@@ -123,7 +125,7 @@ pub struct BidOrder<AccountId, Balance, BlockNum, Hash> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub src_address: AddressId<Hash>,
@@ -137,7 +139,7 @@ pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrder<AccountId, Balance, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub src_address: AddressId<Hash>,
@@ -154,31 +156,31 @@ pub struct DealOrder<AccountId, Balance, BlockNum, Hash> {
 	pub sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AddressId<Hash>(Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AskOrderId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct BidOrderId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrderId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum OrderId<BlockNum, Hash> {
 	Deal(DealOrderId<BlockNum, Hash>),
 	Repayment(RepaymentOrderId<BlockNum, Hash>),
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct TransferId<Hash>(Hash);
 
 fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
@@ -432,6 +434,7 @@ macro_rules! try_get_id {
 
 #[frame_support::pallet]
 pub mod pallet {
+	use core::convert::TryInto;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, Blake2_128Concat};
 	use frame_system::{
 		ensure_signed,
@@ -464,6 +467,8 @@ pub mod pallet {
 		type InternalPublic: sp_core::crypto::UncheckedFrom<[u8; 32]>;
 
 		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
+
+		type PendingTransferLimit: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -476,8 +481,11 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn pending_transfers)]
-	pub type PendingTransfers<T: Config> =
-		StorageValue<_, Vec<PendingTransfer<T::AccountId, T::BlockNumber, T::Hash>>, ValueQuery>;
+	pub type PendingTransfers<T: Config> = StorageValue<
+		_,
+		BoundedVec<PendingTransfer<T::AccountId, T::BlockNumber, T::Hash>, T::PendingTransferLimit>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn deal_orders)]
@@ -622,6 +630,10 @@ pub mod pallet {
 		NotInvestor,
 
 		ScaleDecodeError,
+
+		PendingTransferPoolFull,
+
+		VerifyStringTooLong,
 	}
 
 	#[pallet::hooks]
@@ -993,6 +1005,8 @@ pub mod pallet {
 					&*src_address.network;
 					sep = b' '
 				);
+				let verify_string =
+					verify_string.try_into().map_err(|_| Error::<T>::VerifyStringTooLong)?;
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
 					network: src_address.network,
@@ -1012,8 +1026,8 @@ pub mod pallet {
 				));
 
 				let pending = PendingTransfer { verify_string, transfer };
-
-				PendingTransfers::<T>::mutate(|transfers| transfers.push(pending));
+				PendingTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
+					.map_err(|()| Error::<T>::PendingTransferPoolFull)?;
 			}
 
 			Ok(())
