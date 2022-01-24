@@ -1,4 +1,4 @@
-use node_template_runtime::{
+use creditcoin_node_runtime::{
 	AccountId, BalancesConfig, DifficultyConfig, GenesisConfig, Signature, SudoConfig,
 	SystemConfig, WASM_BINARY,
 };
