@@ -933,14 +933,14 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "3.0.0-monthly-2022-01"
+version = "0.1.0"
 dependencies = [
+ "creditcoin-node-runtime",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures-lite",
  "jsonrpc-core",
  "log",
- "node-template-runtime",
  "num_cpus",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
@@ -969,6 +969,43 @@ dependencies = [
  "structopt",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
+]
+
+[[package]]
+name = "creditcoin-node-runtime"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "hex-literal",
+ "pallet-balances",
+ "pallet-creditcoin",
+ "pallet-difficulty",
+ "pallet-randomness-collective-flip",
+ "pallet-rewards",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "parity-scale-codec",
+ "primitives",
+ "scale-info",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-pow",
+ "sp-core",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -3603,43 +3640,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "node-template-runtime"
-version = "3.0.0-monthly-2022-01"
-dependencies = [
- "frame-benchmarking",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-benchmarking",
- "frame-system-rpc-runtime-api",
- "hex-literal",
- "pallet-balances",
- "pallet-creditcoin",
- "pallet-difficulty",
- "pallet-randomness-collective-flip",
- "pallet-rewards",
- "pallet-sudo",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "parity-scale-codec",
- "primitives",
- "scale-info",
- "sp-api",
- "sp-block-builder",
- "sp-consensus-pow",
- "sp-core",
- "sp-inherents",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-version",
- "substrate-wasm-builder",
-]
-
-[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3848,7 +3848,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "3.0.0-monthly-2022-01"
+version = "0.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3879,7 +3879,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "3.0.0-monthly-2022-01"
+version = "0.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

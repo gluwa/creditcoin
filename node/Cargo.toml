@@ -1,13 +1,13 @@
 [package]
 name = 'creditcoin-node'
-version = '3.0.0-monthly-2022-01'
-description = 'A fresh FRAME-based Substrate node, ready for hacking.'
+version = '0.1.0'
+description = 'A Creditcoin node built on substrate.'
 authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
 homepage = 'https://substrate.dev'
 edition = '2018'
 license = 'Unlicense'
 publish = false
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+repository = 'https://github.com/nathanwhit/creditcoin-substrate/'
 build = 'build.rs'
 
 [[bin]]
@@ -21,9 +21,9 @@ git = 'https://github.com/paritytech/substrate.git'
 rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
 version = '3.0.0'
 
-[dependencies.node-template-runtime]
+[dependencies.creditcoin-node-runtime]
 path = '../runtime'
-version = '3.0.0-monthly-2022-01'
+version = '0.1.0'
 
 [dependencies]
 jsonrpc-core = '18.0.0'
@@ -169,5 +169,5 @@ version = '4.0.0-dev'
 
 [features]
 default = ['std']
-runtime-benchmarks = ['node-template-runtime/runtime-benchmarks']
+runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']
 std = ['sp-consensus-pow/std']

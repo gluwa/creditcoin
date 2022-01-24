@@ -1,13 +1,12 @@
 [package]
-name = 'node-template-runtime'
-version = '3.0.0-monthly-2022-01'
-description = 'A fresh FRAME-based Substrate runtime, ready for hacking.'
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-homepage = 'https://substrate.dev'
+name = 'creditcoin-node-runtime'
+version = '0.1.0'
+description = 'Creditcoin runtime built on substrate.'
+authors = ['Nathan Whitaker <nathan.whitaker01@gmail.com>']
 edition = '2018'
 license = 'Unlicense'
 publish = false
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+repository = 'https://github.com/nathanwhit/creditcoin-substrate'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
@@ -19,12 +18,12 @@ version = "0.1.0"
 [dependencies.pallet-rewards]
 default-features = false
 path = '../pallets/rewards'
-version = '3.0.0-monthly-2022-01'
+version = '0.1.0'
 
 [dependencies.pallet-difficulty]
 default-features = false
 path = '../pallets/difficulty'
-version = '3.0.0-monthly-2022-01'
+version = '0.1.0'
 
 [dependencies.pallet-creditcoin]
 default-features = false
