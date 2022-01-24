@@ -24,3 +24,6 @@ EXPOSE 9944
 EXPOSE 9933
 COPY --from=builder /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
 COPY --from=builder /creditcoin-node/testnetSpec.json /chainspec/testnetSpec.json
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+ENTRYPOINT [ "entrypoint.sh" ]
