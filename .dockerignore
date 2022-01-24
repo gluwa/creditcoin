@@ -17,3 +17,5 @@ docs
 # direnv cache
 .direnv
 Dockerfile
+
+entrypoint.sh
