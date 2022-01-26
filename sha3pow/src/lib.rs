@@ -13,7 +13,7 @@ pub mod app {
 	use sp_application_crypto::{app_crypto, sr25519};
 	use sp_core::crypto::KeyTypeId;
 
-	pub const ID: KeyTypeId = KeyTypeId(*b"_ctc");
+	pub const ID: KeyTypeId = KeyTypeId(*b"ctcm");
 	app_crypto!(sr25519, ID);
 }
 
@@ -126,7 +126,7 @@ where
 
 pub fn mine<B, C>(
 	_client: &C,
-	keystore: &LocalKeystore,
+	_keystore: &LocalKeystore,
 	pre_hash: &H256,
 	_pre_digest: Option<&[u8]>,
 	difficulty: Difficulty,
