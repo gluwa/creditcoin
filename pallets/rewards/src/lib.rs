@@ -50,6 +50,9 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Reward was issued. [block_author, amount]
 		RewardIssued(AccountIdOf<T>, BalanceOf<T>),
+
+		/// Reward amount was changed. [new_reward_amount]
+		RewardChanged(BalanceOf<T>),
 	}
 
 	// Errors inform users that something went wrong.
@@ -60,7 +63,17 @@ pub mod pallet {
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {}
+	impl<T: Config> Pallet<T> {
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		pub fn set_reward_amount(origin: OriginFor<T>, new_amount: BalanceOf<T>) -> DispatchResult {
+			ensure_root(origin)?;
+
+			RewardAmount::<T>::put(new_amount);
+			Self::deposit_event(Event::<T>::RewardChanged(new_amount));
+
+			Ok(())
+		}
+	}
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
