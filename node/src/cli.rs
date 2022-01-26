@@ -8,6 +8,9 @@ pub struct Cli {
 
 	#[structopt(flatten)]
 	pub run: RunCmd,
+
+	#[structopt(long)]
+	pub mining_key: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
