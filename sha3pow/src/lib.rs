@@ -2,6 +2,7 @@ use parity_scale_codec::{Decode, Encode};
 use rand::{prelude::SmallRng, SeedableRng};
 use sc_client_api::{AuxStore, HeaderBackend};
 use sc_consensus_pow::{Error, PowAlgorithm};
+use sc_keystore::LocalKeystore;
 use sha3::{Digest, Sha3_256};
 use sp_api::{BlockId, BlockT, ProvideRuntimeApi};
 use sp_consensus_pow::{DifficultyApi, Seal as RawSeal};
@@ -125,6 +126,7 @@ where
 
 pub fn mine<B, C>(
 	_client: &C,
+	keystore: &LocalKeystore,
 	pre_hash: &H256,
 	_pre_digest: Option<&[u8]>,
 	difficulty: Difficulty,

@@ -268,7 +268,7 @@ pub fn new_full(
 			proposer_factory,
 			network.clone(),
 			network,
-			None,
+			Some(mining_key.encode()),
 			move |_, ()| async move {
 				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 				Ok(timestamp)
@@ -284,7 +284,7 @@ pub fn new_full(
 
 		let threads = num_cpus::get();
 		for _ in 0..threads {
-			if let Some(_keystore) = keystore_container.local_keystore() {
+			if let Some(keystore) = keystore_container.local_keystore() {
 				let worker = worker.clone();
 				let client = client.clone();
 
@@ -293,6 +293,7 @@ pub fn new_full(
 					if let Some(metadata) = metadata {
 						match sha3pow::mine(
 							client.as_ref(),
+							&keystore,
 							&metadata.pre_hash,
 							metadata.pre_runtime.as_ref().map(|v| &v[..]),
 							metadata.difficulty,
