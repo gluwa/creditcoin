@@ -1,6 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use codec::{Decode, Encode};
+use codec::Encode;
 use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::ExecutorProvider;
 pub use sc_executor::NativeElseWasmExecutor;
