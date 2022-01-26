@@ -245,6 +245,11 @@ impl pallet_difficulty::Config for Runtime {
 	type Moment = u64;
 }
 
+impl pallet_rewards::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+}
+
 pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
@@ -300,6 +305,7 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Event<T>},
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
+		Rewards: pallet_rewards::{Pallet, Call, Storage, Event<T>, Config<T>}
 	}
 );
 
