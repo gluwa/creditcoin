@@ -943,6 +943,7 @@ dependencies = [
  "log",
  "num_cpus",
  "pallet-transaction-payment-rpc",
+ "parity-scale-codec",
  "sc-basic-authorship",
  "sc-cli",
  "sc-client-api",
