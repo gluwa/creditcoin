@@ -3887,6 +3887,7 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "scale-info",
+ "sp-consensus-pow",
  "sp-core",
  "sp-io",
  "sp-runtime",
