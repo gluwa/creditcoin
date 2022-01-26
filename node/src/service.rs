@@ -1,5 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use codec::{Decode, Encode};
 use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::ExecutorProvider;
 pub use sc_executor::NativeElseWasmExecutor;
@@ -7,8 +8,10 @@ use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sha3pow::Sha3Algorithm;
+use sp_core::H256;
 use sp_inherents::CreateInherentDataProviders;
-use std::{sync::Arc, thread, time::Duration};
+use sp_runtime::app_crypto::{Ss58Codec, UncheckedFrom};
+use std::{str::FromStr, sync::Arc, thread, time::Duration};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -145,6 +148,24 @@ fn remote_keystore(_url: &String) -> Result<Arc<LocalKeystore>, &'static str> {
 	Err("Remote Keystore not supported.")
 }
 
+pub fn decode_mining_key(mining_key: Option<&str>) -> Result<sha3pow::app::Public, String> {
+	if let Some(key) = mining_key {
+		// raw public key
+		if key.starts_with("0x") {
+			Ok(sha3pow::app::Public::unchecked_from(
+				H256::from_str(&key[2..])
+					.map_err(|_| String::from("Invalid mining key, expected a hash"))?,
+			))
+		} else {
+			// ss58 encoded key
+			Ok(sha3pow::app::Public::from_ss58check(key)
+				.map_err(|e| format!("Invalid mining key format: {}", e))?)
+		}
+	} else {
+		Err("The node is configured for mining but is missing a mining key".into())
+	}
+}
+
 /// Builds a new service for a full client.
 pub fn new_full(
 	config: Configuration,
@@ -225,6 +246,7 @@ pub fn new_full(
 	})?;
 
 	if role.is_authority() {
+		let mining_key = decode_mining_key(mining_key)?;
 		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
