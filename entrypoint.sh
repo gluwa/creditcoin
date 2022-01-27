@@ -5,6 +5,7 @@ if [ "$MODE" = "miner" ]; then
 else
     ws='--ws-external' 
     rpc='--rpc-external'
+    cors="--rpc-cors all"
 fi
 if [ -n "$BOOTNODE_IP" ]; then
     boot_id="${BOOTNODE_PEER_ID:-12D3KooWSnPk7hN9epDUonVuNVgTvxbmnuQbGP8ghMvuoH9GAsz5}"
@@ -20,7 +21,7 @@ if [ -n "$BOOTNODE_IP" ]; then
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-     --base-path "${DATA:-/data}" $validator $ws $rpc
+     --base-path "${DATA:-/data}" $validator $ws $rpc $cors $EXTRA_ARGS
 else
     key="${NODE_KEY:-c5eb4a9ada5c9dd76378d000f046e8cde064d68e96a1df569190eee70afba8e7}"
     node_name="${NODE_NAME:-bootnode}"
@@ -28,5 +29,5 @@ else
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-     --base-path "${DATA:-/data}" $validator $ws $rpc
+     --base-path "${DATA:-/data}" $validator $ws $rpc $cors $EXTRA_ARGS
 fi
