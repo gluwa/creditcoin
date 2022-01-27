@@ -1,11 +1,11 @@
 #!/bin/bash
 
-if [ "$MODE" = "miner" ]; then
-    validator='--validator'
-else
+if [ "$MODE" = "rpc" ]; then
     ws='--ws-external' 
     rpc='--rpc-external'
-    cors="--rpc-cors all"
+    cors="--rpc-cors ${CORS:-all}"
+else
+    validator='--validator'
 fi
 if [ -n "$BOOTNODE_IP" ]; then
     boot_id="${BOOTNODE_PEER_ID:-12D3KooWSnPk7hN9epDUonVuNVgTvxbmnuQbGP8ghMvuoH9GAsz5}"
