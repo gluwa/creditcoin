@@ -12,11 +12,14 @@ pub struct Cli {
 	#[structopt(long)]
 	pub mining_key: Option<String>,
 }
-
 #[derive(Debug, StructOpt)]
 pub enum Subcommand {
 	/// Key management cli utilities
 	Key(sc_cli::KeySubcommand),
+
+	/// Generate and insert key for mining Creditcoin
+	GenerateMiningKey(crate::command::MiningKeySubcommand),
+
 	/// Build a chain specification.
 	BuildSpec(sc_cli::BuildSpecCmd),
 
