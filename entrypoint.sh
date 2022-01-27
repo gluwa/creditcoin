@@ -5,6 +5,7 @@ if [ "$MODE" = "rpc" ]; then
     rpc='--rpc-external'
     cors="--rpc-cors ${CORS:-all}"
 else
+    mining_key="--mining-key $(/bin/creditcoin-node generate-mining-key --chain /chainspec/testnetSpec.json --quiet)"
     validator='--validator'
 fi
 if [ -n "$BOOTNODE_IP" ]; then
@@ -21,7 +22,7 @@ if [ -n "$BOOTNODE_IP" ]; then
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-     --base-path "${DATA:-/data}" $validator $ws $rpc $cors $EXTRA_ARGS
+     --base-path "${DATA:-/data}" $validator $mining_key $ws $rpc $cors $EXTRA_ARGS
 else
     key="${NODE_KEY:-c5eb4a9ada5c9dd76378d000f046e8cde064d68e96a1df569190eee70afba8e7}"
     node_name="${NODE_NAME:-bootnode}"
@@ -29,5 +30,5 @@ else
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-     --base-path "${DATA:-/data}" $validator $ws $rpc $cors $EXTRA_ARGS
+     --base-path "${DATA:-/data}" $validator $mining_key $ws $rpc $cors $EXTRA_ARGS
 fi
