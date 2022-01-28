@@ -91,13 +91,13 @@ impl MiningKeySubcommand {
 
 		let pwd = password.as_ref().map(|s| s.expose_secret().as_str());
 		if self.quiet {
-			let (pair, _) = sp_core::sr25519::Pair::from_phrase(uri, pwd)
+			let (pair, _) = sp_core::ecdsa::Pair::from_phrase(uri, pwd)
 				.expect("we just generated the valid phrase; qed");
 			let public_address = pair.public().into_account().to_ss58check();
 			println!("{}", public_address);
 		} else {
 			with_crypto_scheme!(
-				sc_cli::CryptoScheme::Sr25519,
+				sc_cli::CryptoScheme::Ecdsa,
 				print_from_uri(uri, password, None, output)
 			);
 		}
@@ -116,7 +116,7 @@ impl MiningKeySubcommand {
 			let (keystore, public) = match self.keystore_params.keystore_config(&config_dir)? {
 				(_, KeystoreConfig::Path { path, password }) => {
 					let public = with_crypto_scheme!(
-						sc_cli::CryptoScheme::Sr25519,
+						sc_cli::CryptoScheme::Ecdsa,
 						to_vec(&suri, password.clone())
 					)?;
 					let keystore: SyncCryptoStorePtr =

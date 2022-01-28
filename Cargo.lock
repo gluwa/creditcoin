@@ -939,6 +939,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures-lite",
+ "hex",
  "jsonrpc-core",
  "log",
  "num_cpus",
