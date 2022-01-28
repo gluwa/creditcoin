@@ -89,9 +89,9 @@ impl MiningKeySubcommand {
 		let output = self.output_scheme.output_type.clone();
 		let uri = mnemonic.phrase();
 
-		let pwd = password.as_ref().map(|s| s.expose_secret().as_str());
 		if self.quiet {
-			let (pair, _) = sp_core::ecdsa::Pair::from_phrase(uri, pwd)
+			let raw_password = password.as_ref().map(|s| s.expose_secret().as_str());
+			let (pair, _) = sp_core::ecdsa::Pair::from_phrase(uri, raw_password)
 				.expect("we just generated the valid phrase; qed");
 			let public_address = pair.public().into_account().to_ss58check();
 			println!("{}", public_address);
