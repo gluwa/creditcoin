@@ -9,8 +9,8 @@ use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sha3pow::Sha3Algorithm;
 use sp_inherents::CreateInherentDataProviders;
-use sp_runtime::app_crypto::Ss58Codec;
-use std::{convert::TryFrom, sync::Arc, thread, time::Duration};
+use sp_runtime::{app_crypto::Ss58Codec, traits::IdentifyAccount};
+use std::{sync::Arc, thread, time::Duration};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -147,18 +147,30 @@ fn remote_keystore(_url: &String) -> Result<Arc<LocalKeystore>, &'static str> {
 	Err("Remote Keystore not supported.")
 }
 
-pub fn decode_mining_key(mining_key: Option<&str>) -> Result<sha3pow::app::Public, String> {
+pub fn decode_mining_key(
+	mining_key: Option<&str>,
+) -> Result<creditcoin_node_runtime::AccountId, String> {
 	if let Some(key) = mining_key {
 		// raw public key
 		if key.starts_with("0x") {
 			let key_bytes = hex::decode(&key[2..])
 				.map_err(|e| format!("Invalid mining key, expected hex: {}", e))?;
-			Ok(sha3pow::app::Public::try_from(&*key_bytes)
-				.map_err(|_| String::from("Invalid mining key, expected 33 bytes"))?)
+			Ok(creditcoin_node_runtime::Signer::from(
+				sp_core::ecdsa::Public::from_full(&*key_bytes)
+					.map_err(|_| String::from("Invalid mining key, expected 33 bytes"))?,
+			)
+			.into_account())
 		} else {
 			// ss58 encoded key
-			Ok(sha3pow::app::Public::from_ss58check(key)
-				.map_err(|e| format!("Invalid mining key format: {}", e))?)
+			Ok(creditcoin_node_runtime::Signer::from(
+				sp_core::ecdsa::Public::from_ss58check(key).map_err(|e| {
+					format!(
+						"Invalid mining key format: {}, are you using the SS58 encoded public key?",
+						e
+					)
+				})?,
+			)
+			.into_account())
 		}
 	} else {
 		Err("The node is configured for mining but is missing a mining key".into())
