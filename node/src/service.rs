@@ -8,10 +8,9 @@ use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sha3pow::Sha3Algorithm;
-use sp_core::H256;
 use sp_inherents::CreateInherentDataProviders;
-use sp_runtime::app_crypto::{Ss58Codec, UncheckedFrom};
-use std::{str::FromStr, sync::Arc, thread, time::Duration};
+use sp_runtime::app_crypto::Ss58Codec;
+use std::{convert::TryFrom, sync::Arc, thread, time::Duration};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -152,10 +151,10 @@ pub fn decode_mining_key(mining_key: Option<&str>) -> Result<sha3pow::app::Publi
 	if let Some(key) = mining_key {
 		// raw public key
 		if key.starts_with("0x") {
-			Ok(sha3pow::app::Public::unchecked_from(
-				H256::from_str(&key[2..])
-					.map_err(|_| String::from("Invalid mining key, expected a hash"))?,
-			))
+			let key_bytes = hex::decode(&key[2..])
+				.map_err(|e| format!("Invalid mining key, expected hex: {}", e))?;
+			Ok(sha3pow::app::Public::try_from(&*key_bytes)
+				.map_err(|_| String::from("Invalid mining key, expected 33 bytes"))?)
 		} else {
 			// ss58 encoded key
 			Ok(sha3pow::app::Public::from_ss58check(key)

@@ -10,11 +10,11 @@ use sp_core::{H256, U256};
 use std::sync::Arc;
 
 pub mod app {
-	use sp_application_crypto::{app_crypto, sr25519};
+	use sp_application_crypto::{app_crypto, ecdsa};
 	use sp_core::crypto::KeyTypeId;
 
 	pub const ID: KeyTypeId = KeyTypeId(*b"ctcm");
-	app_crypto!(sr25519, ID);
+	app_crypto!(ecdsa, ID);
 }
 
 pub type Difficulty = U256;
