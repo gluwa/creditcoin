@@ -12,7 +12,7 @@ fi
 if [ "$RESYNC" ]; then
     /bin/creditcoin-node purge-chain --chain /chainspec/testnetSpec.json
 fi
-if ["$PROMETHEUS" = "1"]; then
+if [ "$PROMETHEUS" = "1" ]; then
     prometheus='--prometheus-external'
 fi
 if [ -n "$BOOTNODE_IP" ]; then
