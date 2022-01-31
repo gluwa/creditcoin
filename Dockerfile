@@ -26,8 +26,7 @@ RUN source ~/.cargo/env && cargo build --release
 FROM ubuntu:latest
 EXPOSE 30333/tcp
 EXPOSE 30333/udp
-EXPOSE 9944
-EXPOSE 9933
+EXPOSE 9944 9933 9615
 COPY --from=builder /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
 COPY testnetSpec.json /chainspec/testnetSpec.json
 COPY entrypoint.sh .
