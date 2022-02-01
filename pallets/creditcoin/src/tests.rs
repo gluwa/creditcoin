@@ -240,5 +240,44 @@ fn register_transfer_ocw() {
 			verify_tx.call,
 			Call::Creditcoin(crate::Call::verify_transfer { transfer: expected_transfer })
 		);
+#[test]
+fn add_ask_order_basic() {
+	new_test_ext().execute_with(|| {
+		let acct: <Test as frame_system::Config>::AccountId = Default::default();
+		let blockchain = B("testblockchain").into_bounded();
+		let address = B("testaddresid").into_bounded();
+		let amount = 100;
+		let interest = 10;
+		let fee = B("testfee").into_bounded();
+		let guid = B("testguid").into_bounded();
+		let expiration = B("testexpiration").into_bounded();
+		let maturity = B("testmaturity").into_bounded();
+		let block = B("testblock").into_bounded();
+
+		assert_ok!(Creditcoin::add_ask_order(
+			Origin::signed(acct.clone()),
+			address.clone(),
+			amount.clone(),
+			interest.clone(),
+			maturity.clone(),
+			fee.clone(),
+			expiration.clone(),
+			guid.clone()
+		));
+
+		let ask_order_id = crate::AskOrderId::new::<Test>(&expiration, &guid);
+		let ask_order = crate::AskOrder {
+			blockchain,
+			address,
+			amount,
+			interest,
+			maturity,
+			fee,
+			expiration,
+			block,
+			sighash: acct,
+		};
+
+		assert_eq!(Creditcoin::ask_orders(ask_order_id), Some(ask_order));
 	});
 }
