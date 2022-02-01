@@ -55,7 +55,6 @@ type ExternalAddressLen = ConstU32<256>;
 pub type ExternalAddress = BoundedVec<u8, ExternalAddressLen>;
 type ExternalTxIdLen = ConstU32<256>;
 pub type ExternalTxId = BoundedVec<u8, ExternalTxIdLen>;
-type VerifyStringLen = ConstU32<2560>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Address<AccountId> {
@@ -81,7 +80,6 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct PendingTransfer<AccountId, BlockNum, Hash> {
-	verify_string: BoundedVec<u8, VerifyStringLen>,
 	transfer: Transfer<AccountId, BlockNum, Hash>,
 }
 
@@ -192,16 +190,6 @@ fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 		hex.push(HEX_CHARS_LOWER[(byte & 0x0F) as usize]);
 	}
 	hex
-}
-
-macro_rules! replace_expr {
-	($_t:tt $sub:expr) => {
-		$sub
-	};
-}
-
-macro_rules! count_tts {
-    ($($tts:tt)*) => {<[()]>::len(&[$(replace_expr!($tts ())),*])};
 }
 
 macro_rules! strip_plus {
@@ -435,7 +423,6 @@ macro_rules! try_get_id {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use core::convert::TryInto;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, Blake2_128Concat};
 	use frame_system::{
 		ensure_signed,
@@ -646,7 +633,7 @@ pub mod pallet {
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
-				for PendingTransfer { verify_string: _, transfer } in PendingTransfers::<T>::get() {
+				for PendingTransfer { transfer } in PendingTransfers::<T>::get() {
 					log::debug!("verifying transfer");
 					// TODO: actually hit gateway to verify given transaction
 					if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
@@ -991,23 +978,6 @@ pub mod pallet {
 				Transfers::<T>::insert(transfer_id, transfer);
 			} else {
 				amount += gain;
-				let mut buf = [b'0'; lexical_core::BUFFER_SIZE];
-				let amount_str = lexical_core::write(amount, &mut buf);
-				let order_id_hex = order_id.to_hex();
-
-				let verify_string = concatenate!(
-					&*src_address.blockchain,
-					b"verify",
-					&*src_address.value,
-					&*dest_address.value,
-					&order_id_hex,
-					&*amount_str,
-					&*blockchain_tx_id;
-					&*src_address.network;
-					sep = b' '
-				);
-				let verify_string =
-					verify_string.try_into().map_err(|_| Error::<T>::VerifyStringTooLong)?;
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
 					network: src_address.network,
@@ -1026,7 +996,7 @@ pub mod pallet {
 					transfer.clone(),
 				));
 
-				let pending = PendingTransfer { verify_string, transfer };
+				let pending = PendingTransfer { transfer };
 				PendingTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
 					.map_err(|()| Error::<T>::PendingTransferPoolFull)?;
 			}
