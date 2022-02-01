@@ -71,7 +71,6 @@ fn verify_ethless_transfer() {
 		let get_transaction = pending_rpc_request(
 			"eth_getTransactionByHash",
 			vec![tx_hash.into()],
-			dummy_url,
 			&responses,
 		);
 		let get_transaction_receipt = pending_rpc_request(
@@ -254,8 +253,6 @@ fn add_ask_order_basic() {
 		let maturity = B("testmaturity").into_bounded();
 		let block = B("testblock").into_bounded();
 
-		assert_ok!(Creditcoin::add_ask_order(
-			Origin::signed(acct.clone()),
 			address.clone(),
 			amount.clone(),
 			interest.clone(),
