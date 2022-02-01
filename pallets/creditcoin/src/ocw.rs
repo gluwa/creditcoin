@@ -44,6 +44,31 @@ impl ExternalChain {
 }
 
 impl<T: Config> Pallet<T> {
+	pub fn offchain_signed_tx(
+		auth_id: T::FromAccountId,
+		call: impl Fn(&Account<T>) -> Call<T>,
+	) -> Result<(), Error<T>> {
+		use sp_core::crypto::UncheckedFrom;
+		let auth_bytes: &[u8; 32] = auth_id.as_ref();
+		let public = T::InternalPublic::unchecked_from(*auth_bytes);
+		let public: T::PublicSigning = public.into();
+		let signer =
+			Signer::<T, T::AuthorityId>::any_account().with_filter(sp_std::vec![public.into()]);
+		let result = signer.send_signed_transaction(call);
+
+		if let Some((acc, res)) = result {
+			if res.is_err() {
+				log::error!("failure: offchain_signed_tx: tx sent: {:?}", acc.id);
+				return Err(Error::OffchainSignedTxFailed)
+			} else {
+				return Ok(())
+			}
+		}
+
+		log::error!("No local account available");
+		Err(Error::NoLocalAcctForSignedTx)
+	}
+
 	pub fn verify_ethless_transfer(
 		network: &Network,
 		from: &ExternalAddress,
