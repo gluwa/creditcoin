@@ -1,5 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 use codec::{Decode, Encode, EncodeLike};
 
 use frame_support::pallet_prelude::*;
@@ -20,6 +22,8 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+
+pub mod ocw;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
 
