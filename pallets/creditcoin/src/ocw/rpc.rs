@@ -171,7 +171,9 @@ impl JsonRpcRequest {
 
 #[derive(serde::Deserialize, Clone, Debug)]
 pub struct JsonRpcResponse<T> {
+	#[allow(dead_code)]
 	jsonrpc: VecString,
+	#[allow(dead_code)]
 	id: u64,
 	error: Option<JsonRpcError>,
 	result: Option<T>,
@@ -190,6 +192,7 @@ impl<T> JsonRpcResponse<T> {
 	}
 }
 
+#[allow(dead_code)]
 #[derive(serde::Deserialize, Clone, Debug)]
 pub struct JsonRpcError {
 	code: i32,
@@ -250,7 +253,17 @@ pub struct EthTransactionReceipt {
 	pub status: Option<U64>,
 }
 
-pub fn get_eth_transaction(tx_id: &ExternalTxId, rpc_url: &str) -> Result<EthTransaction, ()> {
+impl EthTransactionReceipt {
+	pub fn is_success(&self) -> bool {
+		if let Some(status) = self.status {
+			!status.is_zero()
+		} else {
+			false
+		}
+	}
+}
+
+pub fn eth_get_transaction(tx_id: &ExternalTxId, rpc_url: &str) -> Result<EthTransaction, ()> {
 	let rpc_req = JsonRpcRequest::new(
 		"eth_getTransactionByHash",
 		vec![serde_json::Value::String(
@@ -260,7 +273,7 @@ pub fn get_eth_transaction(tx_id: &ExternalTxId, rpc_url: &str) -> Result<EthTra
 	rpc_req.send(rpc_url)
 }
 
-pub fn get_eth_transaction_receipt(
+pub fn eth_get_transaction_receipt(
 	tx_id: &ExternalTxId,
 	rpc_url: &str,
 ) -> Result<EthTransactionReceipt, ()> {
@@ -268,5 +281,10 @@ pub fn get_eth_transaction_receipt(
 		"eth_getTransactionReceipt",
 		vec![serde_json::Value::String(String::from_utf8(tx_id.clone().into()).map_err(|_| ())?)],
 	);
+	rpc_req.send(rpc_url)
+}
+
+pub fn eth_get_block_number(rpc_url: &str) -> Result<U64, ()> {
+	let rpc_req = JsonRpcRequest::new("eth_blockNumber", vec![]);
 	rpc_req.send(rpc_url)
 }
