@@ -44,7 +44,7 @@ pub mod crypto {
 	}
 }
 
-pub type ExternalAmount = u64;
+pub type ExternalAmount = sp_core::U512;
 type BlockchainLen = ConstU32<256>;
 pub type Blockchain = BoundedVec<u8, BlockchainLen>;
 type NetworkLen = ConstU32<256>;
@@ -932,14 +932,14 @@ pub mod pallet {
 				OrderId::Deal(deal_order_id) => {
 					let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
-					if gain == 0 {
+					if gain.is_zero() {
 						(order.src_address, order.dst_address, order.amount)
 					} else {
 						(order.dst_address, order.src_address, order.amount)
 					}
 				},
 				OrderId::Repayment(repay_order_id) => {
-					ensure!(gain == 0, Error::<T>::RepaymentOrderNonZeroGain);
+					ensure!(gain.is_zero(), Error::<T>::RepaymentOrderNonZeroGain);
 					let order = try_get_id!(
 						RepaymentOrders<T>,
 						&repay_order_id,
@@ -971,7 +971,7 @@ pub mod pallet {
 			);
 
 			if &*blockchain_tx_id == &*b"0" {
-				amount = 0;
+				amount = ExternalAmount::zero();
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
 					network: src_address.network,
