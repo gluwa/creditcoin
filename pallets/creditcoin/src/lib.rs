@@ -80,7 +80,9 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct PendingTransfer<AccountId, BlockNum, Hash> {
-	transfer: Transfer<AccountId, BlockNum, Hash>,
+	pub transfer: Transfer<AccountId, BlockNum, Hash>,
+	pub from: ExternalAddress,
+	pub to: ExternalAddress,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -633,13 +635,27 @@ pub mod pallet {
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
-				for PendingTransfer { transfer } in PendingTransfers::<T>::get() {
+				for pending in PendingTransfers::<T>::get() {
 					log::debug!("verifying transfer");
-					// TODO: actually hit gateway to verify given transaction
-					if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
-						Call::finalize_transfer { transfer: transfer.clone() }
-					}) {
-						log::error!("Failed to send finalize transfer transaction: {:?}", e);
+					let transfer_validity = Self::verify_transfer(&pending);
+					log::debug!("verify_transfer result: {:?}", transfer_validity);
+					match transfer_validity {
+						Ok(()) =>
+							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
+								Call::finalize_transfer { transfer: pending.transfer.clone() }
+							}) {
+								log::error!(
+									"Failed to send finalize transfer transaction: {:?}",
+									e
+								);
+							},
+						Err(err) => {
+							log::warn!(
+								"failed to verify pending transfer {:?}: {:?}",
+								pending,
+								err
+							);
+						},
 					}
 				}
 			} else {
@@ -996,7 +1012,11 @@ pub mod pallet {
 					transfer.clone(),
 				));
 
-				let pending = PendingTransfer { transfer };
+				let pending = PendingTransfer {
+					from: src_address.value.clone(),
+					to: dest_address.value.clone(),
+					transfer,
+				};
 				PendingTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
 					.map_err(|()| Error::<T>::PendingTransferPoolFull)?;
 			}
