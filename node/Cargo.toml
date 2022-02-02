@@ -93,6 +93,11 @@ git = 'https://github.com/paritytech/substrate.git'
 rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
 version = '0.10.0-dev'
 
+[dependencies.sc-offchain]
+git = 'https://github.com/paritytech/substrate.git'
+rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
+version = '4.0.0-dev'
+
 [dependencies.sc-rpc]
 git = 'https://github.com/paritytech/substrate.git'
 rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'

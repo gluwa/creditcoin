@@ -952,6 +952,7 @@ dependencies = [
  "sc-consensus-pow",
  "sc-executor",
  "sc-keystore",
+ "sc-offchain",
  "sc-rpc",
  "sc-rpc-api",
  "sc-service",
