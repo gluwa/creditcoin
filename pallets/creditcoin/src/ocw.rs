@@ -1,5 +1,8 @@
+pub mod errors;
 pub mod rpc;
 use crate::{Call, Network};
+
+use self::errors::{OffchainError, RpcUrlError};
 
 use super::{
 	pallet::{Config, Error, Pallet},
@@ -16,6 +19,8 @@ use frame_system::{
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_std::prelude::*;
 
+pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
+
 #[derive(Clone, Copy, Debug)]
 pub enum ExternalChain {
 	Ethereum,
@@ -23,7 +28,7 @@ pub enum ExternalChain {
 }
 
 impl ExternalChain {
-	pub fn rpc_url(self, network: &Network) -> Result<String, ()> {
+	pub fn rpc_url(self, network: &Network) -> OffchainResult<String, errors::RpcUrlError> {
 		let mut buf = Vec::from(match self {
 			ExternalChain::Ethless => "ethless-",
 			ExternalChain::Ethereum => "ethereum-",
@@ -31,30 +36,42 @@ impl ExternalChain {
 		buf.extend(network.iter().copied());
 		buf.extend("-rpc-url".bytes());
 		let rpc_url_storage = StorageValueRef::persistent(&buf);
-		if let Some(url_bytes) = rpc_url_storage.get::<Vec<u8>>().map_err(|e| {
-			log::error!("failed to retrieve rpc url from storage: {:?}", e);
-			()
-		})? {
-			Ok(String::from_utf8(url_bytes).map_err(|e| {
-				log::error!("rpc url is invalid utf8: {}", e);
-				()
-			})?)
+		if let Some(url_bytes) = rpc_url_storage.get::<Vec<u8>>()? {
+			Ok(String::from_utf8(url_bytes)?)
 		} else {
-			Err(())
+			Err(RpcUrlError::NoValue)
 		}
 	}
 }
 
 const ETH_CONFIRMATIONS: u64 = 12;
 
-fn split_ethless_address(address: &ExternalAddress) -> Result<(rpc::Address, rpc::Address), ()> {
+fn split_ethless_address(
+	address: &ExternalAddress,
+) -> OffchainResult<(rpc::Address, rpc::Address)> {
 	let mut segments = address.split(|&byte| byte == b'@');
-	let contract = segments.next().ok_or(())?;
-	let contract = core::str::from_utf8(contract).map_err(|_| ())?;
-	let contract = rpc::Address::from_str(contract).map_err(|_| ())?;
-	let address = segments.next().ok_or(())?;
-	let address = core::str::from_utf8(address).map_err(|_| ())?;
-	let address = rpc::Address::from_str(address).map_err(|_| ())?;
+	let contract = segments
+		.next()
+		.ok_or(OffchainError::InvalidTransfer("ethless address is missing an `@`"))?;
+	let contract = core::str::from_utf8(contract).map_err(|err| {
+		log::error!("contract address {:?} is not valid utf8: {}", contract, err);
+		OffchainError::InvalidTransfer("ethless contract address is invalid utf8")
+	})?;
+	let contract = rpc::Address::from_str(contract).map_err(|err| {
+		log::error!("contract address {:?} is not valid hex: {}", contract, err);
+		OffchainError::InvalidTransfer("ethless contract address is invalid hex")
+	})?;
+	let address = segments
+		.next()
+		.ok_or(OffchainError::InvalidTransfer("ethless address is missing a second component"))?;
+	let address = core::str::from_utf8(address).map_err(|err| {
+		log::error!("ethless address {:?} is not valid utf8: {}", address, err);
+		OffchainError::InvalidTransfer("ethless address is invalid utf8")
+	})?;
+	let address = rpc::Address::from_str(address).map_err(|err| {
+		log::error!("ethless address {:?} is not valid hex: {}", address, err);
+		OffchainError::InvalidTransfer("ethless address is invalid hex")
+	})?;
 	Ok((contract, address))
 }
 
@@ -91,7 +108,7 @@ impl<T: Config> Pallet<T> {
 		_order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
-	) -> Result<(), ()> {
+	) -> OffchainResult<()> {
 		#[allow(deprecated)]
 		let transfer_fn = Function {
 			name: "transfer".into(),
@@ -114,48 +131,102 @@ impl<T: Config> Pallet<T> {
 		let rpc_url = ExternalChain::rpc_url(ExternalChain::Ethless, network)?;
 		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
-		ensure!(tx_receipt.is_success(), ());
-		let block_number = tx.block_number.ok_or(())?;
+		ensure!(
+			tx_receipt.is_success(),
+			OffchainError::InvalidTransfer("ethless transfer was not successful")
+		);
+		let block_number = tx
+			.block_number
+			.ok_or(OffchainError::InvalidTransfer("ethless transfer is still pending"))?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
-		ensure!(block_number < eth_tip, ());
+		ensure!(
+			block_number < eth_tip,
+			OffchainError::InvalidTransfer(
+				"block number of ethless transfer is greater than the ethereum tip"
+			)
+		);
 		let diff = eth_tip - block_number;
-		ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, ());
+		ensure!(
+			diff.as_u64() >= ETH_CONFIRMATIONS,
+			OffchainError::InvalidTransfer("ethless transfer does not have enough confirmations")
+		);
 
 		let (from_contract, from_addr) = split_ethless_address(from)?;
 		let (to_contract, to_addr) = split_ethless_address(to)?;
-		ensure!(from_contract == to_contract, ());
+		ensure!(
+			from_contract == to_contract,
+			OffchainError::InvalidTransfer("contract addresses for ethless transfer do not match")
+		);
 
 		let ethless_contract = from_contract;
 
 		if let Some(to) = tx.to {
-			ensure!(to == ethless_contract, ());
+			ensure!(
+				to == ethless_contract,
+				OffchainError::InvalidTransfer(
+					"transaction was not sent through the ethless contract"
+				)
+			);
 		} else {
-			return Err(())
+			return Err(OffchainError::InvalidTransfer(
+				"ethless transaction lacks a receiver (contract creation transaction)",
+			))
 		}
 
 		let inputs = transfer_fn.decode_input(&tx.input.0).map_err(|e| {
 			log::error!("failed to decode inputs: {:?}", e);
-			()
+			OffchainError::InvalidTransfer(
+				"ethless transfer inputs were not decodable with the expected ABI",
+			)
 		})?;
-		ensure!(inputs.len() == transfer_fn.inputs.len(), ());
+		ensure!(
+			inputs.len() == transfer_fn.inputs.len(),
+			OffchainError::InvalidTransfer(
+				"ethless transfer inputs were not of the expected length"
+			)
+		);
 
 		let input_from = match inputs.get(0) {
 			Some(Token::Address(addr)) => addr,
-			_ => return Err(()),
+			_ =>
+				return Err(OffchainError::InvalidTransfer(
+					"first input to ethless transfer was not an address",
+				)),
 		};
-		ensure!(input_from == &from_addr, ());
+		ensure!(
+			input_from == &from_addr,
+			OffchainError::InvalidTransfer(
+				"sender of ethless transfer does not match expected address"
+			)
+		);
 
 		let input_to = match inputs.get(1) {
 			Some(Token::Address(addr)) => addr,
-			_ => return Err(()),
+			_ =>
+				return Err(OffchainError::InvalidTransfer(
+					"second input to ethless transfer was not an address",
+				)),
 		};
-		ensure!(input_to == &to_addr, ());
+		ensure!(
+			input_to == &to_addr,
+			OffchainError::InvalidTransfer(
+				"receiver of ethless transfer does not match expected address"
+			)
+		);
 
 		let input_amount = match inputs.get(2) {
 			Some(Token::Uint(value)) => ExternalAmount::from(value),
-			_ => return Err(()),
+			_ =>
+				return Err(OffchainError::InvalidTransfer(
+					"third input to ethless transfer was not a Uint",
+				)),
 		};
-		ensure!(&input_amount == amount, ());
+		ensure!(
+			&input_amount == amount,
+			OffchainError::InvalidTransfer(
+				"ethless transfer input amount does not match expected amount"
+			)
+		);
 
 		Ok(())
 	}
