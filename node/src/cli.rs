@@ -11,6 +11,9 @@ pub struct Cli {
 
 	#[structopt(long)]
 	pub mining_key: Option<String>,
+
+	#[structopt(long)]
+	pub ether_rpc_uri: Option<String>,
 }
 #[derive(Debug, StructOpt)]
 pub enum Subcommand {
