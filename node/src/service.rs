@@ -2,14 +2,14 @@
 
 use codec::Encode;
 use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
-use sc_client_api::ExecutorProvider;
+use sc_client_api::{Backend, ExecutorProvider};
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sha3pow::Sha3Algorithm;
 use sp_inherents::CreateInherentDataProviders;
-use sp_runtime::{app_crypto::Ss58Codec, traits::IdentifyAccount};
+use sp_runtime::{app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount};
 use std::{sync::Arc, thread, time::Duration};
 
 // Our native executor instance.
@@ -181,6 +181,7 @@ pub fn decode_mining_key(
 pub fn new_full(
 	config: Configuration,
 	mining_key: Option<&str>,
+	ether_rpc_uri: Option<&str>,
 ) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
 		client,
@@ -222,6 +223,15 @@ pub fn new_full(
 			client.clone(),
 			network.clone(),
 		);
+		if let Some(uri) = ether_rpc_uri {
+			let storage = backend.offchain_storage().unwrap();
+			let mut offchain_db = sc_offchain::OffchainDb::new(storage);
+			offchain_db.local_storage_set(
+				sp_core::offchain::StorageKind::PERSISTENT,
+				&*b"ethereum-mainnet-rpc-url",
+				&uri.encode(),
+			);
+		}
 	}
 
 	let role = config.role.clone();
