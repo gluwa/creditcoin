@@ -1,16 +1,21 @@
+use core::str::Utf8Error;
+
 use super::rpc::errors::RpcError;
 use alloc::string::FromUtf8Error;
 use sp_runtime::offchain::storage::StorageRetrievalError;
 
+#[derive(Debug)]
 pub enum OffchainError {
 	InvalidTransfer(&'static str),
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
 }
 
+#[derive(Debug)]
 pub enum RpcUrlError {
 	StorageFailure(StorageRetrievalError),
 	InvalidUrl(FromUtf8Error),
+	InvalidChain(Utf8Error),
 	NoValue,
 }
 
