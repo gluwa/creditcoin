@@ -1,6 +1,6 @@
 pub mod errors;
 pub mod rpc;
-use crate::{Call, Network};
+use crate::{Call, Network, PendingTransfer, Transfer};
 
 use self::errors::{OffchainError, RpcUrlError};
 
@@ -21,18 +21,32 @@ use sp_std::prelude::*;
 
 pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum ExternalChain {
 	Ethereum,
 	Ethless,
+	Unknown(Vec<u8>),
+}
+
+impl<'a> From<&'a [u8]> for ExternalChain {
+	fn from(bytes: &'a [u8]) -> Self {
+		match bytes {
+			b"ethereum" | b"ether" => ExternalChain::Ethereum,
+			b"ethless" => ExternalChain::Ethless,
+			unknown => ExternalChain::Unknown(unknown.to_vec()),
+		}
+	}
 }
 
 impl ExternalChain {
-	pub fn rpc_url(self, network: &Network) -> OffchainResult<String, errors::RpcUrlError> {
-		let mut buf = Vec::from(match self {
-			ExternalChain::Ethless => "ethless-",
+	pub fn rpc_url(&self, network: &Network) -> OffchainResult<String, errors::RpcUrlError> {
+		let chain_prefix = match &self {
+			ExternalChain::Ethless => "ethereum-",
 			ExternalChain::Ethereum => "ethereum-",
-		});
+			ExternalChain::Unknown(bytes) =>
+				core::str::from_utf8(&bytes).map_err(RpcUrlError::InvalidChain)?,
+		};
+		let mut buf = Vec::from(chain_prefix);
 		buf.extend(network.iter().copied());
 		buf.extend("-rpc-url".bytes());
 		let rpc_url_storage = StorageValueRef::persistent(&buf);
@@ -76,6 +90,30 @@ fn split_ethless_address(
 }
 
 impl<T: Config> Pallet<T> {
+	pub fn verify_transfer(
+		transfer: &PendingTransfer<T::AccountId, BlockNumberFor<T>, T::Hash>,
+	) -> OffchainResult<()> {
+		let PendingTransfer {
+			transfer: Transfer { blockchain, network, order, amount, tx, .. },
+			from,
+			to,
+		} = transfer;
+		let chain = ExternalChain::from(blockchain.as_slice());
+		match chain {
+			ExternalChain::Ethereum => Err(OffchainError::InvalidTransfer(
+				"support for ethereum transfers is not yet implemented",
+			)),
+			ExternalChain::Ethless =>
+				Self::verify_ethless_transfer(network, from, to, order, amount, tx),
+			ExternalChain::Unknown(unknown) => {
+				log::warn!("unknown external chain: {}", hex::encode(&unknown));
+				Err(OffchainError::InvalidTransfer(
+					"support for unknown transfers is not yet implemented",
+				))
+			},
+		}
+	}
+
 	pub fn offchain_signed_tx(
 		auth_id: T::FromAccountId,
 		call: impl Fn(&Account<T>) -> Call<T>,
@@ -128,7 +166,7 @@ impl<T: Config> Pallet<T> {
 			constant: false,
 			state_mutability: StateMutability::NonPayable,
 		};
-		let rpc_url = ExternalChain::rpc_url(ExternalChain::Ethless, network)?;
+		let rpc_url = ExternalChain::rpc_url(&ExternalChain::Ethless, network)?;
 		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		ensure!(
@@ -173,7 +211,7 @@ impl<T: Config> Pallet<T> {
 			))
 		}
 
-		let inputs = transfer_fn.decode_input(&tx.input.0).map_err(|e| {
+		let inputs = transfer_fn.decode_input(&tx.input.0[4..]).map_err(|e| {
 			log::error!("failed to decode inputs: {:?}", e);
 			OffchainError::InvalidTransfer(
 				"ethless transfer inputs were not decodable with the expected ABI",
