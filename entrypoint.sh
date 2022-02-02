@@ -15,7 +15,7 @@ fi
 if [ "$PROMETHEUS" = "1" ]; then
     prometheus='--prometheus-external'
 fi
-if [ -n "$BOOTNODE_IP" ]; then
+if [ -n "$BOOTNODE_IP" ] || [ -n "$BOOTNODE_FQDN" ]; then
     boot_id="${BOOTNODE_PEER_ID:-12D3KooWSnPk7hN9epDUonVuNVgTvxbmnuQbGP8ghMvuoH9GAsz5}"
     if [ "$NODE_NAME" ]; then
         name="--name $NODE_NAME"
