@@ -18,7 +18,7 @@ where
 #[test]
 fn register_address_basic() {
 	new_test_ext().execute_with(|| {
-		let acct: <Test as frame_system::Config>::AccountId = Default::default();
+		let acct: AccountId = AccountId::new([0; 32]);
 		let blockchain = B("testblockchain").into_bounded();
 		let value = B("someaddressvalue").into_bounded();
 		let network = B("testnetwork").into_bounded();
@@ -38,7 +38,7 @@ fn register_address_basic() {
 #[test]
 fn register_address_pre_existing() {
 	new_test_ext().execute_with(|| {
-		let acct: <Test as frame_system::Config>::AccountId = Default::default();
+		let acct: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
 		let blockchain = B("testblockchain").into_bounded();
 		let address = B("someaddressvalue").into_bounded();
 		let network = B("testnetwork").into_bounded();
