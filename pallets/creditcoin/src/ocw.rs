@@ -88,7 +88,7 @@ impl<T: Config> Pallet<T> {
 		network: &Network,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
-		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
+		_order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
 	) -> Result<(), ()> {
@@ -156,16 +156,6 @@ impl<T: Config> Pallet<T> {
 			_ => return Err(()),
 		};
 		ensure!(&input_amount == amount, ());
-
-		let input_nonce = match inputs.get(4) {
-			Some(Token::Uint(value)) => value,
-			_ => return Err(()),
-		};
-		let expected_nonce = match order_id {
-			OrderId::Deal(_) => ethereum_types::U256::zero(),
-			OrderId::Repayment(_) => ethereum_types::U256::one(),
-		};
-		ensure!(input_nonce == &expected_nonce, ());
 
 		Ok(())
 	}
