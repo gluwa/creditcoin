@@ -28,7 +28,8 @@ EXPOSE 30333/tcp
 EXPOSE 30333/udp
 EXPOSE 9944 9933 9615
 COPY --from=builder /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
-COPY testnetSpec.json /chainspec/testnetSpec.json
 COPY entrypoint.sh .
+COPY iconv.sh .
 RUN chmod +x /entrypoint.sh
-ENTRYPOINT [ "/bin/bash", "-c", "./entrypoint.sh" ]
+RUN chmod +x /iconv.sh
+ENTRYPOINT [ "/bin/bash", "-c", "./entrypoint.sh |& ./iconv.sh" ]
