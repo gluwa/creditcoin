@@ -16,7 +16,7 @@ use crate::ExternalTxId;
 pub mod errors {
 	use super::JsonRpcError;
 	use crate::ocw::errors::impl_from_error;
-	use sp_runtime::offchain::HttpError;
+	use sp_runtime::offchain::{http::PendingRequest, HttpError};
 
 	#[derive(Debug)]
 	pub enum RpcError {
@@ -26,14 +26,16 @@ pub mod errors {
 		HttpError(HttpError),
 		RequestError(sp_runtime::offchain::http::Error),
 		InvalidArgument(&'static str),
-		Timeout,
+		Timeout(PendingRequest),
 	}
 
 	impl_from_error!(
 		RpcError,
 		JsonRpcError => FailureResponse,
 		serde_json::Error => SerdeError,
-		HttpError => HttpError
+		HttpError => HttpError,
+		sp_runtime::offchain::http::Error => RequestError,
+		PendingRequest => Timeout
 	);
 }
 
@@ -187,12 +189,7 @@ impl JsonRpcRequest {
 		let response = http::Request::post(rpc_url, vec![rpc_bytes])
 			.add_header("Content-Type", "application/json")
 			.send()?
-			.try_wait(timeout)
-			.map_err(|e| {
-				log::warn!("rpc timed out: {:?}", e);
-				RpcError::Timeout
-			})?
-			.map_err(|e| RpcError::RequestError(e))?;
+			.try_wait(timeout)??;
 		let body: Vec<u8> = response.body().collect();
 		let rpc_response: JsonRpcResponse<T> = serde_json::from_slice(&body)?;
 		rpc_response.result()
