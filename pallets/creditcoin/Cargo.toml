@@ -93,6 +93,7 @@ version = '1.0'
 
 [dev-dependencies]
 bstr = { version = "0.2.17", default-features = false }
+parking_lot = "0.11.0"
 
 [dev-dependencies.sp-core]
 default-features = false
