@@ -1,8 +1,20 @@
-use crate as pallet_creditcoin;
-use frame_support::{parameter_types, traits::ConstU32};
+use parking_lot::RwLock;
+use std::{collections::HashMap, sync::Arc};
+
+use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest};
+use frame_support::{
+	parameter_types,
+	traits::{ConstU32, Hooks},
+};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
+	offchain::{
+		testing::{
+			OffchainState, PendingRequest, PoolState, TestOffchainExt, TestTransactionPoolExt,
+		},
+		OffchainDbExt, OffchainWorkerExt, TransactionPoolExt,
+	},
 	testing::{Header, TestXt},
 	traits::{BlakeTwo256, Extrinsic as ExtrinsicT, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
@@ -17,6 +29,7 @@ type Extrinsic = TestXt<Call, ()>;
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type BlockNumber = u64;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -45,7 +58,7 @@ impl system::Config for Test {
 	type Origin = Origin;
 	type Call = Call;
 	type Index = u64;
-	type BlockNumber = u64;
+	type BlockNumber = BlockNumber;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
@@ -122,7 +135,75 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = pallet_balances::weights::SubstrateWeight<Test>;
 }
 
-// Build genesis storage according to the mock runtime.
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+#[derive(Default)]
+pub struct ExtBuilder {}
+
+impl ExtBuilder {
+	pub fn build(self) -> sp_io::TestExternalities {
+		let storage = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+
+		storage.into()
+	}
+	pub fn build_offchain(
+		self,
+	) -> (sp_io::TestExternalities, Arc<RwLock<OffchainState>>, Arc<RwLock<PoolState>>) {
+		let mut ext = self.build();
+		let (offchain, offchain_state) = TestOffchainExt::new();
+		let (pool, pool_state) = TestTransactionPoolExt::new();
+		ext.register_extension(OffchainDbExt::new(offchain.clone()));
+		ext.register_extension(OffchainWorkerExt::new(offchain));
+		ext.register_extension(TransactionPoolExt::new(pool));
+
+		(ext, offchain_state, pool_state)
+	}
+	pub fn build_and_execute<R>(self, test: impl FnOnce() -> R) -> R {
+		self.build().execute_with(test)
+	}
+	#[allow(dead_code)]
+	pub fn build_offchain_and_execute<R>(self, test: impl FnOnce() -> R) -> R {
+		let (mut ext, _, _) = self.build_offchain();
+		ext.execute_with(test)
+	}
+}
+
+#[allow(dead_code)]
+pub fn roll_to(n: BlockNumber) {
+	let now = System::block_number();
+	for i in now + 1..=n {
+		System::set_block_number(i);
+		Creditcoin::on_initialize(i);
+		Creditcoin::on_finalize(i);
+	}
+}
+
+#[allow(dead_code)]
+pub fn roll_to_with_ocw(n: BlockNumber) {
+	let now = System::block_number();
+	for i in now + 1..=n {
+		System::set_block_number(i);
+		Creditcoin::on_initialize(i);
+		Creditcoin::offchain_worker(i);
+		Creditcoin::on_finalize(i);
+	}
+}
+
+pub fn pending_rpc_request(
+	method: &str,
+	params: impl IntoIterator<Item = serde_json::Value>,
+	uri: &str,
+	responses: &HashMap<String, serde_json::Value>,
+) -> PendingRequest {
+	let rpc = JsonRpcRequest::new(method, params).to_bytes();
+	let response = &responses[method];
+	let response_body = serde_json::to_vec(response).unwrap();
+	PendingRequest {
+		method: "POST".into(),
+		uri: uri.into(),
+		headers: vec![("Content-Type".into(), "application/json".into())],
+		body: rpc,
+		response: Some(response_body),
+		response_headers: vec![("Content-Type".into(), "application/json".into())],
+		sent: true,
+		..Default::default()
+	}
 }
