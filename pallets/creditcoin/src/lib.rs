@@ -169,6 +169,13 @@ pub struct BidOrderId<BlockNum, Hash>(BlockNum, Hash);
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrderId<BlockNum, Hash>(BlockNum, Hash);
 
+#[cfg(test)]
+impl<B: Default, H: Default> DealOrderId<B, H> {
+	pub fn dummy() -> Self {
+		Self(B::default(), H::default())
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 
