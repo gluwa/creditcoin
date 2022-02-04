@@ -25,7 +25,7 @@ impl Blockchain {
 	pub fn rpc_url(&self) -> OffchainResult<String, errors::RpcUrlError> {
 		let chain_prefix = self.as_bytes();
 		let mut buf = Vec::from(chain_prefix);
-		buf.extend("-rpc-url".bytes());
+		buf.extend("-rpc-uri".bytes());
 		let rpc_url_storage = StorageValueRef::persistent(&buf);
 		if let Some(url_bytes) = rpc_url_storage.get::<Vec<u8>>()? {
 			Ok(String::from_utf8(url_bytes)?)

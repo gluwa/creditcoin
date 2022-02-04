@@ -87,7 +87,7 @@ fn verify_ethless_transfer() {
 	}
 
 	ext.execute_with(|| {
-		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-url"));
+		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
 
 		let from = B("0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").into_bounded();
