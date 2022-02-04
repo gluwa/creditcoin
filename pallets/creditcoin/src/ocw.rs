@@ -47,24 +47,7 @@ impl Blockchain {
 
 const ETH_CONFIRMATIONS: u64 = 12;
 
-fn split_ethless_address(
-	address: &ExternalAddress,
-) -> OffchainResult<(rpc::Address, rpc::Address)> {
-	let mut segments = address.split(|&byte| byte == b'@');
-	let contract = segments
-		.next()
-		.ok_or(OffchainError::InvalidTransfer("ethless address is missing an `@`"))?;
-	let contract = core::str::from_utf8(contract).map_err(|err| {
-		log::error!("contract address {:?} is not valid utf8: {}", contract, err);
-		OffchainError::InvalidTransfer("ethless contract address is invalid utf8")
-	})?;
-	let contract = rpc::Address::from_str(contract).map_err(|err| {
-		log::error!("contract address {:?} is not valid hex: {}", contract, err);
-		OffchainError::InvalidTransfer("ethless contract address is invalid hex")
-	})?;
-	let address = segments
-		.next()
-		.ok_or(OffchainError::InvalidTransfer("ethless address is missing a second component"))?;
+fn parse_ethless_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> {
 	let address = core::str::from_utf8(address).map_err(|err| {
 		log::error!("ethless address {:?} is not valid utf8: {}", address, err);
 		OffchainError::InvalidTransfer("ethless address is invalid utf8")
@@ -73,7 +56,7 @@ fn split_ethless_address(
 		log::error!("ethless address {:?} is not valid hex: {}", address, err);
 		OffchainError::InvalidTransfer("ethless address is invalid hex")
 	})?;
-	Ok((contract, address))
+	Ok(address)
 }
 
 impl<T: Config> Pallet<T> {
@@ -92,8 +75,8 @@ impl<T: Config> Pallet<T> {
 			TransferKind::Erc20(_) => Err(OffchainError::InvalidTransfer(
 				"support for erc20 transfers is not yet implemented",
 			)),
-			TransferKind::Ethless(_) =>
-				Self::verify_ethless_transfer(blockchain, from, to, order, amount, tx),
+			TransferKind::Ethless(contract) =>
+				Self::verify_ethless_transfer(blockchain, contract, from, to, order, amount, tx),
 			TransferKind::Other(_) => Err(OffchainError::InvalidTransfer(
 				"support for other transfers is not yet implemented",
 			)),
@@ -127,6 +110,7 @@ impl<T: Config> Pallet<T> {
 
 	pub fn verify_ethless_transfer(
 		blockchain: &Blockchain,
+		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
 		_order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
@@ -175,14 +159,10 @@ impl<T: Config> Pallet<T> {
 			OffchainError::InvalidTransfer("ethless transfer does not have enough confirmations")
 		);
 
-		let (from_contract, from_addr) = split_ethless_address(from)?;
-		let (to_contract, to_addr) = split_ethless_address(to)?;
-		ensure!(
-			from_contract == to_contract,
-			OffchainError::InvalidTransfer("contract addresses for ethless transfer do not match")
-		);
+		let from_addr = parse_ethless_address(from)?;
+		let to_addr = parse_ethless_address(to)?;
 
-		let ethless_contract = from_contract;
+		let ethless_contract = parse_ethless_address(contract_address)?;
 
 		if let Some(to) = tx.to {
 			ensure!(
