@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::mock::*;
+use crate::{mock::*, Blockchain};
 use bstr::B;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use sp_runtime::offchain::storage::StorageValueRef;
@@ -22,7 +22,7 @@ where
 fn register_address_basic() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: AccountId = AccountId::new([0; 32]);
-		let blockchain = B("testblockchain").into_bounded();
+		let blockchain = Blockchain::Rinkeby;
 		let value = B("someaddressvalue").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
@@ -40,7 +40,7 @@ fn register_address_basic() {
 fn register_address_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
-		let blockchain = B("testblockchain").into_bounded();
+		let blockchain = Blockchain::Rinkeby;
 		let address = B("someaddressvalue").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
@@ -86,7 +86,7 @@ fn verify_ethless_transfer() {
 	}
 
 	ext.execute_with(|| {
-		let rpc_url_storage = StorageValueRef::persistent(B("ethereum-rinkeby-rpc-url"));
+		let rpc_url_storage = StorageValueRef::persistent(B("ethereum-rpc-url"));
 		rpc_url_storage.set(&dummy_url);
 
 		let from = B(
