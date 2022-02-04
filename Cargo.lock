@@ -3893,6 +3893,7 @@ dependencies = [
  "lexical-core",
  "log",
  "pallet-balances",
+ "pallet-timestamp",
  "parity-scale-codec",
  "parking_lot",
  "scale-info",

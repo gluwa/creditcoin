@@ -124,12 +124,12 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct AskOrder<AccountId, Balance, BlockNum, Hash> {
+pub struct AskOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
 	pub amount: ExternalAmount,
 	pub interest: ExternalAmount,
-	pub maturity: BlockNum,
+	pub maturity: Moment,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
@@ -142,12 +142,12 @@ pub struct Fee<BlockNum> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct BidOrder<AccountId, Balance, BlockNum, Hash> {
+pub struct BidOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
 	pub amount: ExternalAmount,
 	pub interest: ExternalAmount,
-	pub maturity: BlockNum,
+	pub maturity: Moment,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
@@ -169,13 +169,13 @@ pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct DealOrder<AccountId, Balance, BlockNum, Hash> {
+pub struct DealOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
 	pub amount: ExternalAmount,
 	pub interest: ExternalAmount,
-	pub maturity: BlockNum,
+	pub maturity: Moment,
 	pub fee: Balance,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
@@ -472,7 +472,10 @@ pub mod pallet {
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config:
-		frame_system::Config + pallet_balances::Config + CreateSignedTransaction<Call<Self>>
+		frame_system::Config
+		+ pallet_balances::Config
+		+ pallet_timestamp::Config
+		+ CreateSignedTransaction<Call<Self>>
 	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -520,7 +523,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+		DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -547,7 +550,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+		AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -558,7 +561,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+		BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -596,12 +599,12 @@ pub mod pallet {
 
 		AskOrderAdded(
 			AskOrderId<T::BlockNumber, T::Hash>,
-			AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+			AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
 		BidOrderAdded(
 			BidOrderId<T::BlockNumber, T::Hash>,
-			BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash>,
+			BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		),
 	}
 
@@ -738,7 +741,7 @@ pub mod pallet {
 			address_id: AddressId<T::Hash>,
 			amount: ExternalAmount,
 			interest: ExternalAmount,
-			maturity: BlockNumberFor<T>,
+			maturity: T::Moment,
 			fee: BalanceFor<T>,
 			expiration: BlockNumberFor<T>,
 			guid: Guid,
@@ -774,7 +777,7 @@ pub mod pallet {
 			address_id: AddressId<T::Hash>,
 			amount: ExternalAmount,
 			interest: ExternalAmount,
-			maturity: BlockNumberFor<T>,
+			maturity: T::Moment,
 			fee: BalanceFor<T>,
 			expiration: BlockNumberFor<T>,
 			guid: Guid,

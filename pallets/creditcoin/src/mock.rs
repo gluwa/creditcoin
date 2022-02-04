@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest};
 use frame_support::{
 	parameter_types,
-	traits::{ConstU32, Hooks},
+	traits::{ConstU32, ConstU64, Hooks},
 };
 use frame_system as system;
 use sp_core::H256;
@@ -75,6 +75,16 @@ impl system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<{ u32::MAX }>;
+}
+
+impl pallet_timestamp::Config for Test {
+	type Moment = u64;
+
+	type OnTimestampSet = ();
+
+	type MinimumPeriod = ConstU64<1>;
+
+	type WeightInfo = ();
 }
 
 impl pallet_creditcoin::Config for Test {
