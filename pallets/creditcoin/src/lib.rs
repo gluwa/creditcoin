@@ -53,6 +53,8 @@ type ExternalTxIdLen = ConstU32<256>;
 pub type ExternalTxId = BoundedVec<u8, ExternalTxIdLen>;
 type OtherChainLen = ConstU32<256>;
 pub type OtherChain = BoundedVec<u8, OtherChainLen>;
+type OtherTransferKindLen = ConstU32<256>;
+pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum Blockchain {
@@ -76,6 +78,14 @@ impl Blockchain {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TransferKind {
+	Erc20(ExternalAddress),
+	Ethless(ExternalAddress),
+	Native,
+	Other(OtherTransferKind),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Address<AccountId> {
 	pub blockchain: Blockchain,
 	pub value: ExternalAddress,
@@ -85,6 +95,7 @@ pub struct Address<AccountId> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
+	pub kind: TransferKind,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
 	pub order: OrderId<BlockNum, Hash>,
@@ -612,6 +623,8 @@ pub mod pallet {
 		TransferMismatch,
 		TransferAlreadyProcessed,
 
+		UnsupportedTransferKind,
+
 		InsufficientAuthority,
 
 		NonExistentRepaymentOrder,
@@ -948,6 +961,7 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
 		pub fn register_transfer(
 			origin: OriginFor<T>,
+			transfer_kind: TransferKind,
 			gain: ExternalAmount,
 			order_id: OrderId<T::BlockNumber, T::Hash>,
 			blockchain_tx_id: ExternalTxId,
@@ -985,6 +999,11 @@ pub mod pallet {
 				Error::<T>::AddressPlatformMismatch
 			);
 
+			ensure!(
+				src_address.blockchain.supports(&transfer_kind),
+				Error::<T>::UnsupportedTransferKind
+			);
+
 			let transfer_id = TransferId::new::<T>(&src_address.blockchain, &blockchain_tx_id);
 			ensure!(
 				!Transfers::<T>::contains_key(&transfer_id),
@@ -995,6 +1014,7 @@ pub mod pallet {
 				amount = ExternalAmount::zero();
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
+					kind: transfer_kind,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
 					src_address: src_address_id,
@@ -1013,6 +1033,7 @@ pub mod pallet {
 				amount += gain;
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
+					kind: transfer_kind,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
 					src_address: src_address_id,

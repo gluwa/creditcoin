@@ -86,7 +86,7 @@ fn verify_ethless_transfer() {
 	}
 
 	ext.execute_with(|| {
-		let rpc_url_storage = StorageValueRef::persistent(B("ethereum-rpc-url"));
+		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-url"));
 		rpc_url_storage.set(&dummy_url);
 
 		let from = B(
@@ -101,6 +101,13 @@ fn verify_ethless_transfer() {
 		let amount = sp_core::U512::from(53688044u64);
 		let tx_id = tx_hash.as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::verify_ethless_transfer(&from, &to, &order_id, &amount, &tx_id));
+		assert_ok!(Creditcoin::verify_ethless_transfer(
+			&Blockchain::Rinkeby,
+			&from,
+			&to,
+			&order_id,
+			&amount,
+			&tx_id
+		));
 	});
 }
