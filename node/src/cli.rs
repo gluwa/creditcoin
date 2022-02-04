@@ -1,6 +1,41 @@
 use sc_cli::RunCmd;
 use structopt::StructOpt;
 
+fn parse_rpc_pair(input: &str) -> Result<(String, String), String> {
+	let (name, uri) = input
+		.split_once('=')
+		.ok_or_else(|| String::from("expected a key-value pair separated by '='"))?;
+	let unquote = |s: &str| {
+		if s.starts_with('\'') && s.ends_with('\'') {
+			Ok(s.trim_matches('\'').into())
+		} else if s.starts_with('\"') && s.ends_with('\"') {
+			Ok(s.trim_matches('\"').into())
+		} else if !s.starts_with(&['\'', '\"']) {
+			Ok(s.into())
+		} else {
+			Err(String::from("invalid quotes in rpc mapping"))
+		}
+	};
+
+	let name = unquote(name.trim())?;
+	let uri = unquote(uri.trim())?;
+	Ok((name, uri))
+}
+
+mod parse_tests {
+	#[test]
+	fn parse_rpc_pair_quoted() {
+		assert_eq!(
+			super::parse_rpc_pair(r#""ethereum"="https://mainnet.infura.io/thingwith=foo""#),
+			Ok(("ethereum".into(), "https://mainnet.infura.io/thingwith=foo".into()))
+		);
+		assert_eq!(
+			super::parse_rpc_pair(r#"'ethereum'='https://mainnet.infura.io/thingwith=foo'"#),
+			Ok(("ethereum".into(), "https://mainnet.infura.io/thingwith=foo".into()))
+		)
+	}
+}
+
 #[derive(Debug, StructOpt)]
 pub struct Cli {
 	#[structopt(subcommand)]
@@ -12,8 +47,8 @@ pub struct Cli {
 	#[structopt(long)]
 	pub mining_key: Option<String>,
 
-	#[structopt(long)]
-	pub ether_rpc_uri: Option<String>,
+	#[structopt(long, parse(try_from_str = parse_rpc_pair))]
+	pub rpc_mapping: Option<Vec<(String, String)>>,
 }
 #[derive(Debug, StructOpt)]
 pub enum Subcommand {
