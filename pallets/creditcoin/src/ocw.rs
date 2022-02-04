@@ -1,6 +1,6 @@
 pub mod errors;
 pub mod rpc;
-use crate::{Call, Network, PendingTransfer, Transfer};
+use crate::{Call, PendingTransfer, Transfer};
 
 use self::errors::{OffchainError, RpcUrlError};
 
@@ -39,15 +39,14 @@ impl<'a> From<&'a [u8]> for ExternalChain {
 }
 
 impl ExternalChain {
-	pub fn rpc_url(&self, network: &Network) -> OffchainResult<String, errors::RpcUrlError> {
+	pub fn rpc_url(&self) -> OffchainResult<String, errors::RpcUrlError> {
 		let chain_prefix = match &self {
-			ExternalChain::Ethless => "ethereum-",
-			ExternalChain::Ethereum => "ethereum-",
+			ExternalChain::Ethless => "ethereum",
+			ExternalChain::Ethereum => "ethereum",
 			ExternalChain::Unknown(bytes) =>
 				core::str::from_utf8(&bytes).map_err(RpcUrlError::InvalidChain)?,
 		};
 		let mut buf = Vec::from(chain_prefix);
-		buf.extend(network.iter().copied());
 		buf.extend("-rpc-url".bytes());
 		let rpc_url_storage = StorageValueRef::persistent(&buf);
 		if let Some(url_bytes) = rpc_url_storage.get::<Vec<u8>>()? {
@@ -93,18 +92,14 @@ impl<T: Config> Pallet<T> {
 	pub fn verify_transfer(
 		transfer: &PendingTransfer<T::AccountId, BlockNumberFor<T>, T::Hash>,
 	) -> OffchainResult<()> {
-		let PendingTransfer {
-			transfer: Transfer { blockchain, network, order, amount, tx, .. },
-			from,
-			to,
-		} = transfer;
+		let PendingTransfer { transfer: Transfer { blockchain, order, amount, tx, .. }, from, to } =
+			transfer;
 		let chain = ExternalChain::from(blockchain.as_slice());
 		match chain {
 			ExternalChain::Ethereum => Err(OffchainError::InvalidTransfer(
 				"support for ethereum transfers is not yet implemented",
 			)),
-			ExternalChain::Ethless =>
-				Self::verify_ethless_transfer(network, from, to, order, amount, tx),
+			ExternalChain::Ethless => Self::verify_ethless_transfer(from, to, order, amount, tx),
 			ExternalChain::Unknown(unknown) => {
 				log::warn!("unknown external chain: {}", hex::encode(&unknown));
 				Err(OffchainError::InvalidTransfer(
@@ -140,7 +135,6 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub fn verify_ethless_transfer(
-		network: &Network,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
 		_order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
@@ -166,7 +160,7 @@ impl<T: Config> Pallet<T> {
 			constant: false,
 			state_mutability: StateMutability::NonPayable,
 		};
-		let rpc_url = ExternalChain::rpc_url(&ExternalChain::Ethless, network)?;
+		let rpc_url = ExternalChain::rpc_url(&ExternalChain::Ethless)?;
 		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		ensure!(

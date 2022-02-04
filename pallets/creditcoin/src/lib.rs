@@ -47,8 +47,6 @@ pub mod crypto {
 pub type ExternalAmount = sp_core::U512;
 type BlockchainLen = ConstU32<256>;
 pub type Blockchain = BoundedVec<u8, BlockchainLen>;
-type NetworkLen = ConstU32<256>;
-pub type Network = BoundedVec<u8, NetworkLen>;
 type GuidLen = ConstU32<256>;
 pub type Guid = BoundedVec<u8, GuidLen>;
 type ExternalAddressLen = ConstU32<256>;
@@ -60,14 +58,12 @@ pub type ExternalTxId = BoundedVec<u8, ExternalTxIdLen>;
 pub struct Address<AccountId> {
 	pub blockchain: Blockchain,
 	pub value: ExternalAddress,
-	pub network: Network,
-	pub sighash: AccountId,
+	pub owner: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
-	pub network: Network,
 	pub src_address: AddressId<Hash>,
 	pub dst_address: AddressId<Hash>,
 	pub order: OrderId<BlockNum, Hash>,
@@ -243,12 +239,12 @@ where
 }
 
 impl<H> AddressId<H> {
-	pub fn new<Config>(blockchain: &[u8], address: &[u8], network: &[u8]) -> AddressId<H>
+	pub fn new<Config>(blockchain: &[u8], address: &[u8]) -> AddressId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(blockchain, address, network);
+		let key = concatenate!(blockchain, address);
 		AddressId(Config::Hashing::hash(&key))
 	}
 }
@@ -284,12 +280,12 @@ impl<B, H> RepaymentOrderId<B, H> {
 }
 
 impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &[u8], network: &[u8], blockchain_tx_id: &[u8]) -> TransferId<H>
+	pub fn new<Config>(blockchain: &[u8], blockchain_tx_id: &[u8]) -> TransferId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(blockchain, network, blockchain_tx_id);
+		let key = concatenate!(blockchain, blockchain_tx_id);
 		TransferId(Config::Hashing::hash(&key))
 	}
 }
@@ -687,16 +683,15 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
 			address: ExternalAddress,
-			network: Network,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let address_id = AddressId::new::<T>(&blockchain, &address, &network);
+			let address_id = AddressId::new::<T>(&blockchain, &address);
 			ensure!(
 				!Addresses::<T>::contains_key(&address_id),
 				Error::<T>::AddressAlreadyRegistered
 			);
 
-			let entry = Address { blockchain, value: address, network, sighash: who };
+			let entry = Address { blockchain, value: address, owner: who };
 			Self::deposit_event(Event::<T>::AddressRegistered(address_id.clone(), entry.clone()));
 			<Addresses<T>>::insert(address_id, entry);
 
@@ -720,7 +715,7 @@ pub mod pallet {
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::get_address(&address_id)?;
-			ensure!(address.sighash == who, Error::<T>::NotAddressOwner);
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 			let ask_order = AskOrder {
 				blockchain: address.blockchain,
 				address: address_id,
@@ -757,7 +752,7 @@ pub mod pallet {
 
 			let address = Self::addresses(&address_id);
 			if let Some(address) = address {
-				ensure!(address.sighash == who, Error::<T>::NotAddressOwner);
+				ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 				let bid_order = BidOrder {
 					blockchain: address.blockchain,
 					address: address_id,
@@ -896,7 +891,7 @@ pub mod pallet {
 						let src_address =
 							try_get!(Addresses<T>, &deal_order.src_address, NonExistentAddress)?;
 
-						ensure!(src_address.sighash == who, Error::<T>::NotInvestor);
+						ensure!(src_address.owner == who, Error::<T>::NotInvestor);
 
 						let head = Self::block_number();
 						ensure!(head >= deal_order.block, Error::<T>::MalformedDealOrder);
@@ -962,19 +957,14 @@ pub mod pallet {
 			let src_address = Self::get_address(&src_address_id)?;
 			let dest_address = Self::get_address(&dest_address_id)?;
 
-			ensure!(src_address.sighash == who, Error::<T>::NotAddressOwner);
+			ensure!(src_address.owner == who, Error::<T>::NotAddressOwner);
 
 			ensure!(
-				src_address.blockchain == dest_address.blockchain &&
-					src_address.network == dest_address.network,
+				src_address.blockchain == dest_address.blockchain,
 				Error::<T>::AddressPlatformMismatch
 			);
 
-			let transfer_id = TransferId::new::<T>(
-				&src_address.blockchain,
-				&src_address.network,
-				&blockchain_tx_id,
-			);
+			let transfer_id = TransferId::new::<T>(&src_address.blockchain, &blockchain_tx_id);
 			ensure!(
 				!Transfers::<T>::contains_key(&transfer_id),
 				Error::<T>::TransferAlreadyRegistered
@@ -984,7 +974,6 @@ pub mod pallet {
 				amount = ExternalAmount::zero();
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
-					network: src_address.network,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
 					src_address: src_address_id,
@@ -1003,7 +992,6 @@ pub mod pallet {
 				amount += gain;
 				let transfer = Transfer {
 					blockchain: src_address.blockchain,
-					network: src_address.network,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
 					src_address: src_address_id,
@@ -1040,7 +1028,7 @@ pub mod pallet {
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
-			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.network, &transfer.tx);
+			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx);
 			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();

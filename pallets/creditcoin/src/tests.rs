@@ -24,15 +24,13 @@ fn register_address_basic() {
 		let acct: AccountId = AccountId::new([0; 32]);
 		let blockchain = B("testblockchain").into_bounded();
 		let value = B("someaddressvalue").into_bounded();
-		let network = B("testnetwork").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
 			blockchain.clone(),
 			value.clone(),
-			network.clone()
 		));
-		let address_id = crate::AddressId::new::<Test>(&blockchain, &value, &network);
-		let address = crate::Address { blockchain, value, network, sighash: acct };
+		let address_id = crate::AddressId::new::<Test>(&blockchain, &value);
+		let address = crate::Address { blockchain, value, owner: acct };
 
 		assert_eq!(Creditcoin::addresses(address_id), Some(address));
 	});
@@ -44,21 +42,14 @@ fn register_address_pre_existing() {
 		let acct: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
 		let blockchain = B("testblockchain").into_bounded();
 		let address = B("someaddressvalue").into_bounded();
-		let network = B("testnetwork").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
 			blockchain.clone(),
 			address.clone(),
-			network.clone()
 		));
 
 		assert_noop!(
-			Creditcoin::register_address(
-				Origin::signed(acct.clone()),
-				blockchain,
-				address,
-				network
-			),
+			Creditcoin::register_address(Origin::signed(acct.clone()), blockchain, address,),
 			crate::Error::<Test>::AddressAlreadyRegistered
 		);
 	})
@@ -98,7 +89,6 @@ fn verify_ethless_transfer() {
 		let rpc_url_storage = StorageValueRef::persistent(B("ethereum-rinkeby-rpc-url"));
 		rpc_url_storage.set(&dummy_url);
 
-		let network = B("rinkeby").into_bounded();
 		let from = B(
 			"0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c@0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5",
 		)
@@ -111,8 +101,6 @@ fn verify_ethless_transfer() {
 		let amount = sp_core::U512::from(53688044u64);
 		let tx_id = tx_hash.as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::verify_ethless_transfer(
-			&network, &from, &to, &order_id, &amount, &tx_id
-		));
+		assert_ok!(Creditcoin::verify_ethless_transfer(&from, &to, &order_id, &amount, &tx_id));
 	});
 }
