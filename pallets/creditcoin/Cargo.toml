@@ -86,6 +86,12 @@ git = 'https://github.com/paritytech/substrate.git'
 rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
 version = '4.0.0-dev'
 
+[dependencies.pallet-timestamp]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
+version = '4.0.0-dev'
+
 [dependencies.scale-info]
 default-features = false
 features = ['derive']
@@ -111,5 +117,6 @@ std = [
     'frame-system/std',
     'frame-benchmarking/std',
     'pallet-balances/std',
+    'pallet-timestamp/std',
 ]
 try-runtime = ['frame-support/try-runtime']
