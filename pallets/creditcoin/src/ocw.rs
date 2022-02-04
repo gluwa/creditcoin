@@ -94,7 +94,7 @@ impl<T: Config> Pallet<T> {
 	) -> OffchainResult<()> {
 		let PendingTransfer { transfer: Transfer { blockchain, order, amount, tx, .. }, from, to } =
 			transfer;
-		let chain = ExternalChain::from(blockchain.as_slice());
+		let chain = ExternalChain::from(blockchain.as_bytes());
 		match chain {
 			ExternalChain::Ethereum => Err(OffchainError::InvalidTransfer(
 				"support for ethereum transfers is not yet implemented",

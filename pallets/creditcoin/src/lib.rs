@@ -45,14 +45,35 @@ pub mod crypto {
 }
 
 pub type ExternalAmount = sp_core::U512;
-type BlockchainLen = ConstU32<256>;
-pub type Blockchain = BoundedVec<u8, BlockchainLen>;
 type GuidLen = ConstU32<256>;
 pub type Guid = BoundedVec<u8, GuidLen>;
 type ExternalAddressLen = ConstU32<256>;
 pub type ExternalAddress = BoundedVec<u8, ExternalAddressLen>;
 type ExternalTxIdLen = ConstU32<256>;
 pub type ExternalTxId = BoundedVec<u8, ExternalTxIdLen>;
+type OtherChainLen = ConstU32<256>;
+pub type OtherChain = BoundedVec<u8, OtherChainLen>;
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum Blockchain {
+	Ethereum,
+	Rinkeby,
+	Luniverse,
+	Bitcoin,
+	Other(OtherChain),
+}
+
+impl Blockchain {
+	pub fn as_bytes(&self) -> &[u8] {
+		match self {
+			Blockchain::Ethereum => &*b"ethereum",
+			Blockchain::Rinkeby => &*b"rinkeby",
+			Blockchain::Luniverse => &*b"luniverse",
+			Blockchain::Bitcoin => &*b"bitcoin",
+			Blockchain::Other(chain) => chain.as_slice(),
+		}
+	}
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Address<AccountId> {
@@ -239,12 +260,12 @@ where
 }
 
 impl<H> AddressId<H> {
-	pub fn new<Config>(blockchain: &[u8], address: &[u8]) -> AddressId<H>
+	pub fn new<Config>(blockchain: &Blockchain, address: &[u8]) -> AddressId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(blockchain, address);
+		let key = concatenate!(blockchain.as_bytes(), address);
 		AddressId(Config::Hashing::hash(&key))
 	}
 }
@@ -280,12 +301,12 @@ impl<B, H> RepaymentOrderId<B, H> {
 }
 
 impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &[u8], blockchain_tx_id: &[u8]) -> TransferId<H>
+	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(blockchain, blockchain_tx_id);
+		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
 		TransferId(Config::Hashing::hash(&key))
 	}
 }
