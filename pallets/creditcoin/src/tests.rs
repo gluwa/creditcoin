@@ -62,6 +62,7 @@ fn verify_ethless_transfer() {
 	let (mut ext, state, _) = ExtBuilder::default().build_offchain();
 	let dummy_url = "dummy";
 	let tx_hash = "0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620e9";
+	let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 	{
 		let mut state = state.write();
 		let responses: HashMap<String, serde_json::Value> =
@@ -89,20 +90,15 @@ fn verify_ethless_transfer() {
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-url"));
 		rpc_url_storage.set(&dummy_url);
 
-		let from = B(
-			"0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c@0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5",
-		)
-		.into_bounded();
-		let to = B(
-			"0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c@0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9",
-		)
-		.into_bounded();
+		let from = B("0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").into_bounded();
+		let to = B("0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").into_bounded();
 		let order_id = crate::OrderId::Deal(crate::DealOrderId::dummy());
 		let amount = sp_core::U512::from(53688044u64);
 		let tx_id = tx_hash.as_bytes().into_bounded();
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
 			&Blockchain::Rinkeby,
+			&contract,
 			&from,
 			&to,
 			&order_id,
