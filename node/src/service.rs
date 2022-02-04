@@ -181,7 +181,7 @@ pub fn decode_mining_key(
 pub fn new_full(
 	config: Configuration,
 	mining_key: Option<&str>,
-	ether_rpc_uri: Option<&str>,
+	rpc_mapping: Option<impl IntoIterator<Item = (String, String)>>,
 ) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
 		client,
@@ -223,14 +223,18 @@ pub fn new_full(
 			client.clone(),
 			network.clone(),
 		);
-		if let Some(uri) = ether_rpc_uri {
+		if let Some(mapping) = rpc_mapping {
 			let storage = backend.offchain_storage().unwrap();
 			let mut offchain_db = sc_offchain::OffchainDb::new(storage);
-			offchain_db.local_storage_set(
-				sp_core::offchain::StorageKind::PERSISTENT,
-				&*b"ethereum-mainnet-rpc-url",
-				&uri.encode(),
-			);
+			for (chain, uri) in mapping {
+				let mut key = Vec::from(chain.as_bytes());
+				key.extend("-rpc-uri".bytes());
+				offchain_db.local_storage_set(
+					sp_core::offchain::StorageKind::PERSISTENT,
+					&key,
+					&uri.encode(),
+				);
+			}
 		}
 	}
 
