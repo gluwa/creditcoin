@@ -44,7 +44,7 @@ pub mod crypto {
 	}
 }
 
-pub type ExternalAmount = sp_core::U512;
+pub type ExternalAmount = sp_core::U256;
 type GuidLen = ConstU32<256>;
 pub type Guid = BoundedVec<u8, GuidLen>;
 type ExternalAddressLen = ConstU32<256>;
