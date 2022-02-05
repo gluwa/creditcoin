@@ -100,7 +100,7 @@ impl pallet_creditcoin::Config for Test {
 
 	type PublicSigning = <Signature as Verify>::Signer;
 
-	type PendingTransferLimit = PendingTxLimit;
+	type UnverifiedTransferLimit = PendingTxLimit;
 }
 
 impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> for Test {
