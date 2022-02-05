@@ -107,7 +107,7 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct PendingTransfer<AccountId, BlockNum, Hash> {
+pub struct UnverifiedTransfer<AccountId, BlockNum, Hash> {
 	pub transfer: Transfer<AccountId, BlockNum, Hash>,
 	pub from: ExternalAddress,
 	pub to: ExternalAddress,
@@ -496,7 +496,7 @@ pub mod pallet {
 
 		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
 
-		type PendingTransferLimit: Get<u32>;
+		type UnverifiedTransferLimit: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -509,9 +509,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn pending_transfers)]
-	pub type PendingTransfers<T: Config> = StorageValue<
+	pub type UnverifiedTransfers<T: Config> = StorageValue<
 		_,
-		BoundedVec<PendingTransfer<T::AccountId, T::BlockNumber, T::Hash>, T::PendingTransferLimit>,
+		BoundedVec<
+			UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash>,
+			T::UnverifiedTransferLimit,
+		>,
 		ValueQuery,
 	>;
 
@@ -595,7 +598,7 @@ pub mod pallet {
 
 		TransferRegistered(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
-		TransferFinalized(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+		TransferVerifiedd(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		AskOrderAdded(
 			AskOrderId<T::BlockNumber, T::Hash>,
@@ -661,7 +664,7 @@ pub mod pallet {
 
 		ScaleDecodeError,
 
-		PendingTransferPoolFull,
+		UnverifiedTransferPoolFull,
 
 		VerifyStringTooLong,
 	}
@@ -669,20 +672,20 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_block_number: T::BlockNumber) -> Weight {
-			PendingTransfers::<T>::kill();
+			UnverifiedTransfers::<T>::kill();
 			0
 		}
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
-				for pending in PendingTransfers::<T>::get() {
+				for pending in UnverifiedTransfers::<T>::get() {
 					log::debug!("verifying transfer");
-					let transfer_validity = Self::verify_transfer(&pending);
+					let transfer_validity = Self::verify_transfer_ocw(&pending);
 					log::debug!("verify_transfer result: {:?}", transfer_validity);
 					match transfer_validity {
 						Ok(()) =>
 							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
-								Call::finalize_transfer { transfer: pending.transfer.clone() }
+								Call::verify_transfer { transfer: pending.transfer.clone() }
 							}) {
 								log::error!(
 									"Failed to send finalize transfer transaction: {:?}",
@@ -1052,20 +1055,20 @@ pub mod pallet {
 					transfer.clone(),
 				));
 
-				let pending = PendingTransfer {
+				let pending = UnverifiedTransfer {
 					from: src_address.value.clone(),
 					to: dest_address.value.clone(),
 					transfer,
 				};
-				PendingTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
-					.map_err(|()| Error::<T>::PendingTransferPoolFull)?;
+				UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
+					.map_err(|()| Error::<T>::UnverifiedTransferPoolFull)?;
 			}
 
 			Ok(())
 		}
 
 		#[pallet::weight(0)]
-		pub fn finalize_transfer(
+		pub fn verify_transfer(
 			origin: OriginFor<T>,
 			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash>,
 		) -> DispatchResult {
@@ -1078,7 +1081,7 @@ pub mod pallet {
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();
 
-			Self::deposit_event(Event::<T>::TransferFinalized(key.clone(), transfer.clone()));
+			Self::deposit_event(Event::<T>::TransferVerifiedd(key.clone(), transfer.clone()));
 			Transfers::<T>::insert(key, transfer);
 			Ok(())
 		}
