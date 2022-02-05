@@ -1,6 +1,6 @@
 pub mod errors;
 pub mod rpc;
-use crate::{Blockchain, Call, PendingTransfer, Transfer, TransferKind};
+use crate::{Blockchain, Call, Transfer, TransferKind, UnverifiedTransfer};
 
 use self::errors::{OffchainError, RpcUrlError};
 
@@ -60,10 +60,10 @@ fn parse_ethless_address(address: &ExternalAddress) -> OffchainResult<rpc::Addre
 }
 
 impl<T: Config> Pallet<T> {
-	pub fn verify_transfer(
-		transfer: &PendingTransfer<T::AccountId, BlockNumberFor<T>, T::Hash>,
+	pub fn verify_transfer_ocw(
+		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash>,
 	) -> OffchainResult<()> {
-		let PendingTransfer {
+		let UnverifiedTransfer {
 			transfer: Transfer { blockchain, kind, order, amount, tx, .. },
 			from,
 			to,
