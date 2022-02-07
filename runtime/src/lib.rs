@@ -241,8 +241,6 @@ impl pallet_creditcoin::Config for Runtime {
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
 	type UnverifiedTransferLimit = ConstU32<10000>;
-	type IdHashing = BlakeTwo256;
-	type IdHash = sp_core::H256;
 }
 
 impl pallet_difficulty::Config for Runtime {
