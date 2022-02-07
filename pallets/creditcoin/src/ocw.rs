@@ -63,7 +63,7 @@ fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> 
 	Ok(address)
 }
 
-fn validate_ethless_transaction(
+fn validate_ethless_transfer(
 	from: &Address,
 	to: &Address,
 	contract: &Address,
@@ -241,7 +241,7 @@ impl<T: Config> Pallet<T> {
 
 		let ethless_contract = parse_eth_address(contract_address)?;
 
-		validate_ethless_transaction(
+		validate_ethless_transfer(
 			&from_addr,
 			&to_addr,
 			&ethless_contract,
@@ -259,10 +259,15 @@ impl<T: Config> Pallet<T> {
 mod tests {
 	use std::{convert::TryFrom, str::FromStr};
 
-	use ethereum_types::H160;
-	use frame_support::{assert_ok, BoundedVec};
+	use ethereum_types::{H160, U256, U64};
+	use frame_support::{assert_ok, once_cell::sync::Lazy, BoundedVec};
 
-	use super::{errors::OffchainError, parse_eth_address};
+	use super::{
+		errors::OffchainError,
+		parse_eth_address,
+		rpc::{Address, EthTransaction, EthTransactionReceipt},
+		validate_ethless_transfer, ETH_CONFIRMATIONS,
+	};
 	use crate::ExternalAddress;
 
 	fn make_external_address(bytes: impl AsRef<[u8]>) -> ExternalAddress {
@@ -304,5 +309,127 @@ mod tests {
 
 		let expected = H160::from_str(address_str).unwrap();
 		assert_ok!(parse_eth_address(&address).map_err(|_| ()), expected);
+	}
+
+	const INPUT: &str = "0982d5b0000000000000000000000000f04349b4a760f5aed02131e0daa9bb99a1d1d1e5000000000000000000000000bbb8bbaf43fe8b9e5572b1860d5c94ac7ed87bb900000000000000000\
+		000000000000000000000000000000000000000033336ec000000000000000000000000000000000000000000000000000000000323f4ac022a8243b45b35d97d7eb3192e7b95a3bbbe5cd0170059bd3a4c8da2912\
+		841b500000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000410bec91682052bb53450c69a82ebc006d08113\
+		6aef6cdb910bffab429620168792ab3b859b97d18cf53e6057208e20615b8a3ce6128fcb278b324d3e7ed9461671b00000000000000000000000000000000000000000000000000000000000000";
+
+	const ETHLESS_FROM_ADDR: Lazy<Address> =
+		Lazy::new(|| Address::from_str("0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap());
+	const ETHLESS_CONTRACT_ADDR: Lazy<Address> =
+		Lazy::new(|| Address::from_str("0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap());
+	const ETHLESS_TO_ADDR: Lazy<Address> =
+		Lazy::new(|| Address::from_str("0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap());
+
+	const ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| EthTransaction {
+		block_number: Some(5u64.into()),
+		from: Some(ETHLESS_FROM_ADDR.clone()),
+		to: Some(ETHLESS_CONTRACT_ADDR.clone()),
+		input: hex::decode(INPUT).unwrap().into(),
+		..Default::default()
+	});
+
+	struct EthlessTestArgs {
+		from: Address,
+		to: Address,
+		contract: Address,
+		amount: U256,
+		receipt: EthTransactionReceipt,
+		transaction: EthTransaction,
+		tip: U64,
+	}
+
+	impl Default for EthlessTestArgs {
+		fn default() -> Self {
+			Self {
+				from: ETHLESS_FROM_ADDR.clone(),
+				to: ETHLESS_TO_ADDR.clone(),
+				contract: ETHLESS_CONTRACT_ADDR.clone(),
+				amount: U256::from(53688044u64),
+				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
+				transaction: ETH_TRANSACTION.clone(),
+				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS),
+			}
+		}
+	}
+
+	fn test_validate_ethless_transfer(args: EthlessTestArgs) -> Result<(), OffchainError> {
+		let EthlessTestArgs { from, to, contract, amount, receipt, transaction, tip } = args;
+
+		validate_ethless_transfer(&from, &to, &contract, &amount, &receipt, &transaction, tip)
+	}
+
+	#[test]
+	fn ethless_transfer_valid() {
+		assert_ok!(test_validate_ethless_transfer(EthlessTestArgs::default()));
+	}
+
+	#[test]
+	fn ethless_transfer_tx_failed() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			receipt: EthTransactionReceipt { status: Some(0u64.into()), ..Default::default() },
+			..Default::default()
+		}));
+	}
+
+	#[test]
+	fn ethless_transfer_tx_unconfirmed() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
+			..Default::default()
+		}));
+	}
+
+	#[test]
+	fn ethless_transfer_tx_ahead_of_tip() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() - 1),
+			..Default::default()
+		}));
+	}
+
+	#[test]
+	fn ethless_transfer_contract_mismatch() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			contract: Address::from_str("0xbad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap(),
+			..Default::default()
+		}));
+	}
+
+	#[test]
+	fn ethless_transfer_from_mismatch() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			from: Address::from_str("0xbad349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap(),
+			..Default::default()
+		}));
+	}
+
+	#[test]
+	fn ethless_transfer_to_mismatch() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			to: Address::from_str("0xbad8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap(),
+			..Default::default()
+		}));
+	}
+
+	#[test]
+	fn ethless_transfer_invalid_input_data() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			transaction: EthTransaction {
+				input: Vec::from("badbad".as_bytes()).into(),
+				..ETH_TRANSACTION.clone()
+			},
+			..Default::default()
+		}));
+	}
+
+	#[test]
+	fn ethless_transfer_amount_mismatch() {
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			amount: U256::from(1),
+			..Default::default()
+		}));
 	}
 }
