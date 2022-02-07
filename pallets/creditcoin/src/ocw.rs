@@ -255,5 +255,54 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
+#[cfg(test)]
+mod tests {
+	use std::{convert::TryFrom, str::FromStr};
+
+	use ethereum_types::H160;
+	use frame_support::{assert_ok, BoundedVec};
+
+	use super::{errors::OffchainError, parse_eth_address};
+	use crate::ExternalAddress;
+
+	fn make_external_address(bytes: impl AsRef<[u8]>) -> ExternalAddress {
+		BoundedVec::try_from(bytes.as_ref().to_vec()).unwrap()
+	}
+
+	fn assert_invalid_transfer<T>(result: Result<T, OffchainError>) {
+		assert!(matches!(result, Err(OffchainError::InvalidTransfer(_))));
+	}
+
+	#[test]
+	fn eth_address_non_utf8() {
+		let address = make_external_address([0xfeu8, 0xfeu8, 0xffu8, 0xffu8]);
+
+		assert!(matches!(parse_eth_address(&address), Err(OffchainError::InvalidTransfer(_))));
+	}
+
+	#[test]
+	fn eth_address_bad_hex() {
+		let address = make_external_address("0xP794f5ea0ba39494ce839613fffba74279579268");
+
+		assert_invalid_transfer(parse_eth_address(&address));
+	}
+
+	#[test]
+	fn eth_address_bad_len() {
+		let too_long = make_external_address("0xb794f5ea0ba39494ce839613fffba742795792688888");
+		let too_short = make_external_address("0xb794f5ea0b");
+
+		assert_invalid_transfer(parse_eth_address(&too_long));
+		assert_invalid_transfer(parse_eth_address(&too_short));
+	}
+
+	#[test]
+	fn eth_address_valid() {
+		let address_str = "0xb794f5ea0ba39494ce839613fffba74279579268";
+		let address: ExternalAddress =
+			BoundedVec::try_from(address_str.as_bytes().to_vec()).unwrap();
+
+		let expected = H160::from_str(address_str).unwrap();
+		assert_ok!(parse_eth_address(&address).map_err(|_| ()), expected);
 	}
 }
