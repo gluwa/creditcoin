@@ -226,21 +226,13 @@ pub struct JsonRpcError {
 	message: String,
 }
 
-#[derive(serde::Deserialize, Clone, Debug)]
+#[derive(serde::Deserialize, Clone, Debug, Default)]
 pub struct EthTransaction {
 	/// Hash
 	pub hash: H256,
-	/// Nonce
-	pub nonce: U256,
-	/// Block hash. None when pending.
-	#[serde(rename = "blockHash")]
-	pub block_hash: Option<H256>,
 	/// Block number. None when pending.
 	#[serde(rename = "blockNumber")]
 	pub block_number: Option<U64>,
-	/// Transaction Index. None when pending.
-	#[serde(rename = "transactionIndex")]
-	pub transaction_index: Option<Index>,
 	/// Sender
 	#[serde(default, skip_serializing_if = "Option::is_none")]
 	pub from: Option<Address>,
@@ -252,17 +244,11 @@ pub struct EthTransaction {
 	pub input: Bytes,
 }
 
-#[derive(serde::Deserialize, Clone, Debug)]
+#[derive(serde::Deserialize, Clone, Debug, Default)]
 pub struct EthTransactionReceipt {
 	/// Transaction hash.
 	#[serde(rename = "transactionHash")]
 	pub transaction_hash: H256,
-	/// Index within the block.
-	#[serde(rename = "transactionIndex")]
-	pub transaction_index: Index,
-	/// Hash of the block this transaction was included within.
-	#[serde(rename = "blockHash")]
-	pub block_hash: Option<H256>,
 	/// Number of the block this transaction was included within.
 	#[serde(rename = "blockNumber")]
 	pub block_number: Option<U64>,
