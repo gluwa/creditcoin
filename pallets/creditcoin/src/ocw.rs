@@ -6,7 +6,7 @@ use self::errors::{OffchainError, RpcUrlError};
 
 use super::{
 	pallet::{Config, Error, Pallet},
-	ExternalAddress, ExternalAmount, ExternalTxId, OrderId,
+	ExternalAddress, ExternalAmount, ExternalTxId, TransferOrderId,
 };
 use alloc::string::String;
 use core::str::FromStr;
@@ -64,7 +64,7 @@ impl<T: Config> Pallet<T> {
 		transfer: &PendingTransfer<T::AccountId, BlockNumberFor<T>, T::Hash>,
 	) -> OffchainResult<()> {
 		let PendingTransfer {
-			transfer: Transfer { blockchain, kind, order, amount, tx, .. },
+			transfer: Transfer { blockchain, kind, transfer_order_id: order, amount, tx_id, .. },
 			from,
 			to,
 		} = transfer;
@@ -75,8 +75,9 @@ impl<T: Config> Pallet<T> {
 			TransferKind::Erc20(_) => Err(OffchainError::InvalidTransfer(
 				"support for erc20 transfers is not yet implemented",
 			)),
-			TransferKind::Ethless(contract) =>
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order, amount, tx),
+			TransferKind::Ethless(contract) => {
+				Self::verify_ethless_transfer(blockchain, contract, from, to, order, amount, tx_id)
+			},
 			TransferKind::Other(_) => Err(OffchainError::InvalidTransfer(
 				"support for other transfers is not yet implemented",
 			)),
@@ -98,9 +99,9 @@ impl<T: Config> Pallet<T> {
 		if let Some((acc, res)) = result {
 			if res.is_err() {
 				log::error!("failure: offchain_signed_tx: tx sent: {:?}", acc.id);
-				return Err(Error::OffchainSignedTxFailed)
+				return Err(Error::OffchainSignedTxFailed);
 			} else {
-				return Ok(())
+				return Ok(());
 			}
 		}
 
@@ -113,7 +114,7 @@ impl<T: Config> Pallet<T> {
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
-		_order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
+		_order_id: &TransferOrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
 	) -> OffchainResult<()> {
@@ -174,7 +175,7 @@ impl<T: Config> Pallet<T> {
 		} else {
 			return Err(OffchainError::InvalidTransfer(
 				"ethless transaction lacks a receiver (contract creation transaction)",
-			))
+			));
 		}
 
 		let inputs = transfer_fn.decode_input(&tx.input.0[4..]).map_err(|e| {
@@ -192,10 +193,11 @@ impl<T: Config> Pallet<T> {
 
 		let input_from = match inputs.get(0) {
 			Some(Token::Address(addr)) => addr,
-			_ =>
+			_ => {
 				return Err(OffchainError::InvalidTransfer(
 					"first input to ethless transfer was not an address",
-				)),
+				))
+			},
 		};
 		ensure!(
 			input_from == &from_addr,
@@ -206,10 +208,11 @@ impl<T: Config> Pallet<T> {
 
 		let input_to = match inputs.get(1) {
 			Some(Token::Address(addr)) => addr,
-			_ =>
+			_ => {
 				return Err(OffchainError::InvalidTransfer(
 					"second input to ethless transfer was not an address",
-				)),
+				))
+			},
 		};
 		ensure!(
 			input_to == &to_addr,
@@ -220,10 +223,11 @@ impl<T: Config> Pallet<T> {
 
 		let input_amount = match inputs.get(2) {
 			Some(Token::Uint(value)) => ExternalAmount::from(value),
-			_ =>
+			_ => {
 				return Err(OffchainError::InvalidTransfer(
 					"third input to ethless transfer was not a Uint",
-				)),
+				))
+			},
 		};
 		ensure!(
 			&input_amount == amount,

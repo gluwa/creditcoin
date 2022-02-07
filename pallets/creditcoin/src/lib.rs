@@ -88,7 +88,7 @@ pub enum TransferKind {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Address<AccountId> {
 	pub blockchain: Blockchain,
-	pub value: ExternalAddress,
+	pub external_address: ExternalAddress,
 	pub owner: AccountId,
 }
 
@@ -96,11 +96,11 @@ pub struct Address<AccountId> {
 pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub kind: TransferKind,
-	pub src_address: AddressId<Hash>,
-	pub dst_address: AddressId<Hash>,
-	pub order: OrderId<BlockNum, Hash>,
+	pub from: AddressId<Hash>,
+	pub to: AddressId<Hash>,
+	pub transfer_order_id: TransferOrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
-	pub tx: ExternalTxId,
+	pub tx_id: ExternalTxId,
 	pub block: BlockNum,
 	pub processed: bool,
 	pub sighash: AccountId,
@@ -116,15 +116,15 @@ pub struct PendingTransfer<AccountId, BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Offer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
-	pub ask_order: AskOrderId<BlockNum, Hash>,
-	pub bid_order: BidOrderId<BlockNum, Hash>,
+	pub ask_order_id: OrderId<BlockNum, Hash>,
+	pub bid_order_id: OrderId<BlockNum, Hash>,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct AskOrder<AccountId, Balance, BlockNum, Hash, Moment> {
+pub struct Order<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
 	pub amount: ExternalAmount,
@@ -134,24 +134,20 @@ pub struct AskOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub expiration: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct BidOrder<AccountId, Balance, BlockNum, Hash, Moment> {
+	pub bid_order: Order<AccountId, Balance, BlockNum, Hash, Moment>,
+}
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct AskOrder<AccountId, Balance, BlockNum, Hash, Moment> {
+	pub ask_order: Order<AccountId, Balance, BlockNum, Hash, Moment>,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Fee<BlockNum> {
 	pub block: BlockNum,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct BidOrder<AccountId, Balance, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
-	pub address: AddressId<Hash>,
-	pub amount: ExternalAmount,
-	pub interest: ExternalAmount,
-	pub maturity: Moment,
-	pub fee: Balance,
-	pub expiration: BlockNum,
-	pub block: BlockNum,
-	pub sighash: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -162,7 +158,7 @@ pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 	pub amount: ExternalAmount,
 	pub expiration: BlockNum,
 	pub block: BlockNum,
-	pub deal: DealOrderId<BlockNum, Hash>,
+	pub deal_order_id: DealOrderId<BlockNum, Hash>,
 	pub previous_owner: AccountId,
 	pub transfer: TransferId<Hash>,
 	pub sighash: AccountId,
@@ -189,10 +185,7 @@ pub struct DealOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 pub struct AddressId<Hash>(Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct AskOrderId<BlockNum, Hash>(BlockNum, Hash);
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct BidOrderId<BlockNum, Hash>(BlockNum, Hash);
+pub struct OrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrderId<BlockNum, Hash>(BlockNum, Hash);
@@ -208,7 +201,7 @@ impl<B: Default, H: Default> DealOrderId<B, H> {
 pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum OrderId<BlockNum, Hash> {
+pub enum TransferOrderId<BlockNum, Hash> {
 	Deal(DealOrderId<BlockNum, Hash>),
 	Repayment(RepaymentOrderId<BlockNum, Hash>),
 }
@@ -257,14 +250,14 @@ macro_rules! concatenate {
 	}
 }
 
-impl<B, H> OrderId<B, H>
+impl<B, H> TransferOrderId<B, H>
 where
 	H: AsRef<[u8]>,
 {
 	pub fn to_hex(&self) -> Vec<u8> {
 		let bytes = match self {
-			OrderId::Deal(deal) => deal.1.as_ref(),
-			OrderId::Repayment(repay) => repay.1.as_ref(),
+			TransferOrderId::Deal(deal) => deal.1.as_ref(),
+			TransferOrderId::Repayment(repay) => repay.1.as_ref(),
 		};
 		bytes_to_hex(bytes)
 	}
@@ -281,23 +274,13 @@ impl<H> AddressId<H> {
 	}
 }
 
-impl<B, H> AskOrderId<B, H> {
-	pub fn new<Config>(expiration_block: B, guid: &[u8]) -> AskOrderId<B, H>
+impl<B, H> OrderId<B, H> {
+	pub fn new<Config>(expiration_block: B, guid: &[u8]) -> OrderId<B, H>
 	where
 		Config: frame_system::Config<BlockNumber = B>,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		AskOrderId(expiration_block, Config::Hashing::hash(guid))
-	}
-}
-
-impl<B, H> BidOrderId<B, H> {
-	pub fn new<Config>(expiration_block: B, guid: &[u8]) -> BidOrderId<B, H>
-	where
-		Config: frame_system::Config<BlockNumber = B>,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		BidOrderId(expiration_block, Config::Hashing::hash(guid))
+		OrderId(expiration_block, Config::Hashing::hash(guid))
 	}
 }
 
@@ -325,8 +308,8 @@ impl<H> TransferId<H> {
 impl<B, H> OfferId<B, H> {
 	pub fn new<Config>(
 		expiration_block: B,
-		ask_order_id: &AskOrderId<BlockNumberFor<Config>, H>,
-		bid_order_id: &BidOrderId<BlockNumberFor<Config>, H>,
+		ask_order_id: &OrderId<BlockNumberFor<Config>, H>,
+		bid_order_id: &OrderId<BlockNumberFor<Config>, H>,
 	) -> Self
 	where
 		Config: frame_system::Config<BlockNumber = B>,
@@ -395,8 +378,7 @@ macro_rules! impl_id {
 }
 
 impl_id!(DealOrderId);
-impl_id!(AskOrderId);
-impl_id!(BidOrderId);
+impl_id!(OrderId);
 impl_id!(OfferId);
 impl_id!(RepaymentOrderId);
 
@@ -598,12 +580,12 @@ pub mod pallet {
 		TransferFinalized(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		AskOrderAdded(
-			AskOrderId<T::BlockNumber, T::Hash>,
+			OrderId<T::BlockNumber, T::Hash>,
 			AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
 		BidOrderAdded(
-			BidOrderId<T::BlockNumber, T::Hash>,
+			OrderId<T::BlockNumber, T::Hash>,
 			BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		),
 	}
@@ -680,7 +662,7 @@ pub mod pallet {
 					let transfer_validity = Self::verify_transfer(&pending);
 					log::debug!("verify_transfer result: {:?}", transfer_validity);
 					match transfer_validity {
-						Ok(()) =>
+						Ok(()) => {
 							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
 								Call::finalize_transfer { transfer: pending.transfer.clone() }
 							}) {
@@ -688,7 +670,8 @@ pub mod pallet {
 									"Failed to send finalize transfer transaction: {:?}",
 									e
 								);
-							},
+							}
+						},
 						Err(err) => {
 							log::warn!(
 								"failed to verify pending transfer {:?}: {:?}",
@@ -728,7 +711,7 @@ pub mod pallet {
 				Error::<T>::AddressAlreadyRegistered
 			);
 
-			let entry = Address { blockchain, value: address, owner: who };
+			let entry = Address { blockchain, external_address: address, owner: who };
 			Self::deposit_event(Event::<T>::AddressRegistered(address_id.clone(), entry.clone()));
 			<Addresses<T>>::insert(address_id, entry);
 
@@ -748,21 +731,23 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let ask_order_id = AskOrderId::new::<T>(Self::block_number() + expiration, &guid);
+			let ask_order_id = OrderId::new::<T>(Self::block_number() + expiration, &guid);
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 			let ask_order = AskOrder {
-				blockchain: address.blockchain,
-				address: address_id,
-				amount,
-				interest,
-				maturity,
-				fee,
-				expiration,
-				block: <frame_system::Pallet<T>>::block_number(),
-				sighash: who,
+				ask_order: Order {
+					blockchain: address.blockchain,
+					address: address_id,
+					amount,
+					interest,
+					maturity,
+					fee,
+					expiration,
+					block: <frame_system::Pallet<T>>::block_number(),
+					sighash: who,
+				},
 			};
 
 			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id.clone(), ask_order.clone()));
@@ -784,22 +769,24 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let bid_order_id = BidOrderId::new::<T>(Self::block_number() + expiration, &guid);
+			let bid_order_id = OrderId::new::<T>(Self::block_number() + expiration, &guid);
 			ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::addresses(&address_id);
 			if let Some(address) = address {
 				ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 				let bid_order = BidOrder {
-					blockchain: address.blockchain,
-					address: address_id,
-					amount,
-					interest,
-					maturity,
-					fee,
-					expiration,
-					block: <frame_system::Pallet<T>>::block_number(),
-					sighash: who,
+					bid_order: Order {
+						blockchain: address.blockchain,
+						address: address_id,
+						amount,
+						interest,
+						maturity,
+						fee,
+						expiration,
+						block: <frame_system::Pallet<T>>::block_number(),
+						sighash: who,
+					},
 				};
 
 				Self::deposit_event(Event::<T>::BidOrderAdded(
@@ -816,8 +803,8 @@ pub mod pallet {
 		#[pallet::weight(10_000)]
 		pub fn add_offer(
 			origin: OriginFor<T>,
-			ask_order_id: AskOrderId<T::BlockNumber, T::Hash>,
-			bid_order_id: BidOrderId<T::BlockNumber, T::Hash>,
+			ask_order_id: OrderId<T::BlockNumber, T::Hash>,
+			bid_order_id: OrderId<T::BlockNumber, T::Hash>,
 			expiration: BlockNumberFor<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -826,7 +813,7 @@ pub mod pallet {
 
 			let _bid_order = try_get_id!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
 
-			let src_address = Self::get_address(&ask_order.address)?;
+			let src_address = Self::get_address(&ask_order.ask_order.address)?;
 
 			// TODO: Do validation of addresses and parameters here
 
@@ -836,8 +823,8 @@ pub mod pallet {
 			ensure!(!Offers::<T>::contains_id(&offer_id), Error::<T>::DuplicateOffer);
 
 			let offer = Offer {
-				ask_order: ask_order_id,
-				bid_order: bid_order_id,
+				ask_order_id,
+				bid_order_id,
 				block: Self::block_number(),
 				blockchain: src_address.blockchain,
 				expiration,
@@ -858,9 +845,11 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let offer = try_get_id!(Offers<T>, &offer_id, NonExistentOffer)?;
-			let ask_order = try_get_id!(AskOrders<T>, &offer.ask_order, NonExistentAskOrder)?;
+			let ask_order =
+				try_get_id!(AskOrders<T>, &offer.ask_order_id, NonExistentAskOrder)?.ask_order;
 
-			let bid_order = try_get_id!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
+			let bid_order =
+				try_get_id!(BidOrders<T>, &offer.bid_order_id, NonExistentBidOrder)?.bid_order;
 
 			// TODO: checks to make sure orders match up
 
@@ -939,7 +928,8 @@ pub mod pallet {
 						Transfers::<T>::try_mutate(transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
 								ensure!(
-									transfer.order == OrderId::Deal(deal_order_id),
+									transfer.transfer_order_id
+										== TransferOrderId::Deal(deal_order_id),
 									Error::<T>::TransferMismatch
 								);
 								ensure!(
@@ -966,13 +956,13 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
 			gain: ExternalAmount,
-			order_id: OrderId<T::BlockNumber, T::Hash>,
+			transfer_order_id: TransferOrderId<T::BlockNumber, T::Hash>,
 			blockchain_tx_id: ExternalTxId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let (src_address_id, dest_address_id, mut amount) = match &order_id {
-				OrderId::Deal(deal_order_id) => {
+			let (src_address_id, dest_address_id, mut amount) = match &transfer_order_id {
+				TransferOrderId::Deal(deal_order_id) => {
 					let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
 					if gain.is_zero() {
@@ -981,7 +971,7 @@ pub mod pallet {
 						(order.dst_address, order.src_address, order.amount)
 					}
 				},
-				OrderId::Repayment(repay_order_id) => {
+				TransferOrderId::Repayment(repay_order_id) => {
 					ensure!(gain.is_zero(), Error::<T>::RepaymentOrderNonZeroGain);
 					let order = try_get_id!(
 						RepaymentOrders<T>,
@@ -1020,12 +1010,12 @@ pub mod pallet {
 					kind: transfer_kind,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
-					src_address: src_address_id,
-					dst_address: dest_address_id,
-					order: order_id,
+					from: src_address_id,
+					to: dest_address_id,
+					transfer_order_id,
 					processed: false,
 					sighash: who.clone(),
-					tx: blockchain_tx_id,
+					tx_id: blockchain_tx_id,
 				};
 				Self::deposit_event(Event::<T>::TransferRegistered(
 					transfer_id.clone(),
@@ -1039,12 +1029,12 @@ pub mod pallet {
 					kind: transfer_kind,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
-					src_address: src_address_id,
-					dst_address: dest_address_id,
-					order: order_id,
+					from: src_address_id,
+					to: dest_address_id,
+					transfer_order_id,
 					processed: false,
 					sighash: who.clone(),
-					tx: blockchain_tx_id,
+					tx_id: blockchain_tx_id,
 				};
 
 				Self::deposit_event(Event::<T>::TransferRegistered(
@@ -1053,8 +1043,8 @@ pub mod pallet {
 				));
 
 				let pending = PendingTransfer {
-					from: src_address.value.clone(),
-					to: dest_address.value.clone(),
+					from: src_address.external_address.clone(),
+					to: dest_address.external_address.clone(),
 					transfer,
 				};
 				PendingTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
@@ -1073,7 +1063,7 @@ pub mod pallet {
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
-			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx);
+			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();

@@ -30,7 +30,7 @@ fn register_address_basic() {
 			value.clone(),
 		));
 		let address_id = crate::AddressId::new::<Test>(&blockchain, &value);
-		let address = crate::Address { blockchain, value, owner: acct };
+		let address = crate::Address { blockchain, external_address: value, owner: acct };
 
 		assert_eq!(Creditcoin::addresses(address_id), Some(address));
 	});
@@ -92,7 +92,7 @@ fn verify_ethless_transfer() {
 
 		let from = B("0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").into_bounded();
 		let to = B("0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").into_bounded();
-		let order_id = crate::OrderId::Deal(crate::DealOrderId::dummy());
+		let order_id = crate::TransferOrderId::Deal(crate::DealOrderId::dummy());
 		let amount = sp_core::U512::from(53688044u64);
 		let tx_id = tx_hash.as_bytes().into_bounded();
 
