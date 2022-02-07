@@ -2,7 +2,10 @@ pub mod errors;
 pub mod rpc;
 use crate::{Blockchain, Call, Transfer, TransferKind, UnverifiedTransfer};
 
-use self::errors::{OffchainError, RpcUrlError};
+use self::{
+	errors::{OffchainError, RpcUrlError},
+	rpc::{Address, EthTransaction, EthTransactionReceipt},
+};
 
 use super::{
 	pallet::{Config, Error, Pallet},
@@ -11,6 +14,7 @@ use super::{
 use alloc::string::String;
 use core::str::FromStr;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
+use ethereum_types::U64;
 use frame_support::ensure;
 use frame_system::{
 	offchain::{Account, SendSignedTransaction, Signer},
@@ -47,7 +51,7 @@ impl Blockchain {
 
 const ETH_CONFIRMATIONS: u64 = 12;
 
-fn parse_ethless_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> {
+fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> {
 	let address = core::str::from_utf8(address).map_err(|err| {
 		log::error!("ethless address {:?} is not valid utf8: {}", address, err);
 		OffchainError::InvalidTransfer("ethless address is invalid utf8")
@@ -57,6 +61,116 @@ fn parse_ethless_address(address: &ExternalAddress) -> OffchainResult<rpc::Addre
 		OffchainError::InvalidTransfer("ethless address is invalid hex")
 	})?;
 	Ok(address)
+}
+
+fn validate_ethless_transaction(
+	from: &Address,
+	to: &Address,
+	contract: &Address,
+	amount: &ExternalAmount,
+	receipt: &EthTransactionReceipt,
+	transaction: &EthTransaction,
+	eth_tip: U64,
+) -> OffchainResult<()> {
+	#[allow(deprecated)]
+	let transfer_fn = Function {
+		name: "transfer".into(),
+		inputs: vec![
+			Param { name: "_from".into(), kind: ParamType::Address, internal_type: None },
+			Param { name: "_to".into(), kind: ParamType::Address, internal_type: None },
+			Param { name: "_value".into(), kind: ParamType::Uint(256), internal_type: None },
+			Param { name: "_fee".into(), kind: ParamType::Uint(256), internal_type: None },
+			Param { name: "_nonce".into(), kind: ParamType::Uint(256), internal_type: None },
+			Param { name: "_sig".into(), kind: ParamType::Bytes, internal_type: None },
+		],
+		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
+		constant: false,
+		state_mutability: StateMutability::NonPayable,
+	};
+	ensure!(
+		receipt.is_success(),
+		OffchainError::InvalidTransfer("ethless transfer was not successful")
+	);
+	let block_number = transaction
+		.block_number
+		.ok_or(OffchainError::InvalidTransfer("ethless transfer is still pending"))?;
+	ensure!(
+		block_number < eth_tip,
+		OffchainError::InvalidTransfer(
+			"block number of ethless transfer is greater than the ethereum tip"
+		)
+	);
+	let diff = eth_tip - block_number;
+	ensure!(
+		diff.as_u64() >= ETH_CONFIRMATIONS,
+		OffchainError::InvalidTransfer("ethless transfer does not have enough confirmations")
+	);
+
+	if let Some(to) = &transaction.to {
+		ensure!(
+			to == contract,
+			OffchainError::InvalidTransfer("transaction was not sent through the ethless contract")
+		);
+	} else {
+		return Err(OffchainError::InvalidTransfer(
+			"ethless transaction lacks a receiver (contract creation transaction)",
+		))
+	}
+
+	let inputs = transfer_fn.decode_input(&transaction.input.0[4..]).map_err(|e| {
+		log::error!("failed to decode inputs: {:?}", e);
+		OffchainError::InvalidTransfer(
+			"ethless transfer inputs were not decodable with the expected ABI",
+		)
+	})?;
+	ensure!(
+		inputs.len() == transfer_fn.inputs.len(),
+		OffchainError::InvalidTransfer("ethless transfer inputs were not of the expected length")
+	);
+
+	let input_from = match inputs.get(0) {
+		Some(Token::Address(addr)) => addr,
+		_ =>
+			return Err(OffchainError::InvalidTransfer(
+				"first input to ethless transfer was not an address",
+			)),
+	};
+	ensure!(
+		&input_from == &from,
+		OffchainError::InvalidTransfer(
+			"sender of ethless transfer does not match expected address"
+		)
+	);
+
+	let input_to = match inputs.get(1) {
+		Some(Token::Address(addr)) => addr,
+		_ =>
+			return Err(OffchainError::InvalidTransfer(
+				"second input to ethless transfer was not an address",
+			)),
+	};
+	ensure!(
+		&input_to == &to,
+		OffchainError::InvalidTransfer(
+			"receiver of ethless transfer does not match expected address"
+		)
+	);
+
+	let input_amount = match inputs.get(2) {
+		Some(Token::Uint(value)) => ExternalAmount::from(value),
+		_ =>
+			return Err(OffchainError::InvalidTransfer(
+				"third input to ethless transfer was not a Uint",
+			)),
+	};
+	ensure!(
+		&input_amount == amount,
+		OffchainError::InvalidTransfer(
+			"ethless transfer input amount does not match expected amount"
+		)
+	);
+
+	Ok(())
 }
 
 impl<T: Config> Pallet<T> {
@@ -117,121 +231,29 @@ impl<T: Config> Pallet<T> {
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
 	) -> OffchainResult<()> {
-		#[allow(deprecated)]
-		let transfer_fn = Function {
-			name: "transfer".into(),
-			inputs: vec![
-				Param { name: "_from".into(), kind: ParamType::Address, internal_type: None },
-				Param { name: "_to".into(), kind: ParamType::Address, internal_type: None },
-				Param { name: "_value".into(), kind: ParamType::Uint(256), internal_type: None },
-				Param { name: "_fee".into(), kind: ParamType::Uint(256), internal_type: None },
-				Param { name: "_nonce".into(), kind: ParamType::Uint(256), internal_type: None },
-				Param { name: "_sig".into(), kind: ParamType::Bytes, internal_type: None },
-			],
-			outputs: vec![Param {
-				name: "success".into(),
-				kind: ParamType::Bool,
-				internal_type: None,
-			}],
-			constant: false,
-			state_mutability: StateMutability::NonPayable,
-		};
 		let rpc_url = blockchain.rpc_url()?;
 		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
-		ensure!(
-			tx_receipt.is_success(),
-			OffchainError::InvalidTransfer("ethless transfer was not successful")
-		);
-		let block_number = tx
-			.block_number
-			.ok_or(OffchainError::InvalidTransfer("ethless transfer is still pending"))?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
-		ensure!(
-			block_number < eth_tip,
-			OffchainError::InvalidTransfer(
-				"block number of ethless transfer is greater than the ethereum tip"
-			)
-		);
-		let diff = eth_tip - block_number;
-		ensure!(
-			diff.as_u64() >= ETH_CONFIRMATIONS,
-			OffchainError::InvalidTransfer("ethless transfer does not have enough confirmations")
-		);
 
-		let from_addr = parse_ethless_address(from)?;
-		let to_addr = parse_ethless_address(to)?;
+		let from_addr = parse_eth_address(from)?;
+		let to_addr = parse_eth_address(to)?;
 
-		let ethless_contract = parse_ethless_address(contract_address)?;
+		let ethless_contract = parse_eth_address(contract_address)?;
 
-		if let Some(to) = tx.to {
-			ensure!(
-				to == ethless_contract,
-				OffchainError::InvalidTransfer(
-					"transaction was not sent through the ethless contract"
-				)
-			);
-		} else {
-			return Err(OffchainError::InvalidTransfer(
-				"ethless transaction lacks a receiver (contract creation transaction)",
-			))
-		}
-
-		let inputs = transfer_fn.decode_input(&tx.input.0[4..]).map_err(|e| {
-			log::error!("failed to decode inputs: {:?}", e);
-			OffchainError::InvalidTransfer(
-				"ethless transfer inputs were not decodable with the expected ABI",
-			)
-		})?;
-		ensure!(
-			inputs.len() == transfer_fn.inputs.len(),
-			OffchainError::InvalidTransfer(
-				"ethless transfer inputs were not of the expected length"
-			)
-		);
-
-		let input_from = match inputs.get(0) {
-			Some(Token::Address(addr)) => addr,
-			_ =>
-				return Err(OffchainError::InvalidTransfer(
-					"first input to ethless transfer was not an address",
-				)),
-		};
-		ensure!(
-			input_from == &from_addr,
-			OffchainError::InvalidTransfer(
-				"sender of ethless transfer does not match expected address"
-			)
-		);
-
-		let input_to = match inputs.get(1) {
-			Some(Token::Address(addr)) => addr,
-			_ =>
-				return Err(OffchainError::InvalidTransfer(
-					"second input to ethless transfer was not an address",
-				)),
-		};
-		ensure!(
-			input_to == &to_addr,
-			OffchainError::InvalidTransfer(
-				"receiver of ethless transfer does not match expected address"
-			)
-		);
-
-		let input_amount = match inputs.get(2) {
-			Some(Token::Uint(value)) => ExternalAmount::from(value),
-			_ =>
-				return Err(OffchainError::InvalidTransfer(
-					"third input to ethless transfer was not a Uint",
-				)),
-		};
-		ensure!(
-			&input_amount == amount,
-			OffchainError::InvalidTransfer(
-				"ethless transfer input amount does not match expected amount"
-			)
-		);
+		validate_ethless_transaction(
+			&from_addr,
+			&to_addr,
+			&ethless_contract,
+			amount,
+			&tx_receipt,
+			&tx,
+			eth_tip,
+		)?;
 
 		Ok(())
+	}
+}
+
 	}
 }
