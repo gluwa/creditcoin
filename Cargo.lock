@@ -3901,8 +3901,10 @@ dependencies = [
  "serde_json",
  "sp-core",
  "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
+ "sp-tracing",
 ]
 
 [[package]]
