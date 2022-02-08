@@ -203,8 +203,7 @@ impl<T: Config> Pallet<T> {
 	) -> Result<(), Error<T>> {
 		use sp_core::crypto::UncheckedFrom;
 		let auth_bytes: &[u8; 32] = auth_id.as_ref();
-		let public = T::InternalPublic::unchecked_from(*auth_bytes);
-		let public: T::PublicSigning = public.into();
+		let public: T::PublicSigning = T::InternalPublic::unchecked_from(*auth_bytes).into();
 		let signer =
 			Signer::<T, T::AuthorityId>::any_account().with_filter(sp_std::vec![public.into()]);
 		let result = signer.send_signed_transaction(call);
