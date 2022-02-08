@@ -460,7 +460,12 @@ macro_rules! try_get_id {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, Blake2_128Concat};
+	use frame_support::{
+		dispatch::DispatchResult,
+		pallet_prelude::*,
+		traits::{tokens::BalanceStatus, Currency, ReservableCurrency},
+		Blake2_128Concat,
+	};
 	use frame_system::{
 		ensure_signed,
 		offchain::{AppCrypto, CreateSignedTransaction},
@@ -497,6 +502,9 @@ pub mod pallet {
 		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
 
 		type UnverifiedTransferLimit: Get<u32>;
+
+		type Currency: Currency<Self::AccountId, Balance = Self::Balance>
+			+ ReservableCurrency<Self::AccountId>;
 	}
 
 	#[pallet::pallet]
@@ -653,8 +661,13 @@ pub mod pallet {
 
 		DealIncomplete,
 
+		DealOrderAlreadyCompleted,
 		DealOrderAlreadyLocked,
 		DealOrderExpired,
+
+		LenderMissingAccount,
+
+		BorrowerInsufficientFunds,
 
 		NotFundraiser,
 
@@ -886,7 +899,7 @@ pub mod pallet {
 
 			let bid_order = try_get_id!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
 
-			// TODO: checks to make sure orders match up
+			// TODO: checks to make sure orders match up, deduct fee from fundraiser
 
 			let deal_order_id = DealOrderId::new::<T>(Self::block_number() + expiration, &offer_id);
 			let deal_order = DealOrder {
@@ -960,7 +973,15 @@ pub mod pallet {
 						let elapsed = head - deal_order.block;
 						ensure!(deal_order.expiration >= elapsed, Error::<T>::DealOrderExpired);
 
-						Transfers::<T>::try_mutate(transfer_id, |transfer| {
+						ensure!(
+							deal_order.loan_transfer.is_none(),
+							Error::<T>::DealOrderAlreadyCompleted
+						);
+
+						let fee = deal_order.fee.clone();
+						let borrower_account = deal_order.sighash.clone();
+
+						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
 								ensure!(
 									transfer.order == OrderId::Deal(deal_order_id),
@@ -972,11 +993,43 @@ pub mod pallet {
 								);
 								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+
+								let reserved_balance =
+									T::Currency::reserved_balance(&borrower_account);
+
+								ensure!(
+									reserved_balance >= fee,
+									Error::<T>::BorrowerInsufficientFunds
+								);
+
+								match T::Currency::repatriate_reserved(
+									&borrower_account,
+									&who,
+									fee,
+									BalanceStatus::Free,
+								) {
+									Ok(not_enough) => {
+										log::warn!("complete_deal_order: borrower did not have enough reserved funds (missing {:?}). this should not be reachable", not_enough);
+										Ok(())
+									},
+									Err(e) => {
+										log::warn!("complete_deal_order: lender does not have an existing account, this should not occur: {:?}", e);
+										Err(Error::<T>::LenderMissingAccount)
+									},
+								}?;
+
+								transfer.processed = true;
+
 								Ok(())
 							} else {
 								Err(Error::<T>::NonExistentTransfer)
 							}
-						})
+						})?;
+
+						deal_order.loan_transfer = Some(transfer_id);
+						deal_order.block = head;
+
+						Ok(())
 					} else {
 						Err(Error::<T>::NonExistentDealOrder)
 					}
