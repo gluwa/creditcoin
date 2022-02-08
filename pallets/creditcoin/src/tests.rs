@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{mock::*, Blockchain};
+use crate::{mock::*, Blockchain, ExternalAmount, OrderId, TransferKind};
 use bstr::B;
+use codec::Decode;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use sp_runtime::offchain::storage::StorageValueRef;
 
@@ -105,5 +106,139 @@ fn verify_ethless_transfer() {
 			&amount,
 			&tx_id
 		));
+	});
+}
+
+#[test]
+fn register_transfer_ocw() {
+	let mut ext = ExtBuilder::default();
+	ext.generate_authority();
+	let (mut ext, state, pool) = ext.build_offchain();
+	let dummy_url = "dummy";
+	let tx_hash = "0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620e9";
+	let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+	{
+		let mut state = state.write();
+		let responses: HashMap<String, serde_json::Value> =
+			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+		let get_transaction = pending_rpc_request(
+			"eth_getTransactionByHash",
+			vec![tx_hash.into()],
+			dummy_url,
+			&responses,
+		);
+		let get_transaction_receipt = pending_rpc_request(
+			"eth_getTransactionReceipt",
+			vec![tx_hash.into()],
+			dummy_url,
+			&responses,
+		);
+		let block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
+
+		state.expect_request(get_transaction);
+		state.expect_request(get_transaction_receipt);
+		state.expect_request(block_number);
+	}
+
+	ext.execute_with(|| {
+		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
+		rpc_url_storage.set(&dummy_url);
+
+		let lender = AccountId::new([0; 32]);
+		let debtor = AccountId::new([1; 32]);
+
+		let loan_amount = ExternalAmount::from(53688044u64);
+
+		let blockchain = Blockchain::Rinkeby;
+		let expiration = 1000000;
+
+		let lender_addr = B("0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").into_bounded();
+		let lender_address_id = crate::AddressId::new::<Test>(&blockchain, &lender_addr);
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(lender.clone()),
+			blockchain.clone(),
+			lender_addr
+		));
+
+		let debtor_addr = B("0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").into_bounded();
+		let debtor_address_id = crate::AddressId::new::<Test>(&blockchain, &debtor_addr);
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(debtor.clone()),
+			blockchain.clone(),
+			debtor_addr
+		));
+
+		let ask_guid = B("deadbeef").into_bounded();
+		let ask_id = crate::AskOrderId::new::<Test>(System::block_number() + expiration, &ask_guid);
+		assert_ok!(Creditcoin::add_ask_order(
+			Origin::signed(lender.clone()),
+			lender_address_id.clone(),
+			loan_amount.clone(),
+			0u64.into(),
+			1_000_000_000_000,
+			0,
+			expiration,
+			ask_guid.clone()
+		));
+
+		let bid_guid = B("beaddeef").into_bounded();
+		let bid_id = crate::BidOrderId::new::<Test>(System::block_number() + expiration, &bid_guid);
+		assert_ok!(Creditcoin::add_bid_order(
+			Origin::signed(debtor.clone()),
+			debtor_address_id.clone(),
+			loan_amount.clone(),
+			0u64.into(),
+			1_000_000_000_000,
+			0,
+			expiration,
+			bid_guid.clone()
+		));
+
+		let offer_id =
+			crate::OfferId::new::<Test>(System::block_number() + expiration, &ask_id, &bid_id);
+		assert_ok!(Creditcoin::add_offer(
+			Origin::signed(lender.clone()),
+			ask_id.clone(),
+			bid_id.clone(),
+			expiration
+		));
+
+		let deal_order_id =
+			crate::DealOrderId::new::<Test>(System::block_number() + expiration, &offer_id);
+		assert_ok!(Creditcoin::add_deal_order(
+			Origin::signed(debtor.clone()),
+			offer_id.clone(),
+			expiration
+		));
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(lender.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(deal_order_id.clone()),
+			tx_hash.as_bytes().into_bounded()
+		));
+		let expected_transfer = crate::Transfer {
+			blockchain,
+			kind: TransferKind::Ethless(contract.clone()),
+			amount: loan_amount,
+			block: System::block_number(),
+			src_address: lender_address_id.clone(),
+			dst_address: debtor_address_id.clone(),
+			order: OrderId::Deal(deal_order_id.clone()),
+			processed: false,
+			sighash: lender.clone(),
+			tx: tx_hash.as_bytes().into_bounded(),
+		};
+
+		roll_by_with_ocw(1);
+
+		let tx = pool.write().transactions.pop().unwrap();
+		assert!(pool.read().transactions.is_empty());
+		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
+		assert_eq!(
+			verify_tx.call,
+			Call::Creditcoin(crate::Call::verify_transfer { transfer: expected_transfer })
+		);
 	});
 }
