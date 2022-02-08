@@ -179,8 +179,8 @@ impl<T: Config> Pallet<T> {
 	) -> OffchainResult<()> {
 		let UnverifiedTransfer {
 			transfer: Transfer { blockchain, kind, order, amount, tx, .. },
-			from,
-			to,
+			from_external: from,
+			to_external: to,
 		} = transfer;
 		match kind {
 			TransferKind::Native => Err(OffchainError::InvalidTransfer(
