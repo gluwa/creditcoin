@@ -598,7 +598,7 @@ pub mod pallet {
 
 		TransferRegistered(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
-		TransferVerifiedd(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+		TransferVerified(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		AskOrderAdded(
 			AskOrderId<T::BlockNumber, T::Hash>,
@@ -1099,7 +1099,7 @@ pub mod pallet {
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();
 
-			Self::deposit_event(Event::<T>::TransferVerifiedd(key.clone(), transfer.clone()));
+			Self::deposit_event(Event::<T>::TransferVerified(key.clone(), transfer.clone()));
 			Transfers::<T>::insert(key, transfer);
 			Ok(())
 		}
