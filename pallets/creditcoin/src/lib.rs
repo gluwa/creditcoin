@@ -96,8 +96,8 @@ pub struct Address<AccountId> {
 pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub kind: TransferKind,
-	pub src_address: AddressId<Hash>,
-	pub dst_address: AddressId<Hash>,
+	pub from: AddressId<Hash>,
+	pub to: AddressId<Hash>,
 	pub order: OrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
 	pub tx: ExternalTxId,
@@ -109,8 +109,8 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct UnverifiedTransfer<AccountId, BlockNum, Hash> {
 	pub transfer: Transfer<AccountId, BlockNum, Hash>,
-	pub from: ExternalAddress,
-	pub to: ExternalAddress,
+	pub from_external: ExternalAddress,
+	pub to_external: ExternalAddress,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -171,8 +171,8 @@ pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
-	pub src_address: AddressId<Hash>,
-	pub dst_address: AddressId<Hash>,
+	pub lender: AddressId<Hash>,
+	pub borrower: AddressId<Hash>,
 	pub amount: ExternalAmount,
 	pub interest: ExternalAmount,
 	pub maturity: Moment,
@@ -850,7 +850,7 @@ pub mod pallet {
 
 			let _bid_order = try_get_id!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
 
-			let src_address = Self::get_address(&ask_order.address)?;
+			let lender_address = Self::get_address(&ask_order.address)?;
 
 			// TODO: Do validation of addresses and parameters here
 
@@ -863,7 +863,7 @@ pub mod pallet {
 				ask_order: ask_order_id,
 				bid_order: bid_order_id,
 				block: Self::block_number(),
-				blockchain: src_address.blockchain,
+				blockchain: lender_address.blockchain,
 				expiration,
 				sighash: who,
 			};
@@ -891,8 +891,8 @@ pub mod pallet {
 			let deal_order_id = DealOrderId::new::<T>(Self::block_number() + expiration, &offer_id);
 			let deal_order = DealOrder {
 				blockchain: offer.blockchain,
-				src_address: ask_order.address,
-				dst_address: bid_order.address,
+				lender: ask_order.address,
+				borrower: bid_order.address,
 				amount: bid_order.amount,
 				interest: bid_order.interest,
 				maturity: bid_order.maturity,
@@ -950,7 +950,7 @@ pub mod pallet {
 				|value| {
 					if let Some(deal_order) = value {
 						let src_address =
-							try_get!(Addresses<T>, &deal_order.src_address, NonExistentAddress)?;
+							try_get!(Addresses<T>, &deal_order.lender, NonExistentAddress)?;
 
 						ensure!(src_address.owner == who, Error::<T>::NotInvestor);
 
@@ -995,14 +995,16 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let (src_address_id, dest_address_id, mut amount) = match &order_id {
+			let (from_id, to_id, mut amount) = match &order_id {
 				OrderId::Deal(deal_order_id) => {
 					let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
 					if gain.is_zero() {
-						(order.src_address, order.dst_address, order.amount)
+						// transfer for initial loan
+						(order.lender, order.borrower, order.amount)
 					} else {
-						(order.dst_address, order.src_address, order.amount)
+						// transfer to repay loan
+						(order.borrower, order.lender, order.amount)
 					}
 				},
 				OrderId::Repayment(repay_order_id) => {
@@ -1016,36 +1018,31 @@ pub mod pallet {
 				},
 			};
 
-			let src_address = Self::get_address(&src_address_id)?;
-			let dest_address = Self::get_address(&dest_address_id)?;
+			let from = Self::get_address(&from_id)?;
+			let to = Self::get_address(&to_id)?;
 
-			ensure!(src_address.owner == who, Error::<T>::NotAddressOwner);
+			ensure!(from.owner == who, Error::<T>::NotAddressOwner);
 
-			ensure!(
-				src_address.blockchain == dest_address.blockchain,
-				Error::<T>::AddressPlatformMismatch
-			);
+			ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
 
-			ensure!(
-				src_address.blockchain.supports(&transfer_kind),
-				Error::<T>::UnsupportedTransferKind
-			);
+			ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
 
-			let transfer_id = TransferId::new::<T>(&src_address.blockchain, &blockchain_tx_id);
+			let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
 			ensure!(
 				!Transfers::<T>::contains_key(&transfer_id),
 				Error::<T>::TransferAlreadyRegistered
 			);
 
 			if &*blockchain_tx_id == &*b"0" {
+				// this transfer is an exemption, no need to verify it
 				amount = ExternalAmount::zero();
 				let transfer = Transfer {
-					blockchain: src_address.blockchain,
+					blockchain: from.blockchain,
 					kind: transfer_kind,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
-					src_address: src_address_id,
-					dst_address: dest_address_id,
+					from: from_id,
+					to: to_id,
 					order: order_id,
 					processed: false,
 					sighash: who.clone(),
@@ -1059,12 +1056,12 @@ pub mod pallet {
 			} else {
 				amount += gain;
 				let transfer = Transfer {
-					blockchain: src_address.blockchain,
+					blockchain: from.blockchain,
 					kind: transfer_kind,
 					amount,
 					block: <frame_system::Pallet<T>>::block_number(),
-					src_address: src_address_id,
-					dst_address: dest_address_id,
+					from: from_id,
+					to: to_id,
 					order: order_id,
 					processed: false,
 					sighash: who.clone(),
@@ -1077,8 +1074,8 @@ pub mod pallet {
 				));
 
 				let pending = UnverifiedTransfer {
-					from: src_address.value.clone(),
-					to: dest_address.value.clone(),
+					from_external: from.value.clone(),
+					to_external: to.value.clone(),
 					transfer,
 				};
 				UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
