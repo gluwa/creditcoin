@@ -1,6 +1,6 @@
 use creditcoin_node_runtime::{
-	AccountId, BalancesConfig, DifficultyConfig, GenesisConfig, RewardsConfig, Signature,
-	SudoConfig, SystemConfig, WASM_BINARY,
+	AccountId, BalancesConfig, CreditcoinConfig, DifficultyConfig, GenesisConfig, RewardsConfig,
+	Signature, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public, U256};
@@ -136,10 +136,11 @@ fn testnet_genesis(
 			key: Some(root_key),
 		},
 		difficulty: DifficultyConfig {
-			initial_difficulty: U256::from(1_000_000),
+			initial_difficulty: U256::from(1_000_000u64),
 			target_time: 5 * 1000,
 			difficulty_adjustment_period: 50,
 		},
 		rewards: RewardsConfig { reward_amount: 1_000_000_000_000 },
+		creditcoin: CreditcoinConfig { authorities: vec![] },
 	}
 }
