@@ -401,30 +401,23 @@ pub mod pallet {
 			let bid_order_id = BidOrderId::new::<T>(Self::block_number() + expiration, &guid);
 			ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
 
-			let address = Self::addresses(&address_id);
-			if let Some(address) = address {
-				ensure!(address.owner == who, Error::<T>::NotAddressOwner);
-				let bid_order = BidOrder {
-					blockchain: address.blockchain,
-					address: address_id,
-					amount,
-					interest,
-					maturity,
-					fee,
-					expiration,
-					block: <frame_system::Pallet<T>>::block_number(),
-					sighash: who,
-				};
+			let address = Self::get_address(&address_id)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+			let bid_order = BidOrder {
+				blockchain: address.blockchain,
+				address: address_id,
+				amount,
+				interest,
+				maturity,
+				fee,
+				expiration,
+				block: <frame_system::Pallet<T>>::block_number(),
+				sighash: who,
+			};
 
-				Self::deposit_event(Event::<T>::BidOrderAdded(
-					bid_order_id.clone(),
-					bid_order.clone(),
-				));
-				BidOrders::<T>::insert_id(bid_order_id, bid_order);
-				Ok(())
-			} else {
-				Err(Error::<T>::NonExistentAddress.into())
-			}
+			Self::deposit_event(Event::<T>::BidOrderAdded(bid_order_id.clone(), bid_order.clone()));
+			BidOrders::<T>::insert_id(bid_order_id, bid_order);
+			Ok(())
 		}
 
 		#[pallet::weight(10_000)]
