@@ -460,12 +460,7 @@ macro_rules! try_get_id {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{
-		dispatch::DispatchResult,
-		pallet_prelude::*,
-		traits::{tokens::BalanceStatus, Currency, ReservableCurrency},
-		Blake2_128Concat,
-	};
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, Blake2_128Concat};
 	use frame_system::{
 		ensure_signed,
 		offchain::{AppCrypto, CreateSignedTransaction},
@@ -502,9 +497,6 @@ pub mod pallet {
 		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
 
 		type UnverifiedTransferLimit: Get<u32>;
-
-		type Currency: Currency<Self::AccountId, Balance = Self::Balance>
-			+ ReservableCurrency<Self::AccountId>;
 	}
 
 	#[pallet::pallet]
@@ -665,10 +657,6 @@ pub mod pallet {
 		DealOrderAlreadyLocked,
 		DealOrderExpired,
 
-		LenderMissingAccount,
-
-		BorrowerInsufficientFunds,
-
 		NotFundraiser,
 
 		MalformedDealOrder,
@@ -717,7 +705,7 @@ pub mod pallet {
 					let transfer_validity = Self::verify_transfer_ocw(&pending);
 					log::debug!("verify_transfer result: {:?}", transfer_validity);
 					match transfer_validity {
-						Ok(()) =>
+						Ok(()) => {
 							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
 								Call::verify_transfer { transfer: pending.transfer.clone() }
 							}) {
@@ -725,7 +713,8 @@ pub mod pallet {
 									"Failed to send finalize transfer transaction: {:?}",
 									e
 								);
-							},
+							}
+						},
 						Err(err) => {
 							log::warn!(
 								"failed to verify pending transfer {:?}: {:?}",
@@ -994,32 +983,7 @@ pub mod pallet {
 								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
-								let reserved_balance =
-									T::Currency::reserved_balance(&borrower_account);
-
-								ensure!(
-									reserved_balance >= fee,
-									Error::<T>::BorrowerInsufficientFunds
-								);
-
-								match T::Currency::repatriate_reserved(
-									&borrower_account,
-									&who,
-									fee,
-									BalanceStatus::Free,
-								) {
-									Ok(not_enough) => {
-										log::warn!("complete_deal_order: borrower did not have enough reserved funds (missing {:?}). this should not be reachable", not_enough);
-										Ok(())
-									},
-									Err(e) => {
-										log::warn!("complete_deal_order: lender does not have an existing account, this should not occur: {:?}", e);
-										Err(Error::<T>::LenderMissingAccount)
-									},
-								}?;
-
 								transfer.processed = true;
-
 								Ok(())
 							} else {
 								Err(Error::<T>::NonExistentTransfer)
