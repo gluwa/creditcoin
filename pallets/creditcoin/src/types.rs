@@ -58,6 +58,12 @@ pub struct Address<AccountId> {
 	pub owner: AccountId,
 }
 
+impl<AccountId> Address<AccountId> {
+	pub fn matches_chain_of(&self, other: &Address<AccountId>) -> bool {
+		self.blockchain == other.blockchain
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,

@@ -197,6 +197,13 @@ pub mod pallet {
 			BidOrderId<T::BlockNumber, T::Hash>,
 			BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		),
+
+		OfferAdded(OfferId<T::BlockNumber, T::Hash>, Offer<T::AccountId, T::BlockNumber, T::Hash>),
+
+		DealOrderAdded(
+			DealOrderId<T::BlockNumber, T::Hash>,
+			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+		),
 	}
 
 	// Errors inform users that something went wrong.
@@ -243,6 +250,7 @@ pub mod pallet {
 
 		DealOrderAlreadyCompleted,
 		DealOrderAlreadyLocked,
+		DuplicateDealOrder,
 		DealOrderExpired,
 
 		NotFundraiser,
@@ -579,6 +587,108 @@ pub mod pallet {
 					}
 				},
 			)?;
+			Ok(())
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn register_deal_order(
+			origin: OriginFor<T>,
+			borrower_account: T::AccountId,
+			lender_address: AddressId<T::Hash>,
+			borrower_address: AddressId<T::Hash>,
+			amount: ExternalAmount,
+			interest: ExternalAmount,
+			maturity: T::Moment,
+			fee: BalanceFor<T>,
+			expiration_block: BlockNumberFor<T>,
+			ask_guid: Guid,
+			bid_guid: Guid,
+		) -> DispatchResult {
+			let lender_account = ensure_signed(origin)?;
+
+			let borrower = Self::get_address(&borrower_address)?;
+			ensure!(borrower.owner == borrower_account, Error::<T>::NotAddressOwner);
+
+			let lender = Self::get_address(&lender_address)?;
+			ensure!(lender.owner == lender_account, Error::<T>::NotAddressOwner);
+
+			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressPlatformMismatch);
+
+			let ask_order_id = AskOrderId::new::<T>(expiration_block, &ask_guid);
+			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
+
+			let bid_order_id = BidOrderId::new::<T>(expiration_block, &bid_guid);
+			ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
+
+			let offer_id = OfferId::new::<T>(expiration_block, &ask_order_id, &bid_order_id);
+			ensure!(!Offers::<T>::contains_id(&offer_id), Error::<T>::DuplicateOffer);
+
+			let deal_order_id = DealOrderId::new::<T>(expiration_block, &offer_id);
+			ensure!(!DealOrders::<T>::contains_id(&deal_order_id), Error::<T>::DuplicateDealOrder);
+
+			let current_block = Self::block_number();
+
+			let ask_order = AskOrder {
+				blockchain: lender.blockchain.clone(),
+				address: lender_address.clone(),
+				amount,
+				interest,
+				maturity,
+				fee,
+				expiration_block,
+				block: current_block,
+				sighash: lender_account.clone(),
+			};
+
+			let bid_order = BidOrder {
+				blockchain: lender.blockchain.clone(),
+				address: borrower_address.clone(),
+				amount,
+				interest,
+				maturity,
+				fee,
+				expiration_block,
+				block: current_block,
+				sighash: borrower_account.clone(),
+			};
+
+			let offer = Offer {
+				ask_order: ask_order_id.clone(),
+				bid_order: bid_order_id.clone(),
+				block: current_block,
+				blockchain: lender.blockchain.clone(),
+				expiration_block,
+				sighash: lender_account,
+			};
+
+			let deal_order = DealOrder {
+				blockchain: lender.blockchain,
+				lender: lender_address,
+				borrower: borrower_address,
+				amount,
+				interest,
+				maturity,
+				fee,
+				expiration_block,
+				block: current_block,
+				sighash: borrower_account,
+				loan_transfer: None,
+				lock: None,
+				repayment_transfer: None,
+			};
+
+			AskOrders::<T>::insert_id(ask_order_id.clone(), ask_order.clone());
+			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id, ask_order));
+
+			BidOrders::<T>::insert_id(bid_order_id.clone(), bid_order.clone());
+			Self::deposit_event(Event::<T>::BidOrderAdded(bid_order_id, bid_order));
+
+			Offers::<T>::insert_id(offer_id.clone(), offer.clone());
+			Self::deposit_event(Event::<T>::OfferAdded(offer_id, offer));
+
+			DealOrders::<T>::insert_id(deal_order_id.clone(), deal_order.clone());
+			Self::deposit_event(Event::<T>::DealOrderAdded(deal_order_id, deal_order));
+
 			Ok(())
 		}
 
