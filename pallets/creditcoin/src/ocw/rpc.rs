@@ -111,7 +111,6 @@ impl<'a> Deserialize<'a> for Bytes {
 }
 
 pub type Address = H160;
-pub type Index = U64;
 
 struct BytesVisitor;
 
@@ -158,6 +157,7 @@ fn timeout() -> Timestamp {
 }
 
 impl JsonRpcRequest {
+	#[allow(dead_code)]
 	pub fn with_method(method: impl Into<VecString>) -> Self {
 		let method = method.into();
 		Self { jsonrpc: VecString::from("2.0"), method, params: Vec::new(), id: 1 }
@@ -173,13 +173,18 @@ impl JsonRpcRequest {
 			id: 1,
 		}
 	}
+
+	#[allow(dead_code)]
 	pub fn param(&mut self, param: serde_json::Value) -> &mut Self {
 		self.params.push(param);
 		self
 	}
+
+	#[allow(dead_code)]
 	pub fn to_bytes(&self) -> Vec<u8> {
 		serde_json::to_vec(self).expect("serialization cannot fail; qed")
 	}
+
 	pub fn send<T: for<'de> serde::Deserialize<'de>>(
 		self,
 		rpc_url: &str,
