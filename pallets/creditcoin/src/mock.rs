@@ -102,8 +102,6 @@ impl pallet_creditcoin::Config for Test {
 	type PublicSigning = <Signature as Verify>::Signer;
 
 	type UnverifiedTransferLimit = PendingTxLimit;
-
-	type Currency = Balances;
 }
 
 impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> for Test {
