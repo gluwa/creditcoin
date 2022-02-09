@@ -888,7 +888,7 @@ pub mod pallet {
 
 			let bid_order = try_get_id!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
 
-			// TODO: checks to make sure orders match up, deduct fee from fundraiser
+			// TODO: checks to make sure orders match up
 
 			let deal_order_id = DealOrderId::new::<T>(Self::block_number() + expiration, &offer_id);
 			let deal_order = DealOrder {
@@ -966,9 +966,6 @@ pub mod pallet {
 							deal_order.loan_transfer.is_none(),
 							Error::<T>::DealOrderAlreadyCompleted
 						);
-
-						let fee = deal_order.fee.clone();
-						let borrower_account = deal_order.sighash.clone();
 
 						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
