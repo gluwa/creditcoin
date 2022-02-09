@@ -241,6 +241,7 @@ pub mod pallet {
 
 		DealIncomplete,
 
+		DealOrderAlreadyCompleted,
 		DealOrderAlreadyLocked,
 		DealOrderExpired,
 
@@ -292,7 +293,7 @@ pub mod pallet {
 					let transfer_validity = Self::verify_transfer_ocw(&pending);
 					log::debug!("verify_transfer result: {:?}", transfer_validity);
 					match transfer_validity {
-						Ok(()) =>
+						Ok(()) => {
 							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
 								Call::verify_transfer { transfer: pending.transfer.clone() }
 							}) {
@@ -300,7 +301,8 @@ pub mod pallet {
 									"Failed to send finalize transfer transaction: {:?}",
 									e
 								);
-							},
+							}
+						},
 						Err(err) => {
 							log::warn!(
 								"failed to verify pending transfer {:?}: {:?}",
@@ -548,7 +550,12 @@ pub mod pallet {
 						let elapsed = head - deal_order.block;
 						ensure!(deal_order.expiration >= elapsed, Error::<T>::DealOrderExpired);
 
-						Transfers::<T>::try_mutate(transfer_id, |transfer| {
+						ensure!(
+							deal_order.loan_transfer.is_none(),
+							Error::<T>::DealOrderAlreadyCompleted
+						);
+
+						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
 								ensure!(
 									transfer.order == OrderId::Deal(deal_order_id),
@@ -560,11 +567,18 @@ pub mod pallet {
 								);
 								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+
+								transfer.processed = true;
 								Ok(())
 							} else {
 								Err(Error::<T>::NonExistentTransfer)
 							}
-						})
+						})?;
+
+						deal_order.loan_transfer = Some(transfer_id);
+						deal_order.block = head;
+
+						Ok(())
 					} else {
 						Err(Error::<T>::NonExistentDealOrder)
 					}
