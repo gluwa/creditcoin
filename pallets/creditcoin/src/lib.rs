@@ -741,26 +741,4 @@ impl<T: Config> Pallet<T> {
 			local_keys.contains(&acct).then(|| auth)
 		})
 	}
-
-	// fn create_bid_order(
-	// 	who: &T::AccountId,
-	// 	bid_order_id: &BidOrderId<T::BlockNumber, T::Hash>,
-	// 	address_id: &AddressId<T::Hash>,
-	// ) -> DispatchResult {
-	// 	ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
-
-	// 	let address = Self::get_address(&address_id)?;
-	// 	ensure!(address.owner == who, Error::<T>::NotAddressOwner);
-	// 	let bid_order = BidOrder {
-	// 		blockchain: address.blockchain,
-	// 		address: address_id,
-	// 		amount,
-	// 		interest,
-	// 		maturity,
-	// 		fee,
-	// 		expiration,
-	// 		block: <frame_system::Pallet<T>>::block_number(),
-	// 		sighash: who,
-	// 	};
-	// }
 }
