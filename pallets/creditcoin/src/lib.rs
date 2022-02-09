@@ -357,12 +357,12 @@ pub mod pallet {
 			interest: ExternalAmount,
 			maturity: T::Moment,
 			fee: BalanceFor<T>,
-			expiration: BlockNumberFor<T>,
+			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let ask_order_id = AskOrderId::new::<T>(Self::block_number() + expiration, &guid);
+			let ask_order_id = AskOrderId::new::<T>(expiration_block, &guid);
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::get_address(&address_id)?;
@@ -374,7 +374,7 @@ pub mod pallet {
 				interest,
 				maturity,
 				fee,
-				expiration,
+				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				sighash: who,
 			};
@@ -393,12 +393,12 @@ pub mod pallet {
 			interest: ExternalAmount,
 			maturity: T::Moment,
 			fee: BalanceFor<T>,
-			expiration: BlockNumberFor<T>,
+			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let bid_order_id = BidOrderId::new::<T>(Self::block_number() + expiration, &guid);
+			let bid_order_id = BidOrderId::new::<T>(expiration_block, &guid);
 			ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::get_address(&address_id)?;
@@ -410,7 +410,7 @@ pub mod pallet {
 				interest,
 				maturity,
 				fee,
-				expiration,
+				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				sighash: who,
 			};
@@ -425,7 +425,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			ask_order_id: AskOrderId<T::BlockNumber, T::Hash>,
 			bid_order_id: BidOrderId<T::BlockNumber, T::Hash>,
-			expiration: BlockNumberFor<T>,
+			expiration_block: BlockNumberFor<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -437,8 +437,7 @@ pub mod pallet {
 
 			// TODO: Do validation of addresses and parameters here
 
-			let offer_id =
-				OfferId::new::<T>(Self::block_number() + expiration, &ask_order_id, &bid_order_id);
+			let offer_id = OfferId::new::<T>(expiration_block, &ask_order_id, &bid_order_id);
 
 			ensure!(!Offers::<T>::contains_id(&offer_id), Error::<T>::DuplicateOffer);
 
@@ -447,7 +446,7 @@ pub mod pallet {
 				bid_order: bid_order_id,
 				block: Self::block_number(),
 				blockchain: lender_address.blockchain,
-				expiration,
+				expiration_block,
 				sighash: who,
 			};
 
@@ -460,7 +459,7 @@ pub mod pallet {
 		pub fn add_deal_order(
 			origin: OriginFor<T>,
 			offer_id: OfferId<T::BlockNumber, T::Hash>,
-			expiration: BlockNumberFor<T>,
+			expiration_block: BlockNumberFor<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -471,7 +470,7 @@ pub mod pallet {
 
 			// TODO: checks to make sure orders match up
 
-			let deal_order_id = DealOrderId::new::<T>(Self::block_number() + expiration, &offer_id);
+			let deal_order_id = DealOrderId::new::<T>(expiration_block, &offer_id);
 			let deal_order = DealOrder {
 				blockchain: offer.blockchain,
 				lender: ask_order.address,
@@ -480,7 +479,7 @@ pub mod pallet {
 				interest: bid_order.interest,
 				maturity: bid_order.maturity,
 				fee: bid_order.fee,
-				expiration,
+				expiration_block,
 				block: Self::block_number(),
 				sighash: who,
 				loan_transfer: None,
@@ -541,7 +540,10 @@ pub mod pallet {
 						ensure!(head >= deal_order.block, Error::<T>::MalformedDealOrder);
 
 						let elapsed = head - deal_order.block;
-						ensure!(deal_order.expiration >= elapsed, Error::<T>::DealOrderExpired);
+						ensure!(
+							deal_order.expiration_block >= elapsed,
+							Error::<T>::DealOrderExpired
+						);
 
 						ensure!(
 							deal_order.loan_transfer.is_none(),
