@@ -1,9 +1,11 @@
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
+	Guid,
 };
 use frame_system::pallet_prelude::*;
-use sp_runtime::RuntimeAppPublic;
+use sp_io::hashing::sha2_256;
+use sp_runtime::{traits::UniqueSaturatedInto, RuntimeAppPublic};
 use sp_std::prelude::*;
 
 #[allow(unused_macros)]
@@ -45,5 +47,21 @@ impl<T: Config> Pallet<T> {
 			let acct = auth.clone().into();
 			local_keys.contains(&acct).then(|| auth)
 		})
+	}
+
+	pub fn register_deal_order_message(
+		expiration_block: T::BlockNumber,
+		ask_guid: &Guid,
+		bid_guid: &Guid,
+	) -> [u8; 32] {
+		let expiration_block_u64: u64 = expiration_block.unique_saturated_into();
+		let mut buf = lexical::to_string(expiration_block_u64).into_bytes();
+		let block_end_idx = buf.len();
+		buf.extend(core::iter::repeat(0u8).take(2 * (ask_guid.len() + bid_guid.len())));
+		hex::encode_to_slice(&*ask_guid, &mut buf[block_end_idx..])
+			.expect("we allocated 2 * (length of guid) bytes, it must be enough capacity; qed");
+		hex::encode_to_slice(&*bid_guid, &mut buf[(block_end_idx + 2 * ask_guid.len())..])
+			.expect("we just allocated 2 * (length of guid) bytes; qed");
+		sha2_256(&buf)
 	}
 }

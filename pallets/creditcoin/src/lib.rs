@@ -54,7 +54,7 @@ pub mod pallet {
 		offchain::{AppCrypto, CreateSignedTransaction},
 		pallet_prelude::*,
 	};
-	use sp_runtime::traits::{IdentifyAccount, Verify};
+	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedInto, Verify};
 
 	use super::*;
 
@@ -65,6 +65,8 @@ pub mod pallet {
 		+ pallet_balances::Config
 		+ pallet_timestamp::Config
 		+ CreateSignedTransaction<Call<Self>>
+	where
+		<Self as frame_system::Config>::BlockNumber: UniqueSaturatedInto<u64>,
 	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -613,12 +615,10 @@ pub mod pallet {
 			let lender_account = ensure_signed(origin)?;
 			let borrower_account = T::Signer::from(borrower_key.clone()).into_account();
 
-			// todo: decide how we want this to be formulated. scale encoding (as here) is easiest
-			// from the runtime side but may be more burdensome for the client side
-			let message = (expiration_block, ask_guid.clone(), bid_guid.clone()).encode();
+			let message = Self::register_deal_order_message(expiration_block, &ask_guid, &bid_guid);
 
 			ensure!(
-				borrower_signature.verify(&*message, &borrower_key),
+				borrower_signature.verify(message.as_slice(), &borrower_key),
 				Error::<T>::InvalidSignature
 			);
 
