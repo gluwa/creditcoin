@@ -26,6 +26,9 @@ impl<T: Config> Pallet<T> {
 	pub fn block_number() -> BlockNumberFor<T> {
 		<frame_system::Pallet<T>>::block_number()
 	}
+	pub fn timestamp() -> T::Moment {
+		<pallet_timestamp::Pallet<T>>::get()
+	}
 	pub fn get_address(address_id: &AddressId<T::Hash>) -> Result<Address<T::AccountId>, Error<T>> {
 		Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)
 	}

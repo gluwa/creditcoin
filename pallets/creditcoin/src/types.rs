@@ -150,7 +150,7 @@ pub struct DealOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub maturity: Moment,
 	pub fee: Balance,
 	pub expiration_block: BlockNum,
-	pub block: BlockNum,
+	pub timestamp: Moment,
 	pub loan_transfer: Option<TransferId<Hash>>,
 	pub repayment_transfer: Option<TransferId<Hash>>,
 	pub lock: Option<AccountId>,
