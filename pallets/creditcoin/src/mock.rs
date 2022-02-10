@@ -95,6 +95,7 @@ impl pallet_creditcoin::Config for Test {
 
 	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
 
+	type Signer = <Signature as Verify>::Signer;
 	type FromAccountId = AccountId;
 
 	type InternalPublic = sp_core::sr25519::Public;
