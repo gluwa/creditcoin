@@ -118,7 +118,7 @@ pub mod pallet {
 	#[pallet::getter(fn deal_orders)]
 	pub type DealOrders<T: Config> = StorageDoubleMap<
 		_,
-		Twox128,
+		Twox64Concat,
 		T::BlockNumber,
 		Identity,
 		T::Hash,
@@ -129,7 +129,7 @@ pub mod pallet {
 	#[pallet::getter(fn repayment_orders)]
 	pub type RepaymentOrders<T: Config> = StorageDoubleMap<
 		_,
-		Twox128,
+		Twox64Concat,
 		T::BlockNumber,
 		Identity,
 		T::Hash,
@@ -145,7 +145,7 @@ pub mod pallet {
 	#[pallet::getter(fn ask_orders)]
 	pub type AskOrders<T: Config> = StorageDoubleMap<
 		_,
-		Twox128,
+		Twox64Concat,
 		T::BlockNumber,
 		Identity,
 		T::Hash,
@@ -156,7 +156,7 @@ pub mod pallet {
 	#[pallet::getter(fn bid_orders)]
 	pub type BidOrders<T: Config> = StorageDoubleMap<
 		_,
-		Twox128,
+		Twox64Concat,
 		T::BlockNumber,
 		Identity,
 		T::Hash,
@@ -167,7 +167,7 @@ pub mod pallet {
 	#[pallet::getter(fn offers)]
 	pub type Offers<T: Config> = StorageDoubleMap<
 		_,
-		Twox128,
+		Twox64Concat,
 		T::BlockNumber,
 		Identity,
 		T::Hash,
@@ -338,9 +338,36 @@ pub mod pallet {
 			log::debug!("Cleaning up expired entries");
 			AskOrders::<T>::remove_prefix(block_number, None);
 			BidOrders::<T>::remove_prefix(block_number, None);
-			DealOrders::<T>::remove_prefix(block_number, None);
-			RepaymentOrders::<T>::remove_prefix(block_number, None);
 			Offers::<T>::remove_prefix(block_number, None);
+			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
+				.filter_map(|(hash, deal)| {
+					if deal.loan_transfer.is_some() {
+						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
+					} else {
+						None
+					}
+				})
+				.collect();
+
+			let repayments_to_keep: Vec<_> = RepaymentOrders::<T>::drain_prefix(block_number)
+				.filter_map(|(hash, repay)| {
+					if repay.previous_owner.is_some() {
+						Some((
+							RepaymentOrderId::with_expiration_hash::<T>(block_number, hash),
+							repay,
+						))
+					} else {
+						None
+					}
+				})
+				.collect();
+
+			for (key, deal) in deals_to_keep {
+				DealOrders::<T>::insert_id(key, deal);
+			}
+			for (key, repay) in repayments_to_keep {
+				RepaymentOrders::<T>::insert_id(key, repay);
+			}
 		}
 	}
 

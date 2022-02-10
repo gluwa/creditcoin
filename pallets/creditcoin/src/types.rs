@@ -135,7 +135,7 @@ pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub deal: DealOrderId<BlockNum, Hash>,
-	pub previous_owner: AccountId,
+	pub previous_owner: Option<AccountId>,
 	pub transfer: TransferId<Hash>,
 	pub sighash: AccountId,
 }
@@ -353,6 +353,16 @@ macro_rules! impl_id {
 			}
 			fn hash(&self) -> Hash {
 				self.1.clone()
+			}
+		}
+
+		impl<BlockNum, H> $id<BlockNum, H> {
+			pub fn with_expiration_hash<Config>(expiration_block: BlockNum, hash: H) -> Self
+			where
+				Config: frame_system::Config<BlockNumber = BlockNum>,
+				<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+			{
+				Self(expiration_block, hash)
 			}
 		}
 	};
