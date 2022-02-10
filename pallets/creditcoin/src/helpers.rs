@@ -65,3 +65,24 @@ impl<T: Config> Pallet<T> {
 		sha2_256(&buf)
 	}
 }
+
+pub mod interest_rate {
+	use crate::ExternalAmount;
+
+	pub const INTEREST_RATE_PRECISION: u64 = 10_000;
+
+	pub fn calc_interest(
+		principal_amount: &ExternalAmount,
+		interest_rate_bps: &ExternalAmount,
+	) -> ExternalAmount {
+		principal_amount * interest_rate_bps / INTEREST_RATE_PRECISION
+	}
+
+	#[test]
+	pub fn test_calc_interest() {
+		let principal_amount = ExternalAmount::from(100_000);
+		let interest_rate_bps = ExternalAmount::from(1_000);
+		let interest = calc_interest(&principal_amount, &interest_rate_bps);
+		assert_eq!(interest, ExternalAmount::from(10_000));
+	}
+}

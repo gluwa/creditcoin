@@ -48,6 +48,7 @@ pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, Blake2_128Concat};
 	use frame_system::{
 		ensure_signed,
@@ -234,6 +235,7 @@ pub mod pallet {
 		TransferAlreadyRegistered,
 		TransferMismatch,
 		TransferAlreadyProcessed,
+		TransferAmountInsufficient,
 
 		UnsupportedTransferKind,
 
@@ -558,7 +560,7 @@ pub mod pallet {
 				lender: ask_order.address,
 				borrower: bid_order.address,
 				amount: bid_order.amount,
-				interest: bid_order.interest,
+				interest_rate: bid_order.interest,
 				maturity: bid_order.maturity,
 				fee: bid_order.fee,
 				expiration_block,
@@ -617,10 +619,10 @@ pub mod pallet {
 				deal_order_id.hash(),
 				|value| {
 					if let Some(deal_order) = value {
-						let src_address =
+						let lender =
 							try_get!(Addresses<T>, &deal_order.lender, NonExistentAddress)?;
 
-						ensure!(src_address.owner == who, Error::<T>::NotLender);
+						ensure!(lender.owner == who, Error::<T>::NotInvestor);
 
 						let now = Self::timestamp();
 						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
@@ -667,8 +669,6 @@ pub mod pallet {
 
 		#[pallet::weight(10_000)]
 		pub fn register_deal_order(
-			origin: OriginFor<T>,
-			lender_address: AddressId<T::Hash>,
 			borrower_address: AddressId<T::Hash>,
 			amount: ExternalAmount,
 			interest: ExternalAmount,
@@ -773,12 +773,82 @@ pub mod pallet {
 			DealOrders::<T>::insert_id(deal_order_id.clone(), deal_order.clone());
 			Self::deposit_event(Event::<T>::DealOrderAdded(deal_order_id, deal_order));
 
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(4,2))]
+		pub fn close_deal_order(
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			DealOrders::<T>::try_mutate(
+				deal_order_id.expiration(),
+				deal_order_id.hash(),
+				|value| {
+					if let Some(deal_order) = value {
+						let borrower =
+							try_get!(Addresses<T>, &deal_order.borrower, NonExistentAddress)?;
+
+						ensure!(borrower.owner == who, Error::<T>::NotFundraiser);
+
+						let head = Self::block_number();
+						ensure!(head >= deal_order.block, Error::<T>::MalformedDealOrder);
+
+						let elapsed = head - deal_order.block;
+						ensure!(deal_order.expiration >= elapsed, Error::<T>::DealOrderExpired);
+
+						ensure!(
+							deal_order.loan_transfer.is_none(),
+							Error::<T>::DealOrderAlreadyCompleted
+						);
+
+						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
+							if let Some(transfer) = transfer {
+								ensure!(
+									transfer.order == OrderId::Deal(deal_order_id),
+									Error::<T>::TransferMismatch
+								);
+								ensure!(
+									transfer.amount == deal_order.amount,
+									Error::<T>::TransferMismatch
+								);
+								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
+								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+								//will be deal_order.maturity - deal_order.created_moment
+								//let deal_term = Duration::new(60 * 60 * 24 * 30, 0);
+								//let current_timestamp = <pallet_timestamp::Pallet<T>>::get();
+								//let isLate = current_timestamp > deal_order.maturity;
+
+								//TODO: add compound interest formula
+								let expected_interest = helpers::interest_rate::calc_interest(
+									&deal_order.amount,
+									&deal_order.interest_rate,
+								);
+
+								ensure!(
+									transfer.amount >= expected_interest + deal_order.amount,
+									Error::<T>::TransferAmountInsufficient
+								);
+
+								transfer.processed = true;
+
+								Ok(())
+							} else {
+								Err(Error::<T>::NonExistentTransfer)
+							}
+						})?;
+
+						deal_order.repayment_transfer = Some(transfer_id);
+						deal_order.block = head;
+
+						Ok(())
+					} else {
+						Err(Error::<T>::NonExistentDealOrder)
+					}
+				},
+			)?;
 			Ok(())
 		}
-
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
 		pub fn register_transfer(
-			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
 			gain: ExternalAmount,
 			order_id: OrderId<T::BlockNumber, T::Hash>,

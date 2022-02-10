@@ -146,7 +146,7 @@ pub struct DealOrder<AccountId, Balance, BlockNum, Hash, Moment> {
 	pub lender: AddressId<Hash>,
 	pub borrower: AddressId<Hash>,
 	pub amount: ExternalAmount,
-	pub interest: ExternalAmount,
+	pub interest_rate: ExternalAmount,
 	pub maturity: Moment,
 	pub fee: Balance,
 	pub expiration_block: BlockNum,
