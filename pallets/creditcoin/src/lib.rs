@@ -496,7 +496,7 @@ pub mod pallet {
 				maturity: bid_order.maturity,
 				fee: bid_order.fee,
 				expiration_block,
-				block: Self::block_number(),
+				timestamp: Self::timestamp(),
 				sighash: who,
 				loan_transfer: None,
 				lock: None,
@@ -552,14 +552,11 @@ pub mod pallet {
 
 						ensure!(src_address.owner == who, Error::<T>::NotInvestor);
 
-						let head = Self::block_number();
-						ensure!(head >= deal_order.block, Error::<T>::MalformedDealOrder);
+						let now = Self::timestamp();
+						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
 
-						let elapsed = head - deal_order.block;
-						ensure!(
-							deal_order.expiration_block >= elapsed,
-							Error::<T>::DealOrderExpired
-						);
+						let head = Self::block_number();
+						ensure!(deal_order.expiration_block >= head, Error::<T>::DealOrderExpired);
 
 						ensure!(
 							deal_order.loan_transfer.is_none(),
@@ -587,7 +584,7 @@ pub mod pallet {
 						})?;
 
 						deal_order.loan_transfer = Some(transfer_id);
-						deal_order.block = head;
+						deal_order.timestamp = now;
 
 						Ok(())
 					} else {
@@ -689,7 +686,7 @@ pub mod pallet {
 				maturity,
 				fee,
 				expiration_block,
-				block: current_block,
+				timestamp: Self::timestamp(),
 				sighash: borrower_account,
 				loan_transfer: None,
 				lock: None,
