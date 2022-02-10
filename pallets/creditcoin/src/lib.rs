@@ -195,8 +195,8 @@ pub mod pallet {
 		AddressRegistered(AddressId<T::Hash>, Address<T::AccountId>),
 
 		TransferRegistered(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
-
 		TransferVerified(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+		TransferProcessed(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		AskOrderAdded(
 			AskOrderId<T::BlockNumber, T::Hash>,
@@ -211,6 +211,11 @@ pub mod pallet {
 		OfferAdded(OfferId<T::BlockNumber, T::Hash>, Offer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		DealOrderAdded(
+		DealOrderCompleted(
+			DealOrderId<T::BlockNumber, T::Hash>,
+			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+		),
+		DealOrderClosed(
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		),
@@ -638,7 +643,7 @@ pub mod pallet {
 						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
 								ensure!(
-									transfer.order == OrderId::Deal(deal_order_id),
+									transfer.order == OrderId::Deal(deal_order_id.clone()),
 									Error::<T>::TransferMismatch
 								);
 								ensure!(
@@ -649,6 +654,11 @@ pub mod pallet {
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
 								transfer.processed = true;
+								Self::deposit_event(Event::<T>::TransferProcessed(
+									transfer_id.clone(),
+									transfer.clone(),
+								));
+
 								Ok(())
 							} else {
 								Err(Error::<T>::NonExistentTransfer)
@@ -658,6 +668,10 @@ pub mod pallet {
 						deal_order.loan_transfer = Some(transfer_id);
 						deal_order.timestamp = now;
 
+						Self::deposit_event(Event::<T>::DealOrderCompleted(
+							deal_order_id.clone(),
+							deal_order.clone(),
+						));
 						Ok(())
 					} else {
 						Err(Error::<T>::NonExistentDealOrder)
@@ -803,7 +817,7 @@ pub mod pallet {
 						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
 								ensure!(
-									transfer.order == OrderId::Deal(deal_order_id),
+									transfer.order == OrderId::Deal(deal_order_id.clone()),
 									Error::<T>::TransferMismatch
 								);
 								ensure!(
@@ -829,6 +843,10 @@ pub mod pallet {
 								);
 
 								transfer.processed = true;
+								Self::deposit_event(Event::<T>::TransferProcessed(
+									transfer_id.clone(),
+									transfer.clone(),
+								));
 
 								Ok(())
 							} else {
@@ -838,7 +856,10 @@ pub mod pallet {
 
 						deal_order.repayment_transfer = Some(transfer_id);
 						deal_order.block = head;
-
+						Self::deposit_event(Event::<T>::DealOrderClosed(
+							deal_order_id.clone(),
+							deal_order.clone(),
+						));
 						Ok(())
 					} else {
 						Err(Error::<T>::NonExistentDealOrder)
