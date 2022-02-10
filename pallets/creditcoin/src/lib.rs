@@ -263,11 +263,11 @@ pub mod pallet {
 
 		InvalidSignature,
 
-		NotFundraiser,
+		NotBorrower,
 
 		MalformedDealOrder,
 
-		NotInvestor,
+		NotLender,
 
 		ScaleDecodeError,
 
@@ -551,7 +551,7 @@ pub mod pallet {
 					if let Some(deal_order) = value {
 						ensure!(deal_order.lock.is_none(), Error::<T>::DealOrderAlreadyLocked);
 						ensure!(deal_order.loan_transfer.is_some(), Error::<T>::DealIncomplete);
-						ensure!(deal_order.sighash == who, Error::<T>::NotFundraiser);
+						ensure!(deal_order.sighash == who, Error::<T>::NotBorrower);
 						deal_order.lock = Some(who);
 						Ok(())
 					} else {
@@ -579,7 +579,7 @@ pub mod pallet {
 						let src_address =
 							try_get!(Addresses<T>, &deal_order.lender, NonExistentAddress)?;
 
-						ensure!(src_address.owner == who, Error::<T>::NotInvestor);
+						ensure!(src_address.owner == who, Error::<T>::NotLender);
 
 						let now = Self::timestamp();
 						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
