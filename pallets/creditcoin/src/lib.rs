@@ -54,6 +54,7 @@ pub mod pallet {
 		offchain::{AppCrypto, CreateSignedTransaction},
 		pallet_prelude::*,
 	};
+	use sp_runtime::traits::{IdentifyAccount, Verify};
 
 	use super::*;
 
@@ -70,11 +71,16 @@ pub mod pallet {
 
 		type Call: From<Call<Self>>;
 
-		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
+		type AuthorityId: AppCrypto<
+			Self::Public,
+			<Self as frame_system::offchain::SigningTypes>::Signature,
+		>;
+
+		type Signer: From<sp_core::ecdsa::Public>
+			+ IdentifyAccount<AccountId = <Self as frame_system::Config>::AccountId>;
 
 		type FromAccountId: From<sp_core::sr25519::Public>
-			+ Into<Self::AccountId>
-			+ From<Self::AccountId>
+			+ IsType<Self::AccountId>
 			+ Clone
 			+ core::fmt::Debug
 			+ PartialEq<Self::FromAccountId>
@@ -252,6 +258,8 @@ pub mod pallet {
 		DealOrderAlreadyLocked,
 		DuplicateDealOrder,
 		DealOrderExpired,
+
+		InvalidSignature,
 
 		NotFundraiser,
 
@@ -593,7 +601,6 @@ pub mod pallet {
 		#[pallet::weight(10_000)]
 		pub fn register_deal_order(
 			origin: OriginFor<T>,
-			borrower_account: T::AccountId,
 			lender_address: AddressId<T::Hash>,
 			borrower_address: AddressId<T::Hash>,
 			amount: ExternalAmount,
@@ -603,8 +610,20 @@ pub mod pallet {
 			expiration_block: BlockNumberFor<T>,
 			ask_guid: Guid,
 			bid_guid: Guid,
+			borrower_key: sp_core::ecdsa::Public,
+			borrower_signature: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
 			let lender_account = ensure_signed(origin)?;
+			let borrower_account = T::Signer::from(borrower_key.clone()).into_account();
+
+			// todo: decide how we want this to be formulated. scale encoding (as here) is easiest
+			// from the runtime side but may be more burdensome for the client side
+			let message = (expiration_block, ask_guid.clone(), bid_guid.clone()).encode();
+
+			ensure!(
+				borrower_signature.verify(&*message, &borrower_key),
+				Error::<T>::InvalidSignature
+			);
 
 			let borrower = Self::get_address(&borrower_address)?;
 			ensure!(borrower.owner == borrower_account, Error::<T>::NotAddressOwner);
