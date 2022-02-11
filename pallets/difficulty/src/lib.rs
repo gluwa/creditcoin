@@ -171,7 +171,7 @@ where
 	let n = adjustment_period;
 	log::debug!("previous {:?}", previous);
 	if previous.len() < 2 {
-		return initial_difficulty
+		return initial_difficulty;
 	}
 
 	let oldest = &previous[0];
@@ -179,9 +179,9 @@ where
 
 	let t = target_time.saturated_into::<i64>() / 1000;
 	log::debug!("t = {}", t);
-	let solve_time = (newest.timestamp.saturated_into::<i64>() -
-		oldest.timestamp.saturated_into::<i64>()) /
-		1000;
+	let solve_time = (newest.timestamp.saturated_into::<i64>()
+		- oldest.timestamp.saturated_into::<i64>())
+		/ 1000;
 
 	log::debug!("solve time = {}", solve_time);
 	let solve_time = i64::max(-5 * t, i64::min(solve_time, 6 * t));

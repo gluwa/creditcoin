@@ -507,8 +507,8 @@ pub mod pallet {
 			let bid_maturity: u64 = bid_order.maturity.unique_saturated_into();
 
 			ensure!(
-				ask_order.amount == bid_order.amount &&
-					(ask_order.interest / ask_maturity) <= (bid_order.interest / bid_maturity),
+				ask_order.amount == bid_order.amount
+					&& (ask_order.interest / ask_maturity) <= (bid_order.interest / bid_maturity),
 				Error::<T>::AskBidMismatch
 			);
 

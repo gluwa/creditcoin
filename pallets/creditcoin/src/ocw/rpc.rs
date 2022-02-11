@@ -214,7 +214,7 @@ pub struct JsonRpcResponse<T> {
 impl<T> JsonRpcResponse<T> {
 	pub fn result(self) -> Result<T, RpcError> {
 		if let Some(err) = self.error {
-			return Err(err.into())
+			return Err(err.into());
 		}
 		if let Some(result) = self.result {
 			Ok(result)

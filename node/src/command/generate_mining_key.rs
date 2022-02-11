@@ -67,12 +67,13 @@ impl MiningKeySubcommand {
 	fn chain_id(&self) -> String {
 		match self.chain {
 			Some(ref chain) => chain.clone(),
-			None =>
+			None => {
 				if self.dev {
 					"dev".into()
 				} else {
 					"".into()
-				},
+				}
+			},
 		}
 	}
 	pub fn run(&self, cli: &Cli) -> Result<(), sc_cli::Error> {
