@@ -267,6 +267,7 @@ pub mod pallet {
 		DealIncomplete,
 
 		DealOrderAlreadyCompleted,
+		DealOrderAlreadyClosed,
 		DealOrderAlreadyLocked,
 		DealOrderAlreadyClosed,
 		DuplicateDealOrder,
@@ -806,12 +807,9 @@ pub mod pallet {
 						let head = Self::block_number();
 						ensure!(head >= deal_order.block, Error::<T>::MalformedDealOrder);
 
-						let elapsed = head - deal_order.block;
-						ensure!(deal_order.expiration >= elapsed, Error::<T>::DealOrderExpired);
-
 						ensure!(
-							deal_order.loan_transfer.is_none(),
-							Error::<T>::DealOrderAlreadyCompleted
+							deal_order.repayment_transfer.is_none(),
+							Error::<T>::DealOrderAlreadyClosed
 						);
 
 						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
@@ -820,10 +818,7 @@ pub mod pallet {
 									transfer.order == OrderId::Deal(deal_order_id.clone()),
 									Error::<T>::TransferMismatch
 								);
-								ensure!(
-									transfer.amount == deal_order.amount,
-									Error::<T>::TransferMismatch
-								);
+
 								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 								//will be deal_order.maturity - deal_order.created_moment
