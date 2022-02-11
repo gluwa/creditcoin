@@ -214,11 +214,11 @@ pub mod pallet {
 		),
 		DealOrderCompleted(
 			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 		DealOrderClosed(
 			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
 		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>, TransferId<T::Hash>),
