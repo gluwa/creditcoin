@@ -67,6 +67,7 @@ pub mod pallet {
 		+ CreateSignedTransaction<Call<Self>>
 	where
 		<Self as frame_system::Config>::BlockNumber: UniqueSaturatedInto<u64>,
+		<Self as pallet_timestamp::Config>::Moment: UniqueSaturatedInto<u64>,
 	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -264,6 +265,12 @@ pub mod pallet {
 		DuplicateDealOrder,
 		DealOrderExpired,
 
+		AskOrderExpired,
+		BidOrderExpired,
+		OfferExpired,
+		AskBidMismatch,
+
+		SameOwner,
 		InvalidSignature,
 
 		NotBorrower,
@@ -468,7 +475,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000)]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 1))]
 		pub fn add_offer(
 			origin: OriginFor<T>,
 			ask_order_id: AskOrderId<T::BlockNumber, T::Hash>,
@@ -479,11 +486,31 @@ pub mod pallet {
 
 			let ask_order = try_get_id!(AskOrders<T>, &ask_order_id, NonExistentAskOrder)?;
 
-			let _bid_order = try_get_id!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
+			ensure!(ask_order.sighash == who, Error::<T>::NotLender);
 
-			let lender_address = Self::get_address(&ask_order.address)?;
+			let head = Self::block_number();
 
-			// TODO: Do validation of addresses and parameters here
+			ensure!(ask_order.expiration_block >= head, Error::<T>::AskOrderExpired);
+
+			let bid_order = try_get_id!(BidOrders<T>, &bid_order_id, NonExistentBidOrder)?;
+
+			ensure!(bid_order.sighash != who, Error::<T>::SameOwner);
+
+			ensure!(bid_order.expiration_block >= head, Error::<T>::BidOrderExpired);
+
+			ensure!(
+				ask_order.blockchain == bid_order.blockchain,
+				Error::<T>::AddressPlatformMismatch
+			);
+
+			let ask_maturity: u64 = ask_order.maturity.unique_saturated_into();
+			let bid_maturity: u64 = bid_order.maturity.unique_saturated_into();
+
+			ensure!(
+				ask_order.amount == bid_order.amount &&
+					(ask_order.interest / ask_maturity) <= (bid_order.interest / bid_maturity),
+				Error::<T>::AskBidMismatch
+			);
 
 			let offer_id = OfferId::new::<T>(expiration_block, &ask_order_id, &bid_order_id);
 
@@ -493,7 +520,7 @@ pub mod pallet {
 				ask_order: ask_order_id,
 				bid_order: bid_order_id,
 				block: Self::block_number(),
-				blockchain: lender_address.blockchain,
+				blockchain: ask_order.blockchain,
 				expiration_block,
 				sighash: who,
 			};
