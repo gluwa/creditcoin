@@ -110,14 +110,14 @@ where
 
 		// See whether the hash meets the difficulty requirement. If not, fail fast.
 		if !hash_meets_difficulty(&seal.work, difficulty) {
-			return Ok(false)
+			return Ok(false);
 		}
 
 		// Make sure the provided work actually comes from the correct pre_hash
 		let compute = Compute { difficulty, pre_hash: *pre_hash, nonce: seal.nonce };
 
 		if compute.compute() != seal {
-			return Ok(false)
+			return Ok(false);
 		}
 
 		Ok(true)
