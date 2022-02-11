@@ -242,6 +242,7 @@ pub mod pallet {
 		TransferMismatch,
 		TransferAlreadyProcessed,
 		TransferAmountInsufficient,
+		MalformedTransfer,
 
 		UnsupportedTransferKind,
 
@@ -270,7 +271,7 @@ pub mod pallet {
 		DealOrderAlreadyCompleted,
 		DealOrderAlreadyClosed,
 		DealOrderAlreadyLocked,
-		DealOrderAlreadyClosed,
+		DealOrderMustBeLocked,
 		DuplicateDealOrder,
 		DealOrderExpired,
 
@@ -645,7 +646,7 @@ pub mod pallet {
 						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
 								ensure!(
-									transfer.order == OrderId::Deal(deal_order_id.clone()),
+									transfer.order_id == OrderId::Deal(deal_order_id.clone()),
 									Error::<T>::TransferMismatch
 								);
 								ensure!(
@@ -819,19 +820,21 @@ pub mod pallet {
 							Error::<T>::DealOrderAlreadyClosed
 						);
 
+						ensure!(deal_order.lock.is_some(), Error::<T>::DealOrderMustBeLocked);
+
 						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
 							if let Some(transfer) = transfer {
 								ensure!(
-									transfer.order == OrderId::Deal(deal_order_id.clone()),
+									transfer.order_id == OrderId::Deal(deal_order_id.clone()),
 									Error::<T>::TransferMismatch
 								);
 
+								ensure!(
+									transfer.block <= Self::block_number(),
+									Error::<T>::MalformedTransfer
+								);
 								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
-								//will be deal_order.maturity - deal_order.created_moment
-								//let deal_term = Duration::new(60 * 60 * 24 * 30, 0);
-								//let current_timestamp = <pallet_timestamp::Pallet<T>>::get(); || now
-								//let isLate = current_timestamp > deal_order.maturity;
 
 								//TODO: add compound interest formula
 								let expected_interest = helpers::interest_rate::calc_interest(
@@ -928,7 +931,7 @@ pub mod pallet {
 					block: <frame_system::Pallet<T>>::block_number(),
 					from: from_id,
 					to: to_id,
-					order: order_id,
+					order_id,
 					processed: false,
 					sighash: who.clone(),
 					tx: blockchain_tx_id,
@@ -947,7 +950,7 @@ pub mod pallet {
 					block: <frame_system::Pallet<T>>::block_number(),
 					from: from_id,
 					to: to_id,
-					order: order_id,
+					order_id,
 					processed: false,
 					sighash: who.clone(),
 					tx: blockchain_tx_id,

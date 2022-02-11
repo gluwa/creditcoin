@@ -70,7 +70,7 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub kind: TransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
-	pub order: OrderId<BlockNum, Hash>,
+	pub order_id: OrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
 	pub tx: ExternalTxId,
 	pub block: BlockNum,
