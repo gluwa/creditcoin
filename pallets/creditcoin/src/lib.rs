@@ -518,7 +518,8 @@ pub mod pallet {
 
 			ensure!(
 				ask_order.amount == bid_order.amount
-					&& (ask_order.interest / ask_maturity) <= (bid_order.interest / bid_maturity),
+					&& (ask_order.interest_rate / ask_maturity)
+						<= (bid_order.interest_rate / bid_maturity),
 				Error::<T>::AskBidMismatch
 			);
 
@@ -997,7 +998,7 @@ pub mod pallet {
 						Transfers::<T>::try_mutate(&transfer_id, |value| {
 							if let Some(transfer) = value {
 								ensure!(
-									transfer.order == OrderId::Deal(deal_order_id.clone()),
+									transfer.order_id == OrderId::Deal(deal_order_id.clone()),
 									Error::<T>::TransferMismatch
 								);
 
