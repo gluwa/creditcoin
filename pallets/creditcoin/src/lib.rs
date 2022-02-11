@@ -530,7 +530,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000)]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 1))]
 		pub fn add_deal_order(
 			origin: OriginFor<T>,
 			offer_id: OfferId<T::BlockNumber, T::Hash>,
@@ -538,14 +538,21 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
+			let deal_order_id = DealOrderId::new::<T>(expiration_block, &offer_id);
+			ensure!(!DealOrders::<T>::contains_id(&deal_order_id), Error::<T>::DuplicateId);
+
 			let offer = try_get_id!(Offers<T>, &offer_id, NonExistentOffer)?;
+
+			let head = Self::block_number();
+
+			ensure!(offer.expiration_block >= head, Error::<T>::OfferExpired);
+
 			let ask_order = try_get_id!(AskOrders<T>, &offer.ask_order, NonExistentAskOrder)?;
 
 			let bid_order = try_get_id!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
 
-			// TODO: checks to make sure orders match up
+			ensure!(bid_order.sighash == who, Error::<T>::NotBorrower);
 
-			let deal_order_id = DealOrderId::new::<T>(expiration_block, &offer_id);
 			let deal_order = DealOrder {
 				blockchain: offer.blockchain,
 				lender: ask_order.address,
@@ -562,6 +569,10 @@ pub mod pallet {
 				repayment_transfer: None,
 			};
 
+			Self::deposit_event(Event::<T>::DealOrderAdded(
+				deal_order_id.clone(),
+				deal_order.clone(),
+			));
 			DealOrders::<T>::insert_id(deal_order_id, deal_order);
 
 			Ok(())
