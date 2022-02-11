@@ -225,7 +225,7 @@ fn register_transfer_ocw() {
 			block: System::block_number(),
 			from: lender_address_id.clone(),
 			to: debtor_address_id.clone(),
-			order: OrderId::Deal(deal_order_id.clone()),
+			order_id: OrderId::Deal(deal_order_id.clone()),
 			processed: false,
 			sighash: lender.clone(),
 			tx: tx_hash.as_bytes().into_bounded(),

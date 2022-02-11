@@ -181,7 +181,7 @@ impl<T: Config> Pallet<T> {
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash>,
 	) -> OffchainResult<()> {
 		let UnverifiedTransfer {
-			transfer: Transfer { blockchain, kind, order, amount, tx, .. },
+			transfer: Transfer { blockchain, kind, order_id, amount, tx, .. },
 			from_external: from,
 			to_external: to,
 		} = transfer;
@@ -193,7 +193,7 @@ impl<T: Config> Pallet<T> {
 				"support for erc20 transfers is not yet implemented",
 			)),
 			TransferKind::Ethless(contract) => {
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order, amount, tx)
+				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
 			},
 			TransferKind::Other(_) => Err(OffchainError::InvalidTransfer(
 				"support for other transfers is not yet implemented",
