@@ -176,7 +176,6 @@ fn register_transfer_ocw() {
 			loan_amount.clone(),
 			0u64.into(),
 			1_000_000_000_000,
-			0,
 			expiration,
 			ask_guid.clone()
 		));
@@ -189,7 +188,6 @@ fn register_transfer_ocw() {
 			loan_amount.clone(),
 			0u64.into(),
 			1_000_000_000_000,
-			0,
 			expiration,
 			bid_guid.clone()
 		));

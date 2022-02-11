@@ -122,7 +122,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+		DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -149,7 +149,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+		AskOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -160,7 +160,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+		BidOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -198,19 +198,19 @@ pub mod pallet {
 
 		AskOrderAdded(
 			AskOrderId<T::BlockNumber, T::Hash>,
-			AskOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+			AskOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
 		BidOrderAdded(
 			BidOrderId<T::BlockNumber, T::Hash>,
-			BidOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+			BidOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
 		OfferAdded(OfferId<T::BlockNumber, T::Hash>, Offer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		DealOrderAdded(
 			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 		DealOrderCompleted(
 			DealOrderId<T::BlockNumber, T::Hash>,
@@ -421,7 +421,6 @@ pub mod pallet {
 			amount: ExternalAmount,
 			interest_rate: ExternalAmount,
 			maturity: T::Moment,
-			fee: BalanceFor<T>,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -438,7 +437,6 @@ pub mod pallet {
 				amount,
 				interest_rate,
 				maturity,
-				fee,
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				sighash: who,
@@ -457,7 +455,6 @@ pub mod pallet {
 			amount: ExternalAmount,
 			interest_rate: ExternalAmount,
 			maturity: T::Moment,
-			fee: BalanceFor<T>,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -474,7 +471,6 @@ pub mod pallet {
 				amount,
 				interest_rate,
 				maturity,
-				fee,
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				sighash: who,
@@ -571,7 +567,6 @@ pub mod pallet {
 				amount: bid_order.amount,
 				interest_rate: bid_order.interest_rate,
 				maturity: bid_order.maturity,
-				fee: bid_order.fee,
 				expiration_block,
 				timestamp: Self::timestamp(),
 				sighash: who,
@@ -693,7 +688,6 @@ pub mod pallet {
 			amount: ExternalAmount,
 			interest_rate: ExternalAmount,
 			maturity: T::Moment,
-			fee: BalanceFor<T>,
 			expiration_block: BlockNumberFor<T>,
 			ask_guid: Guid,
 			bid_guid: Guid,
@@ -738,7 +732,6 @@ pub mod pallet {
 				amount,
 				interest_rate,
 				maturity,
-				fee,
 				expiration_block,
 				block: current_block,
 				sighash: lender_account.clone(),
@@ -750,7 +743,6 @@ pub mod pallet {
 				amount,
 				interest_rate,
 				maturity,
-				fee,
 				expiration_block,
 				block: current_block,
 				sighash: borrower_account.clone(),
@@ -772,7 +764,6 @@ pub mod pallet {
 				amount,
 				interest_rate,
 				maturity,
-				fee,
 				expiration_block,
 				timestamp: Self::timestamp(),
 				sighash: borrower_account,
