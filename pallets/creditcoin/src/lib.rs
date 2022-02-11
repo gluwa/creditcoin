@@ -212,6 +212,8 @@ pub mod pallet {
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		),
+
+		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>, TransferId<T::Hash>),
 	}
 
 	// Errors inform users that something went wrong.
@@ -258,6 +260,7 @@ pub mod pallet {
 
 		DealOrderAlreadyCompleted,
 		DealOrderAlreadyLocked,
+		DealOrderAlreadyClosed,
 		DuplicateDealOrder,
 		DealOrderExpired,
 
@@ -832,6 +835,57 @@ pub mod pallet {
 					.map_err(|()| Error::<T>::UnverifiedTransferPoolFull)?;
 			}
 
+			Ok(())
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3, 2))]
+		pub fn exempt(
+			origin: OriginFor<T>,
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+			transfer_id: TransferId<T::Hash>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			DealOrders::<T>::try_mutate(
+				deal_order_id.expiration(),
+				deal_order_id.hash(),
+				|value| {
+					if let Some(deal_order) = value {
+						ensure!(
+							deal_order.repayment_transfer.is_some(),
+							Error::<T>::DealOrderAlreadyClosed
+						);
+
+						let lender = Self::get_address(&deal_order.lender)?;
+						ensure!(who == lender.owner, Error::<T>::NotLender);
+
+						Transfers::<T>::try_mutate(&transfer_id, |value| {
+							if let Some(transfer) = value {
+								ensure!(
+									transfer.order == OrderId::Deal(deal_order_id.clone()),
+									Error::<T>::TransferMismatch
+								);
+
+								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+
+								transfer.processed = true;
+
+								Ok(())
+							} else {
+								Err(Error::<T>::NonExistentTransfer)
+							}
+						})?;
+
+						deal_order.repayment_transfer = Some(transfer_id.clone());
+
+						Ok(())
+					} else {
+						Err(Error::<T>::NonExistentDealOrder)
+					}
+				},
+			)?;
+
+			Self::deposit_event(Event::<T>::LoanExempted(deal_order_id, transfer_id));
 			Ok(())
 		}
 
