@@ -57,8 +57,6 @@ pub mod pallet {
 	};
 	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedInto, Verify};
 
-	use super::*;
-
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config:
@@ -211,6 +209,9 @@ pub mod pallet {
 		OfferAdded(OfferId<T::BlockNumber, T::Hash>, Offer<T::AccountId, T::BlockNumber, T::Hash>),
 
 		DealOrderAdded(
+			DealOrderId<T::BlockNumber, T::Hash>,
+			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+		),
 		DealOrderCompleted(
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
@@ -417,7 +418,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
 			amount: ExternalAmount,
-			interest: ExternalAmount,
+			interest_rate: ExternalAmount,
 			maturity: T::Moment,
 			fee: BalanceFor<T>,
 			expiration_block: BlockNumberFor<T>,
@@ -434,7 +435,7 @@ pub mod pallet {
 				blockchain: address.blockchain,
 				address: address_id,
 				amount,
-				interest,
+				interest_rate,
 				maturity,
 				fee,
 				expiration_block,
@@ -453,7 +454,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
 			amount: ExternalAmount,
-			interest: ExternalAmount,
+			interest_rate: ExternalAmount,
 			maturity: T::Moment,
 			fee: BalanceFor<T>,
 			expiration_block: BlockNumberFor<T>,
@@ -470,7 +471,7 @@ pub mod pallet {
 				blockchain: address.blockchain,
 				address: address_id,
 				amount,
-				interest,
+				interest_rate,
 				maturity,
 				fee,
 				expiration_block,
@@ -566,7 +567,7 @@ pub mod pallet {
 				lender: ask_order.address,
 				borrower: bid_order.address,
 				amount: bid_order.amount,
-				interest_rate: bid_order.interest,
+				interest_rate: bid_order.interest_rate,
 				maturity: bid_order.maturity,
 				fee: bid_order.fee,
 				expiration_block,
@@ -628,7 +629,7 @@ pub mod pallet {
 						let lender =
 							try_get!(Addresses<T>, &deal_order.lender, NonExistentAddress)?;
 
-						ensure!(lender.owner == who, Error::<T>::NotInvestor);
+						ensure!(lender.owner == who, Error::<T>::NotLender);
 
 						let now = Self::timestamp();
 						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
@@ -684,9 +685,11 @@ pub mod pallet {
 
 		#[pallet::weight(10_000)]
 		pub fn register_deal_order(
+			origin: OriginFor<T>,
+			lender_address: AddressId<T::Hash>,
 			borrower_address: AddressId<T::Hash>,
 			amount: ExternalAmount,
-			interest: ExternalAmount,
+			interest_rate: ExternalAmount,
 			maturity: T::Moment,
 			fee: BalanceFor<T>,
 			expiration_block: BlockNumberFor<T>,
@@ -731,7 +734,7 @@ pub mod pallet {
 				blockchain: lender.blockchain.clone(),
 				address: lender_address.clone(),
 				amount,
-				interest,
+				interest_rate,
 				maturity,
 				fee,
 				expiration_block,
@@ -743,7 +746,7 @@ pub mod pallet {
 				blockchain: lender.blockchain.clone(),
 				address: borrower_address.clone(),
 				amount,
-				interest,
+				interest_rate,
 				maturity,
 				fee,
 				expiration_block,
@@ -765,7 +768,7 @@ pub mod pallet {
 				lender: lender_address,
 				borrower: borrower_address,
 				amount,
-				interest,
+				interest_rate,
 				maturity,
 				fee,
 				expiration_block,
@@ -787,10 +790,14 @@ pub mod pallet {
 
 			DealOrders::<T>::insert_id(deal_order_id.clone(), deal_order.clone());
 			Self::deposit_event(Event::<T>::DealOrderAdded(deal_order_id, deal_order));
+			Ok(())
+		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(4,2))]
 		pub fn close_deal_order(
+			origin: OriginFor<T>,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+			transfer_id: TransferId<T::Hash>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -802,10 +809,10 @@ pub mod pallet {
 						let borrower =
 							try_get!(Addresses<T>, &deal_order.borrower, NonExistentAddress)?;
 
-						ensure!(borrower.owner == who, Error::<T>::NotFundraiser);
+						ensure!(borrower.owner == who, Error::<T>::NotBorrower);
 
-						let head = Self::block_number();
-						ensure!(head >= deal_order.block, Error::<T>::MalformedDealOrder);
+						let now = Self::timestamp();
+						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
 
 						ensure!(
 							deal_order.repayment_transfer.is_none(),
@@ -823,7 +830,7 @@ pub mod pallet {
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 								//will be deal_order.maturity - deal_order.created_moment
 								//let deal_term = Duration::new(60 * 60 * 24 * 30, 0);
-								//let current_timestamp = <pallet_timestamp::Pallet<T>>::get();
+								//let current_timestamp = <pallet_timestamp::Pallet<T>>::get(); || now
 								//let isLate = current_timestamp > deal_order.maturity;
 
 								//TODO: add compound interest formula
@@ -850,7 +857,7 @@ pub mod pallet {
 						})?;
 
 						deal_order.repayment_transfer = Some(transfer_id);
-						deal_order.block = head;
+
 						Self::deposit_event(Event::<T>::DealOrderClosed(
 							deal_order_id.clone(),
 							deal_order.clone(),
@@ -865,6 +872,7 @@ pub mod pallet {
 		}
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
 		pub fn register_transfer(
+			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
 			gain: ExternalAmount,
 			order_id: OrderId<T::BlockNumber, T::Hash>,
