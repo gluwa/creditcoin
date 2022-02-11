@@ -114,7 +114,7 @@ fn validate_ethless_transfer(
 	} else {
 		return Err(OffchainError::InvalidTransfer(
 			"ethless transaction lacks a receiver (contract creation transaction)",
-		))
+		));
 	}
 
 	let inputs = transfer_fn.decode_input(&transaction.input.0[4..]).map_err(|e| {
@@ -130,10 +130,11 @@ fn validate_ethless_transfer(
 
 	let input_from = match inputs.get(0) {
 		Some(Token::Address(addr)) => addr,
-		_ =>
+		_ => {
 			return Err(OffchainError::InvalidTransfer(
 				"first input to ethless transfer was not an address",
-			)),
+			))
+		},
 	};
 	ensure!(
 		&input_from == &from,
@@ -144,10 +145,11 @@ fn validate_ethless_transfer(
 
 	let input_to = match inputs.get(1) {
 		Some(Token::Address(addr)) => addr,
-		_ =>
+		_ => {
 			return Err(OffchainError::InvalidTransfer(
 				"second input to ethless transfer was not an address",
-			)),
+			))
+		},
 	};
 	ensure!(
 		&input_to == &to,
@@ -158,10 +160,11 @@ fn validate_ethless_transfer(
 
 	let input_amount = match inputs.get(2) {
 		Some(Token::Uint(value)) => ExternalAmount::from(value),
-		_ =>
+		_ => {
 			return Err(OffchainError::InvalidTransfer(
 				"third input to ethless transfer was not a Uint",
-			)),
+			))
+		},
 	};
 	ensure!(
 		&input_amount == amount,
@@ -189,8 +192,9 @@ impl<T: Config> Pallet<T> {
 			TransferKind::Erc20(_) => Err(OffchainError::InvalidTransfer(
 				"support for erc20 transfers is not yet implemented",
 			)),
-			TransferKind::Ethless(contract) =>
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order, amount, tx),
+			TransferKind::Ethless(contract) => {
+				Self::verify_ethless_transfer(blockchain, contract, from, to, order, amount, tx)
+			},
 			TransferKind::Other(_) => Err(OffchainError::InvalidTransfer(
 				"support for other transfers is not yet implemented",
 			)),
@@ -211,9 +215,9 @@ impl<T: Config> Pallet<T> {
 		if let Some((acc, res)) = result {
 			if res.is_err() {
 				log::error!("failure: offchain_signed_tx: tx sent: {:?}", acc.id);
-				return Err(Error::OffchainSignedTxFailed)
+				return Err(Error::OffchainSignedTxFailed);
 			} else {
-				return Ok(())
+				return Ok(());
 			}
 		}
 
