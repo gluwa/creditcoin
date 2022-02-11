@@ -25,7 +25,7 @@ if [ -n "$BOOTNODE_IP" ] || [ -n "$BOOTNODE_FQDN" ]; then
     else
         bootnode="--bootnodes /ip4/$BOOTNODE_IP/tcp/30333/p2p/$boot_id"
     fi
-    /bin/creditcoin-node --chain testnet $name $bootnode \
+    /bin/creditcoin-node --chain "${CHAIN:-testnet}" $name $bootnode \
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
@@ -33,7 +33,7 @@ if [ -n "$BOOTNODE_IP" ] || [ -n "$BOOTNODE_FQDN" ]; then
 else
     key="${NODE_KEY:-c5eb4a9ada5c9dd76378d000f046e8cde064d68e96a1df569190eee70afba8e7}"
     node_name="${NODE_NAME:-bootnode}"
-    /bin/creditcoin-node --chain testnet --node-key "$key" --name "$node_name" \
+    /bin/creditcoin-node --chain "${CHAIN:-testnet}" --node-key "$key" --name "$node_name" \
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
