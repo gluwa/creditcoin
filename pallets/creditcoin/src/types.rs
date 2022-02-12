@@ -110,31 +110,12 @@ pub struct AskOrder<AccountId, BlockNum, Hash, Moment> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct Fee<BlockNum> {
-	pub block: BlockNum,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct BidOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
 	pub terms: BidTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
-	pub sighash: AccountId,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct RepaymentOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
-	pub src_address: AddressId<Hash>,
-	pub dst_address: AddressId<Hash>,
-	pub amount: ExternalAmount,
-	pub expiration_block: BlockNum,
-	pub block: BlockNum,
-	pub deal: DealOrderId<BlockNum, Hash>,
-	pub previous_owner: Option<AccountId>,
-	pub transfer: TransferId<Hash>,
 	pub sighash: AccountId,
 }
 
