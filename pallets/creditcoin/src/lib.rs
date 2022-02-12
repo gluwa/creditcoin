@@ -352,7 +352,7 @@ pub mod pallet {
 			Offers::<T>::remove_prefix(block_number, None);
 			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
 				.filter_map(|(hash, deal)| {
-					if deal.loan_transfer.is_some() {
+					if deal.loan_transfer_id.is_some() {
 						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
 					} else {
 						None
@@ -406,7 +406,7 @@ pub mod pallet {
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 			let ask_order = AskOrder {
 				blockchain: address.blockchain,
-				address: address_id,
+				lender_address_id: address_id,
 				terms: terms.into(),
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
@@ -436,7 +436,7 @@ pub mod pallet {
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 			let bid_order = BidOrder {
 				blockchain: address.blockchain,
-				address: address_id,
+				borrower_address_id: address_id,
 				terms: terms.into(),
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
@@ -483,8 +483,8 @@ pub mod pallet {
 			ensure!(!Offers::<T>::contains_id(&offer_id), Error::<T>::DuplicateOffer);
 
 			let offer = Offer {
-				ask_order: ask_order_id,
-				bid_order: bid_order_id,
+				ask_id: ask_order_id,
+				bid_id: bid_order_id,
 				block: Self::block_number(),
 				blockchain: ask_order.blockchain,
 				expiration_block,
@@ -513,9 +513,9 @@ pub mod pallet {
 
 			ensure!(offer.expiration_block >= head, Error::<T>::OfferExpired);
 
-			let ask_order = try_get_id!(AskOrders<T>, &offer.ask_order, NonExistentAskOrder)?;
+			let ask_order = try_get_id!(AskOrders<T>, &offer.ask_id, NonExistentAskOrder)?;
 
-			let bid_order = try_get_id!(BidOrders<T>, &offer.bid_order, NonExistentBidOrder)?;
+			let bid_order = try_get_id!(BidOrders<T>, &offer.bid_id, NonExistentBidOrder)?;
 
 			ensure!(bid_order.sighash == who, Error::<T>::NotBorrower);
 
@@ -526,15 +526,15 @@ pub mod pallet {
 
 			let deal_order = DealOrder {
 				blockchain: offer.blockchain,
-				lender: ask_order.address,
-				borrower: bid_order.address,
+				lender_address_id: ask_order.lender_address_id,
+				borrower_address_id: bid_order.borrower_address_id,
 				terms: agreed_terms,
 				expiration_block,
 				timestamp: Self::timestamp(),
 				sighash: who,
-				loan_transfer: None,
+				loan_transfer_id: None,
 				lock: None,
-				repayment_transfer: None,
+				repayment_transfer_id: None,
 			};
 
 			Self::deposit_event(Event::<T>::DealOrderAdded(
@@ -559,7 +559,7 @@ pub mod pallet {
 				|value| {
 					if let Some(deal_order) = value {
 						ensure!(deal_order.lock.is_none(), Error::<T>::DealOrderAlreadyLocked);
-						ensure!(deal_order.loan_transfer.is_some(), Error::<T>::DealIncomplete);
+						ensure!(deal_order.loan_transfer_id.is_some(), Error::<T>::DealIncomplete);
 						ensure!(deal_order.sighash == who, Error::<T>::NotBorrower);
 						deal_order.lock = Some(who);
 						Ok(())
@@ -586,7 +586,7 @@ pub mod pallet {
 				|value| {
 					if let Some(deal_order) = value {
 						let lender =
-							try_get!(Addresses<T>, &deal_order.lender, NonExistentAddress)?;
+							try_get!(Addresses<T>, &deal_order.lender_address_id, NonExistentAddress)?;
 
 						ensure!(lender.owner == who, Error::<T>::NotLender);
 
@@ -597,7 +597,7 @@ pub mod pallet {
 						ensure!(deal_order.expiration_block >= head, Error::<T>::DealOrderExpired);
 
 						ensure!(
-							deal_order.loan_transfer.is_none(),
+							deal_order.loan_transfer_id.is_none(),
 							Error::<T>::DealOrderAlreadyCompleted
 						);
 
@@ -626,7 +626,7 @@ pub mod pallet {
 							}
 						})?;
 
-						deal_order.loan_transfer = Some(transfer_id);
+						deal_order.loan_transfer_id = Some(transfer_id);
 						deal_order.timestamp = now;
 
 						Self::deposit_event(Event::<T>::DealOrderCompleted(
@@ -688,7 +688,7 @@ pub mod pallet {
 
 			let ask_order = AskOrder {
 				blockchain: lender.blockchain.clone(),
-				address: lender_address.clone(),
+				lender_address_id: lender_address.clone(),
 				terms: terms.clone().into(),
 				expiration_block,
 				block: current_block,
@@ -697,7 +697,7 @@ pub mod pallet {
 
 			let bid_order = BidOrder {
 				blockchain: lender.blockchain.clone(),
-				address: borrower_address.clone(),
+				borrower_address_id: borrower_address.clone(),
 				terms: terms.clone().into(),
 				expiration_block,
 				block: current_block,
@@ -705,8 +705,8 @@ pub mod pallet {
 			};
 
 			let offer = Offer {
-				ask_order: ask_order_id.clone(),
-				bid_order: bid_order_id.clone(),
+				ask_id: ask_order_id.clone(),
+				bid_id: bid_order_id.clone(),
 				block: current_block,
 				blockchain: lender.blockchain.clone(),
 				expiration_block,
@@ -715,15 +715,15 @@ pub mod pallet {
 
 			let deal_order = DealOrder {
 				blockchain: lender.blockchain,
-				lender: lender_address,
-				borrower: borrower_address,
+				lender_address_id: lender_address,
+				borrower_address_id: borrower_address,
 				terms,
 				expiration_block,
 				timestamp: Self::timestamp(),
 				sighash: borrower_account,
-				loan_transfer: None,
+				loan_transfer_id: None,
 				lock: None,
-				repayment_transfer: None,
+				repayment_transfer_id: None,
 			};
 
 			AskOrders::<T>::insert_id(ask_order_id.clone(), ask_order.clone());
@@ -754,7 +754,7 @@ pub mod pallet {
 				|value| {
 					if let Some(deal_order) = value {
 						let borrower =
-							try_get!(Addresses<T>, &deal_order.borrower, NonExistentAddress)?;
+							try_get!(Addresses<T>, &deal_order.borrower_address_id, NonExistentAddress)?;
 
 						ensure!(borrower.owner == who, Error::<T>::NotBorrower);
 
@@ -762,7 +762,7 @@ pub mod pallet {
 						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
 
 						ensure!(
-							deal_order.repayment_transfer.is_none(),
+							deal_order.repayment_transfer_id.is_none(),
 							Error::<T>::DealOrderAlreadyClosed
 						);
 
@@ -802,7 +802,7 @@ pub mod pallet {
 							}
 						})?;
 
-						deal_order.repayment_transfer = Some(transfer_id);
+						deal_order.repayment_transfer_id = Some(transfer_id);
 
 						Self::deposit_event(Event::<T>::DealOrderClosed(
 							deal_order_id.clone(),
@@ -832,10 +832,10 @@ pub mod pallet {
 
 					if gain.is_zero() {
 						// transfer for initial loan
-						(order.lender, order.borrower, order.terms.amount)
+						(order.lender_address_id, order.borrower_address_id, order.terms.amount)
 					} else {
 						// transfer to repay loan
-						(order.borrower, order.lender, order.terms.amount)
+						(order.borrower_address_id, order.lender_address_id, order.terms.amount)
 					}
 				},
 				OrderId::Repayment(_) => {
@@ -925,11 +925,11 @@ pub mod pallet {
 				|value| {
 					if let Some(deal_order) = value {
 						ensure!(
-							deal_order.repayment_transfer.is_some(),
+							deal_order.repayment_transfer_id.is_some(),
 							Error::<T>::DealOrderAlreadyClosed
 						);
 
-						let lender = Self::get_address(&deal_order.lender)?;
+						let lender = Self::get_address(&deal_order.lender_address_id)?;
 						ensure!(who == lender.owner, Error::<T>::NotLender);
 
 						Transfers::<T>::try_mutate(&transfer_id, |value| {
@@ -949,7 +949,7 @@ pub mod pallet {
 							}
 						})?;
 
-						deal_order.repayment_transfer = Some(transfer_id.clone());
+						deal_order.repayment_transfer_id = Some(transfer_id.clone());
 
 						Ok(())
 					} else {

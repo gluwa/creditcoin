@@ -92,8 +92,8 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Offer<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
-	pub ask_order: AskOrderId<BlockNum, Hash>,
-	pub bid_order: BidOrderId<BlockNum, Hash>,
+	pub ask_id: AskOrderId<BlockNum, Hash>,
+	pub bid_id: BidOrderId<BlockNum, Hash>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
@@ -102,7 +102,7 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AskOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
-	pub address: AddressId<Hash>,
+	pub lender_address_id: AddressId<Hash>,
 	pub terms: AskTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
@@ -112,7 +112,7 @@ pub struct AskOrder<AccountId, BlockNum, Hash, Moment> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct BidOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
-	pub address: AddressId<Hash>,
+	pub borrower_address_id: AddressId<Hash>,
 	pub terms: BidTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
@@ -122,13 +122,13 @@ pub struct BidOrder<AccountId, BlockNum, Hash, Moment> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
-	pub lender: AddressId<Hash>,
-	pub borrower: AddressId<Hash>,
+	pub lender_address_id: AddressId<Hash>,
+	pub borrower_address_id: AddressId<Hash>,
 	pub terms: LoanTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub timestamp: Moment,
-	pub loan_transfer: Option<TransferId<Hash>>,
-	pub repayment_transfer: Option<TransferId<Hash>>,
+	pub loan_transfer_id: Option<TransferId<Hash>>,
+	pub repayment_transfer_id: Option<TransferId<Hash>>,
 	pub lock: Option<AccountId>,
 	pub sighash: AccountId,
 }
