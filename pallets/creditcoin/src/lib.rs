@@ -126,17 +126,6 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn repayment_orders)]
-	pub type RepaymentOrders<T: Config> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		T::BlockNumber,
-		Identity,
-		T::Hash,
-		RepaymentOrder<T::AccountId, T::BlockNumber, T::Hash>,
-	>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn addresses)]
 	pub type Addresses<T: Config> =
 		StorageMap<_, Blake2_128Concat, AddressId<T::Hash>, Address<T::AccountId>>;
@@ -293,6 +282,8 @@ pub mod pallet {
 
 		UnverifiedTransferPoolFull,
 
+		RepaymentOrderUnsupported,
+
 		VerifyStringTooLong,
 	}
 
@@ -369,24 +360,8 @@ pub mod pallet {
 				})
 				.collect();
 
-			let repayments_to_keep: Vec<_> = RepaymentOrders::<T>::drain_prefix(block_number)
-				.filter_map(|(hash, repay)| {
-					if repay.previous_owner.is_some() {
-						Some((
-							RepaymentOrderId::with_expiration_hash::<T>(block_number, hash),
-							repay,
-						))
-					} else {
-						None
-					}
-				})
-				.collect();
-
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
-			}
-			for (key, repay) in repayments_to_keep {
-				RepaymentOrders::<T>::insert_id(key, repay);
 			}
 		}
 	}
@@ -863,14 +838,9 @@ pub mod pallet {
 						(order.borrower, order.lender, order.terms.amount)
 					}
 				},
-				OrderId::Repayment(repay_order_id) => {
+				OrderId::Repayment(_) => {
 					ensure!(gain.is_zero(), Error::<T>::RepaymentOrderNonZeroGain);
-					let order = try_get_id!(
-						RepaymentOrders<T>,
-						&repay_order_id,
-						NonExistentRepaymentOrder
-					)?;
-					(order.src_address, order.dst_address, order.amount)
+					return Err(Error::<T>::RepaymentOrderUnsupported.into());
 				},
 			};
 
