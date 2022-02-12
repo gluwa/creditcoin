@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{mock::*, Blockchain, ExternalAmount, OrderId, TransferKind};
+use crate::{mock::*, Blockchain, ExternalAmount, LoanTerms, OrderId, TransferKind};
 use bstr::B;
 use codec::Decode;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
@@ -168,14 +168,18 @@ fn register_transfer_ocw() {
 			debtor_addr
 		));
 
+		let terms = LoanTerms {
+			amount: loan_amount.clone(),
+			interest_rate: 0,
+			maturity: 1_000_000_000_000,
+		};
+
 		let ask_guid = B("deadbeef").into_bounded();
 		let ask_id = crate::AskOrderId::new::<Test>(System::block_number() + expiration, &ask_guid);
 		assert_ok!(Creditcoin::add_ask_order(
 			Origin::signed(lender.clone()),
 			lender_address_id.clone(),
-			loan_amount.clone(),
-			0u64.into(),
-			1_000_000_000_000,
+			terms.clone(),
 			expiration,
 			ask_guid.clone()
 		));
@@ -185,9 +189,7 @@ fn register_transfer_ocw() {
 		assert_ok!(Creditcoin::add_bid_order(
 			Origin::signed(debtor.clone()),
 			debtor_address_id.clone(),
-			loan_amount.clone(),
-			0u64.into(),
-			1_000_000_000_000,
+			terms.clone(),
 			expiration,
 			bid_guid.clone()
 		));

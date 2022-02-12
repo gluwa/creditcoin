@@ -1,3 +1,7 @@
+pub mod loan_terms;
+
+pub use loan_terms::*;
+
 use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use extend::ext;
 use frame_support::{
@@ -99,9 +103,7 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 pub struct AskOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
-	pub amount: ExternalAmount,
-	pub interest_rate: ExternalAmount,
-	pub maturity: Moment,
+	pub terms: AskTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
@@ -116,9 +118,7 @@ pub struct Fee<BlockNum> {
 pub struct BidOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub address: AddressId<Hash>,
-	pub amount: ExternalAmount,
-	pub interest_rate: ExternalAmount,
-	pub maturity: Moment,
+	pub terms: BidTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub sighash: AccountId,
@@ -143,9 +143,7 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub lender: AddressId<Hash>,
 	pub borrower: AddressId<Hash>,
-	pub amount: ExternalAmount,
-	pub interest_rate: ExternalAmount,
-	pub maturity: Moment,
+	pub terms: LoanTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub timestamp: Moment,
 	pub loan_transfer: Option<TransferId<Hash>>,

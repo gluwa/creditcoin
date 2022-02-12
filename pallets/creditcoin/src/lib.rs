@@ -418,9 +418,7 @@ pub mod pallet {
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			amount: ExternalAmount,
-			interest_rate: ExternalAmount,
-			maturity: T::Moment,
+			terms: LoanTerms<T::Moment>,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -434,9 +432,7 @@ pub mod pallet {
 			let ask_order = AskOrder {
 				blockchain: address.blockchain,
 				address: address_id,
-				amount,
-				interest_rate,
-				maturity,
+				terms: terms.into(),
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				sighash: who,
@@ -452,9 +448,7 @@ pub mod pallet {
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			amount: ExternalAmount,
-			interest_rate: ExternalAmount,
-			maturity: T::Moment,
+			terms: LoanTerms<T::Moment>,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -468,9 +462,7 @@ pub mod pallet {
 			let bid_order = BidOrder {
 				blockchain: address.blockchain,
 				address: address_id,
-				amount,
-				interest_rate,
-				maturity,
+				terms: terms.into(),
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				sighash: who,
@@ -509,15 +501,7 @@ pub mod pallet {
 				Error::<T>::AddressPlatformMismatch
 			);
 
-			let ask_maturity: u64 = ask_order.maturity.unique_saturated_into();
-			let bid_maturity: u64 = bid_order.maturity.unique_saturated_into();
-
-			ensure!(
-				ask_order.amount == bid_order.amount
-					&& (ask_order.interest_rate / ask_maturity)
-						<= (bid_order.interest_rate / bid_maturity),
-				Error::<T>::AskBidMismatch
-			);
+			ensure!(ask_order.terms.match_with(&bid_order.terms), Error::<T>::AskBidMismatch);
 
 			let offer_id = OfferId::new::<T>(expiration_block, &ask_order_id, &bid_order_id);
 
@@ -560,13 +544,16 @@ pub mod pallet {
 
 			ensure!(bid_order.sighash == who, Error::<T>::NotBorrower);
 
+			let agreed_terms = ask_order
+				.terms
+				.agreed_terms(bid_order.terms)
+				.ok_or(Error::<T>::AskBidMismatch)?;
+
 			let deal_order = DealOrder {
 				blockchain: offer.blockchain,
 				lender: ask_order.address,
 				borrower: bid_order.address,
-				amount: bid_order.amount,
-				interest_rate: bid_order.interest_rate,
-				maturity: bid_order.maturity,
+				terms: agreed_terms,
 				expiration_block,
 				timestamp: Self::timestamp(),
 				sighash: who,
@@ -646,7 +633,7 @@ pub mod pallet {
 									Error::<T>::TransferMismatch
 								);
 								ensure!(
-									transfer.amount == deal_order.amount,
+									transfer.amount == deal_order.terms.amount,
 									Error::<T>::TransferMismatch
 								);
 								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
@@ -685,9 +672,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			lender_address: AddressId<T::Hash>,
 			borrower_address: AddressId<T::Hash>,
-			amount: ExternalAmount,
-			interest_rate: ExternalAmount,
-			maturity: T::Moment,
+			terms: LoanTerms<T::Moment>,
 			expiration_block: BlockNumberFor<T>,
 			ask_guid: Guid,
 			bid_guid: Guid,
@@ -729,9 +714,7 @@ pub mod pallet {
 			let ask_order = AskOrder {
 				blockchain: lender.blockchain.clone(),
 				address: lender_address.clone(),
-				amount,
-				interest_rate,
-				maturity,
+				terms: terms.clone().into(),
 				expiration_block,
 				block: current_block,
 				sighash: lender_account.clone(),
@@ -740,9 +723,7 @@ pub mod pallet {
 			let bid_order = BidOrder {
 				blockchain: lender.blockchain.clone(),
 				address: borrower_address.clone(),
-				amount,
-				interest_rate,
-				maturity,
+				terms: terms.clone().into(),
 				expiration_block,
 				block: current_block,
 				sighash: borrower_account.clone(),
@@ -761,9 +742,7 @@ pub mod pallet {
 				blockchain: lender.blockchain,
 				lender: lender_address,
 				borrower: borrower_address,
-				amount,
-				interest_rate,
-				maturity,
+				terms,
 				expiration_block,
 				timestamp: Self::timestamp(),
 				sighash: borrower_account,
@@ -829,13 +808,10 @@ pub mod pallet {
 								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
 								//TODO: add compound interest formula
-								let expected_interest = helpers::interest_rate::calc_interest(
-									&deal_order.amount,
-									&deal_order.interest_rate,
-								);
+								let expected_interest = deal_order.terms.calc_interest();
 
 								ensure!(
-									transfer.amount >= expected_interest + deal_order.amount,
+									transfer.amount >= expected_interest + deal_order.terms.amount,
 									Error::<T>::TransferAmountInsufficient
 								);
 
@@ -881,10 +857,10 @@ pub mod pallet {
 
 					if gain.is_zero() {
 						// transfer for initial loan
-						(order.lender, order.borrower, order.amount)
+						(order.lender, order.borrower, order.terms.amount)
 					} else {
 						// transfer to repay loan
-						(order.borrower, order.lender, order.amount)
+						(order.borrower, order.lender, order.terms.amount)
 					}
 				},
 				OrderId::Repayment(repay_order_id) => {
