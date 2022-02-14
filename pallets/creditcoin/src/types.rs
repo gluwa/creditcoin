@@ -96,7 +96,7 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 	pub bid_id: BidOrderId<BlockNum, Hash>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
-	pub sighash: AccountId,
+	pub lender: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -106,7 +106,7 @@ pub struct AskOrder<AccountId, BlockNum, Hash, Moment> {
 	pub terms: AskTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
-	pub sighash: AccountId,
+	pub lender: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -116,7 +116,7 @@ pub struct BidOrder<AccountId, BlockNum, Hash, Moment> {
 	pub terms: BidTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
-	pub sighash: AccountId,
+	pub borrower: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -127,10 +127,10 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub terms: LoanTerms<Moment>,
 	pub expiration_block: BlockNum,
 	pub timestamp: Moment,
-	pub loan_transfer_id: Option<TransferId<Hash>>,
+	pub funding_transfer_id: Option<TransferId<Hash>>,
 	pub repayment_transfer_id: Option<TransferId<Hash>>,
 	pub lock: Option<AccountId>,
-	pub sighash: AccountId,
+	pub borrower: AccountId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
