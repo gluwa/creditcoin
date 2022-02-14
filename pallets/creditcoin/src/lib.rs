@@ -556,19 +556,15 @@ pub mod pallet {
 			DealOrders::<T>::try_mutate(
 				deal_order_id.expiration(),
 				deal_order_id.hash(),
-				|value| {
-					if let Some(deal_order) = value {
-						ensure!(deal_order.lock.is_none(), Error::<T>::DealOrderAlreadyLocked);
-						ensure!(
-							deal_order.funding_transfer_id.is_some(),
-							Error::<T>::DealNotFunded
-						);
-						ensure!(deal_order.borrower == who, Error::<T>::NotBorrower);
-						deal_order.lock = Some(who);
-						Ok(())
-					} else {
-						Err(Error::<T>::NonExistentDealOrder)
-					}
+				|value| -> DispatchResult {
+					let deal_order = value.as_mut().ok_or(Error::<T>::NonExistentDealOrder)?;
+
+					ensure!(deal_order.lock.is_none(), Error::<T>::DealOrderAlreadyLocked);
+					ensure!(deal_order.funding_transfer_id.is_some(), Error::<T>::DealNotFunded);
+					ensure!(deal_order.borrower == who, Error::<T>::NotBorrower);
+
+					deal_order.lock = Some(who);
+					Ok(())
 				},
 			)?;
 
