@@ -583,68 +583,47 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			DealOrders::<T>::try_mutate(
-				deal_order_id.expiration(),
-				deal_order_id.hash(),
-				|value| {
-					if let Some(deal_order) = value {
-						let lender = try_get!(
-							Addresses<T>,
-							&deal_order.lender_address_id,
-							NonExistentAddress
-						)?;
+			Self::try_mutate_deal_order_and_transfer(
+				&deal_order_id,
+				&transfer_id,
+				|deal_order| {
+					let lender =
+						try_get!(Addresses<T>, &deal_order.lender_address_id, NonExistentAddress)?;
 
-						ensure!(lender.owner == who, Error::<T>::NotLender);
+					ensure!(lender.owner == who, Error::<T>::NotLender);
 
-						let now = Self::timestamp();
-						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
+					let now = Self::timestamp();
+					ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
 
-						let head = Self::block_number();
-						ensure!(deal_order.expiration_block >= head, Error::<T>::DealOrderExpired);
+					ensure!(
+						deal_order.funding_transfer_id.is_none(),
+						Error::<T>::DealOrderAlreadyFunded
+					);
+					let head = Self::block_number();
+					ensure!(deal_order.expiration_block >= head, Error::<T>::DealOrderExpired);
 
-						ensure!(
-							deal_order.funding_transfer_id.is_none(),
-							Error::<T>::DealOrderAlreadyFunded
-						);
+					deal_order.funding_transfer_id = Some(transfer_id.clone());
+					deal_order.timestamp = now;
 
-						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
-							if let Some(transfer) = transfer {
-								ensure!(
-									transfer.order_id == OrderId::Deal(deal_order_id.clone()),
-									Error::<T>::TransferMismatch
-								);
-								ensure!(
-									transfer.amount == deal_order.terms.amount,
-									Error::<T>::TransferMismatch
-								);
-								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
-								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+					Ok(Some(Event::<T>::DealOrderFunded(deal_order_id.clone(), deal_order.clone())))
+				},
+				|transfer, deal_order| {
+					ensure!(
+						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
+						Error::<T>::TransferMismatch
+					);
+					ensure!(
+						transfer.amount == deal_order.terms.amount,
+						Error::<T>::TransferMismatch
+					);
+					ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
+					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
-								transfer.processed = true;
-								Self::deposit_event(Event::<T>::TransferProcessed(
-									transfer_id.clone(),
-									transfer.clone(),
-								));
-
-								Ok(())
-							} else {
-								Err(Error::<T>::NonExistentTransfer)
-							}
-						})?;
-
-						deal_order.funding_transfer_id = Some(transfer_id);
-						deal_order.timestamp = now;
-
-						Self::deposit_event(Event::<T>::DealOrderFunded(
-							deal_order_id.clone(),
-							deal_order.clone(),
-						));
-						Ok(())
-					} else {
-						Err(Error::<T>::NonExistentDealOrder)
-					}
+					transfer.processed = true;
+					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
 				},
 			)?;
+
 			Ok(())
 		}
 
@@ -754,75 +733,55 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			DealOrders::<T>::try_mutate(
-				deal_order_id.expiration(),
-				deal_order_id.hash(),
-				|value| {
-					if let Some(deal_order) = value {
-						let borrower = try_get!(
-							Addresses<T>,
-							&deal_order.borrower_address_id,
-							NonExistentAddress
-						)?;
+			Self::try_mutate_deal_order_and_transfer(
+				&deal_order_id,
+				&transfer_id,
+				|deal_order| {
+					let borrower = try_get!(
+						Addresses<T>,
+						&deal_order.borrower_address_id,
+						NonExistentAddress
+					)?;
 
-						ensure!(borrower.owner == who, Error::<T>::NotBorrower);
+					ensure!(borrower.owner == who, Error::<T>::NotBorrower);
 
-						let now = Self::timestamp();
-						ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
+					let now = Self::timestamp();
+					ensure!(now >= deal_order.timestamp, Error::<T>::MalformedDealOrder);
 
-						ensure!(
-							deal_order.repayment_transfer_id.is_none(),
-							Error::<T>::DealOrderAlreadyClosed
-						);
+					ensure!(
+						deal_order.repayment_transfer_id.is_none(),
+						Error::<T>::DealOrderAlreadyClosed
+					);
 
-						ensure!(deal_order.lock.is_some(), Error::<T>::DealOrderMustBeLocked);
+					ensure!(deal_order.lock.is_some(), Error::<T>::DealOrderMustBeLocked);
 
-						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
-							if let Some(transfer) = transfer {
-								ensure!(
-									transfer.order_id == OrderId::Deal(deal_order_id.clone()),
-									Error::<T>::TransferMismatch
-								);
+					deal_order.repayment_transfer_id = Some(transfer_id.clone());
 
-								ensure!(
-									transfer.block <= Self::block_number(),
-									Error::<T>::MalformedTransfer
-								);
-								ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
-								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+					Ok(Some(Event::<T>::DealOrderClosed(deal_order_id.clone(), deal_order.clone())))
+				},
+				|transfer, deal_order| {
+					ensure!(
+						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
+						Error::<T>::TransferMismatch
+					);
 
-								//TODO: add compound interest formula
-								let expected_interest = deal_order.terms.calc_interest();
+					ensure!(transfer.block <= Self::block_number(), Error::<T>::MalformedTransfer);
+					ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
+					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
-								ensure!(
-									transfer.amount >= expected_interest + deal_order.terms.amount,
-									Error::<T>::TransferAmountInsufficient
-								);
+					//TODO: add compound interest formula
+					let expected_interest = deal_order.terms.calc_interest();
 
-								transfer.processed = true;
-								Self::deposit_event(Event::<T>::TransferProcessed(
-									transfer_id.clone(),
-									transfer.clone(),
-								));
+					ensure!(
+						transfer.amount >= expected_interest + deal_order.terms.amount,
+						Error::<T>::TransferAmountInsufficient
+					);
 
-								Ok(())
-							} else {
-								Err(Error::<T>::NonExistentTransfer)
-							}
-						})?;
-
-						deal_order.repayment_transfer_id = Some(transfer_id);
-
-						Self::deposit_event(Event::<T>::DealOrderClosed(
-							deal_order_id.clone(),
-							deal_order.clone(),
-						));
-						Ok(())
-					} else {
-						Err(Error::<T>::NonExistentDealOrder)
-					}
+					transfer.processed = true;
+					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
 				},
 			)?;
+
 			Ok(())
 		}
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
@@ -928,42 +887,33 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			DealOrders::<T>::try_mutate(
-				deal_order_id.expiration(),
-				deal_order_id.hash(),
-				|value| {
-					if let Some(deal_order) = value {
-						ensure!(
-							deal_order.repayment_transfer_id.is_some(),
-							Error::<T>::DealOrderAlreadyClosed
-						);
+			Self::try_mutate_deal_order_and_transfer(
+				&deal_order_id,
+				&transfer_id,
+				|deal_order| {
+					ensure!(
+						deal_order.repayment_transfer_id.is_some(),
+						Error::<T>::DealOrderAlreadyClosed
+					);
 
-						let lender = Self::get_address(&deal_order.lender_address_id)?;
-						ensure!(who == lender.owner, Error::<T>::NotLender);
+					let lender = Self::get_address(&deal_order.lender_address_id)?;
+					ensure!(who == lender.owner, Error::<T>::NotLender);
 
-						Transfers::<T>::try_mutate(&transfer_id, |value| {
-							if let Some(transfer) = value {
-								ensure!(
-									transfer.order_id == OrderId::Deal(deal_order_id.clone()),
-									Error::<T>::TransferMismatch
-								);
+					deal_order.repayment_transfer_id = Some(transfer_id.clone());
 
-								ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+					Ok(None)
+				},
+				|transfer, _| {
+					ensure!(
+						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
+						Error::<T>::TransferMismatch
+					);
 
-								transfer.processed = true;
+					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
-								Ok(())
-							} else {
-								Err(Error::<T>::NonExistentTransfer)
-							}
-						})?;
+					transfer.processed = true;
 
-						deal_order.repayment_transfer_id = Some(transfer_id.clone());
-
-						Ok(())
-					} else {
-						Err(Error::<T>::NonExistentDealOrder)
-					}
+					Ok(None)
 				},
 			)?;
 
