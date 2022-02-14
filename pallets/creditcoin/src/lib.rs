@@ -201,7 +201,7 @@ pub mod pallet {
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
-		DealOrderCompleted(
+		DealOrderFunded(
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
@@ -255,9 +255,9 @@ pub mod pallet {
 
 		DuplicateOffer,
 
-		DealIncomplete,
+		DealNotFunded,
 
-		DealOrderAlreadyCompleted,
+		DealOrderAlreadyFunded,
 		DealOrderAlreadyClosed,
 		DealOrderAlreadyLocked,
 		DealOrderMustBeLocked,
@@ -561,7 +561,7 @@ pub mod pallet {
 						ensure!(deal_order.lock.is_none(), Error::<T>::DealOrderAlreadyLocked);
 						ensure!(
 							deal_order.funding_transfer_id.is_some(),
-							Error::<T>::DealIncomplete
+							Error::<T>::DealNotFunded
 						);
 						ensure!(deal_order.borrower == who, Error::<T>::NotBorrower);
 						deal_order.lock = Some(who);
@@ -576,7 +576,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(4,2))]
-		pub fn complete_deal_order(
+		pub fn fund_deal_order(
 			origin: OriginFor<T>,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
 			transfer_id: TransferId<T::Hash>,
@@ -604,7 +604,7 @@ pub mod pallet {
 
 						ensure!(
 							deal_order.funding_transfer_id.is_none(),
-							Error::<T>::DealOrderAlreadyCompleted
+							Error::<T>::DealOrderAlreadyFunded
 						);
 
 						Transfers::<T>::try_mutate(&transfer_id, |transfer| {
@@ -635,7 +635,7 @@ pub mod pallet {
 						deal_order.funding_transfer_id = Some(transfer_id);
 						deal_order.timestamp = now;
 
-						Self::deposit_event(Event::<T>::DealOrderCompleted(
+						Self::deposit_event(Event::<T>::DealOrderFunded(
 							deal_order_id.clone(),
 							deal_order.clone(),
 						));
