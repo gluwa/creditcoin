@@ -1,16 +1,22 @@
 #!/bin/bash
 
+base_path="--base-path ${DATA:-/data}"
 if [ "$MODE" = "rpc" ]; then
     ws='--ws-external'
     rpc='--rpc-external'
     cors="--rpc-cors ${CORS:-all}"
     pruning="--pruning ${PRUNING:-archive}"
 else
-    mining_key="--mining-key $(/bin/creditcoin-node generate-mining-key --chain testnet --quiet)"
+    if [ "$MINING_KEY" ]; then
+        mining_key="--mining_key ${MINING_KEY}"
+    else
+        echo 'Generating mining keypair because none was specified, access the keystore to see the secret key'
+        mining_key="--mining-key $(/bin/creditcoin-node generate-mining-key --chain testnet --quiet $base_path)"
+    fi
     validator='--validator'
 fi
 if [ "$RESYNC" ]; then
-    /bin/creditcoin-node purge-chain -y --chain testnet --base-path "${DATA:-/data}"
+    /bin/creditcoin-node purge-chain -y --chain testnet $base_path
 fi
 if [ "$PROMETHEUS" = "1" ]; then
     prometheus='--prometheus-external'
@@ -29,7 +35,7 @@ if [ -n "$BOOTNODE_IP" ] || [ -n "$BOOTNODE_FQDN" ]; then
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-     --base-path "${DATA:-/data}" $validator $mining_key $ws $rpc $cors $pruning $prometheus $EXTRA_ARGS
+     $base_path $validator $mining_key $ws $rpc $cors $pruning $prometheus $EXTRA_ARGS
 else
     key="${NODE_KEY:-c5eb4a9ada5c9dd76378d000f046e8cde064d68e96a1df569190eee70afba8e7}"
     node_name="${NODE_NAME:-bootnode}"
@@ -37,5 +43,5 @@ else
      --port 30333 --ws-port 9944 --rpc-port 9933 \
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-     --base-path "${DATA:-/data}" $validator $mining_key $ws $rpc $cors $pruning $prometheus $EXTRA_ARGS
+     $base_path $validator $mining_key $ws $rpc $cors $pruning $prometheus $EXTRA_ARGS
 fi
