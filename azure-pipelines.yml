@@ -1,0 +1,63 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - refs/tags/*
+    - CSUB-33-docker-image-pipeline
+  paths:
+    exclude:
+    - README.md
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: 'f5aa2da0-fdf0-4f31-b77d-6b7c374f51e6'
+  imageRepository: 'ccsubstrate/testnet'
+  containerRegistry: 'ccacrtest.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build CC Substrate Image
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - script: |
+        # export TAG=$(git describe --tag)
+        export TAG='1.0.2-testcc'
+        export OTHER_TAGS=$(echo $TAG | awk -F- '{print $2}')
+        if [ -z "$OTHER_TAGS" ] ; then
+          export TAG=($TAG,stable)
+        else
+          export TAG=($TAG,$OTHER_TAGS)
+        fi
+        echo "Tags are: $TAG"
+        echo "##vso[task.setvariable variable=gitTag;]$TAG"
+      displayName: Get Tags
+
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
