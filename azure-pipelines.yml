@@ -63,7 +63,7 @@ stages:
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
-      tags: |
-        latest
-        $(gitTag)
-        $(ccTag)
+        tags: |
+          latest
+          $(gitTag)
+          $(ccTag)
