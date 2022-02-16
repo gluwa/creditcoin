@@ -31,7 +31,7 @@ variables:
   vmImageName: 'ubuntu-latest'
 
 stages:
-- stage: Build CC Substrate Image
+- stage: Build
   displayName: Build and push stage
   jobs:
   - job: Build
