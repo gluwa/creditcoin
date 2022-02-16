@@ -40,17 +40,21 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - script: |
-        # export TAG=$(git describe --tag)
-        export TAG='1.0.2-testcc'
-        export OTHER_TAGS=$(echo $TAG | awk -F- '{print $2}')
-        if [ -z "$OTHER_TAGS" ] ; then
-          export TAG=($TAG,stable)
+        # export tag=$(git describe --tag)
+        export tag='1.0.2-testcc'
+        export ccTag=$(echo $tag | awk -F- '{print $2}')
+        if [ -z "$ccTag" ] ; then
+          echo "##vso[task.setvariable variable=gitTag;]$tag"
+          echo "##vso[task.setvariable variable=ccTag;]stable"
+          export tag=($tag,stable)
         else
-          export TAG=($TAG,$OTHER_TAGS)
+          echo "##vso[task.setvariable variable=gitTag;]$tag"
+          echo "##vso[task.setvariable variable=ccTag;]$ccTag"
+          export tag=($tag,$ccTag)
         fi
-        echo "Tags are: $TAG"
-        echo "##vso[task.setvariable variable=gitTag;]$TAG"
-      displayName: Get Tags
+        echo "tags are: $tag"
+
+      displayName: Get tags
 
     - task: Docker@2
       displayName: Build and push an image to container registry
@@ -59,5 +63,7 @@ stages:
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(TAG)
+      tags: |
+        latest
+        $(gitTag)
+        $(other_tag)
