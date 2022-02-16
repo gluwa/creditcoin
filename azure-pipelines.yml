@@ -66,4 +66,4 @@ stages:
       tags: |
         latest
         $(gitTag)
-        $(other_tag)
+        $(ccTag)
