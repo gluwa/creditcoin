@@ -62,7 +62,6 @@ stages:
         command: buildAndPush
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
-        arguments: '--cache-from=$(containerRegistry)/$(imageRepository):latest'
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           latest
