@@ -7,7 +7,6 @@ trigger:
   branches:
     include:
     - refs/tags/*
-    - CSUB-33-docker-image-pipeline
   paths:
     exclude:
     - README.md
@@ -23,7 +22,7 @@ resources:
 variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: 'f5aa2da0-fdf0-4f31-b77d-6b7c374f51e6'
-  imageRepository: 'ccsubstrate/testnet'
+  imageRepository: 'cc-substrate/testnet'
   containerRegistry: 'ccacrtest.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
 
@@ -40,8 +39,10 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - script: |
-        # export tag=$(git describe --tag)
-        export tag='1.0.2-testcc'
+        # Determine the tag for the image: If it is a stable release (e.g 2.0.1),
+        # tags will be 2.0.1,stable,latest. For release candidates (e.g 2.0.1-beta),
+        # tags will be 2.0.2-beta,beta,latest.
+        export tag=$(git describe --tag)
         export ccTag=$(echo $tag | awk -F- '{print $2}')
         if [ -z "$ccTag" ] ; then
           echo "##vso[task.setvariable variable=gitTag;]$tag"
@@ -52,8 +53,7 @@ stages:
           echo "##vso[task.setvariable variable=ccTag;]$ccTag"
           export tag=($tag,$ccTag)
         fi
-        echo "tags are: $tag"
-
+        echo "Image tags are: $tag"
       displayName: Get tags
 
     - task: Docker@2
