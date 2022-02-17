@@ -162,15 +162,17 @@ pub fn decode_mining_key(
 			.into_account())
 		} else {
 			// ss58 encoded key
-			Ok(creditcoin_node_runtime::Signer::from(
-				sp_core::ecdsa::Public::from_ss58check(key).map_err(|e| {
-					format!(
-						"Invalid mining key format: {}, are you using the SS58 encoded public key?",
-						e
-					)
-				})?,
-			)
-			.into_account())
+			match sp_core::ecdsa::Public::from_ss58check(key) {
+				Ok(key) => Ok(creditcoin_node_runtime::Signer::from(key).into_account()),
+				Err(err) => match creditcoin_node_runtime::AccountId::from_ss58check(key) {
+					Ok(account_id) => Ok(account_id),
+					Err(e) => {
+						let msg = format!("Invalid mining key, failed to interpret it as an ECDSA public key (error: {}) and as an account ID (error: {})", err, e);
+						log::error!("{}", msg);
+						return Err(msg)?;
+					},
+				},
+			}
 		}
 	} else {
 		Err("The node is configured for mining but is missing a mining key".into())
