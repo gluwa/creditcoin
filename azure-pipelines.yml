@@ -7,7 +7,6 @@ trigger:
   branches:
     include:
     - refs/tags/*
-    - franklin-azure-cache
   paths:
     exclude:
     - README.md
@@ -43,8 +42,7 @@ stages:
         # Determine the tag for the image: If it is a stable release (e.g 2.0.1),
         # tags will be 2.0.1,stable,latest. For release candidates (e.g 2.0.1-beta),
         # tags will be 2.0.2-beta,beta,latest.
-        # export tag=$(git describe --tag)
-        export tag="0.1.0-testpipeline"
+        export tag=$(git describe --tag)
         export ccTag=$(echo $tag | awk -F- '{print $2}')
         if [ -z "$ccTag" ] ; then
           echo "##vso[task.setvariable variable=gitTag;]$tag"
