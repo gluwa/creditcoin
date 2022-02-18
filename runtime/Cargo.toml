@@ -11,6 +11,9 @@ repository = 'https://github.com/nathanwhit/creditcoin-substrate'
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dependencies]
+smallvec = "1.8.0"
+
 [dependencies.primitives]
 path = "../primitives"
 version = "0.1.0"
