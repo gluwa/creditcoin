@@ -1,8 +1,12 @@
 use std::collections::HashMap;
 
-use crate::{mock::*, Blockchain, ExternalAmount, LoanTerms, OrderId, TransferKind};
+use crate::{
+	mock::*, AddressId, Blockchain, ExternalAddress, ExternalAmount, Id, LoanTerms, OrderId,
+	TransferKind,
+};
 use bstr::B;
 use codec::Decode;
+use ethereum_types::H256;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use sp_runtime::offchain::storage::StorageValueRef;
 
@@ -17,6 +21,38 @@ where
 	fn into_bounded(self) -> BoundedVec<u8, S> {
 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
 	}
+}
+
+pub fn loan_terms() -> LoanTerms<u64> {
+	LoanTerms {
+		amount: ExternalAmount::from(1_000_0000u64),
+		interest_rate: 0,
+		maturity: 1_000_000_000_000,
+	}
+}
+
+#[derive(Clone, Debug)]
+pub struct TestInfo {
+	blockchain: Blockchain,
+	origin_account_id: AccountId,
+	address_id: AddressId<H256>,
+	loan_terms: LoanTerms<u64>,
+}
+
+pub fn prepare_test(address: &str) -> TestInfo {
+	let account_id: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
+	let blockchain = Blockchain::Rinkeby;
+	let address: ExternalAddress = address.as_bytes().into_bounded();
+	let address_id = AddressId::new::<Test>(&blockchain, &address);
+
+	assert_ok!(Creditcoin::register_address(
+		Origin::signed(account_id.clone()),
+		blockchain.clone(),
+		address.clone(),
+	));
+
+	let loan_terms = loan_terms();
+	TestInfo { blockchain, origin_account_id: account_id, address_id, loan_terms }
 }
 
 #[test]
@@ -240,44 +276,67 @@ fn register_transfer_ocw() {
 			verify_tx.call,
 			Call::Creditcoin(crate::Call::verify_transfer { transfer: expected_transfer })
 		);
+	});
+}
+
 #[test]
 fn add_ask_order_basic() {
-	new_test_ext().execute_with(|| {
-		let acct: <Test as frame_system::Config>::AccountId = Default::default();
-		let blockchain = B("testblockchain").into_bounded();
-		let address = B("testaddresid").into_bounded();
-		let amount = 100;
-		let interest = 10;
-		let fee = B("testfee").into_bounded();
+	ExtBuilder::default().build_and_execute(|| {
+		let TestInfo { origin_account_id, address_id, loan_terms, blockchain } =
+			prepare_test("myacct");
 		let guid = B("testguid").into_bounded();
-		let expiration = B("testexpiration").into_bounded();
-		let maturity = B("testmaturity").into_bounded();
-		let block = B("testblock").into_bounded();
+		let expiration_block = 1_000;
 
 		assert_ok!(Creditcoin::add_ask_order(
-			Origin::signed(acct.clone()),
-			address.clone(),
-			amount.clone(),
-			interest.clone(),
-			maturity.clone(),
-			fee.clone(),
-			expiration.clone(),
+			Origin::signed(origin_account_id.clone()),
+			address_id.clone(),
+			loan_terms.clone().into(),
+			expiration_block.clone(),
 			guid.clone()
 		));
 
-		let ask_order_id = crate::AskOrderId::new::<Test>(&expiration, &guid);
+		let ask_order_id = crate::AskOrderId::new::<Test>(expiration_block.clone(), &guid);
+		let new_ask_order = Creditcoin::ask_orders(expiration_block.clone(), ask_order_id.hash());
+		let block = new_ask_order.clone().unwrap().block;
+
 		let ask_order = crate::AskOrder {
 			blockchain,
-			address,
-			amount,
-			interest,
-			maturity,
-			fee,
-			expiration,
+			lender_address_id: address_id,
+			terms: loan_terms.into(),
+			expiration_block,
 			block,
-			sighash: acct,
+			lender: origin_account_id,
 		};
 
-		assert_eq!(Creditcoin::ask_orders(ask_order_id), Some(ask_order));
+		assert_eq!(new_ask_order, Some(ask_order));
+	});
+}
+
+#[test]
+fn add_ask_order_pre_existing() {
+	ExtBuilder::default().build_and_execute(|| {
+		let TestInfo { origin_account_id, address_id, loan_terms, .. } = prepare_test("myacct");
+
+		let guid = B("testguid").into_bounded();
+		let expiration_block = 1_000;
+
+		assert_ok!(Creditcoin::add_ask_order(
+			Origin::signed(origin_account_id.clone()),
+			address_id.clone(),
+			loan_terms.clone().into(),
+			expiration_block.clone(),
+			guid.clone()
+		));
+
+		assert_noop!(
+			Creditcoin::add_ask_order(
+				Origin::signed(origin_account_id.clone()),
+				address_id,
+				loan_terms.into(),
+				expiration_block,
+				guid
+			),
+			crate::Error::<Test>::DuplicateId
+		);
 	});
 }
