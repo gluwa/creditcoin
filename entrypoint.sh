@@ -35,6 +35,12 @@ else
             echo 'Authority nodes require AUTHORITY_SECRET env var'
             exit 1
         fi
+        if [ -n "$AUTHORITY_RPC_MAPPING" ]; then
+            rpc_mapping="--rpc-mapping $AUTHORITY_RPC_MAPPING"
+        else
+            echo 'Authority nodes should have AUTHORITY_RPC_MAPPING specified'
+            exit 1
+        fi
     fi
 fi
 if [ "$RESYNC" ]; then
@@ -60,7 +66,7 @@ if [ -n "$BOOTNODE_IP" ] || [ -n "$BOOTNODE_FQDN" ]; then
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
      $chain $base_path $validator $mining_key $ws $rpc \
-     $cors $pruning $prometheus $EXTRA_ARGS
+     $cors $pruning $prometheus $rpc_mapping $EXTRA_ARGS
 else
     key="${NODE_KEY:-c5eb4a9ada5c9dd76378d000f046e8cde064d68e96a1df569190eee70afba8e7}"
     node_name="${NODE_NAME:-bootnode}"
@@ -70,5 +76,5 @@ else
      --public-addr "/dns4/$FQDN/tcp/30333" \
      --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
      $chain $base_path $validator $mining_key $ws $rpc \
-     $cors $pruning $prometheus $EXTRA_ARGS
+     $cors $pruning $prometheus $rpc_mapping $EXTRA_ARGS
 fi
