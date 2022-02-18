@@ -308,7 +308,7 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
-		Rewards: pallet_rewards::{Pallet, Call, Storage, Event<T>, Config<T>}
+		Rewards: pallet_rewards::{Pallet, Storage, Event<T>}
 	}
 );
 

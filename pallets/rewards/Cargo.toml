@@ -47,6 +47,13 @@ git = 'https://github.com/paritytech/substrate.git'
 rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
 version = '0.10.0-dev'
 
+[dependencies.sp-runtime]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
+version = '4.1.0-dev'
+
+
 [dev-dependencies.sp-core]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -64,6 +71,12 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
 version = '4.1.0-dev'
+
+[dev-dependencies.pallet-balances]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+rev = '94dfe152e61e42cd27844a65165cfdedde5232eb'
+version = '4.0.0-dev'
 
 [features]
 default = ['std']
