@@ -1,7 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use core::convert::TryFrom;
 use frame_support::traits::Currency;
 pub use pallet::*;
+use sp_runtime::{traits::Saturating, FixedPointNumber};
 
 #[cfg(test)]
 mod mock;
@@ -17,14 +19,26 @@ pub type BalanceOf<T> =
 
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
+pub const REWARD_HALF_LIFE: u64 = 2_500_000;
+pub const BASE_REWARD_IN_CTC: u64 = 28;
+pub const CREDO_PER_CTC: u64 = 1_000_000_000_000_000_000;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::Currency};
+	use frame_support::{pallet_prelude::*, traits::Currency};
 	use frame_system::pallet_prelude::*;
+	use sp_runtime::{
+		traits::{UniqueSaturatedFrom, UniqueSaturatedInto},
+		FixedU128,
+	};
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config
+	where
+		<Self as frame_system::Config>::BlockNumber: UniqueSaturatedInto<u64>,
+		BalanceOf<Self>: UniqueSaturatedFrom<u128>,
+	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
@@ -34,10 +48,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
-
-	#[pallet::storage]
-	#[pallet::getter(fn reward_amount)]
-	pub type RewardAmount<T> = StorageValue<_, BalanceOf<T>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn block_author)]
@@ -50,48 +60,6 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Reward was issued. [block_author, amount]
 		RewardIssued(AccountIdOf<T>, BalanceOf<T>),
-
-		/// Reward amount was changed. [new_reward_amount]
-		RewardChanged(BalanceOf<T>),
-	}
-
-	// Errors inform users that something went wrong.
-	#[pallet::error]
-	pub enum Error<T> {}
-
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
-	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
-	#[pallet::call]
-	impl<T: Config> Pallet<T> {
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn set_reward_amount(origin: OriginFor<T>, new_amount: BalanceOf<T>) -> DispatchResult {
-			ensure_root(origin)?;
-
-			RewardAmount::<T>::put(new_amount);
-			Self::deposit_event(Event::<T>::RewardChanged(new_amount));
-
-			Ok(())
-		}
-	}
-
-	#[pallet::genesis_config]
-	pub struct GenesisConfig<T: Config> {
-		pub reward_amount: BalanceOf<T>,
-	}
-
-	#[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T> {
-		fn default() -> Self {
-			Self { reward_amount: <T::Currency as Currency<AccountIdOf<T>>>::minimum_balance() }
-		}
-	}
-
-	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-		fn build(&self) {
-			RewardAmount::<T>::put(self.reward_amount);
-		}
 	}
 
 	#[pallet::hooks]
@@ -108,18 +76,31 @@ pub mod pallet {
 			0
 		}
 
-		fn on_finalize(_block_number: BlockNumberFor<T>) {
+		fn on_finalize(block_number: BlockNumberFor<T>) {
 			if let Some(author) = BlockAuthor::<T>::get() {
-				let reward = Self::reward_amount();
+				let reward = Self::reward_amount(block_number);
 				Self::issue_reward(author, reward);
 			}
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
+		pub fn reward_amount(block_number: BlockNumberFor<T>) -> BalanceOf<T> {
+			let block_number: u64 = block_number.unique_saturated_into();
+			let period = usize::try_from(block_number / REWARD_HALF_LIFE).expect("assuming a 32-bit usize, we would need to be on block number 2^32 * REWARD_HALF_LIFE for this conversion to fail.\
+	given a 1s block time it would take >340 million years to reach this point; qed");
+			let decay_rate_inv = FixedU128::saturating_from_rational(19, 20);
+			let multiplier = decay_rate_inv.saturating_pow(period);
+			let reward_in_ctc: u128 =
+				multiplier.saturating_mul_int(CREDO_PER_CTC).unique_saturated_into();
+			let reward_amount = reward_in_ctc.saturating_mul(BASE_REWARD_IN_CTC.into());
+			<BalanceOf<T>>::unique_saturated_from(reward_amount)
+		}
 		pub fn issue_reward(recipient: AccountIdOf<T>, amount: BalanceOf<T>) {
 			drop(T::Currency::deposit_creating(&recipient, amount));
 			Self::deposit_event(Event::<T>::RewardIssued(recipient, amount));
 		}
 	}
 }
+
+// want 28 followed by 18 zeros = 28_000_000_000_000_000_000
