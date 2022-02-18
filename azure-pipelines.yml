@@ -7,14 +7,18 @@ trigger:
   branches:
     include:
     - refs/tags/*
+    - franklin-azure-cache
   paths:
     exclude:
     - README.md
 
 pr: none
 
+#Use self hosted build server. Resource ID: resourceGroups/devcommon/providers/Microsoft.Compute/virtualMachines/Ubuntu16BuildServer
 pool:
-  vmImage: ubuntu-latest
+  name: Creditcoin
+  demands:
+   - agent.name -equals Ubuntu16BuildServer
 
 resources:
 - repo: self
@@ -25,24 +29,22 @@ variables:
   imageRepository: 'cc-substrate/testnet'
   containerRegistry: 'ccacrtest.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
-
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
+  registryName: 'ccacrtest'
+  DOCKER_BUILDKIT: 1
 
 stages:
 - stage: Build
-  displayName: Build and push stage
+  displayName: Build and Push Image
   jobs:
   - job: Build
     displayName: Build
-    pool:
-      vmImage: $(vmImageName)
     steps:
     - script: |
         # Determine the tag for the image: If it is a stable release (e.g 2.0.1),
         # tags will be 2.0.1,stable,latest. For release candidates (e.g 2.0.1-beta),
         # tags will be 2.0.2-beta,beta,latest.
-        export tag=$(git describe --tag)
+        # export tag=$(git describe --tag)
+        export tag="0.1.0-testpipeline"
         export ccTag=$(echo $tag | awk -F- '{print $2}')
         if [ -z "$ccTag" ] ; then
           echo "##vso[task.setvariable variable=gitTag;]$tag"
@@ -57,12 +59,52 @@ stages:
       displayName: Get tags
 
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Docker Login
       inputs:
-        command: buildAndPush
+        containerRegistry: $(registryName)
+        command: login
+
+    #Pull latest image from registry for caching
+    - script: |
+        docker pull $(containerRegistry)/$(imageRepository):latest
+      displayName: Pull latest image
+      continueOnError: true
+
+    #Dockerfile has two build stages. This stage targets the first stage and tags it
+    #Built image is stored locally on hosted server with :builder tag.
+    #Note: If another stage is to Dockerfile, add another task to target the stage.
+    - task: Docker@2
+      displayName: Build First Layer
+      inputs:
+        containerRegistry: $(registryName)
         repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
+        command: build
+        Dockerfile: $(dockerfilePath)
+        arguments: --target=builder --cache-from=$(containerRegistry)/$(imageRepository):latest
+        tags: |
+          builder
+
+    #Build second stage in Dockerfile, caches from previously :builder.
+    - task: Docker@2
+      displayName: Build Image
+      inputs:
+        containerRegistry: $(registryName)
+        repository: $(imageRepository)
+        command: build
+        Dockerfile: $(dockerfilePath)
+        arguments: '--cache-from=$(containerRegistry)/$(imageRepository):latest'
+        tags: |
+          latest
+          $(gitTag)
+          $(ccTag)
+
+    #Push Image to registry
+    - task: Docker@2
+      displayName: Push Image
+      inputs:
+        command: push
         containerRegistry: $(dockerRegistryServiceConnection)
+        repository: $(imageRepository)
         tags: |
           latest
           $(gitTag)
