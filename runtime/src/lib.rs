@@ -6,7 +6,10 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::traits::{ConstU32, ConstU8};
+use frame_support::{
+	traits::{ConstU32, ConstU8},
+	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+};
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
 use sp_runtime::{
@@ -220,10 +223,30 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
+pub const TARGET_FEE_CREDO: Balance = 10_000_000_000_000_000;
+
+pub struct WeightToCtcFee;
+
+impl WeightToFeePolynomial for WeightToCtcFee {
+	type Balance = Balance;
+
+	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+		let base = Balance::from(ExtrinsicBaseWeight::get());
+		let ratio = TARGET_FEE_CREDO / base;
+		let rem = TARGET_FEE_CREDO % base;
+		smallvec::smallvec!(WeightToFeeCoefficient {
+			coeff_integer: ratio,
+			coeff_frac: Perbill::from_rational(rem, base),
+			negative: false,
+			degree: 1,
+		})
+	}
+}
+
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
 	type TransactionByteFee = TransactionByteFee;
-	type WeightToFee = IdentityFee<Balance>;
+	type WeightToFee = WeightToCtcFee;
 	type FeeMultiplierUpdate = ();
 	type OperationalFeeMultiplier = ConstU8<1u8>;
 }
