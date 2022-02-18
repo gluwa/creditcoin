@@ -34,7 +34,7 @@ pub fn loan_terms() -> LoanTerms<u64> {
 #[derive(Clone, Debug)]
 pub struct TestInfo {
 	blockchain: Blockchain,
-	origin_account_id: AccountId,
+	acccount_id: AccountId,
 	address_id: AddressId<H256>,
 	loan_terms: LoanTerms<u64>,
 }
@@ -52,7 +52,7 @@ pub fn prepare_test(address: &str) -> TestInfo {
 	));
 
 	let loan_terms = loan_terms();
-	TestInfo { blockchain, origin_account_id: account_id, address_id, loan_terms }
+	TestInfo { blockchain, acccount_id: account_id, address_id, loan_terms }
 }
 
 #[test]
@@ -282,7 +282,7 @@ fn register_transfer_ocw() {
 #[test]
 fn add_ask_order_basic() {
 	ExtBuilder::default().build_and_execute(|| {
-		let TestInfo { origin_account_id, address_id, loan_terms, blockchain } =
+		let TestInfo { acccount_id: origin_account_id, address_id, loan_terms, blockchain } =
 			prepare_test("myacct");
 		let guid = B("testguid").into_bounded();
 		let expiration_block = 1_000;
@@ -315,7 +315,8 @@ fn add_ask_order_basic() {
 #[test]
 fn add_ask_order_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let TestInfo { origin_account_id, address_id, loan_terms, .. } = prepare_test("myacct");
+		let TestInfo { acccount_id: origin_account_id, address_id, loan_terms, .. } =
+			prepare_test("myacct");
 
 		let guid = B("testguid").into_bounded();
 		let expiration_block = 1_000;
