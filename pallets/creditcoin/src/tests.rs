@@ -31,28 +31,40 @@ pub fn loan_terms() -> LoanTerms<u64> {
 	}
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RegisteredAddress {
+	address_id: AddressId<H256>,
+	account_id: AccountId,
+}
+impl RegisteredAddress {
+	pub fn new(i: u8) -> RegisteredAddress {
+		let account_id = AccountId::new([i; 32]);
+		let address = i.to_string().as_bytes().into_bounded();
+		let blockchain = Blockchain::Rinkeby;
+		let address_id = AddressId::new::<Test>(&blockchain, &address);
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(account_id.clone()),
+			blockchain,
+			address
+		));
+		RegisteredAddress { account_id, address_id }
+	}
+}
+
 #[derive(Clone, Debug)]
 pub struct TestInfo {
 	blockchain: Blockchain,
-	acccount_id: AccountId,
+	account_id: AccountId,
 	address_id: AddressId<H256>,
 	loan_terms: LoanTerms<u64>,
 }
-
-pub fn prepare_test(address: &str) -> TestInfo {
-	let account_id: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
-	let blockchain = Blockchain::Rinkeby;
-	let address: ExternalAddress = address.as_bytes().into_bounded();
-	let address_id = AddressId::new::<Test>(&blockchain, &address);
-
-	assert_ok!(Creditcoin::register_address(
-		Origin::signed(account_id.clone()),
-		blockchain.clone(),
-		address.clone(),
-	));
-
-	let loan_terms = loan_terms();
-	TestInfo { blockchain, acccount_id: account_id, address_id, loan_terms }
+impl TestInfo {
+	pub fn prepare_test() -> TestInfo {
+		let RegisteredAddress { address_id, account_id } = RegisteredAddress::new(0);
+		let blockchain = Blockchain::Rinkeby;
+		let loan_terms = loan_terms();
+		TestInfo { blockchain, account_id, address_id, loan_terms }
+	}
 }
 
 #[test]
@@ -278,8 +290,8 @@ fn register_transfer_ocw() {
 #[test]
 fn add_ask_order_basic() {
 	ExtBuilder::default().build_and_execute(|| {
-		let TestInfo { acccount_id: origin_account_id, address_id, loan_terms, blockchain } =
-			prepare_test("myacct");
+		let TestInfo { account_id: origin_account_id, address_id, loan_terms, blockchain } =
+			TestInfo::prepare_test();
 		let guid = B("testguid").into_bounded();
 		let expiration_block = 1_000;
 
@@ -311,8 +323,8 @@ fn add_ask_order_basic() {
 #[test]
 fn add_ask_order_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let TestInfo { acccount_id: origin_account_id, address_id, loan_terms, .. } =
-			prepare_test("myacct");
+		let TestInfo { account_id: origin_account_id, address_id, loan_terms, .. } =
+			TestInfo::prepare_test();
 
 		let guid = B("testguid").into_bounded();
 		let expiration_block = 1_000;
