@@ -1,6 +1,6 @@
 use crate::{
-	mock::*, AddressId, AskOrder, BidOrder, Blockchain, ExternalAmount, Id, LoanTerms, OrderId,
-	TransferKind,
+	mock::*, AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, ExternalAmount, Id,
+	LoanTerms, Offer, OfferId, OrderId, TransferKind,
 };
 use bstr::B;
 use codec::Decode;
@@ -51,8 +51,12 @@ impl RegisteredAddress {
 	}
 }
 
-type TestAskOrder = AskOrder<AccountId, u64, H256, u64>;
-type TestBidOrder = BidOrder<AccountId, u64, H256, u64>;
+type TestAskOrderId = AskOrderId<u64, H256>;
+type TestBidOrderId = BidOrderId<u64, H256>;
+type TestOfferId = OfferId<u64, H256>;
+type TestAskOrder = (AskOrder<AccountId, u64, H256, u64>, TestAskOrderId);
+type TestBidOrder = (BidOrder<AccountId, u64, H256, u64>, TestBidOrderId);
+type TestOffer = (Offer<AccountId, u64, H256>, TestOfferId);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
@@ -63,39 +67,74 @@ pub struct TestInfo {
 	ask_guid: H256,
 	bid_guid: H256,
 }
+
 impl TestInfo {
-	pub fn create_ask_order(self) -> Option<TestAskOrder> {
-		let RegisteredAddress { address_id, account_id } = self.lender;
+	fn lift_first<T, U>(t: Option<T>, u: U) -> Option<(T, U)> {
+		match t {
+			Some(t) => Some((t, u)),
+			None => None,
+		}
+	}
+	pub fn create_ask_order(&self) -> Option<TestAskOrder> {
+		let TestInfo { lender, loan_terms, .. } = self;
+		let RegisteredAddress { address_id, account_id } = lender;
 		let guid = self.ask_guid.as_bytes().into_bounded();
 		let expiration_block = 1_000;
 
 		assert_ok!(Creditcoin::add_ask_order(
 			Origin::signed(account_id.clone()),
 			address_id.clone(),
-			self.loan_terms.into(),
+			loan_terms.clone().into(),
 			expiration_block.clone(),
 			guid.clone()
 		));
 
-		let ask_order_id = crate::AskOrderId::new::<Test>(expiration_block.clone(), &guid);
-		Creditcoin::ask_orders(expiration_block.clone(), ask_order_id.hash())
+		let ask_order_id = AskOrderId::new::<Test>(expiration_block.clone(), &guid);
+		Self::lift_first(
+			Creditcoin::ask_orders(expiration_block, ask_order_id.hash()),
+			ask_order_id,
+		)
 	}
 
-	pub fn create_bid_order(self) -> Option<TestBidOrder> {
-		let RegisteredAddress { address_id, account_id } = self.borrower;
+	pub fn create_bid_order(&self) -> Option<TestBidOrder> {
+		let TestInfo { borrower, loan_terms, .. } = self;
+		let RegisteredAddress { address_id, account_id } = borrower;
 		let guid = self.bid_guid.as_bytes().into_bounded();
 		let expiration_block = 1_000;
 
 		assert_ok!(Creditcoin::add_bid_order(
 			Origin::signed(account_id.clone()),
 			address_id.clone(),
-			self.loan_terms.into(),
+			loan_terms.clone().into(),
 			expiration_block.clone(),
 			guid.clone()
 		));
 
-		let bid_order_id = crate::BidOrderId::new::<Test>(expiration_block.clone(), &guid);
-		Creditcoin::bid_orders(expiration_block.clone(), bid_order_id.hash())
+		let bid_order_id = BidOrderId::new::<Test>(expiration_block.clone(), &guid);
+		Self::lift_first(
+			Creditcoin::bid_orders(expiration_block.clone(), bid_order_id.hash()),
+			bid_order_id,
+		)
+	}
+
+	pub fn create_offer(&self) -> Option<TestOffer> {
+		let RegisteredAddress { account_id, .. } = &self.lender;
+
+		match (self.create_ask_order(), self.create_bid_order()) {
+			(Some((_, ask_order_id)), Some((_, bid_order_id))) => {
+				let expiration_block = 1_000;
+				assert_ok!(Creditcoin::add_offer(
+					Origin::signed(account_id.clone()),
+					ask_order_id.clone(),
+					bid_order_id.clone(),
+					expiration_block.clone(),
+				));
+				let offer_id =
+					OfferId::new::<Test>(expiration_block.clone(), &ask_order_id, &bid_order_id);
+				Self::lift_first(Creditcoin::offers(expiration_block, offer_id.hash()), offer_id)
+			},
+			_ => None,
+		}
 	}
 
 	pub fn prepare_test() -> TestInfo {
@@ -340,7 +379,7 @@ fn add_ask_order_basic() {
 		let TestInfo { lender, loan_terms, blockchain, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = lender;
 
-		if let Some(ask_order) = test_info.create_ask_order() {
+		if let Some((ask_order, _)) = test_info.create_ask_order() {
 			let AskOrder { block, expiration_block, .. } = ask_order.clone();
 
 			let new_ask_order = crate::AskOrder {
@@ -365,7 +404,7 @@ fn add_ask_order_pre_existing() {
 		let RegisteredAddress { address_id, account_id } = lender;
 		let guid = ask_guid.as_bytes().into_bounded();
 
-		if let Some(ask_order) = test_info.create_ask_order() {
+		if let Some((ask_order, _)) = test_info.create_ask_order() {
 			let AskOrder { expiration_block, .. } = ask_order.clone();
 
 			assert_noop!(
@@ -389,7 +428,7 @@ fn add_bid_order_basic() {
 		let TestInfo { borrower, loan_terms, blockchain, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 
-		if let Some(bid_order) = test_info.create_bid_order() {
+		if let Some((bid_order, _)) = test_info.create_bid_order() {
 			let BidOrder { expiration_block, block, .. } = bid_order.clone();
 
 			let new_bid_order = crate::BidOrder {
@@ -414,7 +453,7 @@ fn add_bid_order_pre_existing() {
 		let RegisteredAddress { address_id, account_id } = borrower;
 		let guid = bid_guid.as_bytes().into_bounded();
 
-		if let Some(bid_order) = test_info.create_bid_order() {
+		if let Some((bid_order, _)) = test_info.create_bid_order() {
 			let BidOrder { expiration_block, .. } = bid_order.clone();
 
 			assert_noop!(
@@ -429,4 +468,20 @@ fn add_bid_order_pre_existing() {
 			);
 		}
 	});
+}
+
+#[test]
+fn add_offer_basic() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::prepare_test();
+
+		if let Some((offer, _)) = test_info.create_offer() {
+			let Offer { blockchain, expiration_block, block, ask_id, bid_id, lender, .. } =
+				offer.clone();
+
+			let new_offer = Offer { blockchain, expiration_block, block, ask_id, bid_id, lender };
+
+			assert_eq!(new_offer, offer);
+		}
+	})
 }
