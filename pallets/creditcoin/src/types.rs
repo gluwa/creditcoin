@@ -122,6 +122,7 @@ pub struct BidOrder<AccountId, BlockNum, Hash, Moment> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
+	pub offer_id: OfferId<BlockNum, Hash>,
 	pub lender_address_id: AddressId<Hash>,
 	pub borrower_address_id: AddressId<Hash>,
 	pub terms: LoanTerms<Moment>,
