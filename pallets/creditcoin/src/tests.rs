@@ -485,3 +485,19 @@ fn add_offer_basic() {
 		}
 	})
 }
+
+#[test]
+fn add_offer_existing() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::prepare_test();
+
+		if let Some((offer, _)) = test_info.create_offer() {
+			let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer.clone();
+
+			assert_noop!(
+				Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
+				crate::Error::<Test>::DuplicateOffer
+			);
+		}
+	})
+}
