@@ -505,7 +505,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let deal_order_id = DealOrderId::new::<T>(expiration_block, &offer_id);
-			ensure!(!DealOrders::<T>::contains_id(&deal_order_id), Error::<T>::DuplicateId);
+			ensure!(!DealOrders::<T>::contains_id(&deal_order_id), Error::<T>::DuplicateDealOrder);
 
 			let offer = try_get_id!(Offers<T>, &offer_id, NonExistentOffer)?;
 
@@ -526,6 +526,7 @@ pub mod pallet {
 
 			let deal_order = DealOrder {
 				blockchain: offer.blockchain,
+				offer_id,
 				lender_address_id: ask_order.lender_address_id,
 				borrower_address_id: bid_order.borrower_address_id,
 				terms: agreed_terms,
@@ -721,6 +722,7 @@ pub mod pallet {
 
 			let deal_order = DealOrder {
 				blockchain: lender.blockchain,
+				offer_id: offer_id.clone(),
 				lender_address_id,
 				borrower_address_id,
 				terms,
