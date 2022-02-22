@@ -46,8 +46,8 @@
             # optional name for your node, to make it easier to identify
             --name <nodename> \
             # allow prometheus metrics to be scraped
-            --prometheus-external
-            # optional, opt in to telemetry ()
+            --prometheus-external \
+            # optional, opt in to telemetry
             --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
             # node to connect to on boot, in order to join the network
             --bootnodes "/dns4/test-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH" \
