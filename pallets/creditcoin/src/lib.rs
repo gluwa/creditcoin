@@ -491,6 +491,7 @@ pub mod pallet {
 				lender: who,
 			};
 
+			Self::deposit_event(Event::<T>::OfferAdded(offer_id.clone(), offer.clone()));
 			Offers::<T>::insert_id(offer_id, offer);
 
 			Ok(())
