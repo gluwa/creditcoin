@@ -38,7 +38,16 @@
     - Obtain your public IP address
     - Run 
         ```
-        docker run -p 30333:30333 -e FQDN=<publicip> -e BOOTNODE_FQDN='cct-bootnode.centralus.azurecontainer.io' -e MINING_KEY=<SS58address> <TODO: PUBLIC DOCKER IMAGE>`
+        docker run -p 30333:30333 -v <yourlocaldatapath>:/data <TODO: PUBLIC DOCKER IMAGE> \
+            --validator \
+            --name <nodename> \
+            --prometheus-external
+            --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+            --bootnodes '/dns4/test-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH' \
+            --public-addr /dns4/<yourhostname or ip>/tcp/30333  \
+            --chain /testnetSpec.json \
+            --mining-key <SS58Address> \
+            --base-path /data \
+            --port 30333
         ```
-    - By default all data will be stored in `/data` within the docker container.  If you’d like to persist this data or access it from your host system you can mount a docker volume at `/data` by passing `-v` `<yourlocalpath>:/data` in the command above
-    - You may optionally give your node a name so it’s more easily identifiable in telemetry by passing `-e NODE_NAME=<name>` in the command above.
+    - You may optionally give your node a name so it’s more easily identifiable in telemetry by passing `--name <nodename>` in the command above.
