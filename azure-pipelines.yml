@@ -62,27 +62,6 @@ stages:
         containerRegistry: $(registryName)
         command: login
 
-    #Pull latest image from registry for caching
-    - script: |
-        docker pull $(containerRegistry)/$(imageRepository):latest
-      displayName: Pull latest image
-      continueOnError: true
-
-    #Dockerfile has two build stages. This stage targets the first stage and tags it
-    #Built image is stored locally on hosted server with :builder tag.
-    #Note: If another stage is to Dockerfile, add another task to target the stage.
-    - task: Docker@2
-      displayName: Build First Layer
-      inputs:
-        containerRegistry: $(registryName)
-        repository: $(imageRepository)
-        command: build
-        Dockerfile: $(dockerfilePath)
-        arguments: --target=builder --cache-from=$(containerRegistry)/$(imageRepository):latest
-        tags: |
-          builder
-
-    #Build second stage in Dockerfile, caches from previously :builder.
     - task: Docker@2
       displayName: Build Image
       inputs:
@@ -90,7 +69,6 @@ stages:
         repository: $(imageRepository)
         command: build
         Dockerfile: $(dockerfilePath)
-        arguments: '--cache-from=$(containerRegistry)/$(imageRepository):latest'
         tags: |
           latest
           $(gitTag)
