@@ -36,18 +36,29 @@
 2) Start mining node
     - Make make sure that your port 30333 is accessible by external connections
     - Obtain your public IP address
-    - Run 
-        ```
-        docker run -p 30333:30333 -v <yourlocaldatapath>:/data <TODO: PUBLIC DOCKER IMAGE> \
+    - Run
+
+        ```bash
+        
+        docker run -p 30333:30333 -v <yourlocaldatapath>:/data gluwa/creditcoin-node:2.0.0-beta-1 \
+            # running a mining node
             --validator \
+            # optional name for your node, to make it easier to identify
             --name <nodename> \
+            # allow prometheus metrics to be scraped
             --prometheus-external
+            # optional, opt in to telemetry ()
             --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-            --bootnodes '/dns4/test-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH' \
-            --public-addr /dns4/<yourhostname or ip>/tcp/30333  \
+            # node to connect to on boot, in order to join the network
+            --bootnodes "/dns4/test-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH" \
+            # replace <...> with the public IP address or host name that your node can be reached at
+            --public-addr "/dns4/<yourhostname or ip>/tcp/30333" \
+            # we want to connect to the testnet
             --chain /testnetSpec.json \
+            # your mining public key/address to receive rewards at
             --mining-key <SS58Address> \
+            # the base path to store the node's data
             --base-path /data \
+            # the port to use for node-to-node communication
             --port 30333
         ```
-    - You may optionally give your node a name so it’s more easily identifiable in telemetry by passing `--name <nodename>` in the command above.
