@@ -40,7 +40,7 @@
 
         ```bash
         
-        docker run -p 30333:30333 -v <yourlocaldatapath>:/data gluwa/creditcoin-node:2.0.0-beta-1 \
+        docker run -p 30333:30333 -v <yourlocaldatapath>:/data gluwa/creditcoin:2.0.0-beta-1 \
             # running a mining node
             --validator \
             # optional name for your node, to make it easier to identify
