@@ -222,8 +222,12 @@ fn verify_ethless_transfer() {
 		let mut state = state.write();
 		let responses: HashMap<String, serde_json::Value> =
 			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
-		let get_transaction =
-			pending_rpc_request("eth_getTransactionByHash", vec![tx_hash.into()], &responses);
+		let get_transaction = pending_rpc_request(
+			"eth_getTransactionByHash",
+			vec![tx_hash.into()],
+			dummy_url,
+			&responses,
+		);
 		let get_transaction_receipt = pending_rpc_request(
 			"eth_getTransactionReceipt",
 			vec![tx_hash.into()],
