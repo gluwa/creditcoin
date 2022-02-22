@@ -97,7 +97,7 @@ impl<T: Config> Pallet<T> {
 
 				let transfer_event = Transfers::<T>::try_mutate(transfer_id, |value| {
 					let transfer = value.as_mut().ok_or(crate::Error::<T>::NonExistentTransfer)?;
-					mutate_transfer(transfer, &deal_order)
+					mutate_transfer(transfer, deal_order)
 				})?;
 
 				Ok((deal_event, transfer_event))

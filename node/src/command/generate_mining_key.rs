@@ -8,7 +8,7 @@ use sc_cli::{
 use sc_keystore::LocalKeystore;
 use sc_service::{config::KeystoreConfig, Arc, BasePath};
 use sp_core::{
-	crypto::{ExposeSecret, KeyTypeId, SecretString, Ss58Codec},
+	crypto::{ExposeSecret, SecretString, Ss58Codec},
 	Pair,
 };
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
@@ -87,7 +87,7 @@ impl MiningKeySubcommand {
 		};
 		let mnemonic = Mnemonic::new(words, Language::English);
 		let password = self.keystore_params.read_password()?;
-		let output = self.output_scheme.output_type.clone();
+		let output = self.output_scheme.output_type;
 		let uri = mnemonic.phrase();
 
 		if self.quiet {
@@ -127,7 +127,7 @@ impl MiningKeySubcommand {
 				_ => unreachable!("keystore_config always returns path and password; qed"),
 			};
 
-			let key_type = KeyTypeId::from(sha3pow::app::ID);
+			let key_type = sha3pow::app::ID;
 
 			SyncCryptoStore::insert_unknown(&*keystore, key_type, &suri, &public[..])
 				.map_err(|_| sc_cli::Error::KeyStoreOperation)?;
