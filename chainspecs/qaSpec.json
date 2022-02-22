@@ -1,6 +1,6 @@
 {
-  "name": "CC Substrate Testnet",
-  "id": "cc_substrate_testnet",
+  "name": "CC Substrate QA Network",
+  "id": "cc_substrate_qa",
   "chainType": "Live",
   "bootNodes": [],
   "telemetryEndpoints": null,

@@ -1,7 +1,7 @@
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	Guid,
+	DealOrderId, Guid, Id, TransferId,
 };
 use frame_system::pallet_prelude::*;
 use sp_io::hashing::sha2_256;
@@ -23,6 +23,18 @@ macro_rules! try_get_id {
 		.map_err(|()| crate::pallet::Error::<$t>::$err)
 	};
 }
+
+type DealOrderFor<T> = crate::DealOrder<
+	<T as frame_system::Config>::AccountId,
+	<T as frame_system::Config>::BlockNumber,
+	<T as frame_system::Config>::Hash,
+	<T as pallet_timestamp::Config>::Moment,
+>;
+type TransferFor<T> = crate::Transfer<
+	<T as frame_system::Config>::AccountId,
+	<T as frame_system::Config>::BlockNumber,
+	<T as frame_system::Config>::Hash,
+>;
 
 impl<T: Config> Pallet<T> {
 	pub fn block_number() -> BlockNumberFor<T> {
@@ -63,5 +75,42 @@ impl<T: Config> Pallet<T> {
 		hex::encode_to_slice(&*bid_guid, &mut buf[(block_end_idx + 2 * ask_guid.len())..])
 			.expect("we just allocated 2 * (length of guid) bytes; qed");
 		sha2_256(&buf)
+	}
+
+	pub fn try_mutate_deal_order_and_transfer(
+		deal_order_id: &DealOrderId<T::BlockNumber, T::Hash>,
+		transfer_id: &TransferId<T::Hash>,
+		mutate_deal: impl FnOnce(
+			&mut DealOrderFor<T>,
+		) -> Result<Option<crate::Event<T>>, crate::Error<T>>,
+		mutate_transfer: impl FnOnce(
+			&mut TransferFor<T>,
+			&DealOrderFor<T>,
+		) -> Result<Option<crate::Event<T>>, crate::Error<T>>,
+	) -> Result<(), crate::Error<T>> {
+		let (deal_event, transfer_event) = DealOrders::<T>::try_mutate(
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
+			|value| {
+				let deal_order = value.as_mut().ok_or(crate::Error::<T>::NonExistentDealOrder)?;
+				let deal_event = mutate_deal(deal_order)?;
+
+				let transfer_event = Transfers::<T>::try_mutate(transfer_id, |value| {
+					let transfer = value.as_mut().ok_or(crate::Error::<T>::NonExistentTransfer)?;
+					mutate_transfer(transfer, &deal_order)
+				})?;
+
+				Ok((deal_event, transfer_event))
+			},
+		)?;
+
+		if let Some(event) = deal_event {
+			Self::deposit_event(event);
+		}
+		if let Some(event) = transfer_event {
+			Self::deposit_event(event)
+		}
+
+		Ok(())
 	}
 }

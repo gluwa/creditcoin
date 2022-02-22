@@ -103,7 +103,7 @@ impl MiningKeySubcommand {
 			);
 		}
 
-		if self.no_insert {
+		if !self.no_insert {
 			let suri = sc_cli::utils::read_uri(Some(&uri.into()))?;
 			let base_path = self
 				.base_path
