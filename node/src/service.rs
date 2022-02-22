@@ -59,7 +59,7 @@ pub fn new_partial(
 	ServiceError,
 > {
 	if config.keystore_remote.is_some() {
-		return Err(ServiceError::Other(format!("Remote Keystores are not supported.")));
+		return Err(ServiceError::Other("Remote Keystores are not supported.".to_string()));
 	}
 
 	let telemetry = config
@@ -82,7 +82,7 @@ pub fn new_partial(
 
 	let (client, backend, keystore_container, task_manager) =
 		sc_service::new_full_parts::<Block, RuntimeApi, _>(
-			&config,
+			config,
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,
 		)?;
@@ -123,7 +123,7 @@ pub fn new_partial(
 	let import_queue = sc_consensus_pow::import_queue(
 		Box::new(pow_block_import.clone()),
 		None,
-		algorithm.clone(),
+		algorithm,
 		&task_manager.spawn_essential_handle(),
 		config.prometheus_registry(),
 	)?;
@@ -140,7 +140,7 @@ pub fn new_partial(
 	})
 }
 
-fn remote_keystore(_url: &String) -> Result<Arc<LocalKeystore>, &'static str> {
+fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
 	// FIXME: here would the concrete keystore be built,
 	//        must return a concrete type (NOT `LocalKeystore`) that
 	//        implements `CryptoStore` and `SyncCryptoStore`
@@ -152,8 +152,8 @@ pub fn decode_mining_key(
 ) -> Result<creditcoin_node_runtime::AccountId, String> {
 	if let Some(key) = mining_key {
 		// raw public key
-		if key.starts_with("0x") {
-			let key_bytes = hex::decode(&key[2..])
+		if let Some(key_without_prefix) = key.strip_prefix("0x") {
+			let key_bytes = hex::decode(&key_without_prefix)
 				.map_err(|e| format!("Invalid mining key, expected hex: {}", e))?;
 			Ok(creditcoin_node_runtime::Signer::from(
 				sp_core::ecdsa::Public::from_full(&*key_bytes)
@@ -169,7 +169,7 @@ pub fn decode_mining_key(
 					Err(e) => {
 						let msg = format!("Invalid mining key, failed to interpret it as an ECDSA public key (error: {}) and as an account ID (error: {})", err, e);
 						log::error!("{}", msg);
-						return Err(msg)?;
+						Err(msg)
 					},
 				},
 			}
@@ -292,7 +292,7 @@ pub fn new_full(
 			Box::new(pow_block_import),
 			client.clone(),
 			select_chain,
-			algorithm.clone(),
+			algorithm,
 			proposer_factory,
 			network.clone(),
 			network,

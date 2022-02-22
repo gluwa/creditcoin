@@ -823,7 +823,7 @@ pub mod pallet {
 				Error::<T>::TransferAlreadyRegistered
 			);
 
-			if &*blockchain_tx_id == &*b"0" {
+			if *blockchain_tx_id == *b"0" {
 				// this transfer is an exemption, no need to verify it
 				amount = ExternalAmount::zero();
 				let transfer = Transfer {
@@ -835,7 +835,7 @@ pub mod pallet {
 					to: to_id,
 					order_id,
 					processed: false,
-					sighash: who.clone(),
+					sighash: who,
 					tx: blockchain_tx_id,
 				};
 				Self::deposit_event(Event::<T>::TransferRegistered(
@@ -854,18 +854,15 @@ pub mod pallet {
 					to: to_id,
 					order_id,
 					processed: false,
-					sighash: who.clone(),
+					sighash: who,
 					tx: blockchain_tx_id,
 				};
 
-				Self::deposit_event(Event::<T>::TransferRegistered(
-					transfer_id.clone(),
-					transfer.clone(),
-				));
+				Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer.clone()));
 
 				let pending = UnverifiedTransfer {
-					from_external: from.value.clone(),
-					to_external: to.value.clone(),
+					from_external: from.value,
+					to_external: to.value,
 					transfer,
 				};
 				UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
