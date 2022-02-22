@@ -76,14 +76,14 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
-      - name: Install Rustup
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          source ~/.cargo/env
-          rustup default stable
-          rustup update nightly
-          rustup update stable
-          rustup target add wasm32-unknown-unknown --toolchain nightly
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Check Build
         run: |
@@ -93,6 +93,7 @@ jobs:
       #   run: >
       #     pushd node &&
       #     cargo check --features=runtime-benchmarks --release
+
   test:
     runs-on: ubuntu-20.04
     steps:
@@ -103,15 +104,39 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
-      - name: Install Rustup
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          source ~/.cargo/env
-          rustup default stable
-          rustup update nightly
-          rustup update stable
-          rustup target add wasm32-unknown-unknown --toolchain nightly
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
 
-      - name: Run Tests
+      - name: Configure flags for collecting coverage
         run: |
-          SKIP_WASM_BUILD=1 cargo test
+          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
+          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
+          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
+
+      - name: Run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -- test-threads 1
+        env:
+          CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }}
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
+          SKIP_WASM_BUILD: 1
+      - id: coverage
+        uses: actions-rs/grcov@v0.1
+        with:
+          config: .grcov.yml
+
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ steps.coverage.outputs.report }}
+          fail_ci_if_error: true
+          verbose: true
