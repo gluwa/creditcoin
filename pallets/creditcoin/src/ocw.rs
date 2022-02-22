@@ -137,7 +137,7 @@ fn validate_ethless_transfer(
 		},
 	};
 	ensure!(
-		&input_from == &from,
+		input_from == from,
 		OffchainError::InvalidTransfer(
 			"sender of ethless transfer does not match expected address"
 		)
@@ -152,7 +152,7 @@ fn validate_ethless_transfer(
 		},
 	};
 	ensure!(
-		&input_to == &to,
+		input_to == to,
 		OffchainError::InvalidTransfer(
 			"receiver of ethless transfer does not match expected address"
 		)
