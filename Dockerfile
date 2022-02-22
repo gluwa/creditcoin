@@ -1,4 +1,4 @@
-FROM ubuntu:latest AS builder
+FROM ubuntu:20.04 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get install -y \
@@ -23,7 +23,7 @@ ADD runtime /creditcoin-node/runtime
 ADD sha3pow /creditcoin-node/sha3pow
 RUN source ~/.cargo/env && cargo build --release
 
-FROM ubuntu:latest
+FROM ubuntu:20.04
 EXPOSE 30333/tcp
 EXPOSE 30333/udp
 EXPOSE 9944 9933 9615
