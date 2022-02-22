@@ -1,6 +1,6 @@
-# Creditcoin Substrate
+# Creditcoin Node
 
-A substrate based creditcoin node.
+A [substrate](https://substrate.io/) based [Creditcoin](https://www.creditcion.org) node. To get started with Creditcoin mining see [Creditcoin Mining Docs](./docs/miner-setup.md).
 
 ## Getting Started
 
