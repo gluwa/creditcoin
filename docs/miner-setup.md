@@ -10,6 +10,7 @@
 
     - Using an existing ECDSA keypair:
         - Your private key should be formatted as hex and start with `0x`, for example `0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774`
+          - Note: if your existing private key starts with `00`, remove the leading `00` first.
         - Run `docker run -it docker.io/parity/subkey inspect --scheme Ecdsa <private key>` which will display the account information fot the keypair. For example:
             ```
             Secret Key URI `0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774` is account:
