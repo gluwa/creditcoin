@@ -13,6 +13,15 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build docker image
+        run: |
+          docker build -t gluwa/creditcoin-substrate .
+
   check:
     # The type of runner that the job will run on
     runs-on: ubuntu-20.04
