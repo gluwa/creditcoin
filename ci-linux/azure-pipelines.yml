@@ -24,8 +24,6 @@ resources:
 - repo: self
 
 variables:
-  #Container registry service connection established during pipeline creation
-  containerRegistry: 'dockerhub-franklin.okpako'
   dockerfilePath: '$(Build.SourcesDirectory)/ci-linux/ci-build.Dockerfile'
   registryName: 'gluwa/ci-linux'
   DOCKER_BUILDKIT: 1
@@ -40,13 +38,12 @@ stages:
     - task: Docker@2
       displayName: Docker Login
       inputs:
-        containerRegistry: $(registryName)
-        command: login
-
+        containerRegistry: 'Docker Hub - mrausnadian'
+        command: 'login'
     - task: Docker@2
       inputs:
-        containerRegistry: $(containerRegistry)
-        repository: $(registryName)
+        containerRegistry: 'Docker Hub - mrausnadian'
+        repository: 'gluwa/ci-linux'
         command: 'buildAndPush'
         Dockerfile: $(dockerfilePath)
         tags: |
