@@ -1,0 +1,61 @@
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    rebase-strategy: "disabled"
+
+  # Maintain dependencies for Docker images
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "05:00"
+    open-pull-requests-limit: 5
+    rebase-strategy: "disabled"
+
+  # Maintain dependencies for Rust
+  # Note: Dependabot can't recursively search directories at the moment
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "cargo"
+    directory: "/node"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/creditcoin"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/difficulty"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/rewards"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "cargo"
+    directory: "/primitives"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "cargo"
+    directory: "/runtime"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "cargo"
+    directory: "/sha3pow"
+    schedule:
+      interval: "daily"
