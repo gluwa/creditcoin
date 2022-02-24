@@ -1,5 +1,4 @@
 use crate::{mock::*, REWARD_HALF_LIFE};
-use frame_support::{assert_noop, assert_ok};
 
 #[test]
 fn reward_amount_genesis() {
