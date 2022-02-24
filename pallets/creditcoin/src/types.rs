@@ -11,6 +11,8 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use scale_info::TypeInfo;
+use sha2::Digest;
+use sp_core::ecdsa;
 use sp_runtime::traits::Hash;
 use sp_std::prelude::*;
 
@@ -388,5 +390,68 @@ pub(crate) impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value, QueryKind, OnEmpty,
 
 	fn contains_id(id: &IdTy) -> bool {
 		Self::contains_key(id.expiration(), id.hash())
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct LegacySighash([u8; 60]);
+
+impl core::default::Default for LegacySighash {
+	fn default() -> LegacySighash {
+		LegacySighash([0u8; 60])
+	}
+}
+
+impl From<&ecdsa::Public> for LegacySighash {
+	fn from(public_key: &ecdsa::Public) -> Self {
+		let compressed_key_hex = hex::encode(public_key.as_ref());
+		let mut hasher = sha2::Sha512::new();
+		hasher.update(compressed_key_hex.as_bytes());
+		let key_hash = hasher.finalize();
+		let key_hash_hex = hex::encode(&key_hash);
+
+		const SKIP_TO_GET_60: usize = 512 / 8 * 2 - 60; // 512 - hash size in bits, 8 - bits in byte, 2 - hex digits for byte, 60 - merkle address length (70) without creditcoin namespace length (6) and prefix length (4)
+
+		LegacySighash::try_from(&key_hash_hex[SKIP_TO_GET_60..])
+			.expect("the output of Sha512 is 64 bytes. the hex encoding of that is 128 bytes,\
+			therefore key_hash_hex[68..] must be 128-68=60 bytes long and so the conversion to [u8; 60] cannot fail; qed")
+	}
+}
+
+impl TryFrom<&str> for LegacySighash {
+	type Error = ();
+
+	fn try_from(hex: &str) -> Result<Self, Self::Error> {
+		if hex.len() == 60 {
+			let mut res = LegacySighash::default();
+			res.0.copy_from_slice(hex.as_bytes());
+			Ok(res)
+		} else {
+			Err(())
+		}
+	}
+}
+
+#[cfg(feature = "std")]
+impl serde::Serialize for LegacySighash {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(
+			core::str::from_utf8(self.0.as_slice())
+				.expect("LegacySighash can only be constructed with valid UTF-8, through `Default` or `TryFrom`; qed"),
+		)
+	}
+}
+
+#[cfg(feature = "std")]
+impl<'de> serde::Deserialize<'de> for LegacySighash {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		Self::try_from(&*String::deserialize(deserializer)?)
+			.map_err(|()| serde::de::Error::custom("expected 60 bytes"))
 	}
 }
