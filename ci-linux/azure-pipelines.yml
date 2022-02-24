@@ -29,11 +29,6 @@ stages:
     displayName: Build_CI_Image
     steps:
     - task: Docker@2
-      displayName: Docker Login
-      inputs:
-        containerRegistry: 'Docker Hub - mrausnadian'
-        command: 'login'
-    - task: Docker@2
       inputs:
         containerRegistry: 'Docker Hub - mrausnadian'
         repository: 'gluwa/ci-linux'
