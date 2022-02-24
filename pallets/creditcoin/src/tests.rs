@@ -1,14 +1,15 @@
 use crate::{
 	mock::*, AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder,
-	DealOrderId, ExternalAmount, Id, LoanTerms, Offer, OfferId, OrderId, TransferKind,
+	DealOrderId, ExternalAmount, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
+	TransferKind,
 };
 use bstr::B;
 use codec::Decode;
 use ethereum_types::H256;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 
-use sp_runtime::offchain::storage::StorageValueRef;
-use std::collections::HashMap;
+use sp_runtime::{offchain::storage::StorageValueRef, traits::IdentifyAccount, MultiSigner};
+use std::{collections::HashMap, convert::TryFrom};
 
 #[extend::ext]
 impl<'a, S> &'a [u8]
@@ -577,5 +578,30 @@ fn add_deal_order_existing() {
 				crate::Error::<Test>::DuplicateDealOrder
 			);
 		}
+	});
+}
+
+#[test]
+fn claim_legacy_wallet_works() {
+	let keeper = AccountId::from([0; 32]);
+	let legacy_amount = 1000000;
+	let sighash =
+		LegacySighash::try_from("f0bdc887e4d7928623081f30b1bc87b9e4443cca6b52c4364ce578cb6bf4")
+			.unwrap();
+	let pubkey = sp_core::ecdsa::Public::from_full(
+		&hex::decode("0399d6e7c784494fd7edc26fc9ca460a68c97cc64c49c85dfbb68148f0607893bf").unwrap(),
+	)
+	.unwrap();
+	let claimer = MultiSigner::from(pubkey.clone()).into_account();
+
+	let mut ext = ExtBuilder::default();
+	ext.fund(keeper.clone(), legacy_amount)
+		.legacy_balance_keeper(keeper)
+		.legacy_wallets(vec![(sighash, legacy_amount)]);
+
+	ext.build_and_execute(|| {
+		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pubkey));
+
+		assert_eq!(frame_system::pallet::Account::<Test>::get(&claimer).data.free, 1000000);
 	});
 }

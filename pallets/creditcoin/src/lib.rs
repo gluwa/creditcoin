@@ -49,7 +49,12 @@ pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, Blake2_128Concat};
+	use frame_support::{
+		dispatch::DispatchResult,
+		pallet_prelude::*,
+		traits::{tokens::ExistenceRequirement, Currency},
+		weights::PostDispatchInfo,
+	};
 	use frame_system::{
 		ensure_signed,
 		offchain::{AppCrypto, CreateSignedTransaction},
@@ -102,6 +107,12 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn authorities)]
 	pub type Authorities<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, ()>;
+
+	#[pallet::storage]
+	pub type LegacyWallets<T: Config> = StorageMap<_, Twox128, LegacySighash, T::Balance>;
+
+	#[pallet::storage]
+	pub type LegacyBalanceKeeper<T: Config> = StorageValue<_, T::AccountId>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn pending_transfers)]
@@ -211,6 +222,8 @@ pub mod pallet {
 		),
 
 		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>, TransferId<T::Hash>),
+
+		LegacyWalletClaimed(T::AccountId, LegacySighash, T::Balance),
 	}
 
 	// Errors inform users that something went wrong.
@@ -284,26 +297,43 @@ pub mod pallet {
 
 		RepaymentOrderUnsupported,
 
+		NotLegacyWalletOwner,
+		LegacySighashMalformed,
+		LegacyWalletNotFound,
+		LegacyBalanceKeeperMissing,
+
 		VerifyStringTooLong,
 	}
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub authorities: Vec<T::AccountId>,
+		pub legacy_wallets: Vec<(LegacySighash, T::Balance)>,
+		pub legacy_balance_keeper: Option<T::AccountId>,
 	}
 
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			Self { authorities: Vec::new() }
+			Self {
+				authorities: Vec::new(),
+				legacy_wallets: Vec::new(),
+				legacy_balance_keeper: None,
+			}
 		}
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			for authority in self.authorities.iter() {
+			for authority in &self.authorities {
 				Authorities::<T>::insert(authority.clone(), ());
+			}
+			for (sighash, balance) in &self.legacy_wallets {
+				LegacyWallets::<T>::insert(sighash, balance);
+			}
+			if let Some(acct) = &self.legacy_balance_keeper {
+				LegacyBalanceKeeper::<T>::put(acct.clone());
 			}
 		}
 	}
@@ -368,6 +398,36 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Claims legacy wallet and transfers the balance to the sender's account.
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		pub fn claim_legacy_wallet(
+			origin: OriginFor<T>,
+			public_key: sp_core::ecdsa::Public,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+			let account_id_of_key = T::Signer::from(public_key.clone()).into_account();
+			ensure!(account_id_of_key == who, Error::<T>::NotLegacyWalletOwner);
+
+			let sighash = LegacySighash::from(&public_key);
+
+			let legacy_balance =
+				LegacyWallets::<T>::get(&sighash).ok_or(Error::<T>::LegacyWalletNotFound)?;
+
+			let legacy_keeper =
+				LegacyBalanceKeeper::<T>::get().ok_or(Error::<T>::LegacyBalanceKeeperMissing)?;
+
+			<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+				&legacy_keeper,
+				&who,
+				legacy_balance,
+				ExistenceRequirement::AllowDeath,
+			)?;
+			LegacyWallets::<T>::remove(&sighash);
+			Self::deposit_event(Event::<T>::LegacyWalletClaimed(who, sighash, legacy_balance));
+
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
 		/// Registers an external address on `blockchain` and `network` with value `address`
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
 		pub fn register_address(

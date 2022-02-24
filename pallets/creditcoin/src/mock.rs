@@ -1,7 +1,7 @@
 use parking_lot::RwLock;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest};
+use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest, LegacySighash};
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
@@ -153,6 +153,8 @@ impl pallet_balances::Config for Test {
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	authorities: Vec<AccountId>,
+	legacy_wallets: Vec<(LegacySighash, Balance)>,
+	legacy_keeper: Option<AccountId>,
 	keystore: Option<KeyStore>,
 }
 
@@ -180,6 +182,17 @@ impl ExtBuilder {
 		self.authorities.push(AccountId::new(pubkey.into_account().0));
 		self
 	}
+	pub fn legacy_wallets(
+		&mut self,
+		wallets: impl IntoIterator<Item = (LegacySighash, Balance)>,
+	) -> &mut ExtBuilder {
+		self.legacy_wallets.extend(wallets);
+		self
+	}
+	pub fn legacy_balance_keeper(&mut self, acct: AccountId) -> &mut ExtBuilder {
+		self.legacy_keeper = Some(acct);
+		self
+	}
 	pub fn build(self) -> sp_io::TestExternalities {
 		sp_tracing::try_init_simple();
 		let mut storage = system::GenesisConfig::default().build_storage::<Test>().unwrap();
@@ -187,8 +200,12 @@ impl ExtBuilder {
 		let _ = pallet_balances::GenesisConfig::<Test> { balances: self.balances }
 			.assimilate_storage(&mut storage);
 
-		let _ = crate::GenesisConfig::<Test> { authorities: self.authorities }
-			.assimilate_storage(&mut storage);
+		let _ = crate::GenesisConfig::<Test> {
+			authorities: self.authorities,
+			legacy_wallets: self.legacy_wallets,
+			legacy_balance_keeper: self.legacy_keeper,
+		}
+		.assimilate_storage(&mut storage);
 
 		storage.into()
 	}
