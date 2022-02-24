@@ -10,6 +10,7 @@ trigger:
   paths:
     exclude:
     - README.md
+    - ci-linux/*
 
 pr: none
 
