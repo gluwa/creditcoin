@@ -187,6 +187,6 @@ fn testnet_genesis(
 			target_time: 60 * 1000,
 			difficulty_adjustment_period: 56,
 		},
-		creditcoin: CreditcoinConfig { authorities: vec![] },
+		creditcoin: CreditcoinConfig::default(),
 	}
 }
