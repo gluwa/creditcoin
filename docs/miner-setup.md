@@ -37,7 +37,7 @@
 2) Start mining node
     - Make make sure that your port 30333 is accessible by external connections
     - Obtain your public IP address
-    - Run
+    - Run (remove comment lines first)
 
         ```bash
         
