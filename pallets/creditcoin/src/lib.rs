@@ -131,6 +131,10 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, AddressId<T::Hash>, Address<T::AccountId>>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn used_guids)]
+	pub type UsedGuids<T: Config> = StorageMap<_, Blake2_128Concat, Guid, ()>;
+
+	#[pallet::storage]
 	#[pallet::getter(fn ask_orders)]
 	pub type AskOrders<T: Config> = StorageDoubleMap<
 		_,
@@ -285,6 +289,8 @@ pub mod pallet {
 		RepaymentOrderUnsupported,
 
 		VerifyStringTooLong,
+
+		GuidAlreadyUsed,
 	}
 
 	#[pallet::genesis_config]
@@ -389,7 +395,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2))]
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
@@ -413,13 +419,13 @@ pub mod pallet {
 				lender: who,
 			};
 
+			Self::use_guid(&guid)?;
 			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id.clone(), ask_order.clone()));
-
 			AskOrders::<T>::insert_id(ask_order_id, ask_order);
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2))]
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
@@ -443,6 +449,7 @@ pub mod pallet {
 				borrower: who,
 			};
 
+			Self::use_guid(&guid)?;
 			Self::deposit_event(Event::<T>::BidOrderAdded(bid_order_id.clone(), bid_order.clone()));
 			BidOrders::<T>::insert_id(bid_order_id, bid_order);
 			Ok(())

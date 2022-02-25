@@ -1,8 +1,9 @@
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Guid, Id, TransferId,
+	DealOrderId, Error, Guid, Id, TransferId,
 };
+use frame_support::ensure;
 use frame_system::pallet_prelude::*;
 use sp_io::hashing::sha2_256;
 use sp_runtime::{traits::UniqueSaturatedInto, RuntimeAppPublic};
@@ -111,6 +112,12 @@ impl<T: Config> Pallet<T> {
 			Self::deposit_event(event)
 		}
 
+		Ok(())
+	}
+
+	pub fn use_guid(guid: &Guid) -> Result<(), Error<T>> {
+		ensure!(!<UsedGuids<T>>::contains_key(guid.clone()), Error::<T>::GuidAlreadyUsed);
+		UsedGuids::<T>::insert(guid, ());
 		Ok(())
 	}
 }

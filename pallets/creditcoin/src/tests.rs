@@ -68,6 +68,7 @@ pub struct TestInfo {
 	borrower: RegisteredAddress,
 	ask_guid: H256,
 	bid_guid: H256,
+	expiration_block: u64,
 }
 
 impl TestInfo {
@@ -78,10 +79,9 @@ impl TestInfo {
 		}
 	}
 	pub fn create_ask_order(&self) -> Option<TestAskOrder> {
-		let TestInfo { lender, loan_terms, .. } = self;
+		let TestInfo { lender, loan_terms, expiration_block, .. } = self;
 		let RegisteredAddress { address_id, account_id } = lender;
 		let guid = self.ask_guid.as_bytes().into_bounded();
-		let expiration_block = 1_000;
 
 		assert_ok!(Creditcoin::add_ask_order(
 			Origin::signed(account_id.clone()),
@@ -99,10 +99,9 @@ impl TestInfo {
 	}
 
 	pub fn create_bid_order(&self) -> Option<TestBidOrder> {
-		let TestInfo { borrower, loan_terms, .. } = self;
+		let TestInfo { borrower, loan_terms, expiration_block, .. } = self;
 		let RegisteredAddress { address_id, account_id } = borrower;
 		let guid = self.bid_guid.as_bytes().into_bounded();
-		let expiration_block = 1_000;
 
 		assert_ok!(Creditcoin::add_bid_order(
 			Origin::signed(account_id.clone()),
@@ -162,14 +161,15 @@ impl TestInfo {
 		}
 	}
 
-	pub fn prepare_test() -> TestInfo {
+	pub fn new_defaults() -> TestInfo {
 		let lender = RegisteredAddress::new(0);
 		let borrower = RegisteredAddress::new(1);
 		let blockchain = Blockchain::Rinkeby;
 		let loan_terms = loan_terms();
 		let ask_guid = H256::random();
 		let bid_guid = H256::random();
-		TestInfo { blockchain, lender, borrower, loan_terms, ask_guid, bid_guid }
+		let expiration_block = 1_000;
+		TestInfo { blockchain, lender, borrower, loan_terms, ask_guid, bid_guid, expiration_block }
 	}
 }
 
@@ -400,7 +400,7 @@ fn register_transfer_ocw() {
 #[test]
 fn add_ask_order_basic() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 		let TestInfo { lender, loan_terms, blockchain, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = lender;
 
@@ -422,9 +422,34 @@ fn add_ask_order_basic() {
 }
 
 #[test]
+fn add_ask_order_used_guid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let TestInfo { lender, loan_terms, ask_guid, .. } = test_info.clone();
+		let RegisteredAddress { address_id, account_id } = lender;
+		let guid = ask_guid.as_bytes().into_bounded();
+
+		if let Some((_, _)) = test_info.create_ask_order() {
+			let expiration_block = 1_500;
+
+			assert_noop!(
+				Creditcoin::add_ask_order(
+					Origin::signed(account_id.clone()),
+					address_id.clone(),
+					loan_terms.into(),
+					expiration_block.clone(),
+					guid.clone()
+				),
+				crate::Error::<Test>::GuidAlreadyUsed
+			);
+		}
+	});
+}
+
+#[test]
 fn add_ask_order_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 		let TestInfo { lender, loan_terms, ask_guid, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = lender;
 		let guid = ask_guid.as_bytes().into_bounded();
@@ -449,7 +474,7 @@ fn add_ask_order_pre_existing() {
 #[test]
 fn add_bid_order_basic() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 		let TestInfo { borrower, loan_terms, blockchain, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 
@@ -471,9 +496,34 @@ fn add_bid_order_basic() {
 }
 
 #[test]
+fn add_bid_order_used_guid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let TestInfo { lender, loan_terms, bid_guid, .. } = test_info.clone();
+		let RegisteredAddress { address_id, account_id } = lender;
+		let guid = bid_guid.as_bytes().into_bounded();
+
+		if let Some((_, _)) = test_info.create_bid_order() {
+			let expiration_block = 1_500;
+
+			assert_noop!(
+				Creditcoin::add_ask_order(
+					Origin::signed(account_id.clone()),
+					address_id.clone(),
+					loan_terms.into(),
+					expiration_block.clone(),
+					guid.clone()
+				),
+				crate::Error::<Test>::GuidAlreadyUsed
+			);
+		}
+	});
+}
+
+#[test]
 fn add_bid_order_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 		let TestInfo { borrower, loan_terms, bid_guid, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 		let guid = bid_guid.as_bytes().into_bounded();
@@ -498,7 +548,7 @@ fn add_bid_order_pre_existing() {
 #[test]
 fn add_offer_basic() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 
 		if let Some((offer, _)) = test_info.create_offer() {
 			let Offer { blockchain, expiration_block, block, ask_id, bid_id, lender, .. } =
@@ -514,7 +564,7 @@ fn add_offer_basic() {
 #[test]
 fn add_offer_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 
 		if let Some((offer, _)) = test_info.create_offer() {
 			let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer.clone();
@@ -530,7 +580,7 @@ fn add_offer_existing() {
 #[test]
 fn add_deal_order_basic() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 
 		if let Some((deal_order, _)) = test_info.create_deal_order() {
 			let DealOrder {
@@ -567,7 +617,7 @@ fn add_deal_order_basic() {
 #[test]
 fn add_deal_order_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::prepare_test();
+		let test_info = TestInfo::new_defaults();
 
 		if let Some((deal_order, _)) = test_info.create_deal_order() {
 			let DealOrder { expiration_block, borrower, offer_id, .. } = deal_order.clone();
