@@ -485,7 +485,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2))]
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
