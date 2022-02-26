@@ -9,7 +9,10 @@ use ethereum_types::H256;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 
 use sp_runtime::{offchain::storage::StorageValueRef, traits::IdentifyAccount, MultiSigner};
-use std::{collections::HashMap, convert::TryFrom};
+use std::{
+	collections::HashMap,
+	convert::{TryFrom, TryInto},
+};
 
 #[extend::ext]
 impl<'a, S> &'a [u8]
@@ -386,7 +389,7 @@ fn add_ask_order_basic() {
 		let new_ask_order = crate::AskOrder {
 			blockchain,
 			lender_address_id: address_id,
-			terms: loan_terms.into(),
+			terms: loan_terms.try_into().unwrap(),
 			expiration_block,
 			block,
 			lender: account_id,
@@ -443,6 +446,18 @@ fn add_ask_order_pre_existing() {
 }
 
 #[test]
+#[should_panic]
+fn add_add_ask_order_rejects_zero_maturity() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo {
+			loan_terms: LoanTerms { amount: 0.into(), interest_rate: 0, maturity: 0 },
+			..TestInfo::new_defaults()
+		};
+		let _ = test_info.create_ask_order().unwrap();
+	});
+}
+
+#[test]
 fn add_bid_order_basic() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -455,7 +470,7 @@ fn add_bid_order_basic() {
 		let new_bid_order = crate::BidOrder {
 			blockchain,
 			borrower_address_id: address_id,
-			terms: loan_terms.into(),
+			terms: loan_terms.try_into().unwrap(),
 			expiration_block,
 			block,
 			borrower: account_id,
@@ -508,6 +523,18 @@ fn add_bid_order_pre_existing() {
 			),
 			crate::Error::<Test>::DuplicateId
 		);
+	});
+}
+
+#[test]
+#[should_panic]
+fn add_bid_ask_order_rejects_zero_maturity() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo {
+			loan_terms: LoanTerms { amount: 0.into(), interest_rate: 0, maturity: 0 },
+			..TestInfo::new_defaults()
+		};
+		let _ = test_info.create_bid_order().unwrap();
 	});
 }
 
