@@ -89,7 +89,7 @@ impl<T: Config> Pallet<T> {
 			&DealOrderFor<T>,
 		) -> Result<Option<crate::Event<T>>, crate::Error<T>>,
 	) -> Result<(), crate::Error<T>> {
-		let (deal_event, transfer_event) = DealOrders::<T>::try_mutate(
+		let result = DealOrders::<T>::try_mutate(
 			deal_order_id.expiration(),
 			deal_order_id.hash(),
 			|value| {
@@ -103,16 +103,21 @@ impl<T: Config> Pallet<T> {
 
 				Ok((deal_event, transfer_event))
 			},
-		)?;
+		);
 
-		if let Some(event) = deal_event {
-			Self::deposit_event(event);
-		}
-		if let Some(event) = transfer_event {
-			Self::deposit_event(event)
-		}
+		match result {
+			Ok((deal_event, transfer_event)) => {
+				if let Some(event) = deal_event {
+					Self::deposit_event(event);
+				}
+				if let Some(event) = transfer_event {
+					Self::deposit_event(event)
+				}
 
-		Ok(())
+				Ok(())
+			},
+			Err(e) => Err(e),
+		}
 	}
 
 	pub fn use_guid(guid: &Guid) -> Result<(), Error<T>> {

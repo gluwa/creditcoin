@@ -309,6 +309,8 @@ pub mod pallet {
 		VerifyStringTooLong,
 
 		GuidAlreadyUsed,
+
+		InvalidMaturity,
 	}
 
 	#[pallet::genesis_config]
@@ -473,7 +475,7 @@ pub mod pallet {
 			let ask_order = AskOrder {
 				blockchain: address.blockchain,
 				lender_address_id: address_id,
-				terms: terms.into(),
+				terms: terms.try_into().map_err(|_| Error::<T>::InvalidMaturity)?,
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				lender: who,
@@ -503,7 +505,7 @@ pub mod pallet {
 			let bid_order = BidOrder {
 				blockchain: address.blockchain,
 				borrower_address_id: address_id,
-				terms: terms.into(),
+				terms: terms.try_into().map_err(Error::<T>::from)?,
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				borrower: who,
@@ -739,7 +741,7 @@ pub mod pallet {
 			let ask_order = AskOrder {
 				blockchain: lender.blockchain.clone(),
 				lender_address_id: lender_address_id.clone(),
-				terms: terms.clone().into(),
+				terms: terms.clone().try_into().map_err(Error::<T>::from)?,
 				expiration_block,
 				block: current_block,
 				lender: lender_account.clone(),
@@ -748,7 +750,7 @@ pub mod pallet {
 			let bid_order = BidOrder {
 				blockchain: lender.blockchain.clone(),
 				borrower_address_id: borrower_address_id.clone(),
-				terms: terms.clone().into(),
+				terms: terms.clone().try_into().map_err(Error::<T>::from)?,
 				expiration_block,
 				block: current_block,
 				borrower: borrower_account.clone(),
