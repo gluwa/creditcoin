@@ -1,11 +1,11 @@
 use core::ops::Deref;
 
+use super::ExternalAmount;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
 use sp_runtime::traits::UniqueSaturatedInto;
-
-use super::ExternalAmount;
+use sp_std::convert::TryFrom;
 
 pub type InterestRate = u64;
 
@@ -39,9 +39,26 @@ impl<Moment> Deref for AskTerms<Moment> {
 	}
 }
 
-impl<Moment> From<LoanTerms<Moment>> for AskTerms<Moment> {
-	fn from(terms: LoanTerms<Moment>) -> Self {
-		Self(terms)
+#[derive(Clone, Copy, RuntimeDebug)]
+pub struct InvalidMaturityError;
+
+impl<T: crate::Config> From<InvalidMaturityError> for crate::Error<T> {
+	fn from(_: InvalidMaturityError) -> Self {
+		Self::InvalidMaturity
+	}
+}
+
+impl<Moment> TryFrom<LoanTerms<Moment>> for AskTerms<Moment>
+where
+	Moment: UniqueSaturatedInto<u64> + Copy,
+{
+	type Error = InvalidMaturityError;
+	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
+		if terms.maturity.unique_saturated_into() == 0 {
+			return Err(InvalidMaturityError);
+		}
+
+		Ok(Self(terms))
 	}
 }
 
@@ -71,9 +88,17 @@ impl<Moment> Deref for BidTerms<Moment> {
 	}
 }
 
-impl<Moment> From<LoanTerms<Moment>> for BidTerms<Moment> {
-	fn from(terms: LoanTerms<Moment>) -> BidTerms<Moment> {
-		Self(terms)
+impl<Moment> TryFrom<LoanTerms<Moment>> for BidTerms<Moment>
+where
+	Moment: UniqueSaturatedInto<u64> + Copy,
+{
+	type Error = InvalidMaturityError;
+	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
+		if terms.maturity.unique_saturated_into() == 0 {
+			return Err(InvalidMaturityError);
+		}
+
+		Ok(Self(terms))
 	}
 }
 
