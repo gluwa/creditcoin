@@ -1,6 +1,6 @@
 [package]
 name = 'creditcoin-node'
-version = '0.1.0'
+version = '2.0.0-beta.2'
 description = 'A Creditcoin node built on substrate.'
 authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
 homepage = 'https://substrate.dev'
@@ -23,7 +23,7 @@ version = '3.0.0'
 
 [dependencies.creditcoin-node-runtime]
 path = '../runtime'
-version = '0.1.0'
+version = '2.0.0-beta.2'
 
 [dependencies]
 jsonrpc-core = '18.0.0'
