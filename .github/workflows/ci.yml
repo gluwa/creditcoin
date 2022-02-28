@@ -108,16 +108,22 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          components: llvm-tools-preview
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
       - uses: Swatinem/rust-cache@v1
 
+      - name: Install additional cargo tools
+        run: |
+            cargo install cargo-binutils
+
       - name: Configure flags for collecting coverage
         run: |
           echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
-          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
+          echo "RUSTFLAGS=-C instrument-coverage" >> $GITHUB_ENV
+          echo "LLVM_PROFILE_FILE=coverage.profraw" >> $GITHUB_ENV
+          echo "SKIP_WASM_BUILD=1" >> $GITHUB_ENV
 
       - name: Run tests
         uses: actions-rs/cargo@v1
@@ -127,16 +133,28 @@ jobs:
         env:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
-          SKIP_WASM_BUILD: 1
-      - id: coverage
-        uses: actions-rs/grcov@v0.1
-        with:
-          config: .grcov.yml
+          LLVM_PROFILE_FILE: ${{ env.LLVM_PROFILE_NAME }}
+          SKIP_WASM_BUILD: ${{ env.SKIP_WASM_BUILD }}
+
+      - name: Prepare coverage data for upload
+        run: |
+            # produce a binary to act as coverage map file
+            cargo build
+
+            RAW_PROFILE_DATA=$(find -name coverage.profraw | xargs)
+            cargo profdata -- merge --sparse -o coverage.profdata $RAW_PROFILE_DATA
+
+            cargo cov -- export --instr-profile=coverage.profdata --format lcov target/debug/creditcoin-node >> coverage.lcov
+
+            echo "===== files for which coverage was collected"
+            cat coverage.lcov | grep "SF:"
+
+            echo "***** DEBUG *****"
+            cat coverage.lcov
 
       - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ steps.coverage.outputs.report }}
+          files: coverage.lcov
           fail_ci_if_error: true
           verbose: true
