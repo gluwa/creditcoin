@@ -1,6 +1,6 @@
 {
-  "name": "CC Substrate QA Network",
-  "id": "cc_substrate_qa",
+  "name": "Creditcoin QA",
+  "id": "creditcoin_qa",
   "chainType": "Live",
   "bootNodes": [],
   "telemetryEndpoints": null,

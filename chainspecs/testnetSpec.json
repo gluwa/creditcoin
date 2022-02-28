@@ -1,6 +1,6 @@
 {
-  "name": "CC Substrate Testnet",
-  "id": "cc_substrate_testnet",
+  "name": "Creditcoin Testnet",
+  "id": "creditcoin_testnet",
   "chainType": "Live",
   "bootNodes": [],
   "telemetryEndpoints": null,
