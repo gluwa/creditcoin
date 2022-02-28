@@ -79,10 +79,16 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Install Rust WASM toolchain
+        uses: actions-rs/toolchain@v1
+        with:
           toolchain: nightly
           target: wasm32-unknown-unknown
           profile: minimal
-          override: true
+
       - uses: Swatinem/rust-cache@v1
 
       - name: Check Build
