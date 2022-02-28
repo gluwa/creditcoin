@@ -123,7 +123,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -- test-threads 1
+          args: -- --test-threads 1
         env:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
