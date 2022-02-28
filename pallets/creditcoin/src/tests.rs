@@ -450,10 +450,10 @@ fn add_ask_order_pre_existing() {
 fn add_add_ask_order_rejects_zero_maturity() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo {
-			loan_terms: LoanTerms { amount: 0.into(), interest_rate: 0, maturity: 0 },
+			loan_terms: LoanTerms { amount: 0u64.into(), interest_rate: 0, maturity: 0 },
 			..TestInfo::new_defaults()
 		};
-		let _ = test_info.create_ask_order().unwrap();
+		let _ = test_info.create_ask_order();
 	});
 }
 
@@ -531,10 +531,10 @@ fn add_bid_order_pre_existing() {
 fn add_bid_ask_order_rejects_zero_maturity() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo {
-			loan_terms: LoanTerms { amount: 0.into(), interest_rate: 0, maturity: 0 },
+			loan_terms: LoanTerms { amount: 0u64.into(), interest_rate: 0, maturity: 0 },
 			..TestInfo::new_defaults()
 		};
-		let _ = test_info.create_bid_order().unwrap();
+		let _ = test_info.create_bid_order();
 	});
 }
 
