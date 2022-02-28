@@ -475,7 +475,7 @@ pub mod pallet {
 			let ask_order = AskOrder {
 				blockchain: address.blockchain,
 				lender_address_id: address_id,
-				terms: terms.try_into().map_err(|_| Error::<T>::InvalidMaturity)?,
+				terms: terms.try_into().map_err(Error::<T>::from)?,
 				expiration_block,
 				block: <frame_system::Pallet<T>>::block_number(),
 				lender: who,
