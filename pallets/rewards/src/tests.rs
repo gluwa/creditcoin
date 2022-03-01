@@ -19,3 +19,17 @@ fn reward_amount_after_one_halflife() {
 fn reward_amount_limit() {
 	assert_eq!(Rewards::reward_amount(u64::MAX), 0);
 }
+
+#[test]
+fn issue_reward_handling() {
+	new_test_ext().execute_with(|| {
+		Rewards::issue_reward(123456, 55);
+
+		let event = <frame_system::Pallet<Test>>::events()
+			.pop()
+			.expect("Expected at least one EventRecord to be found")
+			.event;
+
+		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::RewardIssued(123456, 55)),);
+	});
+}
