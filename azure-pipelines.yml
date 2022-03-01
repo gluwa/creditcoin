@@ -22,10 +22,9 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'f5aa2da0-fdf0-4f31-b77d-6b7c374f51e6'
-  imageRepository: 'cc-substrate/testnet'
-  containerRegistry: 'ccacrtest.azurecr.io'
+  imageRepository: 'gluwa/creditcoin'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  dockerRegistryServiceConnection: 'Gluwa David Lebee'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -68,3 +67,4 @@ stages:
           latest
           $(gitTag)
           $(ccTag)
+          
