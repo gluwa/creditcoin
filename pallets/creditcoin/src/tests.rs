@@ -4,7 +4,7 @@ use crate::{
 	TransferKind,
 };
 use bstr::B;
-use codec::Decode;
+use codec::{Decode, Encode};
 use ethereum_types::H256;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 
@@ -375,11 +375,12 @@ fn register_transfer_ocw() {
 
 #[test]
 fn add_ask_order_basic() {
-	ExtBuilder::default().build_offchain_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let TestInfo { lender, loan_terms, blockchain, .. } = test_info.clone();
-		let RegisteredAddress { address_id, account_id } = lender;
+	let (mut ext, _, _) = ExtBuilder::default().build_offchain();
 
+	let (ask_order, ask_guid) = ext.execute_with(|| {
+		let test_info = TestInfo::new_defaults();
+		let TestInfo { lender, loan_terms, blockchain, ask_guid, .. } = test_info.clone();
+		let RegisteredAddress { address_id, account_id } = lender;
 		let (ask_order, _) = test_info.create_ask_order();
 		let AskOrder { block, expiration_block, .. } = ask_order.clone();
 
@@ -393,7 +394,11 @@ fn add_ask_order_basic() {
 		};
 
 		assert_eq!(ask_order, new_ask_order);
+		(ask_order, ask_guid)
 	});
+
+	ext.persist_offchain_overlay();
+	assert_eq!(ext.offchain_db().get(&ask_guid).unwrap(), ask_order.encode());
 }
 
 #[test]
@@ -444,9 +449,11 @@ fn add_ask_order_pre_existing() {
 
 #[test]
 fn add_bid_order_basic() {
-	ExtBuilder::default().build_and_execute(|| {
+	let (mut ext, _, _) = ExtBuilder::default().build_offchain();
+
+	let (bid_order, bid_guid) = ext.execute_with(|| {
 		let test_info = TestInfo::new_defaults();
-		let TestInfo { borrower, loan_terms, blockchain, .. } = test_info.clone();
+		let TestInfo { borrower, loan_terms, blockchain, bid_guid, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 
 		let (bid_order, _) = test_info.create_bid_order();
@@ -462,7 +469,11 @@ fn add_bid_order_basic() {
 		};
 
 		assert_eq!(new_bid_order, bid_order);
+		(bid_order, bid_guid)
 	});
+
+	ext.persist_offchain_overlay();
+	assert_eq!(ext.offchain_db().get(&bid_guid).unwrap(), bid_order.encode());
 }
 
 #[test]
