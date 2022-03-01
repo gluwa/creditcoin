@@ -242,7 +242,7 @@ impl WeightToFeePolynomial for WeightToCtcFee {
 	type Balance = Balance;
 
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		let base = Balance::from(ExtrinsicBaseWeight::get());
+		let base = Balance::from(ExtrinsicBaseWeight::get()).saturating_mul(2);
 		let ratio = TARGET_FEE_CREDO / base;
 		let rem = TARGET_FEE_CREDO % base;
 		smallvec::smallvec!(WeightToFeeCoefficient {
