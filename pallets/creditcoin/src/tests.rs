@@ -1,14 +1,19 @@
 use crate::{
-	mock::*, AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder,
-	DealOrderId, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
-	TransferKind,
+	mock::*, AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain,
+	DealOrder, DealOrderId, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId,
+	OrderId, TransferKind,
 };
 use bstr::B;
 use codec::{Decode, Encode};
 use ethereum_types::H256;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
+use frame_system::RawOrigin;
 
-use sp_runtime::{offchain::storage::StorageValueRef, traits::IdentifyAccount, MultiSigner};
+use sp_runtime::{
+	offchain::storage::StorageValueRef,
+	traits::{BadOrigin, IdentifyAccount},
+	MultiSigner,
+};
 use std::{
 	collections::HashMap,
 	convert::{TryFrom, TryInto},
@@ -652,5 +657,33 @@ fn claim_legacy_wallet_works() {
 		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pubkey));
 
 		assert_eq!(frame_system::pallet::Account::<Test>::get(&claimer).data.free, 1000000);
+	});
+}
+
+#[test]
+fn add_authority_errors_for_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		assert_noop!(
+			Creditcoin::add_authority(Origin::signed(acct.clone()), acct.clone()),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn add_authority_works_for_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let root = RawOrigin::Root;
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			acct.clone(),
+		));
+
+		let value = Authorities::<Test>::take(acct.clone());
+		assert_eq!(value, Some(()))
 	});
 }
