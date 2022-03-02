@@ -1,7 +1,7 @@
 use crate::{
 	mock::*, AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain,
 	DealOrder, DealOrderId, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId,
-	OrderId, TransferKind,
+	OrderId, TransferId, TransferKind,
 };
 use bstr::B;
 use codec::{Decode, Encode};
@@ -632,6 +632,134 @@ fn add_deal_order_existing() {
 			Creditcoin::add_deal_order(Origin::signed(borrower), offer_id, expiration_block),
 			crate::Error::<Test>::DuplicateDealOrder
 		);
+	});
+}
+
+#[test]
+fn lock_deal_order_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		assert_noop!(Creditcoin::lock_deal_order(Origin::none(), deal_order_id), BadOrigin);
+	});
+}
+
+#[test]
+fn lock_deal_order_should_error_for_non_existent_deal_order() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (deal_order, _) = test_info.create_deal_order();
+		let DealOrder { borrower, offer_id, .. } = deal_order.clone();
+		// expiration_block set to 0
+		let deal_order_id = DealOrderId::new::<Test>(0, &offer_id);
+
+		assert_noop!(
+			Creditcoin::lock_deal_order(Origin::signed(borrower), deal_order_id),
+			crate::Error::<Test>::NonExistentDealOrder
+		);
+	});
+}
+
+#[test]
+fn lock_deal_order_should_error_when_not_funded() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		assert_noop!(
+			Creditcoin::lock_deal_order(
+				Origin::signed(test_info.borrower.account_id),
+				deal_order_id
+			),
+			crate::Error::<Test>::DealNotFunded
+		);
+	});
+}
+
+#[test]
+fn lock_deal_order_should_fail_for_non_borrower() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		// simulate deal transfer
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().funding_transfer_id =
+					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::lock_deal_order(Origin::signed(test_info.lender.account_id), deal_order_id),
+			crate::Error::<Test>::NotBorrower
+		);
+	});
+}
+
+#[test]
+fn lock_deal_order_should_fail_if_already_locked() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		// simulate deal transfer
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().funding_transfer_id =
+					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
+			},
+		);
+
+		assert_ok!(Creditcoin::lock_deal_order(
+			Origin::signed(test_info.borrower.account_id.clone()),
+			deal_order_id.clone()
+		));
+
+		assert_noop!(
+			Creditcoin::lock_deal_order(
+				Origin::signed(test_info.borrower.account_id.clone()),
+				deal_order_id.clone()
+			),
+			crate::Error::<Test>::DealOrderAlreadyLocked
+		);
+	});
+}
+
+#[test]
+fn lock_deal_order_locks_by_borrower() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		// simulate deal transfer
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().funding_transfer_id =
+					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
+			},
+		);
+
+		assert_ok!(Creditcoin::lock_deal_order(
+			Origin::signed(test_info.borrower.account_id.clone()),
+			deal_order_id.clone()
+		));
+		let locked_deal_order =
+			Creditcoin::deal_orders(deal_order.expiration_block, deal_order_id.hash()).unwrap();
+		assert_eq!(locked_deal_order.lock, Some(test_info.borrower.account_id.clone()));
 	});
 }
 
