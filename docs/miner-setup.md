@@ -41,9 +41,11 @@
 
         ```bash
         
-        docker run -p 30333:30333 -v <yourlocaldatapath>:/data gluwa/creditcoin:2.0.0-beta-1 \
+        docker run -p 30333:30333 -v <yourlocaldatapath>:/data gluwa/creditcoin:2.0.0-beta-2 \
             # running a mining node
             --validator \
+            # maximum # of incoming peers
+            --in-peers 100
             # optional name for your node, to make it easier to identify
             --name <nodename> \
             # allow prometheus metrics to be scraped
@@ -51,7 +53,7 @@
             # optional, opt in to telemetry
             --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
             # node to connect to on boot, in order to join the network
-            --bootnodes "/dns4/test-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH" \
+            --bootnodes "/dns4/testnet-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH" "/dns4/testnet-bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWDg8bvM2apk2vS2834M3WDSJigHToLsREPEs2EphYRpSh" "/dns4/testnet-bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWR7WeN1cKG7NkvecKfsfMCTYzpub5Mswnzv6RAWehuBQo" \
             # replace <...> with the public IP address or host name that your node can be reached at
             --public-addr "/dns4/<yourhostname or ip>/tcp/30333" \
             # we want to connect to the testnet
