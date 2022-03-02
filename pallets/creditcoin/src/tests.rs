@@ -764,6 +764,355 @@ fn lock_deal_order_locks_by_borrower() {
 }
 
 #[test]
+fn fund_deal_order_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(Origin::none(), deal_order_id, transfer_id),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_address_not_registered() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		// simulate deal with an address that isn't registered
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				let blockchain = Blockchain::Rinkeby;
+
+				deal_order_storage.as_mut().unwrap().lender_address_id =
+					AddressId::new::<Test>(&blockchain, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::NonExistentAddress
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_for_non_lender() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.borrower.account_id),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::NotLender
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_timestamp_is_in_the_future() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		// simulate deal with a timestamp in the future
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().timestamp = Creditcoin::timestamp() + 99999;
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::MalformedDealOrder
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_deal_is_funded() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		// simulate a funded deal
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().funding_transfer_id =
+					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::DealOrderAlreadyFunded
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_deal_has_expired() {
+	ExtBuilder::default().build_and_execute(|| {
+		roll_to(4); // advance head so we have something to compare to
+
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		// simulate an expired deal by setting expiration_block < head
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().expiration_block = 0;
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::DealOrderExpired
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_id() {
+	ExtBuilder::default().build_and_execute(|| {
+		// this is the primary deal_order
+		let test_info = TestInfo::new_defaults();
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		// this is a deal_order from another person
+		let second_test_info = TestInfo {
+			lender: RegisteredAddress::new(100),
+			borrower: RegisteredAddress::new(200),
+			blockchain: Blockchain::Rinkeby,
+			loan_terms: LoanTerms {
+				amount: 2_000_000u64.into(),
+				interest_rate: 0,
+				maturity: 1_000_000,
+			},
+			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
+			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
+			expiration_block: 3_333,
+		};
+
+		let (bogus_deal_order, bogus_deal_order_id) = second_test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(second_test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(bogus_deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&bogus_deal_order.blockchain, &tx_hash.clone());
+
+		// try funding DealOrder from Person1 with the transfer from Person2,
+		// which points to a different order_id
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id.clone()),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::TransferMismatch
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, &tx_hash.clone());
+
+		// modify deal amount in order to cause transfer mismatch
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				// note: the transfer above has amount of 0 b/c it is an exemption!
+				deal_order_storage.as_mut().unwrap().terms.amount = ExternalAmount::from(4444);
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id.clone()),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::TransferMismatch
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, &tx_hash.clone());
+
+		// modify transfer in order to cause transfer mismatch
+		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
+			let mut ts = transfer_storage.as_mut().unwrap();
+			// b/c amount above is 0
+			ts.amount = deal_order.terms.amount;
+			ts.sighash = AccountId::new([4; 32]);
+		});
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id.clone()),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::TransferMismatch
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_should_error_when_transfer_has_been_processed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, &tx_hash.clone());
+
+		// modify transfer in order to cause an error
+		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
+			let mut ts = transfer_storage.as_mut().unwrap();
+			// b/c amount above is 0
+			ts.amount = deal_order.terms.amount;
+			ts.processed = true;
+		});
+
+		assert_noop!(
+			Creditcoin::fund_deal_order(
+				Origin::signed(test_info.lender.account_id.clone()),
+				deal_order_id,
+				transfer_id
+			),
+			crate::Error::<Test>::TransferAlreadyProcessed
+		);
+	});
+}
+
+#[test]
+fn fund_deal_order_works() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, &tx_hash.clone());
+
+		// modify transfer b/c amount above is 0
+		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
+			transfer_storage.as_mut().unwrap().amount = deal_order.terms.amount;
+		});
+
+		assert_ok!(Creditcoin::fund_deal_order(
+			Origin::signed(test_info.lender.account_id.clone()),
+			deal_order_id,
+			transfer_id
+		));
+	});
+}
+
+#[test]
 fn claim_legacy_wallet_works() {
 	let keeper = AccountId::from([0; 32]);
 	let legacy_amount = 1000000;
