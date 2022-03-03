@@ -1,7 +1,7 @@
 use crate::{
-	mock::*, AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain,
-	DealOrder, DealOrderId, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId,
-	OrderId, TransferId, TransferKind,
+	mock::*, types::DoubleMapExt, AddressId, AskOrder, AskOrderId, Authorities, BidOrder,
+	BidOrderId, Blockchain, DealOrder, DealOrderId, ExternalAmount, Guid, Id, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, TransferId, TransferKind,
 };
 use bstr::B;
 use codec::{Decode, Encode};
@@ -9,6 +9,7 @@ use ethereum_types::H256;
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
 
+use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
@@ -38,10 +39,23 @@ pub struct RegisteredAddress {
 	account_id: AccountId,
 }
 impl RegisteredAddress {
-	pub fn new(i: u8) -> RegisteredAddress {
+	pub fn from_pubkey(
+		public_key: sp_core::ecdsa::Public,
+		blockchain: Blockchain,
+	) -> RegisteredAddress {
+		let account_id = MultiSigner::from(public_key).into_account();
+		let address = account_id.to_string().as_bytes().into_bounded();
+		let address_id = AddressId::new::<Test>(&blockchain, &address);
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(account_id.clone()),
+			blockchain,
+			address
+		));
+		RegisteredAddress { account_id, address_id }
+	}
+	pub fn new(i: u8, blockchain: Blockchain) -> RegisteredAddress {
 		let account_id = AccountId::new([i; 32]);
 		let address = i.to_string().as_bytes().into_bounded();
-		let blockchain = Blockchain::Rinkeby;
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(account_id.clone()),
@@ -74,8 +88,8 @@ pub struct TestInfo {
 
 impl TestInfo {
 	pub fn new_defaults() -> TestInfo {
-		let lender = RegisteredAddress::new(0);
-		let borrower = RegisteredAddress::new(1);
+		let lender = RegisteredAddress::new(0, Blockchain::Rinkeby);
+		let borrower = RegisteredAddress::new(1, Blockchain::Rinkeby);
 		let blockchain = Blockchain::Rinkeby;
 		let loan_terms = LoanTerms {
 			amount: ExternalAmount::from(1_000_0000u64),
@@ -918,8 +932,8 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(100),
-			borrower: RegisteredAddress::new(200),
+			lender: RegisteredAddress::new(100, Blockchain::Rinkeby),
+			borrower: RegisteredAddress::new(200, Blockchain::Rinkeby),
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
@@ -1162,5 +1176,392 @@ fn add_authority_works_for_root() {
 
 		let value = Authorities::<Test>::take(acct.clone());
 		assert_eq!(value, Some(()))
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::none(),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_signature_is_invalid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&"bogus-ask-guid".as_bytes().into_bounded(),
+			&"bogus-bid-guid".as_bytes().into_bounded(),
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id.clone(),
+				test_info.lender.address_id.clone(), // <-- bogus address
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::NotAddressOwner
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+		let second_test_info = TestInfo {
+			lender: RegisteredAddress::new(111, Blockchain::Rinkeby),
+			..test_info.clone()
+		};
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				second_test_info.lender.address_id, // <-- bogus
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::NotAddressOwner
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_chains() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let test_info = TestInfo {
+			lender: RegisteredAddress::new(111, Blockchain::Ethereum),
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::AddressPlatformMismatch
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_ask_order_id_exists() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+		// create AskOrder which will use-up the default ID
+		test_info.create_ask_order();
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::DuplicateId
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_bid_order_id_exists() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+		// create BidOrder which will use-up the default ID
+		test_info.create_bid_order();
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::DuplicateId
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_offer_id_exists() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+
+		// create Offer w/o creating AskOrder & BidOrder to avoid
+		// erroring out when checking for their existence
+		let ask_order_id = AskOrderId::new::<Test>(test_info.expiration_block, &test_info.ask_guid);
+		let bid_order_id = BidOrderId::new::<Test>(test_info.expiration_block, &test_info.bid_guid);
+		let offer_id =
+			OfferId::new::<Test>(test_info.expiration_block, &ask_order_id, &bid_order_id);
+		let current_block = Creditcoin::block_number();
+		let offer = Offer {
+			ask_id: ask_order_id.clone(),
+			bid_id: bid_order_id.clone(),
+			block: current_block,
+			blockchain: test_info.blockchain.clone(),
+			expiration_block: test_info.expiration_block.clone(),
+			lender: test_info.lender.account_id.clone(),
+		};
+		// insert this offer into storage which will use-up the ID
+		// register_deal_order() will reconstruct the same ID later
+		crate::Offers::<Test>::insert_id(offer_id, offer);
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::DuplicateOffer
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_deal_order_id_exists() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+
+		// create DealOrder w/o creating AskOrder, BidOrder & Offer to avoid
+		// erroring out when checking for their existence
+		let ask_order_id = AskOrderId::new::<Test>(test_info.expiration_block, &test_info.ask_guid);
+		let bid_order_id = BidOrderId::new::<Test>(test_info.expiration_block, &test_info.bid_guid);
+		let offer_id =
+			OfferId::new::<Test>(test_info.expiration_block, &ask_order_id, &bid_order_id);
+		let deal_order_id = DealOrderId::new::<Test>(test_info.expiration_block, &offer_id);
+
+		let deal_order = DealOrder {
+			blockchain: test_info.blockchain,
+			offer_id,
+			lender_address_id: test_info.lender.address_id.clone(),
+			borrower_address_id: test_info.borrower.address_id.clone(),
+			terms: test_info.loan_terms.clone(),
+			expiration_block: test_info.expiration_block,
+			timestamp: Creditcoin::timestamp(),
+			borrower: test_info.borrower.account_id,
+			funding_transfer_id: None,
+			lock: None,
+			repayment_transfer_id: None,
+		};
+
+		// insert this DealOrder into storage which will use-up the ID
+		// register_deal_order() will reconstruct the same ID later
+		crate::DealOrders::<Test>::insert_id(deal_order_id, deal_order);
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				key_pair.public(),
+				signature,
+			),
+			crate::Error::<Test>::DuplicateDealOrder
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_succeed() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_ok!(Creditcoin::register_deal_order(
+			Origin::signed(test_info.lender.account_id),
+			test_info.lender.address_id,
+			test_info.borrower.address_id,
+			test_info.loan_terms,
+			test_info.expiration_block,
+			test_info.ask_guid,
+			test_info.bid_guid,
+			key_pair.public(),
+			signature,
+		));
+
+		// assert events in reversed order
+		let mut all_events = <frame_system::Pallet<Test>>::events();
+		let event4 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(event4, crate::mock::Event::Creditcoin(crate::Event::DealOrderAdded(..))));
+
+		let event3 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(event3, crate::mock::Event::Creditcoin(crate::Event::OfferAdded(..))));
+
+		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(event2, crate::mock::Event::Creditcoin(crate::Event::BidOrderAdded(..))));
+
+		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(event1, crate::mock::Event::Creditcoin(crate::Event::AskOrderAdded(..))));
 	});
 }
