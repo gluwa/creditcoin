@@ -70,9 +70,11 @@ impl<T: Config> Pallet<T> {
 		let expiration_block_u64: u64 = expiration_block.unique_saturated_into();
 		let mut buf = lexical::to_string(expiration_block_u64).into_bytes();
 		let block_end_idx = buf.len();
-		buf.extend(core::iter::repeat(0u8).take(2 * (ask_guid.len() + bid_guid.len())));
+		buf.reserve(2 * (ask_guid.len() + bid_guid.len()));
+		buf.extend(core::iter::repeat(0u8).take(2 * ask_guid.len()));
 		hex::encode_to_slice(&*ask_guid, &mut buf[block_end_idx..])
 			.expect("we allocated 2 * (length of guid) bytes, it must be enough capacity; qed");
+		buf.extend(core::iter::repeat(0u8).take(2 * bid_guid.len()));
 		hex::encode_to_slice(&*bid_guid, &mut buf[(block_end_idx + 2 * ask_guid.len())..])
 			.expect("we just allocated 2 * (length of guid) bytes; qed");
 		sha2_256(&buf)
@@ -124,5 +126,43 @@ impl<T: Config> Pallet<T> {
 		ensure!(!<UsedGuids<T>>::contains_key(guid.clone()), Error::<T>::GuidAlreadyUsed);
 		UsedGuids::<T>::insert(guid, ());
 		Ok(())
+	}
+}
+
+mod tests {
+	#[test]
+	fn register_deal_order_message_works() {
+		use core::convert::TryFrom;
+		use frame_support::BoundedVec;
+		let expiration_block = 5;
+		let ask_guid = BoundedVec::try_from(b"asdfasdfasdfasdf".to_vec()).unwrap();
+		let bid_guid = BoundedVec::try_from(b"qwerqwerqwerqwer".to_vec()).unwrap();
+		let expected = b"\xf0hQ\xa9<yX\r\xcf\xfb\xf5\xf8\xe3\x94/\xd5\xff!\x86O+\xc0\x8e\xff\x9a\x9eH\xdf\xc3\x1f\x15\xc8";
+		assert_eq!(
+			&crate::Pallet::<crate::mock::Test>::register_deal_order_message(
+				expiration_block,
+				&ask_guid,
+				&bid_guid,
+			),
+			expected
+		);
+	}
+
+	#[test]
+	fn register_deal_order_message_empty_guids() {
+		use core::convert::TryFrom;
+		use frame_support::BoundedVec;
+		let expiration_block = 5;
+		let ask_guid = BoundedVec::try_from(vec![]).unwrap();
+		let bid_guid = BoundedVec::try_from(vec![]).unwrap();
+		let expected = b"\xef-\x12}\xe3{\x94+\xaa\xd0aE\xe5K\x0ca\x9a\x1f\"2{.\xbb\xcf\xbe\xc7\x8fUd\xaf\xe3\x9d";
+		assert_eq!(
+			&crate::Pallet::<crate::mock::Test>::register_deal_order_message(
+				expiration_block,
+				&ask_guid,
+				&bid_guid,
+			),
+			expected
+		);
 	}
 }
