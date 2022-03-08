@@ -21,5 +21,5 @@ docker run jacogr/polkadot-js-tools api --ws wss://<rpc-node> query.creditcoin.l
 If a legacy wallet with a balance is found this balance can be claimed using the following command:
 
 ``` shell
-docker run jacogr/polkadot-js-tools api --ws wss://<rpc-node> tx.creditcoin.claimLegacyWallet <Public Key (hex)> --seed <private key or seed phrase>
+docker run jacogr/polkadot-js-tools api --ws wss://<rpc-node> tx.creditcoin.claimLegacyWallet <Public Key (hex)> --seed <private key or seed phrase> --sign ecdsa
 ```
