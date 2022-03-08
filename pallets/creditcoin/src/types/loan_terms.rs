@@ -12,6 +12,8 @@ pub type InterestRate = u64;
 pub const INTEREST_RATE_PRECISION: u64 = 10_000;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct LoanTerms<Moment> {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
@@ -29,6 +31,8 @@ impl<Moment> LoanTerms<Moment> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AskTerms<Moment>(LoanTerms<Moment>);
 
 impl<Moment> Deref for AskTerms<Moment> {
@@ -78,6 +82,8 @@ where
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct BidTerms<Moment>(LoanTerms<Moment>);
 
 impl<Moment> Deref for BidTerms<Moment> {
