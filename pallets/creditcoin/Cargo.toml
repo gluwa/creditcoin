@@ -131,5 +131,9 @@ std = [
     'frame-benchmarking/std',
     'pallet-balances/std',
     'pallet-timestamp/std',
+    'sp-core/std',
+    'serde/std',
+    'serde_json/std',
+    'hex/std',
 ]
 try-runtime = ['frame-support/try-runtime']
