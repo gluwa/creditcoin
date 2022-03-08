@@ -2,7 +2,7 @@ pub mod friendly;
 
 use std::{marker::PhantomData, sync::Arc};
 
-use codec::{Decode, Encode};
+use codec::Decode;
 use futures::prelude::*;
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
@@ -10,11 +10,10 @@ use jsonrpc_pubsub::{
 	manager::SubscriptionManager, typed::Subscriber, PubSubMetadata, SubscriptionId,
 };
 use sc_client_api::{BlockchainEvents, StorageKey};
-use serde::{Deserialize, Serialize};
-use sp_api::{BlockId, HashFor, ProvideRuntimeApi, StateBackend};
+use sp_api::{BlockId, ProvideRuntimeApi, StateBackend};
 use sp_blockchain::HeaderBackend;
-use sp_core::{crypto::Ss58Codec, Bytes, H256};
-use sp_runtime::{traits::Block as BlockT, AccountId32};
+use sp_core::H256;
+use sp_runtime::traits::Block as BlockT;
 
 #[rpc]
 pub trait CreditcoinApi<BlockHash> {
@@ -93,10 +92,10 @@ where
 			.storage(&address_key)
 			.map_err(|e| RpcError {
 				code: ErrorCode::ServerError(Error::StorageError.into()),
-				message: "Unable to retrieve address from storage".into(),
+				message: format!("Unable to retrieve address from storage: {}", e),
 				data: None,
 			})?
-			.ok_or(RpcError::invalid_params("events not found"))?;
+			.ok_or_else(|| RpcError::invalid_params("events not found"))?;
 
 		let events =
 			<Vec<frame_system::EventRecord<creditcoin_node_runtime::Event, H256>>>::decode(
@@ -117,26 +116,21 @@ where
 	}
 
 	fn events_subscribe(&self, _: Self::Metadata, subscriber: Subscriber<Vec<friendly::Event>>) {
-		let at = BlockId::<Block>::hash(self.client.info().best_hash);
-		let module = sp_core::twox_128(b"System");
-		let name = sp_core::twox_128(b"Events");
-		let mut address_key = Vec::with_capacity(32);
-		address_key.extend(module);
-		address_key.extend(name);
-		let key = StorageKey(address_key);
-		let stream = match self.client.storage_changes_notification_stream(Some(&[key]), None) {
-			Ok(stream) => stream,
-			Err(err) => {
-				let _ = subscriber.reject(RpcError {
-					code: ErrorCode::ServerError(Error::SubscriptionError.into()),
-					message: format!("Failed to subscribe to storage changes: {}", err),
-					data: None,
-				});
-				return;
-			},
-		};
+		let events_key = events_storage_key();
+		let stream =
+			match self.client.storage_changes_notification_stream(Some(&[events_key]), None) {
+				Ok(stream) => stream,
+				Err(err) => {
+					let _ = subscriber.reject(RpcError {
+						code: ErrorCode::ServerError(Error::SubscriptionError.into()),
+						message: format!("Failed to subscribe to storage changes: {}", err),
+						data: None,
+					});
+					return;
+				},
+			};
 
-		let mut stream = stream.map(move |(block, changes)| {
+		let stream = stream.map(move |(_block, changes)| {
 			Ok(changes
 				.iter()
 				.filter_map(|(_, _, data)| {
@@ -155,7 +149,6 @@ where
 		});
 
 		self.manager.add(subscriber, move |sink| {
-			let mut stream = stream.boxed();
 			stream
 				.forward(sink.sink_map_err(|e| log::warn!("Error sending notifications: {}", e)))
 				.map(|_| ())
