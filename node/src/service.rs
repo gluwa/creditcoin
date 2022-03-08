@@ -251,10 +251,18 @@ pub fn new_full(
 	let rpc_extensions_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
+		let backend = backend.clone();
+		let task_executor =
+			Arc::new(sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle()));
 
 		Box::new(move |deny_unsafe, _| {
-			let deps =
-				crate::rpc::FullDeps { client: client.clone(), pool: pool.clone(), deny_unsafe };
+			let deps = crate::rpc::FullDeps {
+				client: client.clone(),
+				pool: pool.clone(),
+				backend: backend.clone(),
+				executor: task_executor.clone(),
+				deny_unsafe,
+			};
 
 			Ok(crate::rpc::create_full(deps))
 		})
