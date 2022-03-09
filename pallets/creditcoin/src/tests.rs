@@ -1657,13 +1657,13 @@ fn close_deal_order_should_error_when_deal_timestamp_is_in_the_future() {
 }
 
 #[test]
-fn close_deal_order_should_error_when_deal_has_already_been_repaid() {
+fn close_deal_order_should_error_when_deal_order_has_already_been_repaid() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
 
-		// simulate deal which has been repaid
+		// simulate DealOrder which has been repaid
 		crate::DealOrders::<Test>::mutate(
 			&deal_order_id.expiration(),
 			&deal_order_id.hash(),
@@ -2031,5 +2031,194 @@ fn close_deal_order_should_succeed() {
 			event1,
 			crate::mock::Event::Creditcoin(crate::Event::DealOrderClosed(..))
 		));
+	});
+}
+
+#[test]
+fn exempt_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		assert_noop!(Creditcoin::exempt(Origin::none(), deal_order_id, transfer_id,), BadOrigin);
+	});
+}
+
+#[test]
+fn exempt_should_error_when_deal_order_has_already_been_repaid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		// simulate DealOrder which has been repaid
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().repayment_transfer_id =
+					Some(TransferId::new::<Test>(&deal_order.blockchain, b"4444"));
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::exempt(
+				Origin::signed(test_info.lender.account_id),
+				deal_order_id,
+				transfer_id,
+			),
+			crate::Error::<Test>::DealOrderAlreadyClosed
+		);
+	});
+}
+
+#[test]
+fn exempt_should_error_for_non_lender() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+
+		assert_noop!(
+			Creditcoin::exempt(
+				Origin::signed(test_info.borrower.account_id),
+				deal_order_id,
+				transfer_id,
+			),
+			crate::Error::<Test>::NotLender
+		);
+	});
+}
+
+#[test]
+fn exempt_should_error_when_transfer_order_id_doesnt_match_deal_order_id() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		// this is a deal_order from another person
+		let second_test_info = TestInfo {
+			lender: RegisteredAddress::new(100, Blockchain::Rinkeby),
+			borrower: RegisteredAddress::new(200, Blockchain::Rinkeby),
+			blockchain: Blockchain::Rinkeby,
+			loan_terms: LoanTerms {
+				amount: 2_000_000u64.into(),
+				interest_rate: 0,
+				maturity: 1_000_000,
+			},
+			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
+			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
+			expiration_block: 3_333,
+		};
+
+		let (bogus_deal_order, bogus_deal_order_id) = second_test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(second_test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(bogus_deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&bogus_deal_order.blockchain, &tx_hash.clone());
+
+		assert_noop!(
+			Creditcoin::exempt(
+				Origin::signed(test_info.lender.account_id),
+				deal_order_id,
+				transfer_id,
+			),
+			crate::Error::<Test>::TransferMismatch
+		);
+	});
+}
+
+#[test]
+fn exempt_should_error_when_transfer_has_been_processed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, &tx_hash.clone());
+
+		// modify transfer in order to cause an error
+		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
+			let mut ts = transfer_storage.as_mut().unwrap();
+			// b/c amount above is 0
+			ts.amount = deal_order.terms.amount;
+			ts.processed = true;
+		});
+
+		assert_noop!(
+			Creditcoin::exempt(
+				Origin::signed(test_info.lender.account_id),
+				deal_order_id,
+				transfer_id,
+			),
+			crate::Error::<Test>::TransferAlreadyProcessed
+		);
+	});
+}
+
+#[test]
+fn exempt_should_succeed() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		//  insert as exemption to bypass transfer verification
+		let tx_hash = "0".as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+
+		assert_ok!(Creditcoin::register_transfer(
+			Origin::signed(test_info.lender.account_id.clone()),
+			TransferKind::Ethless(contract.clone()),
+			0u64.into(),
+			OrderId::Deal(deal_order_id.clone()),
+			tx_hash.clone()
+		));
+
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, &tx_hash.clone());
+
+		assert_ok!(Creditcoin::exempt(
+			Origin::signed(test_info.lender.account_id),
+			deal_order_id.clone(),
+			transfer_id.clone(),
+		));
+
+		// assert field values were updated in storage
+		let saved_deal_order = DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
+		assert_eq!(saved_deal_order.repayment_transfer_id, Some(transfer_id.clone()));
+
+		let saved_transfer = Transfers::<Test>::try_get(&transfer_id).unwrap();
+		assert_eq!(saved_transfer.processed, true);
+
+		// assert events in reversed order
+		let mut all_events = <frame_system::Pallet<Test>>::events();
+		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert_eq!(
+			event,
+			crate::mock::Event::Creditcoin(crate::Event::LoanExempted(deal_order_id, transfer_id))
+		);
 	});
 }
