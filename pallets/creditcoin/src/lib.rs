@@ -961,7 +961,7 @@ pub mod pallet {
 				&transfer_id,
 				|deal_order| {
 					ensure!(
-						deal_order.repayment_transfer_id.is_some(),
+						deal_order.repayment_transfer_id.is_none(),
 						Error::<T>::DealOrderAlreadyClosed
 					);
 
