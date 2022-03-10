@@ -4,10 +4,10 @@ panic = 'unwind'
 [workspace]
 members = [
     'node',
+    'node/rpc',
     'pallets/rewards',
     'pallets/difficulty',
     'pallets/creditcoin',
-    'pallets/creditcoin/rpc',
     'runtime',
     "sha3pow",
     "primitives",

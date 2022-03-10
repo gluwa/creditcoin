@@ -46,7 +46,7 @@ where
 	B: sc_client_api::Backend<Block> + 'static,
 	E: futures::task::Spawn + Send + Sync + 'static,
 {
-	use pallet_creditcoin_rpc::{CreditcoinApi, CreditcoinRpc};
+	use creditcoin_node_rpc::{CreditcoinApi, CreditcoinRpc};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 

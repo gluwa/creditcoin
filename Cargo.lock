@@ -935,6 +935,7 @@ dependencies = [
 name = "creditcoin-node"
 version = "2.0.0-beta.2"
 dependencies = [
+ "creditcoin-node-rpc",
  "creditcoin-node-runtime",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -943,7 +944,6 @@ dependencies = [
  "jsonrpc-core",
  "log",
  "num_cpus",
- "pallet-creditcoin-rpc",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
  "sc-basic-authorship",
@@ -960,7 +960,6 @@ dependencies = [
  "sc-telemetry",
  "sc-transaction-pool",
  "sc-transaction-pool-api",
- "serde_json",
  "sha3pow",
  "sp-api",
  "sp-block-builder",
@@ -976,6 +975,37 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "tiny-bip39",
+]
+
+[[package]]
+name = "creditcoin-node-rpc"
+version = "2.0.0-beta.2"
+dependencies = [
+ "creditcoin-node-runtime",
+ "frame-support",
+ "frame-system",
+ "futures 0.3.21",
+ "hex",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpc-pubsub",
+ "log",
+ "pallet-balances",
+ "pallet-creditcoin",
+ "pallet-rewards",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-rpc",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-state-machine",
 ]
 
 [[package]]
@@ -3924,37 +3954,6 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-tracing",
-]
-
-[[package]]
-name = "pallet-creditcoin-rpc"
-version = "2.0.0-beta.2"
-dependencies = [
- "creditcoin-node-runtime",
- "frame-support",
- "frame-system",
- "futures 0.3.21",
- "hex",
- "jsonrpc-core",
- "jsonrpc-core-client",
- "jsonrpc-derive",
- "jsonrpc-pubsub",
- "log",
- "pallet-balances",
- "pallet-creditcoin",
- "pallet-rewards",
- "pallet-timestamp",
- "parity-scale-codec",
- "sc-client-api",
- "sc-rpc",
- "serde",
- "serde_json",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-rpc",
- "sp-runtime",
- "sp-state-machine",
 ]
 
 [[package]]
