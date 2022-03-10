@@ -75,6 +75,21 @@ fn events_storage_key() -> StorageKey {
 	StorageKey(key)
 }
 
+// manual currying so you can do `thing.map_err(decode_error("foo"))`
+// instead of `thing.map_err(|e| handle_decode_error("foo", e))`
+fn decode_error(name: impl AsRef<str>) -> impl FnOnce(codec::Error) -> RpcError {
+	let name = name.as_ref().to_owned();
+	move |e| handle_decode_error(name, e)
+}
+
+fn handle_decode_error(name: impl AsRef<str>, error: codec::Error) -> RpcError {
+	RpcError {
+		code: ErrorCode::ServerError(Error::DecodeError.into()),
+		message: format!("Unable to decode {}: {}", name.as_ref(), error),
+		data: None,
+	}
+}
+
 impl<C, Block, B> CreditcoinApi<<Block as BlockT>::Hash> for CreditcoinRpc<C, Block, B>
 where
 	Block: BlockT,
@@ -98,14 +113,8 @@ where
 			})?
 			.ok_or_else(|| RpcError::invalid_params("events not found"))?;
 
-		let events =
-			<Vec<EventRecord<RuntimeEvent, H256>>>::decode(&mut &*events_bytes).map_err(|e| {
-				RpcError {
-					code: ErrorCode::ServerError(Error::DecodeError.into()),
-					message: format!("Unable to decode events: {}", e),
-					data: None,
-				}
-			})?;
+		let events = <Vec<EventRecord<RuntimeEvent, H256>>>::decode(&mut &*events_bytes)
+			.map_err(decode_error("events"))?;
 
 		let events_out = events
 			.into_iter()
@@ -143,11 +152,7 @@ where
 								);
 							},
 							Err(e) => {
-								return Ok(Err(RpcError {
-									code: ErrorCode::ServerError(Error::DecodeError.into()),
-									message: format!("Unable to decode events: {}", e),
-									data: None,
-								}));
+								return Ok(Err(handle_decode_error("events", e)));
 							},
 						}
 					}
