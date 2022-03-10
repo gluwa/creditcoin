@@ -1189,6 +1189,7 @@ fn register_deal_order_should_error_when_not_signed() {
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1219,6 +1220,7 @@ fn register_deal_order_should_error_when_signature_is_invalid() {
 			test_info.expiration_block,
 			&"bogus-ask-guid".as_bytes().into_bounded(),
 			&"bogus-bid-guid".as_bytes().into_bounded(),
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1249,6 +1251,7 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1285,6 +1288,7 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1319,6 +1323,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1354,6 +1359,7 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1389,6 +1395,7 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1441,6 +1448,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1500,6 +1508,7 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
@@ -1535,6 +1544,7 @@ fn register_deal_order_should_succeed() {
 			test_info.expiration_block,
 			&test_info.ask_guid,
 			&test_info.bid_guid,
+			&test_info.loan_terms,
 		);
 		let signature = key_pair.sign(&message);
 
