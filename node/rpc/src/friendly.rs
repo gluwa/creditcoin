@@ -1,10 +1,6 @@
+use crate::{AccountId, BlockNumber, Hash, Moment};
 use pallet_creditcoin::*;
 use serde::{Deserialize, Serialize};
-
-type Hash = <creditcoin_node_runtime::Runtime as frame_system::Config>::Hash;
-type AccountId = <creditcoin_node_runtime::Runtime as frame_system::Config>::AccountId;
-type BlockNumber = <creditcoin_node_runtime::Runtime as frame_system::Config>::BlockNumber;
-type Moment = <creditcoin_node_runtime::Runtime as pallet_timestamp::Config>::Moment;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]

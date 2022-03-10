@@ -1,10 +1,9 @@
 pub mod friendly;
-
-use std::{marker::PhantomData, sync::Arc};
-
 use codec::Decode;
+use creditcoin_node_runtime::Event as RuntimeEvent;
+use frame_system::EventRecord;
 use futures::prelude::*;
-use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
+use jsonrpc_core::{Error as RpcError, ErrorCode, Result as RpcResult};
 use jsonrpc_derive::rpc;
 use jsonrpc_pubsub::{
 	manager::SubscriptionManager, typed::Subscriber, PubSubMetadata, SubscriptionId,
@@ -14,19 +13,25 @@ use sp_api::{BlockId, ProvideRuntimeApi, StateBackend};
 use sp_blockchain::HeaderBackend;
 use sp_core::H256;
 use sp_runtime::traits::Block as BlockT;
+use std::{marker::PhantomData, sync::Arc};
+
+pub(crate) type Hash = <creditcoin_node_runtime::Runtime as frame_system::Config>::Hash;
+pub(crate) type AccountId = <creditcoin_node_runtime::Runtime as frame_system::Config>::AccountId;
+pub(crate) type BlockNumber =
+	<creditcoin_node_runtime::Runtime as frame_system::Config>::BlockNumber;
+pub(crate) type Moment = <creditcoin_node_runtime::Runtime as pallet_timestamp::Config>::Moment;
 
 #[rpc]
 pub trait CreditcoinApi<BlockHash> {
 	type Metadata: PubSubMetadata;
-
 	#[rpc(name = "creditcoin_getEvents")]
-	fn get_events(&self, at: Option<BlockHash>) -> Result<Vec<friendly::Event>>;
+	fn get_events(&self, at: Option<BlockHash>) -> RpcResult<Vec<friendly::Event>>;
 
 	#[pubsub(subscription = "events", subscribe, name = "creditcoin_eventsSubscribe")]
 	fn events_subscribe(&self, _: Self::Metadata, _: Subscriber<Vec<friendly::Event>>);
 
 	#[pubsub(subscription = "events", unsubscribe, name = "creditcoin_eventsUnsubscribe")]
-	fn events_unsubscribe(&self, _: Option<Self::Metadata>, _: SubscriptionId) -> Result<bool>;
+	fn events_unsubscribe(&self, _: Option<Self::Metadata>, _: SubscriptionId) -> RpcResult<bool>;
 }
 
 pub struct CreditcoinRpc<C, P, B> {
@@ -78,13 +83,9 @@ where
 {
 	type Metadata = sc_rpc::Metadata;
 
-	fn get_events(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<friendly::Event>> {
+	fn get_events(&self, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<friendly::Event>> {
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
-		let module = sp_core::twox_128(b"System");
-		let name = sp_core::twox_128(b"Events");
-		let mut address_key = Vec::with_capacity(32);
-		address_key.extend(module);
-		address_key.extend(name);
+		let StorageKey(address_key) = events_storage_key();
 		let events_bytes = self
 			.backend
 			.state_at(at)
@@ -98,13 +99,12 @@ where
 			.ok_or_else(|| RpcError::invalid_params("events not found"))?;
 
 		let events =
-			<Vec<frame_system::EventRecord<creditcoin_node_runtime::Event, H256>>>::decode(
-				&mut &*events_bytes,
-			)
-			.map_err(|e| RpcError {
-				code: ErrorCode::ServerError(Error::DecodeError.into()),
-				message: format!("Unable to decode events: {}", e),
-				data: None,
+			<Vec<EventRecord<RuntimeEvent, H256>>>::decode(&mut &*events_bytes).map_err(|e| {
+				RpcError {
+					code: ErrorCode::ServerError(Error::DecodeError.into()),
+					message: format!("Unable to decode events: {}", e),
+					data: None,
+				}
 			})?;
 
 		let events_out = events
@@ -129,25 +129,31 @@ where
 					return;
 				},
 			};
-
-		let stream = stream.map(move |(_block, changes)| {
-			Ok(changes
-				.iter()
-				.filter_map(|(_, _, data)| {
-					data.map(|sc_client_api::StorageData(data)| {
-						<Vec<frame_system::EventRecord<creditcoin_node_runtime::Event, H256>>>::decode(
-						&mut data.as_slice(),
-							).map_err(|e| RpcError {
-								code: ErrorCode::ServerError(Error::DecodeError.into()),
-								message: format!("Unable to decode events: {}", e),
-								data: None,
-							}).map(|records| records.into_iter().filter_map(|r| {log::info!("event {:?}", r); friendly::Event::from_runtime(r.event)}).collect())
-					})
-				})
-				.next()
-				.unwrap())
-		});
-
+		let stream =
+			stream.map(move |(_block, changes)| -> Result<RpcResult<Vec<friendly::Event>>, ()> {
+				let mut events = Vec::new();
+				for (_, _, data) in changes.iter() {
+					if let Some(sc_client_api::StorageData(data)) = data {
+						match <Vec<EventRecord<RuntimeEvent, H256>>>::decode(&mut data.as_slice()) {
+							Ok(records) => {
+								events.extend(
+									records
+										.into_iter()
+										.filter_map(|r| friendly::Event::from_runtime(r.event)),
+								);
+							},
+							Err(e) => {
+								return Ok(Err(RpcError {
+									code: ErrorCode::ServerError(Error::DecodeError.into()),
+									message: format!("Unable to decode events: {}", e),
+									data: None,
+								}));
+							},
+						}
+					}
+				}
+				Ok(Ok(events))
+			});
 		self.manager.add(subscriber, move |sink| {
 			stream
 				.forward(sink.sink_map_err(|e| log::warn!("Error sending notifications: {}", e)))
@@ -155,7 +161,7 @@ where
 		});
 	}
 
-	fn events_unsubscribe(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool> {
+	fn events_unsubscribe(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> RpcResult<bool> {
 		Ok(self.manager.cancel(id))
 	}
 }
