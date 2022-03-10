@@ -1,12 +1,13 @@
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, Guid, Id, TransferId,
+	DealOrderId, Error, Guid, Id, LoanTerms, TransferId,
 };
+use codec::Encode;
 use frame_support::ensure;
 use frame_system::pallet_prelude::*;
 use sp_io::hashing::sha2_256;
-use sp_runtime::{traits::UniqueSaturatedInto, RuntimeAppPublic};
+use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
 
 #[allow(unused_macros)]
@@ -66,18 +67,17 @@ impl<T: Config> Pallet<T> {
 		expiration_block: T::BlockNumber,
 		ask_guid: &Guid,
 		bid_guid: &Guid,
+		loan_terms: &LoanTerms<T::Moment>,
 	) -> [u8; 32] {
-		let expiration_block_u64: u64 = expiration_block.unique_saturated_into();
-		let mut buf = lexical::to_string(expiration_block_u64).into_bytes();
-		let block_end_idx = buf.len();
-		buf.reserve(2 * (ask_guid.len() + bid_guid.len()));
-		buf.extend(core::iter::repeat(0u8).take(2 * ask_guid.len()));
-		hex::encode_to_slice(&*ask_guid, &mut buf[block_end_idx..])
-			.expect("we allocated 2 * (length of guid) bytes, it must be enough capacity; qed");
-		buf.extend(core::iter::repeat(0u8).take(2 * bid_guid.len()));
-		hex::encode_to_slice(&*bid_guid, &mut buf[(block_end_idx + 2 * ask_guid.len())..])
-			.expect("we just allocated 2 * (length of guid) bytes; qed");
-		sha2_256(&buf)
+		let all_encoded = expiration_block
+			.encode()
+			.into_iter()
+			.chain(ask_guid.encode())
+			.chain(bid_guid.encode())
+			.chain(loan_terms.encode())
+			.collect::<Vec<u8>>();
+
+		sha2_256(&all_encoded)
 	}
 
 	pub fn try_mutate_deal_order_and_transfer(
@@ -129,7 +129,10 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
+#[cfg(test)]
 mod tests {
+	use crate::{ExternalAmount, LoanTerms};
+
 	#[test]
 	fn register_deal_order_message_works() {
 		use core::convert::TryFrom;
@@ -137,15 +140,24 @@ mod tests {
 		let expiration_block = 5;
 		let ask_guid = BoundedVec::try_from(b"asdfasdfasdfasdf".to_vec()).unwrap();
 		let bid_guid = BoundedVec::try_from(b"qwerqwerqwerqwer".to_vec()).unwrap();
-		let expected = b"\xf0hQ\xa9<yX\r\xcf\xfb\xf5\xf8\xe3\x94/\xd5\xff!\x86O+\xc0\x8e\xff\x9a\x9eH\xdf\xc3\x1f\x15\xc8";
-		assert_eq!(
-			&crate::Pallet::<crate::mock::Test>::register_deal_order_message(
-				expiration_block,
-				&ask_guid,
-				&bid_guid,
-			),
-			expected
+
+		let loan_terms =
+			LoanTerms { amount: ExternalAmount::from(1u64), interest_rate: 10, maturity: 10 };
+
+		// "expected" derived from creating the same message hash via PolkadotJs
+		let expected: [u8; 32] = [
+			46, 130, 146, 236, 109, 135, 57, 106, 137, 172, 43, 134, 74, 91, 53, 45, 152, 197, 25,
+			65, 220, 98, 8, 250, 51, 3, 163, 238, 102, 83, 2, 123,
+		];
+
+		let msg = crate::Pallet::<crate::mock::Test>::register_deal_order_message(
+			expiration_block,
+			&ask_guid,
+			&bid_guid,
+			&loan_terms,
 		);
+
+		assert_eq!(msg, expected);
 	}
 
 	#[test]
@@ -155,14 +167,23 @@ mod tests {
 		let expiration_block = 5;
 		let ask_guid = BoundedVec::try_from(vec![]).unwrap();
 		let bid_guid = BoundedVec::try_from(vec![]).unwrap();
-		let expected = b"\xef-\x12}\xe3{\x94+\xaa\xd0aE\xe5K\x0ca\x9a\x1f\"2{.\xbb\xcf\xbe\xc7\x8fUd\xaf\xe3\x9d";
-		assert_eq!(
-			&crate::Pallet::<crate::mock::Test>::register_deal_order_message(
-				expiration_block,
-				&ask_guid,
-				&bid_guid,
-			),
-			expected
+
+		let loan_terms =
+			LoanTerms { amount: ExternalAmount::from(1u64), interest_rate: 10, maturity: 10 };
+
+		// "expected" derived from creating the same message hash via PolkadotJs
+		let expected: [u8; 32] = [
+			163, 128, 181, 134, 42, 116, 134, 42, 137, 220, 103, 210, 192, 253, 121, 158, 168, 28,
+			88, 83, 38, 163, 19, 127, 7, 150, 247, 10, 26, 128, 115, 219,
+		];
+
+		let msg = crate::Pallet::<crate::mock::Test>::register_deal_order_message(
+			expiration_block,
+			&ask_guid,
+			&bid_guid,
+			&loan_terms,
 		);
+
+		assert_eq!(msg, expected);
 	}
 }
