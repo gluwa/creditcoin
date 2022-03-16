@@ -1,6 +1,6 @@
 [package]
 name = 'creditcoin-node-runtime'
-version = '2.0.0-beta.2'
+version = '2.0.0-beta.3'
 description = 'Creditcoin runtime built on substrate.'
 authors = ['Nathan Whitaker <nathan.whitaker01@gmail.com>']
 edition = '2018'
@@ -16,22 +16,22 @@ smallvec = "1.8.0"
 
 [dependencies.primitives]
 path = "../primitives"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 
 [dependencies.pallet-rewards]
 default-features = false
 path = '../pallets/rewards'
-version = '2.0.0-beta.2'
+version = '2.0.0-beta.3'
 
 [dependencies.pallet-difficulty]
 default-features = false
 path = '../pallets/difficulty'
-version = '2.0.0-beta.2'
+version = '2.0.0-beta.3'
 
 [dependencies.pallet-creditcoin]
 default-features = false
 path = '../pallets/creditcoin'
-version = '2.0.0-beta.2'
+version = '2.0.0-beta.3'
 
 [build-dependencies.substrate-wasm-builder]
 git = 'https://github.com/paritytech/substrate.git'

@@ -1,6 +1,6 @@
 [package]
 name = "creditcoin-node-rpc"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -30,6 +30,6 @@ frame-system = { git = 'https://github.com/paritytech/substrate.git', rev = '94d
 frame-support = { git = 'https://github.com/paritytech/substrate.git', rev = '94dfe152e61e42cd27844a65165cfdedde5232eb', version = '4.0.0-dev' }
 pallet-balances = { git = 'https://github.com/paritytech/substrate.git', rev = '94dfe152e61e42cd27844a65165cfdedde5232eb', version = '4.0.0-dev' }
 pallet-timestamp = { git = 'https://github.com/paritytech/substrate.git', rev = '94dfe152e61e42cd27844a65165cfdedde5232eb', version = '4.0.0-dev' }
-creditcoin-node-runtime = { version = "2.0.0-beta.2", path = "../../runtime" }
+creditcoin-node-runtime = { version = "2.0.0-beta.3", path = "../../runtime" }
 jsonrpc-pubsub = "18.0.0"
 futures = "0.3.21"

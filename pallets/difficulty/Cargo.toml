@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-difficulty'
-version = '2.0.0-beta.2'
+version = '2.0.0-beta.3'
 description = 'FRAME pallet for dynamic difficulty adjustment.'
 authors = ['Nathan Whitaker <nathan.whitaker01@gmail.com>']
 homepage = 'https://substrate.dev'
@@ -16,7 +16,7 @@ targets = ['x86_64-unknown-linux-gnu']
 log = "0.4.14"
 
 [dependencies.primitives]
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 path = "../../primitives"
 
 [dependencies.sp-arithmetic]
