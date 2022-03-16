@@ -933,7 +933,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
@@ -979,7 +979,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "creditcoin-node-runtime",
  "frame-support",
@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-runtime"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -3928,7 +3928,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-creditcoin"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "bstr",
  "ethabi",
@@ -3958,7 +3958,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3989,7 +3989,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4459,7 +4459,7 @@ dependencies = [
 
 [[package]]
 name = "primitives"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "sp-core",
 ]
@@ -6008,7 +6008,7 @@ dependencies = [
 
 [[package]]
 name = "sha3pow"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "parity-scale-codec",
  "rand 0.8.4",
