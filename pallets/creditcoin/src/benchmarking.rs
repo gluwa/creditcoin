@@ -27,10 +27,8 @@ benchmarks! {
 		let caller: T::AccountId = whitelisted_caller();
 		let b in 0..256;
 		let e in 0..256;
-		let n in 0..256;
 		let blockchain = vec![b'b'; b as usize];
 		let external_address = vec![b'a'; e as usize];
-		let network = vec![b'c'; n as usize];
 	}: _(RawOrigin::Signed(caller), Blockchain::Other(blockchain.into_bounded()), external_address.into_bounded())
 }
 
