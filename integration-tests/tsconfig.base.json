@@ -1,0 +1,7 @@
+{
+  "extends": "@polkadot/dev/config/tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true
+  }
+ }
