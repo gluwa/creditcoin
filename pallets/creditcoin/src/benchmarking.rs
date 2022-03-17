@@ -5,7 +5,10 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as Creditcoin;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller};
+use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::*;
 use frame_system::RawOrigin;
+
 #[extend::ext]
 impl<'a, S> &'a [u8]
 where
@@ -28,7 +31,7 @@ benchmarks! {
 		let blockchain = vec![b'b'; b as usize];
 		let external_address = vec![b'a'; e as usize];
 		let network = vec![b'c'; n as usize];
-	}: _(RawOrigin::Signed(caller), blockchain.into_bounded(), external_address.into_bounded(), network.into_bounded())
+	}: _(RawOrigin::Signed(caller), Blockchain::Other(blockchain.into_bounded()), external_address.into_bounded())
 }
 
 impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
