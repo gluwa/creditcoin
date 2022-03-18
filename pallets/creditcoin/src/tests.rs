@@ -40,10 +40,10 @@ pub struct RegisteredAddress {
 }
 impl RegisteredAddress {
 	pub fn from_pubkey(
-		public_key: sp_core::ecdsa::Public,
+		public_key: impl Into<MultiSigner>,
 		blockchain: Blockchain,
 	) -> RegisteredAddress {
-		let account_id = MultiSigner::from(public_key).into_account();
+		let account_id = public_key.into().into_account();
 		let address = account_id.to_string().as_bytes().into_bounded();
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
@@ -1202,8 +1202,8 @@ fn register_deal_order_should_error_when_not_signed() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			BadOrigin
 		);
@@ -1233,8 +1233,8 @@ fn register_deal_order_should_error_when_signature_is_invalid() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::InvalidSignature
 		);
@@ -1264,8 +1264,8 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::NotAddressOwner
 		);
@@ -1301,8 +1301,8 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::NotAddressOwner
 		);
@@ -1336,8 +1336,8 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::AddressPlatformMismatch
 		);
@@ -1372,8 +1372,8 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::DuplicateId
 		);
@@ -1408,8 +1408,8 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::DuplicateId
 		);
@@ -1461,8 +1461,8 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::DuplicateOffer
 		);
@@ -1521,8 +1521,8 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public(),
-				signature,
+				key_pair.public().into(),
+				signature.into(),
 			),
 			crate::Error::<Test>::DuplicateDealOrder
 		);
@@ -1556,8 +1556,8 @@ fn register_deal_order_should_succeed() {
 			test_info.expiration_block,
 			test_info.ask_guid,
 			test_info.bid_guid,
-			key_pair.public(),
-			signature,
+			key_pair.public().into(),
+			signature.into(),
 		));
 
 		// assert events in reversed order
@@ -1573,6 +1573,72 @@ fn register_deal_order_should_succeed() {
 
 		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
 		assert!(matches!(event1, crate::mock::Event::Creditcoin(crate::Event::AskOrderAdded(..))));
+	});
+}
+
+#[test]
+fn register_deal_order_accepts_sr25519() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (key_pair, _) = sp_core::sr25519::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+			&test_info.loan_terms,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_ok!(Creditcoin::register_deal_order(
+			Origin::signed(test_info.lender.account_id),
+			test_info.lender.address_id,
+			test_info.borrower.address_id,
+			test_info.loan_terms,
+			test_info.expiration_block,
+			test_info.ask_guid,
+			test_info.bid_guid,
+			key_pair.public().into(),
+			signature.into(),
+		));
+	});
+}
+
+#[test]
+fn register_deal_order_accepts_ed25519() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (key_pair, _) = sp_core::ed25519::Pair::generate();
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			..TestInfo::new_defaults()
+		};
+
+		let message = Creditcoin::register_deal_order_message(
+			test_info.expiration_block,
+			&test_info.ask_guid,
+			&test_info.bid_guid,
+			&test_info.loan_terms,
+		);
+		let signature = key_pair.sign(&message);
+
+		assert_ok!(Creditcoin::register_deal_order(
+			Origin::signed(test_info.lender.account_id),
+			test_info.lender.address_id,
+			test_info.borrower.address_id,
+			test_info.loan_terms,
+			test_info.expiration_block,
+			test_info.ask_guid,
+			test_info.bid_guid,
+			key_pair.public().into(),
+			signature.into(),
+		));
 	});
 }
 
