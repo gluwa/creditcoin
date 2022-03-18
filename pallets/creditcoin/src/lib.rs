@@ -715,7 +715,7 @@ pub mod pallet {
 			borrower_signature: T::SignerSignature,
 		) -> DispatchResult {
 			let lender_account = ensure_signed(origin)?;
-			let borrower_account = borrower_key.clone().into_account();
+			let borrower_account = borrower_key.into_account();
 
 			let message =
 				Self::register_deal_order_message(expiration_block, &ask_guid, &bid_guid, &terms);
