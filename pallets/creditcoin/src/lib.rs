@@ -85,7 +85,10 @@ pub mod pallet {
 		>;
 
 		type Signer: From<sp_core::ecdsa::Public>
-			+ IdentifyAccount<AccountId = <Self as frame_system::Config>::AccountId>;
+			+ IdentifyAccount<AccountId = <Self as frame_system::Config>::AccountId>
+			+ Parameter;
+
+		type SignerSignature: Verify<Signer = Self::Signer> + Parameter;
 
 		type FromAccountId: From<sp_core::sr25519::Public>
 			+ IsType<Self::AccountId>
@@ -708,17 +711,17 @@ pub mod pallet {
 			expiration_block: BlockNumberFor<T>,
 			ask_guid: Guid,
 			bid_guid: Guid,
-			borrower_key: sp_core::ecdsa::Public,
-			borrower_signature: sp_core::ecdsa::Signature,
+			borrower_key: T::Signer,
+			borrower_signature: T::SignerSignature,
 		) -> DispatchResult {
 			let lender_account = ensure_signed(origin)?;
-			let borrower_account = T::Signer::from(borrower_key.clone()).into_account();
+			let borrower_account = borrower_key.clone().into_account();
 
 			let message =
 				Self::register_deal_order_message(expiration_block, &ask_guid, &bid_guid, &terms);
 
 			ensure!(
-				borrower_signature.verify(message.as_slice(), &borrower_key),
+				borrower_signature.verify(message.as_slice(), &borrower_account),
 				Error::<T>::InvalidSignature
 			);
 
