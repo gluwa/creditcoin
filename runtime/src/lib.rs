@@ -277,6 +277,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type Call = Call;
 	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
 	type Signer = Signer;
+	type SignerSignature = Signature;
 	type FromAccountId = AccountId;
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
