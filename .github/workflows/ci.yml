@@ -89,10 +89,9 @@ jobs:
         run: |
           SKIP_WASM_BUILD=1 cargo check --release
 
-      # - name: Check Build for Benchmarking
-      #   run: >
-      #     pushd node &&
-      #     cargo check --features=runtime-benchmarks --release
+      - name: Check Build for Benchmarking
+        run: |
+          SKIP_WASM_BUILD=1 cargo check --features=runtime-benchmarks --release
 
   test:
     runs-on: ubuntu-20.04
@@ -140,3 +139,32 @@ jobs:
           files: ${{ steps.coverage.outputs.report }}
           fail_ci_if_error: true
           verbose: true
+
+  benchmark:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build benchmarks
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features runtime-benchmarks
+
+      - name: Run benchmarks
+        run: |
+          ./target/release/creditcoin-node benchmark --pallet "*" --extrinsic "*"
