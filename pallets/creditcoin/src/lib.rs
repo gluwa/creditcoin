@@ -191,46 +191,80 @@ pub mod pallet {
 		Transfer<T::AccountId, T::BlockNumber, T::Hash>,
 	>;
 
-	// Pallets use events to inform users when important changes are made.
-	// https://substrate.dev/docs/en/knowledgebase/runtime/events
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
+		/// An address on an external chain has been registered.
+		/// [registered_address_id, registered_address]
 		AddressRegistered(AddressId<T::Hash>, Address<T::AccountId>),
 
+		/// An external transfer has been registered and will be verified.
+		/// [registered_transfer_id, registered_transfer]
 		TransferRegistered(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+
+		/// An external transfer has been successfully verified.
+		/// [verified_transfer_id, verified_transfer]
 		TransferVerified(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+
+		/// An external transfer has been processed and marked as part of a loan.
+		/// [processed_transfer_id, processed_transfer]
 		TransferProcessed(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
 
+		/// An ask order has been added by a prospective lender. This indicates that the lender
+		/// is looking to issue a loan with certain terms.
+		/// [ask_order_id, ask_order]
 		AskOrderAdded(
 			AskOrderId<T::BlockNumber, T::Hash>,
 			AskOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
+		/// A bid order has been added by a prospective borrower. This indicates that the borrower
+		/// is looking for a loan with certain terms.
+		/// [bid_order_id, bid_order]
 		BidOrderAdded(
 			BidOrderId<T::BlockNumber, T::Hash>,
 			BidOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
+		/// An offer has been added by a lender. This indicates that the lender
+		/// is interested in entering a loan with the owner of the bid order.
+		/// [offer_id, offer]
 		OfferAdded(OfferId<T::BlockNumber, T::Hash>, Offer<T::AccountId, T::BlockNumber, T::Hash>),
 
+		/// A deal order has been added by a borrower. This indicates that the borrower
+		/// has accepted a lender's offer and intends to enter the loan.
+		/// [deal_order_id, deal_order]
 		DealOrderAdded(
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
+
+		/// A deal order has been funded by a lender. This indicates that the lender
+		/// has initiated the actual loan by transferring the loan amount to the borrower
+		/// on an external chain.
+		/// [funded_deal_order_id, funded_deal_order]
 		DealOrderFunded(
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
+
+		/// A deal order has been closed by a borrower. This indicates that the borrower
+		/// has repaid the loan in full and is now closing out the loan.
+		/// [closed_deal_order_id, closed_deal_order]
 		DealOrderClosed(
 			DealOrderId<T::BlockNumber, T::Hash>,
 			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
+		/// A loan exemption has been granted by a lender. This indicates that the lender
+		/// is releasing some or all of the outstanding debt on the loan. The borrower
+		/// is no longer responsible for repaying the amount.
+		/// [exempted_deal_order_id, exempting_transfer_id]
 		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>, TransferId<T::Hash>),
 
+		/// A legacy wallet from Creditcoin 1.X has been claimed. The balance of the legacy wallet
+		/// has been transferred to the owner's Creditcoin 2.0 account.
+		/// [legacy_wallet_claimer, legacy_wallet_sighash, legacy_wallet_balance]
 		LegacyWalletClaimed(T::AccountId, LegacySighash, T::Balance),
 	}
 
@@ -240,80 +274,141 @@ pub mod pallet {
 		/// The specified address has already been registered to another account
 		AddressAlreadyRegistered,
 
+		/// The specified address does not exist.
 		NonExistentAddress,
 
+		/// The specified deal order does not exist.
 		NonExistentDealOrder,
+
+		/// The specified ask order does not exist.
 		NonExistentAskOrder,
+
+		/// The specified bid order does not exist.
 		NonExistentBidOrder,
+
+		/// The specified offer does not exist.
 		NonExistentOffer,
+
+		/// The specified transfer does not exist.
 		NonExistentTransfer,
 
+		/// The transfer has already been registered.
 		TransferAlreadyRegistered,
+
+		/// The account that registered the transfer does
+		/// not match the account attempting to use the transfer.
 		TransferMismatch,
+
+		/// The transfer has already been processed and cannot be used.
 		TransferAlreadyProcessed,
+
+		/// The transfer amount is less than the amount in the loan terms.
 		TransferAmountInsufficient,
+
+		/// The transfer is malformed and has a block number greater than the
+		/// tip. This is an internal error.
 		MalformedTransfer,
 
+		/// The specified transfer type is not currently supported by
+		/// the blockchain the loan is executed on.
 		UnsupportedTransferKind,
 
+		/// The node does not have sufficient authority to verify a transfer.
 		InsufficientAuthority,
 
-		NonExistentRepaymentOrder,
-
+		/// The specified ID has already been used.
 		DuplicateId,
 
+		/// The address cannot be used because the user does not own it.
 		NotAddressOwner,
 
+		/// Failed to send an offchain callback transaction. This is likely
+		/// an internal error.
 		OffchainSignedTxFailed,
 
+		/// The node is an authority but there is no account to create a
+		/// callback transaction. This is likely an internal error.
 		NoLocalAcctForSignedTx,
 
 		RepaymentOrderNonZeroGain,
 
+		/// The addresses specified are not on compatible external chains.
 		AddressPlatformMismatch,
 
+		/// The account is already an authority.
 		AlreadyAuthority,
 
+		/// The offer has already been made.
 		DuplicateOffer,
 
+		/// The deal cannot be locked because it is not funded yet.
 		DealNotFunded,
 
+		/// The deal order is already funded and cannot be funded again.
 		DealOrderAlreadyFunded,
+		/// The deal order is already closed and cannot be closed again.
 		DealOrderAlreadyClosed,
+
+		/// The deal order is already locked and cannot be locked again.
 		DealOrderAlreadyLocked,
+
+		/// The deal order must be locked before it can be closed.
 		DealOrderMustBeLocked,
+
+		/// The deal order already exists.
 		DuplicateDealOrder,
+
+		/// The deal order has expired and is no longer valid.
 		DealOrderExpired,
 
+		/// The ask order has expired and is no longer valid.
 		AskOrderExpired,
+
+		/// The bid order has expired and is no longer valid.
 		BidOrderExpired,
+
+		/// The offer order has expired and is no longer valid.
 		OfferExpired,
+
+		/// The terms of the ask and bid order do not agree.
 		AskBidMismatch,
 
+		/// The bid order is owned by the user, a user cannot lend to themself.
 		SameOwner,
+
+		/// The signature does not match the public key and message.
 		InvalidSignature,
 
+		/// Only the borrower can perform the action.
 		NotBorrower,
 
+		/// The deal order is malformed and has a block number greater than the
+		/// tip. This is an internal error.
 		MalformedDealOrder,
 
+		/// Only the lender can perform the action.
 		NotLender,
 
-		ScaleDecodeError,
-
+		/// The queue of unverified transfers is full for this block.
 		UnverifiedTransferPoolFull,
 
+		/// Repayment orders are not currently supported.
 		RepaymentOrderUnsupported,
 
+		/// The legacy wallet is not owned by the user.
 		NotLegacyWalletOwner,
-		LegacySighashMalformed,
+
+		/// There is no legacy wallet corresponding to the public key.
 		LegacyWalletNotFound,
+
+		/// There is no legacy balance keeper, so no legacy wallets can be claimed.
+		/// This is a configuration error and should only occur during local development.
 		LegacyBalanceKeeperMissing,
 
-		VerifyStringTooLong,
-
+		/// The specified guid has already been used and cannot be re-used.
 		GuidAlreadyUsed,
 
+		/// The value of the loan term's maturity is zero, which is invalid.
 		InvalidMaturity,
 	}
 
