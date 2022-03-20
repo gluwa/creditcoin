@@ -1,6 +1,3 @@
-pub mod generate_mining_key;
-pub use generate_mining_key::MiningKeySubcommand;
-
 use crate::{
 	chain_spec,
 	cli::{Cli, Subcommand},
@@ -57,7 +54,6 @@ pub fn run() -> sc_cli::Result<()> {
 
 	match &cli.subcommand {
 		Some(Subcommand::Key(cmd)) => cmd.run(&cli),
-		Some(Subcommand::GenerateMiningKey(cmd)) => cmd.run(&cli),
 		Some(Subcommand::BuildSpec(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
 			runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
