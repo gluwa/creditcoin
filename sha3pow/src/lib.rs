@@ -1,4 +1,5 @@
 use parity_scale_codec::{Decode, Encode};
+use primitives::Difficulty;
 use rand::{prelude::SmallRng, SeedableRng};
 use sc_client_api::{AuxStore, HeaderBackend};
 use sc_consensus_pow::{Error, PowAlgorithm};
@@ -16,8 +17,6 @@ pub mod app {
 	pub const ID: KeyTypeId = KeyTypeId(*b"ctcm");
 	app_crypto!(ecdsa, ID);
 }
-
-pub type Difficulty = U256;
 
 /// Determine whether the given hash satisfies the given difficulty.
 /// The test is done by multiplying the two together. If the product
