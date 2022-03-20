@@ -102,5 +102,3 @@ pub mod pallet {
 		}
 	}
 }
-
-// want 28 followed by 18 zeros = 28_000_000_000_000_000_000
