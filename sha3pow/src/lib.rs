@@ -10,14 +10,6 @@ use sp_consensus_pow::{DifficultyApi, Seal as RawSeal};
 use sp_core::{H256, U256};
 use std::sync::Arc;
 
-pub mod app {
-	use sp_application_crypto::{app_crypto, ecdsa};
-	use sp_core::crypto::KeyTypeId;
-
-	pub const ID: KeyTypeId = KeyTypeId(*b"ctcm");
-	app_crypto!(ecdsa, ID);
-}
-
 /// Determine whether the given hash satisfies the given difficulty.
 /// The test is done by multiplying the two together. If the product
 /// overflows the bounds of U256, then the product (and thus the hash)
