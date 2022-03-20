@@ -6011,6 +6011,7 @@ name = "sha3pow"
 version = "2.0.0-beta.3"
 dependencies = [
  "parity-scale-codec",
+ "primitives",
  "rand 0.8.4",
  "sc-client-api",
  "sc-consensus-pow",
