@@ -169,6 +169,16 @@ impl TestInfo {
 
 		(Creditcoin::deal_orders(expiration_block, deal_order_id.hash()).unwrap(), deal_order_id)
 	}
+
+	pub fn get_register_deal_msg(&self) -> Vec<u8> {
+		self.expiration_block
+			.encode()
+			.into_iter()
+			.chain(self.ask_guid.encode())
+			.chain(self.bid_guid.encode())
+			.chain(self.loan_terms.encode())
+			.collect::<Vec<u8>>()
+	}
 }
 
 #[test]
@@ -1185,12 +1195,7 @@ fn register_deal_order_should_error_when_not_signed() {
 		let test_info = TestInfo::new_defaults();
 
 		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1216,12 +1221,8 @@ fn register_deal_order_should_error_when_signature_is_invalid() {
 		let test_info = TestInfo::new_defaults();
 
 		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&"bogus-ask-guid".as_bytes().into_bounded(),
-			&"bogus-bid-guid".as_bytes().into_bounded(),
-			&test_info.loan_terms,
-		);
+		let (wrong_key, _) = sp_core::ecdsa::Pair::generate();
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1233,7 +1234,7 @@ fn register_deal_order_should_error_when_signature_is_invalid() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public().into(),
+				wrong_key.public().into(),
 				signature.into(),
 			),
 			crate::Error::<Test>::InvalidSignature
@@ -1247,12 +1248,7 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 		let test_info = TestInfo::new_defaults();
 
 		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1284,12 +1280,7 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 			lender: RegisteredAddress::new(111, Blockchain::Rinkeby),
 			..test_info.clone()
 		};
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1319,12 +1310,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 			..TestInfo::new_defaults()
 		};
 
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1355,12 +1341,7 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 		// create AskOrder which will use-up the default ID
 		test_info.create_ask_order();
 
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1391,12 +1372,7 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 		// create BidOrder which will use-up the default ID
 		test_info.create_bid_order();
 
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1444,12 +1420,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 		// register_deal_order() will reconstruct the same ID later
 		crate::Offers::<Test>::insert_id(offer_id, offer);
 
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_noop!(
@@ -1478,6 +1449,9 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 			..TestInfo::new_defaults()
 		};
 
+		let message = test_info.get_register_deal_msg();
+		let signature = key_pair.sign(&message);
+
 		// create DealOrder w/o creating AskOrder, BidOrder & Offer to avoid
 		// erroring out when checking for their existence
 		let ask_order_id = AskOrderId::new::<Test>(test_info.expiration_block, &test_info.ask_guid);
@@ -1503,14 +1477,6 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 		// insert this DealOrder into storage which will use-up the ID
 		// register_deal_order() will reconstruct the same ID later
 		crate::DealOrders::<Test>::insert_id(deal_order_id, deal_order);
-
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
-		let signature = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1540,12 +1506,7 @@ fn register_deal_order_should_succeed() {
 			..TestInfo::new_defaults()
 		};
 
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
@@ -1587,12 +1548,7 @@ fn register_deal_order_accepts_sr25519() {
 			..TestInfo::new_defaults()
 		};
 
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
@@ -1620,12 +1576,7 @@ fn register_deal_order_accepts_ed25519() {
 			..TestInfo::new_defaults()
 		};
 
-		let message = Creditcoin::register_deal_order_message(
-			test_info.expiration_block,
-			&test_info.ask_guid,
-			&test_info.bid_guid,
-			&test_info.loan_terms,
-		);
+		let message = test_info.get_register_deal_msg();
 		let signature = key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
