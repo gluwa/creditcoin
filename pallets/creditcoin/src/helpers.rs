@@ -1,12 +1,11 @@
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, Guid, Id, LoanTerms, TransferId,
+	DealOrderId, Error, Guid, Id, TransferId,
 };
-use codec::Encode;
+
 use frame_support::ensure;
 use frame_system::pallet_prelude::*;
-use sp_io::hashing::sha2_256;
 use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
 
@@ -63,23 +62,6 @@ impl<T: Config> Pallet<T> {
 		})
 	}
 
-	pub fn register_deal_order_message(
-		expiration_block: T::BlockNumber,
-		ask_guid: &Guid,
-		bid_guid: &Guid,
-		loan_terms: &LoanTerms<T::Moment>,
-	) -> [u8; 32] {
-		let all_encoded = expiration_block
-			.encode()
-			.into_iter()
-			.chain(ask_guid.encode())
-			.chain(bid_guid.encode())
-			.chain(loan_terms.encode())
-			.collect::<Vec<u8>>();
-
-		sha2_256(&all_encoded)
-	}
-
 	pub fn try_mutate_deal_order_and_transfer(
 		deal_order_id: &DealOrderId<T::BlockNumber, T::Hash>,
 		transfer_id: &TransferId<T::Hash>,
@@ -126,64 +108,5 @@ impl<T: Config> Pallet<T> {
 		ensure!(!<UsedGuids<T>>::contains_key(guid.clone()), Error::<T>::GuidAlreadyUsed);
 		UsedGuids::<T>::insert(guid, ());
 		Ok(())
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use crate::{ExternalAmount, LoanTerms};
-
-	#[test]
-	fn register_deal_order_message_works() {
-		use core::convert::TryFrom;
-		use frame_support::BoundedVec;
-		let expiration_block = 5;
-		let ask_guid = BoundedVec::try_from(b"asdfasdfasdfasdf".to_vec()).unwrap();
-		let bid_guid = BoundedVec::try_from(b"qwerqwerqwerqwer".to_vec()).unwrap();
-
-		let loan_terms =
-			LoanTerms { amount: ExternalAmount::from(1u64), interest_rate: 10, maturity: 10 };
-
-		// "expected" derived from creating the same message hash via PolkadotJs
-		let expected: [u8; 32] = [
-			46, 130, 146, 236, 109, 135, 57, 106, 137, 172, 43, 134, 74, 91, 53, 45, 152, 197, 25,
-			65, 220, 98, 8, 250, 51, 3, 163, 238, 102, 83, 2, 123,
-		];
-
-		let msg = crate::Pallet::<crate::mock::Test>::register_deal_order_message(
-			expiration_block,
-			&ask_guid,
-			&bid_guid,
-			&loan_terms,
-		);
-
-		assert_eq!(msg, expected);
-	}
-
-	#[test]
-	fn register_deal_order_message_empty_guids() {
-		use core::convert::TryFrom;
-		use frame_support::BoundedVec;
-		let expiration_block = 5;
-		let ask_guid = BoundedVec::try_from(vec![]).unwrap();
-		let bid_guid = BoundedVec::try_from(vec![]).unwrap();
-
-		let loan_terms =
-			LoanTerms { amount: ExternalAmount::from(1u64), interest_rate: 10, maturity: 10 };
-
-		// "expected" derived from creating the same message hash via PolkadotJs
-		let expected: [u8; 32] = [
-			163, 128, 181, 134, 42, 116, 134, 42, 137, 220, 103, 210, 192, 253, 121, 158, 168, 28,
-			88, 83, 38, 163, 19, 127, 7, 150, 247, 10, 26, 128, 115, 219,
-		];
-
-		let msg = crate::Pallet::<crate::mock::Test>::register_deal_order_message(
-			expiration_block,
-			&ask_guid,
-			&bid_guid,
-			&loan_terms,
-		);
-
-		assert_eq!(msg, expected);
 	}
 }
