@@ -795,7 +795,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000)]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 4))]
 		pub fn register_deal_order(
 			origin: OriginFor<T>,
 			lender_address_id: AddressId<T::Hash>,
@@ -1088,11 +1088,11 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(0)]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 1))]
 		pub fn verify_transfer(
 			origin: OriginFor<T>,
 			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash>,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
@@ -1104,18 +1104,21 @@ pub mod pallet {
 
 			Self::deposit_event(Event::<T>::TransferVerified(key.clone(), transfer.clone()));
 			Transfers::<T>::insert(key, transfer);
-			Ok(())
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(0)]
-		pub fn add_authority(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		pub fn add_authority(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
 			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
 
 			Authorities::<T>::insert(who, ());
 
-			Ok(())
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 	}
 }
