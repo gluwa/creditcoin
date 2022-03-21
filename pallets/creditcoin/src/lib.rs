@@ -811,8 +811,13 @@ pub mod pallet {
 			let lender_account = ensure_signed(origin)?;
 			let borrower_account = borrower_key.into_account();
 
-			let message =
-				Self::register_deal_order_message(expiration_block, &ask_guid, &bid_guid, &terms);
+			let message = expiration_block
+				.encode()
+				.into_iter()
+				.chain(ask_guid.encode())
+				.chain(bid_guid.encode())
+				.chain(terms.encode())
+				.collect::<Vec<u8>>();
 
 			ensure!(
 				borrower_signature.verify(message.as_slice(), &borrower_account),
