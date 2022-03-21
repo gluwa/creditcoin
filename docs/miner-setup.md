@@ -22,7 +22,7 @@
             ```
         - Copy the `SS58 Address` for later use
     - Generate a new keypair
-        - Run `docker run -it docker.io/parity/subkey:latest generate --scheme Ecdsa`. This will generate a new keypair and print the account information, for example:
+        - Run `docker run -it docker.io/parity/subkey:latest generate`. This will generate a new keypair and print the account information, for example:
             ```
             Secret phrase:       toss frown run relief book lift aunt guard reduce shell genuine alarm
             Network ID:        substrate
