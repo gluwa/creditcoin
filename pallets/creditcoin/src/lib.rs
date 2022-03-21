@@ -447,9 +447,26 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_initialize(_block_number: T::BlockNumber) -> Weight {
+		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			UnverifiedTransfers::<T>::kill();
-			0
+			log::debug!("Cleaning up expired entries");
+			AskOrders::<T>::remove_prefix(block_number, None);
+			BidOrders::<T>::remove_prefix(block_number, None);
+			Offers::<T>::remove_prefix(block_number, None);
+			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
+				.filter_map(|(hash, deal)| {
+					if deal.funding_transfer_id.is_some() {
+						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
+					} else {
+						None
+					}
+				})
+				.collect();
+			let write_count = deals_to_keep.len() + 5;
+			for (key, deal) in deals_to_keep {
+				DealOrders::<T>::insert_id(key, deal);
+			}
+			T::DbWeight::get().writes(write_count.try_into().unwrap_or(u64::MAX))
 		}
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
@@ -480,25 +497,6 @@ pub mod pallet {
 				}
 			} else {
 				log::trace!("Not authority, skipping off chain work");
-			}
-		}
-		fn on_finalize(block_number: T::BlockNumber) {
-			log::debug!("Cleaning up expired entries");
-			AskOrders::<T>::remove_prefix(block_number, None);
-			BidOrders::<T>::remove_prefix(block_number, None);
-			Offers::<T>::remove_prefix(block_number, None);
-			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
-				.filter_map(|(hash, deal)| {
-					if deal.funding_transfer_id.is_some() {
-						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
-					} else {
-						None
-					}
-				})
-				.collect();
-
-			for (key, deal) in deals_to_keep {
-				DealOrders::<T>::insert_id(key, deal);
 			}
 		}
 	}
