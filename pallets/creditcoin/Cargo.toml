@@ -6,8 +6,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 description = 'FRAME pallet template for defining custom runtime logic.'
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-homepage = 'https://substrate.dev'
+authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker01@gmail.com>']
+homepage = 'https://creditcoin.org'
 license = 'Unlicense'
 publish = false
 

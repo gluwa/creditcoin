@@ -2,12 +2,12 @@
 name = 'creditcoin-node'
 version = '2.0.0-beta.3'
 description = 'A Creditcoin node built on substrate.'
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-homepage = 'https://substrate.dev'
+authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker01@gmail.com>']
+homepage = 'https://creditcoin.org'
 edition = '2018'
 license = 'Unlicense'
 publish = false
-repository = 'https://github.com/nathanwhit/creditcoin-substrate/'
+repository = 'https://github.com/gluwa/creditcoin-substrate/'
 build = 'build.rs'
 
 [[bin]]
