@@ -462,12 +462,13 @@ pub mod pallet {
 					}
 				})
 				.collect();
-			let write_count = deals_to_keep.len() + 5;
+			let write_count = deals_to_keep.len().saturating_add(5);
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
 			}
 			T::DbWeight::get().writes(write_count.try_into().unwrap_or(u64::MAX))
 		}
+
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
