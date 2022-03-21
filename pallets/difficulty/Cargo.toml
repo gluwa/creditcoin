@@ -2,12 +2,11 @@
 name = 'pallet-difficulty'
 version = '2.0.0-beta.3'
 description = 'FRAME pallet for dynamic difficulty adjustment.'
-authors = ['Nathan Whitaker <nathan.whitaker01@gmail.com>']
-homepage = 'https://substrate.dev'
+authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker01@gmail.com>']
 edition = '2018'
 license = 'Unlicense'
 publish = false
-repository = 'https://github.com/nathanwhit/creditcoin-substrate'
+repository = 'https://github.com/gluwa/creditcoin-substrate'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
