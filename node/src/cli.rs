@@ -45,9 +45,15 @@ pub struct Cli {
 	pub run: RunCmd,
 
 	#[structopt(long)]
+	/// The public key or SS58 Address of the account to receive mining rewards in.
 	pub mining_key: Option<String>,
 
+	#[structopt(long)]
+	/// The number of mining worker threads to spawn. Defaults to the number of cores if omitted.
+	pub mining_threads: Option<usize>,
+
 	#[structopt(long, parse(try_from_str = parse_rpc_pair))]
+	/// If the node is an oracle authority, the RPC URL to use for a given external chain.
 	pub rpc_mapping: Option<Vec<(String, String)>>,
 }
 #[derive(Debug, StructOpt)]
