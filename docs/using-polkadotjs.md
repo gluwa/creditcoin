@@ -32,7 +32,7 @@ This will return something like:
 
 Copy the output to `creditcoin.json`.
 
-In your `src` folder, create an `interface` folder and place an empty `definitions.ts` file in it. (FIND OUT WHAT IS ACTUALLY HAPPENING HERE)
+In your `src` folder, create an `interfaces` folder and place an empty `definitions.ts` file in it.
 
 In your `packages.json` add the following to the `scripts` section:
 
@@ -113,11 +113,11 @@ const main = async () => {
   });
 
   // In this example we're calling the unsubscribe() function that is being
-  // returned by the api call function after 20s.
+  // returned by the api call function after 2 minutes.
   setTimeout(() => {
     unsubscribe();
     console.log('Unsubscribed');
-  }, 20000);
+  }, 120000);
 }
 
 main().catch(console.error);
