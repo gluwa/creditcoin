@@ -5,7 +5,6 @@
 ```bash
 sudo apt-get install nodejs npm
 sudo npm install -g yarn
-yarn install --immutable
 ```
 
 **WARNING:** Node.js 14.x || 16.x is required
@@ -17,7 +16,7 @@ yarn install --immutable
    and execute it locally:
 
 ```bash
-./target/debug/creditcoin-node --dev --mining-key XYZ
+./target/release/creditcoin-node --dev --mining-key XYZ
 ```
 
 2. Prepare the local development environment:
