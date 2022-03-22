@@ -34,9 +34,16 @@ impl SubstrateCli for Cli {
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
 		Ok(match id {
+			"" => {
+				let msg =
+					"Please specify the chain with '--chain main' or '--chain test'".to_owned();
+				log::error!("{}", msg);
+				return Err(msg);
+			},
 			"dev" => Box::new(chain_spec::development_config()?),
-			"" | "local" => Box::new(chain_spec::local_testnet_config()?),
-			"testnet" => Box::new(chain_spec::testnet_config()?),
+			"local" => Box::new(chain_spec::local_testnet_config()?),
+			"test" | "testnet" => Box::new(chain_spec::testnet_config()?),
+			"main" | "mainnet" => Box::new(chain_spec::mainnet_config()?),
 			path => {
 				Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?)
 			},
