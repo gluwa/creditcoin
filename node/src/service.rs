@@ -183,6 +183,7 @@ pub fn decode_mining_key(
 pub fn new_full(
 	config: Configuration,
 	mining_key: Option<&str>,
+	mining_threads: Option<usize>,
 	rpc_mapping: Option<impl IntoIterator<Item = (String, String)>>,
 ) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
@@ -318,7 +319,7 @@ pub fn new_full(
 			.spawn_essential_handle()
 			.spawn_blocking("pow", "pow_group", worker_task);
 
-		let threads = num_cpus::get();
+		let threads = mining_threads.unwrap_or_else(num_cpus::get);
 		for _ in 0..threads {
 			if let Some(keystore) = keystore_container.local_keystore() {
 				let worker = worker.clone();
