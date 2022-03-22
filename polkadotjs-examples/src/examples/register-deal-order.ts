@@ -1,7 +1,6 @@
 
 import { ApiPromise, ApiRx, Keyring, WsProvider, } from '@polkadot/api';
 import { PalletCreditcoinBlockchain, } from '@polkadot/types/lookup';
-import { blake2AsHex, } from '@polkadot/util-crypto';
 import { u8aConcat } from '@polkadot/util';
 import { Guid } from 'js-guid';
 import { handleTransaction, getAddressId } from '../utils';
