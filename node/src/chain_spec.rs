@@ -50,7 +50,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 				],
-				true,
+				Some(6000),
+				Some(128),
 			)
 		},
 		// Bootnodes
@@ -97,7 +98,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 				],
-				true,
+				None,
+				None,
 			)
 		},
 		// Bootnodes
@@ -128,7 +130,8 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-	_enable_println: bool,
+	target_time: Option<u64>,
+	adjustment: Option<i64>,
 ) -> GenesisConfig {
 	GenesisConfig {
 		system: SystemConfig {
@@ -144,9 +147,9 @@ fn testnet_genesis(
 			key: Some(root_key),
 		},
 		difficulty: DifficultyConfig {
-			initial_difficulty: U256::from(1_000_000),
-			target_time: 60 * 1000,
-			difficulty_adjustment_period: 56,
+			initial_difficulty: U256::from(1_000_000u64),
+			target_time: target_time.unwrap_or(60 * 1000),
+			difficulty_adjustment_period: adjustment.unwrap_or(43),
 		},
 		creditcoin: CreditcoinConfig::default(),
 	}
