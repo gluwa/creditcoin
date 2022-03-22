@@ -140,6 +140,66 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+  integration-test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build SUT
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Start SUT
+        run: |
+          MINING_KEY=$(docker run docker.io/parity/subkey:latest generate | grep "SS58 Address" | tr -d ' ' | cut -f2 -d':')
+
+          if [ -z "$MINING_KEY" ]; then
+            echo "ERROR: Problem generating mining key"
+            exit 1
+          fi
+
+          echo "INFO: MINING_KEY=$MINING_KEY"
+          ./target/release/creditcoin-node --dev --mining-key $MINING_KEY &
+
+      - name: Run integration test
+        run: |
+          # remove pre-installed packages
+          sudo apt remove npm nodejs
+
+          # Install Node.js 16.x from upstream b/c polkadot/jest can't work withh old versions
+          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+
+          sudo apt-get install -y nodejs
+          sudo npm install -g yarn
+
+          pushd integration-tests/
+
+          # prepare typescript environment and wait for creditcoin-node to initialize
+          ./prepare-devel-env.sh
+
+          yarn test
+
+          # if all went well kill the node. Otherwise GitHub Actions would exit on the
+          # previous step killing everything and we don't have to worry about
+          # dangling processes
+          killall -9 creditcoin-node
+
   benchmark:
     runs-on: ubuntu-20.04
     steps:
