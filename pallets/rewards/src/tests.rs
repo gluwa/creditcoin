@@ -33,13 +33,29 @@ fn reward_amount_limit() {
 #[test]
 fn issue_reward_handling() {
 	new_test_ext().execute_with(|| {
-		Rewards::issue_reward(123456, 55);
+		Rewards::issue_reward(1, 55);
 
 		let event = <frame_system::Pallet<Test>>::events()
 			.pop()
 			.expect("Expected at least one EventRecord to be found")
 			.event;
 
-		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::RewardIssued(123456, 55)),);
+		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::RewardIssued(1, 55)),);
+	});
+}
+
+#[test]
+fn rewards_were_issued_after_mining_blocks() {
+	new_test_ext().execute_with(|| {
+		let initial_balance = Balances::free_balance(1);
+
+		assert!(initial_balance > 0);
+		roll_to(10);
+
+		let new_balance = Balances::free_balance(1);
+
+		log::debug!("******* BALANCES={:?}, {:?}", initial_balance, new_balance);
+
+		assert!(new_balance > initial_balance);
 	});
 }
