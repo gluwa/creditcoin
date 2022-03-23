@@ -1,11 +1,10 @@
 // [object Object]
 // SPDX-License-Identifier: Apache-2.0
 
-import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
+import { ApiPromise, WsProvider } from '@polkadot/api';
 
-describe('System API', (): void => {
+describe('System RPC sanity test', (): void => {
   let api: ApiPromise;
-  let alice: KeyringPair;
 
   beforeEach(async () => {
     process.env.NODE_ENV = 'test';
@@ -13,11 +12,6 @@ describe('System API', (): void => {
     const provider = new WsProvider('ws://127.0.0.1:9944');
 
     api = await ApiPromise.create({ provider });
-
-    const keyring = new Keyring({
-      type: 'sr25519'
-    });
-    const alice = keyring.addFromUri('//Alice', { name: 'Alice' });
   });
 
   afterEach(async () => {
