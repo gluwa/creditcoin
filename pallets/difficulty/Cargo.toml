@@ -2,7 +2,7 @@
 name = 'pallet-difficulty'
 version = '2.0.0-beta.5'
 description = 'FRAME pallet for dynamic difficulty adjustment.'
-authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker01@gmail.com>']
+authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2018'
 license = 'Unlicense'
 publish = false
