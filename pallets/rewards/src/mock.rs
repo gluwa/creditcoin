@@ -1,5 +1,8 @@
 use crate as pallet_rewards;
-use frame_support::{parameter_types, traits::ConstU32};
+use frame_support::{
+	parameter_types,
+	traits::{ConstU32, Hooks},
+};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
@@ -9,6 +12,7 @@ use sp_runtime::{
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+pub type BlockNumber = u64;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -36,7 +40,7 @@ impl system::Config for Test {
 	type Origin = Origin;
 	type Call = Call;
 	type Index = u64;
-	type BlockNumber = u64;
+	type BlockNumber = BlockNumber;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
@@ -83,8 +87,30 @@ impl pallet_rewards::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+	// accounts 1 to 5 have initial balances
+	pallet_balances::GenesisConfig::<Test> {
+		balances: vec![
+			(1, 10_000_000_000_000_000_000),
+			(2, 20_000_000_000_000_000_000),
+			(3, 30_000_000_000_000_000_000),
+			(4, 40_000_000_000_000_000_000),
+			(5, 50_000_000_000_000_000_000),
+			(6, 60_000_000_000_000_000_000),
+		],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
 	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));
 	ext
+}
+
+pub fn roll_to(n: BlockNumber) {
+	let now = System::block_number();
+	for i in now + 1..=n {
+		System::set_block_number(i);
+		Rewards::on_initialize(i);
+		Rewards::on_finalize(i);
+	}
 }
