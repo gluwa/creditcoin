@@ -12,6 +12,7 @@
         - Your private key should be formatted as hex and start with `0x`, for example `0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774`
           - Note: if your existing private key starts with `00`, remove the leading `00` first.
         - Run `docker run -it docker.io/parity/subkey inspect --scheme Ecdsa <private key>` which will display the account information fot the keypair. For example:
+
             ```
             Secret Key URI `0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774` is account:
             Secret seed:       0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774
@@ -20,9 +21,11 @@
             Public key (SS58): KW6p8XTkd6pLhTnwfSfr3hUcVSKTQhJHZxTVD8RrpfUhUTrvn
             SS58 Address:      5HCy4x9b5mW28EYheGn14bWidQkhab5VMiNakia7i4VfxTKs 
             ```
+
         - Copy the `SS58 Address` for later use
     - Generate a new keypair
         - Run `docker run -it docker.io/parity/subkey:latest generate`. This will generate a new keypair and print the account information, for example:
+
             ```
             Secret phrase:       toss frown run relief book lift aunt guard reduce shell genuine alarm
             Network ID:        substrate
@@ -32,6 +35,7 @@
             Public key (SS58): KW8u8Y1GgAGWtTfU5o92imPsYVkowfbsKE7hosQHwJ2E7gF9h
             SS58 Address:      5ErxX8PgVYVE3WbCkSs9mvioFHVrsc4uXFwkF3G9Pyv4FC2w
             ```
+
         - Store your secret phrase (a 12-word mnemonic) in a secure location. We won’t use this phrase directly, but you’ll need it to access the account or recover your private key.
         - Copy the `SS58 Address` for later use
 2) Start mining node
@@ -41,7 +45,7 @@
 
         ```bash
         
-        docker run -p 30333:30333 -v <yourlocaldatapath>:/data gluwa/creditcoin:2.0.0-beta-2 \
+        docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-beta-5 \
             # running a mining node
             --validator \            
             # optional name for your node, to make it easier to identify
@@ -51,11 +55,11 @@
             # optional, opt in to telemetry
             --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
             # node to connect to on boot, in order to join the network
-            --bootnodes "/dns4/testnet-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH" "/dns4/testnet-bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWDg8bvM2apk2vS2834M3WDSJigHToLsREPEs2EphYRpSh" "/dns4/testnet-bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWR7WeN1cKG7NkvecKfsfMCTYzpub5Mswnzv6RAWehuBQo" \
+            --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWRubm6c4bViYyvTKnSjMicC35F1jZNrzt3MKC9Hev5vbG" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWSdzZaqoDAncrQmMUi34Nr29TayCr4xPvqcJQc5J434tZ" \
             # replace <...> with the public IP address or host name that your node can be reached at
             --public-addr "/dns4/<yourhostname or ip>/tcp/30333" \
             # we want to connect to the testnet
-            --chain /testnetSpec.json \
+            --chain mainnet \
             # your mining public key/address to receive rewards at
             --mining-key <SS58Address> \
             # the base path to store the node's data
