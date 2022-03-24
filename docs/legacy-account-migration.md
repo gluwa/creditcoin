@@ -2,7 +2,7 @@
 
 ## How to check an accounts current balance and other information
 
-Account balances migrated from Creditcoin 1.7 at block NNNN. Your starting balance on Creditcoin 2.0 should match your Creditcion 1.7 block NNNN balance
+Account balances migrated from Creditcoin 1.7 at block 1,123,966. Your starting balance on Creditcoin 2.0 should match your Creditcion 1.7 block 1,123,966 balance
 
 In order to check your Creditcoin 2.0 balance you can run the following command:
 
