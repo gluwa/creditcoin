@@ -217,7 +217,6 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-
       - uses: Swatinem/rust-cache@v1
 
       - name: Build benchmarks
