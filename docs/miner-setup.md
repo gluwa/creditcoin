@@ -48,19 +48,19 @@
         docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-beta-5 \
             # running a mining node
             --validator \            
-            # optional name for your node, to make it easier to identify
+            # (optional) REPLACE <nodename> with a name for your node, to make it easier to identify
             --name <nodename> \
             # allow prometheus metrics to be scraped
             --prometheus-external \
-            # optional, opt in to telemetry
+            # (optional) opt in to telemetry
             --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
             # node to connect to on boot, in order to join the network
             --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWRubm6c4bViYyvTKnSjMicC35F1jZNrzt3MKC9Hev5vbG" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWSdzZaqoDAncrQmMUi34Nr29TayCr4xPvqcJQc5J434tZ" \
-            # replace <...> with the public IP address or host name that your node can be reached at
+            # REPLACE <yourhostname or ip> with the public IP address or host name that your node can be reached at
             --public-addr "/dns4/<yourhostname or ip>/tcp/30333" \
-            # we want to connect to the testnet
+            # we want to connect to the mainnet
             --chain mainnet \
-            # your mining public key/address to receive rewards at
+            # REPLACE <SS58Address> with your mining public key/address to receive rewards at
             --mining-key <SS58Address> \
             # the base path to store the node's data
             --base-path /data \
