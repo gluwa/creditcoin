@@ -19,6 +19,7 @@ export const handleTransaction = async (api: ApiPromise, unsubscribe: (() => voi
             console.log(dispatchError.toString());
         }
         unsubscribe();
+        api.disconnect();
     }
     if (status.isInBlock) {
         events.forEach(({ event }) => {
@@ -29,6 +30,7 @@ export const handleTransaction = async (api: ApiPromise, unsubscribe: (() => voi
             });
         });
         unsubscribe();
+        api.disconnect();
     }
 }
 
