@@ -1,4 +1,5 @@
 use crate as pallet_rewards;
+use codec::Encode;
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, Hooks},
@@ -6,7 +7,7 @@ use frame_support::{
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
-	testing::Header,
+	testing::{Digest, DigestItem, Header},
 	traits::{BlakeTwo256, IdentityLookup},
 };
 
@@ -106,11 +107,18 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	ext
 }
 
-pub fn roll_to(n: BlockNumber) {
-	let now = System::block_number();
-	for i in now + 1..=n {
+pub fn roll_to(n: BlockNumber, author_account_id: u64) {
+	let mut i = System::block_number();
+	while i < n {
+		Rewards::on_finalize(i);
+		Balances::on_finalize(i);
+
+		i += 1;
+		let parent = System::parent_hash();
+		let digest_item =
+			DigestItem::PreRuntime(sp_consensus_pow::POW_ENGINE_ID, author_account_id.encode());
+		System::initialize(&i, &parent, &Digest { logs: vec![digest_item.clone()] });
 		System::set_block_number(i);
 		Rewards::on_initialize(i);
-		Rewards::on_finalize(i);
 	}
 }

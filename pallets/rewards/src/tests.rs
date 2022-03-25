@@ -50,7 +50,7 @@ fn rewards_were_issued_after_mining_blocks() {
 		let initial_balance = Balances::free_balance(1);
 
 		assert!(initial_balance > 0);
-		roll_to(10);
+		roll_to(10, 1);
 
 		let new_balance = Balances::free_balance(1);
 
