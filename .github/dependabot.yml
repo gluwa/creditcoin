@@ -64,3 +64,13 @@ updates:
     directory: "/sha3pow"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "npm"
+    directory: "/integration-tests"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "npm"
+    directory: "/polkadotjs-examples"
+    schedule:
+      interval: "daily"
