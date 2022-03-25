@@ -1,6 +1,6 @@
 // [object Object]
 // SPDX-License-Identifier: Apache-2.0
-
+import { WebSocket } from 'ws';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Vec } from '@polkadot/types-codec';
 import type { PalletCreditcoinAskOrderId, Transfer } from '../../../src/interfaces/lookup';
@@ -119,6 +119,92 @@ describe('Creditcoin RPC', (): void => {
       expect(result.isEmpty).toBeFalsy();
       expect(result.toJSON()).toEqual(expect.anything());
     });
+  });
+
+  it('eventsSubscribe() should receive events', (done): void => {
+    expect.assertions(1);
+
+    let subscriptionId;
+    const ws = new WebSocket("ws://127.0.0.1:9944");
+
+    ws
+      .on("open", () => {
+        const rpc = { "id": 1, "jsonrpc": "2.0", "method": "creditcoin_eventsSubscribe" };
+        ws.send(JSON.stringify(rpc));
+      })
+      .on("message", (data) => {
+        const utf8Str = data.toString('utf-8');
+        // console.log('decoded-message', utf8Str);
+
+        if (! subscriptionId) {
+            subscriptionId = JSON.parse(utf8Str).result;
+        } else {
+            // assert at least one message is received
+            const data = JSON.parse(utf8Str);
+            expect(data).toBeTruthy();
+            ws.close();
+        }
+      })
+      .on('close', () => done());
+  });
+
+  it('eventsUnsubscribe() should return true', (done): void => {
+    expect.assertions(1);
+
+    let subscriptionId;
+    const ws = new WebSocket("ws://127.0.0.1:9944");
+
+    ws
+      .on("open", () => {
+        const rpc = { "id": 1, "jsonrpc": "2.0", "method": "creditcoin_eventsSubscribe" };
+        ws.send(JSON.stringify(rpc));
+      })
+      .on("message", (data) => {
+        const utf8Str = data.toString('utf-8');
+        // console.log('decoded-message', utf8Str);
+
+        if (! subscriptionId) {
+            subscriptionId = JSON.parse(utf8Str).result;
+            // unsubscribe
+            const rpc = { "id": 1, "jsonrpc": "2.0", "method": "creditcoin_eventsUnsubscribe", "params": [subscriptionId] };
+            ws.send(JSON.stringify(rpc));
+        } else {
+            const data = JSON.parse(utf8Str);
+            expect(data.result).toBe(true);
+            ws.close();
+        }
+      })
+      .on('close', () => done());
+  });
+
+  it('eventsUnsubscribe() handles invalid subscription id', (done): void => {
+    expect.assertions(1);
+
+    let firstTime = true;
+    const ws = new WebSocket("ws://127.0.0.1:9944");
+
+    ws
+      .on("open", () => {
+        const rpc = { "id": 1, "jsonrpc": "2.0", "method": "creditcoin_eventsSubscribe" };
+        ws.send(JSON.stringify(rpc));
+      })
+      .on("message", (data) => {
+        const utf8Str = data.toString('utf-8');
+        // console.log('decoded-message', utf8Str);
+
+        if (firstTime) {
+            firstTime = false;
+
+            // unsubscribe
+            const rpc = { "id": 1, "jsonrpc": "2.0", "method": "creditcoin_eventsUnsubscribe", "params": ['invalid-id'] };
+            ws.send(JSON.stringify(rpc));
+        } else {
+            const data = JSON.parse(utf8Str);
+            expect(data.error.message).toBe('Invalid subscription id.');
+            ws.close();
+        }
+      })
+      .on('close', () => done());
   });
 
 });
