@@ -195,6 +195,19 @@ jobs:
 
           yarn test
 
+          popd
+
+      - name: Execute examples
+        run: |
+          pushd polkadotjs-examples/
+
+          yarn install
+          yarn start
+
+          popd
+
+      - name: Kill SUT
+        run: |
           # if all went well kill the node. Otherwise GitHub Actions would exit on the
           # previous step killing everything and we don't have to worry about
           # dangling processes
