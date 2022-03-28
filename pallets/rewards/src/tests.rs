@@ -53,9 +53,6 @@ fn rewards_were_issued_after_mining_blocks() {
 		roll_to(10, 1);
 
 		let new_balance = Balances::free_balance(1);
-
-		log::debug!("******* BALANCES={:?}, {:?}", initial_balance, new_balance);
-
 		assert!(new_balance > initial_balance);
 	});
 }
