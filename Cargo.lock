@@ -4019,6 +4019,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-tracing",
 ]
 
 [[package]]
