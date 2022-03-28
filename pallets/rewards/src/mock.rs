@@ -88,6 +88,7 @@ impl pallet_rewards::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
+	sp_tracing::try_init_simple();
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	// accounts 1 to 5 have initial balances
 	pallet_balances::GenesisConfig::<Test> {
