@@ -327,22 +327,27 @@ pub fn new_full(
 
 				thread::spawn(move || loop {
 					let metadata = worker.metadata();
+					let version = worker.version();
 					if let Some(metadata) = metadata {
-						match sha3pow::mine(
-							client.as_ref(),
-							&keystore,
-							&metadata.pre_hash,
-							metadata.pre_runtime.as_ref().map(|v| &v[..]),
-							metadata.difficulty,
-						) {
-							Ok(Some(seal)) => {
-								let current_meta = worker.metadata();
-								if current_meta == Some(metadata) {
-									let _ = futures_lite::future::block_on(worker.submit(seal));
-								}
-							},
-							Ok(None) => {},
-							Err(e) => eprintln!("Mining error: {}", e),
+						loop {
+							match sha3pow::mine(
+								client.as_ref(),
+								&keystore,
+								&metadata.pre_hash,
+								metadata.pre_runtime.as_ref().map(|v| &v[..]),
+								metadata.difficulty,
+							) {
+								Ok(Some(seal)) => {
+									if version == worker.version() {
+										let _ = futures_lite::future::block_on(worker.submit(seal));
+									}
+								},
+								Ok(None) => {},
+								Err(e) => eprintln!("Mining error: {}", e),
+							}
+							if version != worker.version() {
+								break;
+							}
 						}
 					} else {
 						thread::sleep(Duration::from_millis(500));
