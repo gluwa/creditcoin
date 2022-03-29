@@ -248,7 +248,7 @@ pub fn new_full(
 	let _name = config.network.node_name.clone();
 	let _enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
-	let mining_metrics = primitives::metrics::MiningMetrics::new();
+	let mining_metrics = primitives::metrics::MiningMetrics::new(prometheus_registry.as_ref())?;
 
 	let rpc_extensions_builder = {
 		let client = client.clone();
