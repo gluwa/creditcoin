@@ -9,7 +9,7 @@
     "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --package creditcoin-typegen/interfaces  --endpoint ./creditcoin.json --output ./src/interfaces"
   },
   "dependencies": {
-    "@polkadot/api": "^7.12.1",
+    "@polkadot/api": "^7.14.3",
     "@polkadot/typegen": "^7.12.1",
     "js-guid": "^1.0.0"
   },
