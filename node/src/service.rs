@@ -248,6 +248,7 @@ pub fn new_full(
 	let _name = config.network.node_name.clone();
 	let _enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
+	let mining_metrics = primitives::metrics::MiningMetrics::new();
 
 	let rpc_extensions_builder = {
 		let client = client.clone();
@@ -256,6 +257,7 @@ pub fn new_full(
 		let task_executor =
 			Arc::new(sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle()));
 
+		let mining_metrics = mining_metrics.clone();
 		Box::new(move |deny_unsafe, _| {
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
@@ -263,6 +265,7 @@ pub fn new_full(
 				backend: backend.clone(),
 				executor: task_executor.clone(),
 				deny_unsafe,
+				mining_metrics: mining_metrics.clone(),
 			};
 
 			Ok(crate::rpc::create_full(deps))
@@ -324,33 +327,41 @@ pub fn new_full(
 			if let Some(keystore) = keystore_container.local_keystore() {
 				let worker = worker.clone();
 				let client = client.clone();
-
-				thread::spawn(move || loop {
-					let metadata = worker.metadata();
-					let version = worker.version();
-					if let Some(metadata) = metadata {
-						loop {
-							match sha3pow::mine(
-								client.as_ref(),
-								&keystore,
-								&metadata.pre_hash,
-								metadata.pre_runtime.as_ref().map(|v| &v[..]),
-								metadata.difficulty,
-							) {
-								Ok(Some(seal)) => {
-									if version == worker.version() {
-										let _ = futures_lite::future::block_on(worker.submit(seal));
-									}
-								},
-								Ok(None) => {},
-								Err(e) => eprintln!("Mining error: {}", e),
-							}
-							if version != worker.version() {
-								break;
+				let mining_metrics = mining_metrics.clone();
+				thread::spawn(move || {
+					let mut count = 0;
+					loop {
+						let metadata = worker.metadata();
+						let version = worker.version();
+						if let Some(metadata) = metadata {
+							loop {
+								match sha3pow::mine(
+									client.as_ref(),
+									&keystore,
+									&metadata.pre_hash,
+									metadata.pre_runtime.as_ref().map(|v| &v[..]),
+									metadata.difficulty,
+								) {
+									Ok(Some(seal)) => {
+										if version == worker.version() {
+											let _ =
+												futures_lite::future::block_on(worker.submit(seal));
+										}
+									},
+									Ok(None) => {
+										count += 1;
+									},
+									Err(e) => eprintln!("Mining error: {}", e),
+								}
+								if count >= 1_000_000 {
+									mining_metrics.add(count);
+									count = 0;
+								}
+								if version != worker.version() {
+									break;
+								}
 							}
 						}
-					} else {
-						thread::sleep(Duration::from_millis(500));
 					}
 				});
 			}
