@@ -32,21 +32,36 @@ pub trait CreditcoinApi<BlockHash> {
 
 	#[pubsub(subscription = "events", unsubscribe, name = "creditcoin_eventsUnsubscribe")]
 	fn events_unsubscribe(&self, _: Option<Self::Metadata>, _: SubscriptionId) -> RpcResult<bool>;
+
+	#[rpc(name = "creditcoin_hashrate")]
+	fn mining_stats(&self) -> RpcResult<MiningStats>;
 }
 
 pub struct CreditcoinRpc<C, P, B> {
 	client: Arc<C>,
 	backend: Arc<B>,
+	mining_metrics: primitives::metrics::MiningMetrics,
 	manager: SubscriptionManager,
 	_marker: PhantomData<P>,
 }
 
 impl<C, P, B> CreditcoinRpc<C, P, B> {
-	pub fn new<E>(client: Arc<C>, backend: Arc<B>, executor: Arc<E>) -> Self
+	pub fn new<E>(
+		client: Arc<C>,
+		backend: Arc<B>,
+		executor: Arc<E>,
+		mining_metrics: primitives::metrics::MiningMetrics,
+	) -> Self
 	where
 		E: futures::task::Spawn + Send + Sync + 'static,
 	{
-		Self { client, backend, manager: SubscriptionManager::new(executor), _marker: PhantomData }
+		Self {
+			client,
+			backend,
+			manager: SubscriptionManager::new(executor),
+			_marker: PhantomData,
+			mining_metrics,
+		}
 	}
 }
 
@@ -169,4 +184,18 @@ where
 	fn events_unsubscribe(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> RpcResult<bool> {
 		Ok(self.manager.cancel(id))
 	}
+
+	fn mining_stats(&self) -> RpcResult<MiningStats> {
+		let hash_count = self.mining_metrics.count();
+		let elapsed = self.mining_metrics.elapsed();
+		let rate = hash_count as f64 / elapsed.as_secs_f64();
+		Ok(MiningStats { hash_count, elapsed, rate })
+	}
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MiningStats {
+	hash_count: u64,
+	elapsed: std::time::Duration,
+	rate: f64,
 }

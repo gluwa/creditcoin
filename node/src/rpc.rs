@@ -28,6 +28,8 @@ pub struct FullDeps<C, P, B, E> {
 	pub executor: Arc<E>,
 	/// Whether to deny unsafe calls.
 	pub deny_unsafe: DenyUnsafe,
+	/// Metrics about mining.
+	pub mining_metrics: primitives::metrics::MiningMetrics,
 }
 
 /// Instantiate all full RPC extensions.
@@ -51,13 +53,18 @@ where
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 
 	let mut io = jsonrpc_core::IoHandler::default();
-	let FullDeps { client, pool, deny_unsafe, backend, executor } = deps;
+	let FullDeps { client, pool, deny_unsafe, backend, executor, mining_metrics } = deps;
 
 	io.extend_with(SystemApi::to_delegate(FullSystem::new(client.clone(), pool, deny_unsafe)));
 
 	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client.clone())));
 
-	io.extend_with(CreditcoinApi::to_delegate(CreditcoinRpc::new(client, backend, executor)));
+	io.extend_with(CreditcoinApi::to_delegate(CreditcoinRpc::new(
+		client,
+		backend,
+		executor,
+		mining_metrics,
+	)));
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
