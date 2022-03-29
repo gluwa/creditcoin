@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@polkadot/api": "^7.14.3",
-    "@polkadot/typegen": "^7.12.1",
+    "@polkadot/typegen": "^7.14.3",
     "js-guid": "^1.0.0"
   },
   "devDependencies": {
