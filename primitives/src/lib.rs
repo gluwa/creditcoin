@@ -4,30 +4,31 @@ use sp_core::U256;
 
 pub type Difficulty = U256;
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "prometheus"))]
 pub mod metrics {
-	use std::sync::atomic::AtomicU64;
 	use std::sync::Arc;
+	use substrate_prometheus_endpoint::{prometheus::IntCounter, PrometheusError, Registry};
+
 	#[derive(Clone)]
 	pub struct MiningMetrics {
 		inner: Arc<MiningMetricsInner>,
 	}
 
 	impl MiningMetrics {
-		pub fn new() -> Self {
-			MiningMetrics { inner: Arc::new(MiningMetricsInner::new()) }
+		pub fn new(registry: Option<&Registry>) -> Result<Self, PrometheusError> {
+			Ok(MiningMetrics { inner: Arc::new(MiningMetricsInner::register(registry)?) })
 		}
 
 		pub fn inc(&self) {
-			self.inner.count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+			self.inner.count.inc();
 		}
 
 		pub fn add(&self, count: u64) {
-			self.inner.count.fetch_add(count, std::sync::atomic::Ordering::Relaxed);
+			self.inner.count.inc_by(count);
 		}
 
 		pub fn count(&self) -> u64 {
-			self.inner.count.load(std::sync::atomic::Ordering::Relaxed)
+			self.inner.count.get()
 		}
 
 		pub fn elapsed(&self) -> std::time::Duration {
@@ -36,13 +37,29 @@ pub mod metrics {
 	}
 
 	pub struct MiningMetricsInner {
-		count: AtomicU64,
+		count: IntCounter,
 		start: std::time::Instant,
 	}
 
 	impl MiningMetricsInner {
-		fn new() -> Self {
-			MiningMetricsInner { count: AtomicU64::new(0), start: std::time::Instant::now() }
+		fn register(registry: Option<&Registry>) -> Result<Self, PrometheusError> {
+			Ok(MiningMetricsInner {
+				count: if let Some(registry) = registry {
+					substrate_prometheus_endpoint::register(
+						IntCounter::new(
+							"creditcoin_node_hash_count",
+							"number of hashes produced by the node while mining",
+						)?,
+						registry,
+					)?
+				} else {
+					IntCounter::new(
+						"creditcoin_node_hash_count",
+						"number of hashes produced by the node while mining",
+					)?
+				},
+				start: std::time::Instant::now(),
+			})
 		}
 	}
 }
