@@ -410,6 +410,9 @@ pub mod pallet {
 
 		/// The value of the loan term's maturity is zero, which is invalid.
 		InvalidMaturity,
+
+		/// The external address is malformed or otherwise invalid for the platform.
+		MalformedExternalAddress,
 	}
 
 	#[pallet::genesis_config]
@@ -546,6 +549,11 @@ pub mod pallet {
 			ensure!(
 				!Addresses::<T>::contains_key(&address_id),
 				Error::<T>::AddressAlreadyRegistered
+			);
+
+			ensure!(
+				helpers::address_is_well_formed(&blockchain, &address),
+				Error::<T>::MalformedExternalAddress
 			);
 
 			let entry = Address { blockchain, value: address, owner: who };
