@@ -1,16 +1,60 @@
-import { ApiPromise, Keyring, WsProvider, } from '@polkadot/api';
-import {handleTransaction, } from '../utils';
+import { ApiPromise, SubmittableResult } from '@polkadot/api';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { handleTransaction, TxOnFail, TxOnSuccess } from '../utils';
+import { GenericEventData } from '@polkadot/types/';
+import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 
-export const registerAddress = async () => {
-    const provider = new WsProvider('ws://localhost:9944');
-    const api = await ApiPromise.create({ provider });
+type Blockchain = 'Ethereum' | 'Rinkeby' | 'Luniverse' | 'Bitcoin' | 'Other';
 
-    const keyring = new Keyring({ type: `sr25519` });
-    const bob = keyring.addFromUri('//Bob', { name: 'Bob' });
+type Address = {
+    accountId: string;
+    blockchain: Blockchain;
+    externalAddress: string;
+};
 
-    const unsubscribe : () => void = await api.tx.creditcoin
-        .registerAddress('Ethereum', '0x3C6a6762f969B36bb1a6DBD598A5DC9800284D77')
-        //the nonce can be set manually when sending a transaction 
-        //using {nonce:-1} will get the next nonce, including transactions in the transaction pool
-        .signAndSend(bob, { nonce: -1 }, ((result) => handleTransaction(api,unsubscribe,result)));
-}
+type RegisteredAddress = {
+    addressId: string;
+    address: Address;
+};
+
+export const registerAddress = async (
+    api: ApiPromise,
+    externalAddress: string,
+    blockchain: string,
+    signer: KeyringPair,
+    onSuccess: TxOnSuccess,
+    onFail: TxOnFail,
+) => {
+    const unsubscribe: () => void = await api.tx.creditcoin
+        .registerAddress(blockchain, externalAddress)
+        .signAndSend(signer, { nonce: -1 }, (result) => handleTransaction(api, unsubscribe, result, onSuccess, onFail));
+};
+
+const processRegisteredAddress = (api: ApiPromise, result: SubmittableResult): RegisteredAddress | undefined => {
+    const { events } = result;
+    const addressRegistered = events.find(({ event }) => event.method == 'AddressRegistered');
+
+    const getData = (data: GenericEventData) => {
+        const addressId = data[0].toString();
+        const { owner, value, blockchain } = api.createType<PalletCreditcoinAddress>(
+            'PalletCreditcoinAddress',
+            data[1],
+        );
+        const address = { accountId: owner.toString(), blockchain: blockchain.type, externalAddress: value.toString() };
+        return { addressId, address };
+    };
+    return addressRegistered && getData(addressRegistered.event.data);
+};
+
+export const registerAddressAsync = async (
+    api: ApiPromise,
+    externalAddress: string,
+    blockchain: string,
+    signer: KeyringPair,
+) => {
+    return new Promise<RegisteredAddress | undefined>(async (resolve) => {
+        const onFail = () => resolve(undefined);
+        const onSuccess = (result: SubmittableResult) => resolve(processRegisteredAddress(api, result));
+        await registerAddress(api, externalAddress, blockchain, signer, onSuccess, onFail);
+    });
+};
