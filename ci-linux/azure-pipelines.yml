@@ -17,7 +17,7 @@ resources:
 - repo: self
 
 variables:
-  dockerfilePath: '$(Build.SourcesDirectory)/ci-linux/ci-build.Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/../ci-linux/ci-build.Dockerfile'
   registryName: 'gluwa/ci-linux'
   DOCKER_BUILDKIT: 1
 
