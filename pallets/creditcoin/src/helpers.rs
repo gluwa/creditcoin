@@ -1,3 +1,7 @@
+mod external_address;
+
+pub use external_address::address_is_well_formed;
+
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
