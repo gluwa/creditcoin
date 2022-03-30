@@ -1,7 +1,8 @@
 use crate::{
 	mock::*, types::DoubleMapExt, AddressId, AskOrder, AskOrderId, Authorities, BidOrder,
-	BidOrderId, Blockchain, DealOrder, DealOrderId, DealOrders, ExternalAmount, Guid, Id,
-	LegacySighash, LoanTerms, Offer, OfferId, OrderId, TransferId, TransferKind, Transfers,
+	BidOrderId, Blockchain, DealOrder, DealOrderId, DealOrders, ExternalAddress, ExternalAmount,
+	Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, TransferId, TransferKind,
+	Transfers,
 };
 use bstr::B;
 use codec::{Decode, Encode};
@@ -44,7 +45,7 @@ impl RegisteredAddress {
 		blockchain: Blockchain,
 	) -> RegisteredAddress {
 		let account_id = public_key.into().into_account();
-		let address = account_id.to_string().as_bytes().into_bounded();
+		let address = "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB".as_bytes().into_bounded();
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(account_id.clone()),
@@ -53,9 +54,8 @@ impl RegisteredAddress {
 		));
 		RegisteredAddress { account_id, address_id }
 	}
-	pub fn new(i: u8, blockchain: Blockchain) -> RegisteredAddress {
+	pub fn new(address: ExternalAddress, i: u8, blockchain: Blockchain) -> RegisteredAddress {
 		let account_id = AccountId::new([i; 32]);
-		let address = i.to_string().as_bytes().into_bounded();
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(account_id.clone()),
@@ -88,14 +88,18 @@ pub struct TestInfo {
 
 impl TestInfo {
 	pub fn new_defaults() -> TestInfo {
-		let lender = RegisteredAddress::new(0, Blockchain::Rinkeby);
-		let borrower = RegisteredAddress::new(1, Blockchain::Rinkeby);
+		let address1 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".as_bytes().into_bounded();
+		let address2 = "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359".as_bytes().into_bounded();
+		let lender = RegisteredAddress::new(address1, 1, Blockchain::Rinkeby);
+		let borrower = RegisteredAddress::new(address2, 2, Blockchain::Rinkeby);
 		let blockchain = Blockchain::Rinkeby;
+
 		let loan_terms = LoanTerms {
 			amount: ExternalAmount::from(1_000_0000u64),
 			interest_rate: 1,
 			maturity: 1_000_000,
 		};
+
 		let ask_guid = "ask_guid".as_bytes().into_bounded();
 		let bid_guid = "bid_guid".as_bytes().into_bounded();
 		let expiration_block = 1_000;
@@ -186,7 +190,7 @@ fn register_address_basic() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: AccountId = AccountId::new([0; 32]);
 		let blockchain = Blockchain::Rinkeby;
-		let value = B("someaddressvalue").into_bounded();
+		let value = B("0x52908400098527886E0F7030069857D2E4169EE7").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
 			blockchain.clone(),
@@ -204,7 +208,7 @@ fn register_address_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
 		let blockchain = Blockchain::Rinkeby;
-		let address = B("someaddressvalue").into_bounded();
+		let address = B("0x52908400098527886E0F7030069857D2E4169EE7").into_bounded();
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(acct.clone()),
 			blockchain.clone(),
@@ -939,11 +943,13 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 		// this is the primary deal_order
 		let test_info = TestInfo::new_defaults();
 		let (_, deal_order_id) = test_info.create_deal_order();
+		let address1 = "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB".as_bytes().into_bounded();
+		let address2 = "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb".as_bytes().into_bounded();
 
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(100, Blockchain::Rinkeby),
-			borrower: RegisteredAddress::new(200, Blockchain::Rinkeby),
+			lender: RegisteredAddress::new(address1, 100, Blockchain::Rinkeby),
+			borrower: RegisteredAddress::new(address2, 200, Blockchain::Rinkeby),
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
@@ -1277,7 +1283,11 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 			..TestInfo::new_defaults()
 		};
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(111, Blockchain::Rinkeby),
+			lender: RegisteredAddress::new(
+				"0x8617E340B3D01FA5F11F306F4090FD50E238070D".as_bytes().into_bounded(),
+				111,
+				Blockchain::Rinkeby,
+			),
 			..test_info.clone()
 		};
 		let message = test_info.get_register_deal_msg();
@@ -1305,7 +1315,11 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 	ExtBuilder::default().build_and_execute(|| {
 		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
 		let test_info = TestInfo {
-			lender: RegisteredAddress::new(111, Blockchain::Ethereum),
+			lender: RegisteredAddress::new(
+				"0x8617E340B3D01FA5F11F306F4090FD50E238070D".as_bytes().into_bounded(),
+				111,
+				Blockchain::Ethereum,
+			),
 			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
 			..TestInfo::new_defaults()
 		};
@@ -1754,10 +1768,12 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 			},
 		);
 
+		let address1 = "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB".as_bytes().into_bounded();
+		let address2 = "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb".as_bytes().into_bounded();
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(100, Blockchain::Rinkeby),
-			borrower: RegisteredAddress::new(200, Blockchain::Rinkeby),
+			lender: RegisteredAddress::new(address1, 100, Blockchain::Rinkeby),
+			borrower: RegisteredAddress::new(address2, 200, Blockchain::Rinkeby),
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
@@ -2124,10 +2140,12 @@ fn exempt_should_error_when_transfer_order_id_doesnt_match_deal_order_id() {
 		let test_info = TestInfo::new_defaults();
 		let (_, deal_order_id) = test_info.create_deal_order();
 
+		let address1 = "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB".as_bytes().into_bounded();
+		let address2 = "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb".as_bytes().into_bounded();
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(100, Blockchain::Rinkeby),
-			borrower: RegisteredAddress::new(200, Blockchain::Rinkeby),
+			lender: RegisteredAddress::new(address1, 100, Blockchain::Rinkeby),
+			borrower: RegisteredAddress::new(address2, 200, Blockchain::Rinkeby),
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
