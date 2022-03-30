@@ -1,5 +1,5 @@
 #Build the image and tag it creditcoin/ci-linux:production
-FROM debian:bullseye-slim
+FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get install -y \
