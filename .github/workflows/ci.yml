@@ -187,11 +187,7 @@ jobs:
           sudo apt-get install -y nodejs
           sudo npm install -g yarn
 
-          # workaround the fact that test-suite depends on examples
-          # which are configured in the next step!
-          pushd java-script/ && yarn install && popd
-
-          pushd integration-tests/
+          pushd java-script/
 
           # prepare typescript environment and wait for creditcoin-node to initialize
           ./prepare-devel-env.sh
@@ -202,9 +198,9 @@ jobs:
 
       - name: Execute examples
         run: |
+          # environment has already been prepared above
           pushd java-script/
 
-          yarn install
           yarn start
 
           popd
