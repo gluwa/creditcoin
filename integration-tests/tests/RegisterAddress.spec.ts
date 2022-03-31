@@ -4,8 +4,7 @@
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { randomEthAddress } from '../../polkadotjs-examples/src/utils';
 
-const CREDO_PER_CTC = 1_000_000_000_000_000_000;
-const POINT_01_CTC = 0.01 * CREDO_PER_CTC;
+import { CREDO_PER_CTC } from '../src/constants';
 
 describe('RegisterAddress', (): void => {
     let api;
