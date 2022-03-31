@@ -189,7 +189,7 @@ jobs:
 
           # workaround the fact that test-suite depends on examples
           # which are configured in the next step!
-          pushd polkadotjs-examples/ && yarn install && popd
+          pushd java-script/ && yarn install && popd
 
           pushd integration-tests/
 
@@ -202,7 +202,7 @@ jobs:
 
       - name: Execute examples
         run: |
-          pushd polkadotjs-examples/
+          pushd java-script/
 
           yarn install
           yarn start
