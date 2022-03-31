@@ -13,7 +13,7 @@ For more information, see [creditcoin.org](https://creditcoin.org), or read the 
 - [Miner Setup](./docs/miner-setup.md)
 - [Legacy Account Migration](./docs/legacy-account-migration.md)
 - [Using PolkadotJs](./docs/using-polkadotjs.md)
-- [PolkadotJs Example Project](./polkadotjs-examples)
+- [PolkadotJs Example Project](./javascript)
 
 ## Developer Setup
 
