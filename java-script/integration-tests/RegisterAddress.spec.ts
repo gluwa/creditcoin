@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
-import { randomEthAddress } from '../../polkadotjs-examples/src/utils';
 
 import { CREDO_PER_CTC } from '../src/constants';
+import { randomEthAddress } from '../src/utils';
 
 describe('RegisterAddress', (): void => {
     let api;
