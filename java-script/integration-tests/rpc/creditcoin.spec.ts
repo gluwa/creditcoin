@@ -3,7 +3,8 @@
 import { WebSocket } from 'ws';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Vec } from '@polkadot/types-codec';
-import type { PalletCreditcoinAskOrderId, Transfer } from '../../../src/interfaces/lookup';
+
+import type { PalletCreditcoinAskOrderId, Transfer } from '../../src/interfaces/lookup';
 
 describe('Creditcoin RPC', (): void => {
   let api: ApiPromise;
