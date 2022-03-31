@@ -5,17 +5,16 @@ import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { PalletCreditcoinLoanTerms } from '@polkadot/types/lookup';
 import { Guid } from 'js-guid';
 
-import { randomEthAddress } from '../../polkadotjs-examples/src/utils';
-import { registerAddressAsync } from '../../polkadotjs-examples/src/examples/register-address';
-
 import { POINT_01_CTC } from '../src/constants';
+import { randomEthAddress } from '../src/utils';
+import { registerAddressAsync } from '../src/examples/register-address';
 
-describe('AddAskOrder', (): void => {
+describe('AddBidOrder', (): void => {
     let api;
-    let lender;
+    let borrower;
     let loanTerms;
-    let lenderRegAddr;
-    let askGuid;
+    let borrowerRegAddr;
+    let bidGuid;
 
     const blockchain = 'Ethereum';
     const expirationBlock = 5;
@@ -28,18 +27,18 @@ describe('AddAskOrder', (): void => {
         api = await ApiPromise.create({ provider });
 
         const keyring = new Keyring({ type: `sr25519` });
-        lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthAddress();
+        borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+        const borrowerAddress = randomEthAddress();
         loanTerms = api.createType<PalletCreditcoinLoanTerms>('PalletCreditcoinLoanTerms', {
             amount: 1_000,
             interestRate: 100,
             maturity: 10,
         });
 
-        lenderRegAddr = await registerAddressAsync(api, lenderAddress, blockchain, lender);
-        expect(lenderRegAddr?.addressId).toBeTruthy();
+        borrowerRegAddr = await registerAddressAsync(api, borrowerAddress, blockchain, borrower);
+        expect(borrowerRegAddr?.addressId).toBeTruthy();
 
-        askGuid = Guid.newGuid().toString();
+        bidGuid = Guid.newGuid().toString();
     });
 
     afterEach(async () => {
@@ -49,8 +48,8 @@ describe('AddAskOrder', (): void => {
     it('fee is min 0.01 CTC', (): void => {
         return new Promise(async (resolve) => {
             const unsubscribe = await api.tx.creditcoin
-                .addAskOrder(lenderRegAddr?.addressId, loanTerms, expirationBlock, askGuid)
-                .signAndSend(lender, {nonce: -1}, ({ status, events, dispatchError }) => {
+                .addBidOrder(borrowerRegAddr?.addressId, loanTerms, expirationBlock, bidGuid)
+                .signAndSend(borrower, {nonce: -1}, ({ status, events, dispatchError }) => {
 
                     if (status.isInBlock) {
                         let balances_Withdraw = events.find(({
