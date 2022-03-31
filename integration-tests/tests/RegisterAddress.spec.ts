@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
+import { randomEthAddress } from '../../polkadotjs-examples/src/utils';
 
 const CREDO_PER_CTC = 1_000_000_000_000_000_000;
 const POINT_01_CTC = 0.01 * CREDO_PER_CTC;
@@ -28,7 +29,7 @@ describe('RegisterAddress', (): void => {
     it('fee is min 0.01 CTC', (): void => {
         return new Promise(async (resolve) => {
             const unsubscribe = await api.tx.creditcoin
-                .registerAddress('Ethereum', '0x3C6a6762f969B36bb1a6DBD598A5DC9800284D77')
+                .registerAddress('Ethereum', randomEthAddress())
                 .signAndSend(alice, {nonce: -1}, ({ status, events, dispatchError }) => {
 
                     if (status.isInBlock) {
