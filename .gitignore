@@ -18,5 +18,3 @@
 **/package-lock.json
 **/yarn.lock
 **/node_modules/
-**/creditcoin.json
-**/src/interfaces/*.ts
