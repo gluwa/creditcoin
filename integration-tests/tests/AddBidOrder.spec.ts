@@ -8,8 +8,7 @@ import { Guid } from 'js-guid';
 import { randomEthAddress } from '../../polkadotjs-examples/src/utils';
 import { registerAddressAsync } from '../../polkadotjs-examples/src/examples/register-address';
 
-const CREDO_PER_CTC = 1_000_000_000_000_000_000;
-const POINT_01_CTC = 0.01 * CREDO_PER_CTC;
+import { POINT_01_CTC } from '../src/constants';
 
 describe('AddBidOrder', (): void => {
     let api;
