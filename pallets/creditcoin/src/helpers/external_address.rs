@@ -148,6 +148,8 @@ fn eth_address_checksum_valid(address: &[u8]) -> bool {
 
 #[cfg(test)]
 mod tests {
+	use frame_support::BoundedVec;
+
 	use super::*;
 	#[test]
 	fn eth_address_is_checksummed_works() {
@@ -240,5 +242,51 @@ mod tests {
 		assert!(!btc_address_is_well_formed(
 			b"tc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vq5zuyut"
 		));
+	}
+
+	#[test]
+	fn btc_address_invalid_utf8() {
+		assert!(!btc_address_is_well_formed(b"bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5\xc3\x28"))
+	}
+
+	#[test]
+	fn btc_address_too_short() {
+		// successfully base58 decodes, but is too short
+		assert!(!btc_address_is_well_formed(b"1A1zi2DMPTfTL5SLmv7DivfNa"))
+	}
+
+	#[test]
+	fn eth_address_bad_format() {
+		// missing 0x prefix
+		assert!(!eth_address_is_well_formed(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"));
+
+		// too short
+		assert!(!eth_address_is_well_formed(b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1B"));
+		assert!(!eth_address_checksum_valid(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1B"));
+		assert!(eth_address_checksum(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1B").is_none());
+
+		// too long
+		assert!(!eth_address_is_well_formed(b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedbeef"));
+		assert!(!eth_address_checksum_valid(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedbeef"));
+		assert!(eth_address_checksum(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedbeef").is_none());
+	}
+
+	#[test]
+	fn address_is_well_formed_works() {
+		let ethereum = Blockchain::Ethereum;
+		let bitcoin = Blockchain::Bitcoin;
+		let rinkeby = Blockchain::Rinkeby;
+		let luniverse = Blockchain::Luniverse;
+		let other = Blockchain::Other(BoundedVec::try_from(b"other".to_vec()).unwrap());
+
+		let eth_addr = b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_vec().try_into().unwrap();
+		let btc_addr = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_vec().try_into().unwrap();
+
+		assert!(address_is_well_formed(&ethereum, &eth_addr));
+		assert!(address_is_well_formed(&rinkeby, &eth_addr));
+		assert!(address_is_well_formed(&luniverse, &eth_addr));
+		assert!(address_is_well_formed(&bitcoin, &btc_addr));
+		assert!(address_is_well_formed(&other, &eth_addr));
+		assert!(address_is_well_formed(&other, &btc_addr));
 	}
 }
