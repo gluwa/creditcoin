@@ -13,7 +13,7 @@
     "homepage": "https://github.com/gluwa/creditcoin-substrate#readme",
     "packageManager": "yarn@3.2.0",
     "scripts": {
-        "start": "npx ts-node -O '{\"module\":\"commonjs\"}' ./src/index.ts",
+        "start": "ts-node -O '{\"module\":\"commonjs\"}' ./src/index.ts",
         "lint": "tsc --noEmit --pretty",
         "test": "polkadot-dev-run-test --forceExit --runInBand",
         "build:types": "yarn generate:defs && yarn generate:meta",
