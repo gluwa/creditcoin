@@ -1,5 +1,4 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
-import { randomBytes } from 'crypto';
 import { u8aConcat } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { PalletCreditcoinBlockchain } from '@polkadot/types/lookup';
@@ -50,7 +49,5 @@ export const getAddressId = (blockchain: PalletCreditcoinBlockchain | string, ex
 };
 
 export const randomEthAddress = () => {
-    const id = randomBytes(32).toString('hex');
-    const wallet = new Wallet('0x' + id);
-    return wallet.address;
+    return Wallet.createRandom().address;
 };
