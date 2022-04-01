@@ -222,6 +222,19 @@ fn register_address_pre_existing() {
 	})
 }
 
+#[test]
+fn register_address_malformed_address() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
+		let blockchain = Blockchain::Rinkeby;
+		let address = B("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").into_bounded();
+		assert_noop!(
+			Creditcoin::register_address(Origin::signed(acct.clone()), blockchain, address),
+			crate::Error::<Test>::MalformedExternalAddress
+		);
+	})
+}
+
 const ETHLESS_RESPONSES: &[u8] = include_bytes!("tests/ethlessTransfer.json");
 
 #[test]
