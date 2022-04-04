@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: The Unlicense
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { Balance } from '@polkadot/types/interfaces';
 
 import { CREDO_PER_CTC } from '../src/constants';
 import { randomEthAddress } from '../src/utils';
 
 describe('RegisterAddress', (): void => {
-  let api;
-  let alice;
+  let api: ApiPromise;
+  let alice: KeyringPair;
 
   beforeEach(async () => {
     process.env.NODE_ENV = 'test';
@@ -26,28 +28,38 @@ describe('RegisterAddress', (): void => {
     await api.disconnect();
   });
 
-  it('fee is min 0.01 CTC', (): void => {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await api.tx.creditcoin
+  it('fee is min 0.01 CTC', async (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const unsubscribe = api.tx.creditcoin
         .registerAddress('Ethereum', randomEthAddress())
-        .signAndSend(alice, { nonce: -1 }, ({ dispatchError, events, status }) => {
+        .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
           expect(dispatchError).toBeFalsy();
 
           if (status.isInBlock) {
-            const balancesWithdraw = events.find(({ event: { method,
-              section } }) => {
+            const balancesWithdraw = events.find(({ event: { method, section } }) => {
               return section === 'balances' && method === 'Withdraw';
             });
 
             expect(balancesWithdraw).toBeTruthy();
 
             // const accountId = balancesWithdraw.event.data[0].toString();
-            const fee = balancesWithdraw.event.data[1].toBigInt();
+            if (balancesWithdraw) {
+              const fee = (balancesWithdraw.event.data[1] as Balance).toBigInt();
 
-            unsubscribe();
-            resolve(fee);
+              const unsub = await unsubscribe;
+
+              if (typeof unsub === 'function') {
+                unsub();
+                resolve(fee);
+              } else {
+                reject(new Error('Subscription failed'));
+              }
+            } else {
+              reject(new Error("Fee wasn't found"));
+            }
           }
-        });
+        })
+        .catch((error) => reject(error));
     }).then((fee) => {
       // temporary workaround b/c the actual fee is 0.009 CTC
       expect(fee).toBeGreaterThanOrEqual(0.009 * CREDO_PER_CTC);
