@@ -12,7 +12,6 @@ use super::{
 	ExternalAddress, ExternalAmount, ExternalTxId, OrderId,
 };
 use alloc::string::String;
-use core::str::FromStr;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::U64;
 use frame_support::ensure;
@@ -52,14 +51,8 @@ impl Blockchain {
 const ETH_CONFIRMATIONS: u64 = 12;
 
 fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> {
-	let address = core::str::from_utf8(address).map_err(|err| {
-		log::error!("ethless address {:?} is not valid utf8: {}", address, err);
-		OffchainError::InvalidTransfer("ethless address is invalid utf8")
-	})?;
-	let address = rpc::Address::from_str(address).map_err(|err| {
-		log::error!("ethless address {:?} is not valid hex: {}", address, err);
-		OffchainError::InvalidTransfer("ethless address is invalid hex")
-	})?;
+	let address_bytes = <[u8; 20]>::try_from(address.as_slice()).map_err(|_| OffchainError::InvalidTransfer("ethless transfer address is not 20 bytes"))?;
+	let address = rpc::Address::from(address_bytes);
 	Ok(address)
 }
 
@@ -306,11 +299,12 @@ mod tests {
 
 	#[test]
 	fn eth_address_valid() {
-		let address_str = "0xb794f5ea0ba39494ce839613fffba74279579268";
+		let address_str = "b794f5ea0ba39494ce839613fffba74279579268";
+		let address_bytes = hex::decode(address_str).unwrap();
 		let address: ExternalAddress =
-			BoundedVec::try_from(address_str.as_bytes().to_vec()).unwrap();
+			BoundedVec::try_from(address_bytes.clone()).unwrap();
 
-		let expected = H160::from_str(address_str).unwrap();
+		let expected = H160::from(<[u8; 20]>::try_from(address_bytes).unwrap());
 		assert_ok!(parse_eth_address(&address).map_err(|_| ()), expected);
 	}
 
