@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: The Unlicense
 
 import { WebSocket } from 'ws';
-
 import { ApiPromise, WsProvider } from '@polkadot/api';
 
 describe('Creditcoin RPC', (): void => {
@@ -25,8 +24,19 @@ describe('Creditcoin RPC', (): void => {
                 type: 'Hash',
               },
             ],
+            description: 'Get events in a json format',
             type: 'Vec<Json>',
-            description: 'Get events in the given back in a JSON format',
+          },
+          eventsSubscribe: {
+            params: [],
+            description: 'Subscribe to events',
+            type: 'Subscription<Json>',
+            pubsub: ['events', 'eventsSubscribe', 'eventsUnsubscribe'],
+          },
+          hashrate: {
+            params: [],
+            description: 'Get hashrate',
+            type: 'Json',
           },
         },
       },
@@ -55,7 +65,6 @@ describe('Creditcoin RPC', (): void => {
 
     ws.on('open', () => {
       const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
-
       ws.send(JSON.stringify(rpc));
     })
       .on('message', (data) => {
@@ -67,7 +76,6 @@ describe('Creditcoin RPC', (): void => {
         } else {
           // assert at least one message is received
           const data = JSON.parse(utf8Str);
-
           expect(data).toBeTruthy();
           ws.close();
         }
@@ -83,7 +91,6 @@ describe('Creditcoin RPC', (): void => {
 
     ws.on('open', () => {
       const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
-
       ws.send(JSON.stringify(rpc));
     })
       .on('message', (data) => {
@@ -119,7 +126,6 @@ describe('Creditcoin RPC', (): void => {
 
     ws.on('open', () => {
       const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
-
       ws.send(JSON.stringify(rpc));
     })
       .on('message', (data) => {
@@ -146,5 +152,24 @@ describe('Creditcoin RPC', (): void => {
         }
       })
       .on('close', () => done());
+  });
+
+  it('hashrate() should return a valid hashrate', async () => {
+    type HashrateStats = {
+      elapsed: Elapsed;
+      hash_count: number;
+      rate: number;
+    };
+
+    type Elapsed = {
+      nanos: number;
+      secs: number;
+    };
+    const rate = await (api.rpc as any).creditcoin.hashrate();
+    const rateObj: HashrateStats = JSON.parse(rate);
+    expect(rateObj.rate).toBeGreaterThan(0);
+    expect(rateObj.elapsed.secs).toBeGreaterThan(0);
+    expect(rateObj.elapsed.nanos).toBeGreaterThan(0);
+    expect(rateObj.hash_count).toBeGreaterThan(0);
   });
 });
