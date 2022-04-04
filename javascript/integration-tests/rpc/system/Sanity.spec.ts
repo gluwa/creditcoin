@@ -18,16 +18,14 @@ describe('System RPC sanity test', (): void => {
     await api.disconnect();
   });
 
-  it('rpc.system.chain() works', (): void => {
-    return api.rpc.system.chain().then((result) => {
-      expect(result.toString()).toBe('Development');
-    });
+  it('rpc.system.chain() works', async (): Promise<void> => {
+    const result = await api.rpc.system.chain();
+    expect(result.toString()).toBe('Development');
   });
 
-  it('rpc.system.name() works', (): void => {
-    return api.rpc.system.name().then((result) => {
-      expect(result.toString()).toBe('Creditcoin Node');
-    });
+  it('rpc.system.name() works', async (): Promise<void> => {
+    const result = await api.rpc.system.name();
+    expect(result.toString()).toBe('Creditcoin Node');
   });
 
   it('rpc.system.version() works', async (): Promise<void> => {

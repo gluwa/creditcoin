@@ -22,88 +22,14 @@ describe('Creditcoin RPC', (): void => {
               {
                 isOptional: true,
                 name: 'at',
-                type: 'Hash'
-              }
+                type: 'Hash',
+              },
             ],
-            type: 'Vec<friendly__Event>'
-          }
-        }
+            type: 'Vec<Json>',
+            description: 'Get events in the given back in a JSON format',
+          },
+        },
       },
-      types: {
-        // WARNING: copied from node/rpc/src/friendly.rs
-        // Will crash if we receive an event whose data type isn't defined here
-        // or references other unknown data types
-        friendly__Event: {
-          _enum: {
-            addressRegistered: {
-              address: 'Address<AccountId>',
-              address_id: 'AddressId<Hash>'
-            },
-            askOrderAdded: {
-              ask: 'AskOrder<AccountId, BlockNumber, Hash, Moment>',
-              ask_id: 'AskOrderId<BlockNumber, Hash>'
-            },
-            bidOrderAdded: {
-              bid: 'BidOrder<AccountId, BlockNumber, Hash, Moment>',
-              bid_id: 'BidOrderId<BlockNumber, Hash>'
-            },
-            ctcDeposit: {
-              amount: String,
-              into: 'AccountId'
-            },
-            ctcTransfer: {
-              amount: String,
-              from: 'AccountId',
-              to: 'AccountId'
-            },
-            ctcWithdraw: {
-              amount: String,
-              from: 'AccountId'
-            },
-            dealOrderAdded: {
-              deal: 'DealOrder<AccountId, BlockNumber, Hash, Moment>',
-              deal_id: 'DealOrderId<BlockNumber, Hash>'
-            },
-            dealOrderClosed: {
-              deal: 'DealOrder<AccountId, BlockNumber, Hash, Moment>',
-              deal_id: 'DealOrderId<BlockNumber, Hash>'
-            },
-            dealOrderFunded: {
-              deal: 'DealOrder<AccountId, BlockNumber, Hash, Moment>',
-              deal_id: 'DealOrderId<BlockNumber, Hash>'
-            },
-            legacyWalletClaimed: {
-              claimed_balance: String,
-              legacy_sighash: 'LegacySighash',
-              new_account_id: 'AccountId'
-            },
-            loanExempted: {
-              deal_id: 'DealOrderId<BlockNumber, Hash>',
-              exempt_transfer_id: 'TransferId<Hash>'
-            },
-            offerAdded: {
-              offer: 'Offer<AccountId, BlockNumber, Hash>',
-              offer_id: 'OfferId<BlockNumber, Hash>'
-            },
-            rewardIssued: {
-              amount: String,
-              to: 'AccountId'
-            },
-            transferProcessed: {
-              transfer: 'Transfer<AccountId, BlockNumber, Hash>',
-              transfer_id: 'TransferId<Hash>'
-            },
-            transferRegistered: {
-              transfer: 'Transfer<AccountId, BlockNumber, Hash>',
-              transfer_id: 'TransferId<Hash>'
-            },
-            transferVerified: {
-              transfer: 'Transfer<AccountId, BlockNumber, Hash>',
-              transfer_id: 'TransferId<Hash>'
-            }
-          }
-        }
-      }
     });
   });
 
@@ -112,7 +38,7 @@ describe('Creditcoin RPC', (): void => {
   });
 
   it('getEvents() should return some events', (): void => {
-    return api.rpc.creditcoin.getEvents().then((result) => {
+    return (api.rpc as any).creditcoin.getEvents().then((result: any) => {
       // in case of failures should be easy to spot what went wrong
       console.log(`**** RESULT=${result.toString() as string}`);
 
@@ -124,7 +50,7 @@ describe('Creditcoin RPC', (): void => {
   it('eventsSubscribe() should receive events', (done): void => {
     expect.assertions(1);
 
-    let subscriptionId;
+    let subscriptionId: string;
     const ws = new WebSocket('ws://127.0.0.1:9944');
 
     ws.on('open', () => {
@@ -152,7 +78,7 @@ describe('Creditcoin RPC', (): void => {
   it('eventsUnsubscribe() should return true', (done): void => {
     expect.assertions(1);
 
-    let subscriptionId;
+    let subscriptionId: string;
     const ws = new WebSocket('ws://127.0.0.1:9944');
 
     ws.on('open', () => {
@@ -171,7 +97,7 @@ describe('Creditcoin RPC', (): void => {
             id: 1,
             jsonrpc: '2.0',
             method: 'creditcoin_eventsUnsubscribe',
-            params: [subscriptionId]
+            params: [subscriptionId],
           };
 
           ws.send(JSON.stringify(rpc));
@@ -208,7 +134,7 @@ describe('Creditcoin RPC', (): void => {
             id: 1,
             jsonrpc: '2.0',
             method: 'creditcoin_eventsUnsubscribe',
-            params: ['invalid-id']
+            params: ['invalid-id'],
           };
 
           ws.send(JSON.stringify(rpc));
