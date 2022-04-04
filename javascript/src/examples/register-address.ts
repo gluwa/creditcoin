@@ -16,7 +16,7 @@ type Address = {
   externalAddress: string;
 };
 
-type RegisteredAddress = {
+export type RegisteredAddress = {
   addressId: string;
   address: Address;
 };
@@ -58,10 +58,10 @@ export const registerAddressAsync = async (
   blockchain: string,
   signer: KeyringPair
 ) => {
-  return new Promise<RegisteredAddress | undefined>(async (resolve) => {
+  return new Promise<RegisteredAddress | undefined>((resolve, reject) => {
     const onFail = () => resolve(undefined);
     const onSuccess = (result: SubmittableResult) => resolve(processRegisteredAddress(api, result));
 
-    await registerAddress(api, externalAddress, blockchain, signer, onSuccess, onFail);
+    registerAddress(api, externalAddress, blockchain, signer, onSuccess, onFail).catch((reason) => reject(reason));
   });
 };
