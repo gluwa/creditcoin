@@ -1,5 +1,5 @@
-// [object Object]
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2022 Gluwa, Inc. & contributors
+// SPDX-License-Identifier: The Unlicense
 
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -36,7 +36,7 @@ export const registerAddress = async (
 
 const processRegisteredAddress = (api: ApiPromise, result: SubmittableResult): RegisteredAddress | undefined => {
   const { events } = result;
-  const addressRegistered = events.find(({ event }) => event.method == 'AddressRegistered');
+  const addressRegistered = events.find(({ event }) => event.method === 'AddressRegistered');
 
   const getData = (data: GenericEventData) => {
     const addressId = data[0].toString();
@@ -46,7 +46,7 @@ const processRegisteredAddress = (api: ApiPromise, result: SubmittableResult): R
     );
     const address = { accountId: owner.toString(), blockchain: blockchain.type, externalAddress: value.toString() };
 
-    return { addressId, address };
+    return { address, addressId };
   };
 
   return addressRegistered && getData(addressRegistered.event.data);

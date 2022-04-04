@@ -1,5 +1,5 @@
-// [object Object]
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2022 Gluwa, Inc. & contributors
+// SPDX-License-Identifier: The Unlicense
 
 import { Guid } from 'js-guid';
 
