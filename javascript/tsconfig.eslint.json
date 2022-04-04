@@ -6,9 +6,11 @@
   },
   "include": [
     "**/src/**/*",
-    "**/test/**/*"
+    "**/integration-tests/**/*"
   ],
   "exclude": [
-    "**/node_modules/**/*"
+    "**/node_modules/**/*",
+    "**/src/**/*.d.ts",
+    "**/integration-tests/**/*.d.ts"
   ]
 }
