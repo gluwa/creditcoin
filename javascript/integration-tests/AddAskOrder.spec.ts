@@ -1,13 +1,16 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
+import type { Balance } from '@polkadot/types/interfaces';
+
 import { Guid } from 'js-guid';
 
-import { ApiPromise, Keyring, KeyringPair, WsProvider } from '@polkadot/api';
+import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
+import { KeyringPair } from '@polkadot/keyring/types';
 import { PalletCreditcoinLoanTerms } from '@polkadot/types/lookup';
 
 import { POINT_01_CTC } from '../src/constants';
-import { registerAddressAsync } from '../src/examples/register-address';
+import { registerAddressAsync, RegisteredAddress } from '../src/examples/register-address';
 import { randomEthAddress } from '../src/utils';
 
 describe('AddAskOrder', (): void => {
@@ -15,7 +18,7 @@ describe('AddAskOrder', (): void => {
   let lender: KeyringPair;
   let loanTerms: PalletCreditcoinLoanTerms;
   let lenderRegAddr: RegisteredAddress;
-  let askGuid: Guid;
+  let askGuid: string;
 
   const blockchain = 'Ethereum';
   const expirationBlock = 5;
@@ -38,39 +41,54 @@ describe('AddAskOrder', (): void => {
       maturity: 10
     });
 
-    lenderRegAddr = await registerAddressAsync(api, lenderAddress, blockchain, lender);
-    expect(lenderRegAddr).toBeTruthy();
-    expect(lenderRegAddr.addressId).toBeTruthy();
+    const addr = await registerAddressAsync(api, lenderAddress, blockchain, lender);
 
-    askGuid = Guid.newGuid().toString();
+    expect(addr).toBeTruthy();
+
+    if (addr) {
+      lenderRegAddr = addr;
+      expect(lenderRegAddr.addressId).toBeTruthy();
+      askGuid = Guid.newGuid().toString();
+    } else {
+      throw new Error("Lender address wasn't registered successfully");
+    }
   });
 
   afterEach(async () => {
     await api.disconnect();
   });
 
-  it('fee is min 0.01 CTC', (): void => {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await api.tx.creditcoin
+  it('fee is min 0.01 CTC', async (): Promise<void> => {
+    return new Promise((resolve, reject): void => {
+      const unsubscribe = api.tx.creditcoin
         .addAskOrder(lenderRegAddr.addressId, loanTerms, expirationBlock, askGuid)
-        .signAndSend(lender, { nonce: -1 }, ({ dispatchError, events, status }) => {
+        .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
           expect(dispatchError).toBeFalsy();
 
           if (status.isInBlock) {
-            const balancesWithdraw = events.find(({ event: { method,
-              section } }) => {
+            const balancesWithdraw = events.find(({ event: { method, section } }) => {
               return section === 'balances' && method === 'Withdraw';
             });
 
             expect(balancesWithdraw).toBeTruthy();
 
-            // const accountId = balancesWithdraw.event.data[0].toString();
-            const fee = balancesWithdraw.event.data[1].toBigInt();
+            if (balancesWithdraw) {
+              const fee = (balancesWithdraw.event.data[1] as Balance).toBigInt();
 
-            unsubscribe();
-            resolve(fee);
+              const unsub = await unsubscribe;
+
+              if (typeof unsub === 'function') {
+                unsub();
+                resolve(fee);
+              } else {
+                reject(new Error('Subscription failed'));
+              }
+            } else {
+              reject(new Error("Fee wasn't found"));
+            }
           }
-        });
+        })
+        .catch((reason) => reject(reason));
     }).then((fee) => {
       expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
     });
