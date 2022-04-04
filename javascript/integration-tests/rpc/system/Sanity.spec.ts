@@ -30,9 +30,8 @@ describe('System RPC sanity test', (): void => {
     });
   });
 
-  it('rpc.system.version() works', (): void => {
-    return api.rpc.system.version().then((result) => {
-      expect(result.toString()).toEqual(expect.anything());
-    });
+  it('rpc.system.version() works', async (): Promise<void> => {
+    const result = await api.rpc.system.version();
+    expect(result.toString()).toEqual(expect.anything());
   });
 });
