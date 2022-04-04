@@ -104,7 +104,6 @@ describe('Creditcoin RPC', (): void => {
           }
         }
       }
-
     });
   });
 
@@ -115,7 +114,7 @@ describe('Creditcoin RPC', (): void => {
   it('getEvents() should return some events', (): void => {
     return api.rpc.creditcoin.getEvents().then((result) => {
       // in case of failures should be easy to spot what went wrong
-      console.log(`**** RESULT=${result}`);
+      console.log(`**** RESULT=${result.toString() as string}`);
 
       expect(result.isEmpty).toBeFalsy();
       expect(result.toJSON()).toEqual(expect.anything());
@@ -128,12 +127,11 @@ describe('Creditcoin RPC', (): void => {
     let subscriptionId;
     const ws = new WebSocket('ws://127.0.0.1:9944');
 
-    ws
-      .on('open', () => {
-        const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
+    ws.on('open', () => {
+      const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
 
-        ws.send(JSON.stringify(rpc));
-      })
+      ws.send(JSON.stringify(rpc));
+    })
       .on('message', (data) => {
         const utf8Str = data.toString('utf-8');
         // console.log('decoded-message', utf8Str);
@@ -157,12 +155,11 @@ describe('Creditcoin RPC', (): void => {
     let subscriptionId;
     const ws = new WebSocket('ws://127.0.0.1:9944');
 
-    ws
-      .on('open', () => {
-        const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
+    ws.on('open', () => {
+      const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
 
-        ws.send(JSON.stringify(rpc));
-      })
+      ws.send(JSON.stringify(rpc));
+    })
       .on('message', (data) => {
         const utf8Str = data.toString('utf-8');
         // console.log('decoded-message', utf8Str);
@@ -170,7 +167,12 @@ describe('Creditcoin RPC', (): void => {
         if (!subscriptionId) {
           subscriptionId = JSON.parse(utf8Str).result;
           // unsubscribe
-          const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsUnsubscribe', params: [subscriptionId] };
+          const rpc = {
+            id: 1,
+            jsonrpc: '2.0',
+            method: 'creditcoin_eventsUnsubscribe',
+            params: [subscriptionId]
+          };
 
           ws.send(JSON.stringify(rpc));
         } else {
@@ -189,12 +191,11 @@ describe('Creditcoin RPC', (): void => {
     let firstTime = true;
     const ws = new WebSocket('ws://127.0.0.1:9944');
 
-    ws
-      .on('open', () => {
-        const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
+    ws.on('open', () => {
+      const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
 
-        ws.send(JSON.stringify(rpc));
-      })
+      ws.send(JSON.stringify(rpc));
+    })
       .on('message', (data) => {
         const utf8Str = data.toString('utf-8');
         // console.log('decoded-message', utf8Str);
@@ -203,7 +204,12 @@ describe('Creditcoin RPC', (): void => {
           firstTime = false;
 
           // unsubscribe
-          const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsUnsubscribe', params: ['invalid-id'] };
+          const rpc = {
+            id: 1,
+            jsonrpc: '2.0',
+            method: 'creditcoin_eventsUnsubscribe',
+            params: ['invalid-id']
+          };
 
           ws.send(JSON.stringify(rpc));
         } else {
