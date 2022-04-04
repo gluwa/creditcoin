@@ -1,5 +1,5 @@
-// [object Object]
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2022 Gluwa, Inc. & contributors
+// SPDX-License-Identifier: The Unlicense
 
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -68,6 +68,7 @@ export const registerDealOrderAsync = async (
 ) =>
   new Promise<boolean>(async (resolve) => {
     const onFail = () => resolve(false);
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const onSuccess = (result: SubmittableResult) => resolve(true);
 
     await registerDealOrder(

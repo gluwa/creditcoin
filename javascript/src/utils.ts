@@ -1,7 +1,6 @@
-// [object Object]
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2022 Gluwa, Inc. & contributors
+// SPDX-License-Identifier: The Unlicense
 
-import { randomBytes } from 'crypto';
 import { Wallet } from 'ethers';
 
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
@@ -59,5 +58,5 @@ export const getAddressId = (blockchain: PalletCreditcoinBlockchain | string, ex
 };
 
 export const randomEthAddress = () => {
-    return Wallet.createRandom().address;
+  return Wallet.createRandom().address;
 };
