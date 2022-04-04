@@ -66,12 +66,12 @@ export const registerDealOrderAsync = async (
   signedParams: Uint8Array,
   lender: KeyringPair
 ) =>
-  new Promise<boolean>(async (resolve) => {
+  new Promise<boolean>((resolve, reject) => {
     const onFail = () => resolve(false);
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const onSuccess = (result: SubmittableResult) => resolve(true);
 
-    await registerDealOrder(
+    registerDealOrder(
       api,
       lenderAddressId,
       borrowerAddressId,
@@ -84,5 +84,5 @@ export const registerDealOrderAsync = async (
       lender,
       onSuccess,
       onFail
-    );
+    ).catch((reason) => reject(reason));
   });
