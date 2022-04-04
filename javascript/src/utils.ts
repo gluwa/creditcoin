@@ -11,7 +11,7 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 export type TxOnSuccess = (result: SubmittableResult) => void;
 export type TxOnFail = (result: SubmittableResult | Error | undefined) => void;
 
-export const handleTransaction = async (
+export const handleTransaction = (
   api: ApiPromise,
   unsubscribe: () => void,
   result: SubmittableResult,
@@ -20,7 +20,7 @@ export const handleTransaction = async (
 ) => {
   const { dispatchError, events, status } = result;
 
-  console.log(`current status is ${status}`);
+  console.log(`current status is ${status.toString()}`);
 
   if (dispatchError) {
     if (dispatchError.isModule) {

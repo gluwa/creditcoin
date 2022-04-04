@@ -54,7 +54,7 @@ const main = async () => {
     lender
   );
 
-  console.log(`Deal order registered: ${regDealOrderCompleted}`);
+  console.log(`Deal order registered: ${regDealOrderCompleted.toString()}`);
 
   await api.disconnect();
 };
