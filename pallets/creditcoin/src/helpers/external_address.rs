@@ -1,7 +1,5 @@
 use base58::FromBase58;
-use sp_io::hashing::{keccak_256, sha2_256};
-use sp_std::prelude::*;
-
+use sp_io::hashing::sha2_256;
 use crate::{Blockchain, ExternalAddress};
 
 pub fn address_is_well_formed(blockchain: &Blockchain, address: &ExternalAddress) -> bool {
@@ -53,160 +51,24 @@ fn btc_address_is_well_formed(address: &[u8]) -> bool {
 
 // ether-like
 
-#[derive(Copy, Clone)]
-enum AsciiCase {
-	None,
-	Lower,
-	Upper,
-}
-
-const HEX_PREFIX: &[u8] = b"0x";
-const ETH_ADDRESS_LENGTH: usize = 42;
-const ETH_ADDRESS_VALUE_LENGTH: usize = ETH_ADDRESS_LENGTH - HEX_PREFIX.len();
+const ETH_ADDRESS_LENGTH: usize = 20;
 
 fn eth_address_is_well_formed(address: &[u8]) -> bool {
-	if !address.starts_with(HEX_PREFIX) || address.len() != ETH_ADDRESS_LENGTH {
-		return false;
-	}
-
-	let address_value = &address[HEX_PREFIX.len()..];
-
-	if eth_address_is_checksummed(address_value) {
-		eth_address_checksum_valid(address_value)
-	} else {
-		true
-	}
+	address.len() == ETH_ADDRESS_LENGTH
 }
-
-fn eth_address_is_checksummed(address: &[u8]) -> bool {
-	let mut case = AsciiCase::None;
-	for byte in address {
-		if !byte.is_ascii_hexdigit() {
-			return false;
-		}
-		if byte.is_ascii_digit() {
-			continue;
-		} else if byte.is_ascii_uppercase() {
-			match case {
-				AsciiCase::None => case = AsciiCase::Upper,
-				AsciiCase::Upper => continue,
-				AsciiCase::Lower => return true,
-			}
-		} else if byte.is_ascii_lowercase() {
-			match case {
-				AsciiCase::None => case = AsciiCase::Lower,
-				AsciiCase::Lower => continue,
-				AsciiCase::Upper => return true,
-			}
-		}
-	}
-	false
-}
-
-fn eth_address_checksum(address: &[u8]) -> Option<Vec<u8>> {
-	if address.len() != ETH_ADDRESS_VALUE_LENGTH {
-		return None;
-	}
-
-	let mut checksummed_address = Vec::with_capacity(ETH_ADDRESS_VALUE_LENGTH);
-
-	let address_lowercase = address.to_ascii_lowercase();
-
-	let address_hash = keccak_256(&*address_lowercase);
-	let address_hash_hex = hex::encode(&address_hash);
-
-	for (i, byte) in address_lowercase.iter().enumerate() {
-		if byte.is_ascii_digit() {
-			checksummed_address.push(*byte);
-		} else {
-			let hashed_byte_value = u8::from_str_radix(&address_hash_hex[i..i + 1], 16)
-				.expect("We just encoded this string as hex; qed");
-			if hashed_byte_value > 7 {
-				checksummed_address.push(byte.to_ascii_uppercase());
-			} else {
-				checksummed_address.push(*byte);
-			}
-		}
-	}
-
-	Some(checksummed_address)
-}
-
-fn eth_address_checksum_valid(address: &[u8]) -> bool {
-	if address.len() != ETH_ADDRESS_VALUE_LENGTH {
-		return false;
-	}
-
-	let checksummed_address = if let Some(addr) = eth_address_checksum(address) {
-		addr
-	} else {
-		return false;
-	};
-
-	address == checksummed_address
-}
-
 #[cfg(test)]
 mod tests {
 	use frame_support::BoundedVec;
+	use core::convert::{TryInto, TryFrom};
 
 	use super::*;
-	#[test]
-	fn eth_address_is_checksummed_works() {
-		assert!(eth_address_is_checksummed(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"));
-		assert!(eth_address_is_checksummed(b"5AAEB6053F3E94C9B9A09F33669435E7EF1BEAEd"));
-		assert!(!eth_address_is_checksummed(b"5AAEB6053F3E94C9B9A09F33669435E7EF1BEAED"));
-		assert!(!eth_address_is_checksummed(b"5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"));
-		assert!(!eth_address_is_checksummed(b"0000000000000000000000000000000000000000"));
-		assert!(!eth_address_is_checksummed(b"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"));
-	}
-
-	#[test]
-	fn eth_address_checksum_works() {
-		assert_eq!(
-			eth_address_checksum(b"5Aaeb6053F3e94c9b9a09f33669435e7ef1beaeD"),
-			Some(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_vec())
-		);
-		assert_eq!(
-			eth_address_checksum(b"Fb6916095ca1df60bb79ce92ce3ea74c37c5d359"),
-			Some(b"fB6916095ca1df60bB79Ce92cE3Ea74c37c5d359".to_vec())
-		);
-		assert_eq!(
-			eth_address_checksum(b"0000000000000000000000000000000000000000"),
-			Some(b"0000000000000000000000000000000000000000".to_vec())
-		);
-		assert_eq!(eth_address_checksum(&[]), None);
-	}
-
-	#[test]
-	fn eth_address_checksum_valid_works() {
-		assert!(eth_address_checksum_valid(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"));
-		assert!(eth_address_checksum_valid(b"fB6916095ca1df60bB79Ce92cE3Ea74c37c5d359"));
-		assert!(eth_address_checksum_valid(b"dbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB"));
-		assert!(eth_address_checksum_valid(b"D1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb"));
-	}
 
 	#[test]
 	fn eth_address_is_well_formed_works() {
-		// normal addresses (checksummed)
-		assert!(eth_address_is_well_formed(b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"));
-		assert!(eth_address_is_well_formed(b"0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359"));
-		assert!(eth_address_is_well_formed(b"0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB"));
-		assert!(eth_address_is_well_formed(b"0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb"));
-
-		// all uppercase
-		assert!(eth_address_is_well_formed(b"0x52908400098527886E0F7030069857D2E4169EE7"));
-		assert!(eth_address_is_well_formed(b"0x8617E340B3D01FA5F11F306F4090FD50E238070D"));
-
-		// all lowercase
-		assert!(eth_address_is_well_formed(b"0xde709f2102306220921060314715629080e2fb77"));
-		assert!(eth_address_is_well_formed(b"0x27b1fdb04752bbc536007a920d24acb045561c26"));
-
-		// normal but incorrect
-		assert!(!eth_address_is_well_formed(b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeD"));
-		assert!(!eth_address_is_well_formed(b"0xfB6916095ca1Df60bB79Ce92cE3Ea74c37c5d359"));
-		assert!(!eth_address_is_well_formed(b"0xdbF03B407c01e7cD3CBea99509d93f8DDDC8C6Fb"));
-		assert!(!eth_address_is_well_formed(b"0xD1220A0cF47c7B9Be7A2E6BA89F429762e7B9aDb"));
+		// length == 20
+		assert!(eth_address_is_well_formed(hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed").unwrap().as_slice()));
+		// length != 20
+		assert!(!eth_address_is_well_formed(&[0u8; ETH_ADDRESS_LENGTH - 1][..]));
 	}
 
 	#[test]
@@ -255,21 +117,6 @@ mod tests {
 		assert!(!btc_address_is_well_formed(b"1A1zi2DMPTfTL5SLmv7DivfNa"))
 	}
 
-	#[test]
-	fn eth_address_bad_format() {
-		// missing 0x prefix
-		assert!(!eth_address_is_well_formed(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"));
-
-		// too short
-		assert!(!eth_address_is_well_formed(b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1B"));
-		assert!(!eth_address_checksum_valid(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1B"));
-		assert!(eth_address_checksum(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1B").is_none());
-
-		// too long
-		assert!(!eth_address_is_well_formed(b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedbeef"));
-		assert!(!eth_address_checksum_valid(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedbeef"));
-		assert!(eth_address_checksum(b"5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedbeef").is_none());
-	}
 
 	#[test]
 	fn address_is_well_formed_works() {
@@ -279,7 +126,7 @@ mod tests {
 		let luniverse = Blockchain::Luniverse;
 		let other = Blockchain::Other(BoundedVec::try_from(b"other".to_vec()).unwrap());
 
-		let eth_addr = b"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_vec().try_into().unwrap();
+		let eth_addr = hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed").unwrap().try_into().unwrap();
 		let btc_addr = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_vec().try_into().unwrap();
 
 		assert!(address_is_well_formed(&ethereum, &eth_addr));
