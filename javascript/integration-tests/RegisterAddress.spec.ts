@@ -1,5 +1,5 @@
-// [object Object]
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2022 Gluwa, Inc. & contributors
+// SPDX-License-Identifier: The Unlicense
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 
@@ -7,53 +7,50 @@ import { CREDO_PER_CTC } from '../src/constants';
 import { randomEthAddress } from '../src/utils';
 
 describe('RegisterAddress', (): void => {
-    let api;
-    let alice;
+  let api;
+  let alice;
 
-    beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
+  beforeEach(async () => {
+    process.env.NODE_ENV = 'test';
 
-        const provider = new WsProvider('ws://127.0.0.1:9944');
+    const provider = new WsProvider('ws://127.0.0.1:9944');
 
-        api = await ApiPromise.create({ provider });
+    api = await ApiPromise.create({ provider });
 
-        const keyring = new Keyring({ type: `sr25519` });
-        alice = keyring.addFromUri('//Alice', { name: 'Alice' });
-    });
+    const keyring = new Keyring({ type: 'sr25519' });
 
-    afterEach(async () => {
-        await api.disconnect();
-    });
+    alice = keyring.addFromUri('//Alice', { name: 'Alice' });
+  });
 
-    it('fee is min 0.01 CTC', (): void => {
-        return new Promise(async (resolve) => {
-            const unsubscribe = await api.tx.creditcoin
-                .registerAddress('Ethereum', randomEthAddress())
-                .signAndSend(alice, {nonce: -1}, ({ status, events, dispatchError }) => {
+  afterEach(async () => {
+    await api.disconnect();
+  });
 
-                    if (status.isInBlock) {
-                        let balances_Withdraw = events.find(({
-                            event: {
-                                section,
-                                method
-                            }
-                        }) => {
-                            return section === 'balances' && method === 'Withdraw'
-                        });
+  it('fee is min 0.01 CTC', (): void => {
+    return new Promise(async (resolve) => {
+      const unsubscribe = await api.tx.creditcoin
+        .registerAddress('Ethereum', randomEthAddress())
+        .signAndSend(alice, { nonce: -1 }, ({ dispatchError, events, status }) => {
+          expect(dispatchError).toBeFalsy();
 
-                        expect(balances_Withdraw).toBeTruthy();
+          if (status.isInBlock) {
+            const balancesWithdraw = events.find(({ event: { method,
+              section } }) => {
+              return section === 'balances' && method === 'Withdraw';
+            });
 
-                        let _acountId = balances_Withdraw.event.data[0].toString();
-                        let fee = balances_Withdraw.event.data[1].toBigInt();
+            expect(balancesWithdraw).toBeTruthy();
 
-                        unsubscribe();
-                        resolve(fee);
-                    }
-                })
-        }).then((fee) => {
-            // temporary workaround b/c the actual fee is 0.009 CTC
-            expect(fee).toBeGreaterThanOrEqual(0.009 * CREDO_PER_CTC);
+            // const accountId = balancesWithdraw.event.data[0].toString();
+            const fee = balancesWithdraw.event.data[1].toBigInt();
+
+            unsubscribe();
+            resolve(fee);
+          }
         });
+    }).then((fee) => {
+      // temporary workaround b/c the actual fee is 0.009 CTC
+      expect(fee).toBeGreaterThanOrEqual(0.009 * CREDO_PER_CTC);
     });
-
+  });
 });
