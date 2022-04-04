@@ -51,7 +51,8 @@ impl Blockchain {
 const ETH_CONFIRMATIONS: u64 = 12;
 
 fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> {
-	let address_bytes = <[u8; 20]>::try_from(address.as_slice()).map_err(|_| OffchainError::InvalidTransfer("ethless transfer address is not 20 bytes"))?;
+	let address_bytes = <[u8; 20]>::try_from(address.as_slice())
+		.map_err(|_| OffchainError::InvalidTransfer("ethless transfer address is not 20 bytes"))?;
 	let address = rpc::Address::from(address_bytes);
 	Ok(address)
 }
@@ -301,8 +302,7 @@ mod tests {
 	fn eth_address_valid() {
 		let address_str = "b794f5ea0ba39494ce839613fffba74279579268";
 		let address_bytes = hex::decode(address_str).unwrap();
-		let address: ExternalAddress =
-			BoundedVec::try_from(address_bytes.clone()).unwrap();
+		let address: ExternalAddress = BoundedVec::try_from(address_bytes.clone()).unwrap();
 
 		let expected = H160::from(<[u8; 20]>::try_from(address_bytes).unwrap());
 		assert_ok!(parse_eth_address(&address).map_err(|_| ()), expected);

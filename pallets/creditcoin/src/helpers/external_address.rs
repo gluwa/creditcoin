@@ -1,6 +1,6 @@
+use crate::{Blockchain, ExternalAddress};
 use base58::FromBase58;
 use sp_io::hashing::sha2_256;
-use crate::{Blockchain, ExternalAddress};
 
 pub fn address_is_well_formed(blockchain: &Blockchain, address: &ExternalAddress) -> bool {
 	match blockchain {
@@ -58,15 +58,17 @@ fn eth_address_is_well_formed(address: &[u8]) -> bool {
 }
 #[cfg(test)]
 mod tests {
+	use core::convert::{TryFrom, TryInto};
 	use frame_support::BoundedVec;
-	use core::convert::{TryInto, TryFrom};
 
 	use super::*;
 
 	#[test]
 	fn eth_address_is_well_formed_works() {
 		// length == 20
-		assert!(eth_address_is_well_formed(hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed").unwrap().as_slice()));
+		assert!(eth_address_is_well_formed(
+			hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed").unwrap().as_slice()
+		));
 		// length != 20
 		assert!(!eth_address_is_well_formed(&[0u8; ETH_ADDRESS_LENGTH - 1][..]));
 	}
@@ -117,7 +119,6 @@ mod tests {
 		assert!(!btc_address_is_well_formed(b"1A1zi2DMPTfTL5SLmv7DivfNa"))
 	}
 
-
 	#[test]
 	fn address_is_well_formed_works() {
 		let ethereum = Blockchain::Ethereum;
@@ -126,7 +127,10 @@ mod tests {
 		let luniverse = Blockchain::Luniverse;
 		let other = Blockchain::Other(BoundedVec::try_from(b"other".to_vec()).unwrap());
 
-		let eth_addr = hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed").unwrap().try_into().unwrap();
+		let eth_addr = hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
+			.unwrap()
+			.try_into()
+			.unwrap();
 		let btc_addr = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_vec().try_into().unwrap();
 
 		assert!(address_is_well_formed(&ethereum, &eth_addr));
