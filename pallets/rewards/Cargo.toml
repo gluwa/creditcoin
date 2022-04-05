@@ -27,6 +27,12 @@ optional = true
 rev = '57cab2f30bcc5343771c8bc763dd6c9c9e10f0a8'
 version = '4.0.0-dev'
 
+[dependencies.sp-std]
+default-features = false
+git = 'https://github.com/gluwa/substrate.git'
+rev = '57cab2f30bcc5343771c8bc763dd6c9c9e10f0a8'
+version = '4.0.0-dev'
+
 [dependencies.frame-support]
 default-features = false
 git = 'https://github.com/gluwa/substrate.git'

@@ -9,6 +9,8 @@ use sp_runtime::traits::{SaturatedConversion, UniqueSaturatedInto};
 #[cfg(test)]
 mod mock;
 
+pub mod weights;
+
 #[cfg(test)]
 mod tests;
 
