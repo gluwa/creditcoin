@@ -595,7 +595,7 @@ pub mod pallet {
 		}
 
 		/// Registers an external address on `blockchain` and `network` with value `address`
-		#[pallet::weight(<T as Config>::WeightInfo::register_address(blockchain.as_bytes().len().unique_saturated_into(),(&address).as_slice().len().unique_saturated_into()))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address(blockchain.as_bytes().len().unique_saturated_into(),address.as_slice().len().unique_saturated_into()))]
 		pub fn register_address(
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
