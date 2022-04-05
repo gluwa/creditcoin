@@ -144,7 +144,7 @@ impl<T: Config> Pallet<T> {
 			let transfer = Transfer {
 				blockchain: from.blockchain,
 				kind: transfer_kind,
-				amount,
+				amount: ExternalAmount::zero(),
 				block: <frame_system::Pallet<T>>::block_number(),
 				from: from_id,
 				to: to_id,
