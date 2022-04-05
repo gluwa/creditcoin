@@ -12,7 +12,6 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -44,6 +43,13 @@ pub mod pallet {
 			+ BaseArithmetic
 			+ UniqueSaturatedInto<i64>
 			+ MaybeSerializeDeserialize;
+
+		type WeightInfo: WeightInfo;
+	}
+
+	pub trait WeightInfo {
+		fn set_target_block_time() -> Weight;
+		fn set_adjustment_period() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -104,7 +110,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::set_target_block_time())]
 		pub fn set_target_block_time(
 			origin: OriginFor<T>,
 			target_time: T::Moment,
@@ -117,7 +123,7 @@ pub mod pallet {
 
 			Ok(())
 		}
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::set_adjustment_period())]
 		pub fn set_adjustment_period(origin: OriginFor<T>, period: i64) -> DispatchResult {
 			ensure_root(origin)?;
 

@@ -62,6 +62,7 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
+mod weights;
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -282,15 +283,18 @@ impl pallet_creditcoin::Config for Runtime {
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
 	type UnverifiedTransferLimit = ConstU32<10000>;
+	//type WeightInfo = weights::pallet_creditcoin::WeightInfo<Runtime>;
 }
 
 impl pallet_difficulty::Config for Runtime {
 	type Moment = u64;
+	type WeightInfo = weights::pallet_difficulty::WeightInfo<Runtime>;
 }
 
 impl pallet_rewards::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
+	//type WeightInfo = weights::pallet_rewards::WeightInfo<Runtime>;
 }
 
 pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
@@ -497,7 +501,9 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, pallet_creditcoin, Creditcoin);
+			//list_benchmark!(list, extra, pallet_creditcoin, Creditcoin);
+			//list_benchmark!(list, extra, pallet_rewards, Rewards);
+			list_benchmark!(list, extra, pallet_difficulty, Difficulty);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -531,7 +537,9 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, pallet_creditcoin, Creditcoin);
+			//add_benchmark!(params, batches, pallet_creditcoin, Creditcoin);
+			//add_benchmark!(params, batches, pallet_rewards, Rewards);
+			add_benchmark!(params, batches, pallet_difficulty, Difficulty);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
