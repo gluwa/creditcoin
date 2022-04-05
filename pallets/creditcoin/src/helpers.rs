@@ -5,7 +5,8 @@ pub use external_address::address_is_well_formed;
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, Guid, Id, TransferId,
+	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Transfer, TransferId,
+	TransferKind, UnverifiedTransfer,
 };
 
 use frame_support::ensure;
@@ -112,5 +113,70 @@ impl<T: Config> Pallet<T> {
 		ensure!(!<UsedGuids<T>>::contains_key(guid.clone()), Error::<T>::GuidAlreadyUsed);
 		UsedGuids::<T>::insert(guid, ());
 		Ok(())
+	}
+
+	pub fn register_transfer_internal(
+		who: T::AccountId,
+		from_id: AddressId<T::Hash>,
+		to_id: AddressId<T::Hash>,
+		transfer_kind: TransferKind,
+		amount: ExternalAmount,
+		order_id: OrderId<T::BlockNumber, T::Hash>,
+		blockchain_tx_id: ExternalTxId,
+	) -> Result<
+		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash>),
+		crate::Error<T>,
+	> {
+		let from = Self::get_address(&from_id)?;
+		let to = Self::get_address(&to_id)?;
+
+		ensure!(from.owner == who, Error::<T>::NotAddressOwner);
+
+		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
+
+		ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
+
+		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
+		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
+
+		if *blockchain_tx_id == *b"0" {
+			// this transfer is an exemption, no need to verify it
+			let transfer = Transfer {
+				blockchain: from.blockchain,
+				kind: transfer_kind,
+				amount,
+				block: <frame_system::Pallet<T>>::block_number(),
+				from: from_id,
+				to: to_id,
+				order_id,
+				processed: false,
+				sighash: who,
+				tx: blockchain_tx_id,
+			};
+			Transfers::<T>::insert(transfer_id.clone(), transfer.clone());
+			Ok((transfer_id, transfer))
+		} else {
+			let transfer = Transfer {
+				blockchain: from.blockchain,
+				kind: transfer_kind,
+				amount,
+				block: <frame_system::Pallet<T>>::block_number(),
+				from: from_id,
+				to: to_id,
+				order_id,
+				processed: false,
+				sighash: who,
+				tx: blockchain_tx_id,
+			};
+
+			let pending = UnverifiedTransfer {
+				from_external: from.value,
+				to_external: to.value,
+				transfer: transfer.clone(),
+			};
+			UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
+				.map_err(|()| Error::<T>::UnverifiedTransferPoolFull)?;
+			Ok((transfer_id, transfer))
+		}
 	}
 }
