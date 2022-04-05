@@ -11,7 +11,6 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
 pub type BalanceOf<T> =
@@ -43,6 +42,13 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		type Currency: Currency<AccountIdOf<Self>>;
+
+		type WeightInfo: WeightInfo;
+	}
+
+	pub trait WeightInfo {
+		fn on_finalize() -> Weight;
+		fn on_initialize() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -73,7 +79,7 @@ pub mod pallet {
 				BlockAuthor::<T>::put(author);
 			}
 
-			0
+			T::WeightInfo::on_finalize().saturating_add(T::WeightInfo::on_initialize())
 		}
 
 		fn on_finalize(block_number: BlockNumberFor<T>) {

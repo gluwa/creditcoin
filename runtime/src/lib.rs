@@ -294,7 +294,7 @@ impl pallet_difficulty::Config for Runtime {
 impl pallet_rewards::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
-	//type WeightInfo = weights::pallet_rewards::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_rewards::WeightInfo<Runtime>;
 }
 
 pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
@@ -502,7 +502,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
 			//list_benchmark!(list, extra, pallet_creditcoin, Creditcoin);
-			//list_benchmark!(list, extra, pallet_rewards, Rewards);
+			list_benchmark!(list, extra, pallet_rewards, Rewards);
 			list_benchmark!(list, extra, pallet_difficulty, Difficulty);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
@@ -538,7 +538,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			//add_benchmark!(params, batches, pallet_creditcoin, Creditcoin);
-			//add_benchmark!(params, batches, pallet_rewards, Rewards);
+			add_benchmark!(params, batches, pallet_rewards, Rewards);
 			add_benchmark!(params, batches, pallet_difficulty, Difficulty);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
