@@ -54,6 +54,7 @@
 
 // impl pallet_template::Config for Test {
 // 	type Event = Event;
+// type WeightInfo = super::weights::WeightInfo<Test>;
 // }
 
 // // Build genesis storage according to the mock runtime.
