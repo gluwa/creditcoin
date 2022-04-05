@@ -21,6 +21,7 @@ use std::{
 	convert::{TryFrom, TryInto},
 };
 
+//Duplicated code; pallet_creditcoin::benchmarking.rs
 #[extend::ext]
 impl<'a, S> &'a [u8]
 where
