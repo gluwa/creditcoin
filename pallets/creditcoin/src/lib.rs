@@ -5,17 +5,16 @@ extern crate alloc;
 
 use frame_support::traits::StorageVersion;
 pub use pallet::*;
+use sp_io::KillStorageResult;
 use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
 
 #[cfg(test)]
 mod mock;
 
+mod benchmarking;
 #[cfg(test)]
 mod tests;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
 
 #[macro_use]
 mod helpers;
@@ -93,7 +92,9 @@ pub mod pallet {
 			+ IdentifyAccount<AccountId = <Self as frame_system::Config>::AccountId>
 			+ Parameter;
 
-		type SignerSignature: Verify<Signer = Self::Signer> + Parameter;
+		type SignerSignature: Verify<Signer = Self::Signer>
+			+ From<sp_core::ecdsa::Signature>
+			+ Parameter;
 
 		type FromAccountId: From<sp_core::sr25519::Public>
 			+ IsType<Self::AccountId>
@@ -107,6 +108,27 @@ pub mod pallet {
 		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
 
 		type UnverifiedTransferLimit: Get<u32>;
+
+		type WeightInfo: WeightInfo;
+	}
+
+	pub trait WeightInfo {
+		fn on_initialize(_u: u32, a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
+		fn register_address(b: u32, e: u32) -> Weight;
+		fn claim_legacy_wallet() -> Weight;
+		fn add_ask_order() -> Weight;
+		fn add_bid_order() -> Weight;
+		fn add_offer() -> Weight;
+		fn add_deal_order() -> Weight;
+		fn add_authority() -> Weight;
+		fn verify_transfer() -> Weight;
+		fn fund_deal_order() -> Weight;
+		fn lock_deal_order() -> Weight;
+		fn register_transfer_ocw() -> Weight;
+		fn register_transfer_exempt() -> Weight;
+		fn close_deal_order() -> Weight;
+		fn exempt() -> Weight;
+		fn register_deal_order() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -459,11 +481,23 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			UnverifiedTransfers::<T>::kill();
 			log::debug!("Cleaning up expired entries");
-			AskOrders::<T>::remove_prefix(block_number, None);
-			BidOrders::<T>::remove_prefix(block_number, None);
-			Offers::<T>::remove_prefix(block_number, None);
+			let a = match AskOrders::<T>::remove_prefix(block_number, None) {
+				KillStorageResult::SomeRemaining(u) => u,
+				KillStorageResult::AllRemoved(u) => u,
+			};
+			let b = match BidOrders::<T>::remove_prefix(block_number, None) {
+				KillStorageResult::SomeRemaining(u) => u,
+				KillStorageResult::AllRemoved(u) => u,
+			};
+			let o = match Offers::<T>::remove_prefix(block_number, None) {
+				KillStorageResult::SomeRemaining(u) => u,
+				KillStorageResult::AllRemoved(u) => u,
+			};
+
+			let mut d = 0usize;
 			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
 				.filter_map(|(hash, deal)| {
+					d += 1;
 					if deal.funding_transfer_id.is_some() {
 						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
 					} else {
@@ -471,11 +505,20 @@ pub mod pallet {
 					}
 				})
 				.collect();
-			let write_count = deals_to_keep.len().saturating_add(5);
+			let f = deals_to_keep.len();
+			let d = d - f;
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
 			}
-			T::DbWeight::get().writes(write_count.try_into().unwrap_or(u64::MAX))
+
+			<T as Config>::WeightInfo::on_initialize(
+				0,
+				a,
+				b,
+				o,
+				d.unique_saturated_into(),
+				f.unique_saturated_into(),
+			)
 		}
 
 		fn offchain_worker(_block_number: T::BlockNumber) {
@@ -518,7 +561,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Claims legacy wallet and transfers the balance to the sender's account.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::claim_legacy_wallet())]
 		pub fn claim_legacy_wallet(
 			origin: OriginFor<T>,
 			public_key: sp_core::ecdsa::Public,
@@ -544,11 +587,15 @@ pub mod pallet {
 			LegacyWallets::<T>::remove(&sighash);
 			Self::deposit_event(Event::<T>::LegacyWalletClaimed(who, sighash, legacy_balance));
 
-			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+			Ok(PostDispatchInfo {
+				//actual_weight: Some(<T as Config>::WeightInfo::claim_legacy_wallet()),
+				actual_weight: Some(0),
+				pays_fee: Pays::No,
+			})
 		}
 
 		/// Registers an external address on `blockchain` and `network` with value `address`
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address(blockchain.as_bytes().len().unique_saturated_into(),(&address).as_slice().len().unique_saturated_into()))]
 		pub fn register_address(
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
@@ -573,7 +620,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2))]
+		#[pallet::weight(<T as Config>::WeightInfo::add_ask_order())]
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
@@ -608,7 +655,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2))]
+		#[pallet::weight(<T as Config>::WeightInfo::add_bid_order())]
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
@@ -644,7 +691,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::add_offer())]
 		pub fn add_offer(
 			origin: OriginFor<T>,
 			ask_order_id: AskOrderId<T::BlockNumber, T::Hash>,
@@ -693,7 +740,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::add_deal_order())]
 		pub fn add_deal_order(
 			origin: OriginFor<T>,
 			offer_id: OfferId<T::BlockNumber, T::Hash>,
@@ -744,7 +791,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::lock_deal_order())]
 		pub fn lock_deal_order(
 			origin: OriginFor<T>,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
@@ -769,7 +816,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(4,2))]
+		#[pallet::weight(<T as Config>::WeightInfo::fund_deal_order())]
 		pub fn fund_deal_order(
 			origin: OriginFor<T>,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
@@ -821,7 +868,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 4))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_deal_order())]
 		pub fn register_deal_order(
 			origin: OriginFor<T>,
 			lender_address_id: AddressId<T::Hash>,
@@ -926,7 +973,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(4,2))]
+		#[pallet::weight(<T as Config>::WeightInfo::close_deal_order())]
 		pub fn close_deal_order(
 			origin: OriginFor<T>,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
@@ -979,7 +1026,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
@@ -1005,7 +1052,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
@@ -1031,7 +1078,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3, 2))]
+		#[pallet::weight(<T as Config>::WeightInfo::exempt())]
 		pub fn exempt(
 			origin: OriginFor<T>,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
@@ -1079,7 +1126,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
 		pub fn verify_transfer(
 			origin: OriginFor<T>,
 			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash>,
@@ -1098,7 +1145,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::add_authority())]
 		pub fn add_authority(
 			origin: OriginFor<T>,
 			who: T::AccountId,

@@ -283,7 +283,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
 	type UnverifiedTransferLimit = ConstU32<10000>;
-	//type WeightInfo = weights::pallet_creditcoin::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_creditcoin::WeightInfo<Runtime>;
 }
 
 impl pallet_difficulty::Config for Runtime {
@@ -501,7 +501,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			//list_benchmark!(list, extra, pallet_creditcoin, Creditcoin);
+			list_benchmark!(list, extra, pallet_creditcoin, Creditcoin);
 			list_benchmark!(list, extra, pallet_rewards, Rewards);
 			list_benchmark!(list, extra, pallet_difficulty, Difficulty);
 
@@ -537,7 +537,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			//add_benchmark!(params, batches, pallet_creditcoin, Creditcoin);
+			add_benchmark!(params, batches, pallet_creditcoin, Creditcoin);
 			add_benchmark!(params, batches, pallet_rewards, Rewards);
 			add_benchmark!(params, batches, pallet_difficulty, Difficulty);
 
