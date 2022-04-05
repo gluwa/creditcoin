@@ -397,11 +397,10 @@ fn register_transfer_ocw() {
 			expiration
 		));
 
-		assert_ok!(Creditcoin::register_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
 			TransferKind::Ethless(contract.clone()),
-			0u64.into(),
-			OrderId::Deal(deal_order_id.clone()),
+			deal_order_id.clone(),
 			tx_hash.as_bytes().into_bounded()
 		));
 		let expected_transfer = crate::Transfer {
@@ -1035,11 +1034,10 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(second_test_info.lender.account_id.clone()),
 			TransferKind::Ethless(contract.clone()),
-			0u64.into(),
-			OrderId::Deal(bogus_deal_order_id.clone()),
+			bogus_deal_order_id.clone(),
 			tx_hash.clone()
 		));
 
@@ -1068,11 +1066,10 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
 			TransferKind::Ethless(contract.clone()),
-			0u64.into(),
-			OrderId::Deal(deal_order_id.clone()),
+			deal_order_id.clone(),
 			tx_hash.clone()
 		));
 
@@ -1084,7 +1081,7 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 			&deal_order_id.hash(),
 			|deal_order_storage| {
 				// note: the transfer above has amount of 0 b/c it is an exemption!
-				deal_order_storage.as_mut().unwrap().terms.amount = ExternalAmount::from(4444);
+				deal_order_storage.as_mut().unwrap().terms.amount = ExternalAmount::from(4444u64);
 			},
 		);
 
@@ -1109,11 +1106,10 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
 			TransferKind::Ethless(contract.clone()),
-			0u64.into(),
-			OrderId::Deal(deal_order_id.clone()),
+			deal_order_id.clone(),
 			tx_hash.clone()
 		));
 
@@ -1148,11 +1144,10 @@ fn fund_deal_order_should_error_when_transfer_has_been_processed() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
 			TransferKind::Ethless(contract.clone()),
-			0u64.into(),
-			OrderId::Deal(deal_order_id.clone()),
+			deal_order_id.clone(),
 			tx_hash.clone()
 		));
 
@@ -1187,11 +1182,10 @@ fn fund_deal_order_works() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
 			TransferKind::Ethless(contract.clone()),
-			0u64.into(),
-			OrderId::Deal(deal_order_id.clone()),
+			deal_order_id.clone(),
 			tx_hash.clone()
 		));
 
@@ -1859,8 +1853,10 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(second_test_info.borrower.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			second_test_info.borrower.account_id.clone(),
+			second_test_info.borrower.address_id.clone(),
+			second_test_info.lender.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			33u64.into(),
 			OrderId::Deal(bogus_deal_order_id.clone()),
@@ -1901,8 +1897,10 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(test_info.borrower.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			test_info.borrower.account_id.clone(),
+			test_info.borrower.address_id.clone(),
+			test_info.lender.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			33u64.into(),
 			OrderId::Deal(deal_order_id.clone()),
@@ -1950,8 +1948,10 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(test_info.borrower.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			test_info.borrower.account_id.clone(),
+			test_info.borrower.address_id.clone(),
+			test_info.lender.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			33u64.into(),
 			OrderId::Deal(deal_order_id.clone()),
@@ -1999,8 +1999,10 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(test_info.borrower.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			test_info.borrower.account_id.clone(),
+			test_info.borrower.address_id.clone(),
+			test_info.lender.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			33u64.into(),
 			OrderId::Deal(deal_order_id.clone()),
@@ -2048,8 +2050,10 @@ fn close_deal_order_should_error_when_transfer_amount_is_not_enough() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(test_info.borrower.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			test_info.borrower.account_id.clone(),
+			test_info.borrower.address_id.clone(),
+			test_info.lender.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			33u64.into(),
 			OrderId::Deal(deal_order_id.clone()),
@@ -2098,8 +2102,10 @@ fn close_deal_order_should_succeed() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(test_info.borrower.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			test_info.borrower.account_id.clone(),
+			test_info.borrower.address_id.clone(),
+			test_info.lender.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			33u64.into(),
 			OrderId::Deal(deal_order_id.clone()),
@@ -2231,8 +2237,10 @@ fn exempt_should_error_when_transfer_order_id_doesnt_match_deal_order_id() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(second_test_info.lender.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			second_test_info.lender.account_id.clone(),
+			second_test_info.lender.address_id.clone(),
+			second_test_info.borrower.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			0u64.into(),
 			OrderId::Deal(bogus_deal_order_id.clone()),
@@ -2262,8 +2270,10 @@ fn exempt_should_error_when_transfer_has_been_processed() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(test_info.lender.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			test_info.lender.address_id.clone(),
+			test_info.borrower.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			0u64.into(),
 			OrderId::Deal(deal_order_id.clone()),
@@ -2303,8 +2313,10 @@ fn exempt_should_succeed() {
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		assert_ok!(Creditcoin::register_transfer(
-			Origin::signed(test_info.lender.account_id.clone()),
+		assert_ok!(Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			test_info.lender.address_id.clone(),
+			test_info.borrower.address_id.clone(),
 			TransferKind::Ethless(contract.clone()),
 			0u64.into(),
 			OrderId::Deal(deal_order_id.clone()),

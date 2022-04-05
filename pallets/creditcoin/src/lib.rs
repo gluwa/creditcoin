@@ -54,6 +54,7 @@ pub mod pallet {
 		dispatch::DispatchResult,
 		pallet_prelude::*,
 		traits::{tokens::ExistenceRequirement, Currency},
+		transactional,
 		weights::PostDispatchInfo,
 	};
 	use frame_system::{
@@ -975,94 +976,56 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		#[transactional]
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
-		pub fn register_transfer(
+		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
-			gain: ExternalAmount,
-			order_id: OrderId<T::BlockNumber, T::Hash>,
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
 			blockchain_tx_id: ExternalTxId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let (from_id, to_id, mut amount) = match &order_id {
-				OrderId::Deal(deal_order_id) => {
-					let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
+			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
-					if gain.is_zero() {
-						// transfer for initial loan
-						(order.lender_address_id, order.borrower_address_id, order.terms.amount)
-					} else {
-						// transfer to repay loan
-						(order.borrower_address_id, order.lender_address_id, order.terms.amount)
-					}
-				},
-				OrderId::Repayment(_) => {
-					ensure!(gain.is_zero(), Error::<T>::RepaymentOrderNonZeroGain);
-					return Err(Error::<T>::RepaymentOrderUnsupported.into());
-				},
-			};
+			let (transfer_id, transfer) = Self::register_transfer_internal(
+				who,
+				order.lender_address_id,
+				order.borrower_address_id,
+				transfer_kind,
+				order.terms.amount,
+				OrderId::Deal(deal_order_id),
+				blockchain_tx_id,
+			)?;
+			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
 
-			let from = Self::get_address(&from_id)?;
-			let to = Self::get_address(&to_id)?;
+			Ok(())
+		}
 
-			ensure!(from.owner == who, Error::<T>::NotAddressOwner);
+		#[transactional]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,1))]
+		pub fn register_repayment_transfer(
+			origin: OriginFor<T>,
+			transfer_kind: TransferKind,
+			gain: ExternalAmount,
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+			blockchain_tx_id: ExternalTxId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
 
-			ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
+			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
-			ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
-
-			let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
-			ensure!(
-				!Transfers::<T>::contains_key(&transfer_id),
-				Error::<T>::TransferAlreadyRegistered
-			);
-
-			if *blockchain_tx_id == *b"0" {
-				// this transfer is an exemption, no need to verify it
-				amount = ExternalAmount::zero();
-				let transfer = Transfer {
-					blockchain: from.blockchain,
-					kind: transfer_kind,
-					amount,
-					block: <frame_system::Pallet<T>>::block_number(),
-					from: from_id,
-					to: to_id,
-					order_id,
-					processed: false,
-					sighash: who,
-					tx: blockchain_tx_id,
-				};
-				Self::deposit_event(Event::<T>::TransferRegistered(
-					transfer_id.clone(),
-					transfer.clone(),
-				));
-				Transfers::<T>::insert(transfer_id, transfer);
-			} else {
-				amount += gain;
-				let transfer = Transfer {
-					blockchain: from.blockchain,
-					kind: transfer_kind,
-					amount,
-					block: <frame_system::Pallet<T>>::block_number(),
-					from: from_id,
-					to: to_id,
-					order_id,
-					processed: false,
-					sighash: who,
-					tx: blockchain_tx_id,
-				};
-
-				Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer.clone()));
-
-				let pending = UnverifiedTransfer {
-					from_external: from.value,
-					to_external: to.value,
-					transfer,
-				};
-				UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
-					.map_err(|()| Error::<T>::UnverifiedTransferPoolFull)?;
-			}
+			let (transfer_id, transfer) = Self::register_transfer_internal(
+				who,
+				order.borrower_address_id,
+				order.lender_address_id,
+				transfer_kind,
+				order.terms.amount + gain,
+				OrderId::Deal(deal_order_id),
+				blockchain_tx_id,
+			)?;
+			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
 
 			Ok(())
 		}
