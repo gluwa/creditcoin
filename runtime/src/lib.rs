@@ -62,7 +62,6 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
-mod weights;
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -283,18 +282,18 @@ impl pallet_creditcoin::Config for Runtime {
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
 	type UnverifiedTransferLimit = ConstU32<10000>;
-	type WeightInfo = weights::pallet_creditcoin::WeightInfo<Runtime>;
+	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
 }
 
 impl pallet_difficulty::Config for Runtime {
 	type Moment = u64;
-	type WeightInfo = weights::pallet_difficulty::WeightInfo<Runtime>;
+	type WeightInfo = pallet_difficulty::weights::WeightInfo<Runtime>;
 }
 
 impl pallet_rewards::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
-	type WeightInfo = weights::pallet_rewards::WeightInfo<Runtime>;
+	type WeightInfo = pallet_rewards::weights::WeightInfo<Runtime>;
 }
 
 pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;

@@ -12,6 +12,8 @@ use sp_std::prelude::*;
 #[cfg(test)]
 mod mock;
 
+pub mod weights;
+
 mod benchmarking;
 #[cfg(test)]
 mod tests;

@@ -13,6 +13,8 @@ mod tests;
 
 mod benchmarking;
 
+pub mod weights;
+
 pub type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
