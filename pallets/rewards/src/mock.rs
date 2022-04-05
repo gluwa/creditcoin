@@ -84,6 +84,7 @@ impl pallet_balances::Config for Test {
 impl pallet_rewards::Config for Test {
 	type Event = Event;
 	type Currency = Balances;
+	type WeightInfo = super::weights::WeightInfo<Test>;
 }
 
 // Build genesis storage according to the mock runtime.
