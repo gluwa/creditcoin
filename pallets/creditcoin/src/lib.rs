@@ -260,8 +260,8 @@ pub mod pallet {
 		/// A loan exemption has been granted by a lender. This indicates that the lender
 		/// is releasing some or all of the outstanding debt on the loan. The borrower
 		/// is no longer responsible for repaying the amount.
-		/// [exempted_deal_order_id, exempting_transfer_id]
-		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>, TransferId<T::Hash>),
+		/// [exempted_deal_order_id]
+		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>),
 
 		/// A legacy wallet from Creditcoin 1.X has been claimed. The balance of the legacy wallet
 		/// has been transferred to the owner's Creditcoin 2.0 account.
@@ -1027,14 +1027,15 @@ pub mod pallet {
 		pub fn exempt(
 			origin: OriginFor<T>,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
-			transfer_id: TransferId<T::Hash>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::try_mutate_deal_order_and_transfer(
-				&deal_order_id,
-				&transfer_id,
-				|deal_order| {
+			DealOrders::<T>::try_mutate(
+				&deal_order_id.expiration(),
+				&deal_order_id.hash(),
+				|value| -> DispatchResult {
+					let deal_order =
+						value.as_mut().ok_or(crate::Error::<T>::NonExistentDealOrder)?;
 					ensure!(
 						deal_order.repayment_transfer_id.is_none(),
 						Error::<T>::DealOrderAlreadyClosed
@@ -1043,25 +1044,30 @@ pub mod pallet {
 					let lender = Self::get_address(&deal_order.lender_address_id)?;
 					ensure!(who == lender.owner, Error::<T>::NotLender);
 
-					deal_order.repayment_transfer_id = Some(transfer_id.clone());
+					let fake_transfer = Transfer {
+					order_id: OrderId::Deal(deal_order_id.clone()),
+					block: Self::block_number(),
+					sighash: who,
+					amount: ExternalAmount::zero(),
+					processed: true,
+					kind: TransferKind::Native,
+					tx: ExternalTxId::try_from(b"0".to_vec()).expect(
+						"0 is a length of one which will always be < size bound of ExternalTxId",
+					),
+					blockchain: lender.blockchain.clone(),
+					from: deal_order.lender_address_id.clone(),
+					to: deal_order.lender_address_id.clone(),
+				};
+					let fake_transfer_id =
+						TransferId::new::<T>(&fake_transfer.blockchain, &fake_transfer.tx);
 
-					Ok(None)
-				},
-				|transfer, _| {
-					ensure!(
-						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
-						Error::<T>::TransferMismatch
-					);
+					deal_order.repayment_transfer_id = Some(fake_transfer_id.clone());
 
-					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
-
-					transfer.processed = true;
-
-					Ok(None)
+					Ok(())
 				},
 			)?;
 
-			Self::deposit_event(Event::<T>::LoanExempted(deal_order_id, transfer_id));
+			Self::deposit_event(Event::<T>::LoanExempted(deal_order_id));
 			Ok(())
 		}
 
