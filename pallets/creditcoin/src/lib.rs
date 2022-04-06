@@ -944,7 +944,7 @@ pub mod pallet {
 
 					Ok(Some(Event::<T>::DealOrderClosed(deal_order_id.clone(), deal_order.clone())))
 				},
-				|transfer, deal_order| {
+				|transfer, _deal_order| {
 					ensure!(
 						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
 						Error::<T>::TransferMismatch
@@ -953,14 +953,6 @@ pub mod pallet {
 					ensure!(transfer.block <= Self::block_number(), Error::<T>::MalformedTransfer);
 					ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
 					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
-
-					//TODO: add compound interest formula
-					let expected_interest = deal_order.terms.calc_interest();
-
-					ensure!(
-						transfer.amount >= expected_interest + deal_order.terms.amount,
-						Error::<T>::TransferAmountInsufficient
-					);
 
 					transfer.processed = true;
 					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))

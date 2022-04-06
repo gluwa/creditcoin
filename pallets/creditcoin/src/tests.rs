@@ -1976,35 +1976,6 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 }
 
 #[test]
-fn close_deal_order_should_error_when_transfer_amount_is_not_enough() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (_deal_order, deal_order_id) = test_info.create_deal_order();
-
-		// lock DealOrder
-		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
-			|deal_order_storage| {
-				deal_order_storage.as_mut().unwrap().lock =
-					Some(test_info.borrower.account_id.clone());
-			},
-		);
-
-		let (_, transfer_id) = test_info.create_repayment_transfer(&deal_order_id, 1);
-
-		assert_noop!(
-			Creditcoin::close_deal_order(
-				Origin::signed(test_info.borrower.account_id),
-				deal_order_id,
-				transfer_id,
-			),
-			crate::Error::<Test>::TransferAmountInsufficient
-		);
-	});
-}
-
-#[test]
 fn close_deal_order_should_succeed() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
