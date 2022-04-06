@@ -573,6 +573,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
+			let head = Self::block_number();
+			ensure!(expiration_block >= head, Error::<T>::AskOrderExpired);
+
 			let ask_order_id = AskOrderId::new::<T>(expiration_block, &guid);
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
 
@@ -605,11 +608,15 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
+			let head = Self::block_number();
+			ensure!(expiration_block >= head, Error::<T>::BidOrderExpired);
+
 			let bid_order_id = BidOrderId::new::<T>(expiration_block, &guid);
 			ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
 
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
 			let bid_order = BidOrder {
 				blockchain: address.blockchain,
 				borrower_address_id: address_id,
