@@ -10,6 +10,8 @@ use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
+use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
+use pallet_creditcoin::WeightInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
 use sp_runtime::{
@@ -242,7 +244,7 @@ impl WeightToFeePolynomial for WeightToCtcFee {
 	type Balance = Balance;
 
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		let base = Balance::from(ExtrinsicBaseWeight::get()).saturating_mul(2);
+		let base = Balance::from(creditcoin_weights::<Runtime>::register_address(0, 0));
 		let ratio = TARGET_FEE_CREDO / base;
 		let rem = TARGET_FEE_CREDO % base;
 		smallvec::smallvec!(WeightToFeeCoefficient {
