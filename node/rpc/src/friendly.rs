@@ -70,7 +70,6 @@ pub enum Event {
 
 	LoanExempted {
 		deal_id: DealOrderId<BlockNumber, Hash>,
-		exempt_transfer_id: TransferId<Hash>,
 	},
 
 	LegacyWalletClaimed {
@@ -134,9 +133,7 @@ impl Event {
 				pallet_creditcoin::Event::DealOrderClosed(deal_id, deal) => {
 					Event::DealOrderClosed { deal_id, deal }
 				},
-				pallet_creditcoin::Event::LoanExempted(deal_id, exempt_transfer_id) => {
-					Event::LoanExempted { deal_id, exempt_transfer_id }
-				},
+				pallet_creditcoin::Event::LoanExempted(deal_id) => Event::LoanExempted { deal_id },
 				pallet_creditcoin::Event::LegacyWalletClaimed(
 					new_account_id,
 					legacy_sighash,
