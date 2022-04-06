@@ -139,44 +139,26 @@ impl<T: Config> Pallet<T> {
 		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
 		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
 
-		if *blockchain_tx_id == *b"0" {
-			// this transfer is an exemption, no need to verify it
-			let transfer = Transfer {
-				blockchain: from.blockchain,
-				kind: transfer_kind,
-				amount: ExternalAmount::zero(),
-				block: <frame_system::Pallet<T>>::block_number(),
-				from: from_id,
-				to: to_id,
-				order_id,
-				processed: false,
-				sighash: who,
-				tx: blockchain_tx_id,
-			};
-			Transfers::<T>::insert(transfer_id.clone(), transfer.clone());
-			Ok((transfer_id, transfer))
-		} else {
-			let transfer = Transfer {
-				blockchain: from.blockchain,
-				kind: transfer_kind,
-				amount,
-				block: <frame_system::Pallet<T>>::block_number(),
-				from: from_id,
-				to: to_id,
-				order_id,
-				processed: false,
-				sighash: who,
-				tx: blockchain_tx_id,
-			};
+		let transfer = Transfer {
+			blockchain: from.blockchain,
+			kind: transfer_kind,
+			amount,
+			block: <frame_system::Pallet<T>>::block_number(),
+			from: from_id,
+			to: to_id,
+			order_id,
+			processed: false,
+			sighash: who,
+			tx: blockchain_tx_id,
+		};
 
-			let pending = UnverifiedTransfer {
-				from_external: from.value,
-				to_external: to.value,
-				transfer: transfer.clone(),
-			};
-			UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
-				.map_err(|()| Error::<T>::UnverifiedTransferPoolFull)?;
-			Ok((transfer_id, transfer))
-		}
+		let pending = UnverifiedTransfer {
+			from_external: from.value,
+			to_external: to.value,
+			transfer: transfer.clone(),
+		};
+		UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
+			.map_err(|()| Error::<T>::UnverifiedTransferPoolFull)?;
+		Ok((transfer_id, transfer))
 	}
 }
