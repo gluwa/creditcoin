@@ -458,6 +458,30 @@ fn add_ask_order_basic() {
 }
 
 #[test]
+fn add_ask_order_expired() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let TestInfo { lender, loan_terms, ask_guid, .. } = test_info.clone();
+		let RegisteredAddress { address_id, account_id } = lender;
+
+		let _ask_order = test_info.create_ask_order();
+		let expiration_block = 1_500;
+		System::set_block_number(expiration_block + 1);
+
+		assert_noop!(
+			Creditcoin::add_ask_order(
+				Origin::signed(account_id.clone()),
+				address_id.clone(),
+				loan_terms.into(),
+				expiration_block.clone(),
+				ask_guid
+			),
+			crate::Error::<Test>::AskOrderExpired
+		);
+	});
+}
+
+#[test]
 fn add_ask_order_used_guid() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -542,6 +566,30 @@ fn add_bid_order_basic() {
 
 	ext.persist_offchain_overlay();
 	assert_eq!(ext.offchain_db().get(&bid_guid).unwrap(), bid_order.encode());
+}
+
+#[test]
+fn add_bid_order_expired() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let TestInfo { lender, loan_terms, bid_guid, .. } = test_info.clone();
+		let RegisteredAddress { address_id, account_id } = lender;
+
+		let _bid_order = test_info.create_bid_order();
+		let expiration_block = 1_500;
+		System::set_block_number(expiration_block + 1);
+
+		assert_noop!(
+			Creditcoin::add_bid_order(
+				Origin::signed(account_id.clone()),
+				address_id.clone(),
+				loan_terms.into(),
+				expiration_block.clone(),
+				bid_guid
+			),
+			crate::Error::<Test>::BidOrderExpired
+		);
+	});
 }
 
 #[test]
