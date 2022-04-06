@@ -1008,7 +1008,7 @@ pub mod pallet {
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
-			gain: ExternalAmount,
+			repayment_amount: ExternalAmount,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
 			blockchain_tx_id: ExternalTxId,
 		) -> DispatchResult {
@@ -1021,7 +1021,7 @@ pub mod pallet {
 				order.borrower_address_id,
 				order.lender_address_id,
 				transfer_kind,
-				order.terms.amount + gain,
+				repayment_amount,
 				OrderId::Deal(deal_order_id),
 				blockchain_tx_id,
 			)?;
