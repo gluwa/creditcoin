@@ -1054,14 +1054,14 @@ pub mod pallet {
 					tx: ExternalTxId::try_from(b"0".to_vec()).expect(
 						"0 is a length of one which will always be < size bound of ExternalTxId",
 					),
-					blockchain: lender.blockchain.clone(),
+					blockchain: lender.blockchain,
 					from: deal_order.lender_address_id.clone(),
 					to: deal_order.lender_address_id.clone(),
 				};
 					let fake_transfer_id =
 						TransferId::new::<T>(&fake_transfer.blockchain, &fake_transfer.tx);
 
-					deal_order.repayment_transfer_id = Some(fake_transfer_id.clone());
+					deal_order.repayment_transfer_id = Some(fake_transfer_id);
 
 					Ok(())
 				},
