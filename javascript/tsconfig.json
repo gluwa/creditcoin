@@ -1,23 +1,13 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "paths": {
-      "creditcoin-ts/*": [
-        "./src/*"
-      ],
-      "@polkadot/api/augment": [
-        "./src/interfaces/augment-api.ts"
-      ],
-      "@polkadot/types/augment": [
-        "./src/interfaces/augment-types.ts"
-      ],
-      "@polkadot/types/lookup": [
-        "./src/interfaces/types-lookup.ts"
-      ],
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "paths": {
+            "creditcoin-ts/*": ["./src/*"],
+            "@polkadot/api/augment": ["./src/interfaces/augment-api.ts"],
+            "@polkadot/types/augment": ["./src/interfaces/augment-types.ts"],
+            "@polkadot/types/lookup": ["./src/interfaces/types-lookup.ts"]
+        },
+        "skipLibCheck": true /* Skip type checking all .d.ts files. */
     },
-    "skipLibCheck": true /* Skip type checking all .d.ts files. */
-  },
-  "exclude": [
-    "**/src/interfaces/**/*.ts"
-  ]
- }
+    "exclude": ["**/src/interfaces/**/*.ts"]
+}
