@@ -590,8 +590,7 @@ pub mod pallet {
 			Self::deposit_event(Event::<T>::LegacyWalletClaimed(who, sighash, legacy_balance));
 
 			Ok(PostDispatchInfo {
-				//actual_weight: Some(<T as Config>::WeightInfo::claim_legacy_wallet()),
-				actual_weight: Some(0),
+				actual_weight: None,
 				pays_fee: Pays::No,
 			})
 		}
