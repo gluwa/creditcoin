@@ -483,23 +483,23 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			UnverifiedTransfers::<T>::kill();
 			log::debug!("Cleaning up expired entries");
-			let a = match AskOrders::<T>::remove_prefix(block_number, None) {
+			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
 				KillStorageResult::SomeRemaining(u) => u,
 				KillStorageResult::AllRemoved(u) => u,
 			};
-			let b = match BidOrders::<T>::remove_prefix(block_number, None) {
+			let bid_count = match BidOrders::<T>::remove_prefix(block_number, None) {
 				KillStorageResult::SomeRemaining(u) => u,
 				KillStorageResult::AllRemoved(u) => u,
 			};
-			let o = match Offers::<T>::remove_prefix(block_number, None) {
+			let offer_count = match Offers::<T>::remove_prefix(block_number, None) {
 				KillStorageResult::SomeRemaining(u) => u,
 				KillStorageResult::AllRemoved(u) => u,
 			};
 
-			let mut d = 0usize;
+			let mut deals_count = 0usize;
 			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
 				.filter_map(|(hash, deal)| {
-					d += 1;
+					deals_count += 1;
 					if deal.funding_transfer_id.is_some() {
 						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
 					} else {
@@ -507,19 +507,19 @@ pub mod pallet {
 					}
 				})
 				.collect();
-			let f = deals_to_keep.len();
-			let d = d - f;
+			let funded_deals_count = deals_to_keep.len();
+			let deals_count = deals_count - funded_deals_count;
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
 			}
 
 			<T as Config>::WeightInfo::on_initialize(
 				0,
-				a,
-				b,
-				o,
-				d.unique_saturated_into(),
-				f.unique_saturated_into(),
+				ask_count,
+				bid_count,
+				offer_count,
+				deals_count.unique_saturated_into(),
+				funded_deals_count.unique_saturated_into(),
 			)
 		}
 
@@ -589,10 +589,7 @@ pub mod pallet {
 			LegacyWallets::<T>::remove(&sighash);
 			Self::deposit_event(Event::<T>::LegacyWalletClaimed(who, sighash, legacy_balance));
 
-			Ok(PostDispatchInfo {
-				actual_weight: None,
-				pays_fee: Pays::No,
-			})
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
 		/// Registers an external address on `blockchain` and `network` with value `address`
