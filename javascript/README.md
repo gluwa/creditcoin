@@ -7,7 +7,6 @@ sudo npm install -g yarn
 
 **WARNING:** Node.js 14.x || 16.x is required
 
-
 # Creditcoin PolkdotJs Examples
 
 ## Getting Started
@@ -20,7 +19,6 @@ yarn start
 ```
 
 See the `./src/examples/` directory for more information.
-
 
 # Integration tests for Creditcoin Substrate node
 
