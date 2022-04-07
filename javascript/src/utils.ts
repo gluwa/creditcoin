@@ -12,51 +12,51 @@ export type TxOnSuccess = (result: SubmittableResult) => void;
 export type TxOnFail = (result: SubmittableResult | Error | undefined) => void;
 
 export const handleTransaction = (
-  api: ApiPromise,
-  unsubscribe: () => void,
-  result: SubmittableResult,
-  onSuccess: (result: SubmittableResult) => void,
-  onFail: (result: SubmittableResult | Error | undefined) => void
+    api: ApiPromise,
+    unsubscribe: () => void,
+    result: SubmittableResult,
+    onSuccess: (result: SubmittableResult) => void,
+    onFail: (result: SubmittableResult | Error | undefined) => void,
 ) => {
-  const { dispatchError, events, status } = result;
+    const { dispatchError, events, status } = result;
 
-  console.log(`current status is ${status.toString()}`);
+    console.log(`current status is ${status.toString()}`);
 
-  if (dispatchError) {
-    if (dispatchError.isModule) {
-      const decoded = api.registry.findMetaError(dispatchError.asModule);
-      const { docs, name, section } = decoded;
+    if (dispatchError) {
+        if (dispatchError.isModule) {
+            const decoded = api.registry.findMetaError(dispatchError.asModule);
+            const { docs, name, section } = decoded;
 
-      console.log(`${section}.${name}: ${docs.join(' ')}`);
-    } else {
-      console.log(dispatchError.toString());
+            console.log(`${section}.${name}: ${docs.join(' ')}`);
+        } else {
+            console.log(dispatchError.toString());
+        }
+
+        onFail(result);
+        unsubscribe();
     }
 
-    onFail(result);
-    unsubscribe();
-  }
+    if (status.isInBlock) {
+        events.forEach(({ event }) => {
+            const types = event.typeDef;
 
-  if (status.isInBlock) {
-    events.forEach(({ event }) => {
-      const types = event.typeDef;
+            event.data.forEach((data, index) => {
+                console.log(`pallet: ${event.section} event name: ${event.method}`);
+                console.log(`event types ${types[index].type} event data: ${data.toString()}`);
+            });
+        });
 
-      event.data.forEach((data, index) => {
-        console.log(`pallet: ${event.section} event name: ${event.method}`);
-        console.log(`event types ${types[index].type} event data: ${data.toString()}`);
-      });
-    });
-
-    onSuccess(result);
-    unsubscribe();
-  }
+        onSuccess(result);
+        unsubscribe();
+    }
 };
 
 export const getAddressId = (blockchain: PalletCreditcoinBlockchain | string, externalAddress: string) => {
-  const addressId = u8aConcat(Buffer.from(blockchain.toString().toLowerCase()), Buffer.from(externalAddress));
+    const addressId = u8aConcat(Buffer.from(blockchain.toString().toLowerCase()), Buffer.from(externalAddress));
 
-  return blake2AsHex(addressId);
+    return blake2AsHex(addressId);
 };
 
 export const randomEthAddress = () => {
-  return Wallet.createRandom().address;
+    return Wallet.createRandom().address;
 };
