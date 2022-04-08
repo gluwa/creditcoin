@@ -106,7 +106,7 @@ impl TestInfo {
 		let loan_terms = LoanTerms {
 			amount: ExternalAmount::from(1_000_0000u64),
 			interest_rate: InterestRate { rate_per_period: 1, decimals: 1, period_ms: 1_000_000 },
-			duration: 1_000_000,
+			term_length_ms: 1_000_000,
 		};
 
 		let ask_guid = "ask_guid".as_bytes().into_bounded();
@@ -416,7 +416,7 @@ fn register_transfer_ocw() {
 		let terms = LoanTerms {
 			amount: loan_amount.clone(),
 			interest_rate: InterestRate::default(),
-			duration: 1_000_000_000_000,
+			term_length_ms: 1_000_000_000_000,
 		};
 
 		let ask_guid = B("deadbeef").into_bounded();
@@ -587,13 +587,13 @@ fn add_ask_order_pre_existing() {
 
 #[test]
 #[should_panic]
-fn add_add_ask_order_rejects_zero_duration() {
+fn add_add_ask_order_rejects_zero_term_length_ms() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo {
 			loan_terms: LoanTerms {
 				amount: 0u64.into(),
 				interest_rate: Default::default(),
-				duration: 0,
+				term_length_ms: 0,
 			},
 			..TestInfo::new_defaults()
 		};
@@ -702,13 +702,13 @@ fn add_bid_order_pre_existing() {
 
 #[test]
 #[should_panic]
-fn add_bid_ask_order_rejects_zero_duration() {
+fn add_bid_ask_order_rejects_zero_term_length_ms() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo {
 			loan_terms: LoanTerms {
 				amount: 0u64.into(),
 				interest_rate: Default::default(),
-				duration: 0,
+				term_length_ms: 0,
 			},
 			..TestInfo::new_defaults()
 		};
@@ -1088,7 +1088,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
-				duration: 1_000_000,
+				term_length_ms: 1_000_000,
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -1896,7 +1896,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
-				duration: 1_000_000,
+				term_length_ms: 1_000_000,
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
