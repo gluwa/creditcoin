@@ -1,57 +1,44 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import type { Balance } from '@polkadot/types/interfaces';
-
 import { Guid } from 'js-guid';
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { PalletCreditcoinLoanTerms } from '@polkadot/types/lookup';
+import type { Balance } from '@polkadot/types/interfaces';
+
+import { Blockchain, LoanTerms } from 'credal-js/lib/model';
+import { createCreditcoinLoanTerms } from 'credal-js/lib/transforms';
+import { AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 
 import { POINT_01_CTC } from '../src/constants';
-import { registerAddressAsync, RegisteredAddress } from '../src/examples/register-address';
 import { randomEthAddress } from '../src/utils';
+import * as testUtils from './test-utils';
 
 describe('AddAskOrder', (): void => {
     let api: ApiPromise;
     let lender: KeyringPair;
-    let loanTerms: PalletCreditcoinLoanTerms;
-    let lenderRegAddr: RegisteredAddress;
-    let askGuid: string;
+    let lenderRegAddr: AddressRegistered;
+    let askGuid: Guid;
 
-    const blockchain = 'Ethereum';
+    const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
+    const loanTerms: LoanTerms = {
+        amount: BigInt(1_000),
+        interestRate: 100,
+        maturity: new Date(10),
+    };
 
     beforeEach(async () => {
         process.env.NODE_ENV = 'test';
 
         const provider = new WsProvider('ws://127.0.0.1:9944');
-
         api = await ApiPromise.create({ provider });
-
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthAddress();
-
-        loanTerms = api.createType<PalletCreditcoinLoanTerms>('PalletCreditcoinLoanTerms', {
-            amount: 1_000,
-            interestRate: 100,
-            maturity: 10,
-        });
-
-        const addr = await registerAddressAsync(api, lenderAddress, blockchain, lender);
-
-        expect(addr).toBeTruthy();
-
-        if (addr) {
-            lenderRegAddr = addr;
-            expect(lenderRegAddr.addressId).toBeTruthy();
-            askGuid = Guid.newGuid().toString();
-        } else {
-            throw new Error("Lender address wasn't registered successfully");
-        }
+        lenderRegAddr = await testUtils.registerAddress(api, randomEthAddress(), blockchain, lender);
+        askGuid = Guid.newGuid();
     });
 
     afterEach(async () => {
@@ -61,9 +48,14 @@ describe('AddAskOrder', (): void => {
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
-                .addAskOrder(lenderRegAddr.addressId, loanTerms, expirationBlock, askGuid)
+                .addAskOrder(
+                    lenderRegAddr.addressId,
+                    createCreditcoinLoanTerms(api, loanTerms),
+                    expirationBlock,
+                    askGuid.toString(),
+                )
                 .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    expect(dispatchError).toBeFalsy();
+                    testUtils.expectNoDispatchError(api, dispatchError);
 
                     if (status.isInBlock) {
                         const balancesWithdraw = events.find(({ event: { method, section } }) => {
