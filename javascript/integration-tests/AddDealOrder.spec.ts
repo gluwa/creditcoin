@@ -7,18 +7,17 @@ import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Balance } from '@polkadot/types/interfaces';
 
-import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'credal-js/lib/model';
+import { OfferId, Blockchain, LoanTerms } from 'credal-js/lib/model';
 
 import { POINT_01_CTC } from '../src/constants';
 import { randomEthAddress } from '../src/utils';
 import * as testUtils from './test-utils';
 
-describe('AddOffer', (): void => {
+describe('AddDealOrder', (): void => {
     let api: ApiPromise;
     let borrower: KeyringPair;
     let lender: KeyringPair;
-    let askOrderId: AskOrderId;
-    let bidOrderId: BidOrderId;
+    let offerId: OfferId;
 
     const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
@@ -52,7 +51,6 @@ describe('AddOffer', (): void => {
             askGuid,
             lender,
         );
-        askOrderId = askOrderAdded.askOrderId;
 
         const bidGuid = Guid.newGuid();
         const bidOrderAdded = await testUtils.addBidOrder(
@@ -63,7 +61,15 @@ describe('AddOffer', (): void => {
             bidGuid,
             borrower,
         );
-        bidOrderId = bidOrderAdded.bidOrderId;
+
+        const offer = await testUtils.addOffer(
+            api,
+            askOrderAdded.askOrderId,
+            bidOrderAdded.bidOrderId,
+            expirationBlock,
+            lender,
+        );
+        offerId = offer.offerId;
     }, 210000);
 
     afterEach(async () => {
@@ -73,8 +79,8 @@ describe('AddOffer', (): void => {
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
-                .addOffer(askOrderId, bidOrderId, expirationBlock)
-                .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
+                .addDealOrder(offerId, expirationBlock)
+                .signAndSend(borrower, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     testUtils.expectNoDispatchError(api, dispatchError);
 
                     if (status.isInBlock) {
@@ -104,5 +110,5 @@ describe('AddOffer', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 90000);
+    }, 30000);
 });
