@@ -1,7 +1,7 @@
 use crate::{
 	mock::*, types::DoubleMapExt, AddressId, AskOrder, AskOrderId, Authorities, BidOrder,
-	BidOrderId, Blockchain, DealOrder, DealOrderId, DealOrders, ExternalAddress, ExternalAmount,
-	Guid, Id, InterestRate, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
+	BidOrderId, Blockchain, DealOrder, DealOrderId, DealOrders, Duration, ExternalAddress,
+	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
 	TransferId, TransferKind, Transfers,
 };
 use bstr::B;
@@ -78,8 +78,8 @@ type TestBidOrderId = BidOrderId<u64, H256>;
 type TestOfferId = OfferId<u64, H256>;
 type TestDealOrderId = DealOrderId<u64, H256>;
 type TestTransferId = TransferId<H256>;
-type TestAskOrder = (AskOrder<AccountId, u64, H256, u64>, TestAskOrderId);
-type TestBidOrder = (BidOrder<AccountId, u64, H256, u64>, TestBidOrderId);
+type TestAskOrder = (AskOrder<AccountId, u64, H256>, TestAskOrderId);
+type TestBidOrder = (BidOrder<AccountId, u64, H256>, TestBidOrderId);
 type TestOffer = (Offer<AccountId, u64, H256>, TestOfferId);
 type TestDealOrder = (DealOrder<AccountId, u64, H256, u64>, TestDealOrderId);
 type TestTransfer = (Transfer<AccountId, u64, H256>, TestTransferId);
@@ -87,7 +87,7 @@ type TestTransfer = (Transfer<AccountId, u64, H256>, TestTransferId);
 #[derive(Clone, Debug)]
 pub struct TestInfo {
 	blockchain: Blockchain,
-	loan_terms: LoanTerms<u64>,
+	loan_terms: LoanTerms,
 	lender: RegisteredAddress,
 	borrower: RegisteredAddress,
 	ask_guid: Guid,
@@ -103,11 +103,8 @@ impl TestInfo {
 		let borrower = RegisteredAddress::new(address2, 2, Blockchain::Rinkeby);
 		let blockchain = Blockchain::Rinkeby;
 
-		let loan_terms = LoanTerms {
-			amount: ExternalAmount::from(1_000_0000u64),
-			interest_rate: InterestRate { rate_per_period: 1, decimals: 1, period_ms: 1_000_000 },
-			term_length_ms: 1_000_000,
-		};
+		let loan_terms =
+			LoanTerms { amount: ExternalAmount::from(1_000_0000u64), ..Default::default() };
 
 		let ask_guid = "ask_guid".as_bytes().into_bounded();
 		let bid_guid = "bid_guid".as_bytes().into_bounded();
@@ -413,11 +410,7 @@ fn register_transfer_ocw() {
 			debtor_addr
 		));
 
-		let terms = LoanTerms {
-			amount: loan_amount.clone(),
-			interest_rate: InterestRate::default(),
-			term_length_ms: 1_000_000_000_000,
-		};
+		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
 
 		let ask_guid = B("deadbeef").into_bounded();
 		let ask_id = crate::AskOrderId::new::<Test>(System::block_number() + expiration, &ask_guid);
@@ -593,7 +586,7 @@ fn add_add_ask_order_rejects_zero_term_length_ms() {
 			loan_terms: LoanTerms {
 				amount: 0u64.into(),
 				interest_rate: Default::default(),
-				term_length_ms: 0,
+				term_length: Duration::from_millis(0),
 			},
 			..TestInfo::new_defaults()
 		};
@@ -705,11 +698,7 @@ fn add_bid_order_pre_existing() {
 fn add_bid_ask_order_rejects_zero_term_length_ms() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo {
-			loan_terms: LoanTerms {
-				amount: 0u64.into(),
-				interest_rate: Default::default(),
-				term_length_ms: 0,
-			},
+			loan_terms: LoanTerms { term_length: Duration::from_millis(0), ..Default::default() },
 			..TestInfo::new_defaults()
 		};
 		let _ = test_info.create_bid_order();
@@ -1088,7 +1077,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
-				term_length_ms: 1_000_000,
+				term_length: Duration::from_millis(1_000_000),
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -1896,7 +1885,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
-				term_length_ms: 1_000_000,
+				term_length: Duration::from_millis(1_000_000),
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
