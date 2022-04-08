@@ -1,12 +1,13 @@
 use core::convert::TryFrom;
 
+use crate::{
+	loan_terms::Duration, AddressId, Blockchain, Config, ExternalAmount, OfferId, TransferId,
+};
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::traits::Get;
 use frame_support::weights::Weight;
 use scale_info::TypeInfo;
 use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
-
-use crate::{AddressId, Blockchain, Config, ExternalAmount, OfferId, TransferId};
 
 type OldInterestRate = u64;
 
@@ -78,10 +79,10 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				amount: ask.terms.0.amount,
 				interest_rate: crate::InterestRate {
 					rate_per_period: ask.terms.0.interest_rate,
-					decimals: INTEREST_RATE_PRECISION,
-					period_ms: ask.terms.0.maturity.unique_saturated_into(),
+					decimals: 4,
+					period: Duration::from_millis(ask.terms.0.maturity.unique_saturated_into()),
 				},
-				term_length_ms: ask.terms.0.maturity,
+				term_length: Duration::from_millis(ask.terms.0.maturity.unique_saturated_into()),
 			})
 			.expect("pre-existing ask orders cannot have invalid terms"),
 		})
@@ -103,9 +104,9 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				interest_rate: crate::InterestRate {
 					rate_per_period: bid.terms.0.interest_rate,
 					decimals: INTEREST_RATE_PRECISION,
-					period_ms: bid.terms.0.maturity.unique_saturated_into(),
+					period: Duration::from_millis(bid.terms.0.maturity.unique_saturated_into()),
 				},
-				term_length_ms: bid.terms.0.maturity,
+				term_length: Duration::from_millis(bid.terms.0.maturity.unique_saturated_into()),
 			})
 			.expect("pre-existing bid orders cannot have invalid terms"),
 		})
@@ -126,9 +127,11 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				interest_rate: crate::InterestRate {
 					rate_per_period: deal.terms.interest_rate,
 					decimals: INTEREST_RATE_PRECISION,
-					period_ms: deal.terms.maturity.unique_saturated_into(),
+					period: Duration::from_millis(deal.terms.maturity.unique_saturated_into()),
 				},
-				term_length_ms: deal.terms.maturity.saturating_sub(deal.timestamp),
+				term_length: Duration::from_millis(
+					deal.terms.maturity.saturating_sub(deal.timestamp).unique_saturated_into(),
+				),
 			},
 			expiration_block: deal.expiration_block,
 			timestamp: deal.timestamp,
