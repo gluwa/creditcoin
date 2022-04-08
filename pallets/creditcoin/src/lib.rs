@@ -3,6 +3,7 @@
 
 extern crate alloc;
 
+use frame_support::traits::StorageVersion;
 pub use pallet::*;
 use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
@@ -18,6 +19,7 @@ mod benchmarking;
 
 #[macro_use]
 mod helpers;
+mod migrations;
 mod ocw;
 mod types;
 
@@ -46,6 +48,8 @@ pub mod crypto {
 }
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
+
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -106,6 +110,7 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
@@ -503,6 +508,10 @@ pub mod pallet {
 			} else {
 				log::trace!("Not authority, skipping off chain work");
 			}
+		}
+
+		fn on_runtime_upgrade() -> Weight {
+			migrations::migrate::<T>()
 		}
 	}
 
