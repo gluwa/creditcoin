@@ -127,10 +127,10 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AskOrder<AccountId, BlockNum, Hash, Moment> {
+pub struct AskOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub lender_address_id: AddressId<Hash>,
-	pub terms: AskTerms<Moment>,
+	pub terms: AskTerms,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub lender: AccountId,
@@ -139,10 +139,10 @@ pub struct AskOrder<AccountId, BlockNum, Hash, Moment> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct BidOrder<AccountId, BlockNum, Hash, Moment> {
+pub struct BidOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub borrower_address_id: AddressId<Hash>,
-	pub terms: BidTerms<Moment>,
+	pub terms: BidTerms,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub borrower: AccountId,
@@ -156,7 +156,7 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub offer_id: OfferId<BlockNum, Hash>,
 	pub lender_address_id: AddressId<Hash>,
 	pub borrower_address_id: AddressId<Hash>,
-	pub terms: LoanTerms<Moment>,
+	pub terms: LoanTerms,
 	pub expiration_block: BlockNum,
 	pub timestamp: Moment,
 	pub funding_transfer_id: Option<TransferId<Hash>>,
