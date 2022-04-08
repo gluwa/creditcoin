@@ -11,7 +11,7 @@ use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
 
 type OldInterestRate = u64;
 
-const INTEREST_RATE_PRECISION: u64 = 10_000;
+const OLD_INTEREST_RATE_DECIMALS: u64 = 4;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 struct OldLoanTerms<Moment> {
@@ -79,7 +79,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				amount: ask.terms.0.amount,
 				interest_rate: crate::InterestRate {
 					rate_per_period: ask.terms.0.interest_rate,
-					decimals: 4,
+					decimals: OLD_INTEREST_RATE_DECIMALS,
 					period: Duration::from_millis(ask.terms.0.maturity.unique_saturated_into()),
 				},
 				term_length: Duration::from_millis(ask.terms.0.maturity.unique_saturated_into()),
@@ -103,7 +103,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				amount: bid.terms.0.amount,
 				interest_rate: crate::InterestRate {
 					rate_per_period: bid.terms.0.interest_rate,
-					decimals: INTEREST_RATE_PRECISION,
+					decimals: OLD_INTEREST_RATE_DECIMALS,
 					period: Duration::from_millis(bid.terms.0.maturity.unique_saturated_into()),
 				},
 				term_length: Duration::from_millis(bid.terms.0.maturity.unique_saturated_into()),
@@ -126,7 +126,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				amount: deal.terms.amount,
 				interest_rate: crate::InterestRate {
 					rate_per_period: deal.terms.interest_rate,
-					decimals: INTEREST_RATE_PRECISION,
+					decimals: OLD_INTEREST_RATE_DECIMALS,
 					period: Duration::from_millis(deal.terms.maturity.unique_saturated_into()),
 				},
 				term_length: Duration::from_millis(
