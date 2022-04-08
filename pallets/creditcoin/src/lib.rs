@@ -414,8 +414,8 @@ pub mod pallet {
 		/// The specified guid has already been used and cannot be re-used.
 		GuidAlreadyUsed,
 
-		/// The value of the loan term's duration is zero, which is invalid.
-		InvalidDuration,
+		/// The value of the loan term's term length is zero, which is invalid.
+		InvalidTermLength,
 
 		/// The external address is malformed or otherwise invalid for the platform.
 		MalformedExternalAddress,

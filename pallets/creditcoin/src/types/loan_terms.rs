@@ -26,7 +26,7 @@ pub struct InterestRate {
 pub struct LoanTerms<Moment> {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
-	pub duration: Moment,
+	pub term_length_ms: Moment,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -43,11 +43,11 @@ impl<Moment> Deref for AskTerms<Moment> {
 }
 
 #[derive(Clone, Copy, RuntimeDebug)]
-pub struct InvalidDurationError;
+pub struct InvalidTermLengthError;
 
-impl<T: crate::Config> From<InvalidDurationError> for crate::Error<T> {
-	fn from(_: InvalidDurationError) -> Self {
-		Self::InvalidDuration
+impl<T: crate::Config> From<InvalidTermLengthError> for crate::Error<T> {
+	fn from(_: InvalidTermLengthError) -> Self {
+		Self::InvalidTermLength
 	}
 }
 
@@ -55,10 +55,10 @@ impl<Moment> TryFrom<LoanTerms<Moment>> for AskTerms<Moment>
 where
 	Moment: UniqueSaturatedInto<u64> + Copy,
 {
-	type Error = InvalidDurationError;
+	type Error = InvalidTermLengthError;
 	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
-		if terms.duration.unique_saturated_into() == 0 {
-			return Err(InvalidDurationError);
+		if terms.term_length_ms.unique_saturated_into() == 0 {
+			return Err(InvalidTermLengthError);
 		}
 
 		Ok(Self(terms))
@@ -72,7 +72,7 @@ where
 	pub fn match_with(&self, bid_terms: &BidTerms<Moment>) -> bool {
 		self.amount == bid_terms.amount
 			&& self.interest_rate == bid_terms.interest_rate
-			&& self.duration == bid_terms.duration
+			&& self.term_length_ms == bid_terms.term_length_ms
 	}
 
 	pub fn agreed_terms(&self, bid_terms: BidTerms<Moment>) -> Option<LoanTerms<Moment>> {
@@ -97,10 +97,10 @@ impl<Moment> TryFrom<LoanTerms<Moment>> for BidTerms<Moment>
 where
 	Moment: UniqueSaturatedInto<u64> + Copy,
 {
-	type Error = InvalidDurationError;
+	type Error = InvalidTermLengthError;
 	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
-		if terms.duration.unique_saturated_into() == 0 {
-			return Err(InvalidDurationError);
+		if terms.term_length_ms.unique_saturated_into() == 0 {
+			return Err(InvalidTermLengthError);
 		}
 
 		Ok(Self(terms))
@@ -129,7 +129,7 @@ where
 		Self {
 			amount: Default::default(),
 			interest_rate: InterestRate { rate_per_period: 0, decimals: 1, period_ms: 1 },
-			duration: Moment::one(),
+			term_length_ms: Moment::one(),
 		}
 	}
 }
