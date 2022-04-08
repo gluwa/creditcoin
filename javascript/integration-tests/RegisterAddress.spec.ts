@@ -7,6 +7,7 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { CREDO_PER_CTC } from '../src/constants';
 import { randomEthAddress } from '../src/utils';
+import * as testUtils from './test-utils';
 
 describe('RegisterAddress', (): void => {
     let api: ApiPromise;
@@ -33,7 +34,7 @@ describe('RegisterAddress', (): void => {
             const unsubscribe = api.tx.creditcoin
                 .registerAddress('Ethereum', randomEthAddress())
                 .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    expect(dispatchError).toBeFalsy();
+                    testUtils.expectNoDispatchError(api, dispatchError);
 
                     if (status.isInBlock) {
                         const balancesWithdraw = events.find(({ event: { method, section } }) => {
