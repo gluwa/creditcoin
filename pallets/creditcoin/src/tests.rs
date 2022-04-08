@@ -1,8 +1,8 @@
 use crate::{
 	mock::*, types::DoubleMapExt, AddressId, AskOrder, AskOrderId, Authorities, BidOrder,
 	BidOrderId, Blockchain, DealOrder, DealOrderId, DealOrders, ExternalAddress, ExternalAmount,
-	Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId,
-	TransferKind, Transfers,
+	Guid, Id, InterestRate, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
+	TransferId, TransferKind, Transfers,
 };
 use bstr::B;
 use codec::{Decode, Encode};
@@ -105,8 +105,8 @@ impl TestInfo {
 
 		let loan_terms = LoanTerms {
 			amount: ExternalAmount::from(1_000_0000u64),
-			interest_rate: 1,
-			maturity: 1_000_000,
+			interest_rate: InterestRate { rate_per_period: 1, decimals: 1, period_ms: 1_000_000 },
+			duration: 1_000_000,
 		};
 
 		let ask_guid = "ask_guid".as_bytes().into_bounded();
@@ -415,8 +415,8 @@ fn register_transfer_ocw() {
 
 		let terms = LoanTerms {
 			amount: loan_amount.clone(),
-			interest_rate: 0,
-			maturity: 1_000_000_000_000,
+			interest_rate: InterestRate::default(),
+			duration: 1_000_000_000_000,
 		};
 
 		let ask_guid = B("deadbeef").into_bounded();
@@ -587,10 +587,14 @@ fn add_ask_order_pre_existing() {
 
 #[test]
 #[should_panic]
-fn add_add_ask_order_rejects_zero_maturity() {
+fn add_add_ask_order_rejects_zero_duration() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo {
-			loan_terms: LoanTerms { amount: 0u64.into(), interest_rate: 0, maturity: 0 },
+			loan_terms: LoanTerms {
+				amount: 0u64.into(),
+				interest_rate: Default::default(),
+				duration: 0,
+			},
 			..TestInfo::new_defaults()
 		};
 		let _ = test_info.create_ask_order();
@@ -698,10 +702,14 @@ fn add_bid_order_pre_existing() {
 
 #[test]
 #[should_panic]
-fn add_bid_ask_order_rejects_zero_maturity() {
+fn add_bid_ask_order_rejects_zero_duration() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo {
-			loan_terms: LoanTerms { amount: 0u64.into(), interest_rate: 0, maturity: 0 },
+			loan_terms: LoanTerms {
+				amount: 0u64.into(),
+				interest_rate: Default::default(),
+				duration: 0,
+			},
 			..TestInfo::new_defaults()
 		};
 		let _ = test_info.create_bid_order();
@@ -1103,8 +1111,8 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
-				interest_rate: 0,
-				maturity: 1_000_000,
+				interest_rate: Default::default(),
+				duration: 1_000_000,
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -1936,8 +1944,8 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
-				interest_rate: 0,
-				maturity: 1_000_000,
+				interest_rate: Default::default(),
+				duration: 1_000_000,
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -2104,17 +2112,14 @@ fn close_deal_order_should_succeed() {
 			tx_hash.clone()
 		));
 
-		let (_, transfer_id) = test_info.create_repayment_transfer(
-			&deal_order_id,
-			deal_order.terms.amount + deal_order.terms.calc_interest() + 1u64,
-		);
+		let (_, transfer_id) =
+			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount + 1u64);
 
 		// modify transfer to make sure we have transfered enough funds
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
 			let mut ts = transfer_storage.as_mut().unwrap();
 
-			let interest = deal_order.terms.calc_interest();
-			ts.amount = ExternalAmount::from(deal_order.terms.amount + interest + 1u64);
+			ts.amount = ExternalAmount::from(deal_order.terms.amount + 1u64);
 		});
 
 		assert_ok!(Creditcoin::close_deal_order(
