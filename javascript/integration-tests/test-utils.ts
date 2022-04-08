@@ -1,17 +1,14 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
+import { Guid } from 'js-guid';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import {
-    PalletCreditcoinAskOrderId,
-    PalletCreditcoinBidOrderId,
-    PalletCreditcoinLoanTerms,
-} from '@polkadot/types/lookup';
 
-import { addAskOrderAsync } from '../src/examples/add-ask-order';
-import { addBidOrderAsync } from '../src/examples/add-bid-order';
-import { registerAddressAsync, RegisteredAddress } from '../src/examples/register-address';
+import { Blockchain, LoanTerms } from 'credal-js/lib/model';
+import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
+import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
+import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 
 export const expectNoDispatchError = (api: ApiPromise, dispatchError: any): void => {
     if (dispatchError) {
@@ -29,9 +26,9 @@ export const expectNoDispatchError = (api: ApiPromise, dispatchError: any): void
 export const registerAddress = async (
     api: ApiPromise,
     ethAddress: string,
-    blockchain: string,
+    blockchain: Blockchain,
     signer: KeyringPair,
-): Promise<RegisteredAddress> => {
+): Promise<AddressRegistered> => {
     const addr = await registerAddressAsync(api, ethAddress, blockchain, signer);
     expect(addr).toBeTruthy();
 
@@ -46,35 +43,35 @@ export const registerAddress = async (
 export const addAskOrder = async (
     api: ApiPromise,
     externalAddress: string,
-    loanTerms: PalletCreditcoinLoanTerms,
+    loanTerms: LoanTerms,
     expirationBlock: number,
-    askGuid: string,
+    askGuid: Guid,
     signer: KeyringPair,
-): Promise<PalletCreditcoinAskOrderId> => {
+): Promise<AskOrderAdded> => {
     const result = await addAskOrderAsync(api, externalAddress, loanTerms, expirationBlock, askGuid, signer);
     expect(result).toBeTruthy();
 
     if (result) {
         return result;
     } else {
-        throw new Error('askOrderId not found');
+        throw new Error('askOrder not found');
     }
 };
 
 export const addBidOrder = async (
     api: ApiPromise,
     externalAddress: string,
-    loanTerms: PalletCreditcoinLoanTerms,
+    loanTerms: LoanTerms,
     expirationBlock: number,
-    bidGuid: string,
+    bidGuid: Guid,
     signer: KeyringPair,
-): Promise<PalletCreditcoinBidOrderId> => {
+): Promise<BidOrderAdded> => {
     const result = await addBidOrderAsync(api, externalAddress, loanTerms, expirationBlock, bidGuid, signer);
     expect(result).toBeTruthy();
 
     if (result) {
         return result;
     } else {
-        throw new Error('bidOrderId not found');
+        throw new Error('bidOrder not found');
     }
 };

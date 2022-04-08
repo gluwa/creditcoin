@@ -6,51 +6,39 @@ import { Guid } from 'js-guid';
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { Balance } from '@polkadot/types/interfaces';
-import { PalletCreditcoinLoanTerms } from '@polkadot/types/lookup';
+
+import { Blockchain, LoanTerms } from 'credal-js/lib/model';
+import { createCreditcoinLoanTerms } from 'credal-js/lib/transforms';
+import { AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 
 import { POINT_01_CTC } from '../src/constants';
-import { registerAddressAsync, RegisteredAddress } from '../src/examples/register-address';
 import { randomEthAddress } from '../src/utils';
+import * as testUtils from './test-utils';
 
 describe('AddBidOrder', (): void => {
     let api: ApiPromise;
     let borrower: KeyringPair;
-    let loanTerms: PalletCreditcoinLoanTerms;
-    let borrowerRegAddr: RegisteredAddress;
-    let bidGuid: string;
+    let borrowerRegAddr: AddressRegistered;
+    let bidGuid: Guid;
 
-    const blockchain = 'Ethereum';
+    const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
+    const loanTerms: LoanTerms = {
+        amount: BigInt(1_000),
+        interestRate: 100,
+        maturity: new Date(10),
+    };
 
     beforeEach(async () => {
         process.env.NODE_ENV = 'test';
 
         const provider = new WsProvider('ws://127.0.0.1:9944');
-
         api = await ApiPromise.create({ provider });
-
         const keyring = new Keyring({ type: 'sr25519' });
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const borrowerAddress = randomEthAddress();
-
-        loanTerms = api.createType<PalletCreditcoinLoanTerms>('PalletCreditcoinLoanTerms', {
-            amount: 1_000,
-            interestRate: 100,
-            maturity: 10,
-        });
-
-        const result = await registerAddressAsync(api, borrowerAddress, blockchain, borrower);
-
-        expect(result).toBeTruthy();
-
-        if (result) {
-            borrowerRegAddr = result;
-            expect(borrowerRegAddr.addressId).toBeTruthy();
-            bidGuid = Guid.newGuid().toString();
-        } else {
-            throw new Error("Borrower address wasn't registered successfully");
-        }
+        borrowerRegAddr = await testUtils.registerAddress(api, randomEthAddress(), blockchain, borrower);
+        bidGuid = Guid.newGuid();
     });
 
     afterEach(async () => {
@@ -60,9 +48,14 @@ describe('AddBidOrder', (): void => {
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         return new Promise((resolve, reject) => {
             const unsubscribe = api.tx.creditcoin
-                .addBidOrder(borrowerRegAddr.addressId, loanTerms, expirationBlock, bidGuid)
+                .addBidOrder(
+                    borrowerRegAddr.addressId,
+                    createCreditcoinLoanTerms(api, loanTerms),
+                    expirationBlock,
+                    bidGuid.toString(),
+                )
                 .signAndSend(borrower, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    expect(dispatchError).toBeFalsy();
+                    testUtils.expectNoDispatchError(api, dispatchError);
 
                     if (status.isInBlock) {
                         const balancesWithdraw = events.find(({ event: { method, section } }) => {
