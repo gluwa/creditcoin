@@ -4,12 +4,36 @@ use super::ExternalAmount;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
-use sp_runtime::traits::UniqueSaturatedInto;
 use sp_std::convert::TryFrom;
 
 pub type RatePerPeriod = u64;
 pub type Decimals = u64;
-pub type Period = u64;
+#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct Duration {
+	secs: u64,
+	nanos: u32,
+}
+
+const MILLIS_PER_SEC: u64 = 1_000;
+const NANOS_PER_MILLI: u32 = 1_000_000;
+
+impl Duration {
+	pub const fn new(secs: u64, nanos: u32) -> Self {
+		Self { secs, nanos }
+	}
+	pub const fn from_millis(millis: u64) -> Self {
+		Self {
+			secs: millis / MILLIS_PER_SEC,
+			nanos: ((millis % MILLIS_PER_SEC) as u32) * NANOS_PER_MILLI,
+		}
+	}
+
+	pub const fn is_zero(&self) -> bool {
+		self.secs == 0 && self.nanos == 0
+	}
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
@@ -17,25 +41,25 @@ pub type Period = u64;
 pub struct InterestRate {
 	pub rate_per_period: RatePerPeriod,
 	pub decimals: Decimals,
-	pub period_ms: Period,
+	pub period: Duration,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct LoanTerms<Moment> {
+pub struct LoanTerms {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
-	pub term_length_ms: Moment,
+	pub term_length: Duration,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AskTerms<Moment>(LoanTerms<Moment>);
+pub struct AskTerms(LoanTerms);
 
-impl<Moment> Deref for AskTerms<Moment> {
-	type Target = LoanTerms<Moment>;
+impl Deref for AskTerms {
+	type Target = LoanTerms;
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
@@ -51,13 +75,10 @@ impl<T: crate::Config> From<InvalidTermLengthError> for crate::Error<T> {
 	}
 }
 
-impl<Moment> TryFrom<LoanTerms<Moment>> for AskTerms<Moment>
-where
-	Moment: UniqueSaturatedInto<u64> + Copy,
-{
+impl TryFrom<LoanTerms> for AskTerms {
 	type Error = InvalidTermLengthError;
-	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
-		if terms.term_length_ms.unique_saturated_into() == 0 {
+	fn try_from(terms: LoanTerms) -> Result<Self, Self::Error> {
+		if terms.term_length.is_zero() {
 			return Err(InvalidTermLengthError);
 		}
 
@@ -65,17 +86,14 @@ where
 	}
 }
 
-impl<Moment> AskTerms<Moment>
-where
-	Moment: UniqueSaturatedInto<u64> + Copy + PartialEq,
-{
-	pub fn match_with(&self, bid_terms: &BidTerms<Moment>) -> bool {
+impl AskTerms {
+	pub fn match_with(&self, bid_terms: &BidTerms) -> bool {
 		self.amount == bid_terms.amount
 			&& self.interest_rate == bid_terms.interest_rate
-			&& self.term_length_ms == bid_terms.term_length_ms
+			&& self.term_length == bid_terms.term_length
 	}
 
-	pub fn agreed_terms(&self, bid_terms: BidTerms<Moment>) -> Option<LoanTerms<Moment>> {
+	pub fn agreed_terms(&self, bid_terms: BidTerms) -> Option<LoanTerms> {
 		self.match_with(&bid_terms).then(|| bid_terms.0)
 	}
 }
@@ -83,23 +101,20 @@ where
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct BidTerms<Moment>(LoanTerms<Moment>);
+pub struct BidTerms(LoanTerms);
 
-impl<Moment> Deref for BidTerms<Moment> {
-	type Target = LoanTerms<Moment>;
+impl Deref for BidTerms {
+	type Target = LoanTerms;
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
 }
 
-impl<Moment> TryFrom<LoanTerms<Moment>> for BidTerms<Moment>
-where
-	Moment: UniqueSaturatedInto<u64> + Copy,
-{
+impl TryFrom<LoanTerms> for BidTerms {
 	type Error = InvalidTermLengthError;
-	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
-		if terms.term_length_ms.unique_saturated_into() == 0 {
+	fn try_from(terms: LoanTerms) -> Result<Self, Self::Error> {
+		if terms.term_length.is_zero() {
 			return Err(InvalidTermLengthError);
 		}
 
@@ -107,35 +122,29 @@ where
 	}
 }
 
-impl<Moment> BidTerms<Moment>
-where
-	Moment: UniqueSaturatedInto<u64> + Copy + PartialEq,
-{
-	pub fn match_with(&self, ask_terms: &AskTerms<Moment>) -> bool {
+impl BidTerms {
+	pub fn match_with(&self, ask_terms: &AskTerms) -> bool {
 		ask_terms.match_with(self)
 	}
 
-	pub fn agreed_terms(self, ask_terms: &AskTerms<Moment>) -> Option<LoanTerms<Moment>> {
+	pub fn agreed_terms(self, ask_terms: &AskTerms) -> Option<LoanTerms> {
 		ask_terms.agreed_terms(self)
 	}
 }
 
 #[cfg(test)]
-impl<Moment> Default for LoanTerms<Moment>
-where
-	Moment: sp_runtime::traits::One,
-{
+impl Default for LoanTerms {
 	fn default() -> Self {
 		Self {
 			amount: Default::default(),
-			interest_rate: InterestRate { rate_per_period: 0, decimals: 1, period_ms: 1 },
-			term_length_ms: Moment::one(),
+			interest_rate: InterestRate::default(),
+			term_length: Duration::from_millis(100_000),
 		}
 	}
 }
 #[cfg(test)]
 impl Default for InterestRate {
 	fn default() -> Self {
-		Self { rate_per_period: 0, decimals: 1, period_ms: 1_000_000 }
+		Self { rate_per_period: 0, decimals: 1, period: Duration::from_millis(100_000) }
 	}
 }

@@ -42,12 +42,12 @@ pub enum Event {
 
 	AskOrderAdded {
 		ask_id: AskOrderId<BlockNumber, Hash>,
-		ask: AskOrder<AccountId, BlockNumber, Hash, Moment>,
+		ask: AskOrder<AccountId, BlockNumber, Hash>,
 	},
 
 	BidOrderAdded {
 		bid_id: BidOrderId<BlockNumber, Hash>,
-		bid: BidOrder<AccountId, BlockNumber, Hash, Moment>,
+		bid: BidOrder<AccountId, BlockNumber, Hash>,
 	},
 
 	OfferAdded {
