@@ -7,9 +7,18 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::UniqueSaturatedInto;
 use sp_std::convert::TryFrom;
 
-pub type InterestRate = u64;
+pub type RatePerPeriod = u64;
+pub type Decimals = u64;
+pub type Period = u64;
 
-pub const INTEREST_RATE_PRECISION: u64 = 10_000;
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct InterestRate {
+	pub rate_per_period: RatePerPeriod,
+	pub decimals: Decimals,
+	pub period_ms: Period,
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
@@ -58,12 +67,12 @@ where
 
 impl<Moment> AskTerms<Moment>
 where
-	Moment: UniqueSaturatedInto<u64> + Copy,
+	Moment: UniqueSaturatedInto<u64> + Copy + PartialEq,
 {
 	pub fn match_with(&self, bid_terms: &BidTerms<Moment>) -> bool {
 		self.amount == bid_terms.amount
-			&& (self.interest_rate / self.maturity.unique_saturated_into())
-				>= (bid_terms.interest_rate / bid_terms.maturity.unique_saturated_into())
+			&& self.interest_rate == bid_terms.interest_rate
+			&& self.duration == bid_terms.duration
 	}
 
 	pub fn agreed_terms(&self, bid_terms: BidTerms<Moment>) -> Option<LoanTerms<Moment>> {
@@ -100,7 +109,7 @@ where
 
 impl<Moment> BidTerms<Moment>
 where
-	Moment: UniqueSaturatedInto<u64> + Copy,
+	Moment: UniqueSaturatedInto<u64> + Copy + PartialEq,
 {
 	pub fn match_with(&self, ask_terms: &AskTerms<Moment>) -> bool {
 		ask_terms.match_with(self)
