@@ -5,9 +5,10 @@ import { Guid } from 'js-guid';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { Blockchain, LoanTerms } from 'credal-js/lib/model';
+import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'credal-js/lib/model';
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
 import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
+import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 
 export const expectNoDispatchError = (api: ApiPromise, dispatchError: any): void => {
@@ -73,5 +74,22 @@ export const addBidOrder = async (
         return result;
     } else {
         throw new Error('bidOrder not found');
+    }
+};
+
+export const addOffer = async (
+    api: ApiPromise,
+    askOrderId: AskOrderId,
+    bidOrderId: BidOrderId,
+    expirationBlock: number,
+    signer: KeyringPair,
+): Promise<OfferAdded> => {
+    const result = await addOfferAsync(api, askOrderId, bidOrderId, expirationBlock, signer);
+    expect(result).toBeTruthy();
+
+    if (result) {
+        return result;
+    } else {
+        throw new Error('AddOffer failed');
     }
 };
