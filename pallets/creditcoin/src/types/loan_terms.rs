@@ -17,17 +17,7 @@ pub const INTEREST_RATE_PRECISION: u64 = 10_000;
 pub struct LoanTerms<Moment> {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
-	pub maturity: Moment,
-}
-
-fn calc_interest(principal_amount: &ExternalAmount, interest_rate: InterestRate) -> ExternalAmount {
-	principal_amount * interest_rate / INTEREST_RATE_PRECISION
-}
-
-impl<Moment> LoanTerms<Moment> {
-	pub fn calc_interest(&self) -> ExternalAmount {
-		calc_interest(&self.amount, self.interest_rate)
-	}
+	pub duration: Moment,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -44,11 +34,11 @@ impl<Moment> Deref for AskTerms<Moment> {
 }
 
 #[derive(Clone, Copy, RuntimeDebug)]
-pub struct InvalidMaturityError;
+pub struct InvalidDurationError;
 
-impl<T: crate::Config> From<InvalidMaturityError> for crate::Error<T> {
-	fn from(_: InvalidMaturityError) -> Self {
-		Self::InvalidMaturity
+impl<T: crate::Config> From<InvalidDurationError> for crate::Error<T> {
+	fn from(_: InvalidDurationError) -> Self {
+		Self::InvalidDuration
 	}
 }
 
@@ -56,10 +46,10 @@ impl<Moment> TryFrom<LoanTerms<Moment>> for AskTerms<Moment>
 where
 	Moment: UniqueSaturatedInto<u64> + Copy,
 {
-	type Error = InvalidMaturityError;
+	type Error = InvalidDurationError;
 	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
-		if terms.maturity.unique_saturated_into() == 0 {
-			return Err(InvalidMaturityError);
+		if terms.duration.unique_saturated_into() == 0 {
+			return Err(InvalidDurationError);
 		}
 
 		Ok(Self(terms))
@@ -98,10 +88,10 @@ impl<Moment> TryFrom<LoanTerms<Moment>> for BidTerms<Moment>
 where
 	Moment: UniqueSaturatedInto<u64> + Copy,
 {
-	type Error = InvalidMaturityError;
+	type Error = InvalidDurationError;
 	fn try_from(terms: LoanTerms<Moment>) -> Result<Self, Self::Error> {
-		if terms.maturity.unique_saturated_into() == 0 {
-			return Err(InvalidMaturityError);
+		if terms.duration.unique_saturated_into() == 0 {
+			return Err(InvalidDurationError);
 		}
 
 		Ok(Self(terms))
