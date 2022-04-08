@@ -81,7 +81,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 					decimals: INTEREST_RATE_PRECISION,
 					period_ms: ask.terms.0.maturity.unique_saturated_into(),
 				},
-				duration: ask.terms.0.maturity,
+				term_length_ms: ask.terms.0.maturity,
 			})
 			.expect("pre-existing ask orders cannot have invalid terms"),
 		})
@@ -105,7 +105,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 					decimals: INTEREST_RATE_PRECISION,
 					period_ms: bid.terms.0.maturity.unique_saturated_into(),
 				},
-				duration: bid.terms.0.maturity,
+				term_length_ms: bid.terms.0.maturity,
 			})
 			.expect("pre-existing bid orders cannot have invalid terms"),
 		})
@@ -128,7 +128,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 					decimals: INTEREST_RATE_PRECISION,
 					period_ms: deal.terms.maturity.unique_saturated_into(),
 				},
-				duration: deal.terms.maturity.saturating_sub(deal.timestamp),
+				term_length_ms: deal.terms.maturity.saturating_sub(deal.timestamp),
 			},
 			expiration_block: deal.expiration_block,
 			timestamp: deal.timestamp,
