@@ -2,7 +2,7 @@
 
 yarn install
 
-TARGET_URL=http://127.0.0.1:9933
+TARGET_URL=${1:-http://127.0.0.1:9933}
 CURL_PARAMS="-H 'Content-Type: application/json' -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' $TARGET_URL"
 
 COUNTER=0
