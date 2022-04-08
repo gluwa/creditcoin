@@ -121,16 +121,21 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-	use super::calc_interest;
-	use crate::ExternalAmount;
-	use ethereum_types::U256;
-
-	#[test]
-	pub fn test_calc_interest() {
-		let principal_amount = ExternalAmount::from(100_000u64);
-		let interest_rate_bps = 1_000;
-		let interest = calc_interest(&principal_amount, interest_rate_bps);
-		assert_eq!(interest, U256::from(10_000u64));
+impl<Moment> Default for LoanTerms<Moment>
+where
+	Moment: sp_runtime::traits::One,
+{
+	fn default() -> Self {
+		Self {
+			amount: Default::default(),
+			interest_rate: InterestRate { rate_per_period: 0, decimals: 1, period_ms: 1 },
+			duration: Moment::one(),
+		}
+	}
+}
+#[cfg(test)]
+impl Default for InterestRate {
+	fn default() -> Self {
+		Self { rate_per_period: 0, decimals: 1, period_ms: 1_000_000 }
 	}
 }
