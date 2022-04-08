@@ -163,7 +163,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		AskOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+		AskOrder<T::AccountId, T::BlockNumber, T::Hash>,
 	>;
 
 	#[pallet::storage]
@@ -174,7 +174,7 @@ pub mod pallet {
 		T::BlockNumber,
 		Identity,
 		T::Hash,
-		BidOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+		BidOrder<T::AccountId, T::BlockNumber, T::Hash>,
 	>;
 
 	#[pallet::storage]
@@ -221,7 +221,7 @@ pub mod pallet {
 		/// [ask_order_id, ask_order]
 		AskOrderAdded(
 			AskOrderId<T::BlockNumber, T::Hash>,
-			AskOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+			AskOrder<T::AccountId, T::BlockNumber, T::Hash>,
 		),
 
 		/// A bid order has been added by a prospective borrower. This indicates that the borrower
@@ -229,7 +229,7 @@ pub mod pallet {
 		/// [bid_order_id, bid_order]
 		BidOrderAdded(
 			BidOrderId<T::BlockNumber, T::Hash>,
-			BidOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+			BidOrder<T::AccountId, T::BlockNumber, T::Hash>,
 		),
 
 		/// An offer has been added by a lender. This indicates that the lender
@@ -577,7 +577,7 @@ pub mod pallet {
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			terms: LoanTerms<T::Moment>,
+			terms: LoanTerms,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -612,7 +612,7 @@ pub mod pallet {
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			terms: LoanTerms<T::Moment>,
+			terms: LoanTerms,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -826,7 +826,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			lender_address_id: AddressId<T::Hash>,
 			borrower_address_id: AddressId<T::Hash>,
-			terms: LoanTerms<T::Moment>,
+			terms: LoanTerms,
 			expiration_block: BlockNumberFor<T>,
 			ask_guid: Guid,
 			bid_guid: Guid,
