@@ -1,60 +1,49 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import type { Balance } from '@polkadot/types/interfaces';
-
 import { Guid } from 'js-guid';
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import {
-    PalletCreditcoinAskOrderId,
-    PalletCreditcoinBidOrderId,
-    PalletCreditcoinLoanTerms,
-} from '@polkadot/types/lookup';
+import type { Balance } from '@polkadot/types/interfaces';
+
+import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'credal-js/lib/model';
 
 import { POINT_01_CTC } from '../src/constants';
-
 import { randomEthAddress } from '../src/utils';
 import * as testUtils from './test-utils';
 
 describe('AddOffer', (): void => {
     let api: ApiPromise;
     let borrower, lender: KeyringPair;
-    let loanTerms: PalletCreditcoinLoanTerms;
-    let askGuid, bidGuid: string;
-    let askOrderId: PalletCreditcoinAskOrderId;
-    let bidOrderId: PalletCreditcoinBidOrderId;
+    let askOrderId: AskOrderId;
+    let bidOrderId: BidOrderId;
 
-    const blockchain = 'Ethereum';
+    const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
+    const loanTerms: LoanTerms = {
+        amount: BigInt(1_000),
+        interestRate: 100,
+        maturity: new Date(100),
+    };
 
     beforeEach(async () => {
         process.env.NODE_ENV = 'test';
 
         const provider = new WsProvider('ws://127.0.0.1:9944');
-
         api = await ApiPromise.create({ provider });
-
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         const lenderAddress = randomEthAddress();
         const lenderRegAddr = await testUtils.registerAddress(api, lenderAddress, blockchain, lender);
-        askGuid = Guid.newGuid().toString();
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
         const borrowerAddress = randomEthAddress();
         const borrowerRegAddr = await testUtils.registerAddress(api, borrowerAddress, blockchain, borrower);
-        bidGuid = Guid.newGuid().toString();
 
-        loanTerms = api.createType<PalletCreditcoinLoanTerms>('PalletCreditcoinLoanTerms', {
-            amount: 1_000,
-            interestRate: 100,
-            maturity: 10,
-        });
-
-        askOrderId = await testUtils.addAskOrder(
+        const askGuid = Guid.newGuid();
+        const askOrderAdded = await testUtils.addAskOrder(
             api,
             lenderRegAddr.addressId,
             loanTerms,
@@ -62,7 +51,10 @@ describe('AddOffer', (): void => {
             askGuid,
             lender,
         );
-        bidOrderId = await testUtils.addBidOrder(
+        askOrderId = askOrderAdded.askOrderId;
+
+        const bidGuid = Guid.newGuid();
+        const bidOrderAdded = await testUtils.addBidOrder(
             api,
             borrowerRegAddr.addressId,
             loanTerms,
@@ -70,6 +62,7 @@ describe('AddOffer', (): void => {
             bidGuid,
             borrower,
         );
+        bidOrderId = bidOrderAdded.bidOrderId;
     }, 210000);
 
     afterEach(async () => {
