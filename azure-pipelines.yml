@@ -25,16 +25,15 @@ variables:
   imageRepository: 'gluwa/creditcoin'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   dockerRegistryServiceConnection: 'Gluwa David Lebee'
-
-  # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
 stages:
-- stage: Build
-  displayName: Build and push stage
+# Docker Image
+- stage: BuildContainer
+  displayName: 'Build Containers & Artifacts'
   jobs:
   - job: Build
-    displayName: Build
+    displayName: 'docker-image'
     pool:
       vmImage: $(vmImageName)
     steps:
@@ -67,4 +66,8 @@ stages:
           latest
           $(gitTag)
           $(ccTag)
-          
+
+#Binaries
+  - template: ./ci/templates/build.yml
+    parameters:
+      artifactName: target
