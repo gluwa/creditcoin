@@ -24,8 +24,18 @@ describe('AddOffer', (): void => {
     const expirationBlock = 10_000;
     const loanTerms: LoanTerms = {
         amount: BigInt(1_000),
-        interestRate: 100,
-        maturity: new Date(100),
+        interestRate: {
+            ratePerPeriod: 100,
+            decimals: 4,
+            period: {
+                secs: 60 * 60 * 24,
+                nanos: 0,
+            },
+        },
+        termLength: {
+            secs: 60 * 60 * 24 * 30,
+            nanos: 0,
+        },
     };
 
     beforeEach(async () => {
@@ -36,33 +46,24 @@ describe('AddOffer', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthAddress();
-        const lenderRegAddr = await testUtils.registerAddress(api, lenderAddress, blockchain, lender);
-
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+        const lenderAddress = randomEthAddress();
         const borrowerAddress = randomEthAddress();
-        const borrowerRegAddr = await testUtils.registerAddress(api, borrowerAddress, blockchain, borrower);
+
+        const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
+            testUtils.registerAddress(api, lenderAddress, blockchain, lender),
+            testUtils.registerAddress(api, borrowerAddress, blockchain, borrower),
+        ]);
 
         const askGuid = Guid.newGuid();
-        const askOrderAdded = await testUtils.addAskOrder(
-            api,
-            lenderRegAddr.addressId,
-            loanTerms,
-            expirationBlock,
-            askGuid,
-            lender,
-        );
-        askOrderId = askOrderAdded.askOrderId;
-
         const bidGuid = Guid.newGuid();
-        const bidOrderAdded = await testUtils.addBidOrder(
-            api,
-            borrowerRegAddr.addressId,
-            loanTerms,
-            expirationBlock,
-            bidGuid,
-            borrower,
-        );
+
+        const [askOrderAdded, bidOrderAdded] = await Promise.all([
+            testUtils.addAskOrder(api, lenderRegAddr.addressId, loanTerms, expirationBlock, askGuid, lender),
+            testUtils.addBidOrder(api, borrowerRegAddr.addressId, loanTerms, expirationBlock, bidGuid, borrower),
+        ]);
+
+        askOrderId = askOrderAdded.askOrderId;
         bidOrderId = bidOrderAdded.bidOrderId;
     }, 210000);
 
