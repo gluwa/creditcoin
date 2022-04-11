@@ -25,8 +25,18 @@ describe('AddAskOrder', (): void => {
     const expirationBlock = 10_000;
     const loanTerms: LoanTerms = {
         amount: BigInt(1_000),
-        interestRate: 100,
-        maturity: new Date(10),
+        interestRate: {
+            ratePerPeriod: 100,
+            decimals: 4,
+            period: {
+                secs: 60 * 60 * 24,
+                nanos: 0,
+            },
+        },
+        termLength: {
+            secs: 60 * 60 * 24 * 30,
+            nanos: 0,
+        },
     };
 
     beforeEach(async () => {
