@@ -739,6 +739,30 @@ fn add_offer_existing() {
 }
 
 #[test]
+fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		let (offer, _) = test_info.create_offer();
+		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer.clone();
+
+		// simulate deal transfer
+		crate::AskOrders::<Test>::mutate(
+			&ask_id.expiration(),
+			&ask_id.hash(),
+			|ask_order_storage| {
+				ask_order_storage.as_mut().unwrap().blockchain = Blockchain::Bitcoin;
+			},
+		);
+
+		assert_noop!(
+			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
+			crate::Error::<Test>::AddressPlatformMismatch
+		);
+	})
+}
+
+#[test]
 fn add_deal_order_basic() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
