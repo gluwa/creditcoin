@@ -16,6 +16,7 @@ import {
     DealOrderId,
     LoanTerms,
     OfferId,
+    TransferId,
     TransferKind,
 } from 'credal-js/lib/model';
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
@@ -26,6 +27,7 @@ import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 import { registerDealOrderAsync, DealOrderRegistered } from 'credal-js/lib/extrinsics/register-deal-order';
 import { registerFundingTransferAsync, TransferEvent } from 'credal-js/lib/extrinsics/register-funding-transfer';
+import { fundDealOrderAsync, DealOrderFunded, TransferProcessed } from 'credal-js/lib/extrinsics/fund-deal-order';
 
 const ETHEREUM_ADDRESS = 'http://localhost:8545';
 
@@ -204,6 +206,8 @@ export const prepareEthTransfer = async (
     );
 
     // wait 15 sec for Ethereum (min 12 confirmations)
+    // WARNING: needs hardhat to be configured to produce blocks every second!
+    // see https://github.com/gluwa/hardhat-testing/pull/11
     await sleep(15000);
 
     const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
@@ -227,5 +231,21 @@ export const registerFundingTransfer = async (
         return result;
     } else {
         throw new Error('RegisterFundingTransfer failed');
+    }
+};
+
+export const fundDealOrder = async (
+    api: ApiPromise,
+    dealOrderId: DealOrderId,
+    transferId: TransferId,
+    signer: KeyringPair,
+): Promise<[DealOrderFunded, TransferProcessed]> => {
+    const result = await fundDealOrderAsync(api, dealOrderId, transferId, signer);
+    expect(result).toBeTruthy();
+
+    if (result) {
+        return result;
+    } else {
+        throw new Error('FundDealOrder failed');
     }
 };
