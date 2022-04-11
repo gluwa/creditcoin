@@ -1223,6 +1223,8 @@ fn fund_deal_order_should_error_when_transfer_has_been_processed() {
 #[test]
 fn fund_deal_order_works() {
 	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
 		let test_info = TestInfo::new_defaults();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
@@ -1249,6 +1251,21 @@ fn fund_deal_order_works() {
 			deal_order_id,
 			transfer_id
 		));
+
+		// assert events in reversed order
+		let mut all_events = <frame_system::Pallet<Test>>::events();
+
+		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(
+			event2,
+			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(..))
+		));
+
+		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(
+			event1,
+			crate::mock::Event::Creditcoin(crate::Event::DealOrderFunded(..))
+		));
 	});
 }
 
@@ -1271,8 +1288,16 @@ fn claim_legacy_wallet_works() {
 		.legacy_wallets(vec![(sighash, legacy_amount)]);
 
 	ext.build_and_execute(|| {
-		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pubkey));
+		System::set_block_number(1);
 
+		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pubkey));
+		// assert events in reversed order
+		let mut all_events = <frame_system::Pallet<Test>>::events();
+		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(
+			event,
+			crate::mock::Event::Creditcoin(crate::Event::LegacyWalletClaimed(..))
+		));
 		assert_eq!(frame_system::pallet::Account::<Test>::get(&claimer).data.free, 1000000);
 	});
 }
