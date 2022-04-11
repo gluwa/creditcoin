@@ -5,9 +5,10 @@ import { Guid } from 'js-guid';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'credal-js/lib/model';
+import { AskOrderId, BidOrderId, Blockchain, LoanTerms, OfferId } from 'credal-js/lib/model';
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
 import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
+import { addDealOrderAsync, DealOrderAdded } from 'credal-js/lib/extrinsics/add-deal-order';
 import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 
@@ -91,5 +92,21 @@ export const addOffer = async (
         return result;
     } else {
         throw new Error('AddOffer failed');
+    }
+};
+
+export const addDealOrder = async (
+    api: ApiPromise,
+    offerId: OfferId,
+    expirationBlock: number,
+    signer: KeyringPair,
+): Promise<DealOrderAdded> => {
+    const result = await addDealOrderAsync(api, offerId, expirationBlock, signer);
+    expect(result).toBeTruthy();
+
+    if (result) {
+        return result;
+    } else {
+        throw new Error('AddDealOrder failed');
     }
 };
