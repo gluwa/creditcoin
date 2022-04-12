@@ -41,6 +41,7 @@ jobs:
               compression: gz
               archiveName: "$(REPO_BASE_NAME)-v$(TAG)-${{ build.target }}"
               artifactName: ${{ parameters['artifactName'] }}
+              builder: ${{ build.target }}
 
   - ${{ if contains(build.target, 'apple') }}:
     - template: cargo-build.yml
@@ -64,6 +65,7 @@ jobs:
               archiveType: 7z
               archiveName: "$(REPO_BASE_NAME)-v$(TAG)-${{ build.target }}"
               artifactName: ${{ parameters['artifactName'] }}
+              builder: ${{ build.target }}
 
   - ${{ if contains(build.target, 'windows') }}:
     - template: cargo-build.yml
@@ -86,3 +88,4 @@ jobs:
             parameters:
               archiveName: "$(REPO_BASE_NAME)-v$(TAG)-${{ build.target }}"
               artifactName: ${{ parameters['artifactName'] }}
+              builder: ${{ build.target }}
