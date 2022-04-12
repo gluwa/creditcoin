@@ -337,7 +337,7 @@ fn verify_ethless_transfer() {
 		let to = hex::decode("BBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap().into_bounded();
 		let order_id = crate::OrderId::Deal(crate::DealOrderId::dummy());
 		let amount = sp_core::U256::from(53688044u64);
-		let tx_id = tx_hash.as_bytes().into_bounded();
+		let tx_id = tx_hash.hex_to_address();
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
 			&Blockchain::Rinkeby,
@@ -365,13 +365,13 @@ fn register_transfer_ocw() {
 			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
 		let get_transaction = pending_rpc_request(
 			"eth_getTransactionByHash",
-			vec![tx_hash.into()],
+			Some(serde_json::Value::String(tx_hash.into())),
 			dummy_url,
 			&responses,
 		);
 		let get_transaction_receipt = pending_rpc_request(
 			"eth_getTransactionReceipt",
-			vec![tx_hash.into()],
+			Some(serde_json::Value::String(tx_hash.into())),
 			dummy_url,
 			&responses,
 		);
@@ -453,7 +453,7 @@ fn register_transfer_ocw() {
 			Origin::signed(lender.clone()),
 			TransferKind::Ethless(contract.clone()),
 			deal_order_id.clone(),
-			tx_hash.as_bytes().into_bounded()
+			tx_hash.hex_to_address()
 		));
 		let expected_transfer = crate::Transfer {
 			blockchain,
@@ -465,7 +465,7 @@ fn register_transfer_ocw() {
 			order_id: OrderId::Deal(deal_order_id.clone()),
 			processed: false,
 			sighash: lender.clone(),
-			tx: tx_hash.as_bytes().into_bounded(),
+			tx: tx_hash.hex_to_address(),
 		};
 
 		roll_by_with_ocw(1);
