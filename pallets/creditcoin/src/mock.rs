@@ -104,6 +104,8 @@ impl pallet_creditcoin::Config for Test {
 
 	type PublicSigning = <Signature as Verify>::Signer;
 
+	type HashIntoNonce = H256;
+
 	type UnverifiedTransferLimit = PendingTxLimit;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;

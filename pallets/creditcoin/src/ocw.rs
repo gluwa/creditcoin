@@ -1,6 +1,6 @@
 pub mod errors;
 pub mod rpc;
-use crate::{Blockchain, Call, Transfer, TransferKind, UnverifiedTransfer};
+use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
 
 use self::{
 	errors::{OffchainError, RpcUrlError},
@@ -13,7 +13,7 @@ use super::{
 };
 use alloc::string::String;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
-use ethereum_types::U64;
+use ethereum_types::{U256, U64};
 use frame_support::ensure;
 use frame_system::{
 	offchain::{Account, SendSignedTransaction, Signer},
@@ -57,17 +57,9 @@ fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> 
 	Ok(address)
 }
 
-fn validate_ethless_transfer(
-	from: &Address,
-	to: &Address,
-	contract: &Address,
-	amount: &ExternalAmount,
-	receipt: &EthTransactionReceipt,
-	transaction: &EthTransaction,
-	eth_tip: U64,
-) -> OffchainResult<()> {
+fn ethless_transfer_function_abi() -> Function {
 	#[allow(deprecated)]
-	let transfer_fn = Function {
+	Function {
 		name: "transfer".into(),
 		inputs: vec![
 			Param { name: "_from".into(), kind: ParamType::Address, internal_type: None },
@@ -80,7 +72,21 @@ fn validate_ethless_transfer(
 		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
 		constant: false,
 		state_mutability: StateMutability::NonPayable,
-	};
+	}
+}
+
+fn validate_ethless_transfer(
+	from: &Address,
+	to: &Address,
+	contract: &Address,
+	amount: &ExternalAmount,
+	receipt: &EthTransactionReceipt,
+	transaction: &EthTransaction,
+	eth_tip: U64,
+	id_hash: impl ethereum_types::BigEndianHash<Uint = U256>,
+) -> OffchainResult<()> {
+	let transfer_fn = ethless_transfer_function_abi();
+
 	ensure!(
 		receipt.is_success(),
 		OffchainError::InvalidTransfer("ethless transfer was not successful")
@@ -167,6 +173,20 @@ fn validate_ethless_transfer(
 		)
 	);
 
+	let nonce = match inputs.get(4) {
+		Some(Token::Uint(value)) => ExternalAmount::from(value),
+		_ => {
+			return Err(OffchainError::InvalidTransfer(
+				"fifth input to ethless transfer was not a Uint",
+			))
+		},
+	};
+	let expected_nonce = id_hash.into_uint();
+	ensure!(
+		nonce == expected_nonce,
+		OffchainError::InvalidTransfer("ethless transfer nonce does not match the expected nonce")
+	);
+
 	Ok(())
 }
 
@@ -224,7 +244,7 @@ impl<T: Config> Pallet<T> {
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
-		_order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
+		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
 	) -> OffchainResult<()> {
@@ -246,6 +266,7 @@ impl<T: Config> Pallet<T> {
 			&tx_receipt,
 			&tx,
 			eth_tip,
+			T::HashIntoNonce::from(order_id.hash()),
 		)?;
 
 		Ok(())
@@ -256,12 +277,14 @@ impl<T: Config> Pallet<T> {
 mod tests {
 	use std::{convert::TryFrom, str::FromStr};
 
-	use ethereum_types::{H160, U256, U64};
+	use ethabi::Token;
+	use ethereum_types::{BigEndianHash, H160, U256, U64};
 	use frame_support::{assert_ok, once_cell::sync::Lazy, BoundedVec};
+	use sp_core::H256;
 
 	use super::{
 		errors::OffchainError,
-		parse_eth_address,
+		ethless_transfer_function_abi, parse_eth_address,
 		rpc::{Address, EthTransaction, EthTransactionReceipt},
 		validate_ethless_transfer, ETH_CONFIRMATIONS,
 	};
@@ -336,6 +359,7 @@ mod tests {
 		receipt: EthTransactionReceipt,
 		transaction: EthTransaction,
 		tip: U64,
+		nonce: U256,
 	}
 
 	impl Default for EthlessTestArgs {
@@ -348,14 +372,27 @@ mod tests {
 				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
 				transaction: ETH_TRANSACTION.clone(),
 				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS),
+				nonce: U256::from_dec_str(
+					"979732326222468652918279417612319888321218652914508214827914231471334244789",
+				)
+				.unwrap(),
 			}
 		}
 	}
 
 	fn test_validate_ethless_transfer(args: EthlessTestArgs) -> Result<(), OffchainError> {
-		let EthlessTestArgs { from, to, contract, amount, receipt, transaction, tip } = args;
+		let EthlessTestArgs { from, to, contract, amount, receipt, transaction, tip, nonce } = args;
 
-		validate_ethless_transfer(&from, &to, &contract, &amount, &receipt, &transaction, tip)
+		validate_ethless_transfer(
+			&from,
+			&to,
+			&contract,
+			&amount,
+			&receipt,
+			&transaction,
+			tip,
+			H256::from_uint(&nonce),
+		)
 	}
 
 	#[test]
