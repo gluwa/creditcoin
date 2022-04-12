@@ -18,6 +18,7 @@ parameters:
   archiveName: "$(Build.Repository.Name)"
   archiveType: zip
   compression: none
+  builder: x86_64-unknown-linux-gnu
 
 steps:
   - task: CopyFiles@2
@@ -30,7 +31,7 @@ steps:
     - task: ArchiveFiles@2
       displayName: Archive files
       inputs:
-        rootFolderOrFile: "$(Build.BinariesDirectory)"
+        rootFolderOrFile: "$(Build.BinariesDirectory)/${{ parameters['builder'] }}/release"
         includeRootFolder: false
         archiveType: ${{ parameters['archiveType'] }}
         tarCompression: ${{ parameters['compression'] }}
