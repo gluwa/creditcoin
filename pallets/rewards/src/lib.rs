@@ -13,6 +13,7 @@ mod tests;
 
 mod benchmarking;
 
+#[allow(clippy::unnecessary_cast)]
 pub mod weights;
 
 pub type BalanceOf<T> =
