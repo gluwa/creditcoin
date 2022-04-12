@@ -648,6 +648,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "capture-logger"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "605a59c5054ce9e87cd329251bcc4c04579d5edbd206b1e4c45fbfe24b13ff82"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "cargo-platform"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3976,6 +3985,7 @@ dependencies = [
  "base58",
  "bitcoin-bech32",
  "bstr",
+ "capture-logger",
  "ethabi",
  "ethereum-types",
  "extend",
