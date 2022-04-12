@@ -115,4 +115,40 @@ describe('RegisterDealOrder', (): void => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
     }, 30000);
+
+    it('fee scales linearly', async (): Promise<void> => {
+        // WARNING: don't use Promise.all() here b/c it doesn't guarantee
+        // execution order
+        const fee01 = await getRegisterDealOrderFee();
+console.log("***** after fee01", fee01);
+
+        const fee02 = await getRegisterDealOrderFee();
+console.log("***** after fee02", fee02);
+
+        const fee03 = await getRegisterDealOrderFee();
+console.log("***** after fee03", fee03);
+
+        const fee04 = await getRegisterDealOrderFee();
+console.log("***** after fee04", fee04);
+
+        const fee05 = await getRegisterDealOrderFee();
+console.log("***** after fee05", fee05);
+
+        const fee06 = await getRegisterDealOrderFee();
+console.log("***** after fee06", fee06);
+
+        const fee07 = await getRegisterDealOrderFee();
+console.log("***** after fee07", fee07);
+
+        const fee08 = await getRegisterDealOrderFee();
+console.log("***** after fee08", fee08);
+
+        const fee09 = await getRegisterDealOrderFee();
+console.log("***** after fee09", fee09);
+
+        const fee10 = await getRegisterDealOrderFee();
+console.log("***** after fee10", fee10);
+
+        expect(fee01).toBeLessThan(fee10);
+    }, 600000);
 });
