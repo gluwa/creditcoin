@@ -311,13 +311,13 @@ pub fn eth_get_transaction_receipt(
 ) -> OffchainResult<EthTransactionReceipt, RpcError> {
 	let rpc_req = JsonRpcRequest::new(
 		"eth_getTransactionReceipt",
-		vec![serde_json::Value::String(to_json_hex(tx_id.as_ref()))],
+		Some(serde_json::Value::String(to_json_hex(tx_id.as_ref()))),
 	);
 	rpc_req.send(rpc_url)
 }
 
 pub fn eth_get_block_number(rpc_url: &str) -> OffchainResult<U64, RpcError> {
-	let rpc_req = JsonRpcRequest::new("eth_blockNumber", vec![]);
+	let rpc_req = JsonRpcRequest::new("eth_blockNumber", None);
 	rpc_req.send(rpc_url)
 }
 
