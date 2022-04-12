@@ -41,28 +41,7 @@ describe('RegisterDealOrder', (): void => {
             nanos: 0,
         },
     };
-
-    beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
-
-        const provider = new WsProvider('ws://127.0.0.1:9944');
-        api = await ApiPromise.create({ provider });
-        const keyring = new Keyring({ type: 'sr25519' });
-
-        lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthAddress();
-        lenderRegAddr = await testUtils.registerAddress(api, lenderAddress, blockchain, lender);
-
-        borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const borrowerAddress = randomEthAddress();
-        borrowerRegAddr = await testUtils.registerAddress(api, borrowerAddress, blockchain, borrower);
-    }, 60000);
-
-    afterEach(async () => {
-        await api.disconnect();
-    });
-
-    it('fee is min 0.01 CTC', async (): Promise<void> => {
+    const getRegisterDealOrderFee = (): Promise<BigInt> => {
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
@@ -106,7 +85,33 @@ describe('RegisterDealOrder', (): void => {
                     }
                 })
                 .catch((reason) => reject(reason));
-        }).then((fee) => {
+        });
+    };
+
+    beforeEach(async () => {
+        process.env.NODE_ENV = 'test';
+
+        const provider = new WsProvider('ws://127.0.0.1:9944');
+        api = await ApiPromise.create({ provider });
+        const keyring = new Keyring({ type: 'sr25519' });
+
+        lender = keyring.addFromUri('//Alice', { name: 'Alice' });
+        const lenderAddress = randomEthAddress();
+
+        borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+        const borrowerAddress = randomEthAddress();
+        [lenderRegAddr, borrowerRegAddr] = await Promise.all([
+            testUtils.registerAddress(api, lenderAddress, blockchain, lender),
+            testUtils.registerAddress(api, borrowerAddress, blockchain, borrower),
+        ]);
+    }, 60000);
+
+    afterEach(async () => {
+        await api.disconnect();
+    });
+
+    it('fee is min 0.01 CTC', async (): Promise<void> => {
+        return getRegisterDealOrderFee().then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
     }, 30000);
