@@ -1,12 +1,11 @@
-use parking_lot::RwLock;
-use std::{collections::HashMap, sync::Arc};
-
 use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest, LegacySighash};
+use capture_logger::{begin_capture, pop_captured};
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
 };
 use frame_system as system;
+use parking_lot::RwLock;
 use sp_core::H256;
 use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
 use sp_runtime::{
@@ -20,6 +19,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, Extrinsic as ExtrinsicT, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, RuntimeAppPublic,
 };
+use std::{collections::HashMap, sync::Arc};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -215,6 +215,9 @@ impl ExtBuilder {
 	pub fn build_offchain(
 		mut self,
 	) -> (sp_io::TestExternalities, Arc<RwLock<OffchainState>>, Arc<RwLock<PoolState>>) {
+		if let None = self.keystore {
+			self.keystore = Some(KeyStore::new());
+		}
 		let keystore = core::mem::take(&mut self.keystore);
 		let mut ext = self.build();
 		let (offchain, offchain_state) = TestOffchainExt::new();
@@ -293,4 +296,17 @@ pub fn pending_rpc_request(
 		sent: true,
 		..Default::default()
 	}
+}
+
+#[test]
+fn offchain_worker_should_log_when_authority_is_missing() {
+	ExtBuilder::default().build_offchain_and_execute(|| {
+		System::set_block_number(1);
+
+		begin_capture();
+
+		Creditcoin::offchain_worker(System::block_number());
+
+		assert_eq!(pop_captured().unwrap().message(), "No authority, skipping off chain work");
+	});
 }
