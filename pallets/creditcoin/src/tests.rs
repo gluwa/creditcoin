@@ -6,11 +6,11 @@ use crate::{
 };
 use bstr::B;
 use codec::{Decode, Encode};
-use ethereum_types::H256;
+use ethereum_types::{BigEndianHash, H256};
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
 
-use sp_core::Pair;
+use sp_core::{Pair, U256};
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
@@ -336,8 +336,16 @@ fn verify_ethless_transfer() {
 
 		let from = hex::decode("f04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap().into_bounded();
 		let to = hex::decode("BBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap().into_bounded();
-		let order_id = crate::OrderId::Deal(crate::DealOrderId::dummy());
-		let amount = sp_core::U256::from(53688044u64);
+		let order_id = crate::OrderId::Deal(crate::DealOrderId::with_expiration_hash::<Test>(
+			10000,
+			H256::from_uint(
+				&U256::from_dec_str(
+					"979732326222468652918279417612319888321218652914508214827914231471334244789",
+				)
+				.unwrap(),
+			),
+		));
+		let amount = U256::from(53688044u64);
 		let tx_id = tx_hash.hex_to_address();
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
@@ -450,11 +458,30 @@ fn register_transfer_ocw() {
 			expiration
 		));
 
+		let deal_id_hash = H256::from_uint(
+			&U256::from_dec_str(
+				"979732326222468652918279417612319888321218652914508214827914231471334244789",
+			)
+			.unwrap(),
+		);
+
+		// this is kind of a gross hack, basically when I made the test transfer on luniverse to pull the mock responses
+		// I didn't pass the proper `nonce` to the smart contract, and it's a pain to redo the transaction and update all the tests,
+		// so here we just "change" the deal_order_id to one with a `hash` that matches the expected nonce so that the transfer
+		// verification logic is happy
+		let deal = crate::DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
+		crate::DealOrders::<Test>::remove(deal_order_id.expiration(), deal_order_id.hash());
+		let fake_deal_order_id = crate::DealOrderId::with_expiration_hash::<Test>(
+			deal_order_id.expiration(),
+			deal_id_hash,
+		);
+		crate::DealOrders::<Test>::insert_id(fake_deal_order_id.clone(), deal);
+
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
 			TransferKind::Ethless(contract.clone()),
-			deal_order_id.clone(),
-			tx_hash.hex_to_address()
+			fake_deal_order_id.clone(),
+			tx_hash.hex_to_address(),
 		));
 		let expected_transfer = crate::Transfer {
 			blockchain,
@@ -463,7 +490,7 @@ fn register_transfer_ocw() {
 			block: System::block_number(),
 			from: lender_address_id.clone(),
 			to: debtor_address_id.clone(),
-			order_id: OrderId::Deal(deal_order_id.clone()),
+			order_id: OrderId::Deal(fake_deal_order_id.clone()),
 			processed: false,
 			sighash: lender.clone(),
 			tx: tx_hash.hex_to_address(),
