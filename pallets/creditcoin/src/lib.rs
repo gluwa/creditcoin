@@ -12,6 +12,7 @@ use sp_std::prelude::*;
 #[cfg(test)]
 mod mock;
 
+#[allow(clippy::unnecessary_cast)]
 pub mod weights;
 
 mod benchmarking;

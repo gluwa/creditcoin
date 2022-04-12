@@ -9,6 +9,7 @@ use sp_runtime::traits::{SaturatedConversion, UniqueSaturatedInto};
 #[cfg(test)]
 mod mock;
 
+#[allow(clippy::unnecessary_cast)]
 pub mod weights;
 
 #[cfg(test)]
