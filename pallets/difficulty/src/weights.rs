@@ -32,14 +32,14 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `super`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
-	// Storage: Difficulty TargetBlockTime (r:0 w:1)
-	fn set_target_block_time() -> Weight {
-		(1_600_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-	}
-	// Storage: Difficulty DifficultyAdjustmentPeriod (r:0 w:1)
-	fn set_adjustment_period() -> Weight {
-		(1_800_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-	}
+        // Storage: Difficulty TargetBlockTime (r:0 w:1)
+        fn set_target_block_time() -> Weight {
+                (4_300_000 as Weight)
+                        .saturating_add(T::DbWeight::get().writes(1 as Weight))
+        }
+        // Storage: Difficulty DifficultyAdjustmentPeriod (r:0 w:1)
+        fn set_adjustment_period() -> Weight {
+                (3_900_000 as Weight)
+                        .saturating_add(T::DbWeight::get().writes(1 as Weight))
+        }
 }
