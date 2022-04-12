@@ -3,9 +3,10 @@ use super::*;
 
 use crate::benchmarking::alloc::format;
 use crate::types::Blockchain;
+use crate::Duration;
 #[allow(unused)]
 use crate::Pallet as Creditcoin;
-use crate::{AskOrderId, LoanTerms};
+use crate::{AskOrderId, InterestRate, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
 	pallet_prelude::*,
@@ -50,8 +51,8 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 
 		let lender = lender_account::<T>(false);
-		let terms =
-			LoanTerms { amount: 10u64.into(), interest_rate: 1, maturity: <Timestamp<T>>::now() };
+
+		let terms = get_all_fit_terms::<T>();
 
 		let expiration_block = T::BlockNumber::one();
 		//generate this many filler asks
@@ -119,25 +120,19 @@ benchmarks! {
 	add_ask_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = lender_account::<T>(true);
-		let loan_terms = LoanTerms{
-			amount: 10u64.into(),
-			interest_rate: 1,
-			maturity: <Timestamp<T>>::now(),
-		};
+		let terms = get_all_fit_terms::<T>();
 		let expiration_block = T::BlockNumber::one();
 
-		let (address_id,ask_id,guid) = generate_ask::<T>(&who,&loan_terms,&expiration_block,false,0).unwrap();
+		let (address_id,ask_id,guid) = generate_ask::<T>(&who,&terms,&expiration_block,false,0).unwrap();
 
-	}: _(RawOrigin::Signed(who),address_id,loan_terms,expiration_block.into(),guid.into_bounded())
+	}: _(RawOrigin::Signed(who),address_id,terms,expiration_block.into(),guid.into_bounded())
 
 	add_bid_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = borrower_account::<T>(true);
-		let loan_terms = LoanTerms{
-			amount: 10u64.into(),
-			interest_rate: 1,
-			maturity: <Timestamp<T>>::now(),
-		};
+
+		let loan_terms = get_all_fit_terms::<T>();
+
 		let expiration_block = T::BlockNumber::one();
 
 		let (address_id,bid_id,guid) = generate_bid::<T>(&who,&loan_terms,&expiration_block,false,0).unwrap();
@@ -147,11 +142,7 @@ benchmarks! {
 	add_offer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
-		let loan_terms = LoanTerms{
-			amount: 10u64.into(),
-			interest_rate: 1,
-			maturity: <Timestamp<T>>::now(),
-		};
+		let loan_terms = get_all_fit_terms::<T>();
 		let expiration_block = T::BlockNumber::one();
 
 		let (_, ask_id, bid_id) = generate_offer::<T>(&lender,&loan_terms,&expiration_block,false,0u8).unwrap();
@@ -162,11 +153,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender = lender_account::<T>(false);
 		let borrower= borrower_account::<T>(true);
-		let loan_terms = LoanTerms{
-			amount: 10u64.into(),
-			interest_rate: 1,
-			maturity: <Timestamp<T>>::now(),
-		};
+		let loan_terms = get_all_fit_terms::<T>();
 		let expiration_block = T::BlockNumber::one();
 
 		let (offer_id,ask_id,bid_id) = generate_offer::<T>(&lender, &loan_terms, &expiration_block, true,0u8).unwrap();
@@ -228,11 +215,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender:T::AccountId = lender_account::<T>(true);
 		let lender_addr_id = register_eth_addr::<T>(&lender,"f04349B4A760F5Aed02131e0dAA9bB99a1d1d1e4");
-		let terms = LoanTerms{
-			amount: 10u64.into(),
-			interest_rate: 1,
-			maturity: <Timestamp<T>>::now(),
-		};
+		let terms = get_all_fit_terms::<T>();
 		let expiry = T::BlockNumber::one();
 		let ask_guid = "ask_guid".as_bytes();
 		let bid_guid = "bid_guid".as_bytes();
@@ -257,6 +240,17 @@ benchmarks! {
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
+fn get_all_fit_terms<T: Config>() -> LoanTerms {
+	LoanTerms {
+		amount: 10u64.into(),
+		interest_rate: InterestRate {
+			rate_per_period: 1,
+			decimals: 1,
+			period: Duration::from_millis(100),
+		},
+		term_length: Duration::new(1u64, 0u32),
+	}
+}
 
 fn generate_funded_deal<T: Config>(
 	fund: bool,
@@ -386,14 +380,12 @@ fn generate_deal<T: Config>(
 	let lender = lender_account::<T>(true);
 	//let authority = authority_account::<T>(false);
 	//<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
-	let loan_terms =
-		LoanTerms { amount: 10u64.into(), interest_rate: 1, maturity: <Timestamp<T>>::now() };
+	let terms = get_all_fit_terms::<T>();
 	let expiration_block = T::BlockNumber::one();
 
 	let borrower = borrower_account::<T>(false);
 	let origin = RawOrigin::Signed(borrower).into();
-	let (offer_id, _, _) =
-		generate_offer::<T>(&lender, &loan_terms, &expiration_block, true, seed)?;
+	let (offer_id, _, _) = generate_offer::<T>(&lender, &terms, &expiration_block, true, seed)?;
 
 	let deal_id = DealOrderId::new::<T>(expiration_block.clone(), &offer_id);
 
@@ -406,7 +398,7 @@ fn generate_deal<T: Config>(
 
 fn generate_offer<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms<T::Moment>,
+	loan_terms: &LoanTerms,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
@@ -452,7 +444,7 @@ fn register_eth_addr<T: Config>(who: &T::AccountId, hex_addr: &str) -> AddressId
 
 fn generate_ask<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms<T::Moment>,
+	loan_terms: &LoanTerms,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
@@ -480,7 +472,7 @@ fn generate_ask<T: Config>(
 
 fn generate_bid<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms<T::Moment>,
+	loan_terms: &LoanTerms,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
