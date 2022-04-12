@@ -398,6 +398,39 @@ impl_id!(BidOrderId);
 impl_id!(OfferId);
 impl_id!(RepaymentOrderId);
 
+impl<'a, B, H> Id<B, H> for &'a OrderId<B, H>
+where
+	B: Clone,
+	H: Clone,
+{
+	fn expiration(&self) -> B {
+		match self {
+			OrderId::Deal(deal) => deal.expiration(),
+			OrderId::Repayment(repay) => repay.expiration(),
+		}
+	}
+
+	fn hash(&self) -> H {
+		match self {
+			OrderId::Deal(deal) => deal.hash(),
+			OrderId::Repayment(repay) => repay.hash(),
+		}
+	}
+}
+impl<B, H> Id<B, H> for OrderId<B, H>
+where
+	B: Clone,
+	H: Clone,
+{
+	fn expiration(&self) -> B {
+		(&self).expiration()
+	}
+
+	fn hash(&self) -> H {
+		(&self).hash()
+	}
+}
+
 #[ext(name = DoubleMapExt)]
 pub(crate) impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value, QueryKind, OnEmpty, MaxValues, IdTy>
 	frame_support::storage::types::StorageDoubleMap<
