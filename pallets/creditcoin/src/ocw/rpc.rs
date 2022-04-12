@@ -281,18 +281,26 @@ impl EthTransactionReceipt {
 	}
 }
 
+fn to_json_hex(bytes: &[u8]) -> String {
+	use core::ops::Not;
+	let hex = hex::encode(bytes);
+	if hex.is_empty().not() {
+		let mut buf = String::with_capacity(hex.len() + 2);
+		buf.push_str("0x");
+		buf.push_str(&hex);
+		buf
+	} else {
+		hex
+	}
+}
+
 pub fn eth_get_transaction(
 	tx_id: &ExternalTxId,
 	rpc_url: &str,
 ) -> OffchainResult<EthTransaction, RpcError> {
 	let rpc_req = JsonRpcRequest::new(
 		"eth_getTransactionByHash",
-		vec![serde_json::Value::String(
-			alloc::string::String::from_utf8(tx_id.clone().into()).map_err(|err| {
-				log::error!("failed to get eth transaction, tx id is invalid utf8: {}", err);
-				RpcError::InvalidArgument("transaction id is invalid utf8")
-			})?,
-		)],
+		Some(serde_json::Value::String(to_json_hex(tx_id.as_ref()))),
 	);
 	rpc_req.send(rpc_url)
 }
@@ -303,15 +311,7 @@ pub fn eth_get_transaction_receipt(
 ) -> OffchainResult<EthTransactionReceipt, RpcError> {
 	let rpc_req = JsonRpcRequest::new(
 		"eth_getTransactionReceipt",
-		vec![serde_json::Value::String(String::from_utf8(tx_id.clone().into()).map_err(
-			|err| {
-				log::error!(
-					"failed to get eth transaction receipt, tx id is invalid utf8: {}",
-					err
-				);
-				RpcError::InvalidArgument("transaction id is invalid utf8")
-			},
-		)?)],
+		vec![serde_json::Value::String(to_json_hex(tx_id.as_ref()))],
 	);
 	rpc_req.send(rpc_url)
 }
@@ -319,4 +319,14 @@ pub fn eth_get_transaction_receipt(
 pub fn eth_get_block_number(rpc_url: &str) -> OffchainResult<U64, RpcError> {
 	let rpc_req = JsonRpcRequest::new("eth_blockNumber", vec![]);
 	rpc_req.send(rpc_url)
+}
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn to_json_hex_works() {
+		assert_eq!(super::to_json_hex(&[0x01, 0x02, 0x03]), "0x010203");
+		assert_eq!(super::to_json_hex(&[0x01, 0x00, 0x03]), "0x010003");
+		assert_eq!(super::to_json_hex(&[]), "");
+	}
 }
