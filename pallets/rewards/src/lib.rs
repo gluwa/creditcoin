@@ -11,8 +11,10 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+
+#[allow(clippy::unnecessary_cast)]
+pub mod weights;
 
 pub type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -43,6 +45,13 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		type Currency: Currency<AccountIdOf<Self>>;
+
+		type WeightInfo: WeightInfo;
+	}
+
+	pub trait WeightInfo {
+		fn on_finalize() -> Weight;
+		fn on_initialize() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -73,7 +82,7 @@ pub mod pallet {
 				BlockAuthor::<T>::put(author);
 			}
 
-			0
+			T::WeightInfo::on_finalize().saturating_add(T::WeightInfo::on_initialize())
 		}
 
 		fn on_finalize(block_number: BlockNumberFor<T>) {
