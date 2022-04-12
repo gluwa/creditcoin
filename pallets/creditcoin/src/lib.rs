@@ -106,6 +106,16 @@ pub mod pallet {
 
 		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
 
+		// in order to turn a `Hash` into a U256 for checking the nonces on
+		// ethless transfers we need the `Hash` type to implement
+		// the BigEndianHash trait. This effectively constrains the Hash
+		// type to H256, which sort of defeats the purpose of it being an associated type.
+		// However a lot of code refers to Config::Hash, so right now this is the least invasive way
+		// to get the compiler to let us do the Config::Hash -> U256 conversion
+		type HashIntoNonce: IsType<<Self as frame_system::Config>::Hash>
+			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
+			+ Clone;
+
 		type UnverifiedTransferLimit: Get<u32>;
 	}
 
