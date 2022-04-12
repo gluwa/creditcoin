@@ -128,7 +128,6 @@ pub mod pallet {
 		fn fund_deal_order() -> Weight;
 		fn lock_deal_order() -> Weight;
 		fn register_transfer_ocw() -> Weight;
-		fn register_transfer_exempt() -> Weight;
 		fn close_deal_order() -> Weight;
 		fn exempt() -> Weight;
 		fn register_deal_order() -> Weight;
