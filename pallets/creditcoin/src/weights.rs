@@ -144,14 +144,6 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
-	// Storage: Creditcoin DealOrders (r:1 w:0)
-	// Storage: Creditcoin Addresses (r:2 w:0)
-	// Storage: Creditcoin Transfers (r:1 w:1)
-	fn register_transfer_exempt() -> Weight {
-		(39_100_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Timestamp Now (r:1 w:0)
