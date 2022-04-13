@@ -1,5 +1,4 @@
 use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest, LegacySighash};
-use capture_logger::{begin_capture, pop_captured};
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
@@ -35,9 +34,9 @@ pub type BlockNumber = u64;
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
 	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	Block = Block,
+	NodeBlock = Block,
+	UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Event<T>, Config<T>},
@@ -197,7 +196,6 @@ impl ExtBuilder {
 		self
 	}
 	pub fn build(self) -> sp_io::TestExternalities {
-		sp_tracing::try_init_simple();
 		let mut storage = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
 		let _ = pallet_balances::GenesisConfig::<Test> { balances: self.balances }
@@ -299,14 +297,12 @@ pub fn pending_rpc_request(
 }
 
 #[test]
+#[tracing_test::traced_test]
 fn offchain_worker_should_log_when_authority_is_missing() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		System::set_block_number(1);
 
-		begin_capture();
-
 		Creditcoin::offchain_worker(System::block_number());
-
-		assert_eq!(pop_captured().unwrap().message(), "No authority, skipping off chain work");
+		assert!(logs_contain("Not authority, skipping off chain work"));
 	});
 }
