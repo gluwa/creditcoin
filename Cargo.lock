@@ -648,15 +648,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "capture-logger"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "605a59c5054ce9e87cd329251bcc4c04579d5edbd206b1e4c45fbfe24b13ff82"
-dependencies = [
- "log",
-]
-
-[[package]]
 name = "cargo-platform"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3467,6 +3458,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "matchers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
+dependencies = [
+ "regex-automata",
+]
+
+[[package]]
 name = "matches"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3985,7 +3985,6 @@ dependencies = [
  "base58",
  "bitcoin-bech32",
  "bstr",
- "capture-logger",
  "ethabi",
  "ethereum-types",
  "extend",
@@ -4009,6 +4008,8 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-tracing",
+ "tracing",
+ "tracing-test",
 ]
 
 [[package]]
@@ -5725,7 +5726,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-log",
- "tracing-subscriber",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -6704,7 +6705,7 @@ dependencies = [
  "sp-std",
  "tracing",
  "tracing-core",
- "tracing-subscriber",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -7278,7 +7279,7 @@ dependencies = [
  "ansi_term",
  "chrono",
  "lazy_static",
- "matchers",
+ "matchers 0.0.1",
  "parking_lot",
  "regex",
  "serde",
@@ -7290,6 +7291,45 @@ dependencies = [
  "tracing-core",
  "tracing-log",
  "tracing-serde",
+]
+
+[[package]]
+name = "tracing-subscriber"
+version = "0.3.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bc28f93baff38037f64e6f43d34cfa1605f27a49c34e8a04c5e78b0babf2596"
+dependencies = [
+ "ansi_term",
+ "lazy_static",
+ "matchers 0.1.0",
+ "regex",
+ "sharded-slab",
+ "smallvec",
+ "thread_local",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+]
+
+[[package]]
+name = "tracing-test"
+version = "0.2.1"
+source = "git+https://github.com/nathanwhit/tracing-test?branch=main#ceab2765021f2bacb2a94b5ae2b47e2f6c911b19"
+dependencies = [
+ "lazy_static",
+ "tracing-core",
+ "tracing-subscriber 0.3.11",
+ "tracing-test-macro",
+]
+
+[[package]]
+name = "tracing-test-macro"
+version = "0.2.1"
+source = "git+https://github.com/nathanwhit/tracing-test?branch=main#ceab2765021f2bacb2a94b5ae2b47e2f6c911b19"
+dependencies = [
+ "lazy_static",
+ "quote",
+ "syn",
 ]
 
 [[package]]
