@@ -466,4 +466,31 @@ mod tests {
 			..Default::default()
 		}));
 	}
+
+	#[test]
+	fn ethless_transfer_nonce_mismatch() {
+		let transfer = ethless_transfer_function_abi();
+		let input = transfer
+			.encode_input(&[
+				// from
+				Token::Address(ETHLESS_FROM_ADDR.clone()),
+				// to
+				Token::Address(ETHLESS_TO_ADDR.clone()),
+				// value
+				Token::Uint(U256::from(53688044)),
+				// fee
+				Token::Uint(1.into()),
+				// nonce
+				Token::Uint(1.into()),
+				// sig
+				Token::Bytes(Vec::new()),
+			])
+			.unwrap()
+			.into();
+		let transaction = EthTransaction { input, ..ETH_TRANSACTION.clone() };
+		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
+			transaction,
+			..Default::default()
+		}));
+	}
 }
