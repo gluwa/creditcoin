@@ -139,6 +139,38 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+  llvm-cov:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-03-21
+          components: llvm-tools-preview
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Run tests
+        run: cargo llvm-cov --workspace --html --show-missing-lines --doctests --hide-instantiations
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: target/llvm-cov/html/
+
   integration-test:
     runs-on: ubuntu-20.04
     steps:
