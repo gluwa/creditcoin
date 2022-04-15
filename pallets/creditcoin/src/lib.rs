@@ -882,10 +882,10 @@ pub mod pallet {
 						transfer.amount == deal_order.terms.amount,
 						Error::<T>::TransferAmountMismatch
 					);
-					ensure!(transfer.sighash == who, Error::<T>::TransferAccountMismatch);
-					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+					ensure!(transfer.account_id == who, Error::<T>::TransferAccountMismatch);
+					ensure!(!transfer.is_processed, Error::<T>::TransferAlreadyProcessed);
 
-					transfer.processed = true;
+					transfer.is_processed = true;
 					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
 				},
 			)?;
@@ -1040,10 +1040,10 @@ pub mod pallet {
 					);
 
 					ensure!(transfer.block <= Self::block_number(), Error::<T>::MalformedTransfer);
-					ensure!(transfer.sighash == who, Error::<T>::TransferAccountMismatch);
-					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
+					ensure!(transfer.account_id == who, Error::<T>::TransferAccountMismatch);
+					ensure!(!transfer.is_processed, Error::<T>::TransferAlreadyProcessed);
 
-					transfer.processed = true;
+					transfer.is_processed = true;
 					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
 				},
 			)?;
@@ -1128,9 +1128,9 @@ pub mod pallet {
 					let fake_transfer = Transfer {
 						order_id: OrderId::Deal(deal_order_id.clone()),
 						block: Self::block_number(),
-						sighash: who,
+						account_id: who,
 						amount: ExternalAmount::zero(),
-						processed: true,
+						is_processed: true,
 						kind: TransferKind::Native,
 						tx_id: ExternalTxId::try_from(b"0".to_vec()).expect(
 							"0 is a length of one which will always be < size bound of ExternalTxId",
