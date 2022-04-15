@@ -148,8 +148,8 @@ impl<T: Config> Pallet<T> {
 			from: from_id,
 			to: to_id,
 			order_id,
-			processed: false,
-			sighash: who,
+			is_processed: false,
+			account_id: who,
 			tx_id: blockchain_tx_id,
 			timestamp: None,
 		};
