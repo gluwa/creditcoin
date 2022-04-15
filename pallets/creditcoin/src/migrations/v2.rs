@@ -63,8 +63,8 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				amount: transfer.amount,
 				tx_id: transfer.tx,
 				block: transfer.block,
-				processed: transfer.processed,
-				sighash: transfer.sighash,
+				is_processed: transfer.processed,
+				account_id: transfer.sighash,
 				timestamp: None,
 			})
 		},
