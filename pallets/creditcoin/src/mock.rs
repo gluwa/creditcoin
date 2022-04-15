@@ -308,3 +308,14 @@ fn offchain_worker_should_log_when_authority_is_missing() {
 		assert!(logs_contain("Not authority, skipping off chain work"));
 	});
 }
+
+#[test]
+fn default_works() {
+	ExtBuilder::default().build_offchain_and_execute(|| {
+		let defaults = crate::GenesisConfig::<Test>::default();
+
+		assert_eq!(defaults.authorities.len(), 0);
+		assert_eq!(defaults.legacy_wallets.len(), 0);
+		assert_eq!(defaults.legacy_balance_keeper, None);
+	});
+}
