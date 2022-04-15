@@ -40,6 +40,7 @@ type TransferFor<T> = crate::Transfer<
 	<T as frame_system::Config>::AccountId,
 	<T as frame_system::Config>::BlockNumber,
 	<T as frame_system::Config>::Hash,
+	<T as pallet_timestamp::Config>::Moment,
 >;
 
 impl<T: Config> Pallet<T> {
@@ -124,7 +125,7 @@ impl<T: Config> Pallet<T> {
 		order_id: OrderId<T::BlockNumber, T::Hash>,
 		blockchain_tx_id: ExternalTxId,
 	) -> Result<
-		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash>),
+		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>),
 		crate::Error<T>,
 	> {
 		let from = Self::get_address(&from_id)?;
@@ -149,7 +150,8 @@ impl<T: Config> Pallet<T> {
 			order_id,
 			processed: false,
 			sighash: who,
-			tx: blockchain_tx_id,
+			tx_id: blockchain_tx_id,
+			timestamp: None,
 		};
 
 		let pending = UnverifiedTransfer {

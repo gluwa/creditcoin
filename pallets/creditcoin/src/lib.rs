@@ -51,7 +51,7 @@ pub mod crypto {
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
-pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -68,7 +68,7 @@ pub mod pallet {
 		offchain::{AppCrypto, CreateSignedTransaction},
 		pallet_prelude::*,
 	};
-	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedInto, Verify};
+	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -79,7 +79,8 @@ pub mod pallet {
 		+ CreateSignedTransaction<Call<Self>>
 	where
 		<Self as frame_system::Config>::BlockNumber: UniqueSaturatedInto<u64>,
-		<Self as pallet_timestamp::Config>::Moment: UniqueSaturatedInto<u64>,
+		<Self as pallet_timestamp::Config>::Moment:
+			UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
 	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -163,7 +164,7 @@ pub mod pallet {
 	pub type UnverifiedTransfers<T: Config> = StorageValue<
 		_,
 		BoundedVec<
-			UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash>,
+			UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 			T::UnverifiedTransferLimit,
 		>,
 		ValueQuery,
@@ -228,7 +229,7 @@ pub mod pallet {
 		_,
 		Identity,
 		TransferId<T::Hash>,
-		Transfer<T::AccountId, T::BlockNumber, T::Hash>,
+		Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::event]
@@ -240,15 +241,24 @@ pub mod pallet {
 
 		/// An external transfer has been registered and will be verified.
 		/// [registered_transfer_id, registered_transfer]
-		TransferRegistered(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+		TransferRegistered(
+			TransferId<T::Hash>,
+			Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+		),
 
 		/// An external transfer has been successfully verified.
 		/// [verified_transfer_id, verified_transfer]
-		TransferVerified(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+		TransferVerified(
+			TransferId<T::Hash>,
+			Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+		),
 
 		/// An external transfer has been processed and marked as part of a loan.
 		/// [processed_transfer_id, processed_transfer]
-		TransferProcessed(TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>),
+		TransferProcessed(
+			TransferId<T::Hash>,
+			Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+		),
 
 		/// An ask order has been added by a prospective lender. This indicates that the lender
 		/// is looking to issue a loan with certain terms.
@@ -542,9 +552,9 @@ pub mod pallet {
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
-				for pending in UnverifiedTransfers::<T>::get() {
+				for mut pending in UnverifiedTransfers::<T>::get() {
 					log::debug!("verifying transfer");
-					let transfer_validity = Self::verify_transfer_ocw(&pending);
+					let transfer_validity = Self::verify_transfer_ocw(&mut pending);
 					log::debug!("verify_transfer result: {:?}", transfer_validity);
 					match transfer_validity {
 						Ok(()) => {
@@ -789,6 +799,7 @@ pub mod pallet {
 				borrower_address_id: bid_order.borrower_address_id,
 				terms: agreed_terms,
 				expiration_block,
+				block: Some(Self::block_number()),
 				timestamp: Self::timestamp(),
 				borrower: who,
 				funding_transfer_id: None,
@@ -967,6 +978,7 @@ pub mod pallet {
 				terms,
 				expiration_block,
 				timestamp: Self::timestamp(),
+				block: Some(Self::block_number()),
 				borrower: borrower_account,
 				funding_transfer_id: None,
 				lock: None,
@@ -1114,21 +1126,22 @@ pub mod pallet {
 					ensure!(who == lender.owner, Error::<T>::NotLender);
 
 					let fake_transfer = Transfer {
-					order_id: OrderId::Deal(deal_order_id.clone()),
-					block: Self::block_number(),
-					sighash: who,
-					amount: ExternalAmount::zero(),
-					processed: true,
-					kind: TransferKind::Native,
-					tx: ExternalTxId::try_from(b"0".to_vec()).expect(
-						"0 is a length of one which will always be < size bound of ExternalTxId",
-					),
-					blockchain: lender.blockchain,
-					from: deal_order.lender_address_id.clone(),
-					to: deal_order.lender_address_id.clone(),
-				};
+						order_id: OrderId::Deal(deal_order_id.clone()),
+						block: Self::block_number(),
+						sighash: who,
+						amount: ExternalAmount::zero(),
+						processed: true,
+						kind: TransferKind::Native,
+						tx_id: ExternalTxId::try_from(b"0".to_vec()).expect(
+							"0 is a length of one which will always be < size bound of ExternalTxId",
+						),
+						blockchain: lender.blockchain,
+						from: deal_order.lender_address_id.clone(),
+						to: deal_order.lender_address_id.clone(),
+						timestamp: Some(Self::timestamp()),
+					};
 					let fake_transfer_id =
-						TransferId::new::<T>(&fake_transfer.blockchain, &fake_transfer.tx);
+						TransferId::new::<T>(&fake_transfer.blockchain, &fake_transfer.tx_id);
 
 					deal_order.repayment_transfer_id = Some(fake_transfer_id);
 
@@ -1143,13 +1156,13 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
 		pub fn verify_transfer(
 			origin: OriginFor<T>,
-			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash>,
+			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
-			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx);
+			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();

@@ -84,7 +84,7 @@ type TestAskOrder = (AskOrder<AccountId, u64, H256>, TestAskOrderId);
 type TestBidOrder = (BidOrder<AccountId, u64, H256>, TestBidOrderId);
 type TestOffer = (Offer<AccountId, u64, H256>, TestOfferId);
 type TestDealOrder = (DealOrder<AccountId, u64, H256, u64>, TestDealOrderId);
-type TestTransfer = (Transfer<AccountId, u64, H256>, TestTransferId);
+type TestTransfer = (Transfer<AccountId, u64, H256, u64>, TestTransferId);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
@@ -230,10 +230,11 @@ impl TestInfo {
 			to: to.address_id.clone(),
 			order_id: OrderId::Deal(deal_order_id.clone()),
 			amount: amount.into(),
-			tx,
+			tx_id: tx,
 			block: System::block_number(),
 			processed: false,
 			sighash: from.account_id.clone(),
+			timestamp: None,
 		};
 		Transfers::<Test>::insert(&id, &transfer);
 		(transfer, id)
@@ -306,8 +307,9 @@ const ETHLESS_RESPONSES: &[u8] = include_bytes!("tests/ethlessTransfer.json");
 fn verify_ethless_transfer() {
 	let (mut ext, state, _) = ExtBuilder::default().build_offchain();
 	let dummy_url = "dummy";
-	let tx_hash = "0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620e9";
-	let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".hex_to_address();
+	let tx_hash = "0xdd1b7aa5ff8e6e7afef3c825be716629737bc427348038a1cb2468ee66f0cf76";
+	let contract = "0xb377a2eed7566ac9fcb0ba673604f9bf875e2bab".hex_to_address();
+	let tx_block_num = "0x1c56";
 	{
 		let mut state = state.write();
 		let responses: HashMap<String, serde_json::Value> =
@@ -324,30 +326,37 @@ fn verify_ethless_transfer() {
 			dummy_url,
 			&responses,
 		);
-		let block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
-
+		let get_block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
+		let timestamp = pending_rpc_request(
+			"eth_getBlockByNumber",
+			vec![tx_block_num.into(), false.into()],
+			dummy_url,
+			&responses,
+		);
 		state.expect_request(get_transaction);
 		state.expect_request(get_transaction_receipt);
-		state.expect_request(block_number);
+		state.expect_request(get_block_number);
+		state.expect_request(timestamp);
 	}
 
 	ext.execute_with(|| {
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
 
-		let from = hex::decode("f04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap().into_bounded();
-		let to = hex::decode("BBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap().into_bounded();
+		let from = "0xf7c8067032f58539a14d773bd71b42c5e2109792".hex_to_address();
+		let to = "0x0df1ccab6ae966428bb00f2c09f38e786a4306b9".hex_to_address();
 		let order_id = crate::OrderId::Deal(crate::DealOrderId::with_expiration_hash::<Test>(
 			10000,
 			H256::from_uint(
 				&U256::from_dec_str(
-					"979732326222468652918279417612319888321218652914508214827914231471334244789",
+					"7913845638721091072082372344789841956592324632742257657176664029723484163082",
 				)
 				.unwrap(),
 			),
 		));
-		let amount = U256::from(53688044u64);
+		let amount = U256::from(100);
 		let tx_id = tx_hash.hex_to_address();
+		let mut timestamp = None;
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
 			&Blockchain::Rinkeby,
@@ -356,7 +365,8 @@ fn verify_ethless_transfer() {
 			&to,
 			&order_id,
 			&amount,
-			&tx_id
+			&tx_id,
+			&mut timestamp
 		));
 	});
 }
@@ -367,29 +377,36 @@ fn register_transfer_ocw() {
 	ext.generate_authority();
 	let (mut ext, state, pool) = ext.build_offchain();
 	let dummy_url = "dummy";
-	let tx_hash = "0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620e9";
-	let contract = "0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".hex_to_address();
+	let tx_hash = "0xdd1b7aa5ff8e6e7afef3c825be716629737bc427348038a1cb2468ee66f0cf76";
+	let contract = "0xb377a2eed7566ac9fcb0ba673604f9bf875e2bab".hex_to_address();
+	let tx_block_num = "0x1c56";
 	{
 		let mut state = state.write();
 		let responses: HashMap<String, serde_json::Value> =
 			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
 		let get_transaction = pending_rpc_request(
 			"eth_getTransactionByHash",
-			Some(serde_json::Value::String(tx_hash.into())),
+			vec![tx_hash.into()],
 			dummy_url,
 			&responses,
 		);
 		let get_transaction_receipt = pending_rpc_request(
 			"eth_getTransactionReceipt",
-			Some(serde_json::Value::String(tx_hash.into())),
+			vec![tx_hash.into()],
 			dummy_url,
 			&responses,
 		);
-		let block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
-
+		let get_block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
+		let timestamp = pending_rpc_request(
+			"eth_getBlockByNumber",
+			vec![tx_block_num.into(), false.into()],
+			dummy_url,
+			&responses,
+		);
 		state.expect_request(get_transaction);
 		state.expect_request(get_transaction_receipt);
-		state.expect_request(block_number);
+		state.expect_request(get_block_number);
+		state.expect_request(timestamp);
 	}
 
 	ext.execute_with(|| {
@@ -399,12 +416,12 @@ fn register_transfer_ocw() {
 		let lender = AccountId::new([0; 32]);
 		let debtor = AccountId::new([1; 32]);
 
-		let loan_amount = ExternalAmount::from(53688044u64);
+		let loan_amount = ExternalAmount::from(100);
 
 		let blockchain = Blockchain::Rinkeby;
 		let expiration = 1000000;
 
-		let lender_addr = "0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5".hex_to_address();
+		let lender_addr = "0xf7c8067032f58539a14d773bd71b42c5e2109792".hex_to_address();
 		let lender_address_id = crate::AddressId::new::<Test>(&blockchain, &lender_addr);
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(lender.clone()),
@@ -412,7 +429,7 @@ fn register_transfer_ocw() {
 			lender_addr
 		));
 
-		let debtor_addr = "0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9".hex_to_address();
+		let debtor_addr = "0x0df1ccab6ae966428bb00f2c09f38e786a4306b9".hex_to_address();
 		let debtor_address_id = crate::AddressId::new::<Test>(&blockchain, &debtor_addr);
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(debtor.clone()),
@@ -461,7 +478,7 @@ fn register_transfer_ocw() {
 
 		let deal_id_hash = H256::from_uint(
 			&U256::from_dec_str(
-				"979732326222468652918279417612319888321218652914508214827914231471334244789",
+				"7913845638721091072082372344789841956592324632742257657176664029723484163082",
 			)
 			.unwrap(),
 		);
@@ -494,7 +511,8 @@ fn register_transfer_ocw() {
 			order_id: OrderId::Deal(fake_deal_order_id.clone()),
 			processed: false,
 			sighash: lender.clone(),
-			tx: tx_hash.hex_to_address(),
+			tx_id: tx_hash.hex_to_address(),
+			timestamp: Some(1649986116),
 		};
 
 		roll_by_with_ocw(1);
@@ -818,6 +836,7 @@ fn add_deal_order_basic() {
 			funding_transfer_id: None,
 			lock: None,
 			repayment_transfer_id: None,
+			block: Some(Creditcoin::block_number()),
 		};
 
 		assert_eq!(new_deal_order, deal_order);
@@ -1687,6 +1706,7 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 			expiration_block: test_info.expiration_block,
 			timestamp: Creditcoin::timestamp(),
 			borrower: test_info.borrower.account_id,
+			block: Some(Creditcoin::block_number()),
 			funding_transfer_id: None,
 			lock: None,
 			repayment_transfer_id: None,
