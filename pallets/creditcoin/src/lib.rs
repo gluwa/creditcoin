@@ -337,7 +337,13 @@ pub mod pallet {
 
 		/// The account that registered the transfer does
 		/// not match the account attempting to use the transfer.
-		TransferMismatch,
+		TransferAccountMismatch,
+
+		///The specified deal order ID does not match the transfer deal order ID.
+		TransferDealOrderMismatch,
+
+		///The amount on the deal order does not match the transfer amount.
+		TransferAmountMismatch,
 
 		/// The transfer has already been processed and cannot be used.
 		TransferAlreadyProcessed,
@@ -859,13 +865,13 @@ pub mod pallet {
 				|transfer, deal_order| {
 					ensure!(
 						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
-						Error::<T>::TransferMismatch
+						Error::<T>::TransferDealOrderMismatch
 					);
 					ensure!(
 						transfer.amount == deal_order.terms.amount,
-						Error::<T>::TransferMismatch
+						Error::<T>::TransferAmountMismatch
 					);
-					ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
+					ensure!(transfer.sighash == who, Error::<T>::TransferAccountMismatch);
 					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
 					transfer.processed = true;
@@ -1018,11 +1024,11 @@ pub mod pallet {
 				|transfer, _deal_order| {
 					ensure!(
 						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
-						Error::<T>::TransferMismatch
+						Error::<T>::TransferDealOrderMismatch
 					);
 
 					ensure!(transfer.block <= Self::block_number(), Error::<T>::MalformedTransfer);
-					ensure!(transfer.sighash == who, Error::<T>::TransferMismatch);
+					ensure!(transfer.sighash == who, Error::<T>::TransferAccountMismatch);
 					ensure!(!transfer.processed, Error::<T>::TransferAlreadyProcessed);
 
 					transfer.processed = true;

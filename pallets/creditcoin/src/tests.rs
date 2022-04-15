@@ -1159,7 +1159,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::TransferMismatch
+			crate::Error::<Test>::TransferDealOrderMismatch
 		);
 	});
 }
@@ -1199,7 +1199,7 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::TransferMismatch
+			crate::Error::<Test>::TransferAmountMismatch
 		);
 	});
 }
@@ -1237,7 +1237,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::TransferMismatch
+			crate::Error::<Test>::TransferAccountMismatch
 		);
 	});
 }
@@ -1981,7 +1981,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::TransferMismatch
+			crate::Error::<Test>::TransferDealOrderMismatch
 		);
 	});
 }
@@ -2055,7 +2055,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::TransferMismatch
+			crate::Error::<Test>::TransferAccountMismatch
 		);
 	});
 }
