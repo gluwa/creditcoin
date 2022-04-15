@@ -4,8 +4,9 @@ use crate::{
 	loan_terms::Duration, AddressId, Blockchain, Config, ExternalAmount, OfferId, TransferId,
 };
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::traits::Get;
 use frame_support::weights::Weight;
+use frame_support::{generate_storage_alias, traits::Get};
+use frame_support::{Identity, Twox64Concat};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
 
@@ -61,6 +62,26 @@ struct OldDealOrder<AccountId, BlockNum, Hash, Moment> {
 	borrower: AccountId,
 }
 
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
+pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
+	pub blockchain: Blockchain,
+	pub offer_id: OfferId<BlockNum, Hash>,
+	pub lender_address_id: AddressId<Hash>,
+	pub borrower_address_id: AddressId<Hash>,
+	pub terms: crate::LoanTerms,
+	pub expiration_block: BlockNum,
+	pub timestamp: Moment,
+	pub funding_transfer_id: Option<TransferId<Hash>>,
+	pub repayment_transfer_id: Option<TransferId<Hash>>,
+	pub lock: Option<AccountId>,
+	pub borrower: AccountId,
+}
+
+generate_storage_alias!(
+	Creditcoin,
+	DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
+);
+
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = 0;
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
@@ -112,34 +133,33 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		})
 	});
 
-	crate::DealOrders::<T>::translate::<
-		OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		_,
-	>(|_expiration, _hash, deal| {
-		weight = weight.saturating_add(weight_each);
-		Some(crate::DealOrder {
-			blockchain: deal.blockchain,
-			offer_id: deal.offer_id,
-			lender_address_id: deal.lender_address_id,
-			borrower_address_id: deal.borrower_address_id,
-			terms: crate::LoanTerms {
-				amount: deal.terms.amount,
-				interest_rate: crate::InterestRate {
-					rate_per_period: deal.terms.interest_rate,
-					decimals: OLD_INTEREST_RATE_DECIMALS,
-					period: Duration::from_millis(deal.terms.maturity.unique_saturated_into()),
+	DealOrders::<T>::translate::<OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
+		|_expiration, _hash, deal| {
+			weight = weight.saturating_add(weight_each);
+			Some(DealOrder {
+				blockchain: deal.blockchain,
+				offer_id: deal.offer_id,
+				lender_address_id: deal.lender_address_id,
+				borrower_address_id: deal.borrower_address_id,
+				terms: crate::LoanTerms {
+					amount: deal.terms.amount,
+					interest_rate: crate::InterestRate {
+						rate_per_period: deal.terms.interest_rate,
+						decimals: OLD_INTEREST_RATE_DECIMALS,
+						period: Duration::from_millis(deal.terms.maturity.unique_saturated_into()),
+					},
+					term_length: Duration::from_millis(
+						deal.terms.maturity.saturating_sub(deal.timestamp).unique_saturated_into(),
+					),
 				},
-				term_length: Duration::from_millis(
-					deal.terms.maturity.saturating_sub(deal.timestamp).unique_saturated_into(),
-				),
-			},
-			expiration_block: deal.expiration_block,
-			timestamp: deal.timestamp,
-			funding_transfer_id: deal.funding_transfer_id,
-			repayment_transfer_id: deal.repayment_transfer_id,
-			lock: deal.lock,
-			borrower: deal.borrower,
-		})
-	});
+				expiration_block: deal.expiration_block,
+				timestamp: deal.timestamp,
+				funding_transfer_id: deal.funding_transfer_id,
+				repayment_transfer_id: deal.repayment_transfer_id,
+				lock: deal.lock,
+				borrower: deal.borrower,
+			})
+		},
+	);
 	weight
 }
