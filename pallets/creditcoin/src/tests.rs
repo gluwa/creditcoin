@@ -232,8 +232,8 @@ impl TestInfo {
 			amount: amount.into(),
 			tx_id: tx,
 			block: System::block_number(),
-			processed: false,
-			sighash: from.account_id.clone(),
+			is_processed: false,
+			account_id: from.account_id.clone(),
 			timestamp: None,
 		};
 		Transfers::<Test>::insert(&id, &transfer);
@@ -509,8 +509,8 @@ fn register_transfer_ocw() {
 			from: lender_address_id.clone(),
 			to: debtor_address_id.clone(),
 			order_id: OrderId::Deal(fake_deal_order_id.clone()),
-			processed: false,
-			sighash: lender.clone(),
+			is_processed: false,
+			account_id: lender.clone(),
 			tx_id: tx_hash.hex_to_address(),
 			timestamp: Some(1649986116),
 		};
@@ -1248,7 +1248,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 			let mut ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
-			ts.sighash = AccountId::new([4; 32]);
+			ts.account_id = AccountId::new([4; 32]);
 		});
 
 		assert_noop!(
@@ -1275,7 +1275,7 @@ fn fund_deal_order_should_error_when_transfer_has_been_processed() {
 			let mut ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
-			ts.processed = true;
+			ts.is_processed = true;
 		});
 
 		assert_noop!(
@@ -2086,7 +2086,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
 			let mut ts = transfer_storage.as_mut().unwrap();
-			ts.sighash = AccountId::new([44; 32]);
+			ts.account_id = AccountId::new([44; 32]);
 		});
 
 		assert_noop!(
@@ -2123,7 +2123,7 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
 			let mut ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
-			ts.processed = true;
+			ts.is_processed = true;
 		});
 
 		assert_noop!(
@@ -2190,7 +2190,7 @@ fn close_deal_order_should_succeed() {
 		assert_eq!(saved_deal_order.repayment_transfer_id, Some(transfer_id.clone()));
 
 		let saved_transfer = Transfers::<Test>::try_get(&transfer_id).unwrap();
-		assert_eq!(saved_transfer.processed, true);
+		assert_eq!(saved_transfer.is_processed, true);
 
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();

@@ -97,8 +97,8 @@ pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub tx_id: ExternalTxId,
 	pub block: BlockNum,
-	pub processed: bool,
-	pub sighash: AccountId,
+	pub is_processed: bool,
+	pub account_id: AccountId,
 	pub timestamp: Option<Moment>,
 }
 
