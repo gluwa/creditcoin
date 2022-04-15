@@ -1337,6 +1337,25 @@ fn add_authority_errors_for_non_root() {
 }
 
 #[test]
+fn add_authority_should_fail_when_authority_already_exists() {
+	ExtBuilder::default().build_and_execute(|| {
+		let root = RawOrigin::Root;
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			acct.clone(),
+		));
+
+		// try again
+		assert_noop!(
+			Creditcoin::add_authority(crate::mock::Origin::from(root.clone()), acct.clone(),),
+			crate::Error::<Test>::AlreadyAuthority,
+		);
+	});
+}
+
+#[test]
 fn add_authority_works_for_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let root = RawOrigin::Root;
