@@ -4,6 +4,7 @@ use crate::{
 	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
 	TransferId, TransferKind, Transfers,
 };
+
 use bstr::B;
 use codec::{Decode, Encode};
 use ethereum_types::H256;
@@ -2329,5 +2330,88 @@ fn verify_transfer_should_work() {
 		));
 
 		assert_eq!(Transfers::<Test>::get(&transfer_id), Some(transfer));
+	});
+}
+
+#[test]
+fn on_initialize_removes_expired_deals_without_transfers() {
+	ExtBuilder::default().build_offchain_and_execute(|| {
+		System::set_block_number(1);
+		let mut expected_deal_orders = Vec::new();
+
+		let now = System::block_number();
+		for expiration_block in now..=20 {
+			let address1 =
+				format!("0x{:02}F03B407c01E7cD3CBea99509d93f8DDDC8C6FB", expiration_block.clone())
+					.hex_to_address();
+			let address2 =
+				format!("0x{:02}220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb", expiration_block.clone())
+					.hex_to_address();
+
+			let test_info = TestInfo {
+				lender: RegisteredAddress::new(address1, 111, Blockchain::Rinkeby),
+				borrower: RegisteredAddress::new(address2, 222, Blockchain::Rinkeby),
+				blockchain: Blockchain::Rinkeby,
+				loan_terms: LoanTerms {
+					amount: 2_000_000u64.into(),
+					interest_rate: Default::default(),
+					term_length: Duration::from_millis(1_000_000),
+				},
+				ask_guid: format!("{:?}-ask-guid", expiration_block.clone())
+					.as_bytes()
+					.into_bounded(),
+				bid_guid: format!("{:?}-bid-guid", expiration_block.clone())
+					.as_bytes()
+					.into_bounded(),
+				expiration_block: expiration_block.clone(),
+			};
+
+			let (_, offer_id) = test_info.create_offer();
+			assert_ok!(Creditcoin::add_deal_order(
+				Origin::signed(test_info.borrower.account_id.clone()),
+				offer_id.clone(),
+				expiration_block.clone(),
+			));
+			let deal_order_id = DealOrderId::new::<Test>(expiration_block.clone(), &offer_id);
+			let deal_order =
+				Creditcoin::deal_orders(deal_order_id.expiration(), deal_order_id.hash()).unwrap();
+
+			// fund only deal orders which expire at even blocks
+			if expiration_block % 2 == 0 {
+				let tx = format!("0xfafafa{:02}", expiration_block.clone());
+				assert_ok!(Creditcoin::register_funding_transfer(
+					Origin::signed(test_info.lender.account_id.clone()),
+					TransferKind::Native,
+					deal_order_id.clone(),
+					tx.as_bytes().into_bounded()
+				));
+				let (_transfer, transfer_id) = test_info.mock_transfer(
+					&test_info.lender,
+					&test_info.borrower,
+					deal_order.terms.amount,
+					&deal_order_id,
+					tx,
+				);
+
+				// attach transfer to deal order
+				assert_ok!(Creditcoin::fund_deal_order(
+					Origin::signed(test_info.lender.account_id.clone()),
+					deal_order_id.clone(),
+					transfer_id.clone()
+				));
+				// it's funded so it should be kept
+				expected_deal_orders.push(deal_order_id.clone());
+			} else if expiration_block > 15 {
+				// still hasn't expired so should be kept regardless
+				expected_deal_orders.push(deal_order_id.clone());
+			}
+		}
+
+		// advance blocks, will perform housekeeping
+		roll_to(15);
+
+		for expected_order_id in expected_deal_orders.iter() {
+			let _order = DealOrders::<Test>::try_get_id(&expected_order_id).unwrap();
+		}
 	});
 }
