@@ -2242,3 +2242,100 @@ fn exempt_should_succeed() {
 		);
 	});
 }
+
+#[test]
+fn verify_transfer_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (_deal_order, deal_order_id) = test_info.create_deal_order();
+		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		assert_noop!(Creditcoin::verify_transfer(Origin::none(), transfer), BadOrigin);
+	});
+}
+
+#[test]
+fn verify_transfer_should_error_when_signer_not_authorized() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (_deal_order, deal_order_id) = test_info.create_deal_order();
+		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		assert_noop!(
+			Creditcoin::verify_transfer(Origin::signed(test_info.lender.account_id), transfer),
+			crate::Error::<Test>::InsufficientAuthority,
+		);
+	});
+}
+
+#[test]
+fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+
+		// authorize lender
+		let root = RawOrigin::Root;
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			test_info.lender.account_id.clone(),
+		));
+
+		let (_deal_order, deal_order_id) = test_info.create_deal_order();
+		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		assert_noop!(
+			Creditcoin::verify_transfer(Origin::signed(test_info.lender.account_id), transfer),
+			crate::Error::<Test>::TransferAlreadyRegistered,
+		);
+	});
+}
+
+#[test]
+fn verify_transfer_should_work() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		// authorize lender
+		let root = RawOrigin::Root;
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			test_info.lender.account_id.clone(),
+		));
+
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		// create a transfer but don't add it into storage
+		let tx = "0xafafaf".as_bytes().into_bounded();
+		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+		let transfer = Transfer {
+			blockchain: test_info.blockchain.clone(),
+			kind: TransferKind::Native,
+			from: test_info.lender.address_id.clone(),
+			to: test_info.borrower.address_id.clone(),
+			order_id: OrderId::Deal(deal_order_id.clone()),
+			amount: deal_order.terms.amount.into(),
+			tx,
+			block: System::block_number(),
+			processed: false,
+			sighash: test_info.lender.account_id.clone(),
+		};
+
+		assert_ok!(Creditcoin::verify_transfer(
+			Origin::signed(test_info.lender.account_id),
+			transfer.clone()
+		),);
+
+		// assert events in reversed order
+		let mut all_events = <frame_system::Pallet<Test>>::events();
+
+		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
+		assert!(matches!(
+			event1,
+			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(..))
+		));
+
+		assert_eq!(Transfers::<Test>::get(&transfer_id), Some(transfer));
+	});
+}
