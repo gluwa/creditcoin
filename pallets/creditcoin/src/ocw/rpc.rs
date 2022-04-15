@@ -271,6 +271,12 @@ pub struct EthTransactionReceipt {
 	pub status: Option<U64>,
 }
 
+#[derive(serde::Deserialize, Clone, Debug, Default)]
+pub struct EthBlock {
+	/// Timestamp of the block's collation.
+	pub timestamp: U64,
+}
+
 impl EthTransactionReceipt {
 	pub fn is_success(&self) -> bool {
 		if let Some(status) = self.status {
@@ -292,6 +298,10 @@ fn to_json_hex(bytes: &[u8]) -> String {
 	} else {
 		hex
 	}
+}
+
+fn format_as_hex<T: sp_std::fmt::LowerHex>(value: T) -> String {
+	alloc::format!("0x{:x}", value)
 }
 
 pub fn eth_get_transaction(
@@ -321,6 +331,17 @@ pub fn eth_get_block_number(rpc_url: &str) -> OffchainResult<U64, RpcError> {
 	rpc_req.send(rpc_url)
 }
 
+pub fn eth_get_block_by_number(
+	block_number: U64,
+	rpc_url: &str,
+) -> OffchainResult<EthBlock, RpcError> {
+	let rpc_req = JsonRpcRequest::new(
+		"eth_getBlockByNumber",
+		[serde_json::Value::String(format_as_hex(block_number)), serde_json::Value::Bool(false)],
+	);
+	rpc_req.send(rpc_url)
+}
+
 #[cfg(test)]
 mod tests {
 	#[test]
@@ -328,5 +349,10 @@ mod tests {
 		assert_eq!(super::to_json_hex(&[0x01, 0x02, 0x03]), "0x010203");
 		assert_eq!(super::to_json_hex(&[0x01, 0x00, 0x03]), "0x010003");
 		assert_eq!(super::to_json_hex(&[]), "");
+	}
+
+	#[test]
+	fn format_as_hex_works() {
+		assert_eq!(super::format_as_hex(0x123456789abcdefu64), "0x123456789abcdef");
 	}
 }
