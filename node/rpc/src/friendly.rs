@@ -29,15 +29,15 @@ pub enum Event {
 
 	TransferRegistered {
 		transfer_id: TransferId<Hash>,
-		transfer: Transfer<AccountId, BlockNumber, Hash>,
+		transfer: Transfer<AccountId, BlockNumber, Hash, Moment>,
 	},
 	TransferVerified {
 		transfer_id: TransferId<Hash>,
-		transfer: Transfer<AccountId, BlockNumber, Hash>,
+		transfer: Transfer<AccountId, BlockNumber, Hash, Moment>,
 	},
 	TransferProcessed {
 		transfer_id: TransferId<Hash>,
-		transfer: Transfer<AccountId, BlockNumber, Hash>,
+		transfer: Transfer<AccountId, BlockNumber, Hash, Moment>,
 	},
 
 	AskOrderAdded {

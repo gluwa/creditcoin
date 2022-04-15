@@ -87,7 +87,7 @@ impl<AccountId> Address<AccountId> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Transfer<AccountId, BlockNum, Hash> {
+pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub kind: TransferKind,
 	pub from: AddressId<Hash>,
@@ -95,17 +95,18 @@ pub struct Transfer<AccountId, BlockNum, Hash> {
 	pub order_id: OrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
-	pub tx: ExternalTxId,
+	pub tx_id: ExternalTxId,
 	pub block: BlockNum,
 	pub processed: bool,
 	pub sighash: AccountId,
+	pub timestamp: Option<Moment>,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct UnverifiedTransfer<AccountId, BlockNum, Hash> {
-	pub transfer: Transfer<AccountId, BlockNum, Hash>,
+pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
+	pub transfer: Transfer<AccountId, BlockNum, Hash, Moment>,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub from_external: ExternalAddress,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
@@ -159,6 +160,7 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub terms: LoanTerms,
 	pub expiration_block: BlockNum,
 	pub timestamp: Moment,
+	pub block: Option<BlockNum>,
 	pub funding_transfer_id: Option<TransferId<Hash>>,
 	pub repayment_transfer_id: Option<TransferId<Hash>>,
 	pub lock: Option<AccountId>,

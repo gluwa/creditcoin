@@ -4,7 +4,7 @@ use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
 
 use self::{
 	errors::{OffchainError, RpcUrlError},
-	rpc::{Address, EthTransaction, EthTransactionReceipt},
+	rpc::{Address, EthBlock, EthTransaction, EthTransactionReceipt},
 };
 
 use super::{
@@ -20,6 +20,7 @@ use frame_system::{
 	pallet_prelude::BlockNumberFor,
 };
 use sp_runtime::offchain::storage::StorageValueRef;
+use sp_runtime::traits::UniqueSaturatedFrom;
 use sp_std::prelude::*;
 
 pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
@@ -192,10 +193,10 @@ fn validate_ethless_transfer(
 
 impl<T: Config> Pallet<T> {
 	pub fn verify_transfer_ocw(
-		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash>,
+		transfer: &mut UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
 	) -> OffchainResult<()> {
 		let UnverifiedTransfer {
-			transfer: Transfer { blockchain, kind, order_id, amount, tx, .. },
+			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, timestamp, .. },
 			from_external: from,
 			to_external: to,
 		} = transfer;
@@ -206,9 +207,9 @@ impl<T: Config> Pallet<T> {
 			TransferKind::Erc20(_) => Err(OffchainError::InvalidTransfer(
 				"support for erc20 transfers is not yet implemented",
 			)),
-			TransferKind::Ethless(contract) => {
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
-			},
+			TransferKind::Ethless(contract) => Self::verify_ethless_transfer(
+				blockchain, contract, from, to, order_id, amount, tx, timestamp,
+			),
 			TransferKind::Other(_) => Err(OffchainError::InvalidTransfer(
 				"support for other transfers is not yet implemented",
 			)),
@@ -247,11 +248,14 @@ impl<T: Config> Pallet<T> {
 		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
+		timestamp: &mut Option<T::Moment>,
 	) -> OffchainResult<()> {
 		let rpc_url = blockchain.rpc_url()?;
 		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
+
+		let tx_block_num = tx.block_number;
 
 		let from_addr = parse_eth_address(from)?;
 		let to_addr = parse_eth_address(to)?;
@@ -268,6 +272,14 @@ impl<T: Config> Pallet<T> {
 			eth_tip,
 			T::HashIntoNonce::from(order_id.hash()),
 		)?;
+
+		if let Some(num) = tx_block_num {
+			if let Ok(EthBlock { timestamp: block_timestamp }) =
+				rpc::eth_get_block_by_number(num, &rpc_url)
+			{
+				*timestamp = Some(T::Moment::unique_saturated_from(block_timestamp.as_u64()));
+			}
+		}
 
 		Ok(())
 	}
