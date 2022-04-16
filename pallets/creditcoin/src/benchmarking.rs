@@ -195,7 +195,7 @@ benchmarks! {
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,true,0u8);
-	}: register_funding_transfer(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx)
+	}: register_funding_transfer(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
 
 	close_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -277,7 +277,7 @@ fn generate_transfer<T: Config>(
 	swap_sender: bool,
 	kill_unverified: bool,
 	seed: u8,
-) -> (TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash>) {
+) -> (TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>) {
 	let (raw_tx, gain, who) = if swap_sender {
 		(
 			format!("0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620{:02x}", seed),
@@ -319,7 +319,7 @@ fn generate_transfer<T: Config>(
 		.into_iter()
 		.find(|ut| {
 			let transfer = &ut.transfer;
-			let seek_id = TransferId::new::<T>(&transfer.blockchain, &transfer.tx);
+			let seek_id = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 			transfer_id == seek_id
 		})
 		.unwrap()
