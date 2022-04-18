@@ -50,11 +50,11 @@ describe('RegisterDealOrder', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthAddress();
+        const lenderAddress = randomEthAddress().address;
         lenderRegAddr = await testUtils.registerAddress(api, lenderAddress, blockchain, lender);
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const borrowerAddress = randomEthAddress();
+        const borrowerAddress = randomEthAddress().address;
         borrowerRegAddr = await testUtils.registerAddress(api, borrowerAddress, blockchain, borrower);
     }, 60000);
 

@@ -19,8 +19,8 @@ const main = async () => {
         const lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         const borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
 
-        const lenderAddress = randomEthAddress();
-        const borrowerAddress = randomEthAddress();
+        const lenderAddress = randomEthAddress().address;
+        const borrowerAddress = randomEthAddress().address;
 
         const askGuid = Guid.newGuid().toString();
         const bidGuid = Guid.newGuid().toString();
