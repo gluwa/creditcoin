@@ -47,7 +47,7 @@ describe('AddBidOrder', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        borrowerRegAddr = await testUtils.registerAddress(api, randomEthAddress(), blockchain, borrower);
+        borrowerRegAddr = await testUtils.registerAddress(api, randomEthAddress().address, blockchain, borrower);
         bidGuid = Guid.newGuid();
     });
 

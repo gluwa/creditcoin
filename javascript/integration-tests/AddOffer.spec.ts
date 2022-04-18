@@ -47,8 +47,8 @@ describe('AddOffer', (): void => {
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const lenderAddress = randomEthAddress();
-        const borrowerAddress = randomEthAddress();
+        const lenderAddress = randomEthAddress().address;
+        const borrowerAddress = randomEthAddress().address;
 
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
             testUtils.registerAddress(api, lenderAddress, blockchain, lender),
