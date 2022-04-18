@@ -1,16 +1,28 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
+import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { AskOrderId, BidOrderId, Blockchain, LoanTerms, OfferId } from 'credal-js/lib/model';
+import { lendOnEth } from 'credal-js/lib/ethereum';
+import {
+    AddressId,
+    AskOrderId,
+    BidOrderId,
+    Blockchain,
+    DealOrderId,
+    LoanTerms,
+    OfferId,
+    TransferKind,
+} from 'credal-js/lib/model';
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
 import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
 import { addDealOrderAsync, DealOrderAdded } from 'credal-js/lib/extrinsics/add-deal-order';
 import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
+import { registerDealOrderAsync, DealOrderRegistered } from 'credal-js/lib/extrinsics/register-deal-order';
 
 export const expectNoDispatchError = (api: ApiPromise, dispatchError: any): void => {
     if (dispatchError) {
@@ -109,4 +121,62 @@ export const addDealOrder = async (
     } else {
         throw new Error('AddDealOrder failed');
     }
+};
+
+export const registerDealOrder = async (
+    api: ApiPromise,
+    lenderAddressId: AddressId,
+    borrowerAddressId: AddressId,
+    loanTerms: LoanTerms,
+    expBlock: number,
+    askGuid: Guid,
+    bidGuid: Guid,
+    borrowerKey: Uint8Array,
+    signedParams: Uint8Array,
+    signer: KeyringPair,
+): Promise<DealOrderRegistered> => {
+    const result = await registerDealOrderAsync(
+        api,
+        lenderAddressId,
+        borrowerAddressId,
+        loanTerms,
+        expBlock,
+        askGuid,
+        bidGuid,
+        borrowerKey,
+        signedParams,
+        signer,
+    );
+    expect(result).toBeTruthy();
+
+    if (result) {
+        return result;
+    } else {
+        throw new Error('RegisterDealOrder failed');
+    }
+};
+
+const sleep = (delay: number) => new Promise((resolve) => setTimeout(resolve, delay));
+
+export const prepareEthTransfer = async (
+    lenderWallet: Wallet,
+    borrowerWallet: Wallet,
+    dealOrderId: DealOrderId,
+    loanTerms: LoanTerms,
+): Promise<[TransferKind, string]> => {
+    // Note: this is Account #0 from gluwa/hardhat-dev !!!
+    process.env.PK1 = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
+
+    const [tokenAddress, txHash] = await lendOnEth(
+        lenderWallet,
+        borrowerWallet.address,
+        dealOrderId[1],
+        loanTerms.amount,
+    );
+
+    // wait 15 sec for Ethereum (min 12 confirmations)
+    await sleep(15000);
+
+    const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
+    return [transferKind, txHash];
 };
