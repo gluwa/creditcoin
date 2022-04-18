@@ -2356,16 +2356,17 @@ fn verify_transfer_should_work() {
 			to: test_info.borrower.address_id.clone(),
 			order_id: OrderId::Deal(deal_order_id.clone()),
 			amount: deal_order.terms.amount.into(),
-			tx,
+			tx_id: tx,
 			block: System::block_number(),
-			processed: false,
-			sighash: test_info.lender.account_id.clone(),
+			is_processed: false,
+			account_id: test_info.lender.account_id.clone(),
+			timestamp: None,
 		};
 
 		assert_ok!(Creditcoin::verify_transfer(
 			Origin::signed(test_info.lender.account_id),
 			transfer.clone()
-		),);
+		));
 
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
