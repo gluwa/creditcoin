@@ -176,6 +176,10 @@ jobs:
           echo "INFO: MINING_KEY=$MINING_KEY"
           ./target/release/creditcoin-node --dev --mining-key $MINING_KEY &
 
+      - name: Start local Ethereum node
+        run: |
+          docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
+
       - name: Run integration test
         run: |
           # remove pre-installed packages

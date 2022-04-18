@@ -27,11 +27,17 @@ reuse the type definitions and some helper functions provided by the examples!
 
 ## Getting Started
 
-1. Build the software under test, see **Single-Node Development Chain** in `../README.md`
+0. Build the software under test, see **Single-Node Development Chain** in `../README.md`
    and execute it locally:
 
 ```bash
 ./target/release/creditcoin-node --dev --mining-key XYZ
+```
+
+1. Execute a local Ethereum node:
+
+```bash
+docker run --rm -it -p 8545:8545 gluwa/hardhat-dev
 ```
 
 2. Prepare the local development environment:
