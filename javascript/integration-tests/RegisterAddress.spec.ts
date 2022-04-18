@@ -32,7 +32,7 @@ describe('RegisterAddress', (): void => {
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         return new Promise((resolve, reject) => {
             const unsubscribe = api.tx.creditcoin
-                .registerAddress('Ethereum', randomEthAddress())
+                .registerAddress('Ethereum', randomEthAddress().address)
                 .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     testUtils.expectNoDispatchError(api, dispatchError);
 
