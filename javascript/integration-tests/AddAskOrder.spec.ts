@@ -47,7 +47,7 @@ describe('AddAskOrder', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        lenderRegAddr = await testUtils.registerAddress(api, randomEthAddress(), blockchain, lender);
+        lenderRegAddr = await testUtils.registerAddress(api, randomEthAddress().address, blockchain, lender);
         askGuid = Guid.newGuid();
     });
 
