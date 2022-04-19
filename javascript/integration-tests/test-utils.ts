@@ -5,6 +5,7 @@ import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
+import type { Null, Option } from '@polkadot/types';
 
 import { lendOnEth } from 'credal-js/lib/ethereum';
 import {
@@ -18,11 +19,39 @@ import {
     TransferKind,
 } from 'credal-js/lib/model';
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
+import { addAuthorityAsync } from 'credal-js/lib/extrinsics/add-authority';
 import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
 import { addDealOrderAsync, DealOrderAdded } from 'credal-js/lib/extrinsics/add-deal-order';
 import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 import { registerDealOrderAsync, DealOrderRegistered } from 'credal-js/lib/extrinsics/register-deal-order';
+import { registerFundingTransferAsync, TransferEvent } from 'credal-js/lib/extrinsics/register-funding-transfer';
+
+const ETHEREUM_ADDRESS = 'http://localhost:8545';
+
+export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) => {
+    const AUTHORITY_PUBKEY = '0xcce7c3c86f7e4431cdefca6c328bab69af12010a4a9fa0d91be37a24776afd4a';
+    const AUTHORITY_SURI = 'blade city surround refuse fold spring trip enlist myself wild elevator coil';
+    const AUTHORITY_ACCOUNTID = '5GhNUTKw9xkTN5Za4torEe1SAGPhXjM78oNZWAXrFymhB6oZ';
+
+    const u8aToHex = (bytes: Uint8Array): string => {
+        return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+    };
+    const rpcUri = u8aToHex(api.createType('String', ETHEREUM_ADDRESS).toU8a());
+    await api.rpc.offchain.localStorageSet('PERSISTENT', 'ethereum-rpc-uri', rpcUri);
+
+    const hasAuthKey = await api.rpc.author.hasKey(AUTHORITY_PUBKEY, 'ctcs');
+    if (hasAuthKey.isFalse) {
+        await api.rpc.author.insertKey('ctcs', AUTHORITY_SURI, AUTHORITY_PUBKEY);
+    }
+    const auth = await api.query.creditcoin.authorities<Option<Null>>(AUTHORITY_ACCOUNTID);
+    if (auth.isNone) {
+        await addAuthorityAsync(api, AUTHORITY_ACCOUNTID, sudoSigner);
+    }
+    await api.tx.sudo
+        .sudo(api.tx.balances.setBalance(AUTHORITY_ACCOUNTID, '1000000000000000000', '0'))
+        .signAndSend(sudoSigner, { nonce: -1 });
+};
 
 export const expectNoDispatchError = (api: ApiPromise, dispatchError: any): void => {
     if (dispatchError) {
@@ -179,4 +208,24 @@ export const prepareEthTransfer = async (
 
     const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
     return [transferKind, txHash];
+};
+
+export const registerFundingTransfer = async (
+    api: ApiPromise,
+    transferKind: TransferKind,
+    dealOrderId: DealOrderId,
+    txHash: string,
+    signer: KeyringPair,
+): Promise<TransferEvent> => {
+    const result = await registerFundingTransferAsync(api, transferKind, dealOrderId, txHash, signer);
+    expect(result).toBeTruthy();
+
+    if (result) {
+        const verifiedTransfer = await result.waitForVerification().catch();
+        expect(verifiedTransfer).toBeTruthy();
+
+        return result;
+    } else {
+        throw new Error('RegisterFundingTransfer failed');
+    }
 };
