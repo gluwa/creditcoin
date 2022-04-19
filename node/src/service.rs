@@ -31,33 +31,31 @@ type FullClient =
 	sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
+type PartialComponentsType<T> = sc_service::PartialComponents<
+	FullClient,
+	FullBackend,
+	FullSelectChain,
+	sc_consensus::DefaultImportQueue<Block, FullClient>,
+	sc_transaction_pool::FullPool<Block, FullClient>,
+	(
+		sc_consensus_pow::PowBlockImport<
+			Block,
+			Arc<FullClient>,
+			FullClient,
+			FullSelectChain,
+			Sha3Algorithm<FullClient>,
+			sp_consensus::CanAuthorWithNativeVersion<
+				<FullClient as ExecutorProvider<Block>>::Executor,
+			>,
+			T,
+		>,
+		Option<Telemetry>,
+	),
+>;
 
 pub fn new_partial(
 	config: &Configuration,
-) -> Result<
-	sc_service::PartialComponents<
-		FullClient,
-		FullBackend,
-		FullSelectChain,
-		sc_consensus::DefaultImportQueue<Block, FullClient>,
-		sc_transaction_pool::FullPool<Block, FullClient>,
-		(
-			sc_consensus_pow::PowBlockImport<
-				Block,
-				Arc<FullClient>,
-				FullClient,
-				FullSelectChain,
-				Sha3Algorithm<FullClient>,
-				sp_consensus::CanAuthorWithNativeVersion<
-					<FullClient as ExecutorProvider<Block>>::Executor,
-				>,
-				impl CreateInherentDataProviders<Block, ()>,
-			>,
-			Option<Telemetry>,
-		),
-	>,
-	ServiceError,
-> {
+) -> Result<PartialComponentsType<impl CreateInherentDataProviders<Block, ()>>, ServiceError> {
 	if config.keystore_remote.is_some() {
 		return Err(ServiceError::Other("Remote Keystores are not supported.".to_string()));
 	}
