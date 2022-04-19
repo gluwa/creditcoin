@@ -859,6 +859,30 @@ fn add_deal_order_existing() {
 }
 
 #[test]
+fn lock_deal_order_should_emit_deal_order_locked_event() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+		let test_info = TestInfo::new_defaults();
+
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().funding_transfer_id =
+					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
+			},
+		);
+
+		assert_ok!(Creditcoin::lock_deal_order(Origin::signed(deal_order.borrower), deal_order_id));
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
+
+		assert!(matches!(event, crate::mock::Event::Creditcoin(crate::Event::DealOrderLocked(..))));
+	});
+}
+
+#[test]
 fn lock_deal_order_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
