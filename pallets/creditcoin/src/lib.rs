@@ -298,6 +298,14 @@ pub mod pallet {
 			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		),
 
+		/// A deal order has been locked by a borrower. This indicates that the borrower
+		/// is preparing to make a repayment and locks the loan from being sold or transferred
+		/// to another party.
+		DealOrderLocked(
+			DealOrderId<T::BlockNumber, T::Hash>,
+			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+		),
+
 		/// A deal order has been closed by a borrower. This indicates that the borrower
 		/// has repaid the loan in full and is now closing out the loan.
 		/// [closed_deal_order_id, closed_deal_order]
@@ -834,6 +842,10 @@ pub mod pallet {
 					ensure!(deal_order.borrower == who, Error::<T>::NotBorrower);
 
 					deal_order.lock = Some(who);
+					Self::deposit_event(Event::<T>::DealOrderLocked(
+						deal_order_id.clone(),
+						deal_order.clone(),
+					));
 					Ok(())
 				},
 			)?;
