@@ -207,6 +207,11 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             SameOwner: AugmentedError<ApiType>;
             /**
+             * The account that registered the transfer does
+             * not match the account attempting to use the transfer.
+             **/
+            TransferAccountMismatch: AugmentedError<ApiType>;
+            /**
              * The transfer has already been processed and cannot be used.
              **/
             TransferAlreadyProcessed: AugmentedError<ApiType>;
@@ -219,10 +224,13 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             TransferAmountInsufficient: AugmentedError<ApiType>;
             /**
-             * The account that registered the transfer does
-             * not match the account attempting to use the transfer.
+             * The amount on the deal order does not match the transfer amount.
              **/
-            TransferMismatch: AugmentedError<ApiType>;
+            TransferAmountMismatch: AugmentedError<ApiType>;
+            /**
+             * The specified deal order ID does not match the transfer deal order ID.
+             **/
+            TransferDealOrderMismatch: AugmentedError<ApiType>;
             /**
              * The specified transfer type is not currently supported by
              * the blockchain the loan is executed on.

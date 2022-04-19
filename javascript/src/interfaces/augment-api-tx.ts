@@ -377,10 +377,11 @@ declare module '@polkadot/api-base/types/submittable' {
                               to?: any;
                               orderId?: any;
                               amount?: any;
-                              tx?: any;
+                              txId?: any;
                               block?: any;
-                              processed?: any;
-                              sighash?: any;
+                              isProcessed?: any;
+                              accountId?: any;
+                              timestamp?: any;
                           }
                         | string
                         | Uint8Array,

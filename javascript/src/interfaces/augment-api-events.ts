@@ -112,6 +112,12 @@ declare module '@polkadot/api-base/types/events' {
              **/
             DealOrderFunded: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
             /**
+             * A deal order has been locked by a borrower. This indicates that the borrower
+             * is preparing to make a repayment and locks the loan from being sold or transferred
+             * to another party.
+             **/
+            DealOrderLocked: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
+            /**
              * A legacy wallet from Creditcoin 1.X has been claimed. The balance of the legacy wallet
              * has been transferred to the owner's Creditcoin 2.0 account.
              * [legacy_wallet_claimer, legacy_wallet_sighash, legacy_wallet_balance]
