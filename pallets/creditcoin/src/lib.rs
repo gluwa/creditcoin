@@ -649,11 +649,11 @@ pub mod pallet {
 			let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 			let message = &sp_io::hashing::blake2_256(message.as_ref());
 			let signature = <[u8; 65]>::from(signature);
-			let pkey = secp256k1_ecdsa_recover_compressed(&signature, message)
+			let raw_pkey = secp256k1_ecdsa_recover_compressed(&signature, message)
 				.map_err(|_| Error::<T>::EcdsaRecoveryFailed)?;
 			let recreated_address = helpers::external_address_generator(&blockchain, &address)
 				.ok_or(Error::<T>::AddressFormatNotSupported)?(
-				sp_core::ecdsa::Public::from_raw(pkey)
+				&sp_core::ecdsa::Public::from_raw(raw_pkey)
 			);
 			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
 

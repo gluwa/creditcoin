@@ -12,7 +12,7 @@ use sp_std::vec::Vec;
 pub fn external_address_generator(
 	blockchain: &Blockchain,
 	reference: &ExternalAddress,
-) -> Option<Box<dyn Fn(Public) -> ExternalAddress>> {
+) -> Option<Box<dyn Fn(&Public) -> ExternalAddress>> {
 	match blockchain {
 		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => {
 			match Etherlike::is_address(reference) {
@@ -29,7 +29,7 @@ pub fn external_address_generator(
 pub trait PublictoAddress {
 	type AddressType;
 	fn is_address(addr: &ExternalAddress) -> Option<Self::AddressType>;
-	fn from_public(pkey: Public) -> ExternalAddress;
+	fn from_public(pkey: &Public) -> ExternalAddress;
 }
 
 pub enum Etherlike {
@@ -53,8 +53,8 @@ impl PublictoAddress for Etherlike {
 		Some(Self::Simple)
 	}
 
-	fn from_public(pkey: Public) -> ExternalAddress {
-		let pkey = libsecp256k1::PublicKey::parse_slice(pkey.as_ref(), None)
+	fn from_public(pkey: &Public) -> ExternalAddress {
+		let pkey = libsecp256k1::PublicKey::parse_slice((*pkey).as_ref(), None)
 			.expect("Public can't have invalid input length; qed")
 			.serialize();
 		//pkey uncompressed, 64 bytes
@@ -93,7 +93,7 @@ impl Etherlike {
 		ExternalAddress::try_from(x).unwrap()
 	}
 
-	pub fn from_public_checksummed(pkey: Public) -> ExternalAddress {
+	pub fn from_public_checksummed(pkey: &Public) -> ExternalAddress {
 		Self::to_checksum_address(Self::from_public(pkey))
 	}
 }
@@ -257,7 +257,7 @@ mod tests {
 			hex::decode("09231da7b19A016f9e576d23B16277062F4d46A8".to_lowercase()).unwrap(),
 		)
 		.unwrap();
-		let address2 = Etherlike::from_public(public.clone());
+		let address2 = Etherlike::from_public(&public);
 		assert!(address == address2);
 	}
 
