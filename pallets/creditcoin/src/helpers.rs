@@ -1,6 +1,8 @@
 mod external_address;
 
-pub use external_address::address_is_well_formed;
+pub use external_address::{address_is_well_formed, external_address_generator};
+#[cfg(test)]
+pub use external_address::{Etherlike, PublictoAddress};
 
 use crate::{
 	pallet::*,
