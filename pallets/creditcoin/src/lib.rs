@@ -5,6 +5,7 @@ extern crate alloc;
 
 use frame_support::traits::StorageVersion;
 pub use pallet::*;
+use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
 use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
@@ -477,6 +478,15 @@ pub mod pallet {
 
 		/// The external address is malformed or otherwise invalid for the platform.
 		MalformedExternalAddress,
+
+		/// Unsuccessful publick key recovery from a message and an ecdsa signature.
+		EcdsaRecoveryFailed,
+
+		///given the blockchain, no address format was found to meet the registering address
+		AddressFormatNotSupported,
+
+		/// failed to guarantee resource ownership
+		OwnershipNotSatisfied,
 	}
 
 	#[pallet::genesis_config]
@@ -632,8 +642,21 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
 			address: ExternalAddress,
+			signature: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+
+			let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+			let message = &sp_io::hashing::blake2_256(message.as_ref());
+			let signature = <[u8; 65]>::from(signature);
+			let pkey = secp256k1_ecdsa_recover_compressed(&signature, message)
+				.map_err(|_| Error::<T>::EcdsaRecoveryFailed)?;
+			let recreated_address = helpers::external_address_generator(&blockchain, &address)
+				.ok_or(Error::<T>::AddressFormatNotSupported)?(
+				sp_core::ecdsa::Public::from_raw(pkey)
+			);
+			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
+
 			let address_id = AddressId::new::<T>(&blockchain, &address);
 			ensure!(
 				!Addresses::<T>::contains_key(&address_id),
