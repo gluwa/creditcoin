@@ -1,9 +1,13 @@
-use crate::{AddressId, Blockchain, Config, ExternalAmount, ExternalTxId, OrderId, TransferKind};
+use crate::{
+	AddressId, Blockchain, Config, ExternalAmount, ExternalTxId, OfferId, OrderId, TransferId,
+	TransferKind,
+};
 use frame_support::{generate_storage_alias, pallet_prelude::*, Identity, Twox64Concat};
 
 use super::v1::DealOrder as OldDealOrder;
+use super::v1::LoanTerms;
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
 struct OldTransfer<AccountId, BlockNum, Hash> {
 	blockchain: Blockchain,
 	kind: TransferKind,
@@ -17,9 +21,25 @@ struct OldTransfer<AccountId, BlockNum, Hash> {
 	sighash: AccountId,
 }
 
+#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
+	pub blockchain: Blockchain,
+	pub offer_id: OfferId<BlockNum, Hash>,
+	pub lender_address_id: AddressId<Hash>,
+	pub borrower_address_id: AddressId<Hash>,
+	pub terms: LoanTerms,
+	pub expiration_block: BlockNum,
+	pub timestamp: Moment,
+	pub block: Option<BlockNum>,
+	pub funding_transfer_id: Option<TransferId<Hash>>,
+	pub repayment_transfer_id: Option<TransferId<Hash>>,
+	pub lock: Option<AccountId>,
+	pub borrower: AccountId,
+}
+
 generate_storage_alias!(
 	Creditcoin,
-	DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), crate::DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
+	DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
 );
 
 generate_storage_alias!(
@@ -33,8 +53,8 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 	DealOrders::<T>::translate::<OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
 		|_exp, _hash, deal| {
-			weight += weight_each;
-			Some(crate::DealOrder {
+			weight = weight.saturating_add(weight_each);
+			Some(DealOrder {
 				blockchain: deal.blockchain,
 				offer_id: deal.offer_id,
 				lender_address_id: deal.lender_address_id,
@@ -53,7 +73,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 	Transfers::<T>::translate::<OldTransfer<T::AccountId, T::BlockNumber, T::Hash>, _>(
 		|_id, transfer| {
-			weight += weight_each;
+			weight = weight.saturating_add(weight_each);
 			Some(crate::Transfer {
 				blockchain: transfer.blockchain,
 				kind: transfer.kind,

@@ -35,6 +35,14 @@ impl Duration {
 	}
 }
 
+#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub enum InterestType {
+	Simple,
+	Compound,
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
@@ -42,6 +50,7 @@ pub struct InterestRate {
 	pub rate_per_period: RatePerPeriod,
 	pub decimals: Decimals,
 	pub period: Duration,
+	pub interest_type: InterestType,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -145,6 +154,11 @@ impl Default for LoanTerms {
 #[cfg(test)]
 impl Default for InterestRate {
 	fn default() -> Self {
-		Self { rate_per_period: 0, decimals: 1, period: Duration::from_millis(100_000) }
+		Self {
+			rate_per_period: 0,
+			decimals: 1,
+			period: Duration::from_millis(100_000),
+			interest_type: InterestType::Simple,
+		}
 	}
 }
