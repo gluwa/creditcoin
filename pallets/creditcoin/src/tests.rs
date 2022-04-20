@@ -59,8 +59,7 @@ impl RegisteredAddress {
 	) -> RegisteredAddress {
 		let signer = address_key.into();
 		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
-			let address = Etherlike::to_checksum_address(Etherlike::from_public(&pkey));
-			format!("0x{}", hex::encode(address)).hex_to_address()
+			Etherlike::from_public(&pkey)
 		} else {
 			unimplemented!();
 		};
@@ -82,8 +81,7 @@ impl RegisteredAddress {
 	) -> RegisteredAddress {
 		let signer = public_key.into();
 		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
-			let address = Etherlike::to_checksum_address(Etherlike::from_public(&pkey));
-			format!("0x{}", hex::encode(address)).hex_to_address()
+			Etherlike::from_public(&pkey)
 		} else {
 			unimplemented!();
 		};
@@ -106,7 +104,7 @@ impl RegisteredAddress {
 		let who = signer.into_account();
 		let message = get_register_address_message(who.clone());
 		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::to_checksum_address(Etherlike::from_public(&pkey));
+		let address = Etherlike::from_public(&pkey);
 
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
@@ -306,8 +304,7 @@ fn register_address_basic() {
 		let who = signer.into_account();
 		let message = get_register_address_message(who.clone());
 		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::to_checksum_address(Etherlike::from_public(&pkey));
-		let address = format!("0x{}", hex::encode(address)).hex_to_address();
+		let address = Etherlike::from_public(&pkey);
 		let blockchain = Blockchain::Rinkeby;
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
@@ -331,8 +328,7 @@ fn register_address_pre_existing() {
 		let who = signer.into_account();
 		let message = get_register_address_message(who.clone());
 		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::to_checksum_address(Etherlike::from_public(&pkey));
-		let address = format!("0x{}", hex::encode(address)).hex_to_address();
+		let address = Etherlike::from_public(&pkey);
 		let blockchain = Blockchain::Rinkeby;
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
@@ -363,7 +359,7 @@ fn register_address_malformed_address() {
 		let who = signer.into_account();
 		let message = get_register_address_message(who.clone());
 		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::to_checksum_address(Etherlike::from_public(&pkey));
+		let address = Etherlike::from_public(&pkey);
 		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
 		let blockchain = Blockchain::Rinkeby;
 		assert_noop!(
@@ -501,8 +497,7 @@ fn register_transfer_ocw() {
 		let lender = l_signer.into_account();
 		let l_message = get_register_address_message(lender.clone());
 		let l_signature = l_key_pair.sign(l_message.as_slice());
-		let l_address = Etherlike::to_checksum_address(Etherlike::from_public(&l_pkey));
-		let l_address = format!("0x{}", hex::encode(l_address)).hex_to_address();
+		let l_address = Etherlike::from_public(&l_pkey);
 
 		let loan_amount = ExternalAmount::from(100);
 
@@ -524,8 +519,7 @@ fn register_transfer_ocw() {
 		let borrower = b_signer.into_account();
 		let b_message = get_register_address_message(borrower.clone());
 		let b_signature = b_key_pair.sign(b_message.as_slice());
-		let b_address = Etherlike::to_checksum_address(Etherlike::from_public(&b_pkey));
-		let b_address = format!("0x{}", hex::encode(b_address)).hex_to_address();
+		let b_address = Etherlike::from_public(&b_pkey);
 
 		let b_address_id = crate::AddressId::new::<Test>(&blockchain, &b_address);
 		assert_ok!(Creditcoin::register_address(
