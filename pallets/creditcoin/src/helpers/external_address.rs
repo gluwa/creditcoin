@@ -211,7 +211,7 @@ mod tests {
 		);
 
 		let address = ExternalAddress::try_from(
-			hex::decode("09231da7b19A016f9e576d23B16277062F4d46A8".to_lowercase()).unwrap(),
+			hex::decode("09231da7b19A016f9e576d23B16277062F4d46A8").unwrap(),
 		)
 		.unwrap();
 		let address2 = Etherlike::from_public(&public);
