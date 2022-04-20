@@ -13,7 +13,7 @@ pub fn external_address_generator(
 ) -> Option<Box<dyn Fn(&Public) -> ExternalAddress>> {
 	match blockchain {
 		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => {
-			if let Some(_) = Etherlike::is_address(reference) {
+			if Etherlike::is_address(reference).is_some() {
 				Some(Box::new(Etherlike::from_public))
 			} else {
 				None
