@@ -1,5 +1,4 @@
 use crate::{Blockchain, ExternalAddress};
-use alloc::string::String;
 use base58::FromBase58;
 use core::convert::TryFrom;
 use frame_support::BoundedVec;
@@ -7,7 +6,6 @@ use sp_core::ecdsa::Public;
 use sp_io::hashing::keccak_256;
 use sp_io::hashing::sha2_256;
 use sp_std::boxed::Box;
-use sp_std::vec::Vec;
 
 pub fn external_address_generator(
 	blockchain: &Blockchain,
@@ -15,10 +13,10 @@ pub fn external_address_generator(
 ) -> Option<Box<dyn Fn(&Public) -> ExternalAddress>> {
 	match blockchain {
 		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => {
-			match Etherlike::is_address(reference) {
-				Some(Etherlike::Simple) => Some(Box::new(Etherlike::from_public)),
-				Some(Etherlike::Eip55) => Some(Box::new(Etherlike::from_public_checksummed)),
-				_ => None,
+			if let Some(_) = Etherlike::is_address(reference) {
+				Some(Box::new(Etherlike::from_public))
+			} else {
+				None
 			}
 		},
 		Blockchain::Bitcoin => None,
@@ -34,23 +32,17 @@ pub trait PublictoAddress {
 
 pub enum Etherlike {
 	Simple,
-	Eip55,
 }
 
 impl PublictoAddress for Etherlike {
 	type AddressType = Self;
 	///Needs tests!
 	fn is_address(addr: &ExternalAddress) -> Option<Self::AddressType> {
-		if !eth_address_is_well_formed(addr) {
-			return None;
+		if eth_address_is_well_formed(addr) {
+			Some(Self::Simple)
+		} else {
+			None
 		}
-
-		for b in hex::encode(addr).as_bytes() {
-			if b.is_ascii_uppercase() {
-				return Some(Self::Eip55);
-			}
-		}
-		Some(Self::Simple)
 	}
 
 	fn from_public(pkey: &Public) -> ExternalAddress {
@@ -60,41 +52,6 @@ impl PublictoAddress for Etherlike {
 		//pkey uncompressed, 64 bytes
 		let a = keccak_256(&pkey[1..])[12..].to_vec();
 		BoundedVec::try_from(a).expect("20 bytes fit within bounds; qed")
-	}
-}
-
-impl Etherlike {
-	///https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md
-	/// Takes a 20-byte binary address as input
-	pub fn to_checksum_address(lowercase_addr: ExternalAddress) -> ExternalAddress {
-		let lowercase_addr = hex::encode(lowercase_addr);
-
-		let byte_digest = {
-			//Treat the lowercase hex address as ascii/utf-8 for keccak256 hashing
-			let digest = keccak_256(lowercase_addr.as_bytes());
-			hex::encode(digest)
-		};
-		let z = lowercase_addr.as_bytes().iter().zip(byte_digest.as_bytes().iter());
-		let transform = z
-			.map(
-				|(&h, &m)| {
-					if h.is_ascii_alphabetic() && m >= b"8"[0] {
-						h.to_ascii_uppercase()
-					} else {
-						h
-					}
-				},
-			)
-			.collect::<Vec<_>>();
-
-		let x = String::from_utf8(transform).unwrap();
-		let x = hex::decode(x).unwrap();
-
-		ExternalAddress::try_from(x).unwrap()
-	}
-
-	pub fn from_public_checksummed(pkey: &Public) -> ExternalAddress {
-		Self::to_checksum_address(Self::from_public(pkey))
 	}
 }
 
@@ -259,21 +216,5 @@ mod tests {
 		.unwrap();
 		let address2 = Etherlike::from_public(&public);
 		assert!(address == address2);
-	}
-
-	fn builder_to_checksum_address(checksum_addr: &str) {
-		let checksum_addr = checksum_addr.to_lowercase();
-		let v = ExternalAddress::try_from(hex::decode(checksum_addr.clone()).unwrap().to_vec())
-			.unwrap();
-		let checked = Etherlike::to_checksum_address(v);
-		assert_eq!(&checked[..], hex::decode(checksum_addr).unwrap());
-	}
-
-	#[test]
-	fn to_checksum_address() {
-		builder_to_checksum_address("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed");
-		builder_to_checksum_address("fB6916095ca1df60bB79Ce92cE3Ea74c37c5d359");
-		builder_to_checksum_address("dbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB");
-		builder_to_checksum_address("D1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb");
 	}
 }
