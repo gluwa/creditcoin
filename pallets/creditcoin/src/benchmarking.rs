@@ -2,6 +2,7 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
+use crate::helpers::{Etherlike, PublictoAddress};
 use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
@@ -86,12 +87,15 @@ benchmarks! {
 	}
 
 	register_address {
-		let b in 0..256;
-		let e in 0..256;
-		let caller: T::AccountId = lender_account::<T>(false);
-		let blockchain = vec![b'b'; b as usize];
-		let external_address = vec![b'a'; e as usize];
-	}: _(RawOrigin::Signed(caller), Blockchain::Other(blockchain.into_bounded()), external_address.into_bounded())
+		let who: T::AccountId = lender_account::<T>(false);
+		let ktypeid = KeyTypeId(*b"dumy");
+		let seed = "//who".as_bytes().to_vec();
+		let pkey = ecdsa_generate(ktypeid, Some(seed));
+		let address = Etherlike::from_public(&pkey);
+		let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
+
+	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address,signature)
 
 	claim_legacy_wallet {
 		let pubkey = {
@@ -214,7 +218,7 @@ benchmarks! {
 	register_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender:T::AccountId = lender_account::<T>(true);
-		let lender_addr_id = register_eth_addr::<T>(&lender,"f04349B4A760F5Aed02131e0dAA9bB99a1d1d1e4");
+		let lender_addr_id = register_eth_addr::<T>(&lender,"lender");
 		let terms = get_all_fit_terms::<T>();
 		let expiry = T::BlockNumber::one();
 		let ask_guid = "ask_guid".as_bytes();
@@ -231,7 +235,7 @@ benchmarks! {
 		let pkey = ecdsa_generate(ktypeid, None);
 		let borrower = T::Signer::from(pkey.clone()).into_account();
 
-		let borrower_addr_id = register_eth_addr::<T>(&borrower,"f04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5");
+		let borrower_addr_id = register_eth_addr::<T>(&borrower,"borrower");
 		let signature = ecdsa_sign(ktypeid, &pkey, &payload[..]).expect("ecdsa signature");
 
 
@@ -431,12 +435,17 @@ fn generate_offer<T: Config>(
 	Ok((offer_id, ask_id, bid_id))
 }
 
-fn register_eth_addr<T: Config>(who: &T::AccountId, hex_addr: &str) -> AddressId<<T>::Hash> {
-	let address = hex::decode(hex_addr).unwrap();
+fn register_eth_addr<T: Config>(who: &T::AccountId, seed: &str) -> AddressId<<T>::Hash> {
+	let ktypeid = KeyTypeId(*b"dumy");
+	let pkey = ecdsa_generate(ktypeid, Some(format!("//{}", seed).as_bytes().to_vec()));
+	let address = Etherlike::from_public(&pkey);
 	let address_id = crate::AddressId::new::<T>(&Blockchain::Ethereum, &address);
 
+	let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+	let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
+
 	let origin = RawOrigin::Signed(who.clone());
-	Creditcoin::<T>::register_address(origin.into(), Blockchain::Ethereum, address.into_bounded())
+	Creditcoin::<T>::register_address(origin.into(), Blockchain::Ethereum, address, signature)
 		.unwrap();
 
 	address_id
@@ -449,8 +458,8 @@ fn generate_ask<T: Config>(
 	call: bool,
 	seed: u8,
 ) -> Result<(AddressId<<T>::Hash>, AskOrderId<T::BlockNumber, T::Hash>, Vec<u8>), crate::Error<T>> {
-	let hex_addr = &format!("f04349B4A760F5Aed02131e0dAA9bB99a1d1da{:02x}", seed)[..];
-	let address_id = register_eth_addr::<T>(who, hex_addr);
+	let secretkey = &format!("lender{:02x}", seed)[..];
+	let address_id = register_eth_addr::<T>(who, secretkey);
 	let guid = format!("ask_guid{:02x}", seed);
 	let guid = guid.as_bytes();
 
@@ -477,8 +486,8 @@ fn generate_bid<T: Config>(
 	call: bool,
 	seed: u8,
 ) -> Result<(AddressId<<T>::Hash>, BidOrderId<T::BlockNumber, T::Hash>, Vec<u8>), crate::Error<T>> {
-	let hex_addr = &format!("f04349B4A760F5Aed02131e0dAA9bB99a1d1db{:02x}", seed)[..];
-	let address_id = register_eth_addr::<T>(who, hex_addr);
+	let secretkey = &format!("borrower{:02x}", seed)[..];
+	let address_id = register_eth_addr::<T>(who, secretkey);
 	let guid = format!("bid_guid{:02x}", seed);
 	let guid = guid.as_bytes();
 

@@ -244,7 +244,7 @@ impl WeightToFeePolynomial for WeightToCtcFee {
 	type Balance = Balance;
 
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		let base = Balance::from(creditcoin_weights::<Runtime>::register_address(0, 0));
+		let base = Balance::from(creditcoin_weights::<Runtime>::register_address());
 		let ratio = TARGET_FEE_CREDO / base;
 		let rem = TARGET_FEE_CREDO % base;
 		smallvec::smallvec!(WeightToFeeCoefficient {
