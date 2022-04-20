@@ -129,7 +129,7 @@ pub mod pallet {
 
 	pub trait WeightInfo {
 		fn on_initialize(_u: u32, a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
-		fn register_address(b: u32, e: u32) -> Weight;
+		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
 		fn add_bid_order() -> Weight;
@@ -637,7 +637,7 @@ pub mod pallet {
 		}
 
 		/// Registers an external address on `blockchain` and `network` with value `address`
-		#[pallet::weight(<T as Config>::WeightInfo::register_address(blockchain.as_bytes().len().unique_saturated_into(),address.as_slice().len().unique_saturated_into()))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address())]
 		pub fn register_address(
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
