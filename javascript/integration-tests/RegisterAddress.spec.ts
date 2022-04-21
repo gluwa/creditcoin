@@ -6,7 +6,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { Balance } from '@polkadot/types/interfaces';
 
 import { CREDO_PER_CTC } from '../src/constants';
-import { randomEthAddress } from '../src/utils';
+import { randomEthWallet } from '../src/utils';
 import * as testUtils from './test-utils';
 
 describe('RegisterAddress', (): void => {
@@ -32,7 +32,7 @@ describe('RegisterAddress', (): void => {
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         return new Promise((resolve, reject) => {
             const unsubscribe = api.tx.creditcoin
-                .registerAddress('Ethereum', randomEthAddress().address)
+                .registerAddress('Ethereum', randomEthWallet().address)
                 .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     testUtils.expectNoDispatchError(api, dispatchError);
 

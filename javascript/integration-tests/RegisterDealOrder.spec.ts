@@ -13,7 +13,7 @@ import { AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 import { signLoanParams } from 'credal-js/lib/extrinsics/register-deal-order';
 
 import { POINT_01_CTC } from '../src/constants';
-import { randomEthAddress } from '../src/utils';
+import { randomEthWallet } from '../src/utils';
 import * as testUtils from './test-utils';
 
 describe('RegisterDealOrder', (): void => {
@@ -50,11 +50,11 @@ describe('RegisterDealOrder', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthAddress().address;
+        const lenderAddress = randomEthWallet().address;
         lenderRegAddr = await testUtils.registerAddress(api, lenderAddress, blockchain, lender);
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const borrowerAddress = randomEthAddress().address;
+        const borrowerAddress = randomEthWallet().address;
         borrowerRegAddr = await testUtils.registerAddress(api, borrowerAddress, blockchain, borrower);
     }, 60000);
 
