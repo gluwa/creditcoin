@@ -5,17 +5,17 @@ use frame_support::BoundedVec;
 use sp_core::ecdsa::Public;
 use sp_io::hashing::keccak_256;
 use sp_io::hashing::sha2_256;
-use sp_std::boxed::Box;
 
 pub fn external_address_generator(
 	blockchain: &Blockchain,
 	reference: &ExternalAddress,
-) -> Option<Box<dyn Fn(&Public) -> ExternalAddress>> {
+	pkey: Public,
+) -> Option<ExternalAddress> {
 	match blockchain {
 		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby
 			if Etherlike::is_address(reference).is_some() =>
 		{
-			Some(Box::new(Etherlike::from_public))
+			Some(Etherlike::from_public(&pkey))
 		},
 		Blockchain::Bitcoin => None,
 		Blockchain::Other(_) => None,
