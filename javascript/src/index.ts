@@ -8,7 +8,7 @@ import { PalletCreditcoinLoanTerms } from '@polkadot/types/lookup';
 
 import { registerAddressAsync } from './examples/register-address';
 import { registerDealOrderAsync, signLoanParams } from './examples/register-deal-order';
-import { randomEthAddress } from './utils';
+import { randomEthWallet } from './utils';
 
 const main = async () => {
     let api: ApiPromise | undefined;
@@ -19,8 +19,8 @@ const main = async () => {
         const lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         const borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
 
-        const lenderAddress = randomEthAddress().address;
-        const borrowerAddress = randomEthAddress().address;
+        const lenderAddress = randomEthWallet().address;
+        const borrowerAddress = randomEthWallet().address;
 
         const askGuid = Guid.newGuid().toString();
         const bidGuid = Guid.newGuid().toString();
