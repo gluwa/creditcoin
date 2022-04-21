@@ -1,5 +1,5 @@
 use crate::{
-	helpers::{Etherlike, PublictoAddress},
+	helpers::{Etherlike, PublicToAddress},
 	mock::*,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
@@ -97,7 +97,7 @@ impl RegisteredAddress {
 		RegisteredAddress { account_id, address_id }
 	}
 	pub fn new(seed: &str, blockchain: Blockchain) -> RegisteredAddress {
-		let seed = seed.as_bytes().iter().copied().cycle().take(32).collect::<Vec<_>>();
+		let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
 		let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
 		let pkey = key_pair.public();
 		let signer: MultiSigner = pkey.clone().into();
@@ -291,7 +291,7 @@ impl TestInfo {
 	}
 }
 
-pub fn get_register_address_message(who: self::AccountId) -> [u8; 32] {
+pub fn get_register_address_message(who: AccountId) -> [u8; 32] {
 	sp_io::hashing::sha2_256(who.encode().as_slice())
 }
 

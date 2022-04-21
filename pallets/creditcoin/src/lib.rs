@@ -479,9 +479,6 @@ pub mod pallet {
 		/// The external address is malformed or otherwise invalid for the platform.
 		MalformedExternalAddress,
 
-		/// Unsuccessful publick key recovery from a message and an ecdsa signature.
-		EcdsaRecoveryFailed,
-
 		///given the blockchain, no address format was found to meet the registering address
 		AddressFormatNotSupported,
 
@@ -650,7 +647,7 @@ pub mod pallet {
 			let message = &sp_io::hashing::blake2_256(message.as_ref());
 			let signature = <[u8; 65]>::from(signature);
 			let raw_pkey = secp256k1_ecdsa_recover_compressed(&signature, message)
-				.map_err(|_| Error::<T>::EcdsaRecoveryFailed)?;
+				.map_err(|_| Error::<T>::InvalidSignature)?;
 			let recreated_address = helpers::external_address_generator(&blockchain, &address)
 				.ok_or(Error::<T>::AddressFormatNotSupported)?(
 				&sp_core::ecdsa::Public::from_raw(raw_pkey)
