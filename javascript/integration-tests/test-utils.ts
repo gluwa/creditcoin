@@ -220,13 +220,16 @@ export const registerFundingTransfer = async (
     dealOrderId: DealOrderId,
     txHash: string,
     signer: KeyringPair,
+    waitForVerification = true,
 ): Promise<TransferEvent> => {
     const result = await registerFundingTransferAsync(api, transferKind, dealOrderId, txHash, signer);
     expect(result).toBeTruthy();
 
     if (result) {
-        const verifiedTransfer = await result.waitForVerification().catch();
-        expect(verifiedTransfer).toBeTruthy();
+        if (waitForVerification) {
+            const verifiedTransfer = await result.waitForVerification().catch();
+            expect(verifiedTransfer).toBeTruthy();
+        }
 
         return result;
     } else {
