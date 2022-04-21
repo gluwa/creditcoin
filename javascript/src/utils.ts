@@ -57,6 +57,6 @@ export const getAddressId = (blockchain: PalletCreditcoinBlockchain | string, ex
     return blake2AsHex(addressId);
 };
 
-export const randomEthAddress = (): Wallet => {
+export const randomEthWallet = (): Wallet => {
     return Wallet.createRandom();
 };

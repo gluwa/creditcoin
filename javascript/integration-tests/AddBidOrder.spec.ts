@@ -12,7 +12,7 @@ import { createCreditcoinLoanTerms } from 'credal-js/lib/transforms';
 import { AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 
 import { POINT_01_CTC } from '../src/constants';
-import { randomEthAddress } from '../src/utils';
+import { randomEthWallet } from '../src/utils';
 import * as testUtils from './test-utils';
 
 describe('AddBidOrder', (): void => {
@@ -47,7 +47,7 @@ describe('AddBidOrder', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        borrowerRegAddr = await testUtils.registerAddress(api, randomEthAddress().address, blockchain, borrower);
+        borrowerRegAddr = await testUtils.registerAddress(api, randomEthWallet().address, blockchain, borrower);
         bidGuid = Guid.newGuid();
     });
 
