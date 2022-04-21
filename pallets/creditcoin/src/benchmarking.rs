@@ -2,7 +2,7 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{Etherlike, PublictoAddress};
+use crate::helpers::{Etherlike, PublicToAddress};
 use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
