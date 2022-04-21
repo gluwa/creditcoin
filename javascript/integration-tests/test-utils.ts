@@ -43,12 +43,11 @@ import {
 import { fundDealOrderAsync } from 'credal-js/lib/extrinsics/fund-deal-order';
 
 const ETHEREUM_ADDRESS = 'http://localhost:8545';
+export const AUTHORITY_PUBKEY = '0xcce7c3c86f7e4431cdefca6c328bab69af12010a4a9fa0d91be37a24776afd4a';
+export const AUTHORITY_SURI = 'blade city surround refuse fold spring trip enlist myself wild elevator coil';
+export const AUTHORITY_ACCOUNTID = '5GhNUTKw9xkTN5Za4torEe1SAGPhXjM78oNZWAXrFymhB6oZ';
 
 export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) => {
-    const AUTHORITY_PUBKEY = '0xcce7c3c86f7e4431cdefca6c328bab69af12010a4a9fa0d91be37a24776afd4a';
-    const AUTHORITY_SURI = 'blade city surround refuse fold spring trip enlist myself wild elevator coil';
-    const AUTHORITY_ACCOUNTID = '5GhNUTKw9xkTN5Za4torEe1SAGPhXjM78oNZWAXrFymhB6oZ';
-
     const u8aToHex = (bytes: Uint8Array): string => {
         return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
     };
