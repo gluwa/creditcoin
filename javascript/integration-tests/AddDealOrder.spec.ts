@@ -10,7 +10,7 @@ import type { Balance } from '@polkadot/types/interfaces';
 import { OfferId, Blockchain, LoanTerms } from 'credal-js/lib/model';
 
 import { POINT_01_CTC } from '../src/constants';
-import { randomEthAddress } from '../src/utils';
+import { randomEthWallet } from '../src/utils';
 import * as testUtils from './test-utils';
 
 describe('AddDealOrder', (): void => {
@@ -45,10 +45,10 @@ describe('AddDealOrder', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthAddress().address;
+        const lenderAddress = randomEthWallet().address;
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const borrowerAddress = randomEthAddress().address;
+        const borrowerAddress = randomEthWallet().address;
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
             testUtils.registerAddress(api, lenderAddress, blockchain, lender),
             testUtils.registerAddress(api, borrowerAddress, blockchain, borrower),
