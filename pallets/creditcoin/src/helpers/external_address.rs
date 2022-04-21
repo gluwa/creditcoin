@@ -12,34 +12,30 @@ pub fn external_address_generator(
 	reference: &ExternalAddress,
 ) -> Option<Box<dyn Fn(&Public) -> ExternalAddress>> {
 	match blockchain {
-		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => {
-			if Etherlike::is_address(reference).is_some() {
-				Some(Box::new(Etherlike::from_public))
-			} else {
-				None
-			}
+		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby
+			if Etherlike::is_address(reference).is_some() =>
+		{
+			Some(Box::new(Etherlike::from_public))
 		},
 		Blockchain::Bitcoin => None,
 		Blockchain::Other(_) => None,
+		_ => None,
 	}
 }
 
-pub trait PublictoAddress {
+pub trait PublicToAddress {
 	type AddressType;
 	fn is_address(addr: &ExternalAddress) -> Option<Self::AddressType>;
 	fn from_public(pkey: &Public) -> ExternalAddress;
 }
 
-pub enum Etherlike {
-	Simple,
-}
+pub struct Etherlike;
 
-impl PublictoAddress for Etherlike {
-	type AddressType = Self;
-	///Needs tests!
+impl PublicToAddress for Etherlike {
+	type AddressType = ();
 	fn is_address(addr: &ExternalAddress) -> Option<Self::AddressType> {
 		if eth_address_is_well_formed(addr) {
-			Some(Self::Simple)
+			Some(())
 		} else {
 			None
 		}
