@@ -6,6 +6,8 @@ import { Guid } from 'js-guid';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Null, Option } from '@polkadot/types';
+import { PalletCreditcoinTransfer } from '@polkadot/types/lookup';
+import { BN } from '@polkadot/util';
 
 import { ethConnection } from 'credal-js/lib/examples/ethereum';
 import {
@@ -19,10 +21,12 @@ import {
     DealOrderLocked,
     LoanTerms,
     OfferId,
+    Transfer,
     TransferId,
     TransferKind,
     TransferProcessed,
 } from 'credal-js/lib/model';
+import { createCreditcoinTransferKind } from 'credal-js/lib/transforms';
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
 import { addAuthorityAsync } from 'credal-js/lib/extrinsics/add-authority';
 import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
@@ -31,7 +35,11 @@ import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { lockDealOrderAsync } from 'credal-js/lib/extrinsics/lock-deal-order';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 import { registerDealOrderAsync, DealOrderRegistered } from 'credal-js/lib/extrinsics/register-deal-order';
-import { registerFundingTransferAsync, TransferEvent } from 'credal-js/lib/extrinsics/register-transfers';
+import {
+    registerFundingTransferAsync,
+    registerRepaymentTransferAsync,
+    TransferEvent,
+} from 'credal-js/lib/extrinsics/register-transfers';
 import { fundDealOrderAsync } from 'credal-js/lib/extrinsics/fund-deal-order';
 
 const ETHEREUM_ADDRESS = 'http://localhost:8545';
@@ -251,6 +259,37 @@ export const registerFundingTransfer = async (
         return result;
     } else {
         throw new Error('RegisterFundingTransfer failed');
+    }
+};
+
+export const registerRepaymentTransfer = async (
+    api: ApiPromise,
+    transferKind: TransferKind,
+    repaymentAmount: BN,
+    dealOrderId: DealOrderId,
+    txHash: string,
+    signer: KeyringPair,
+    waitForVerification = true,
+): Promise<TransferEvent> => {
+    const result = await registerRepaymentTransferAsync(
+        api,
+        transferKind,
+        repaymentAmount,
+        dealOrderId,
+        txHash,
+        signer,
+    );
+    expect(result).toBeTruthy();
+
+    if (result) {
+        if (waitForVerification) {
+            const verifiedTransfer = await result.waitForVerification().catch();
+            expect(verifiedTransfer).toBeTruthy();
+        }
+
+        return result;
+    } else {
+        throw new Error('RegisterRepaymentTransfer failed');
     }
 };
 
