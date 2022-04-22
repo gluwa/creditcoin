@@ -4,9 +4,9 @@
 import { Guid } from 'js-guid';
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
-import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Balance } from '@polkadot/types/interfaces';
+import { BN } from '@polkadot/util';
 
 import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'credal-js/lib/model';
 
