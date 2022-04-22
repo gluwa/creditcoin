@@ -7,27 +7,30 @@ import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Null, Option } from '@polkadot/types';
 
-import { lendOnEth } from 'credal-js/lib/ethereum';
+import { ethConnection } from 'credal-js/lib/examples/ethereum';
 import {
     AddressId,
     AskOrderId,
     BidOrderId,
     Blockchain,
     DealOrderId,
+    DealOrderAdded,
+    DealOrderFunded,
     LoanTerms,
     OfferId,
     TransferId,
     TransferKind,
+    TransferProcessed,
 } from 'credal-js/lib/model';
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
 import { addAuthorityAsync } from 'credal-js/lib/extrinsics/add-authority';
 import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
-import { addDealOrderAsync, DealOrderAdded } from 'credal-js/lib/extrinsics/add-deal-order';
+import { addDealOrderAsync } from 'credal-js/lib/extrinsics/add-deal-order';
 import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 import { registerDealOrderAsync, DealOrderRegistered } from 'credal-js/lib/extrinsics/register-deal-order';
-import { registerFundingTransferAsync, TransferEvent } from 'credal-js/lib/extrinsics/register-funding-transfer';
-import { fundDealOrderAsync, DealOrderFunded, TransferProcessed } from 'credal-js/lib/extrinsics/fund-deal-order';
+import { registerFundingTransferAsync, TransferEvent } from 'credal-js/lib/extrinsics/register-transfers';
+import { fundDealOrderAsync } from 'credal-js/lib/extrinsics/fund-deal-order';
 
 const ETHEREUM_ADDRESS = 'http://localhost:8545';
 
@@ -187,7 +190,7 @@ export const registerDealOrder = async (
     }
 };
 
-const sleep = (delay: number) => new Promise((resolve) => setTimeout(resolve, delay));
+export const sleep = (delay: number) => new Promise((resolve) => setTimeout(resolve, delay));
 
 export const prepareEthTransfer = async (
     lenderWallet: Wallet,
@@ -198,20 +201,23 @@ export const prepareEthTransfer = async (
     // Note: this is Account #0 from gluwa/hardhat-dev !!!
     process.env.PK1 = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
 
-    const [tokenAddress, txHash] = await lendOnEth(
+    // connect to ethereum to lend and repay
+    const { lend, repay, waitUntilTip } = await ethConnection();
+    expect(repay).toBeTruthy();
+
+    // Lender lends to borrower on ethereum
+    const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
         lenderWallet,
         borrowerWallet.address,
         dealOrderId[1],
         loanTerms.amount,
     );
 
-    // wait 15 sec for Ethereum (min 12 confirmations)
-    // WARNING: needs hardhat to be configured to produce blocks every second!
-    // see https://github.com/gluwa/hardhat-testing/pull/11
-    await sleep(15000);
+    // wait 15 blocks on Ethereum
+    await waitUntilTip(lendBlockNumber + 15);
 
     const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
-    return [transferKind, txHash];
+    return [transferKind, lendTxHash];
 };
 
 export const registerFundingTransfer = async (

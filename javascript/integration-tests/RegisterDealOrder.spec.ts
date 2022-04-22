@@ -6,6 +6,7 @@ import { Guid } from 'js-guid';
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Balance } from '@polkadot/types/interfaces';
+import { BN } from '@polkadot/util';
 
 import { Blockchain, LoanTerms } from 'credal-js/lib/model';
 import { createCreditcoinLoanTerms } from 'credal-js/lib/transforms';
@@ -27,7 +28,7 @@ describe('RegisterDealOrder', (): void => {
     const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
     const loanTerms: LoanTerms = {
-        amount: BigInt(1_000),
+        amount: new BN(1_000),
         interestRate: {
             ratePerPeriod: 100,
             decimals: 4,
