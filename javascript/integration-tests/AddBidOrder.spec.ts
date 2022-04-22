@@ -6,11 +6,11 @@ import { Guid } from 'js-guid';
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { Balance } from '@polkadot/types/interfaces';
+import { BN } from '@polkadot/util';
 
 import { Blockchain, LoanTerms } from 'credal-js/lib/model';
 import { createCreditcoinLoanTerms } from 'credal-js/lib/transforms';
 import { AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
-import { BN } from '@polkadot/util';
 
 import { POINT_01_CTC } from '../src/constants';
 import { randomEthWallet } from '../src/utils';
