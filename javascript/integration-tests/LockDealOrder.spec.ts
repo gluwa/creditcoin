@@ -6,8 +6,8 @@ import { Guid } from 'js-guid';
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Balance } from '@polkadot/types/interfaces';
-
 import { BN } from '@polkadot/util';
+
 import { Blockchain, DealOrderId, LoanTerms } from 'credal-js/lib/model';
 import { signLoanParams } from 'credal-js/lib/extrinsics/register-deal-order';
 
