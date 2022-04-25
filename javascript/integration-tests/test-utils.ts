@@ -63,8 +63,14 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
     if (auth.isNone) {
         await addAuthorityAsync(api, AUTHORITY_ACCOUNTID, sudoSigner);
     }
+
     await api.tx.sudo
-        .sudo(api.tx.balances.setBalance(AUTHORITY_ACCOUNTID, '1000000000000000000', '0'))
+        .sudo(api.tx.balances.setBalance(AUTHORITY_ACCOUNTID, '10000000000000000000', '0'))
+        .signAndSend(sudoSigner, { nonce: -1 });
+
+    // bump balance for Alice b/c we need enough to be able to pay fees
+    await api.tx.sudo
+        .sudo(api.tx.balances.setBalance(sudoSigner.address, '10000000000000000000', '0'))
         .signAndSend(sudoSigner, { nonce: -1 });
 };
 
