@@ -12,7 +12,7 @@ ADD sha3pow /creditcoin-node/sha3pow
 ADD chainspecs /creditcoin-node/chainspecs
 RUN source ~/.cargo/env && cargo build --release
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 EXPOSE 30333/tcp
 EXPOSE 30333/udp
 EXPOSE 9944 9933 9615
