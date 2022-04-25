@@ -567,6 +567,7 @@ pub mod pallet {
 					match transfer_validity {
 						Ok(()) => {
 							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
+								log::info!("**** DEBUG: offchain_worker will Call::verify_transfer() with {:?}", hex::encode(pending.transfer.clone().tx_id));
 								Call::verify_transfer { transfer: pending.transfer.clone() }
 							}) {
 								log::error!(
@@ -1170,6 +1171,8 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
+			let tx_hash = hex::encode(&transfer.tx_id);
+			log::info!("**** DEBUG, verify_transfer, tx_id={:?}", tx_hash);
 			let who = ensure_signed(origin)?;
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);

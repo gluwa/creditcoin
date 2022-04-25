@@ -232,6 +232,7 @@ export const prepareEthTransfer = async (
     await waitUntilTip(lendBlockNumber + 15);
 
     const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
+console.log(`**** DEBUG, ethTransfer tx_id=${lendTxHash}`);
     return [transferKind, lendTxHash];
 };
 
@@ -251,7 +252,7 @@ export const registerFundingTransfer = async (
             const verifiedTransfer = await result.waitForVerification().catch();
             expect(verifiedTransfer).toBeTruthy();
         }
-
+console.log(`**** DEBUG, registerFundingTransfer transferId=${result.transferId}`);
         return result;
     } else {
         throw new Error('RegisterFundingTransfer failed');
@@ -282,7 +283,7 @@ export const registerRepaymentTransfer = async (
             const verifiedTransfer = await result.waitForVerification().catch();
             expect(verifiedTransfer).toBeTruthy();
         }
-
+console.log(`**** DEBUG, registerRepaymentTransfer transferId=${result.transferId}`);
         return result;
     } else {
         throw new Error('RegisterRepaymentTransfer failed');
