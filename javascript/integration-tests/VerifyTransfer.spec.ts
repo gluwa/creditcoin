@@ -82,6 +82,7 @@ describe('VerifyTransfer', (): void => {
             borrowerWallet,
             dealOrderId,
             loanTerms,
+            false,
         );
 
         transferEvent = await testUtils.registerFundingTransfer(api, transferKind, dealOrderId, txHash, lender, false);

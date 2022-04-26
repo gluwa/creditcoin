@@ -212,6 +212,7 @@ export const prepareEthTransfer = async (
     borrowerWallet: Wallet,
     dealOrderId: DealOrderId,
     loanTerms: LoanTerms,
+    waitForEthereum = true,
 ): Promise<[TransferKind, string]> => {
     // Note: this is Account #0 from gluwa/hardhat-dev !!!
     process.env.PK1 = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
@@ -228,8 +229,10 @@ export const prepareEthTransfer = async (
         loanTerms.amount,
     );
 
-    // wait 15 blocks on Ethereum
-    await waitUntilTip(lendBlockNumber + 15);
+    if (waitForEthereum) {
+        // wait 15 blocks on Ethereum
+        await waitUntilTip(lendBlockNumber + 15);
+    }
 
     const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
 console.log(`**** DEBUG, ethTransfer tx_id=${lendTxHash}`);
