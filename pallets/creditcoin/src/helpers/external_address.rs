@@ -6,7 +6,7 @@ use sp_core::ecdsa::Public;
 use sp_io::hashing::keccak_256;
 use sp_io::hashing::sha2_256;
 
-pub fn external_address_generator(
+pub fn generate_external_address(
 	blockchain: &Blockchain,
 	reference: &ExternalAddress,
 	pkey: Public,
@@ -46,8 +46,8 @@ impl PublicToAddress for Etherlike {
 			.expect("Public can't have invalid input length; qed")
 			.serialize();
 		//pkey uncompressed, 64 bytes
-		let a = keccak_256(&pkey[1..])[12..].to_vec();
-		BoundedVec::try_from(a).expect("20 bytes fit within bounds; qed")
+		let address_bytes = keccak_256(&pkey[1..])[12..].to_vec();
+		BoundedVec::try_from(address_bytes).expect("20 bytes fit within bounds; qed")
 	}
 }
 
