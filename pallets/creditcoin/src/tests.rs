@@ -478,7 +478,6 @@ fn verify_ethless_transfer() {
 		));
 		let amount = U256::from(100);
 		let tx_id = tx_hash.hex_to_address();
-		let mut timestamp = None;
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
 			&Blockchain::Rinkeby,
@@ -488,7 +487,6 @@ fn verify_ethless_transfer() {
 			&order_id,
 			&amount,
 			&tx_id,
-			&mut timestamp
 		));
 	});
 }
