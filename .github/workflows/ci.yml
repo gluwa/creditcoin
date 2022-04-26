@@ -200,15 +200,6 @@ jobs:
 
           popd
 
-      - name: Execute examples
-        run: |
-          # environment has already been prepared above
-          pushd javascript/
-
-          yarn start
-
-          popd
-
       - name: Kill SUT
         run: |
           # if all went well kill the node. Otherwise GitHub Actions would exit on the
