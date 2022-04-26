@@ -2,7 +2,7 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{Etherlike, PublicToAddress};
+use crate::helpers::{EVMAddress, PublicToAddress};
 use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
@@ -91,7 +91,7 @@ benchmarks! {
 		let ktypeid = KeyTypeId(*b"dumy");
 		let seed = "//who".as_bytes().to_vec();
 		let pkey = ecdsa_generate(ktypeid, Some(seed));
-		let address = Etherlike::from_public(&pkey);
+		let address = EVMAddress::from_public(&pkey);
 		let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 
@@ -438,7 +438,7 @@ fn generate_offer<T: Config>(
 fn register_eth_addr<T: Config>(who: &T::AccountId, seed: &str) -> AddressId<<T>::Hash> {
 	let ktypeid = KeyTypeId(*b"dumy");
 	let pkey = ecdsa_generate(ktypeid, Some(format!("//{}", seed).as_bytes().to_vec()));
-	let address = Etherlike::from_public(&pkey);
+	let address = EVMAddress::from_public(&pkey);
 	let address_id = crate::AddressId::new::<T>(&Blockchain::Ethereum, &address);
 
 	let message = sp_io::hashing::sha2_256(who.encode().as_slice());
