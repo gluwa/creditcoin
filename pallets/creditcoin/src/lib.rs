@@ -56,6 +56,8 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::ocw::errors::VerificationResult;
+
 	use super::*;
 	use frame_support::{
 		dispatch::DispatchResult,
@@ -69,6 +71,7 @@ pub mod pallet {
 		offchain::{AppCrypto, CreateSignedTransaction},
 		pallet_prelude::*,
 	};
+	use ocw::errors::VerificationFailureCause;
 	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -325,6 +328,8 @@ pub mod pallet {
 		/// has been transferred to the owner's Creditcoin 2.0 account.
 		/// [legacy_wallet_claimer, legacy_wallet_sighash, legacy_wallet_balance]
 		LegacyWalletClaimed(T::AccountId, LegacySighash, T::Balance),
+
+		TransferFailedVerification(TransferId<T::Hash>, VerificationFailureCause),
 	}
 
 	// Errors inform users that something went wrong.
@@ -567,26 +572,57 @@ pub mod pallet {
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
-				for mut pending in UnverifiedTransfers::<T>::get() {
+				for pending in UnverifiedTransfers::<T>::get() {
 					log::debug!("verifying transfer");
-					let transfer_validity = Self::verify_transfer_ocw(&mut pending);
-					log::debug!("verify_transfer result: {:?}", transfer_validity);
-					match transfer_validity {
-						Ok(()) => {
-							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
-								Call::verify_transfer { transfer: pending.transfer.clone() }
-							}) {
-								log::error!(
-									"Failed to send finalize transfer transaction: {:?}",
-									e
+					let verify_result = Self::verify_transfer_ocw(&pending);
+					log::debug!("verify_transfer result: {:?}", verify_result);
+					match verify_result {
+						Ok(result) => match result {
+							VerificationResult::Success { timestamp } => {
+								if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
+									Call::verify_transfer {
+										transfer: Transfer {
+											timestamp,
+											..pending.transfer.clone()
+										},
+									}
+								}) {
+									log::error!(
+										"Failed to send verify_transfer transaction: {:?}",
+										e
+									);
+								}
+							},
+							VerificationResult::Failure(cause) => {
+								log::warn!(
+									"failed to verify pending transfer {:?}: {:?}",
+									pending,
+									cause
 								);
-							}
+								if cause.is_fatal() {
+									if let Err(e) =
+										Self::offchain_signed_tx(auth_id.clone(), |_| {
+											Call::fail_transfer {
+												transfer_id: TransferId::new::<T>(
+													&pending.transfer.blockchain,
+													&pending.transfer.tx_id,
+												),
+												cause,
+											}
+										}) {
+										log::error!(
+											"Failed to send fail_transfer transaction: {:?}",
+											e
+										);
+									}
+								}
+							},
 						},
-						Err(err) => {
-							log::warn!(
-								"failed to verify pending transfer {:?}: {:?}",
+						Err(error) => {
+							log::error!(
+								"transfer verification encountered an error {:?}: {:?}",
 								pending,
-								err
+								error
 							);
 						},
 					}
@@ -1205,6 +1241,20 @@ pub mod pallet {
 
 			Self::deposit_event(Event::<T>::TransferVerified(key.clone(), transfer.clone()));
 			Transfers::<T>::insert(key, transfer);
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
+		#[pallet::weight(T::DbWeight::get().reads_writes(1, 1))]
+		pub fn fail_transfer(
+			origin: OriginFor<T>,
+			transfer_id: TransferId<T::Hash>,
+			cause: VerificationFailureCause,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+
+			Self::deposit_event(Event::<T>::TransferFailedVerification(transfer_id, cause));
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
