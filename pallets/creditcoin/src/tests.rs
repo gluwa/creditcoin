@@ -1,5 +1,5 @@
 use crate::{
-	helpers::{Etherlike, PublicToAddress},
+	helpers::{EVMAddress, PublicToAddress},
 	mock::*,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
@@ -59,7 +59,7 @@ impl RegisteredAddress {
 	) -> RegisteredAddress {
 		let signer = address_key.into();
 		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
-			Etherlike::from_public(&pkey)
+			EVMAddress::from_public(&pkey)
 		} else {
 			unimplemented!();
 		};
@@ -81,7 +81,7 @@ impl RegisteredAddress {
 	) -> RegisteredAddress {
 		let signer = public_key.into();
 		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
-			Etherlike::from_public(&pkey)
+			EVMAddress::from_public(&pkey)
 		} else {
 			unimplemented!();
 		};
@@ -120,7 +120,7 @@ fn generate_address_with_proof(
 	let who = signer.into_account();
 	let message = get_register_address_message(who.clone());
 	let ownership_proof = key_pair.sign(message.as_slice());
-	let address = Etherlike::from_public(&pkey);
+	let address = EVMAddress::from_public(&pkey);
 	(who, address, ownership_proof, key_pair)
 }
 
