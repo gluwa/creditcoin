@@ -97,24 +97,31 @@ impl RegisteredAddress {
 		RegisteredAddress { account_id, address_id }
 	}
 	pub fn new(seed: &str, blockchain: Blockchain) -> RegisteredAddress {
-		let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
-		let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::from_public(&pkey);
-
+		let (who, address, ownership_proof, _) = generate_address_with_proof(seed);
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
 			blockchain,
 			address,
-			signature
+			ownership_proof
 		));
+
 		RegisteredAddress { account_id: who, address_id }
 	}
+}
+
+fn generate_address_with_proof(
+	seed: &str,
+) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
+	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
+	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
+	let pkey = key_pair.public();
+	let signer: MultiSigner = pkey.clone().into();
+	let who = signer.into_account();
+	let message = get_register_address_message(who.clone());
+	let ownership_proof = key_pair.sign(message.as_slice());
+	let address = Etherlike::from_public(&pkey);
+	(who, address, ownership_proof, key_pair)
 }
 
 type TestAskOrderId = AskOrderId<u64, H256>;
@@ -298,23 +305,16 @@ pub fn get_register_address_message(who: AccountId) -> [u8; 32] {
 #[test]
 fn register_address_basic() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::from_public(&pkey);
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
 			blockchain.clone(),
 			address.clone(),
-			signature
+			ownership_proof
 		));
 		let address_id = crate::AddressId::new::<Test>(&blockchain, &address);
 		let address = crate::Address { blockchain, value: address, owner: who };
-
 		assert_eq!(Creditcoin::addresses(address_id), Some(address));
 	});
 }
@@ -322,28 +322,17 @@ fn register_address_basic() {
 #[test]
 fn register_address_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::from_public(&pkey);
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
 			blockchain.clone(),
 			address.clone(),
-			signature.clone()
+			ownership_proof.clone()
 		));
 
 		assert_noop!(
-			Creditcoin::register_address(
-				Origin::signed(who.clone()),
-				blockchain,
-				address,
-				signature
-			),
+			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
 			crate::Error::<Test>::AddressAlreadyRegistered
 		);
 	})
@@ -353,13 +342,7 @@ fn register_address_pre_existing() {
 /// Address too long.
 fn register_address_malformed_address() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
-		let address = Etherlike::from_public(&pkey);
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
 		let blockchain = Blockchain::Rinkeby;
 		assert_noop!(
@@ -367,7 +350,7 @@ fn register_address_malformed_address() {
 				Origin::signed(who.clone()),
 				blockchain,
 				address,
-				signature
+				ownership_proof
 			),
 			crate::Error::<Test>::AddressFormatNotSupported
 		);
@@ -416,8 +399,8 @@ fn verify_ethless_transfer() {
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
 
-		let from = "0x09231da7b19a016f9e576d23b16277062f4d46a8".hex_to_address();
-		let to = "0x60036b7f479eb5e5cae619db9674feb8abd830a2".hex_to_address();
+		let from = "53894b5701e2e95d40b30f356898c8f65d6a9eb4".hex_to_address();
+		let to = "0x34f4d352a95940b3cbc52a56abbe745ba6656c84".hex_to_address();
 		let order_id = crate::OrderId::Deal(crate::DealOrderId::with_expiration_hash::<Test>(
 			10000,
 			H256::from_uint(
@@ -442,10 +425,6 @@ fn verify_ethless_transfer() {
 			&mut timestamp
 		));
 	});
-}
-
-fn hardcoded_pair(seed: &str) -> sp_core::ecdsa::Pair {
-	sp_core::ecdsa::Pair::from_seed_slice(&hex::decode(seed).unwrap()).unwrap()
 }
 
 #[test]
@@ -490,17 +469,7 @@ fn register_transfer_ocw() {
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
 
-		let l_key_pair =
-			hardcoded_pair("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60");
-		let l_pkey = l_key_pair.public();
-		let l_signer: MultiSigner = l_pkey.clone().into();
-		let lender = l_signer.into_account();
-		let l_message = get_register_address_message(lender.clone());
-		let l_signature = l_key_pair.sign(l_message.as_slice());
-		let l_address = Etherlike::from_public(&l_pkey);
-
-		let loan_amount = ExternalAmount::from(100);
-
+		let (lender, l_address, l_ownership_proof, _) = generate_address_with_proof("lender");
 		let blockchain = Blockchain::Rinkeby;
 		let expiration = 1000000;
 
@@ -509,26 +478,19 @@ fn register_transfer_ocw() {
 			Origin::signed(lender.clone()),
 			blockchain.clone(),
 			l_address,
-			l_signature
+			l_ownership_proof
 		));
 
-		let b_key_pair =
-			hardcoded_pair("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f61");
-		let b_pkey = b_key_pair.public();
-		let b_signer: MultiSigner = b_pkey.clone().into();
-		let borrower = b_signer.into_account();
-		let b_message = get_register_address_message(borrower.clone());
-		let b_signature = b_key_pair.sign(b_message.as_slice());
-		let b_address = Etherlike::from_public(&b_pkey);
-
+		let (borrower, b_address, b_ownership_proof, _) = generate_address_with_proof("borrower");
 		let b_address_id = crate::AddressId::new::<Test>(&blockchain, &b_address);
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(borrower.clone()),
 			blockchain.clone(),
 			b_address,
-			b_signature
+			b_ownership_proof
 		));
 
+		let loan_amount = ExternalAmount::from(100);
 		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
 
 		let ask_guid = B("deadbeef").into_bounded();
@@ -1459,11 +1421,11 @@ fn claim_legacy_wallet_works() {
 	let sighash =
 		LegacySighash::try_from("f0bdc887e4d7928623081f30b1bc87b9e4443cca6b52c4364ce578cb6bf4")
 			.unwrap();
-	let pubkey = sp_core::ecdsa::Public::from_full(
+	let pub_key = sp_core::ecdsa::Public::from_full(
 		&hex::decode("0399d6e7c784494fd7edc26fc9ca460a68c97cc64c49c85dfbb68148f0607893bf").unwrap(),
 	)
 	.unwrap();
-	let claimer = MultiSigner::from(pubkey.clone()).into_account();
+	let claimer = MultiSigner::from(pub_key.clone()).into_account();
 
 	let mut ext = ExtBuilder::default();
 	ext.fund(keeper.clone(), legacy_amount)
@@ -1473,7 +1435,7 @@ fn claim_legacy_wallet_works() {
 	ext.build_and_execute(|| {
 		System::set_block_number(1);
 
-		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pubkey));
+		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pub_key));
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
@@ -1592,7 +1554,7 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 
 		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1604,7 +1566,7 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 				test_info.ask_guid,
 				test_info.bid_guid,
 				key_pair.public().into(),
-				signature.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::NotAddressOwner
 		);
@@ -1614,19 +1576,19 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 #[test]
 fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let message = get_register_address_message(signer.into_account());
-		let signature = key_pair.sign(message.as_slice());
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(pkey, Blockchain::Rinkeby, signature),
+			borrower: RegisteredAddress::from_pubkey(
+				key_pair.public(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 
-		let lender = RegisteredAddress::new("111", Blockchain::Rinkeby);
+		let lender = RegisteredAddress::new("lender2", Blockchain::Rinkeby);
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1638,7 +1600,7 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 				test_info.ask_guid,
 				test_info.bid_guid,
 				key_pair.public().into(),
-				signature.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::NotAddressOwner
 		);
@@ -1648,20 +1610,21 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 #[test]
 fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_chains() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let message = get_register_address_message(signer.clone().into_account());
-		let signature = key_pair.sign(message.as_slice());
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			lender: RegisteredAddress::new("lender", Blockchain::Ethereum),
-			borrower: RegisteredAddress::from_pubkey(pkey, Blockchain::Rinkeby, signature),
+			lender: RegisteredAddress::new("lender2", Blockchain::Ethereum),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1672,8 +1635,8 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				signer,
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::AddressPlatformMismatch
 		);
@@ -1683,25 +1646,22 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 #[test]
 fn register_deal_order_should_error_when_ask_order_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let (pkey, signature) = {
-			let pkey = key_pair.public();
-			let signer: MultiSigner = pkey.clone().into();
-			let who = signer.into_account();
-			let message = get_register_address_message(who.clone());
-			let signature = key_pair.sign(message.as_slice());
-			(pkey, signature)
-		};
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(pkey, Blockchain::Rinkeby, signature),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 		// create AskOrder which will use-up the default ID
 		test_info.create_ask_order();
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1712,8 +1672,8 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				signer,
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateId
 		);
@@ -1723,26 +1683,23 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 #[test]
 fn register_deal_order_should_error_when_bid_order_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.clone().into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
-				pkey.clone(),
+				pub_key.clone(),
 				Blockchain::Rinkeby,
-				signature.clone(),
+				ownership_proof.clone(),
 			),
 			..TestInfo::new_defaults()
 		};
+
 		// create BidOrder which will use-up the default ID
 		test_info.create_bid_order();
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1754,7 +1711,7 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 				test_info.ask_guid,
 				test_info.bid_guid,
 				key_pair.public().into(),
-				signature.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateId
 		);
@@ -1764,15 +1721,15 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 #[test]
 fn register_deal_order_should_error_when_offer_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.clone().into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(pkey, Blockchain::Rinkeby, signature),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 
@@ -1796,7 +1753,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 		crate::Offers::<Test>::insert_id(offer_id, offer);
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1807,8 +1764,8 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				signer,
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateOffer
 		);
@@ -1818,24 +1775,20 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 #[test]
 fn register_deal_order_should_error_when_deal_order_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
-				key_pair.public(),
+				pub_key.clone(),
 				Blockchain::Rinkeby,
-				signature,
+				ownership_proof,
 			),
 			..TestInfo::new_defaults()
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		// create DealOrder w/o creating AskOrder, BidOrder & Offer to avoid
 		// erroring out when checking for their existence
@@ -1873,8 +1826,8 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public().into(),
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateDealOrder
 		);
@@ -1886,24 +1839,20 @@ fn register_deal_order_should_succeed() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
-		let pkey = key_pair.public();
-		let signer: MultiSigner = pkey.clone().into();
-		let who = signer.into_account();
-		let message = get_register_address_message(who.clone());
-		let signature = key_pair.sign(message.as_slice());
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
-				key_pair.public(),
+				pub_key.clone(),
 				Blockchain::Rinkeby,
-				signature,
+				ownership_proof,
 			),
 			..TestInfo::new_defaults()
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
 			Origin::signed(test_info.lender.account_id),
@@ -1913,8 +1862,8 @@ fn register_deal_order_should_succeed() {
 			test_info.expiration_block,
 			test_info.ask_guid,
 			test_info.bid_guid,
-			key_pair.public().into(),
-			signature.into(),
+			pub_key.into(),
+			compliance_proof.into(),
 		));
 
 		// assert events in reversed order
@@ -1939,28 +1888,28 @@ fn register_deal_order_accepts_sr25519() {
 		System::set_block_number(1);
 
 		let (owners_key_pair, _) = sp_core::sr25519::Pair::generate();
-		let o_pkey = owners_key_pair.public();
-		let o_signer: MultiSigner = o_pkey.into();
+		let o_pubkey = owners_key_pair.public();
+		let o_signer: MultiSigner = o_pubkey.into();
 		let owners_account = o_signer.clone().into_account();
 
 		let test_info = {
 			let (b_key_pair, _) = sp_core::ecdsa::Pair::generate();
-			let b_pkey = b_key_pair.public();
+			let b_pubkey = b_key_pair.public();
 			let message = get_register_address_message(owners_account.clone());
-			let signature = b_key_pair.sign(message.as_slice());
+			let ownership_proof = b_key_pair.sign(message.as_slice());
 			TestInfo {
 				borrower: RegisteredAddress::from_pubkey_distinct_owner(
 					owners_account,
 					Blockchain::Rinkeby,
-					b_pkey,
-					signature,
+					b_pubkey,
+					ownership_proof,
 				),
 				..TestInfo::new_defaults()
 			}
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = owners_key_pair.sign(&message);
+		let compliance_proof = owners_key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
 			Origin::signed(test_info.lender.account_id),
@@ -1970,8 +1919,8 @@ fn register_deal_order_accepts_sr25519() {
 			test_info.expiration_block,
 			test_info.ask_guid,
 			test_info.bid_guid,
-			o_signer,
-			signature.into(),
+			o_pubkey.into(),
+			compliance_proof.into(),
 		));
 	});
 }
@@ -1982,28 +1931,28 @@ fn register_deal_order_accepts_ed25519() {
 		System::set_block_number(1);
 
 		let (owners_key_pair, _) = sp_core::ed25519::Pair::generate();
-		let o_pkey = owners_key_pair.public();
-		let o_signer: MultiSigner = o_pkey.into();
+		let o_pubkey = owners_key_pair.public();
+		let o_signer: MultiSigner = o_pubkey.into();
 		let owners_account = o_signer.clone().into_account();
 
 		let test_info = {
 			let (b_key_pair, _) = sp_core::ecdsa::Pair::generate();
-			let b_pkey = b_key_pair.public();
+			let b_pubkey = b_key_pair.public();
 			let message = get_register_address_message(owners_account.clone());
-			let signature = b_key_pair.sign(message.as_slice());
+			let ownership_proof = b_key_pair.sign(message.as_slice());
 			TestInfo {
 				borrower: RegisteredAddress::from_pubkey_distinct_owner(
 					owners_account,
 					Blockchain::Rinkeby,
-					b_pkey,
-					signature,
+					b_pubkey,
+					ownership_proof,
 				),
 				..TestInfo::new_defaults()
 			}
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = owners_key_pair.sign(&message);
+		let compliance_proof = owners_key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
 			Origin::signed(test_info.lender.account_id),
@@ -2014,7 +1963,7 @@ fn register_deal_order_accepts_ed25519() {
 			test_info.ask_guid,
 			test_info.bid_guid,
 			o_signer,
-			signature.into(),
+			compliance_proof.into(),
 		));
 	});
 }
