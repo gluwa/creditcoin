@@ -6,7 +6,9 @@ import { Wallet } from 'ethers';
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { PalletCreditcoinBlockchain } from '@polkadot/types/lookup';
 import { u8aConcat } from '@polkadot/util';
-import { blake2AsHex } from '@polkadot/util-crypto';
+import { blake2AsHex, sha256AsU8a, blake2AsU8a } from '@polkadot/util-crypto';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { joinSignature } from "@ethersproject/bytes";
 
 export type TxOnSuccess = (result: SubmittableResult) => void;
 export type TxOnFail = (result: SubmittableResult | Error | undefined) => void;
@@ -60,3 +62,27 @@ export const getAddressId = (blockchain: PalletCreditcoinBlockchain | string, ex
 export const randomEthWallet = (): Wallet => {
     return Wallet.createRandom();
 };
+
+export const ethOwnershipProof = (
+    api: ApiPromise,
+    signer: Wallet,
+    account: string
+) => {
+    return joinSignature(signer._signingKey().signDigest(ownershipProofDigest(api, account)))
+}
+
+export const ownershipProof = (
+    api: ApiPromise,
+    signer: KeyringPair,
+    account: string
+) => {
+    return signer.sign(ownershipProofDigest(api, account))
+}
+
+const ownershipProofDigest = (
+    api: ApiPromise,
+    account: string
+) => {
+    const bytesParams = api.createType('AccountId32', account).toU8a();
+    return blake2AsU8a(sha256AsU8a(bytesParams))
+}

@@ -7,7 +7,7 @@ import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Null, Option } from '@polkadot/types';
 
-import { lendOnEth } from 'credal-js/lib/ethereum';
+import { ethConnection } from 'credal-js/lib/examples/ethereum';
 import {
     AddressId,
     AskOrderId,
@@ -22,12 +22,13 @@ import {
 import { addAskOrderAsync, AskOrderAdded } from 'credal-js/lib/extrinsics/add-ask-order';
 import { addAuthorityAsync } from 'credal-js/lib/extrinsics/add-authority';
 import { addBidOrderAsync, BidOrderAdded } from 'credal-js/lib/extrinsics/add-bid-order';
-import { addDealOrderAsync, DealOrderAdded } from 'credal-js/lib/extrinsics/add-deal-order';
+import { addDealOrderAsync } from 'credal-js/lib/extrinsics/add-deal-order';
 import { addOfferAsync, OfferAdded } from 'credal-js/lib/extrinsics/add-offer';
 import { registerAddressAsync, AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 import { registerDealOrderAsync, DealOrderRegistered } from 'credal-js/lib/extrinsics/register-deal-order';
-import { registerFundingTransferAsync, TransferEvent } from 'credal-js/lib/extrinsics/register-funding-transfer';
-import { fundDealOrderAsync, DealOrderFunded, TransferProcessed } from 'credal-js/lib/extrinsics/fund-deal-order';
+import { registerFundingTransferAsync, TransferEvent } from 'credal-js/lib/extrinsics/register-transfers';
+import { fundDealOrderAsync } from 'credal-js/lib/extrinsics/fund-deal-order';
+import { DealOrderFunded, TransferProcessed, DealOrderAdded } from 'credal-js/lib/model';
 
 const ETHEREUM_ADDRESS = 'http://localhost:8545';
 
@@ -72,9 +73,10 @@ export const registerAddress = async (
     api: ApiPromise,
     ethAddress: string,
     blockchain: Blockchain,
+    ownershipProof: string,
     signer: KeyringPair,
 ): Promise<AddressRegistered> => {
-    const addr = await registerAddressAsync(api, ethAddress, blockchain, signer);
+    const addr = await registerAddressAsync(api, ethAddress, blockchain, ownershipProof, signer);
     expect(addr).toBeTruthy();
 
     if (addr) {
@@ -197,8 +199,9 @@ export const prepareEthTransfer = async (
 ): Promise<[TransferKind, string]> => {
     // Note: this is Account #0 from gluwa/hardhat-dev !!!
     process.env.PK1 = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
+    const eth = await ethConnection(ETHEREUM_ADDRESS);
 
-    const [tokenAddress, txHash] = await lendOnEth(
+    const [tokenAddress, txHash] = await eth.lend(
         lenderWallet,
         borrowerWallet.address,
         dealOrderId[1],

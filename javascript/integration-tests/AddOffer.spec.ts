@@ -12,6 +12,7 @@ import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'credal-js/lib/mod
 import { POINT_01_CTC } from '../src/constants';
 import { randomEthWallet } from '../src/utils';
 import * as testUtils from './test-utils';
+import { signAccountId } from 'credal-js/lib/utils';
 
 describe('AddOffer', (): void => {
     let api: ApiPromise;
@@ -47,12 +48,12 @@ describe('AddOffer', (): void => {
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const lenderAddress = randomEthWallet().address;
-        const borrowerAddress = randomEthWallet().address;
+        const lenderWallet = randomEthWallet();
+        const borrowerWallet = randomEthWallet();
 
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-            testUtils.registerAddress(api, lenderAddress, blockchain, lender),
-            testUtils.registerAddress(api, borrowerAddress, blockchain, borrower),
+            testUtils.registerAddress(api, lenderWallet.address, blockchain, signAccountId(api, lenderWallet, lender.address), lender),
+            testUtils.registerAddress(api, borrowerWallet.address, blockchain, signAccountId(api, borrowerWallet, borrower.address), borrower),
         ]);
 
         const askGuid = Guid.newGuid();
