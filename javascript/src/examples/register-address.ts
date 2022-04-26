@@ -6,7 +6,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { GenericEventData } from '@polkadot/types/';
 import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 
-import { handleTransaction, TxOnFail, TxOnSuccess } from '../utils';
+import { handleTransaction, TxOnFail, TxOnSuccess, ownershipProof } from '../utils';
 
 type Blockchain = 'Ethereum' | 'Rinkeby' | 'Luniverse' | 'Bitcoin' | 'Other';
 
@@ -26,11 +26,12 @@ export const registerAddress = async (
     externalAddress: string,
     blockchain: string,
     signer: KeyringPair,
+    account: string,
     onSuccess: TxOnSuccess,
     onFail: TxOnFail,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
-        .registerAddress(blockchain, externalAddress)
+        .registerAddress(blockchain, externalAddress, ownershipProof(api, signer, account))
         .signAndSend(signer, { nonce: -1 }, (result) => handleTransaction(api, unsubscribe, result, onSuccess, onFail));
 };
 
@@ -57,11 +58,12 @@ export const registerAddressAsync = async (
     externalAddress: string,
     blockchain: string,
     signer: KeyringPair,
+    account: string,
 ) => {
     return new Promise<RegisteredAddress | undefined>((resolve, reject) => {
         const onFail = () => resolve(undefined);
         const onSuccess = (result: SubmittableResult) => resolve(processRegisteredAddress(api, result));
 
-        registerAddress(api, externalAddress, blockchain, signer, onSuccess, onFail).catch((reason) => reject(reason));
+        registerAddress(api, externalAddress, blockchain, signer, account, onSuccess, onFail).catch((reason) => reject(reason));
     });
 };

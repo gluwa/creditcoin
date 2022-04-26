@@ -14,6 +14,7 @@ import { signLoanParams } from 'credal-js/lib/extrinsics/register-deal-order';
 import { POINT_01_CTC } from '../src/constants';
 import { randomEthWallet } from '../src/utils';
 import * as testUtils from './test-utils';
+import { signAccountId } from 'credal-js/lib/utils';
 
 describe('RegisterFundingTransfer', (): void => {
     let api: ApiPromise;
@@ -50,11 +51,11 @@ describe('RegisterFundingTransfer', (): void => {
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         const lenderWallet = randomEthWallet();
-        const lenderRegAddr = await testUtils.registerAddress(api, lenderWallet.address, blockchain, lender);
+        const lenderRegAddr = await testUtils.registerAddress(api, lenderWallet.address, blockchain, signAccountId(api, lenderWallet, lender.address), lender);
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
         const borrowerWallet = randomEthWallet();
-        const borrowerRegAddr = await testUtils.registerAddress(api, borrowerWallet.address, blockchain, borrower);
+        const borrowerRegAddr = await testUtils.registerAddress(api, borrowerWallet.address, blockchain, signAccountId(api, borrowerWallet, borrower.address), borrower);
 
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
