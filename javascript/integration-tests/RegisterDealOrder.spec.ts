@@ -8,6 +8,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import type { Balance } from '@polkadot/types/interfaces';
 
 import { Blockchain, LoanTerms } from 'credal-js/lib/model';
+import { signAccountId } from 'credal-js/lib/utils';
 import { createCreditcoinLoanTerms } from 'credal-js/lib/transforms';
 import { AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
 import { signLoanParams } from 'credal-js/lib/extrinsics/register-deal-order';
@@ -50,12 +51,12 @@ describe('RegisterDealOrder', (): void => {
         const keyring = new Keyring({ type: 'sr25519' });
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
-        const lenderAddress = randomEthWallet().address;
-        lenderRegAddr = await testUtils.registerAddress(api, lenderAddress, blockchain, lender);
+        const lenderWallet = randomEthWallet();
+        lenderRegAddr = await testUtils.registerAddress(api, lenderWallet.address, blockchain, signAccountId(api, lenderWallet, lender.address), lender);
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-        const borrowerAddress = randomEthWallet().address;
-        borrowerRegAddr = await testUtils.registerAddress(api, borrowerAddress, blockchain, borrower);
+        const borrowerWallet = randomEthWallet();
+        borrowerRegAddr = await testUtils.registerAddress(api, borrowerWallet.address, blockchain, signAccountId(api, borrowerWallet, borrower.address), borrower);
     }, 60000);
 
     afterEach(async () => {
