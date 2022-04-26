@@ -1,6 +1,6 @@
 mod external_address;
 
-pub use external_address::{address_is_well_formed, external_address_generator};
+pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub use external_address::{Etherlike, PublicToAddress};
 
