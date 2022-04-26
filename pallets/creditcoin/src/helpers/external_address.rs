@@ -9,13 +9,13 @@ use sp_io::hashing::sha2_256;
 pub fn generate_external_address(
 	blockchain: &Blockchain,
 	reference: &ExternalAddress,
-	pkey: Public,
+	public_key: Public,
 ) -> Option<ExternalAddress> {
 	match blockchain {
 		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby
-			if Etherlike::is_address(reference).is_some() =>
+			if EVMAddress::try_extract_addresss_type(reference).is_some() =>
 		{
-			Some(Etherlike::from_public(&pkey))
+			Some(EVMAddress::from_public(&public_key))
 		},
 		Blockchain::Bitcoin => None,
 		Blockchain::Other(_) => None,
@@ -25,15 +25,15 @@ pub fn generate_external_address(
 
 pub trait PublicToAddress {
 	type AddressType;
-	fn is_address(addr: &ExternalAddress) -> Option<Self::AddressType>;
+	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType>;
 	fn from_public(pkey: &Public) -> ExternalAddress;
 }
 
-pub struct Etherlike;
+pub struct EVMAddress;
 
-impl PublicToAddress for Etherlike {
+impl PublicToAddress for EVMAddress {
 	type AddressType = ();
-	fn is_address(addr: &ExternalAddress) -> Option<Self::AddressType> {
+	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType> {
 		if eth_address_is_well_formed(addr) {
 			Some(())
 		} else {
@@ -192,7 +192,8 @@ mod tests {
 	}
 
 	#[test]
-	fn etherlike_roundtrip() {
+	#[allow(non_snake_case)]
+	fn EVMAddress_roundtrip() {
 		let pair = sp_core::ecdsa::Pair::from_seed_slice(
 			&hex::decode("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
 				.unwrap(),
@@ -210,7 +211,7 @@ mod tests {
 			hex::decode("09231da7b19A016f9e576d23B16277062F4d46A8").unwrap(),
 		)
 		.unwrap();
-		let address2 = Etherlike::from_public(&public);
+		let address2 = EVMAddress::from_public(&public);
 		assert!(address == address2);
 	}
 }
