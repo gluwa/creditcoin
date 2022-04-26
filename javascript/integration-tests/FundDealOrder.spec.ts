@@ -11,6 +11,7 @@ import { Blockchain, DealOrderId, LoanTerms } from 'credal-js/lib/model';
 import { signLoanParams } from 'credal-js/lib/extrinsics/register-deal-order';
 import { TransferEvent } from 'credal-js/lib/extrinsics/register-transfers';
 
+import { BN } from '@polkadot/util';
 import { POINT_01_CTC } from '../src/constants';
 import { randomEthWallet } from '../src/utils';
 import * as testUtils from './test-utils';
@@ -26,7 +27,7 @@ describe('FundDealOrder', (): void => {
     const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
     const loanTerms: LoanTerms = {
-        amount: BigInt(1_000),
+        amount: new BN(1_000),
         interestRate: {
             ratePerPeriod: 100,
             decimals: 4,
