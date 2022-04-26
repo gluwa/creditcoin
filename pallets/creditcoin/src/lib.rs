@@ -479,10 +479,10 @@ pub mod pallet {
 		/// The external address is malformed or otherwise invalid for the platform.
 		MalformedExternalAddress,
 
-		///given the blockchain, no address format was found to meet the registering address
+		/// The address format was not recognized for the given blockchain and external address.
 		AddressFormatNotSupported,
 
-		/// failed to guarantee resource ownership
+		/// The address retrieved from the proof-of-ownership signature did not match the external address being registered.
 		OwnershipNotSatisfied,
 	}
 
@@ -639,19 +639,19 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
 			address: ExternalAddress,
-			signature: sp_core::ecdsa::Signature,
+			ownership_proof: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 			let message = &sp_io::hashing::blake2_256(message.as_ref());
-			let signature = <[u8; 65]>::from(signature);
-			let raw_pkey = secp256k1_ecdsa_recover_compressed(&signature, message)
+			let signature = <[u8; 65]>::from(ownership_proof);
+			let raw_pubkey = secp256k1_ecdsa_recover_compressed(&signature, message)
 				.map_err(|_| Error::<T>::InvalidSignature)?;
-			let recreated_address = helpers::external_address_generator(
+			let recreated_address = helpers::generate_external_address(
 				&blockchain,
 				&address,
-				sp_core::ecdsa::Public::from_raw(raw_pkey),
+				sp_core::ecdsa::Public::from_raw(raw_pubkey),
 			)
 			.ok_or(Error::<T>::AddressFormatNotSupported)?;
 			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
