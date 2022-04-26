@@ -2,13 +2,59 @@ use core::str::Utf8Error;
 
 use super::rpc::errors::RpcError;
 use alloc::string::FromUtf8Error;
+use codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 use sp_runtime::offchain::storage::StorageRetrievalError;
 
 #[derive(Debug)]
 pub enum OffchainError {
-	InvalidTransfer(&'static str),
+	InvalidTransfer(VerificationFailureCause),
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VerificationResult<Moment> {
+	Success { timestamp: Option<Moment> },
+	Failure(VerificationFailureCause),
+}
+
+impl<M> From<VerificationFailureCause> for VerificationResult<M> {
+	fn from(failure: VerificationFailureCause) -> Self {
+		VerificationResult::Failure(failure)
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub enum VerificationFailureCause {
+	TransferFailed,
+	TransferPending,
+	TransferUnconfirmed,
+	TransferInFuture,
+	IncorrectContract,
+	MissingReceiver,
+	AbiMismatch,
+	IncorrectInputLength,
+	IncorrectInputType,
+	IncorrectAmount,
+	IncorrectNonce,
+	IncorrectReceiver,
+	IncorrectSender,
+	InvalidAddress,
+	UnsupportedMethod,
+}
+
+impl VerificationFailureCause {
+	pub fn is_fatal(self) -> bool {
+		use VerificationFailureCause::*;
+		match self {
+			TransferFailed | IncorrectContract | MissingReceiver | AbiMismatch
+			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
+			| InvalidAddress | UnsupportedMethod | TransferInFuture | IncorrectSender
+			| IncorrectReceiver => true,
+			TransferPending | TransferUnconfirmed => false,
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -42,7 +88,8 @@ pub(crate) use _impl_from_error as impl_from_error;
 impl_from_error!(
 	OffchainError,
 	RpcUrlError => NoRpcUrl,
-	RpcError => RpcError
+	RpcError => RpcError,
+	VerificationFailureCause => InvalidTransfer,
 );
 impl_from_error!(
 	RpcUrlError,
