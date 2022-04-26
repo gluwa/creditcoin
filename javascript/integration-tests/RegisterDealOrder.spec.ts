@@ -11,6 +11,8 @@ import { Blockchain, LoanTerms } from 'credal-js/lib/model';
 import { signAccountId } from 'credal-js/lib/utils';
 import { createCreditcoinLoanTerms } from 'credal-js/lib/transforms';
 import { AddressRegistered } from 'credal-js/lib/extrinsics/register-address';
+
+import { BN } from '@polkadot/util';
 import { signLoanParams } from 'credal-js/lib/extrinsics/register-deal-order';
 
 import { POINT_01_CTC } from '../src/constants';
@@ -28,7 +30,7 @@ describe('RegisterDealOrder', (): void => {
     const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
     const loanTerms: LoanTerms = {
-        amount: BigInt(1_000),
+        amount: new BN(1_000),
         interestRate: {
             ratePerPeriod: 100,
             decimals: 4,
