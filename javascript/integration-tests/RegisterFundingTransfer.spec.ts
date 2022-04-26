@@ -10,6 +10,7 @@ import type { Balance } from '@polkadot/types/interfaces';
 import { Blockchain, DealOrderId, LoanTerms, TransferKind } from 'credal-js/lib/model';
 import { createCreditcoinTransferKind } from 'credal-js/lib/transforms';
 import { signLoanParams } from 'credal-js/lib/extrinsics/register-deal-order';
+import { BN } from '@polkadot/util';
 
 import { POINT_01_CTC } from '../src/constants';
 import { randomEthWallet } from '../src/utils';
@@ -27,7 +28,7 @@ describe('RegisterFundingTransfer', (): void => {
     const blockchain: Blockchain = 'Ethereum';
     const expirationBlock = 10_000;
     const loanTerms: LoanTerms = {
-        amount: BigInt(1_000),
+        amount: new BN(1_000),
         interestRate: {
             ratePerPeriod: 100,
             decimals: 4,
