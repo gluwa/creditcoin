@@ -51,11 +51,23 @@ describe('FundDealOrder', (): void => {
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         const lenderWallet = randomEthWallet();
-        const lenderRegAddr = await testUtils.registerAddress(api, lenderWallet.address, blockchain, signAccountId(api, lenderWallet, lender.address), lender);
+        const lenderRegAddr = await testUtils.registerAddress(
+            api,
+            lenderWallet.address,
+            blockchain,
+            signAccountId(api, lenderWallet, lender.address),
+            lender,
+        );
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
         const borrowerWallet = randomEthWallet();
-        const borrowerRegAddr = await testUtils.registerAddress(api, borrowerWallet.address, blockchain, signAccountId(api, borrowerWallet, borrower.address), borrower);
+        const borrowerRegAddr = await testUtils.registerAddress(
+            api,
+            borrowerWallet.address,
+            blockchain,
+            signAccountId(api, borrowerWallet, borrower.address),
+            borrower,
+        );
 
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
