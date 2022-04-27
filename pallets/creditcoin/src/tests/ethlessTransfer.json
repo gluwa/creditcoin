@@ -108,6 +108,5 @@
       "uncles": [],
       "baseFeePerGas": "0x7"
     }
-  },
-  "network": "ethereum"
+  }
 }
