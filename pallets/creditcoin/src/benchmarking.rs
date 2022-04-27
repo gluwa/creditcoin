@@ -178,6 +178,15 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(authority), transfer)
 
+	fail_transfer {
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let authority = authority_account::<T>(true);
+		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+		let deal_id = generate_deal::<T>(true,0u8).unwrap();
+		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,false,true,0u8);
+		let cause = crate::ocw::VerificationFailureCause::TransferFailed;
+	}: _(RawOrigin::Signed(authority), transfer_id, cause)
+
 	fund_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);

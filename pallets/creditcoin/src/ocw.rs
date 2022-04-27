@@ -1,9 +1,10 @@
 pub mod errors;
 pub mod rpc;
 use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
+pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::{
-	errors::{OffchainError, RpcUrlError, VerificationFailureCause, VerificationResult},
+	errors::RpcUrlError,
 	rpc::{Address, EthBlock, EthTransaction, EthTransactionReceipt},
 };
 
