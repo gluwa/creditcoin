@@ -163,7 +163,25 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Run tests
-        run: cargo llvm-cov --workspace --html --show-missing-lines --doctests --hide-instantiations
+        id: coverage
+        run: |
+            cargo llvm-cov --workspace --html --show-missing-lines --doctests --hide-instantiations | tee -a uncovered-lines.log
+
+            UNCOVERED_LINES=$(cat uncovered-lines.log | sed "s|$(pwd)|.|")
+            # workaround the fact that GitHub Actions doesn't support multi-line output
+            # https://trstringer.com/github-actions-multiline-strings/
+            UNCOVERED_LINES="${UNCOVERED_LINES//'%'/'%25'}"
+            UNCOVERED_LINES="${UNCOVERED_LINES//$'\n'/'%0A'}"
+            UNCOVERED_LINES="${UNCOVERED_LINES//$'\r'/'%0D'}"
+            echo "::set-output name=uncovered_lines::$UNCOVERED_LINES"
+
+      - name: Post comment to PR
+        uses: mshick/add-pr-comment@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          message: ${{ steps.coverage.outputs.uncovered_lines }}
+          allow-repeats: false
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
