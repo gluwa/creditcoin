@@ -54,11 +54,23 @@ describe('RegisterDealOrder', (): void => {
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         const lenderWallet = randomEthWallet();
-        lenderRegAddr = await testUtils.registerAddress(api, lenderWallet.address, blockchain, signAccountId(api, lenderWallet, lender.address), lender);
+        lenderRegAddr = await testUtils.registerAddress(
+            api,
+            lenderWallet.address,
+            blockchain,
+            signAccountId(api, lenderWallet, lender.address),
+            lender,
+        );
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
         const borrowerWallet = randomEthWallet();
-        borrowerRegAddr = await testUtils.registerAddress(api, borrowerWallet.address, blockchain, signAccountId(api, borrowerWallet, borrower.address), borrower);
+        borrowerRegAddr = await testUtils.registerAddress(
+            api,
+            borrowerWallet.address,
+            blockchain,
+            signAccountId(api, borrowerWallet, borrower.address),
+            borrower,
+        );
     }, 60000);
 
     afterEach(async () => {

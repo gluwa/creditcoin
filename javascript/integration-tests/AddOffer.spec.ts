@@ -53,8 +53,20 @@ describe('AddOffer', (): void => {
         const borrowerWallet = randomEthWallet();
 
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-            testUtils.registerAddress(api, lenderWallet.address, blockchain, signAccountId(api, lenderWallet, lender.address), lender),
-            testUtils.registerAddress(api, borrowerWallet.address, blockchain, signAccountId(api, borrowerWallet, borrower.address), borrower),
+            testUtils.registerAddress(
+                api,
+                lenderWallet.address,
+                blockchain,
+                signAccountId(api, lenderWallet, lender.address),
+                lender,
+            ),
+            testUtils.registerAddress(
+                api,
+                borrowerWallet.address,
+                blockchain,
+                signAccountId(api, borrowerWallet, borrower.address),
+                borrower,
+            ),
         ]);
 
         const askGuid = Guid.newGuid();
