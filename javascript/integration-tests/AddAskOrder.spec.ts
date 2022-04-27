@@ -50,7 +50,13 @@ describe('AddAskOrder', (): void => {
 
         lender = keyring.addFromUri('//Alice', { name: 'Alice' });
         const lenderWallet = randomEthWallet();
-        lenderRegAddr = await testUtils.registerAddress(api, lenderWallet.address, blockchain, signAccountId(api, lenderWallet, lender.address), lender);
+        lenderRegAddr = await testUtils.registerAddress(
+            api,
+            lenderWallet.address,
+            blockchain,
+            signAccountId(api, lenderWallet, lender.address),
+            lender,
+        );
         askGuid = Guid.newGuid();
     });
 
