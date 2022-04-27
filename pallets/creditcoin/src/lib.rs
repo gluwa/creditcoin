@@ -1254,6 +1254,11 @@ pub mod pallet {
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
+			ensure!(
+				!Transfers::<T>::contains_key(&transfer_id),
+				Error::<T>::TransferAlreadyRegistered
+			);
+
 			Self::deposit_event(Event::<T>::TransferFailedVerification(transfer_id, cause));
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
