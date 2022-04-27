@@ -120,6 +120,12 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
+	// Storage: Creditcoin Authorities (r:1 w:0)
+	// Storage: Creditcoin Transfers (r:1 w:0)
+	fn fail_transfer() -> Weight {
+		(12_000_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Timestamp Now (r:1 w:0)
