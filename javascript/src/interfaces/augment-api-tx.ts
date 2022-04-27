@@ -15,6 +15,7 @@ import type {
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
     SpCoreEcdsaPublic,
+    SpCoreEcdsaSignature,
     SpRuntimeMultiSignature,
     SpRuntimeMultiSigner,
 } from '@polkadot/types/lookup';
@@ -294,8 +295,9 @@ declare module '@polkadot/api-base/types/submittable' {
                         | string
                         | Uint8Array,
                     address: Bytes | string | Uint8Array,
+                    ownershipProof: SpCoreEcdsaSignature | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinBlockchain, Bytes]
+                [PalletCreditcoinBlockchain, Bytes, SpCoreEcdsaSignature]
             >;
             registerDealOrder: AugmentedSubmittable<
                 (
