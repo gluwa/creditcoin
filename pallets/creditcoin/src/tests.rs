@@ -16,7 +16,7 @@ use frame_system::RawOrigin;
 
 use sp_core::{Pair, U256};
 use sp_runtime::{
-	offchain::storage::StorageValueRef,
+	offchain::{storage::StorageValueRef, testing::PendingRequest},
 	traits::{BadOrigin, IdentifyAccount},
 	MultiSigner,
 };
@@ -138,13 +138,13 @@ type TestTransfer = (Transfer<AccountId, u64, H256, u64>, TestTransferId);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
-	blockchain: Blockchain,
-	loan_terms: LoanTerms,
-	lender: RegisteredAddress,
-	borrower: RegisteredAddress,
-	ask_guid: Guid,
-	bid_guid: Guid,
-	expiration_block: u64,
+	pub(crate) blockchain: Blockchain,
+	pub(crate) loan_terms: LoanTerms,
+	pub(crate) lender: RegisteredAddress,
+	pub(crate) borrower: RegisteredAddress,
+	pub(crate) ask_guid: Guid,
+	pub(crate) bid_guid: Guid,
+	pub(crate) expiration_block: u64,
 }
 
 impl TestInfo {
@@ -261,6 +261,39 @@ impl TestInfo {
 		self.mock_transfer(&self.borrower, &self.lender, amount, deal_order_id, tx)
 	}
 
+	pub fn make_transfer(
+		&self,
+		from: &RegisteredAddress,
+		to: &RegisteredAddress,
+		amount: impl Into<ExternalAmount>,
+		deal_order_id: &TestDealOrderId,
+		blockchain_tx_id: impl AsRef<[u8]>,
+	) -> TestTransfer {
+		let blockchain_tx_id = blockchain_tx_id.as_ref();
+		let tx = if blockchain_tx_id.starts_with(&*b"0x") {
+			core::str::from_utf8(blockchain_tx_id).unwrap().hex_to_address()
+		} else {
+			blockchain_tx_id.into_bounded()
+		};
+		let id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+		(
+			Transfer {
+				blockchain: self.blockchain.clone(),
+				kind: TransferKind::Native,
+				from: from.address_id.clone(),
+				to: to.address_id.clone(),
+				order_id: OrderId::Deal(deal_order_id.clone()),
+				amount: amount.into(),
+				tx_id: tx,
+				block: System::block_number(),
+				is_processed: false,
+				account_id: from.account_id.clone(),
+				timestamp: None,
+			},
+			id,
+		)
+	}
+
 	pub fn mock_transfer(
 		&self,
 		from: &RegisteredAddress,
@@ -269,21 +302,7 @@ impl TestInfo {
 		deal_order_id: &TestDealOrderId,
 		blockchain_tx_id: impl AsRef<[u8]>,
 	) -> TestTransfer {
-		let tx = blockchain_tx_id.as_ref().into_bounded();
-		let id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
-		let transfer = Transfer {
-			blockchain: self.blockchain.clone(),
-			kind: TransferKind::Native,
-			from: from.address_id.clone(),
-			to: to.address_id.clone(),
-			order_id: OrderId::Deal(deal_order_id.clone()),
-			amount: amount.into(),
-			tx_id: tx,
-			block: System::block_number(),
-			is_processed: false,
-			account_id: from.account_id.clone(),
-			timestamp: None,
-		};
+		let (transfer, id) = self.make_transfer(from, to, amount, deal_order_id, blockchain_tx_id);
 		Transfers::<Test>::insert(&id, &transfer);
 		(transfer, id)
 	}
@@ -423,60 +442,152 @@ fn register_address_should_error_when_signature_is_invalid() {
 	})
 }
 
-const ETHLESS_RESPONSES: &[u8] = include_bytes!("tests/ethlessTransfer.json");
+pub(crate) const ETHLESS_RESPONSES: &[u8] = include_bytes!("tests/ethlessTransfer.json");
+
+pub(crate) struct MockedRpcRequests {
+	pub(crate) get_transaction: PendingRequest,
+	pub(crate) get_transaction_receipt: PendingRequest,
+	pub(crate) get_block_number: PendingRequest,
+	pub(crate) get_block_by_number: PendingRequest,
+}
+
+impl MockedRpcRequests {
+	pub(crate) fn new<'a>(
+		rpc_uri: impl Into<Option<&'a str>>,
+		tx_hash: &str,
+		tx_block_number: &str,
+	) -> Self {
+		let responses: HashMap<String, serde_json::Value> =
+			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+		let uri = rpc_uri.into().unwrap_or("dummy");
+		let get_transaction =
+			pending_rpc_request("eth_getTransactionByHash", vec![tx_hash.into()], uri, &responses);
+		let get_transaction_receipt =
+			pending_rpc_request("eth_getTransactionReceipt", vec![tx_hash.into()], uri, &responses);
+		let get_block_number = pending_rpc_request("eth_blockNumber", None, uri, &responses);
+		let get_block_by_number = pending_rpc_request(
+			"eth_getBlockByNumber",
+			vec![tx_block_number.into(), false.into()],
+			uri,
+			&responses,
+		);
+		Self { get_transaction, get_transaction_receipt, get_block_number, get_block_by_number }
+	}
+}
+
+pub(crate) fn get_mock_tx_hash() -> String {
+	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
+		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["hash"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string()
+}
+
+pub(crate) fn get_mock_contract() -> String {
+	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
+		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	dbg!(responses["eth_getTransactionByHash"].result.clone().unwrap()["to"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string())
+}
+
+pub(crate) fn get_mock_tx_block_num() -> String {
+	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
+		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["blockNumber"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string()
+}
+
+pub(crate) fn get_mock_from_address() -> String {
+	format!("{:?}", get_mock_contract_input(0, ethabi::Token::into_address))
+}
+
+fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) -> Option<T>) -> T {
+	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
+		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	let abi = crate::ocw::ethless_transfer_function_abi();
+	let input = responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string();
+	let input_bytes = hex::decode(&input.trim_start_matches("0x")).unwrap();
+	let inputs = abi.decode_input(&input_bytes[4..]).unwrap();
+	convert(inputs[index].clone()).unwrap()
+}
+
+pub(crate) fn get_mock_input_data() -> String {
+	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
+		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string()
+}
+
+pub(crate) fn get_mock_to_address() -> String {
+	format!("{:?}", get_mock_contract_input(1, ethabi::Token::into_address))
+}
+
+pub(crate) fn get_mock_amount() -> U256 {
+	get_mock_contract_input(2, ethabi::Token::into_uint)
+}
+
+pub(crate) fn get_mock_nonce() -> U256 {
+	get_mock_contract_input(4, ethabi::Token::into_uint)
+}
+
+pub(crate) fn get_mock_timestamp() -> u64 {
+	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
+		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	let timestamp_hex = responses["eth_getBlockByNumber"].result.clone().unwrap()["timestamp"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string();
+	u64::from_str_radix(&timestamp_hex.trim_start_matches("0x"), 16).unwrap()
+}
 
 #[test]
 fn verify_ethless_transfer() {
 	let (mut ext, state, _) = ExtBuilder::default().build_offchain();
 	let dummy_url = "dummy";
-	let tx_hash = "0xdd1b7aa5ff8e6e7afef3c825be716629737bc427348038a1cb2468ee66f0cf76";
-	let contract = "0xb377a2eed7566ac9fcb0ba673604f9bf875e2bab".hex_to_address();
-	let tx_block_num = "0x1c56";
+	let tx_hash = get_mock_tx_hash();
+	let contract = get_mock_contract().hex_to_address();
+	let tx_block_num = get_mock_tx_block_num();
 	{
 		let mut state = state.write();
-		let responses: HashMap<String, serde_json::Value> =
-			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
-		let get_transaction = pending_rpc_request(
-			"eth_getTransactionByHash",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_transaction_receipt = pending_rpc_request(
-			"eth_getTransactionReceipt",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
-		let timestamp = pending_rpc_request(
-			"eth_getBlockByNumber",
-			vec![tx_block_num.into(), false.into()],
-			dummy_url,
-			&responses,
-		);
+		let MockedRpcRequests {
+			get_transaction,
+			get_transaction_receipt,
+			get_block_number,
+			get_block_by_number,
+		} = MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num);
 		state.expect_request(get_transaction);
 		state.expect_request(get_transaction_receipt);
 		state.expect_request(get_block_number);
-		state.expect_request(timestamp);
+		state.expect_request(get_block_by_number);
 	}
 
 	ext.execute_with(|| {
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
 
-		let from = "53894b5701e2e95d40b30f356898c8f65d6a9eb4".hex_to_address();
-		let to = "0x34f4d352a95940b3cbc52a56abbe745ba6656c84".hex_to_address();
+		let from = get_mock_from_address().hex_to_address();
+		let to = get_mock_to_address().hex_to_address();
 		let order_id = crate::OrderId::Deal(crate::DealOrderId::with_expiration_hash::<Test>(
 			10000,
-			H256::from_uint(
-				&U256::from_dec_str(
-					"7913845638721091072082372344789841956592324632742257657176664029723484163082",
-				)
-				.unwrap(),
-			),
+			H256::from_uint(&get_mock_nonce()),
 		));
-		let amount = U256::from(100);
+		let amount = get_mock_amount();
 		let tx_id = tx_hash.hex_to_address();
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
@@ -497,36 +608,22 @@ fn register_transfer_ocw() {
 	ext.generate_authority();
 	let (mut ext, state, pool) = ext.build_offchain();
 	let dummy_url = "dummy";
-	let tx_hash = "0xdd1b7aa5ff8e6e7afef3c825be716629737bc427348038a1cb2468ee66f0cf76";
-	let contract = "0xb377a2eed7566ac9fcb0ba673604f9bf875e2bab".hex_to_address();
-	let tx_block_num = "0x1c56";
+	let tx_hash = get_mock_tx_hash();
+	let contract = get_mock_contract().hex_to_address();
+	let tx_block_num = get_mock_tx_block_num();
 	{
 		let mut state = state.write();
-		let responses: HashMap<String, serde_json::Value> =
-			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
-		let get_transaction = pending_rpc_request(
-			"eth_getTransactionByHash",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_transaction_receipt = pending_rpc_request(
-			"eth_getTransactionReceipt",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
-		let timestamp = pending_rpc_request(
-			"eth_getBlockByNumber",
-			vec![tx_block_num.into(), false.into()],
-			dummy_url,
-			&responses,
-		);
+
+		let MockedRpcRequests {
+			get_transaction,
+			get_transaction_receipt,
+			get_block_number,
+			get_block_by_number,
+		} = MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num);
 		state.expect_request(get_transaction);
 		state.expect_request(get_transaction_receipt);
 		state.expect_request(get_block_number);
-		state.expect_request(timestamp);
+		state.expect_request(get_block_by_number);
 	}
 
 	ext.execute_with(|| {
@@ -554,7 +651,7 @@ fn register_transfer_ocw() {
 			b_ownership_proof
 		));
 
-		let loan_amount = ExternalAmount::from(100);
+		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
 
 		let ask_guid = B("deadbeef").into_bounded();
@@ -594,12 +691,7 @@ fn register_transfer_ocw() {
 			expiration
 		));
 
-		let deal_id_hash = H256::from_uint(
-			&U256::from_dec_str(
-				"7913845638721091072082372344789841956592324632742257657176664029723484163082",
-			)
-			.unwrap(),
-		);
+		let deal_id_hash = H256::from_uint(&get_mock_nonce());
 
 		// this is kind of a gross hack, basically when I made the test transfer on luniverse to pull the mock responses
 		// I didn't pass the proper `nonce` to the smart contract, and it's a pain to redo the transaction and update all the tests,
@@ -630,7 +722,7 @@ fn register_transfer_ocw() {
 			is_processed: false,
 			account_id: lender.clone(),
 			tx_id: tx_hash.hex_to_address(),
-			timestamp: Some(1649986116),
+			timestamp: Some(get_mock_timestamp()),
 		};
 
 		roll_by_with_ocw(1);
