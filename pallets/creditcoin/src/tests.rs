@@ -1,6 +1,7 @@
 use crate::{
 	helpers::{EVMAddress, PublicToAddress},
 	mock::*,
+	ocw::rpc::JsonRpcResponse,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
 	DealOrderId, DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash,
@@ -11,7 +12,7 @@ use assert_matches::assert_matches;
 use bstr::B;
 use codec::{Decode, Encode};
 use ethereum_types::{BigEndianHash, H256};
-use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
+use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
 
 use sp_core::{Pair, U256};
@@ -442,7 +443,8 @@ fn register_address_should_error_when_signature_is_invalid() {
 	})
 }
 
-pub(crate) const ETHLESS_RESPONSES: &[u8] = include_bytes!("tests/ethlessTransfer.json");
+pub(crate) static ETHLESS_RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
+	Lazy::new(|| serde_json::from_slice(include_bytes!("tests/ethlessTransfer.json")).unwrap());
 
 pub(crate) struct MockedRpcRequests {
 	pub(crate) get_transaction: PendingRequest,
@@ -457,11 +459,10 @@ impl MockedRpcRequests {
 		tx_hash: &str,
 		tx_block_number: &str,
 	) -> Self {
-		let responses: HashMap<String, serde_json::Value> =
-			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+		let responses = &*ETHLESS_RESPONSES;
 		let uri = rpc_uri.into().unwrap_or("dummy");
 		let get_transaction =
-			pending_rpc_request("eth_getTransactionByHash", vec![tx_hash.into()], uri, &responses);
+			pending_rpc_request("eth_getTransactionByHash", vec![tx_hash.into()], uri, responses);
 		let get_transaction_receipt =
 			pending_rpc_request("eth_getTransactionReceipt", vec![tx_hash.into()], uri, &responses);
 		let get_block_number = pending_rpc_request("eth_blockNumber", None, uri, &responses);
@@ -476,8 +477,7 @@ impl MockedRpcRequests {
 }
 
 pub(crate) fn get_mock_tx_hash() -> String {
-	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
-		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	let responses = &*ETHLESS_RESPONSES;
 	responses["eth_getTransactionByHash"].result.clone().unwrap()["hash"]
 		.clone()
 		.as_str()
@@ -486,18 +486,18 @@ pub(crate) fn get_mock_tx_hash() -> String {
 }
 
 pub(crate) fn get_mock_contract() -> String {
-	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
-		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
-	dbg!(responses["eth_getTransactionByHash"].result.clone().unwrap()["to"]
+	let responses = &*ETHLESS_RESPONSES;
+
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["to"]
 		.clone()
 		.as_str()
 		.unwrap()
-		.to_string())
+		.to_string()
 }
 
 pub(crate) fn get_mock_tx_block_num() -> String {
-	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
-		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	let responses = &*ETHLESS_RESPONSES;
+
 	responses["eth_getTransactionByHash"].result.clone().unwrap()["blockNumber"]
 		.clone()
 		.as_str()
@@ -510,8 +510,8 @@ pub(crate) fn get_mock_from_address() -> String {
 }
 
 fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) -> Option<T>) -> T {
-	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
-		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	let responses = &*ETHLESS_RESPONSES;
+
 	let abi = crate::ocw::ethless_transfer_function_abi();
 	let input = responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
 		.clone()
@@ -524,8 +524,8 @@ fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) 
 }
 
 pub(crate) fn get_mock_input_data() -> String {
-	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
-		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	let responses = &*ETHLESS_RESPONSES;
+
 	responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
 		.clone()
 		.as_str()
@@ -546,8 +546,8 @@ pub(crate) fn get_mock_nonce() -> U256 {
 }
 
 pub(crate) fn get_mock_timestamp() -> u64 {
-	let responses: HashMap<String, crate::ocw::rpc::JsonRpcResponse<serde_json::Value>> =
-		serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
+	let responses = &*ETHLESS_RESPONSES;
+
 	let timestamp_hex = responses["eth_getBlockByNumber"].result.clone().unwrap()["timestamp"]
 		.clone()
 		.as_str()
