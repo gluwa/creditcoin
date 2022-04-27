@@ -2672,6 +2672,120 @@ fn verify_transfer_should_work() {
 }
 
 #[test]
+fn fail_transfer_should_work() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let root = RawOrigin::Root;
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			test_info.lender.account_id.clone(),
+		));
+
+		let _ = test_info.create_deal_order();
+
+		let tx = "0xafafaf".hex_to_address();
+		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+
+		assert_ok!(Creditcoin::fail_transfer(
+			Origin::signed(test_info.lender.account_id),
+			transfer_id.clone(),
+			failure_cause
+		));
+
+		let mut all_events = System::events();
+
+		assert_matches!(
+			all_events.pop().unwrap().event,
+			crate::mock::Event::Creditcoin(crate::Event::<Test>::TransferFailedVerification(id, cause)) => {
+				assert_eq!(id, transfer_id);
+				assert_eq!(cause, failure_cause);
+			}
+		);
+	})
+}
+
+#[test]
+fn fail_transfer_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let _ = test_info.create_deal_order();
+
+		let tx = "0xafafaf".hex_to_address();
+		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+
+		assert_noop!(
+			Creditcoin::fail_transfer(Origin::none(), transfer_id.clone(), failure_cause),
+			BadOrigin
+		);
+	})
+}
+
+#[test]
+fn fail_transfer_should_error_when_not_authority() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let _ = test_info.create_deal_order();
+
+		let tx = "0xafafaf".hex_to_address();
+		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+
+		assert_noop!(
+			Creditcoin::fail_transfer(
+				Origin::signed(test_info.lender.account_id),
+				transfer_id.clone(),
+				failure_cause
+			),
+			crate::Error::<Test>::InsufficientAuthority
+		);
+	})
+}
+
+#[test]
+fn fail_transfer_should_error_when_transfer_registered() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		let (_, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		let root = RawOrigin::Root;
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			test_info.lender.account_id.clone(),
+		));
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+
+		assert_noop!(
+			Creditcoin::fail_transfer(
+				Origin::signed(test_info.lender.account_id),
+				transfer_id.clone(),
+				failure_cause
+			),
+			crate::Error::<Test>::TransferAlreadyRegistered
+		);
+	})
+}
+
+#[test]
 fn on_initialize_removes_expired_deals_without_transfers() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		System::set_block_number(1);
