@@ -1,4 +1,8 @@
-use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest, LegacySighash};
+use crate::{
+	self as pallet_creditcoin,
+	ocw::rpc::{JsonRpcRequest, JsonRpcResponse},
+	LegacySighash,
+};
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
@@ -168,7 +172,7 @@ impl ExtBuilder {
 		self.balances.push((account, amount));
 		self
 	}
-	pub fn generate_authority(&mut self) -> &mut ExtBuilder {
+	pub fn generate_authority(&mut self) -> sp_core::sr25519::Public {
 		const PHRASE: &str =
 			"news slush supreme milk chapter athlete soap sausage put clutch what kitten";
 		if let None = self.keystore {
@@ -183,8 +187,8 @@ impl ExtBuilder {
 				Some(&format!("{}/auth{}", PHRASE, self.authorities.len() + 1)),
 			)
 			.unwrap();
-		self.authorities.push(AccountId::new(pubkey.into_account().0));
-		self
+		self.authorities.push(AccountId::new(pubkey.clone().into_account().0));
+		pubkey
 	}
 	pub fn legacy_wallets(
 		&mut self,
@@ -239,6 +243,14 @@ impl ExtBuilder {
 		let (mut ext, _, _) = self.build_offchain();
 		ext.execute_with(test)
 	}
+	#[allow(dead_code)]
+	pub fn build_offchain_and_execute_with_state<R>(
+		self,
+		test: impl FnOnce(Arc<RwLock<OffchainState>>, Arc<RwLock<PoolState>>) -> R,
+	) -> R {
+		let (mut ext, state, pool) = self.build_offchain();
+		ext.execute_with(|| test(state, pool))
+	}
 }
 
 #[allow(dead_code)]
@@ -281,7 +293,7 @@ pub fn pending_rpc_request(
 	method: &str,
 	params: impl IntoIterator<Item = serde_json::Value>,
 	uri: &str,
-	responses: &HashMap<String, serde_json::Value>,
+	responses: &HashMap<String, JsonRpcResponse<serde_json::Value>>,
 ) -> PendingRequest {
 	let rpc = JsonRpcRequest::new(method, params).to_bytes();
 	let response = &responses[method];
