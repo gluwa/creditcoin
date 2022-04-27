@@ -49,6 +49,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AddressAlreadyRegistered: AugmentedError<ApiType>;
             /**
+             * The address format was not recognized for the given blockchain and external address.
+             **/
+            AddressFormatNotSupported: AugmentedError<ApiType>;
+            /**
              * The addresses specified are not on compatible external chains.
              **/
             AddressPlatformMismatch: AugmentedError<ApiType>;
@@ -197,6 +201,10 @@ declare module '@polkadot/api-base/types/errors' {
              * The offer order has expired and is no longer valid.
              **/
             OfferExpired: AugmentedError<ApiType>;
+            /**
+             * The address retrieved from the proof-of-ownership signature did not match the external address being registered.
+             **/
+            OwnershipNotSatisfied: AugmentedError<ApiType>;
             RepaymentOrderNonZeroGain: AugmentedError<ApiType>;
             /**
              * Repayment orders are not currently supported.
