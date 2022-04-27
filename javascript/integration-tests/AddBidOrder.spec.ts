@@ -50,7 +50,13 @@ describe('AddBidOrder', (): void => {
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
         const borrowerWallet = randomEthWallet();
-        borrowerRegAddr = await testUtils.registerAddress(api, borrowerWallet.address, blockchain, signAccountId(api, borrowerWallet, borrower.address), borrower);
+        borrowerRegAddr = await testUtils.registerAddress(
+            api,
+            borrowerWallet.address,
+            blockchain,
+            signAccountId(api, borrowerWallet, borrower.address),
+            borrower,
+        );
         bidGuid = Guid.newGuid();
     });
 

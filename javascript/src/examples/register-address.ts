@@ -64,6 +64,8 @@ export const registerAddressAsync = async (
         const onFail = () => resolve(undefined);
         const onSuccess = (result: SubmittableResult) => resolve(processRegisteredAddress(api, result));
 
-        registerAddress(api, externalAddress, blockchain, signer, account, onSuccess, onFail).catch((reason) => reject(reason));
+        registerAddress(api, externalAddress, blockchain, signer, account, onSuccess, onFail).catch((reason) =>
+            reject(reason),
+        );
     });
 };
