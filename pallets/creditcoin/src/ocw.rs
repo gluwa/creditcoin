@@ -58,7 +58,7 @@ fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> 
 	Ok(address)
 }
 
-fn ethless_transfer_function_abi() -> Function {
+pub(crate) fn ethless_transfer_function_abi() -> Function {
 	#[allow(deprecated)]
 	Function {
 		name: "transfer".into(),
@@ -89,8 +89,7 @@ fn validate_ethless_transfer(
 	let transfer_fn = ethless_transfer_function_abi();
 	ensure!(receipt.is_success(), VerificationFailureCause::TransferFailed);
 
-	let block_number =
-		transaction.block_number.ok_or(VerificationFailureCause::TransferPending)?;
+	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TransferPending)?;
 
 	ensure!(block_number <= eth_tip, VerificationFailureCause::TransferInFuture);
 
@@ -241,12 +240,37 @@ impl<T: Config> Pallet<T> {
 
 #[cfg(test)]
 mod tests {
+	use core::fmt::Debug;
 	use std::{convert::TryFrom, str::FromStr};
 
+	use super::errors::{
+		RpcUrlError,
+		VerificationFailureCause::{self, *},
+	};
+	use crate::{
+		mock::Test as TestRuntime,
+		ocw::{
+			errors::VerificationResult,
+			rpc::{errors::RpcError, JsonRpcResponse},
+		},
+		tests::{MockedRpcRequests, TestInfo},
+		Id, LoanTerms, TransferKind,
+	};
+	use alloc::sync::Arc;
+	use assert_matches::assert_matches;
+	use codec::Decode;
 	use ethabi::Token;
 	use ethereum_types::{BigEndianHash, H160, U256, U64};
 	use frame_support::{assert_ok, once_cell::sync::Lazy, BoundedVec};
+	use parking_lot::RwLock;
 	use sp_core::H256;
+	use sp_runtime::{
+		offchain::{
+			storage::{StorageRetrievalError, StorageValueRef},
+			testing::OffchainState,
+		},
+		traits::IdentifyAccount,
+	};
 
 	use super::{
 		errors::OffchainError,
@@ -254,28 +278,64 @@ mod tests {
 		rpc::{Address, EthTransaction, EthTransactionReceipt},
 		validate_ethless_transfer, ETH_CONFIRMATIONS,
 	};
-	use crate::ExternalAddress;
+	use crate::{
+		mock::{AccountId, ExtBuilder},
+		Blockchain, ExternalAddress,
+	};
 
-	fn make_external_address(bytes: impl AsRef<[u8]>) -> ExternalAddress {
-		BoundedVec::try_from(bytes.as_ref().to_vec()).unwrap()
+	fn make_external_address(hex_str: &str) -> ExternalAddress {
+		BoundedVec::try_from(hex::decode(hex_str.trim_start_matches("0x")).unwrap()).unwrap()
 	}
 
-	fn assert_invalid_transfer<T>(result: Result<T, OffchainError>) {
-		assert!(matches!(result, Err(OffchainError::InvalidTransfer(_))));
+	#[track_caller]
+	fn assert_invalid_transfer<T: Debug>(
+		result: Result<T, OffchainError>,
+		cause: VerificationFailureCause,
+	) {
+		assert_matches!(result, Err(OffchainError::InvalidTransfer(why)) => { assert_eq!(why, cause); } );
 	}
 
-	#[test]
-	fn eth_address_non_utf8() {
-		let address = make_external_address([0xfeu8, 0xfeu8, 0xffu8, 0xffu8]);
-
-		assert!(matches!(parse_eth_address(&address), Err(OffchainError::InvalidTransfer(_))));
+	fn default_nonce() -> U256 {
+		U256::from_dec_str(
+			"979732326222468652918279417612319888321218652914508214827914231471334244789",
+		)
+		.unwrap()
 	}
 
-	#[test]
-	fn eth_address_bad_hex() {
-		let address = make_external_address("0xP794f5ea0ba39494ce839613fffba74279579268");
+	#[derive(Clone, Debug, PartialEq)]
+	struct TransferContractInput {
+		from: Address,
+		to: Address,
+		value: U256,
+		fee: U256,
+		nonce: U256,
+		sig: Vec<u8>,
+	}
 
-		assert_invalid_transfer(parse_eth_address(&address));
+	impl Default for TransferContractInput {
+		fn default() -> Self {
+			Self {
+				from: ETHLESS_FROM_ADDR.clone(),
+				to: ETHLESS_TO_ADDR.clone(),
+				value: U256::from(100),
+				fee: 1.into(),
+				nonce: default_nonce(),
+				sig: vec![],
+			}
+		}
+	}
+
+	impl TransferContractInput {
+		fn into_tokens(self) -> Vec<Token> {
+			vec![
+				Token::Address(self.from),
+				Token::Address(self.to),
+				Token::Uint(self.value),
+				Token::Uint(self.fee),
+				Token::Uint(self.nonce),
+				Token::Bytes(self.sig),
+			]
+		}
 	}
 
 	#[test]
@@ -283,37 +343,34 @@ mod tests {
 		let too_long = make_external_address("0xb794f5ea0ba39494ce839613fffba742795792688888");
 		let too_short = make_external_address("0xb794f5ea0b");
 
-		assert_invalid_transfer(parse_eth_address(&too_long));
-		assert_invalid_transfer(parse_eth_address(&too_short));
+		assert_invalid_transfer(parse_eth_address(&too_long), InvalidAddress);
+		assert_invalid_transfer(parse_eth_address(&too_short), InvalidAddress);
 	}
 
 	#[test]
 	fn eth_address_valid() {
-		let address_str = "b794f5ea0ba39494ce839613fffba74279579268";
-		let address_bytes = hex::decode(address_str).unwrap();
-		let address: ExternalAddress = BoundedVec::try_from(address_bytes.clone()).unwrap();
+		let address: ExternalAddress =
+			make_external_address("0xb794f5ea0ba39494ce839613fffba74279579268");
 
-		let expected = H160::from(<[u8; 20]>::try_from(address_bytes).unwrap());
-		assert_ok!(parse_eth_address(&address).map_err(|_| ()), expected);
+		let expected = H160::from(<[u8; 20]>::try_from(address.as_slice()).unwrap());
+		assert_eq!(parse_eth_address(&address).unwrap(), expected);
 	}
 
-	const INPUT: &str = "0982d5b0000000000000000000000000f04349b4a760f5aed02131e0daa9bb99a1d1d1e5000000000000000000000000bbb8bbaf43fe8b9e5572b1860d5c94ac7ed87bb900000000000000000\
-		000000000000000000000000000000000000000033336ec000000000000000000000000000000000000000000000000000000000323f4ac022a8243b45b35d97d7eb3192e7b95a3bbbe5cd0170059bd3a4c8da2912\
-		841b500000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000410bec91682052bb53450c69a82ebc006d08113\
-		6aef6cdb910bffab429620168792ab3b859b97d18cf53e6057208e20615b8a3ce6128fcb278b324d3e7ed9461671b00000000000000000000000000000000000000000000000000000000000000";
+	static ETHLESS_INPUT: Lazy<String> =
+		Lazy::new(|| crate::tests::get_mock_input_data().trim_start_matches("0x").into());
 
-	const ETHLESS_FROM_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str("0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap());
-	const ETHLESS_CONTRACT_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str("0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap());
-	const ETHLESS_TO_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str("0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap());
+	static ETHLESS_FROM_ADDR: Lazy<Address> =
+		Lazy::new(|| Address::from_str(&crate::tests::get_mock_from_address()).unwrap());
+	static ETHLESS_CONTRACT_ADDR: Lazy<Address> =
+		Lazy::new(|| Address::from_str(&crate::tests::get_mock_contract()).unwrap());
+	static ETHLESS_TO_ADDR: Lazy<Address> =
+		Lazy::new(|| Address::from_str(&crate::tests::get_mock_to_address()).unwrap());
 
-	const ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| EthTransaction {
+	static ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| EthTransaction {
 		block_number: Some(5u64.into()),
 		from: Some(ETHLESS_FROM_ADDR.clone()),
 		to: Some(ETHLESS_CONTRACT_ADDR.clone()),
-		input: hex::decode(INPUT).unwrap().into(),
+		input: hex::decode(&*ETHLESS_INPUT).unwrap().into(),
 		..Default::default()
 	});
 
@@ -334,14 +391,11 @@ mod tests {
 				from: ETHLESS_FROM_ADDR.clone(),
 				to: ETHLESS_TO_ADDR.clone(),
 				contract: ETHLESS_CONTRACT_ADDR.clone(),
-				amount: U256::from(53688044u64),
+				amount: crate::tests::get_mock_amount(),
 				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
 				transaction: ETH_TRANSACTION.clone(),
 				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS),
-				nonce: U256::from_dec_str(
-					"979732326222468652918279417612319888321218652914508214827914231471334244789",
-				)
-				.unwrap(),
+				nonce: crate::tests::get_mock_nonce(),
 			}
 		}
 	}
@@ -361,6 +415,10 @@ mod tests {
 		)
 	}
 
+	fn default<T: Default>() -> T {
+		Default::default()
+	}
+
 	#[test]
 	fn ethless_transfer_valid() {
 		assert_ok!(test_validate_ethless_transfer(EthlessTestArgs::default()));
@@ -368,95 +426,579 @@ mod tests {
 
 	#[test]
 	fn ethless_transfer_tx_failed() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			receipt: EthTransactionReceipt { status: Some(0u64.into()), ..Default::default() },
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				receipt: EthTransactionReceipt { status: Some(0u64.into()), ..Default::default() },
+				..Default::default()
+			}),
+			TransferFailed,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_tx_unconfirmed() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
+				..Default::default()
+			}),
+			TransferUnconfirmed,
+		);
+	}
+
+	#[test]
+	fn ethless_transfer_tx_missing_to() {
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				transaction: EthTransaction { to: None, ..ETH_TRANSACTION.clone() },
+				..Default::default()
+			}),
+			MissingReceiver,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_tx_ahead_of_tip() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() - 1),
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() - 1),
+				..Default::default()
+			}),
+			TransferInFuture,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_contract_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			contract: Address::from_str("0xbad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap(),
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				contract: Address::from_str("0xbad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap(),
+				..Default::default()
+			}),
+			IncorrectContract,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_from_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			from: Address::from_str("0xbad349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap(),
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				from: Address::from_str("0xbad349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap(),
+				..Default::default()
+			}),
+			IncorrectSender,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_to_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			to: Address::from_str("0xbad8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap(),
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				to: Address::from_str("0xbad8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap(),
+				..Default::default()
+			}),
+			IncorrectReceiver,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_invalid_input_data() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			transaction: EthTransaction {
-				input: Vec::from("badbad".as_bytes()).into(),
-				..ETH_TRANSACTION.clone()
-			},
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				transaction: EthTransaction {
+					input: Vec::from("badbad".as_bytes()).into(),
+					..ETH_TRANSACTION.clone()
+				},
+				..Default::default()
+			}),
+			AbiMismatch,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_amount_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			amount: U256::from(1),
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				amount: U256::from(1),
+				..Default::default()
+			}),
+			IncorrectAmount,
+		);
 	}
 
 	#[test]
 	fn ethless_transfer_nonce_mismatch() {
 		let transfer = ethless_transfer_function_abi();
-		let input = transfer
-			.encode_input(&[
-				// from
-				Token::Address(ETHLESS_FROM_ADDR.clone()),
-				// to
-				Token::Address(ETHLESS_TO_ADDR.clone()),
-				// value
-				Token::Uint(U256::from(53688044)),
-				// fee
-				Token::Uint(1.into()),
-				// nonce
-				Token::Uint(1.into()),
-				// sig
-				Token::Bytes(Vec::new()),
-			])
-			.unwrap()
-			.into();
+		let input_args = TransferContractInput { nonce: 1.into(), ..Default::default() };
+		let input = transfer.encode_input(&input_args.into_tokens()).unwrap().into();
 		let transaction = EthTransaction { input, ..ETH_TRANSACTION.clone() };
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			transaction,
-			..Default::default()
-		}));
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs { transaction, ..Default::default() }),
+			IncorrectNonce,
+		);
+	}
+
+	#[test]
+	fn ethless_transfer_pending() {
+		assert_invalid_transfer(
+			test_validate_ethless_transfer(EthlessTestArgs {
+				transaction: EthTransaction { block_number: None, ..ETH_TRANSACTION.clone() },
+				..Default::default()
+			}),
+			TransferPending,
+		)
+	}
+
+	fn set_rpc_uri(blockchain: &Blockchain, value: impl AsRef<[u8]>) {
+		let mut key = Vec::from(blockchain.as_bytes());
+		key.extend(b"-rpc-uri");
+		let rpc_url_storage = StorageValueRef::persistent(&key);
+		rpc_url_storage.set(&value.as_ref());
+	}
+
+	#[test]
+	fn blockchain_rpc_url_missing() {
+		ExtBuilder::default().build_offchain_and_execute(|| {
+			assert_eq!(Blockchain::Ethereum.rpc_url(), Err(RpcUrlError::NoValue));
+		})
+	}
+
+	#[test]
+	fn blockchain_rpc_url_non_utf8() {
+		ExtBuilder::default().build_offchain_and_execute(|| {
+			set_rpc_uri(&Blockchain::Ethereum, &[0x80]);
+
+			assert_matches!(
+				Blockchain::Ethereum.rpc_url().unwrap_err(),
+				RpcUrlError::InvalidUrl(_)
+			);
+		});
+	}
+
+	#[test]
+	fn blockchain_rpc_url_invalid_scale() {
+		ExtBuilder::default().build_offchain_and_execute(|| {
+			let rpc_url_storage = StorageValueRef::persistent(&*b"ethereum-rpc-uri");
+			rpc_url_storage.set(&[0x80]);
+
+			assert_matches!(
+				dbg!(Blockchain::Ethereum.rpc_url()).unwrap_err(),
+				RpcUrlError::StorageFailure(StorageRetrievalError::Undecodable)
+			);
+		});
+	}
+
+	#[test]
+	fn blockchain_supports_etherlike() {
+		assert!(Blockchain::Ethereum.supports(&crate::TransferKind::Native));
+		assert!(Blockchain::Rinkeby.supports(&crate::TransferKind::Native));
+		assert!(Blockchain::Luniverse.supports(&crate::TransferKind::Native));
+		assert!(Blockchain::Ethereum.supports(&crate::TransferKind::Erc20(default())));
+		assert!(Blockchain::Rinkeby.supports(&crate::TransferKind::Erc20(default())));
+		assert!(Blockchain::Luniverse.supports(&crate::TransferKind::Erc20(default())));
+		assert!(Blockchain::Ethereum.supports(&crate::TransferKind::Ethless(default())));
+		assert!(Blockchain::Rinkeby.supports(&crate::TransferKind::Ethless(default())));
+		assert!(Blockchain::Luniverse.supports(&crate::TransferKind::Ethless(default())));
+	}
+
+	#[test]
+	fn blockchain_unsupported() {
+		assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Native));
+		assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Erc20(default())));
+		assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Ethless(default())));
+		assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Other(default())));
+
+		assert!(!Blockchain::Ethereum.supports(&crate::TransferKind::Other(default())));
+		assert!(!Blockchain::Rinkeby.supports(&crate::TransferKind::Other(default())));
+		assert!(!Blockchain::Luniverse.supports(&crate::TransferKind::Other(default())));
+		assert!(!Blockchain::Bitcoin.supports(&crate::TransferKind::Other(default())));
+
+		assert!(!Blockchain::Bitcoin.supports(&crate::TransferKind::Erc20(default())));
+		assert!(!Blockchain::Bitcoin.supports(&crate::TransferKind::Ethless(default())));
+	}
+
+	#[test]
+	fn blockchain_supports_bitcoin_native_transfer() {
+		assert!(Blockchain::Bitcoin.supports(&crate::TransferKind::Native));
+	}
+
+	#[test]
+	fn offchain_signed_tx_works() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let acct = AccountId::from(acct_pubkey.into_account().0);
+		let transfer_id = crate::TransferId::new::<crate::mock::Test>(&Blockchain::Ethereum, &[0]);
+		ext.build_offchain_and_execute_with_state(|_state, pool| {
+			crate::mock::roll_to(1);
+			let call = crate::Call::<crate::mock::Test>::fail_transfer {
+				transfer_id,
+				cause: IncorrectAmount,
+			};
+			assert_ok!(crate::Pallet::<crate::mock::Test>::offchain_signed_tx(
+				acct.clone(),
+				|_| call.clone(),
+			));
+			crate::mock::roll_to(2);
+
+			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+				let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
+				assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
+			});
+		});
+	}
+
+	type MockTransfer = crate::Transfer<
+		crate::mock::AccountId,
+		crate::mock::BlockNumber,
+		<TestRuntime as frame_system::Config>::Hash,
+		u64,
+	>;
+	type MockUnverifiedTransfer = crate::UnverifiedTransfer<
+		crate::mock::AccountId,
+		crate::mock::BlockNumber,
+		<TestRuntime as frame_system::Config>::Hash,
+		u64,
+	>;
+
+	fn make_unverified_transfer(transfer: MockTransfer) -> MockUnverifiedTransfer {
+		MockUnverifiedTransfer {
+			transfer,
+			to_external: ExternalAddress::try_from(ETHLESS_TO_ADDR.clone().0.to_vec()).unwrap(),
+			from_external: ExternalAddress::try_from(ETHLESS_FROM_ADDR.clone().0.to_vec()).unwrap(),
+		}
+	}
+
+	#[extend::ext]
+	impl H160 {
+		fn to_external_address(&self) -> ExternalAddress {
+			ExternalAddress::try_from(self.0.clone().to_vec()).unwrap()
+		}
+	}
+
+	#[test]
+	fn verify_transfer_ocw_fails_on_unsupported_method() {
+		ExtBuilder::default().build_offchain_and_execute(|| {
+			crate::mock::roll_to(1);
+			let test_info = TestInfo::new_defaults();
+			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (mut transfer, _transfer_id) = test_info.make_transfer(
+				&test_info.lender,
+				&test_info.borrower,
+				deal_order.terms.amount,
+				&deal_order_id,
+				"0xfafafa",
+			);
+			transfer.kind = crate::TransferKind::Native;
+			let unverified = make_unverified_transfer(transfer.clone());
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Ok(VerificationResult::Failure(UnsupportedMethod))
+			);
+
+			transfer.kind = crate::TransferKind::Erc20(ExternalAddress::default());
+			let unverified = make_unverified_transfer(transfer.clone());
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Ok(VerificationResult::Failure(UnsupportedMethod))
+			);
+
+			transfer.kind = crate::TransferKind::Other(ExternalAddress::default());
+			let unverified = make_unverified_transfer(transfer.clone());
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Ok(VerificationResult::Failure(UnsupportedMethod))
+			);
+		});
+	}
+
+	#[test]
+	fn verify_transfer_ocw_returns_err() {
+		ExtBuilder::default().build_offchain_and_execute(|| {
+			crate::mock::roll_to(1);
+			let test_info = TestInfo::new_defaults();
+			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (mut transfer, _transfer_id) = test_info.make_transfer(
+				&test_info.lender,
+				&test_info.borrower,
+				deal_order.terms.amount,
+				&deal_order_id,
+				"0xfafafa",
+			);
+			transfer.kind =
+				crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address());
+			let unverified = make_unverified_transfer(transfer);
+
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Err(OffchainError::NoRpcUrl(_))
+			);
+		});
+	}
+
+	fn set_up_verify_transfer_env() -> (MockUnverifiedTransfer, MockedRpcRequests) {
+		let rpc_uri = "http://localhost:8545";
+		set_rpc_uri(&Blockchain::Rinkeby, rpc_uri);
+
+		let test_info = TestInfo {
+			loan_terms: LoanTerms { amount: crate::tests::get_mock_amount(), ..Default::default() },
+			..TestInfo::new_defaults()
+		};
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		let deal_id_hash = H256::from_uint(&crate::tests::get_mock_nonce());
+		let deal_order_id = crate::DealOrderId::with_expiration_hash::<TestRuntime>(
+			deal_order_id.expiration(),
+			deal_id_hash,
+		);
+		let (mut transfer, _transfer_id) = test_info.make_transfer(
+			&test_info.lender,
+			&test_info.borrower,
+			deal_order.terms.amount,
+			&deal_order_id,
+			crate::tests::get_mock_tx_hash(),
+		);
+		transfer.kind = crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address());
+		let unverified = make_unverified_transfer(transfer);
+
+		(
+			unverified,
+			MockedRpcRequests::new(
+				Some(rpc_uri),
+				&crate::tests::get_mock_tx_hash(),
+				&crate::tests::get_mock_tx_block_num(),
+			),
+		)
+	}
+
+	#[test]
+	fn verify_transfer_ocw_works() {
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
+			crate::mock::roll_to(1);
+			let (
+				unverified,
+				MockedRpcRequests {
+					get_transaction,
+					get_transaction_receipt,
+					get_block_number,
+					get_block_by_number,
+				},
+			) = set_up_verify_transfer_env();
+
+			{
+				let mut state = state.write();
+
+				state.expect_request(get_transaction);
+				state.expect_request(get_transaction_receipt);
+				state.expect_request(get_block_number);
+				state.expect_request(get_block_by_number);
+			}
+
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Ok(VerificationResult::Success { timestamp: Some(_) })
+			);
+		});
+	}
+
+	#[test]
+	fn verify_transfer_get_transaction_error() {
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
+			crate::mock::roll_to(1);
+			let (unverified, MockedRpcRequests { mut get_transaction, .. }) =
+				set_up_verify_transfer_env();
+
+			get_transaction.response = Some(
+				serde_json::to_vec(&JsonRpcResponse::<bool> {
+					jsonrpc: "2.0".into(),
+					id: 1,
+					error: None,
+					result: None,
+				})
+				.unwrap(),
+			);
+
+			{
+				let mut state = state.write();
+
+				state.expect_request(get_transaction);
+			}
+
+			// should this be a VerificationResult::Failure ?
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Err(OffchainError::RpcError(RpcError::NoResult))
+			);
+		});
+	}
+
+	#[test]
+	fn verify_transfer_get_transaction_receipt_error() {
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
+			crate::mock::roll_to(1);
+			let (
+				unverified,
+				MockedRpcRequests { get_transaction, mut get_transaction_receipt, .. },
+			) = set_up_verify_transfer_env();
+
+			get_transaction_receipt.response = Some(
+				serde_json::to_vec(&JsonRpcResponse::<bool> {
+					jsonrpc: "2.0".into(),
+					id: 1,
+					error: None,
+					result: None,
+				})
+				.unwrap(),
+			);
+
+			{
+				let mut state = state.write();
+
+				state.expect_request(get_transaction);
+				state.expect_request(get_transaction_receipt);
+			}
+
+			// should this be a VerificationResult::Failure ?
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Err(OffchainError::RpcError(RpcError::NoResult))
+			);
+		});
+	}
+
+	#[test]
+	fn verify_transfer_get_block_number_error() {
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
+			crate::mock::roll_to(1);
+			let (
+				unverified,
+				MockedRpcRequests {
+					get_transaction,
+					get_transaction_receipt,
+					mut get_block_number,
+					..
+				},
+			) = set_up_verify_transfer_env();
+
+			get_block_number.response = Some(
+				serde_json::to_vec(&JsonRpcResponse::<bool> {
+					jsonrpc: "2.0".into(),
+					id: 1,
+					error: None,
+					result: None,
+				})
+				.unwrap(),
+			);
+
+			{
+				let mut state = state.write();
+
+				state.expect_request(get_transaction);
+				state.expect_request(get_transaction_receipt);
+				state.expect_request(get_block_number);
+			}
+
+			// should this be a VerificationResult::Failure ?
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Err(OffchainError::RpcError(RpcError::NoResult))
+			);
+		});
+	}
+
+	#[test]
+	fn verify_transfer_get_block_by_number_error() {
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
+			crate::mock::roll_to(1);
+			let (
+				unverified,
+				MockedRpcRequests {
+					get_transaction,
+					get_transaction_receipt,
+					get_block_number,
+					mut get_block_by_number,
+				},
+			) = set_up_verify_transfer_env();
+
+			get_block_by_number.response = Some(
+				serde_json::to_vec(&JsonRpcResponse::<bool> {
+					jsonrpc: "2.0".into(),
+					id: 1,
+					error: None,
+					result: None,
+				})
+				.unwrap(),
+			);
+
+			{
+				let mut state = state.write();
+
+				state.expect_request(get_transaction);
+				state.expect_request(get_transaction_receipt);
+				state.expect_request(get_block_number);
+				state.expect_request(get_block_by_number);
+			}
+
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Ok(VerificationResult::Success { timestamp: None })
+			);
+		});
+	}
+
+	#[test]
+	fn verify_transfer_get_block_invalid_address() {
+		fn mock_requests(state: &Arc<RwLock<OffchainState>>) {
+			let MockedRpcRequests {
+				get_transaction,
+				get_transaction_receipt,
+				get_block_number,
+				..
+			} = MockedRpcRequests::new(
+				Some("http://localhost:8545"),
+				&crate::tests::get_mock_tx_hash(),
+				&crate::tests::get_mock_tx_block_num(),
+			);
+
+			{
+				let mut state = state.write();
+
+				state.expect_request(get_transaction);
+				state.expect_request(get_transaction_receipt);
+				state.expect_request(get_block_number);
+			}
+		}
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
+			crate::mock::roll_to(1);
+			let (mut unverified, ..) = set_up_verify_transfer_env();
+
+			mock_requests(&state);
+
+			let bad_from_unverified =
+				MockUnverifiedTransfer { from_external: default(), ..unverified.clone() };
+
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_from_unverified),
+				Ok(VerificationResult::Failure(InvalidAddress))
+			);
+
+			mock_requests(&state);
+
+			let bad_to_unverified =
+				MockUnverifiedTransfer { to_external: default(), ..unverified.clone() };
+
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_to_unverified),
+				Ok(VerificationResult::Failure(InvalidAddress))
+			);
+
+			mock_requests(&state);
+
+			unverified.transfer.kind = TransferKind::Ethless(default());
+
+			assert_matches!(
+				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+				Ok(VerificationResult::Failure(InvalidAddress))
+			);
+		});
 	}
 }
