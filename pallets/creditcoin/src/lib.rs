@@ -140,6 +140,7 @@ pub mod pallet {
 		fn add_deal_order() -> Weight;
 		fn add_authority() -> Weight;
 		fn verify_transfer() -> Weight;
+		fn fail_transfer() -> Weight;
 		fn fund_deal_order() -> Weight;
 		fn lock_deal_order() -> Weight;
 		fn register_transfer_ocw() -> Weight;
@@ -1244,7 +1245,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight(<T as Config>::WeightInfo::fail_transfer())]
 		pub fn fail_transfer(
 			origin: OriginFor<T>,
 			transfer_id: TransferId<T::Hash>,
