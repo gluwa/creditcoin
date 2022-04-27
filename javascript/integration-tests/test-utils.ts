@@ -52,15 +52,15 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
         await addAuthorityAsync(api, AUTHORITY_ACCOUNTID, sudoSigner);
     }
 
-    await api.tx.sudo
-        .sudo(api.tx.balances.setBalance(AUTHORITY_ACCOUNTID, '10000000000000000000', '0'))
-        .signAndSend(sudoSigner, { nonce: -1 });
-
+    await setBalance(api, sudoSigner, AUTHORITY_ACCOUNTID, '10000000000000000000');
     // bump balance for Alice b/c we need enough to be able to pay fees
-    await api.tx.sudo
-        .sudo(api.tx.balances.setBalance(sudoSigner.address, '10000000000000000000', '0'))
-        .signAndSend(sudoSigner, { nonce: -1 });
+    await setBalance(api, sudoSigner, sudoSigner.address, '10000000000000000000');
+
 };
+
+export const setBalance = async (api: ApiPromise, sudoSigner: KeyringPair, address: string, amount: string, nonce = -1) => {
+    await api.tx.sudo.sudo(api.tx.balances.setBalance(address, amount, '0')).signAndSend(sudoSigner, { nonce: nonce })
+}
 
 export const expectNoDispatchError = (api: ApiPromise, dispatchError: any): void => {
     if (dispatchError) {
