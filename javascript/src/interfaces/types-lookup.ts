@@ -759,6 +759,7 @@ declare module '@polkadot/types/lookup' {
         readonly asRegisterAddress: {
             readonly blockchain: PalletCreditcoinBlockchain;
             readonly address: Bytes;
+            readonly ownershipProof: SpCoreEcdsaSignature;
         } & Struct;
         readonly isAddAskOrder: boolean;
         readonly asAddAskOrder: {
@@ -856,7 +857,10 @@ declare module '@polkadot/types/lookup' {
     /** @name SpCoreEcdsaPublic (111) */
     export interface SpCoreEcdsaPublic extends U8aFixed {}
 
-    /** @name SpRuntimeMultiSigner (113) */
+    /** @name SpCoreEcdsaSignature (113) */
+    export interface SpCoreEcdsaSignature extends U8aFixed {}
+
+    /** @name SpRuntimeMultiSigner (115) */
     export interface SpRuntimeMultiSigner extends Enum {
         readonly isEd25519: boolean;
         readonly asEd25519: SpCoreEd25519Public;
@@ -867,13 +871,13 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'Ed25519' | 'Sr25519' | 'Ecdsa';
     }
 
-    /** @name SpCoreEd25519Public (114) */
+    /** @name SpCoreEd25519Public (116) */
     export interface SpCoreEd25519Public extends U8aFixed {}
 
-    /** @name SpCoreSr25519Public (115) */
+    /** @name SpCoreSr25519Public (117) */
     export interface SpCoreSr25519Public extends U8aFixed {}
 
-    /** @name SpRuntimeMultiSignature (116) */
+    /** @name SpRuntimeMultiSignature (118) */
     export interface SpRuntimeMultiSignature extends Enum {
         readonly isEd25519: boolean;
         readonly asEd25519: SpCoreEd25519Signature;
@@ -884,14 +888,11 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'Ed25519' | 'Sr25519' | 'Ecdsa';
     }
 
-    /** @name SpCoreEd25519Signature (117) */
+    /** @name SpCoreEd25519Signature (119) */
     export interface SpCoreEd25519Signature extends U8aFixed {}
 
-    /** @name SpCoreSr25519Signature (119) */
+    /** @name SpCoreSr25519Signature (121) */
     export interface SpCoreSr25519Signature extends U8aFixed {}
-
-    /** @name SpCoreEcdsaSignature (120) */
-    export interface SpCoreEcdsaSignature extends U8aFixed {}
 
     /** @name PalletDifficultyCall (122) */
     export interface PalletDifficultyCall extends Enum {
@@ -969,6 +970,8 @@ declare module '@polkadot/types/lookup' {
         readonly isGuidAlreadyUsed: boolean;
         readonly isInvalidTermLength: boolean;
         readonly isMalformedExternalAddress: boolean;
+        readonly isAddressFormatNotSupported: boolean;
+        readonly isOwnershipNotSatisfied: boolean;
         readonly type:
             | 'AddressAlreadyRegistered'
             | 'NonExistentAddress'
@@ -1017,7 +1020,9 @@ declare module '@polkadot/types/lookup' {
             | 'LegacyBalanceKeeperMissing'
             | 'GuidAlreadyUsed'
             | 'InvalidTermLength'
-            | 'MalformedExternalAddress';
+            | 'MalformedExternalAddress'
+            | 'AddressFormatNotSupported'
+            | 'OwnershipNotSatisfied';
     }
 
     /** @name PalletDifficultyDifficultyAndTimestamp (131) */
