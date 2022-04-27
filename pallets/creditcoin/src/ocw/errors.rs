@@ -57,7 +57,7 @@ impl VerificationFailureCause {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RpcUrlError {
 	StorageFailure(StorageRetrievalError),
 	InvalidUrl(FromUtf8Error),
