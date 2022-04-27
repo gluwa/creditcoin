@@ -664,6 +664,7 @@ export default {
             register_address: {
                 blockchain: 'PalletCreditcoinBlockchain',
                 address: 'Bytes',
+                ownershipProof: 'SpCoreEcdsaSignature',
             },
             add_ask_order: {
                 addressId: 'H256',
@@ -734,7 +735,11 @@ export default {
      **/
     SpCoreEcdsaPublic: '[u8;33]',
     /**
-     * Lookup113: sp_runtime::MultiSigner
+     * Lookup113: sp_core::ecdsa::Signature
+     **/
+    SpCoreEcdsaSignature: '[u8;65]',
+    /**
+     * Lookup115: sp_runtime::MultiSigner
      **/
     SpRuntimeMultiSigner: {
         _enum: {
@@ -744,15 +749,15 @@ export default {
         },
     },
     /**
-     * Lookup114: sp_core::ed25519::Public
+     * Lookup116: sp_core::ed25519::Public
      **/
     SpCoreEd25519Public: '[u8;32]',
     /**
-     * Lookup115: sp_core::sr25519::Public
+     * Lookup117: sp_core::sr25519::Public
      **/
     SpCoreSr25519Public: '[u8;32]',
     /**
-     * Lookup116: sp_runtime::MultiSignature
+     * Lookup118: sp_runtime::MultiSignature
      **/
     SpRuntimeMultiSignature: {
         _enum: {
@@ -762,17 +767,13 @@ export default {
         },
     },
     /**
-     * Lookup117: sp_core::ed25519::Signature
+     * Lookup119: sp_core::ed25519::Signature
      **/
     SpCoreEd25519Signature: '[u8;64]',
     /**
-     * Lookup119: sp_core::sr25519::Signature
+     * Lookup121: sp_core::sr25519::Signature
      **/
     SpCoreSr25519Signature: '[u8;64]',
-    /**
-     * Lookup120: sp_core::ecdsa::Signature
-     **/
-    SpCoreEcdsaSignature: '[u8;65]',
     /**
      * Lookup122: pallet_difficulty::pallet::Call<T>
      **/
@@ -853,6 +854,8 @@ export default {
             'GuidAlreadyUsed',
             'InvalidTermLength',
             'MalformedExternalAddress',
+            'AddressFormatNotSupported',
+            'OwnershipNotSatisfied',
         ],
     },
     /**
