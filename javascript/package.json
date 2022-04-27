@@ -38,7 +38,7 @@
         "@typescript-eslint/eslint-plugin": "^5.18.0",
         "@typescript-eslint/parser": "^5.18.0",
         "axios": "^0.26.1",
-        "credal-js": "git+https://github.com/gluwa/credal-js.git#517f8739f4eb60d37ba1d31464d99b9ae768bee7",
+        "credal-js": "git+https://github.com/gluwa/credal-js.git#dev",
         "eslint": "^8.12.0",
         "eslint-plugin-header": "^3.1.1",
         "prettier": "^2.6.1",
