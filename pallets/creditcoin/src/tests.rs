@@ -7,6 +7,7 @@ use crate::{
 	LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers,
 };
 
+use assert_matches::assert_matches;
 use bstr::B;
 use codec::{Decode, Encode};
 use ethereum_types::{BigEndianHash, H256};
@@ -303,8 +304,10 @@ pub fn get_register_address_message(who: AccountId) -> [u8; 32] {
 }
 
 #[test]
-fn register_address_basic() {
+fn register_address_should_work() {
 	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
 		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
 		assert_ok!(Creditcoin::register_address(
@@ -315,7 +318,17 @@ fn register_address_basic() {
 		));
 		let address_id = crate::AddressId::new::<Test>(&blockchain, &address);
 		let address = crate::Address { blockchain, value: address, owner: who };
-		assert_eq!(Creditcoin::addresses(address_id), Some(address));
+		assert_eq!(Creditcoin::addresses(address_id.clone()), Some(address.clone()));
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
+
+		assert_matches!(
+			event,
+			crate::mock::Event::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+				assert_eq!(registered_address_id, address_id);
+				assert_eq!(registered_address, address);
+			}
+		);
 	});
 }
 
@@ -339,8 +352,39 @@ fn register_address_pre_existing() {
 }
 
 #[test]
-/// Address too long.
-fn register_address_malformed_address() {
+fn register_address_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (_who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		assert_noop!(
+			Creditcoin::register_address(Origin::none(), blockchain, address, ownership_proof),
+			BadOrigin,
+		);
+	})
+}
+
+#[test]
+fn register_address_should_error_when_using_wrong_ownership_proof() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+		let (_who2, _address2, ownership_proof2, _) = generate_address_with_proof("bogus");
+
+		let blockchain = Blockchain::Rinkeby;
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who.clone()),
+				blockchain,
+				address,
+				ownership_proof2
+			),
+			crate::Error::<Test>::OwnershipNotSatisfied
+		);
+	})
+}
+
+#[test]
+fn register_address_should_error_when_address_too_long() {
 	ExtBuilder::default().build_and_execute(|| {
 		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
@@ -353,6 +397,28 @@ fn register_address_malformed_address() {
 				ownership_proof
 			),
 			crate::Error::<Test>::AddressFormatNotSupported
+		);
+	})
+}
+
+#[test]
+fn register_address_should_error_when_signature_is_invalid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+
+		// NOTE: No checking goes on to ensure this is a real signature! See
+		// https://docs.rs/sp-core/2.0.0-rc4/sp_core/ecdsa/struct.Signature.html#method.from_raw
+		let ownership_proof = sp_core::ecdsa::Signature::from_raw([0; 65]);
+
+		let blockchain = Blockchain::Rinkeby;
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who.clone()),
+				blockchain,
+				address,
+				ownership_proof
+			),
+			crate::Error::<Test>::InvalidSignature
 		);
 	})
 }
