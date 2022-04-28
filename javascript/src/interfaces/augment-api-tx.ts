@@ -11,6 +11,7 @@ import type {
     PalletCreditcoinBlockchain,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
+    PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOfferId,
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
@@ -268,6 +269,31 @@ declare module '@polkadot/api-base/types/submittable' {
             exempt: AugmentedSubmittable<
                 (dealOrderId: PalletCreditcoinDealOrderId) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinDealOrderId]
+            >;
+            failTransfer: AugmentedSubmittable<
+                (
+                    transferId: H256 | string | Uint8Array,
+                    cause:
+                        | PalletCreditcoinOcwErrorsVerificationFailureCause
+                        | 'TransferFailed'
+                        | 'TransferPending'
+                        | 'TransferUnconfirmed'
+                        | 'TransferInFuture'
+                        | 'IncorrectContract'
+                        | 'MissingReceiver'
+                        | 'AbiMismatch'
+                        | 'IncorrectInputLength'
+                        | 'IncorrectInputType'
+                        | 'IncorrectAmount'
+                        | 'IncorrectNonce'
+                        | 'IncorrectReceiver'
+                        | 'IncorrectSender'
+                        | 'InvalidAddress'
+                        | 'UnsupportedMethod'
+                        | number
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
             >;
             fundDealOrder: AugmentedSubmittable<
                 (
