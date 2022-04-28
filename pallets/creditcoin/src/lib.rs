@@ -662,6 +662,8 @@ pub mod pallet {
 				Error::<T>::AddressAlreadyRegistered
 			);
 
+			// note: this error condition is unreachable!
+			// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
 			ensure!(
 				helpers::address_is_well_formed(&blockchain, &address),
 				Error::<T>::MalformedExternalAddress
