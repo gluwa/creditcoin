@@ -3,7 +3,6 @@
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { Balance } from '@polkadot/types/interfaces';
 
 import { CREDO_PER_CTC } from '../src/constants';
 import { randomEthWallet, ethOwnershipProof } from '../src/utils';
@@ -35,31 +34,7 @@ describe('RegisterAddress', (): void => {
             const unsubscribe = api.tx.creditcoin
                 .registerAddress('Ethereum', wallet.address, ethOwnershipProof(api, wallet, alice.address))
                 .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    testUtils.expectNoDispatchError(api, dispatchError);
-
-                    if (status.isInBlock) {
-                        const balancesWithdraw = events.find(({ event: { method, section } }) => {
-                            return section === 'balances' && method === 'Withdraw';
-                        });
-
-                        expect(balancesWithdraw).toBeTruthy();
-
-                        // const accountId = balancesWithdraw.event.data[0].toString();
-                        if (balancesWithdraw) {
-                            const fee = (balancesWithdraw.event.data[1] as Balance).toBigInt();
-
-                            const unsub = await unsubscribe;
-
-                            if (typeof unsub === 'function') {
-                                unsub();
-                                resolve(fee);
-                            } else {
-                                reject(new Error('Subscription failed'));
-                            }
-                        } else {
-                            reject(new Error("Fee wasn't found"));
-                        }
-                    }
+                    testUtils.extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {

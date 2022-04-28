@@ -6,6 +6,8 @@ import { Guid } from 'js-guid';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Null, Option } from '@polkadot/types';
+import type { Balance } from '@polkadot/types/interfaces';
+import type { EventRecord } from '@polkadot/types/interfaces/system';
 import { PalletCreditcoinTransfer } from '@polkadot/types/lookup';
 import { BN } from '@polkadot/util';
 
@@ -341,5 +343,40 @@ export const lockDealOrder = async (
         return result;
     } else {
         throw new Error('LockDealOrder failed');
+    }
+};
+
+export const extractFee = async (
+    resolve: any,
+    reject: any,
+    unsubscribe: any,
+    api: ApiPromise,
+    dispatchError: any,
+    events: EventRecord[],
+    status: any,
+): Promise<void> => {
+    expectNoDispatchError(api, dispatchError);
+
+    if (status.isInBlock) {
+        const balancesWithdraw = events.find(({ event: { method, section } }) => {
+            return section === 'balances' && method === 'Withdraw';
+        });
+
+        expect(balancesWithdraw).toBeTruthy();
+
+        if (balancesWithdraw) {
+            const fee = (balancesWithdraw.event.data[1] as Balance).toBigInt();
+
+            const unsub = await unsubscribe;
+
+            if (unsub) {
+                unsub();
+                resolve(fee);
+            } else {
+                reject(new Error('Subscription failed'));
+            }
+        } else {
+            reject(new Error("Fee wasn't found"));
+        }
     }
 };
