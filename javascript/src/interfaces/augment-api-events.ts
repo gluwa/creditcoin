@@ -15,6 +15,7 @@ import type {
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLegacySighash,
+    PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinTransfer,
@@ -136,6 +137,10 @@ declare module '@polkadot/api-base/types/events' {
              * [offer_id, offer]
              **/
             OfferAdded: AugmentedEvent<ApiType, [PalletCreditcoinOfferId, PalletCreditcoinOffer]>;
+            TransferFailedVerification: AugmentedEvent<
+                ApiType,
+                [H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
+            >;
             /**
              * An external transfer has been processed and marked as part of a loan.
              * [processed_transfer_id, processed_transfer]
