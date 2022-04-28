@@ -5,7 +5,6 @@ import { Guid } from 'js-guid';
 
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import type { Balance } from '@polkadot/types/interfaces';
 import { BN } from '@polkadot/util';
 
 import { Blockchain, DealOrderId, LoanTerms } from 'credal-js/lib/model';
@@ -131,30 +130,7 @@ describe('CloseDealOrder', (): void => {
             const unsubscribe = api.tx.creditcoin
                 .closeDealOrder(dealOrderId, transferEvent.transferId)
                 .signAndSend(borrower, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    testUtils.expectNoDispatchError(api, dispatchError);
-
-                    if (status.isInBlock) {
-                        const balancesWithdraw = events.find(({ event: { method, section } }) => {
-                            return section === 'balances' && method === 'Withdraw';
-                        });
-
-                        expect(balancesWithdraw).toBeTruthy();
-
-                        if (balancesWithdraw) {
-                            const fee = (balancesWithdraw.event.data[1] as Balance).toBigInt();
-
-                            const unsub = await unsubscribe;
-
-                            if (typeof unsub === 'function') {
-                                unsub();
-                                resolve(fee);
-                            } else {
-                                reject(new Error('Subscription failed'));
-                            }
-                        } else {
-                            reject(new Error("Fee wasn't found"));
-                        }
-                    }
+                    testUtils.extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
                 .catch((reason) => reject(reason));
         }).then((fee) => {
