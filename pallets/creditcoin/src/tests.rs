@@ -320,7 +320,7 @@ fn register_address_should_work() {
 		let address = crate::Address { blockchain, value: address, owner: who };
 		assert_eq!(Creditcoin::addresses(address_id.clone()), Some(address.clone()));
 
-		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
 
 		assert_matches!(
 			event,
