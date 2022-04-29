@@ -1,7 +1,6 @@
 use crate::{
 	helpers::{EVMAddress, PublicToAddress},
 	mock::*,
-	ocw::rpc::JsonRpcResponse,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
 	DealOrderId, DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash,
@@ -12,19 +11,16 @@ use assert_matches::assert_matches;
 use bstr::B;
 use codec::{Decode, Encode};
 use ethereum_types::{BigEndianHash, H256};
-use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Get, BoundedVec};
+use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
 
-use sp_core::{Pair, U256};
+use sp_core::Pair;
 use sp_runtime::{
-	offchain::{storage::StorageValueRef, testing::PendingRequest},
+	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
 	MultiSigner,
 };
-use std::{
-	collections::HashMap,
-	convert::{TryFrom, TryInto},
-};
+use std::convert::{TryFrom, TryInto};
 
 //Duplicated code; pallet_creditcoin::benchmarking.rs
 #[extend::ext]
@@ -148,8 +144,8 @@ pub struct TestInfo {
 	pub(crate) expiration_block: u64,
 }
 
-impl TestInfo {
-	pub fn new_defaults() -> TestInfo {
+impl Default for TestInfo {
+	fn default() -> Self {
 		let lender = RegisteredAddress::new("lender", Blockchain::Rinkeby);
 		let borrower = RegisteredAddress::new("borrower", Blockchain::Rinkeby);
 		let blockchain = Blockchain::Rinkeby;
@@ -161,6 +157,12 @@ impl TestInfo {
 		let bid_guid = "bid_guid".as_bytes().into_bounded();
 		let expiration_block = 1_000;
 		TestInfo { blockchain, lender, borrower, loan_terms, ask_guid, bid_guid, expiration_block }
+	}
+}
+
+impl TestInfo {
+	pub fn new_defaults() -> TestInfo {
+		TestInfo::default()
 	}
 
 	pub fn create_ask_order(&self) -> TestAskOrder {
@@ -269,6 +271,7 @@ impl TestInfo {
 		amount: impl Into<ExternalAmount>,
 		deal_order_id: &TestDealOrderId,
 		blockchain_tx_id: impl AsRef<[u8]>,
+		transfer_kind: impl Into<Option<TransferKind>>,
 	) -> TestTransfer {
 		let blockchain_tx_id = blockchain_tx_id.as_ref();
 		let tx = if blockchain_tx_id.starts_with(&*b"0x") {
@@ -280,7 +283,7 @@ impl TestInfo {
 		(
 			Transfer {
 				blockchain: self.blockchain.clone(),
-				kind: TransferKind::Native,
+				kind: transfer_kind.into().unwrap_or(TransferKind::Native),
 				from: from.address_id.clone(),
 				to: to.address_id.clone(),
 				order_id: OrderId::Deal(deal_order_id.clone()),
@@ -303,7 +306,8 @@ impl TestInfo {
 		deal_order_id: &TestDealOrderId,
 		blockchain_tx_id: impl AsRef<[u8]>,
 	) -> TestTransfer {
-		let (transfer, id) = self.make_transfer(from, to, amount, deal_order_id, blockchain_tx_id);
+		let (transfer, id) =
+			self.make_transfer(from, to, amount, deal_order_id, blockchain_tx_id, None);
 		Transfers::<Test>::insert(&id, &transfer);
 		(transfer, id)
 	}
@@ -443,143 +447,17 @@ fn register_address_should_error_when_signature_is_invalid() {
 	})
 }
 
-pub(crate) static ETHLESS_RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
-	Lazy::new(|| serde_json::from_slice(include_bytes!("tests/ethlessTransfer.json")).unwrap());
-
-pub(crate) struct MockedRpcRequests {
-	pub(crate) get_transaction: PendingRequest,
-	pub(crate) get_transaction_receipt: PendingRequest,
-	pub(crate) get_block_number: PendingRequest,
-	pub(crate) get_block_by_number: PendingRequest,
-}
-
-impl MockedRpcRequests {
-	pub(crate) fn new<'a>(
-		rpc_uri: impl Into<Option<&'a str>>,
-		tx_hash: &str,
-		tx_block_number: &str,
-	) -> Self {
-		let responses = &*ETHLESS_RESPONSES;
-		let uri = rpc_uri.into().unwrap_or("dummy");
-		let get_transaction =
-			pending_rpc_request("eth_getTransactionByHash", vec![tx_hash.into()], uri, responses);
-		let get_transaction_receipt =
-			pending_rpc_request("eth_getTransactionReceipt", vec![tx_hash.into()], uri, &responses);
-		let get_block_number = pending_rpc_request("eth_blockNumber", None, uri, &responses);
-		let get_block_by_number = pending_rpc_request(
-			"eth_getBlockByNumber",
-			vec![tx_block_number.into(), false.into()],
-			uri,
-			&responses,
-		);
-		Self { get_transaction, get_transaction_receipt, get_block_number, get_block_by_number }
-	}
-}
-
-pub(crate) fn get_mock_tx_hash() -> String {
-	let responses = &*ETHLESS_RESPONSES;
-	responses["eth_getTransactionByHash"].result.clone().unwrap()["hash"]
-		.clone()
-		.as_str()
-		.unwrap()
-		.to_string()
-}
-
-pub(crate) fn get_mock_contract() -> String {
-	let responses = &*ETHLESS_RESPONSES;
-
-	responses["eth_getTransactionByHash"].result.clone().unwrap()["to"]
-		.clone()
-		.as_str()
-		.unwrap()
-		.to_string()
-}
-
-pub(crate) fn get_mock_tx_block_num() -> String {
-	let responses = &*ETHLESS_RESPONSES;
-
-	responses["eth_getTransactionByHash"].result.clone().unwrap()["blockNumber"]
-		.clone()
-		.as_str()
-		.unwrap()
-		.to_string()
-}
-
-pub(crate) fn get_mock_from_address() -> String {
-	format!("{:?}", get_mock_contract_input(0, ethabi::Token::into_address))
-}
-
-fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) -> Option<T>) -> T {
-	let responses = &*ETHLESS_RESPONSES;
-
-	let abi = crate::ocw::ethless_transfer_function_abi();
-	let input = responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
-		.clone()
-		.as_str()
-		.unwrap()
-		.to_string();
-	let input_bytes = hex::decode(&input.trim_start_matches("0x")).unwrap();
-	let inputs = abi.decode_input(&input_bytes[4..]).unwrap();
-	convert(inputs[index].clone()).unwrap()
-}
-
-pub(crate) fn get_mock_input_data() -> String {
-	let responses = &*ETHLESS_RESPONSES;
-
-	responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
-		.clone()
-		.as_str()
-		.unwrap()
-		.to_string()
-}
-
-pub(crate) fn get_mock_to_address() -> String {
-	format!("{:?}", get_mock_contract_input(1, ethabi::Token::into_address))
-}
-
-pub(crate) fn get_mock_amount() -> U256 {
-	get_mock_contract_input(2, ethabi::Token::into_uint)
-}
-
-pub(crate) fn get_mock_nonce() -> U256 {
-	get_mock_contract_input(4, ethabi::Token::into_uint)
-}
-
-pub(crate) fn get_mock_timestamp() -> u64 {
-	let responses = &*ETHLESS_RESPONSES;
-
-	let timestamp_hex = responses["eth_getBlockByNumber"].result.clone().unwrap()["timestamp"]
-		.clone()
-		.as_str()
-		.unwrap()
-		.to_string();
-	u64::from_str_radix(&timestamp_hex.trim_start_matches("0x"), 16).unwrap()
-}
-
 #[test]
 fn verify_ethless_transfer() {
-	let (mut ext, state, _) = ExtBuilder::default().build_offchain();
-	let dummy_url = "dummy";
-	let tx_hash = get_mock_tx_hash();
-	let contract = get_mock_contract().hex_to_address();
-	let tx_block_num = get_mock_tx_block_num();
-	{
-		let mut state = state.write();
-		let MockedRpcRequests {
-			get_transaction,
-			get_transaction_receipt,
-			get_block_number,
-			get_block_by_number,
-		} = MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num);
-		state.expect_request(get_transaction);
-		state.expect_request(get_transaction_receipt);
-		state.expect_request(get_block_number);
-		state.expect_request(get_block_by_number);
-	}
-
-	ext.execute_with(|| {
+	ExtBuilder::default().build_offchain_and_execute_with_state(|state, _| {
+		let dummy_url = "dummy";
+		let tx_hash = get_mock_tx_hash();
+		let contract = get_mock_contract().hex_to_address();
+		let tx_block_num = get_mock_tx_block_num();
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
+
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
 
 		let from = get_mock_from_address().hex_to_address();
 		let to = get_mock_to_address().hex_to_address();
@@ -603,93 +481,28 @@ fn verify_ethless_transfer() {
 }
 
 #[test]
+#[tracing_test::traced_test]
 fn register_transfer_ocw() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
-	let (mut ext, state, pool) = ext.build_offchain();
-	let dummy_url = "dummy";
-	let tx_hash = get_mock_tx_hash();
-	let contract = get_mock_contract().hex_to_address();
-	let tx_block_num = get_mock_tx_block_num();
-	{
-		let mut state = state.write();
-
-		let MockedRpcRequests {
-			get_transaction,
-			get_transaction_receipt,
-			get_block_number,
-			get_block_by_number,
-		} = MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num);
-		state.expect_request(get_transaction);
-		state.expect_request(get_transaction_receipt);
-		state.expect_request(get_block_number);
-		state.expect_request(get_block_by_number);
-	}
-
-	ext.execute_with(|| {
-		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
-		rpc_url_storage.set(&dummy_url);
-
-		let (lender, l_address, l_ownership_proof, _) = generate_address_with_proof("lender");
+	ext.build_offchain_and_execute_with_state(|state, pool| {
+		let dummy_url = "dummy";
+		let tx_hash = get_mock_tx_hash();
+		let contract = get_mock_contract().hex_to_address();
+		let tx_block_num = get_mock_tx_block_num();
 		let blockchain = Blockchain::Rinkeby;
-		let expiration = 1000000;
 
-		let l_address_id = crate::AddressId::new::<Test>(&blockchain, &l_address);
-		assert_ok!(Creditcoin::register_address(
-			Origin::signed(lender.clone()),
-			blockchain.clone(),
-			l_address,
-			l_ownership_proof
-		));
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
 
-		let (borrower, b_address, b_ownership_proof, _) = generate_address_with_proof("borrower");
-		let b_address_id = crate::AddressId::new::<Test>(&blockchain, &b_address);
-		assert_ok!(Creditcoin::register_address(
-			Origin::signed(borrower.clone()),
-			blockchain.clone(),
-			b_address,
-			b_ownership_proof
-		));
+		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
 
-		let ask_guid = B("deadbeef").into_bounded();
-		let ask_id = crate::AskOrderId::new::<Test>(System::block_number() + expiration, &ask_guid);
-		assert_ok!(Creditcoin::add_ask_order(
-			Origin::signed(lender.clone()),
-			l_address_id.clone(),
-			terms.clone(),
-			expiration,
-			ask_guid.clone()
-		));
+		let test_info =
+			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
 
-		let bid_guid = B("beaddeef").into_bounded();
-		let bid_id = crate::BidOrderId::new::<Test>(System::block_number() + expiration, &bid_guid);
-		assert_ok!(Creditcoin::add_bid_order(
-			Origin::signed(borrower.clone()),
-			b_address_id.clone(),
-			terms.clone(),
-			expiration,
-			bid_guid.clone()
-		));
-
-		let offer_id =
-			crate::OfferId::new::<Test>(System::block_number() + expiration, &ask_id, &bid_id);
-		assert_ok!(Creditcoin::add_offer(
-			Origin::signed(lender.clone()),
-			ask_id.clone(),
-			bid_id.clone(),
-			expiration
-		));
-
-		let deal_order_id =
-			crate::DealOrderId::new::<Test>(System::block_number() + expiration, &offer_id);
-		assert_ok!(Creditcoin::add_deal_order(
-			Origin::signed(borrower.clone()),
-			offer_id.clone(),
-			expiration
-		));
+		let (_, deal_order_id) = test_info.create_deal_order();
 
 		let deal_id_hash = H256::from_uint(&get_mock_nonce());
 
@@ -705,6 +518,8 @@ fn register_transfer_ocw() {
 		);
 		crate::DealOrders::<Test>::insert_id(fake_deal_order_id.clone(), deal);
 
+		let lender = test_info.lender.account_id.clone();
+
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
 			TransferKind::Ethless(contract.clone()),
@@ -712,12 +527,12 @@ fn register_transfer_ocw() {
 			tx_hash.hex_to_address(),
 		));
 		let expected_transfer = crate::Transfer {
-			blockchain,
+			blockchain: test_info.blockchain.clone(),
 			kind: TransferKind::Ethless(contract.clone()),
 			amount: loan_amount,
 			block: System::block_number(),
-			from: l_address_id.clone(),
-			to: b_address_id.clone(),
+			from: test_info.lender.address_id.clone(),
+			to: test_info.borrower.address_id.clone(),
 			order_id: OrderId::Deal(fake_deal_order_id.clone()),
 			is_processed: false,
 			account_id: lender.clone(),
