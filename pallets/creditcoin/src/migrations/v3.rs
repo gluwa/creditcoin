@@ -300,7 +300,7 @@ mod tests {
 				borrower: test_info.borrower.account_id,
 			};
 
-			OldDealOrders::insert_id(deal_id.clone(), old_deal.clone());
+			OldDealOrders::insert_id(&deal_id, &old_deal);
 
 			super::migrate::<Test>();
 
