@@ -68,7 +68,7 @@ describe('RegisterFundingTransfer', (): void => {
 
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
         borrowerWallet = randomEthWallet();
-        const borrowerRegAddr_ = await testUtils.registerAddress(
+        const borrowerRegAddr_ = testUtils.registerAddress(
             api,
             borrowerWallet.address,
             blockchain,
@@ -125,8 +125,6 @@ describe('RegisterFundingTransfer', (): void => {
     }, 30000);
 
     it('failure event is emitted if transfer is invalid', async (): Promise<void> => {
-        const provider = new WsProvider('ws://127.0.0.1:9944');
-        const api = await ApiPromise.create({ provider });
         // wrong amount
         const badLoanTerms = { ...loanTerms, amount: new BN(1) };
 
