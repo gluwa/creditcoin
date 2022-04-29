@@ -11,7 +11,7 @@ use super::v1::LoanTerms;
 
 use crate::Transfer;
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 struct OldTransfer<AccountId, BlockNum, Hash> {
 	blockchain: Blockchain,
 	kind: TransferKind,
@@ -25,7 +25,7 @@ struct OldTransfer<AccountId, BlockNum, Hash> {
 	sighash: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
@@ -155,7 +155,7 @@ mod test {
 				borrower: test_info.borrower.account_id,
 			};
 
-			OldDealOrders::insert_id(deal_id.clone(), old_deal.clone());
+			OldDealOrders::insert_id(&deal_id, &old_deal);
 
 			super::migrate::<Test>();
 
@@ -200,7 +200,7 @@ mod test {
 				sighash: test_info.borrower.account_id,
 			};
 
-			OldTransfers::insert(transfer_id.clone(), old_transfer.clone());
+			OldTransfers::insert(&transfer_id, &old_transfer);
 
 			super::migrate::<Test>();
 
