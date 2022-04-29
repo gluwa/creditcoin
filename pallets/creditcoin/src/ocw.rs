@@ -249,12 +249,16 @@ mod tests {
 		VerificationFailureCause::{self, *},
 	};
 	use crate::{
-		mock::Test as TestRuntime,
+		mock::MockedRpcRequests,
+		mock::{
+			get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
+			get_mock_nonce, get_mock_to_address, set_rpc_uri, Test as TestRuntime,
+		},
 		ocw::{
 			errors::VerificationResult,
 			rpc::{errors::RpcError, JsonRpcResponse},
 		},
-		tests::{MockedRpcRequests, TestInfo},
+		tests::TestInfo,
 		Id, LoanTerms, TransferKind,
 	};
 	use alloc::sync::Arc;
@@ -358,14 +362,14 @@ mod tests {
 	}
 
 	static ETHLESS_INPUT: Lazy<String> =
-		Lazy::new(|| crate::tests::get_mock_input_data().trim_start_matches("0x").into());
+		Lazy::new(|| get_mock_input_data().trim_start_matches("0x").into());
 
 	static ETHLESS_FROM_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str(&crate::tests::get_mock_from_address()).unwrap());
+		Lazy::new(|| Address::from_str(&get_mock_from_address()).unwrap());
 	static ETHLESS_CONTRACT_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str(&crate::tests::get_mock_contract()).unwrap());
+		Lazy::new(|| Address::from_str(&get_mock_contract()).unwrap());
 	static ETHLESS_TO_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str(&crate::tests::get_mock_to_address()).unwrap());
+		Lazy::new(|| Address::from_str(&get_mock_to_address()).unwrap());
 
 	static ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| EthTransaction {
 		block_number: Some(5u64.into()),
@@ -392,11 +396,11 @@ mod tests {
 				from: ETHLESS_FROM_ADDR.clone(),
 				to: ETHLESS_TO_ADDR.clone(),
 				contract: ETHLESS_CONTRACT_ADDR.clone(),
-				amount: crate::tests::get_mock_amount(),
+				amount: get_mock_amount(),
 				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
 				transaction: ETH_TRANSACTION.clone(),
 				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS),
-				nonce: crate::tests::get_mock_nonce(),
+				nonce: get_mock_nonce(),
 			}
 		}
 	}
@@ -550,13 +554,6 @@ mod tests {
 		)
 	}
 
-	fn set_rpc_uri(blockchain: &Blockchain, value: impl AsRef<[u8]>) {
-		let mut key = Vec::from(blockchain.as_bytes());
-		key.extend(b"-rpc-uri");
-		let rpc_url_storage = StorageValueRef::persistent(&key);
-		rpc_url_storage.set(&value.as_ref());
-	}
-
 	#[test]
 	fn blockchain_rpc_url_missing() {
 		ExtBuilder::default().build_offchain_and_execute(|| {
@@ -688,8 +685,8 @@ mod tests {
 				deal_order.terms.amount,
 				&deal_order_id,
 				"0xfafafa",
+				crate::TransferKind::Native,
 			);
-			transfer.kind = crate::TransferKind::Native;
 			let unverified = make_unverified_transfer(transfer.clone());
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
@@ -718,15 +715,14 @@ mod tests {
 			crate::mock::roll_to(1);
 			let test_info = TestInfo::new_defaults();
 			let (deal_order, deal_order_id) = test_info.create_deal_order();
-			let (mut transfer, _transfer_id) = test_info.make_transfer(
+			let (transfer, _) = test_info.make_transfer(
 				&test_info.lender,
 				&test_info.borrower,
 				deal_order.terms.amount,
 				&deal_order_id,
 				"0xfafafa",
+				crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
 			);
-			transfer.kind =
-				crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address());
 			let unverified = make_unverified_transfer(transfer);
 
 			assert_matches!(
@@ -741,32 +737,32 @@ mod tests {
 		set_rpc_uri(&Blockchain::Rinkeby, rpc_uri);
 
 		let test_info = TestInfo {
-			loan_terms: LoanTerms { amount: crate::tests::get_mock_amount(), ..Default::default() },
+			loan_terms: LoanTerms { amount: get_mock_amount(), ..Default::default() },
 			..TestInfo::new_defaults()
 		};
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
-		let deal_id_hash = H256::from_uint(&crate::tests::get_mock_nonce());
+		let deal_id_hash = H256::from_uint(&get_mock_nonce());
 		let deal_order_id = crate::DealOrderId::with_expiration_hash::<TestRuntime>(
 			deal_order_id.expiration(),
 			deal_id_hash,
 		);
-		let (mut transfer, _transfer_id) = test_info.make_transfer(
+		let (transfer, _) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
 			deal_order.terms.amount,
 			&deal_order_id,
-			crate::tests::get_mock_tx_hash(),
+			crate::mock::get_mock_tx_hash(),
+			crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
 		);
-		transfer.kind = crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address());
 		let unverified = make_unverified_transfer(transfer);
 
 		(
 			unverified,
 			MockedRpcRequests::new(
 				Some(rpc_uri),
-				&crate::tests::get_mock_tx_hash(),
-				&crate::tests::get_mock_tx_block_num(),
+				&crate::mock::get_mock_tx_hash(),
+				&crate::mock::get_mock_tx_block_num(),
 			),
 		)
 	}
@@ -775,24 +771,9 @@ mod tests {
 	fn verify_transfer_ocw_works() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (
-				unverified,
-				MockedRpcRequests {
-					get_transaction,
-					get_transaction_receipt,
-					get_block_number,
-					get_block_by_number,
-				},
-			) = set_up_verify_transfer_env();
+			let (unverified, requests) = set_up_verify_transfer_env();
 
-			{
-				let mut state = state.write();
-
-				state.expect_request(get_transaction);
-				state.expect_request(get_transaction_receipt);
-				state.expect_request(get_block_number);
-				state.expect_request(get_block_by_number);
-			}
+			requests.mock_all(&mut state.write());
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
@@ -805,10 +786,9 @@ mod tests {
 	fn verify_transfer_get_transaction_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (unverified, MockedRpcRequests { mut get_transaction, .. }) =
-				set_up_verify_transfer_env();
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
-			get_transaction.response = Some(
+			requests.get_transaction.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
 					jsonrpc: "2.0".into(),
 					id: 1,
@@ -818,11 +798,7 @@ mod tests {
 				.unwrap(),
 			);
 
-			{
-				let mut state = state.write();
-
-				state.expect_request(get_transaction);
-			}
+			requests.mock_get_transaction(&mut state.write());
 
 			// should this be a VerificationResult::Failure ?
 			assert_matches!(
@@ -836,12 +812,9 @@ mod tests {
 	fn verify_transfer_get_transaction_receipt_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (
-				unverified,
-				MockedRpcRequests { get_transaction, mut get_transaction_receipt, .. },
-			) = set_up_verify_transfer_env();
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
-			get_transaction_receipt.response = Some(
+			requests.get_transaction_receipt.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
 					jsonrpc: "2.0".into(),
 					id: 1,
@@ -851,12 +824,7 @@ mod tests {
 				.unwrap(),
 			);
 
-			{
-				let mut state = state.write();
-
-				state.expect_request(get_transaction);
-				state.expect_request(get_transaction_receipt);
-			}
+			requests.mock_get_transaction_receipt(&mut state.write());
 
 			// should this be a VerificationResult::Failure ?
 			assert_matches!(
@@ -870,17 +838,9 @@ mod tests {
 	fn verify_transfer_get_block_number_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (
-				unverified,
-				MockedRpcRequests {
-					get_transaction,
-					get_transaction_receipt,
-					mut get_block_number,
-					..
-				},
-			) = set_up_verify_transfer_env();
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
-			get_block_number.response = Some(
+			requests.get_block_number.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
 					jsonrpc: "2.0".into(),
 					id: 1,
@@ -890,13 +850,7 @@ mod tests {
 				.unwrap(),
 			);
 
-			{
-				let mut state = state.write();
-
-				state.expect_request(get_transaction);
-				state.expect_request(get_transaction_receipt);
-				state.expect_request(get_block_number);
-			}
+			requests.mock_get_block_number(&mut state.write());
 
 			// should this be a VerificationResult::Failure ?
 			assert_matches!(
@@ -910,17 +864,9 @@ mod tests {
 	fn verify_transfer_get_block_by_number_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (
-				unverified,
-				MockedRpcRequests {
-					get_transaction,
-					get_transaction_receipt,
-					get_block_number,
-					mut get_block_by_number,
-				},
-			) = set_up_verify_transfer_env();
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
-			get_block_by_number.response = Some(
+			requests.get_block_by_number.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
 					jsonrpc: "2.0".into(),
 					id: 1,
@@ -930,14 +876,7 @@ mod tests {
 				.unwrap(),
 			);
 
-			{
-				let mut state = state.write();
-
-				state.expect_request(get_transaction);
-				state.expect_request(get_transaction_receipt);
-				state.expect_request(get_block_number);
-				state.expect_request(get_block_by_number);
-			}
+			requests.mock_all(&mut state.write());
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
@@ -949,24 +888,12 @@ mod tests {
 	#[test]
 	fn verify_transfer_get_block_invalid_address() {
 		fn mock_requests(state: &Arc<RwLock<OffchainState>>) {
-			let MockedRpcRequests {
-				get_transaction,
-				get_transaction_receipt,
-				get_block_number,
-				..
-			} = MockedRpcRequests::new(
+			MockedRpcRequests::new(
 				Some("http://localhost:8545"),
-				&crate::tests::get_mock_tx_hash(),
-				&crate::tests::get_mock_tx_block_num(),
-			);
-
-			{
-				let mut state = state.write();
-
-				state.expect_request(get_transaction);
-				state.expect_request(get_transaction_receipt);
-				state.expect_request(get_block_number);
-			}
+				&crate::mock::get_mock_tx_hash(),
+				&crate::mock::get_mock_tx_block_num(),
+			)
+			.mock_get_block_number(&mut state.write());
 		}
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
