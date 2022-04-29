@@ -45,8 +45,8 @@ impl<'a> &'a str {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RegisteredAddress {
-	address_id: AddressId<H256>,
-	account_id: AccountId,
+	pub(crate) address_id: AddressId<H256>,
+	pub(crate) account_id: AccountId,
 }
 impl RegisteredAddress {
 	pub fn from_pubkey_distinct_owner(
