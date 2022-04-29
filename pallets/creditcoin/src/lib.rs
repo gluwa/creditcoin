@@ -252,18 +252,12 @@ pub mod pallet {
 		),
 
 		/// An external transfer has been successfully verified.
-		/// [verified_transfer_id, verified_transfer]
-		TransferVerified(
-			TransferId<T::Hash>,
-			Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [verified_transfer_id]
+		TransferVerified(TransferId<T::Hash>),
 
 		/// An external transfer has been processed and marked as part of a loan.
-		/// [processed_transfer_id, processed_transfer]
-		TransferProcessed(
-			TransferId<T::Hash>,
-			Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [processed_transfer_id]
+		TransferProcessed(TransferId<T::Hash>),
 
 		/// An ask order has been added by a prospective lender. This indicates that the lender
 		/// is looking to issue a loan with certain terms.
@@ -297,30 +291,22 @@ pub mod pallet {
 		/// A deal order has been funded by a lender. This indicates that the lender
 		/// has initiated the actual loan by transferring the loan amount to the borrower
 		/// on an external chain.
-		/// [funded_deal_order_id, funded_deal_order]
-		DealOrderFunded(
-			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [funded_deal_order_id]
+		DealOrderFunded(DealOrderId<T::BlockNumber, T::Hash>),
 
 		/// A deal order has been locked by a borrower. This indicates that the borrower
 		/// is preparing to make a repayment and locks the loan from being sold or transferred
 		/// to another party.
-		DealOrderLocked(
-			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [deal_order_id]
+		DealOrderLocked(DealOrderId<T::BlockNumber, T::Hash>),
 
 		/// A deal order has been closed by a borrower. This indicates that the borrower
 		/// has repaid the loan in full and is now closing out the loan.
-		/// [closed_deal_order_id, closed_deal_order]
-		DealOrderClosed(
-			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [closed_deal_order_id]
+		DealOrderClosed(DealOrderId<T::BlockNumber, T::Hash>),
 
 		/// A loan exemption has been granted by a lender. This indicates that the lender
-		/// is releasing some or all of the outstanding debt on the loan. The borrower
+		/// is releasing (some!!) or all of the outstanding debt on the loan. The borrower
 		/// is no longer responsible for repaying the amount.
 		/// [exempted_deal_order_id]
 		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>),
@@ -903,10 +889,7 @@ pub mod pallet {
 					ensure!(deal_order.borrower == who, Error::<T>::NotBorrower);
 
 					deal_order.lock = Some(who);
-					Self::deposit_event(Event::<T>::DealOrderLocked(
-						deal_order_id.clone(),
-						deal_order.clone(),
-					));
+					Self::deposit_event(Event::<T>::DealOrderLocked(deal_order_id.clone()));
 					Ok(())
 				},
 			)?;
@@ -944,7 +927,7 @@ pub mod pallet {
 					deal_order.funding_transfer_id = Some(transfer_id.clone());
 					deal_order.timestamp = now;
 
-					Ok(Some(Event::<T>::DealOrderFunded(deal_order_id.clone(), deal_order.clone())))
+					Ok(Some(Event::<T>::DealOrderFunded(deal_order_id.clone())))
 				},
 				|transfer, deal_order| {
 					ensure!(
@@ -959,7 +942,7 @@ pub mod pallet {
 					ensure!(!transfer.is_processed, Error::<T>::TransferAlreadyProcessed);
 
 					transfer.is_processed = true;
-					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
+					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone())))
 				},
 			)?;
 
@@ -1104,7 +1087,7 @@ pub mod pallet {
 
 					deal_order.repayment_transfer_id = Some(transfer_id.clone());
 
-					Ok(Some(Event::<T>::DealOrderClosed(deal_order_id.clone(), deal_order.clone())))
+					Ok(Some(Event::<T>::DealOrderClosed(deal_order_id.clone())))
 				},
 				|transfer, _deal_order| {
 					ensure!(
@@ -1117,7 +1100,7 @@ pub mod pallet {
 					ensure!(!transfer.is_processed, Error::<T>::TransferAlreadyProcessed);
 
 					transfer.is_processed = true;
-					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
+					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone())))
 				},
 			)?;
 
@@ -1240,7 +1223,7 @@ pub mod pallet {
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();
 
-			Self::deposit_event(Event::<T>::TransferVerified(key.clone(), transfer.clone()));
+			Self::deposit_event(Event::<T>::TransferVerified(key.clone()));
 			Transfers::<T>::insert(key, transfer);
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
