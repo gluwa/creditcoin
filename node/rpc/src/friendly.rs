@@ -33,11 +33,9 @@ pub enum Event {
 	},
 	TransferVerified {
 		transfer_id: TransferId<Hash>,
-		transfer: Transfer<AccountId, BlockNumber, Hash, Moment>,
 	},
 	TransferProcessed {
 		transfer_id: TransferId<Hash>,
-		transfer: Transfer<AccountId, BlockNumber, Hash, Moment>,
 	},
 
 	AskOrderAdded {
@@ -61,11 +59,9 @@ pub enum Event {
 	},
 	DealOrderFunded {
 		deal_id: DealOrderId<BlockNumber, Hash>,
-		deal: DealOrder<AccountId, BlockNumber, Hash, Moment>,
 	},
 	DealOrderClosed {
 		deal_id: DealOrderId<BlockNumber, Hash>,
-		deal: DealOrder<AccountId, BlockNumber, Hash, Moment>,
 	},
 
 	LoanExempted {
@@ -109,11 +105,11 @@ impl Event {
 				pallet_creditcoin::Event::TransferRegistered(transfer_id, transfer) => {
 					Event::TransferRegistered { transfer_id, transfer }
 				},
-				pallet_creditcoin::Event::TransferVerified(transfer_id, transfer) => {
-					Event::TransferVerified { transfer_id, transfer }
+				pallet_creditcoin::Event::TransferVerified(transfer_id) => {
+					Event::TransferVerified { transfer_id }
 				},
-				pallet_creditcoin::Event::TransferProcessed(transfer_id, transfer) => {
-					Event::TransferProcessed { transfer_id, transfer }
+				pallet_creditcoin::Event::TransferProcessed(transfer_id) => {
+					Event::TransferProcessed { transfer_id }
 				},
 				pallet_creditcoin::Event::AskOrderAdded(ask_id, ask) => {
 					Event::AskOrderAdded { ask_id, ask }
@@ -127,11 +123,11 @@ impl Event {
 				pallet_creditcoin::Event::DealOrderAdded(deal_id, deal) => {
 					Event::DealOrderAdded { deal_id, deal }
 				},
-				pallet_creditcoin::Event::DealOrderFunded(deal_id, deal) => {
-					Event::DealOrderFunded { deal_id, deal }
+				pallet_creditcoin::Event::DealOrderFunded(deal_id) => {
+					Event::DealOrderFunded { deal_id }
 				},
-				pallet_creditcoin::Event::DealOrderClosed(deal_id, deal) => {
-					Event::DealOrderClosed { deal_id, deal }
+				pallet_creditcoin::Event::DealOrderClosed(deal_id) => {
+					Event::DealOrderClosed { deal_id }
 				},
 				pallet_creditcoin::Event::LoanExempted(deal_id) => Event::LoanExempted { deal_id },
 				pallet_creditcoin::Event::LegacyWalletClaimed(
