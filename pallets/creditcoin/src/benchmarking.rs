@@ -7,7 +7,7 @@ use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
 use crate::Pallet as Creditcoin;
-use crate::{AskOrderId, InterestRate, LoanTerms};
+use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
 	pallet_prelude::*,
@@ -260,6 +260,7 @@ fn get_all_fit_terms<T: Config>() -> LoanTerms {
 			rate_per_period: 1,
 			decimals: 1,
 			period: Duration::from_millis(100),
+			interest_type: InterestType::Simple,
 		},
 		term_length: Duration::new(1u64, 0u32),
 	}
