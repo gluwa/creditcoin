@@ -5,31 +5,30 @@ use crate::{
 	loan_terms::{Decimals, Duration},
 	AddressId, Blockchain, Config, ExternalAmount, OfferId, RatePerPeriod, TransferId,
 };
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode};
 use frame_support::weights::Weight;
 use frame_support::{generate_storage_alias, traits::Get};
 use frame_support::{Identity, Twox64Concat};
-use scale_info::TypeInfo;
 use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
 
 type OldInterestRate = u64;
 
 const OLD_INTEREST_RATE_DECIMALS: u64 = 4;
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 struct OldLoanTerms<Moment> {
 	amount: ExternalAmount,
 	interest_rate: OldInterestRate,
 	maturity: Moment,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 struct OldAskTerms<Moment>(OldLoanTerms<Moment>);
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 struct OldBidTerms<Moment>(OldLoanTerms<Moment>);
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 struct OldAskOrder<AccountId, BlockNum, Hash, Moment> {
 	blockchain: Blockchain,
 	lender_address_id: AddressId<Hash>,
@@ -39,7 +38,7 @@ struct OldAskOrder<AccountId, BlockNum, Hash, Moment> {
 	lender: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 struct OldBidOrder<AccountId, BlockNum, Hash, Moment> {
 	blockchain: Blockchain,
 	borrower_address_id: AddressId<Hash>,
@@ -49,7 +48,7 @@ struct OldBidOrder<AccountId, BlockNum, Hash, Moment> {
 	borrower: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 struct OldDealOrder<AccountId, BlockNum, Hash, Moment> {
 	blockchain: Blockchain,
 	offer_id: OfferId<BlockNum, Hash>,
@@ -64,7 +63,7 @@ struct OldDealOrder<AccountId, BlockNum, Hash, Moment> {
 	borrower: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
@@ -80,7 +79,7 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub borrower: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct InterestRate {
 	pub rate_per_period: RatePerPeriod,
@@ -88,7 +87,7 @@ pub struct InterestRate {
 	pub period: Duration,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct LoanTerms {
 	pub amount: ExternalAmount,
@@ -96,15 +95,15 @@ pub struct LoanTerms {
 	pub term_length: Duration,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct AskTerms(pub LoanTerms);
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct BidTerms(pub LoanTerms);
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct AskOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
@@ -115,7 +114,7 @@ pub struct AskOrder<AccountId, BlockNum, Hash> {
 	pub lender: AccountId,
 }
 
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct BidOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
@@ -277,7 +276,7 @@ mod tests {
 				block: 0,
 				lender: test_info.lender.account_id.clone(),
 			};
-			OldAskOrders::insert_id(ask_id.clone(), old_ask.clone());
+			OldAskOrders::insert_id(&ask_id, &old_ask);
 
 			super::migrate::<Test>();
 
@@ -327,7 +326,7 @@ mod tests {
 				block,
 				borrower: test_info.borrower.account_id.clone(),
 			};
-			OldBidOrders::insert_id(bid_id.clone(), old_bid.clone());
+			OldBidOrders::insert_id(&bid_id, &old_bid);
 
 			super::migrate::<Test>();
 
@@ -375,7 +374,7 @@ mod tests {
 				borrower: test_info.borrower.account_id.clone(),
 			};
 
-			OldDealOrders::insert_id(deal_id.clone(), old_deal.clone());
+			OldDealOrders::insert_id(&deal_id, &old_deal);
 
 			super::migrate::<Test>();
 
