@@ -553,6 +553,77 @@ fn register_transfer_ocw() {
 }
 
 #[test]
+#[tracing_test::traced_test]
+fn register_transfer_ocw_fail_to_send() {
+	let mut ext = ExtBuilder::default();
+	ext.generate_authority();
+	ext.build_offchain_and_execute_with_state(|state, _| {
+		let dummy_url = "dummy";
+		let tx_hash = get_mock_tx_hash();
+		let contract = get_mock_contract().hex_to_address();
+		let tx_block_num = get_mock_tx_block_num();
+		let blockchain = Blockchain::Rinkeby;
+
+		// we're going to verify a transfer twice:
+		// First when we expect failure, which means we won't make all of the requests
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num)
+			.mock_get_block_number(&mut state.write());
+		// Second when we expect success, where we'll do all the requests
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+
+		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+
+		let loan_amount = get_mock_amount();
+		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
+
+		let test_info =
+			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		let lender = test_info.lender.account_id.clone();
+
+		// exercise when we try to send a fail_transfer but tx send fails
+		with_failing_create_transaction(|| {
+			assert_ok!(Creditcoin::register_funding_transfer(
+				Origin::signed(lender.clone()),
+				TransferKind::Ethless(contract.clone()),
+				deal_order_id.clone(),
+				tx_hash.hex_to_address(),
+			));
+
+			roll_by_with_ocw(1);
+
+			assert!(logs_contain("Failed to send fail_transfer"));
+		});
+
+		let deal_id_hash = H256::from_uint(&get_mock_nonce());
+
+		let deal = crate::DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
+		crate::DealOrders::<Test>::remove(deal_order_id.expiration(), deal_order_id.hash());
+		let fake_deal_order_id = crate::DealOrderId::with_expiration_hash::<Test>(
+			deal_order_id.expiration(),
+			deal_id_hash,
+		);
+		crate::DealOrders::<Test>::insert_id(fake_deal_order_id.clone(), deal);
+
+		// exercise when we try to send a verify_transfer but tx send fails
+		with_failing_create_transaction(|| {
+			assert_ok!(Creditcoin::register_funding_transfer(
+				Origin::signed(lender.clone()),
+				TransferKind::Ethless(contract.clone()),
+				fake_deal_order_id.clone(),
+				tx_hash.hex_to_address(),
+			));
+
+			roll_by_with_ocw(1);
+
+			assert!(logs_contain("Failed to send verify_transfer"));
+		});
+	});
+}
+
+#[test]
 fn add_ask_order_basic() {
 	let (mut ext, _, _) = ExtBuilder::default().build_offchain();
 
