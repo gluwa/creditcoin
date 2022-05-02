@@ -3,7 +3,7 @@
 
 import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
-import { ApiPromise } from '@polkadot/api';
+import { ApiPromise, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import type { Null, Option } from '@polkadot/types';
 import type { Balance } from '@polkadot/types/interfaces';
@@ -69,6 +69,8 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
     await setBalance(api, sudoSigner, AUTHORITY_ACCOUNTID, '10000000000000000000');
     // bump balance for Alice b/c we need enough to be able to pay fees
     await setBalance(api, sudoSigner, sudoSigner.address, '10000000000000000000');
+
+    return new Keyring({ type: 'sr25519' }).createFromUri(AUTHORITY_SURI);
 };
 
 export const setBalance = async (
