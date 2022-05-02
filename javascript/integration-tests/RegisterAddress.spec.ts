@@ -4,7 +4,7 @@
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 
-import { CREDO_PER_CTC } from '../src/constants';
+import { POINT_01_CTC } from '../src/constants';
 import { randomEthWallet, ethOwnershipProof } from '../src/utils';
 import * as testUtils from './test-utils';
 
@@ -38,8 +38,7 @@ describe('RegisterAddress', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            // temporary workaround b/c the actual fee is 0.009 CTC
-            expect(fee).toBeGreaterThanOrEqual(0.009 * CREDO_PER_CTC);
+            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
     });
 });
