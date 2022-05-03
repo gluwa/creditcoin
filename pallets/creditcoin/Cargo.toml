@@ -15,7 +15,7 @@ publish = false
 targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
-log = "0.4.16"
+log = "0.4.17"
 extend = "1.1.2"
 ethabi = { version = "16.0.0", features = ["rlp"], default-features = false }
 ethereum-types = { version = "0.12.1", features = [
