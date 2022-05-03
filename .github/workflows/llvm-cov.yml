@@ -62,7 +62,7 @@ jobs:
           export AZURE_STORAGE_KEY=${{ secrets.LLVM_AZURE_STORAGE_KEY }}
           export PR_NUMBER=$(echo $GITHUB_REF | sed "s|refs/pull/||" | sed "s|/merge||")
 
-          az storage blob upload-batch --account-name staticsitellvmhtml --auth-mode key -d "\$web" --destination-path $PR_NUMBER -s ./target/llvm-cov
+          az storage blob upload-batch --account-name staticsitellvmhtml --auth-mode key -d "\$web" --destination-path $PR_NUMBER --overwrite -s ./target/llvm-cov
 
       - name: Post comment to PR
         uses: mshick/add-pr-comment@v1
