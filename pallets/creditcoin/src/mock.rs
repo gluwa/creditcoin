@@ -55,7 +55,8 @@ frame_support::construct_runtime!(
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
-	pub const PendingTxLimit: u32 = 10000;
+	// used in tests, lower values == faster execution
+	pub const PendingTxLimit: u32 = 500;
 }
 
 impl system::Config for Test {
