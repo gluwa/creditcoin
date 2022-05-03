@@ -2791,3 +2791,47 @@ fn register_funding_transfer_should_error_when_not_deal_order_not_found() {
 		);
 	})
 }
+
+#[test]
+fn register_repayment_transfer_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (_, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+
+		assert_noop!(
+			Creditcoin::register_repayment_transfer(
+				Origin::none(),
+				TransferKind::Native,
+				21u64.into(),
+				deal_order_id,
+				tx.as_bytes().into_bounded()
+			),
+			BadOrigin
+		);
+	})
+}
+
+#[test]
+fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, _) = test_info.create_deal_order();
+		let DealOrder { offer_id, .. } = deal_order.clone();
+		// expiration_block set to 0
+		let deal_order_id = DealOrderId::new::<Test>(0, &offer_id);
+
+		let tx = "0xabcabcabc";
+
+		assert_noop!(
+			Creditcoin::register_repayment_transfer(
+				Origin::signed(test_info.borrower.account_id.clone()),
+				TransferKind::Native,
+				21u64.into(),
+				deal_order_id,
+				tx.as_bytes().into_bounded()
+			),
+			crate::Error::<Test>::NonExistentDealOrder
+		);
+	})
+}
