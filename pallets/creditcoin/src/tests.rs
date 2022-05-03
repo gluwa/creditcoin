@@ -2835,3 +2835,177 @@ fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
 		);
 	})
 }
+
+#[test]
+fn register_transfer_internal_should_error_with_non_existent_lender_address() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+		let bogus_address =
+			AddressId::new::<Test>(&Blockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			bogus_address,
+			deal_order.borrower_address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_with_non_existent_borrower_address() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+		let bogus_address =
+			AddressId::new::<Test>(&Blockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			bogus_address,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_signer_doesnt_own_from_address() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.borrower_address_id, // should match 1st argument
+			deal_order.lender_address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::NotAddressOwner);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_blockchain() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let second_borrower = RegisteredAddress::new("borrower2", Blockchain::Luniverse);
+		let tx = "0xabcabcabc";
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			second_borrower.address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::AddressPlatformMismatch);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_transfer_kind_is_not_supported() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			deal_order.borrower_address_id,
+			// not supported on Blockchain::Rinkeby
+			TransferKind::Other(BoundedVec::try_from(b"other".to_vec()).unwrap()),
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::UnsupportedTransferKind);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_transfer_is_already_registered() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			deal_order.borrower_address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			transfer.tx_id,
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::TransferAlreadyRegistered);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_unverified_transfer_queue_is_full() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		// fill the unverified transfer pool to the limit
+		for index in 1..=crate::mock::PendingTxLimit::get() {
+			let tx = format!("0xabcdef{:04}", index.clone());
+
+			let _result = Creditcoin::register_transfer_internal(
+				test_info.lender.account_id.clone(),
+				deal_order.lender_address_id.clone(),
+				deal_order.borrower_address_id.clone(),
+				TransferKind::Native,
+				deal_order.terms.amount.clone(),
+				OrderId::Deal(deal_order_id.clone()),
+				tx.as_bytes().into_bounded(),
+			);
+		}
+
+		let tx = "0xffffffff";
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			deal_order.borrower_address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+		assert_eq!(result, crate::Error::<Test>::UnverifiedTransferPoolFull);
+	})
+}
