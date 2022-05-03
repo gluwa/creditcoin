@@ -11,7 +11,7 @@ hex = "0.4.3"
 jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
-log = "0.4.16"
+log = "0.4.17"
 pallet-creditcoin = { path = "../../pallets/creditcoin" }
 pallet-rewards = { path = "../../pallets/rewards" }
 primitives = { path = "../../primitives", features = ["std", "prometheus"] }
