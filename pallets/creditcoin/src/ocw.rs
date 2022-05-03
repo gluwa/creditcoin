@@ -108,6 +108,9 @@ fn validate_ethless_transfer(
 		log::error!("failed to decode inputs: {:?}", e);
 		VerificationFailureCause::AbiMismatch
 	})?;
+
+	// IncorrectInputLength and IncorrectInputType are unreachable
+	// under normal circumstances. We get AbiMismatch or InvalidData errors
 	ensure!(
 		inputs.len() == transfer_fn.inputs.len(),
 		VerificationFailureCause::IncorrectInputLength
