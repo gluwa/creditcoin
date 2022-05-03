@@ -334,6 +334,7 @@ pub mod pallet {
 	}
 
 	// Errors inform users that something went wrong.
+	#[derive(PartialEq)]
 	#[pallet::error]
 	pub enum Error<T> {
 		/// The specified address has already been registered to another account
