@@ -17,6 +17,7 @@ pub type VerificationResult<Moment> = Result<Option<Moment>, OffchainError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum VerificationFailureCause {
+	TaskNonexistent,
 	TaskFailed,
 	TaskPending,
 	TaskUnconfirmed,
@@ -42,7 +43,7 @@ impl VerificationFailureCause {
 			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
 			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
 			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender
-			| IncorrectReceiver => true,
+			| IncorrectReceiver | TaskNonexistent => true,
 			TaskPending | TaskUnconfirmed => false,
 		}
 	}
@@ -52,7 +53,7 @@ impl VerificationFailureCause {
 pub enum RpcUrlError {
 	StorageFailure(StorageRetrievalError),
 	InvalidUrl(FromUtf8Error),
-	InvalidChain(Utf8Error),
+	InvalidChain(Utf8Error), 
 	NoValue,
 }
 
