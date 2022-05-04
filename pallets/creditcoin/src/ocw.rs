@@ -152,6 +152,7 @@ impl<T: Config> Pallet<T> {
 			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
+			..
 		} = transfer;
 		match kind {
 			TransferKind::Ethless(contract) => {
@@ -633,6 +634,7 @@ mod tests {
 			crate::mock::roll_to(1);
 			let call = crate::Call::<crate::mock::Test>::fail_transfer {
 				transfer_id,
+				deadline: 10000,
 				cause: IncorrectAmount,
 			};
 			assert_ok!(crate::Pallet::<crate::mock::Test>::offchain_signed_tx(
@@ -666,6 +668,7 @@ mod tests {
 			transfer,
 			to_external: ExternalAddress::try_from(ETHLESS_TO_ADDR.clone().0.to_vec()).unwrap(),
 			from_external: ExternalAddress::try_from(ETHLESS_FROM_ADDR.clone().0.to_vec()).unwrap(),
+			deadline: 10000,
 		}
 	}
 
