@@ -6,7 +6,7 @@ pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::{
 	errors::RpcUrlError,
-	rpc::{Address, EthBlock, EthTransaction, EthTransactionReceipt},
+	rpc::{errors::RpcError, Address, EthBlock, EthTransaction, EthTransactionReceipt},
 };
 
 use super::{
@@ -199,7 +199,13 @@ impl<T: Config> Pallet<T> {
 		tx_id: &ExternalTxId,
 	) -> VerificationResult<T::Moment> {
 		let rpc_url = blockchain.rpc_url()?;
-		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
+		let tx = rpc::eth_get_transaction(tx_id, &rpc_url).map_err(|e| {
+			if let RpcError::NoResult = e {
+				OffchainError::InvalidTask(VerificationFailureCause::TaskNonexistent)
+			} else {
+				e.into()
+			}
+		})?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
 
@@ -242,7 +248,10 @@ pub(crate) struct LocalVerificationStatus<'a> {
 	key: &'a [u8],
 }
 
-pub(crate) fn transfer_local_status_storage_key<T: Config>(deadline: T::BlockNumber, transfer_id: &TransferId<T::Hash>) -> Vec<u8> {
+pub(crate) fn transfer_local_status_storage_key<T: Config>(
+	deadline: T::BlockNumber,
+	transfer_id: &TransferId<T::Hash>,
+) -> Vec<u8> {
 	(deadline, transfer_id).encode()
 }
 
@@ -284,12 +293,12 @@ mod tests {
 		VerificationFailureCause::{self, *},
 	};
 	use crate::{
-		mock::MockedRpcRequests,
 		mock::{
 			get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
 			get_mock_nonce, get_mock_to_address, set_rpc_uri, AccountId, ExtBuilder,
 			Test as TestRuntime,
 		},
+		mock::{MockedRpcRequests, PendingRequestExt},
 		ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
 		tests::TestInfo,
 		types::DoubleMapExt,
@@ -873,23 +882,13 @@ mod tests {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
 			let (unverified, mut requests) = set_up_verify_transfer_env(false);
-
-			requests.get_transaction.as_mut().unwrap().response = Some(
-				serde_json::to_vec(&JsonRpcResponse::<bool> {
-					jsonrpc: "2.0".into(),
-					id: 1,
-					error: None,
-					result: None,
-				})
-				.unwrap(),
-			);
+			requests.get_transaction.set_empty_response();
 
 			requests.mock_get_transaction(&mut state.write());
 
-			// should this be a VerificationResult::Failure ?
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Err(OffchainError::RpcError(RpcError::NoResult))
+				Ok(VerificationResult::Failure(TransferNonexistent))
 			);
 		});
 	}
