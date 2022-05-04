@@ -7,7 +7,7 @@ use ethereum_types::U256;
 use frame_support::{
 	once_cell::sync::Lazy,
 	parameter_types,
-	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
+	traits::{ConstU32, ConstU64, GenesisBuild, Get, Hooks},
 };
 use frame_system as system;
 use parking_lot::RwLock;
@@ -114,6 +114,7 @@ impl pallet_creditcoin::Config for Test {
 	type HashIntoNonce = H256;
 
 	type UnverifiedPoolsLimit = PendingTxLimit;
+	type UnverifiedTransferTimeout = ConstU64<5>;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
 }
