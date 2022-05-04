@@ -434,6 +434,22 @@ pub(crate) fn get_mock_timestamp() -> u64 {
 	u64::from_str_radix(&timestamp_hex.trim_start_matches("0x"), 16).unwrap()
 }
 
+#[extend::ext(name = PendingRequestExt)]
+pub(crate) impl Option<PendingRequest> {
+	fn set_response(&mut self, response: impl serde::Serialize) {
+		self.as_mut().unwrap().response = Some(serde_json::to_vec(&response).unwrap());
+	}
+
+	fn set_empty_response(&mut self) {
+		self.set_response(JsonRpcResponse::<()> {
+			jsonrpc: "2.0".into(),
+			id: 1,
+			error: None,
+			result: None,
+		});
+	}
+}
+
 pub(crate) struct MockedRpcRequests {
 	pub(crate) get_transaction: Option<PendingRequest>,
 	pub(crate) get_transaction_receipt: Option<PendingRequest>,
