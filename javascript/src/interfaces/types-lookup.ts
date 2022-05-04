@@ -287,9 +287,9 @@ declare module '@polkadot/types/lookup' {
         readonly isTransferRegistered: boolean;
         readonly asTransferRegistered: ITuple<[H256, PalletCreditcoinTransfer]>;
         readonly isTransferVerified: boolean;
-        readonly asTransferVerified: ITuple<[H256, PalletCreditcoinTransfer]>;
+        readonly asTransferVerified: H256;
         readonly isTransferProcessed: boolean;
-        readonly asTransferProcessed: ITuple<[H256, PalletCreditcoinTransfer]>;
+        readonly asTransferProcessed: H256;
         readonly isAskOrderAdded: boolean;
         readonly asAskOrderAdded: ITuple<[PalletCreditcoinAskOrderId, PalletCreditcoinAskOrder]>;
         readonly isBidOrderAdded: boolean;
@@ -299,11 +299,11 @@ declare module '@polkadot/types/lookup' {
         readonly isDealOrderAdded: boolean;
         readonly asDealOrderAdded: ITuple<[PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
         readonly isDealOrderFunded: boolean;
-        readonly asDealOrderFunded: ITuple<[PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
+        readonly asDealOrderFunded: PalletCreditcoinDealOrderId;
         readonly isDealOrderLocked: boolean;
-        readonly asDealOrderLocked: ITuple<[PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
+        readonly asDealOrderLocked: PalletCreditcoinDealOrderId;
         readonly isDealOrderClosed: boolean;
-        readonly asDealOrderClosed: ITuple<[PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
+        readonly asDealOrderClosed: PalletCreditcoinDealOrderId;
         readonly isLoanExempted: boolean;
         readonly asLoanExempted: PalletCreditcoinDealOrderId;
         readonly isLegacyWalletClaimed: boolean;
