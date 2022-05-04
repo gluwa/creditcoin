@@ -127,6 +127,8 @@ pub mod pallet {
 
 		type UnverifiedPoolsLimit: Get<u32>;
 
+		type UnverifiedTransferTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
+
 		type WeightInfo: WeightInfo;
 	}
 
