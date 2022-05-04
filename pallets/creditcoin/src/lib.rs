@@ -573,7 +573,7 @@ pub mod pallet {
 						ocw::transfer_local_status_storage_key::<T>(deadline, &transfer_id);
 					let transfer_status = ocw::LocalVerificationStatus::new(&storage_key);
 					if transfer_status.is_complete() {
-						log::debug!("Already handled transfer ({}, {:?})", deadline, transfer_id);
+						log::debug!("Already handled transfer ({:?}, {:?})", deadline, transfer_id);
 						continue;
 					}
 					log::debug!("verifying OCW task");
