@@ -20,13 +20,13 @@ jobs:
           workdir: ${{ github.workspace }}
       - name: Summary
         run: |
-          echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain }}-srtool-digest.json
-          cat ${{ matrix.chain }}-srtool-digest.json
+          echo '${{ steps.srtool_build.outputs.json }}' | jq . > creditcoin-srtool-digest.json
+          cat creditcoin-srtool-digest.json
           echo "Runtime location: ${{ steps.srtool_build.outputs.wasm }}"
       - name: Archive Runtime
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.chain }}-runtime-${{ github.sha }}
+          name: creditcoin-runtime-${{ github.sha }}
           path: |
             ${{ steps.srtool_build.outputs.wasm_compressed }}
-            ${{ matrix.chain }}-srtool-digest.json
+            creditcoin-srtool-digest.json
