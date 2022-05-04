@@ -1,6 +1,7 @@
 pub mod errors;
 pub mod rpc;
-use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
+use crate::{Blockchain, Call, Id, Transfer, TransferId, TransferKind, UnverifiedTransfer};
+use codec::Encode;
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::{
@@ -233,6 +234,40 @@ impl<T: Config> Pallet<T> {
 		};
 
 		Ok(timestamp)
+	}
+}
+
+pub(crate) struct LocalVerificationStatus<'a> {
+	storage_ref: StorageValueRef<'a>,
+	key: &'a [u8],
+}
+
+pub(crate) fn transfer_local_status_storage_key<T: Config>(deadline: T::BlockNumber, transfer_id: &TransferId<T::Hash>) -> Vec<u8> {
+	(deadline, transfer_id).encode()
+}
+
+impl<'a> LocalVerificationStatus<'a> {
+	pub(crate) fn new(storage_key: &'a [u8]) -> Self {
+		Self { storage_ref: StorageValueRef::persistent(storage_key), key: storage_key }
+	}
+
+	pub(crate) fn is_complete(&self) -> bool {
+		match self.storage_ref.get::<()>() {
+			Ok(Some(())) => true,
+			Ok(None) => false,
+			Err(e) => {
+				log::warn!(
+					"Failed to decode offchain storage for {}: {:?}",
+					hex::encode(self.key),
+					e
+				);
+				true
+			},
+		}
+	}
+
+	pub(crate) fn mark_complete(&self) {
+		self.storage_ref.set(&());
 	}
 }
 
