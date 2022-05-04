@@ -11,9 +11,9 @@ use crate::{
 	TransferKind, UnverifiedTransfer,
 };
 
-use frame_support::ensure;
+use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
-use sp_runtime::RuntimeAppPublic;
+use sp_runtime::{traits::Saturating, RuntimeAppPublic};
 use sp_std::prelude::*;
 
 #[allow(unused_macros)]
@@ -142,11 +142,13 @@ impl<T: Config> Pallet<T> {
 		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
 		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
 
+		let block = Self::block_number();
+
 		let transfer = Transfer {
 			blockchain: from.blockchain,
 			kind: transfer_kind,
 			amount,
-			block: <frame_system::Pallet<T>>::block_number(),
+			block,
 			from: from_id,
 			to: to_id,
 			order_id,
@@ -156,10 +158,13 @@ impl<T: Config> Pallet<T> {
 			timestamp: None,
 		};
 
+		let deadline = block.saturating_add(T::UnverifiedTransferTimeout::get());
+
 		let pending = UnverifiedTransfer {
 			from_external: from.value,
 			to_external: to.value,
 			transfer: transfer.clone(),
+			deadline,
 		};
 		UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
 			.map_err(|()| Error::<T>::UnverifiedTaskPoolFull)?;

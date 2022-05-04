@@ -111,6 +111,7 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 	pub from_external: ExternalAddress,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub to_external: ExternalAddress,
+	pub deadline: BlockNum,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
