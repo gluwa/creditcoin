@@ -133,7 +133,7 @@ pub mod pallet {
 	}
 
 	pub trait WeightInfo {
-		fn on_initialize(_u: u32, a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
+		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
@@ -538,10 +538,10 @@ pub mod pallet {
 				KillStorageResult::AllRemoved(u) => u,
 			};
 
-			let mut deals_count = 0usize;
+			let mut deals_count = 0u32;
 			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
 				.filter_map(|(hash, deal)| {
-					deals_count += 1;
+					deals_count = deals_count.saturating_add(1);
 					if deal.funding_transfer_id.is_some() {
 						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
 					} else {
@@ -549,19 +549,19 @@ pub mod pallet {
 					}
 				})
 				.collect();
-			let funded_deals_count = deals_to_keep.len();
-			let deals_count = deals_count - funded_deals_count;
+			let funded_deals_count = deals_to_keep.len().unique_saturated_into();
+			let deals_count = deals_count.saturating_sub(funded_deals_count);
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
 			}
 
 			<T as Config>::WeightInfo::on_initialize(
-				0,
 				ask_count,
 				bid_count,
 				offer_count,
-				deals_count.unique_saturated_into(),
-				funded_deals_count.unique_saturated_into(),
+				deals_count,
+				funded_deals_count,
+				unverified_count,
 			)
 		}
 
