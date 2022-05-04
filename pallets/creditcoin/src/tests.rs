@@ -971,10 +971,15 @@ fn lock_deal_order_should_emit_deal_order_locked_event() {
 			},
 		);
 
-		assert_ok!(Creditcoin::lock_deal_order(Origin::signed(deal_order.borrower), deal_order_id));
+		assert_ok!(Creditcoin::lock_deal_order(
+			Origin::signed(deal_order.borrower),
+			deal_order_id.clone()
+		));
 		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
 
-		assert!(matches!(event, crate::mock::Event::Creditcoin(crate::Event::DealOrderLocked(..))));
+		assert_matches!(event, crate::mock::Event::Creditcoin(crate::Event::DealOrderLocked(id))=>{
+			assert_eq!(id,deal_order_id);
+		});
 	});
 }
 
@@ -1435,24 +1440,29 @@ fn fund_deal_order_works() {
 
 		assert_ok!(Creditcoin::fund_deal_order(
 			Origin::signed(test_info.lender.account_id.clone()),
-			deal_order_id,
-			transfer_id
+			deal_order_id.clone(),
+			transfer_id.clone()
 		));
 
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 
-		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+		let event2 = all_events.pop().expect("Second EventRecord").event;
+		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+				assert_eq!(transfer_id, id)
 
-		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+			}
+		);
+
+		let event1 = all_events.pop().expect("First EventRecord").event;
+		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderFunded(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::DealOrderFunded(id))=>{
+				assert_eq!(deal_order_id, id)
+			}
+		);
 	});
 }
 
@@ -2370,17 +2380,21 @@ fn close_deal_order_should_succeed() {
 
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
-		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+		let event2 = all_events.pop().expect("Second EventRecord").event;
+		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+				assert_eq!(id,transfer_id);
+			}
+		);
 
-		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+		let event1 = all_events.pop().expect("First EventRecord").event;
+		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderClosed(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::DealOrderClosed(id)) =>{
+				assert_eq!(id,deal_order_id);
+			}
+		);
 	});
 }
 
@@ -2544,14 +2558,16 @@ fn verify_transfer_should_work() {
 			transfer.clone()
 		));
 
-		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 
-		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
-			event1,
-			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(..))
-		));
+		// assert events in reversed order
+		let last_event = all_events.pop().expect("At least one EventRecord").event;
+		assert_matches!(
+			last_event,
+			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(id)) =>{
+				assert_eq!(transfer_id,id)
+			}
+		);
 
 		assert_eq!(Transfers::<Test>::get(&transfer_id), Some(transfer));
 	});
