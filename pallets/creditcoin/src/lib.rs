@@ -306,7 +306,7 @@ pub mod pallet {
 		DealOrderClosed(DealOrderId<T::BlockNumber, T::Hash>),
 
 		/// A loan exemption has been granted by a lender. This indicates that the lender
-		/// is releasing (some!!) or all of the outstanding debt on the loan. The borrower
+		/// is releasing all of the outstanding debt on the loan. The borrower
 		/// is no longer responsible for repaying the amount.
 		/// [exempted_deal_order_id]
 		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>),
