@@ -14,7 +14,7 @@ jobs:
         id: srtool_build
         uses: chevdor/srtool-actions@v0.3.0
         with:
-          chain: ["creditcoin"]
+          chain: "creditcoin"
           runtime_dir: runtime
           package: creditcoin-node-runtime
           workdir: ${{ github.workspace }}
