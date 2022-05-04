@@ -119,6 +119,16 @@ impl pallet_creditcoin::Config for Test {
 	type WeightInfo = super::weights::WeightInfo<Test>;
 }
 
+impl Test {
+	pub(crate) fn unverified_transfer_timeout() -> u64 {
+		<<Test as crate::Config>::UnverifiedTransferTimeout as Get<u64>>::get()
+	}
+
+	pub(crate) fn unverified_transfer_deadline() -> u64 {
+		System::block_number() + Self::unverified_transfer_timeout()
+	}
+}
+
 thread_local! {
 	pub static CREATE_TRANSACTION_FAIL: Cell<bool> = Cell::new(false);
 }

@@ -168,13 +168,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn pending_transfers)]
-	pub type UnverifiedTransfers<T: Config> = StorageValue<
+	pub type UnverifiedTransfers<T: Config> = StorageDoubleMap<
 		_,
-		BoundedVec<
-			UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-			T::UnverifiedPoolsLimit,
-		>,
-		ValueQuery,
+		Identity,
+		T::BlockNumber,
+		Identity,
+		TransferId<T::Hash>,
+		UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -517,8 +517,14 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
-			UnverifiedTransfers::<T>::kill();
 			log::debug!("Cleaning up expired entries");
+
+			let unverified_count = match UnverifiedTransfers::<T>::remove_prefix(block_number, None)
+			{
+				KillStorageResult::SomeRemaining(u) => u,
+				KillStorageResult::AllRemoved(u) => u,
+			};
+
 			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
 				KillStorageResult::SomeRemaining(u) => u,
 				KillStorageResult::AllRemoved(u) => u,
@@ -571,6 +577,7 @@ pub mod pallet {
 							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
 								Call::verify_transfer {
 									transfer: Transfer { timestamp, ..pending.transfer.clone() },
+									deadline,
 								}
 							}) {
 								log::error!("Failed to send verify_transfer transaction: {:?}", e);
@@ -590,6 +597,7 @@ pub mod pallet {
 											&pending.transfer.tx_id,
 										),
 										cause,
+										deadline,
 									}
 								}) {
 									log::error!(
@@ -1206,6 +1214,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
 		pub fn verify_transfer(
 			origin: OriginFor<T>,
+			deadline: T::BlockNumber,
 			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
@@ -1214,6 +1223,9 @@ pub mod pallet {
 
 			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
+
+			UnverifiedTransfers::<T>::remove(&deadline, &key);
+
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();
 
@@ -1225,6 +1237,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::fail_transfer())]
 		pub fn fail_transfer(
 			origin: OriginFor<T>,
+			deadline: T::BlockNumber,
 			transfer_id: TransferId<T::Hash>,
 			cause: VerificationFailureCause,
 		) -> DispatchResultWithPostInfo {
@@ -1236,6 +1249,8 @@ pub mod pallet {
 				!Transfers::<T>::contains_key(&transfer_id),
 				Error::<T>::TransferAlreadyRegistered
 			);
+
+			UnverifiedTransfers::<T>::remove(&deadline, &transfer_id);
 
 			Self::deposit_event(Event::<T>::TransferFailedVerification(transfer_id, cause));
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })

@@ -166,8 +166,8 @@ impl<T: Config> Pallet<T> {
 			transfer: transfer.clone(),
 			deadline,
 		};
-		UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
-			.map_err(|()| Error::<T>::UnverifiedTaskPoolFull)?;
+		UnverifiedTransfers::<T>::insert(&deadline, &transfer_id, &pending);
+
 		Ok((transfer_id, transfer))
 	}
 }
