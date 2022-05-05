@@ -2,11 +2,9 @@ name: BENCHMARK
 
 # Controls when the action will run.
 on:
-  pull_request:
-    branches: dev
-  issue_comment:
-    types: [created, edited, deleted]
-  workflow_dispatch:
+  push:
+    branches:
+     - CSUB-114-new-steps
 
 jobs:
   hardware-benchmarks:
@@ -76,14 +74,14 @@ jobs:
           PALLET: creditcoin
         run: |
           OUTPUT=./pallets/$PALLET/src/weights.rs
-          ./target/release/creditcoin-node benchmark --chain dev --steps=20 --repeat=10 --pallet pallet_$PALLET --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output $OUTPUT
+          ./target/release/creditcoin-node benchmark --chain dev --steps=10 --repeat=8 --pallet pallet_$PALLET --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output $OUTPUT
           sed -i s/pallet_$PALLET/super/ $OUTPUT
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v8
         with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
+          # repository: ${{ github.event.pull_request.head.repo.full_name }}
+          # ref: ${{ github.event.pull_request.head.ref }}
           author_name: hardwareBenchmark
           author_email: creditcoin@gluwa.com
           message: 'Creditcoin benchmarks added'
