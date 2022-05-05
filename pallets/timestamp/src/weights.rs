@@ -20,7 +20,7 @@
 // --wasm-execution=compiled
 // --heap-pages=10000
 // --output
-// ./pallets/rewards/src/weights.rs
+// ./pallets/timestamp/src/weights.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -32,15 +32,17 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `super`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
-	// Storage: System Digest (r:1 w:0)
-	fn on_initialize() -> Weight {
-		(2_700_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+	// Storage: Timestamp Now (r:1 w:1)
+	// Storage: Difficulty TargetBlockTime (r:1 w:0)
+	// Storage: Difficulty CurrentDifficulty (r:1 w:1)
+	// Storage: Difficulty DifficultyAdjustmentPeriod (r:1 w:0)
+	// Storage: Difficulty PreviousDifficultiesAndTimestamps (r:1 w:1)
+	fn set() -> Weight {
+		(20_800_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(5 as Weight))
+			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
-	// Storage: System Account (r:1 w:1)
 	fn on_finalize() -> Weight {
-		(49_800_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		(4_400_000 as Weight)
 	}
 }
