@@ -3,14 +3,10 @@ name: BENCHMARK
 # Controls when the action will run.
 on:
   pull_request:
-    branches: dev
-  issue_comment:
-    types: [created, edited, deleted]
-  workflow_dispatch:
+    branches: testnet
 
 jobs:
   hardware-benchmarks:
-    if: contains(github.event.comment.body, '/benchmark')
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
@@ -76,7 +72,7 @@ jobs:
           PALLET: creditcoin
         run: |
           OUTPUT=./pallets/$PALLET/src/weights.rs
-          ./target/release/creditcoin-node benchmark --chain dev --steps=20 --repeat=10 --pallet pallet_$PALLET --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output $OUTPUT
+          ./target/release/creditcoin-node benchmark --chain dev --steps=16 --repeat=10 --pallet pallet_$PALLET --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output $OUTPUT
           sed -i s/pallet_$PALLET/super/ $OUTPUT
 
       - name: Commit changes
