@@ -30,7 +30,7 @@ describe('FailTransfer', (): void => {
 
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
-                .failTransfer(transferId, cause)
+                .failTransfer(1000, transferId, cause)
                 .signAndSend(authority, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
