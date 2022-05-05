@@ -174,9 +174,10 @@ benchmarks! {
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
+		let expiry = T::BlockNumber::one();
 		let (_, transfer)= generate_transfer::<T>(deal_id,false,false,true,0u8);
 
-	}: _(RawOrigin::Signed(authority), transfer)
+	}: _(RawOrigin::Signed(authority), expiry, transfer)
 
 	fail_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -185,7 +186,8 @@ benchmarks! {
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,false,true,0u8);
 		let cause = crate::ocw::VerificationFailureCause::TaskFailed;
-	}: _(RawOrigin::Signed(authority), transfer_id, cause)
+		let expiry = T::BlockNumber::one();
+	}: _(RawOrigin::Signed(authority), expiry, transfer_id, cause)
 
 	fund_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -329,8 +331,7 @@ fn generate_transfer<T: Config>(
 		.unwrap();
 	}
 
-	let transfer = Creditcoin::<T>::pending_transfers()
-		.into_iter()
+	let transfer = UnverifiedTransfers::<T>::iter_values()
 		.find(|ut| {
 			let transfer = &ut.transfer;
 			let seek_id = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
@@ -339,7 +340,7 @@ fn generate_transfer<T: Config>(
 		.unwrap()
 		.transfer;
 	if kill_unverified {
-		UnverifiedTransfers::<T>::kill();
+		UnverifiedTransfers::<T>::remove_all(None);
 	}
 
 	if insert {
