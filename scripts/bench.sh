@@ -19,6 +19,7 @@ done
 
 
 OUTPUT=./pallets/$PALLET/src/weights.rs
+mkdir -p pallets/$PALLET/src
 
 if [[ $BUILD -eq 0 ]]
 then
