@@ -1,0 +1,38 @@
+{
+    "name": "credal-js",
+    "version": "0.1.5",
+    "author": "Jeremy Frank <jeremy.frank@gluwa.com>",
+    "license": "MIT",
+    "main": "lib/index.js",
+    "files": [
+        "lib/**/*"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "example": "ts-node ./src/examples/loan-cycle.ts",
+        "build:types": "yarn generate:defs && yarn generate:meta",
+        "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package credal-js/interfaces --input ./src/interfaces --endpoint ./creditcoin.json",
+        "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --package credal-js/interfaces  --endpoint ./creditcoin.json --output ./src/interfaces",
+        "format": "prettier --write \"src/**/*.ts\"",
+        "lint": "eslint -c .eslintrc.js --ext .ts ./src",
+        "typecheck": "tsc --noEmit",
+        "prepare": "npm run build",
+        "test": "$npm_execpath example"
+    },
+    "devDependencies": {
+        "@polkadot/typegen": "^7.15.1",
+        "@typescript-eslint/eslint-plugin": "^5.22.0",
+        "@typescript-eslint/parser": "^5.22.0",
+        "eslint": "^8.12.0",
+        "eslint-config-prettier": "^8.5.0",
+        "prettier": "^2.6.2",
+        "ts-node": "^10.7.0",
+        "tsconfig-paths": "^3.14.1",
+        "typescript": "^4.6.4"
+    },
+    "dependencies": {
+        "@polkadot/api": "^7.15.1",
+        "ethers": "^5.6.5",
+        "js-guid": "^1.0.0"
+    }
+}
