@@ -1,6 +1,7 @@
 use crate::{
 	helpers::{EVMAddress, PublicToAddress},
 	mock::*,
+	ocw::VerificationFailureCause,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
 	DealOrderId, DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash,
@@ -492,6 +493,10 @@ fn register_transfer_ocw() {
 		let tx_block_num = get_mock_tx_block_num();
 		let blockchain = Blockchain::Rinkeby;
 
+		// mocks for when we expect failure
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num)
+			.mock_get_block_number(&mut state.write());
+		// mocks for when we expect success
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
 
 		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
@@ -501,8 +506,34 @@ fn register_transfer_ocw() {
 
 		let test_info =
 			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
-
 		let (_, deal_order_id) = test_info.create_deal_order();
+		let lender = test_info.lender.account_id.clone();
+
+		// test that we get a "fail_transfer" tx when verification fails
+		assert_ok!(Creditcoin::register_funding_transfer(
+			Origin::signed(lender.clone()),
+			TransferKind::Ethless(contract.clone()),
+			deal_order_id.clone(),
+			tx_hash.hex_to_address(),
+		));
+		let deadline = Test::unverified_transfer_deadline();
+
+		roll_by_with_ocw(1);
+
+		let transfer_id = TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
+		let tx = pool.write().transactions.pop().expect("fail transfer");
+		assert!(pool.read().transactions.is_empty());
+		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
+		assert_eq!(
+			fail_tx.call,
+			Call::Creditcoin(crate::Call::fail_transfer {
+				transfer_id,
+				deadline,
+				cause: VerificationFailureCause::IncorrectNonce
+			})
+		);
+
+		// test for successful verification
 
 		let deal_id_hash = H256::from_uint(&get_mock_nonce());
 
@@ -517,8 +548,6 @@ fn register_transfer_ocw() {
 			deal_id_hash,
 		);
 		crate::DealOrders::<Test>::insert_id(fake_deal_order_id.clone(), deal);
-
-		let lender = test_info.lender.account_id.clone();
 
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
