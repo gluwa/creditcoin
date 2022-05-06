@@ -227,8 +227,8 @@ impl<T> JsonRpcResponse<T> {
 #[allow(dead_code)]
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct JsonRpcError {
-	code: i32,
-	message: String,
+	pub code: i32,
+	pub message: String,
 }
 
 #[derive(serde::Deserialize, Clone, Debug, Default)]
