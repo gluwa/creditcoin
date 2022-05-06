@@ -45,7 +45,7 @@ export const registerAddressAsync = async (
     blockchain: Blockchain,
     ownershipProof: string,
     signer: KeyringPair,
-) => {
+): Promise<AddressRegistered> => {
     return new Promise<AddressRegistered>((resolve, reject) => {
         const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processAddressRegistered(api, result));
