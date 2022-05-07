@@ -7,51 +7,53 @@ import { signAccountId } from 'creditcoin-js/utils';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { testData } from './common';
+
 import { extractFee } from '../utils';
 
-describe('AddAskOrder', (): void => {
+describe('AddBidOrder', (): void => {
     let ccApi: CreditcoinApi;
-    let lender: KeyringPair;
-    let lenderRegAddr: AddressRegistered;
-    let askGuid: Guid;
+    let borrower: KeyringPair;
+    let borrowerRegAddr: AddressRegistered;
+    let bidGuid: Guid;
 
     const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
         ccApi = await creditcoinApi('ws://127.0.0.1:9944');
-        lender = keyring.addFromUri('//Alice');
-    });
-    beforeEach(async () => {
-        const lenderWallet = createWallet();
-
-        lenderRegAddr = await ccApi.extrinsics.registerAddress(
-            lenderWallet.address,
-            blockchain,
-            signAccountId(ccApi.api, lenderWallet, lender.address),
-            lender,
-        );
-        askGuid = Guid.newGuid();
+        borrower = keyring.addFromUri('//Alice');
     });
 
     afterAll(async () => {
         await ccApi.api.disconnect();
     });
 
+    beforeEach(async () => {
+        const borrowerWallet = createWallet();
+
+        borrowerRegAddr = await ccApi.extrinsics.registerAddress(
+            borrowerWallet.address,
+            blockchain,
+            signAccountId(ccApi.api, borrowerWallet, borrower.address),
+            borrower,
+        );
+        bidGuid = Guid.newGuid();
+    });
+
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
-        return new Promise((resolve, reject): void => {
+        return new Promise((resolve, reject) => {
             const unsubscribe = api.tx.creditcoin
-                .addAskOrder(
-                    lenderRegAddr.itemId,
+                .addBidOrder(
+                    borrowerRegAddr.itemId,
                     createCreditcoinLoanTerms(api, loanTerms),
                     expirationBlock,
-                    askGuid.toString(),
+                    bidGuid.toString(),
                 )
-                .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
+                .signAndSend(borrower, { nonce: -1 }, async ({ dispatchError, events, status }) => {
+                    extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
-                .catch((reason) => reject(reason));
+                .catch((error) => reject(error));
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
