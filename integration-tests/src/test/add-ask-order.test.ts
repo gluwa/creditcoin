@@ -22,6 +22,11 @@ describe('AddAskOrder', (): void => {
         ccApi = await creditcoinApi('ws://127.0.0.1:9944');
         lender = keyring.addFromUri('//Alice');
     });
+
+    afterAll(async () => {
+        await ccApi.api.disconnect();
+    });
+
     beforeEach(async () => {
         const lenderWallet = createWallet();
 
@@ -32,10 +37,6 @@ describe('AddAskOrder', (): void => {
             lender,
         );
         askGuid = Guid.newGuid();
-    });
-
-    afterAll(async () => {
-        await ccApi.api.disconnect();
     });
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
