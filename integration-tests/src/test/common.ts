@@ -2,8 +2,9 @@ import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { Blockchain, LoanTerms } from 'creditcoin-js/model';
+import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/model';
 import { CreditcoinApi } from 'creditcoin-js/types';
+import { ethConnection } from 'creditcoin-js/examples/ethereum';
 import { Keyring } from '@polkadot/api';
 
 type TestData = {
@@ -59,4 +60,26 @@ export const addAskAndBidOrder = async (ccApi: CreditcoinApi, lender: KeyringPai
     ]);
 
     return [askOrderAdded.itemId, bidOrderAdded.itemId];
+};
+
+export const lendOnEth = async (
+    lenderWallet: Wallet,
+    borrowerWallet: Wallet,
+    dealOrderId: DealOrderId,
+    loanTerms: LoanTerms,
+) => {
+    const { lend, waitUntilTip } = await ethConnection();
+
+    // Lender lends to borrower on ethereum
+    const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
+        lenderWallet,
+        borrowerWallet.address,
+        dealOrderId[1],
+        loanTerms.amount,
+    );
+
+    // wait 15 blocks on Ethereum
+    await waitUntilTip(lendBlockNumber + 15);
+
+    return [tokenAddress, lendTxHash];
 };
