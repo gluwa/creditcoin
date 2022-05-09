@@ -1,17 +1,16 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { POINT_01_CTC } from '../constants';
-import { AskOrderId, BidOrderId } from 'creditcoin-js/model';
+import { OfferId } from 'creditcoin-js/model';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { addAskAndBidOrder, testData } from './common';
 import { extractFee } from '../utils';
 
-describe('AddOffer', (): void => {
+describe('AddDealOrder', (): void => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
-    let askOrderId: AskOrderId;
-    let bidOrderId: BidOrderId;
+    let offerId: OfferId;
 
     const { expirationBlock, keyring } = testData;
 
@@ -28,7 +27,9 @@ describe('AddOffer', (): void => {
 
     beforeEach(async () => {
         process.env.NODE_ENV = 'test';
-        [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
+        const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
+        const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
+        offerId = offer.itemId;
     }, 210000);
 
     afterEach(async () => {
@@ -39,13 +40,13 @@ describe('AddOffer', (): void => {
         const { api } = ccApi;
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
-                .addOffer(askOrderId, bidOrderId, expirationBlock)
-                .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
+                .addDealOrder(offerId, expirationBlock)
+                .signAndSend(borrower, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
                 .catch((reason) => reject(reason));
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 90000);
+    }, 30000);
 });
