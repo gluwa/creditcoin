@@ -53,10 +53,6 @@ describe('RegisterDealOrder', (): void => {
         lenderAddressId = lenderRegAddr.itemId;
     }, 60000);
 
-    afterEach(async () => {
-        await ccApi.api.disconnect();
-    });
-
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
         const askGuid = Guid.newGuid();
