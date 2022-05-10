@@ -297,7 +297,7 @@ mod tests {
 		BoundedVec::try_from(hex::decode(hex_str.trim_start_matches("0x")).unwrap()).unwrap()
 	}
 
-	// duplicate with tests.sh
+	// duplicate with tests.rs
 	#[extend::ext]
 	impl<'a> &'a str {
 		fn hex_to_address(self) -> ExternalAddress {
