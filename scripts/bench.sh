@@ -7,13 +7,17 @@ PALLET=creditcoin
 COMMAND=build
 BENCH=1
 BUILD=1
+REPEAT=30
+STEPS=50
 
-while getopts "fcbp:" opt;do
+while getopts "fcbp:r:s:" opt;do
     case $opt in
     (f) COMMAND=check BUILD=0;;
     (c) BUILD=0;;
     (p) PALLET=$OPTARG;;
     (b) BENCH=0;;
+    (r) REPEAT=$OPTARG;;
+    (s) STEPS=$OPTARG;;
     esac
 done
 
@@ -28,6 +32,6 @@ fi
 
 if [[ $BENCH -eq 0 ]]
 then
-    ./target/release/creditcoin-node benchmark --chain dev --steps=50 --repeat=30 --pallet pallet_$PALLET --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output $OUTPUT
+    ./target/release/creditcoin-node benchmark --chain dev --steps=$STEPS --repeat=$REPEAT --pallet pallet_$PALLET --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output $OUTPUT
     sed -i s/pallet_$PALLET/super/ $OUTPUT
 fi
