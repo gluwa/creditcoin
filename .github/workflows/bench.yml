@@ -15,6 +15,15 @@ jobs:
         run: |
           echo "HOME=/home/actions" >> $GITHUB_ENV
 
+      - name: Inspect benchmark CI config
+        run: |
+          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | tr -d ' ' | cut -f2 -d: | sort | xargs)
+          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              exit 1
+          fi
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -47,12 +56,11 @@ jobs:
         shell: bash
         continue-on-error: true
         env:
+          STEPS: 8
+          REPEAT: 8
           PALLET: creditcoin
         run: |
-          OUTPUT=./pallets/$PALLET/src/weights.rs
-          mkdir -p pallets/$PALLET/src
-          ./target/release/creditcoin-node benchmark --chain dev --steps=8 --repeat=8 --pallet pallet_$PALLET --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output $OUTPUT
-          sed -i s/pallet_$PALLET/super/ $OUTPUT
+          ./scripts/bench.sh -p $PALLET -cb -r $REPEAT -s $STEPS
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v8
