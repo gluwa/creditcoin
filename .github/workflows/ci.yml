@@ -200,6 +200,18 @@ jobs:
 
           popd
 
+      - name: Run new integration tests
+        run: |
+          # Note: NodeJS is installed in the previous step
+          pushd integration-tests/
+
+          # wait for creditcoin-node to initialize
+          ./wait-for-creditcoin.sh
+
+          yarn test
+
+          popd
+
       - name: Upload logs
         uses: actions/upload-artifact@v3
         if: failure()
