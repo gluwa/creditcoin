@@ -38,7 +38,7 @@ describe('AddBidOrder', (): void => {
             borrower,
         );
         bidGuid = Guid.newGuid();
-    });
+    }, 60000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
