@@ -77,7 +77,7 @@ describe('RegisterFundingTransfer', (): void => {
             dealOrder.dealOrder.itemId,
             loanTerms,
         );
-    }, 60000);
+    }, 90000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
