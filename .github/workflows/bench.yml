@@ -63,7 +63,7 @@ jobs:
           ./scripts/bench.sh -p $PALLET -cb -r $REPEAT -s $STEPS
 
       - name: Commit changes
-        uses: EndBug/add-and-commit@v8
+        uses: EndBug/add-and-commit@v9
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
