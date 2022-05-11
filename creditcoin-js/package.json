@@ -20,7 +20,7 @@
         "test": "$npm_execpath example"
     },
     "devDependencies": {
-        "@polkadot/typegen": "^7.15.1",
+        "@polkadot/typegen": "^8.3.2",
         "@typescript-eslint/eslint-plugin": "^5.22.0",
         "@typescript-eslint/parser": "^5.22.0",
         "eslint": "^8.12.0",
