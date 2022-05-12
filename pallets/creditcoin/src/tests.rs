@@ -3042,39 +3042,3 @@ fn register_transfer_internal_should_error_when_transfer_is_already_registered()
 		assert_eq!(result, crate::Error::<Test>::TransferAlreadyRegistered);
 	})
 }
-
-#[test]
-fn register_transfer_internal_should_error_when_unverified_transfer_queue_is_full() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order, deal_order_id) = test_info.create_deal_order();
-
-		// fill the unverified transfer pool to the limit
-		for index in 1..=crate::mock::PendingTxLimit::get() {
-			let tx = format!("0xabcdef{:04}", index.clone());
-
-			let _result = Creditcoin::register_transfer_internal(
-				test_info.lender.account_id.clone(),
-				deal_order.lender_address_id.clone(),
-				deal_order.borrower_address_id.clone(),
-				TransferKind::Native,
-				deal_order.terms.amount.clone(),
-				OrderId::Deal(deal_order_id.clone()),
-				tx.as_bytes().into_bounded(),
-			);
-		}
-
-		let tx = "0xffffffff";
-		let result = Creditcoin::register_transfer_internal(
-			test_info.lender.account_id.clone(),
-			deal_order.lender_address_id,
-			deal_order.borrower_address_id,
-			TransferKind::Native,
-			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-		assert_eq!(result, crate::Error::<Test>::UnverifiedTaskPoolFull);
-	})
-}
