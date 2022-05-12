@@ -1,9 +1,0 @@
-{
-    "extends": "./tsconfig.base.json",
-    "compilerOptions": {
-        "baseUrl": "./packages",
-        "composite": false
-    },
-    "include": ["**/src/**/*", "**/integration-tests/**/*"],
-    "exclude": ["**/node_modules/**/*", "**/src/**/*.d.ts", "**/integration-tests/**/*.d.ts"]
-}
