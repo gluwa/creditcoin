@@ -3,7 +3,6 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { Guid } from 'js-guid';
 import { POINT_01_CTC } from '../constants';
 import { BN } from '@polkadot/util';
-import { AskOrderId, BidOrderId, TransferKind } from 'creditcoin-js/model';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
@@ -90,9 +89,9 @@ describe('RegisterFundingTransfer', (): void => {
             const unsubscribe = api.tx.creditcoin
                 .registerFundingTransfer(ccTransferKind, dealOrder.dealOrder.itemId, txHash)
                 .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
+                    await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
-                .catch((reason) => reject(reason));
+                .catch((error) => reject(error));
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
@@ -104,18 +103,18 @@ describe('RegisterFundingTransfer', (): void => {
         const dealOrderId = dealOrder.dealOrder.itemId;
         const { api } = ccApi;
 
-        const [testTokenAddress, txHash] = await lendOnEth(
+        const [failureTokenAddress, failureTxHash] = await lendOnEth(
             lenderWallet,
             borrowerWallet,
             dealOrder.dealOrder.itemId,
             badLoanTerms,
         );
 
-        const transferId = createFundingTransferId(blockchain, txHash);
+        const transferId = createFundingTransferId(blockchain, failureTxHash);
         await ccApi.extrinsics.registerFundingTransfer(
-            { kind: 'Ethless', contractAddress: testTokenAddress },
+            { kind: 'Ethless', contractAddress: failureTokenAddress },
             dealOrderId,
-            txHash,
+            failureTxHash,
             lender,
         );
 
