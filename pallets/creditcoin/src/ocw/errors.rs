@@ -8,31 +8,22 @@ use sp_runtime::offchain::storage::StorageRetrievalError;
 
 #[derive(Debug)]
 pub enum OffchainError {
-	InvalidTransfer(VerificationFailureCause),
+	InvalidTask(VerificationFailureCause),
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VerificationResult<Moment> {
-	Success { timestamp: Option<Moment> },
-	Failure(VerificationFailureCause),
-}
-
-impl<M> From<VerificationFailureCause> for VerificationResult<M> {
-	fn from(failure: VerificationFailureCause) -> Self {
-		VerificationResult::Failure(failure)
-	}
-}
+pub type VerificationResult<Moment> = Result<Option<Moment>, OffchainError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum VerificationFailureCause {
-	TransferFailed,
-	TransferPending,
-	TransferUnconfirmed,
-	TransferInFuture,
+	TaskFailed,
+	TaskPending,
+	TaskUnconfirmed,
+	TaskInFuture,
 	IncorrectContract,
 	MissingReceiver,
+	MissingSender,
 	AbiMismatch,
 	IncorrectInputLength,
 	IncorrectInputType,
@@ -48,11 +39,11 @@ impl VerificationFailureCause {
 	pub fn is_fatal(self) -> bool {
 		use VerificationFailureCause::*;
 		match self {
-			TransferFailed | IncorrectContract | MissingReceiver | AbiMismatch
+			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
 			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
-			| InvalidAddress | UnsupportedMethod | TransferInFuture | IncorrectSender
+			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender
 			| IncorrectReceiver => true,
-			TransferPending | TransferUnconfirmed => false,
+			TaskPending | TaskUnconfirmed => false,
 		}
 	}
 }
@@ -89,7 +80,7 @@ impl_from_error!(
 	OffchainError,
 	RpcUrlError => NoRpcUrl,
 	RpcError => RpcError,
-	VerificationFailureCause => InvalidTransfer,
+	VerificationFailureCause => InvalidTask,
 );
 impl_from_error!(
 	RpcUrlError,

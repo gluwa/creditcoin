@@ -56,7 +56,7 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
 
 #[frame_support::pallet]
 pub mod pallet {
-	use crate::ocw::errors::VerificationResult;
+	use crate::ocw::errors::OffchainError;
 
 	use super::*;
 	use frame_support::{
@@ -125,7 +125,7 @@ pub mod pallet {
 			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
 			+ Clone;
 
-		type UnverifiedTransferLimit: Get<u32>;
+		type UnverifiedPoolsLimit: Get<u32>;
 
 		type WeightInfo: WeightInfo;
 	}
@@ -170,7 +170,7 @@ pub mod pallet {
 		_,
 		BoundedVec<
 			UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-			T::UnverifiedTransferLimit,
+			T::UnverifiedPoolsLimit,
 		>,
 		ValueQuery,
 	>;
@@ -447,8 +447,8 @@ pub mod pallet {
 		/// Only the lender can perform the action.
 		NotLender,
 
-		/// The queue of unverified transfers is full for this block.
-		UnverifiedTransferPoolFull,
+		/// The pool of unverified tasks pending verification is full.
+		UnverifiedTaskPoolFull,
 
 		/// Repayment orders are not currently supported.
 		RepaymentOrderUnsupported,
@@ -561,50 +561,41 @@ pub mod pallet {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
 				for pending in UnverifiedTransfers::<T>::get() {
-					log::debug!("verifying transfer");
+					log::debug!("verifying OCW task");
 					let verify_result = Self::verify_transfer_ocw(&pending);
 					log::debug!("verify_transfer result: {:?}", verify_result);
 					match verify_result {
-						Ok(result) => match result {
-							VerificationResult::Success { timestamp } => {
+						Ok(timestamp) => {
+							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
+								Call::verify_transfer {
+									transfer: Transfer { timestamp, ..pending.transfer.clone() },
+								}
+							}) {
+								log::error!("Failed to send verify_transfer transaction: {:?}", e);
+							}
+						},
+						Err(OffchainError::InvalidTask(cause)) => {
+							log::warn!(
+								"failed to verify pending transfer {:?}: {:?}",
+								pending,
+								cause
+							);
+							if cause.is_fatal() {
 								if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
-									Call::verify_transfer {
-										transfer: Transfer {
-											timestamp,
-											..pending.transfer.clone()
-										},
+									Call::fail_transfer {
+										transfer_id: TransferId::new::<T>(
+											&pending.transfer.blockchain,
+											&pending.transfer.tx_id,
+										),
+										cause,
 									}
 								}) {
 									log::error!(
-										"Failed to send verify_transfer transaction: {:?}",
+										"Failed to send fail_transfer transaction: {:?}",
 										e
 									);
 								}
-							},
-							VerificationResult::Failure(cause) => {
-								log::warn!(
-									"failed to verify pending transfer {:?}: {:?}",
-									pending,
-									cause
-								);
-								if cause.is_fatal() {
-									if let Err(e) =
-										Self::offchain_signed_tx(auth_id.clone(), |_| {
-											Call::fail_transfer {
-												transfer_id: TransferId::new::<T>(
-													&pending.transfer.blockchain,
-													&pending.transfer.tx_id,
-												),
-												cause,
-											}
-										}) {
-										log::error!(
-											"Failed to send fail_transfer transaction: {:?}",
-											e
-										);
-									}
-								}
-							},
+							}
 						},
 						Err(error) => {
 							log::error!(

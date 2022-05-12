@@ -162,7 +162,7 @@ impl<T: Config> Pallet<T> {
 			transfer: transfer.clone(),
 		};
 		UnverifiedTransfers::<T>::try_mutate(|transfers| transfers.try_push(pending))
-			.map_err(|()| Error::<T>::UnverifiedTransferPoolFull)?;
+			.map_err(|()| Error::<T>::UnverifiedTaskPoolFull)?;
 		Ok((transfer_id, transfer))
 	}
 }

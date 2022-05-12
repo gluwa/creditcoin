@@ -88,15 +88,15 @@ fn validate_ethless_transfer(
 	id_hash: impl ethereum_types::BigEndianHash<Uint = U256>,
 ) -> OffchainResult<()> {
 	let transfer_fn = ethless_transfer_function_abi();
-	ensure!(receipt.is_success(), VerificationFailureCause::TransferFailed);
+	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
 
-	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TransferPending)?;
+	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
 
-	ensure!(block_number <= eth_tip, VerificationFailureCause::TransferInFuture);
+	ensure!(block_number <= eth_tip, VerificationFailureCause::TaskInFuture);
 
 	let diff = eth_tip - block_number;
 
-	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TransferUnconfirmed);
+	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
 	if let Some(to) = &transaction.to {
 		ensure!(to == contract, VerificationFailureCause::IncorrectContract);
@@ -147,25 +147,18 @@ fn validate_ethless_transfer(
 impl<T: Config> Pallet<T> {
 	pub fn verify_transfer_ocw(
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
-	) -> OffchainResult<VerificationResult<T::Moment>> {
+	) -> VerificationResult<T::Moment> {
 		let UnverifiedTransfer {
 			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
 		} = transfer;
-		let result = match kind {
+		match kind {
 			TransferKind::Ethless(contract) => {
 				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
 			},
 			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
 				Err(VerificationFailureCause::UnsupportedMethod.into())
-			},
-		};
-		match result {
-			Ok(timestamp) => Ok(VerificationResult::Success { timestamp }),
-			Err(e) => match e {
-				OffchainError::InvalidTransfer(failure) => Ok(VerificationResult::from(failure)),
-				error => Err(error),
 			},
 		}
 	}
@@ -202,7 +195,7 @@ impl<T: Config> Pallet<T> {
 		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
-	) -> OffchainResult<Option<T::Moment>> {
+	) -> VerificationResult<T::Moment> {
 		let rpc_url = blockchain.rpc_url()?;
 		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
@@ -261,10 +254,7 @@ mod tests {
 			get_mock_nonce, get_mock_to_address, set_rpc_uri, AccountId, ExtBuilder,
 			Test as TestRuntime,
 		},
-		ocw::{
-			errors::VerificationResult,
-			rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
-		},
+		ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
 		tests::TestInfo,
 		types::DoubleMapExt,
 		Blockchain, ExternalAddress, Id, LoanTerms, TransferKind,
@@ -310,7 +300,7 @@ mod tests {
 		result: Result<T, OffchainError>,
 		cause: VerificationFailureCause,
 	) {
-		assert_matches!(result, Err(OffchainError::InvalidTransfer(why)) => { assert_eq!(why, cause); } );
+		assert_matches!(result, Err(OffchainError::InvalidTask(why)) => { assert_eq!(why, cause); } );
 	}
 
 	fn default_nonce() -> U256 {
@@ -449,7 +439,7 @@ mod tests {
 				receipt: EthTransactionReceipt { status: Some(0u64.into()), ..Default::default() },
 				..Default::default()
 			}),
-			TransferFailed,
+			TaskFailed,
 		);
 	}
 
@@ -460,7 +450,7 @@ mod tests {
 				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
 				..Default::default()
 			}),
-			TransferUnconfirmed,
+			TaskUnconfirmed,
 		);
 	}
 
@@ -482,7 +472,7 @@ mod tests {
 				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() - 1),
 				..Default::default()
 			}),
-			TransferInFuture,
+			TaskInFuture,
 		);
 	}
 
@@ -563,7 +553,7 @@ mod tests {
 				transaction: EthTransaction { block_number: None, ..ETH_TRANSACTION.clone() },
 				..Default::default()
 			}),
-			TransferPending,
+			TaskPending,
 		)
 	}
 
@@ -703,21 +693,21 @@ mod tests {
 			let unverified = make_unverified_transfer(transfer.clone());
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Ok(VerificationResult::Failure(UnsupportedMethod))
+				Err(OffchainError::InvalidTask(UnsupportedMethod))
 			);
 
 			transfer.kind = crate::TransferKind::Erc20(ExternalAddress::default());
 			let unverified = make_unverified_transfer(transfer.clone());
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Ok(VerificationResult::Failure(UnsupportedMethod))
+				Err(OffchainError::InvalidTask(UnsupportedMethod))
 			);
 
 			transfer.kind = crate::TransferKind::Other(ExternalAddress::default());
 			let unverified = make_unverified_transfer(transfer.clone());
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Ok(VerificationResult::Failure(UnsupportedMethod))
+				Err(OffchainError::InvalidTask(UnsupportedMethod))
 			);
 		});
 	}
@@ -835,7 +825,7 @@ mod tests {
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Ok(VerificationResult::Success { timestamp: Some(_) })
+				Ok(Some(_))
 			);
 		});
 	}
@@ -938,7 +928,7 @@ mod tests {
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Ok(VerificationResult::Success { timestamp: None })
+				Ok(None)
 			);
 		});
 	}
@@ -964,7 +954,7 @@ mod tests {
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_from_unverified),
-				Ok(VerificationResult::Failure(InvalidAddress))
+				Err(OffchainError::InvalidTask(InvalidAddress))
 			);
 
 			mock_requests(&state);
@@ -974,7 +964,7 @@ mod tests {
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_to_unverified),
-				Ok(VerificationResult::Failure(InvalidAddress))
+				Err(OffchainError::InvalidTask(InvalidAddress))
 			);
 
 			mock_requests(&state);
@@ -983,7 +973,7 @@ mod tests {
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Ok(VerificationResult::Failure(InvalidAddress))
+				Err(OffchainError::InvalidTask(InvalidAddress))
 			);
 		});
 	}
