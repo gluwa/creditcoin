@@ -113,7 +113,7 @@ impl pallet_creditcoin::Config for Test {
 
 	type HashIntoNonce = H256;
 
-	type UnverifiedTransferLimit = PendingTxLimit;
+	type UnverifiedPoolsLimit = PendingTxLimit;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
 }
