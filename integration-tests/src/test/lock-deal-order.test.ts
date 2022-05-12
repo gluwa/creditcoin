@@ -2,13 +2,10 @@ import { KeyringPair } from '@polkadot/keyring/types';
 
 import { Guid } from 'js-guid';
 import { POINT_01_CTC } from '../constants';
-import { BN } from '@polkadot/util';
-import { AskOrderId, BidOrderId, TransferKind } from 'creditcoin-js/model';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
-import { createCreditcoinTransferKind } from 'creditcoin-js/transforms';
 import { testData, lendOnEth } from './common';
 import { extractFee } from '../utils';
 import { Wallet } from 'ethers';
@@ -18,8 +15,6 @@ describe('LockDealOrder', (): void => {
     let borrower: KeyringPair;
     let lender: KeyringPair;
     let dealOrder: DealOrderRegistered;
-    let repaymentTokenAddress: string;
-    let repaymentTxHash: string;
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
 
@@ -40,7 +35,7 @@ describe('LockDealOrder', (): void => {
         process.env.NODE_ENV = 'test';
         const {
             api,
-            extrinsics: { fundDealOrder, lockDealOrder, registerAddress, registerDealOrder, registerFundingTransfer },
+            extrinsics: { fundDealOrder, registerAddress, registerDealOrder, registerFundingTransfer },
             utils: { signAccountId },
         } = ccApi;
         lenderWallet = createWallet();
@@ -95,9 +90,9 @@ describe('LockDealOrder', (): void => {
             const unsubscribe = api.tx.creditcoin
                 .lockDealOrder(dealOrder.dealOrder.itemId)
                 .signAndSend(borrower, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
+                    await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
-                .catch((reason) => reject(reason));
+                .catch((error) => reject(error));
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });

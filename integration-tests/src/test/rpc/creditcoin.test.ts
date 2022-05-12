@@ -13,7 +13,7 @@ describe('Creditcoin RPC', (): void => {
         const provider = new WsProvider('ws://127.0.0.1:9944');
 
         api = await ApiPromise.create({
-            provider: provider,
+            provider,
             rpc: {
                 creditcoin: {
                     getEvents: {
@@ -75,8 +75,8 @@ describe('Creditcoin RPC', (): void => {
                     subscriptionId = JSON.parse(utf8Str).result;
                 } else {
                     // assert at least one message is received
-                    const data = JSON.parse(utf8Str);
-                    expect(data).toBeTruthy();
+                    const parsedData = JSON.parse(utf8Str);
+                    expect(parsedData).toBeTruthy();
                     ws.close();
                 }
             })
@@ -109,9 +109,8 @@ describe('Creditcoin RPC', (): void => {
 
                     ws.send(JSON.stringify(rpc));
                 } else {
-                    const data = JSON.parse(utf8Str);
-
-                    expect(data.result).toBe(true);
+                    const parsedData = JSON.parse(utf8Str);
+                    expect(parsedData.result).toBe(true);
                     ws.close();
                 }
             })
@@ -145,9 +144,8 @@ describe('Creditcoin RPC', (): void => {
 
                     ws.send(JSON.stringify(rpc));
                 } else {
-                    const data = JSON.parse(utf8Str);
-
-                    expect(data.error.message).toBe('Invalid subscription id.');
+                    const parsedData = JSON.parse(utf8Str);
+                    expect(parsedData.error.message).toBe('Invalid subscription id.');
                     ws.close();
                 }
             })
@@ -157,7 +155,7 @@ describe('Creditcoin RPC', (): void => {
     it('hashrate() should return a valid hashrate', async () => {
         type HashrateStats = {
             elapsed: Elapsed;
-            hash_count: number;
+            hash_count: number; // eslint-disable-line
             rate: number;
         };
 
@@ -170,6 +168,6 @@ describe('Creditcoin RPC', (): void => {
         expect(rateObj.rate).toBeGreaterThan(0);
         expect(rateObj.elapsed.secs).toBeGreaterThan(0);
         expect(rateObj.elapsed.nanos).toBeGreaterThan(0);
-        expect(rateObj.hash_count).toBeGreaterThan(0);
+        expect(rateObj.hash_count).toBeGreaterThan(0); // eslint-disable-line
     });
 });
