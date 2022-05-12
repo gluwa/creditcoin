@@ -215,7 +215,12 @@ jobs:
           killall -9 creditcoin-node
 
   javascript-lint:
+    name: javascript-lint / ${{ matrix.directory }}
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        directory: [creditcoin-js, integration-tests]
+
     steps:
       - uses: actions/checkout@v3
 
@@ -235,17 +240,20 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd javascript/
+          pushd creditcoin-js/ && yarn install && popd
+          pushd ${{ matrix.directory }}
 
           yarn install
-
           yarn lint
-          yarn tsc
-
           popd
 
-  javascript-prettier:
+  javascript-typecheck:
+    name: javascript-typecheck / ${{ matrix.directory }}
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        directory: [creditcoin-js, integration-tests]
+
     steps:
       - uses: actions/checkout@v3
 
@@ -265,17 +273,50 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd javascript/
+          pushd creditcoin-js/ && yarn install && popd
+          pushd ${{ matrix.directory }}
 
           yarn install
+          yarn typecheck
+          popd
 
-          yarn prettier --write .
+  javascript-format:
+    name: javascript-format / ${{ matrix.directory }}
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        directory: [creditcoin-js, integration-tests]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y curl
+
+          # remove pre-installed packages
+          sudo apt remove npm nodejs
+
+          # Install Node.js 16.x from upstream b/c polkadot/jest can't work withh old versions
+          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+
+          sudo apt-get install -y nodejs
+          sudo npm install -g yarn
+
+      - name: Run tools
+        run: |
+          pushd creditcoin-js/ && yarn install && popd
+          pushd ${{ matrix.directory }}
+
+          yarn install
+          yarn format
 
           git status
           if [ -n "$(git status --short)" ]; then
               git diff
-              echo "FAIL: JavaScript is not pretty!"
-              echo "HELP: Execute 'yarn prettier --write .' and commit the changes to fix this"
+              echo "FAIL: JavaScript is not formatted properly!"
+              echo "HELP: Execute 'yarn format' and commit the changes to fix this"
               exit 1
           fi
 
