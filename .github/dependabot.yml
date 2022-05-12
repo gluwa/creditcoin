@@ -71,6 +71,6 @@ updates:
       interval: "daily"
 
   - package-ecosystem: "npm"
-    directory: "/creditcoin-js"
+    directory: "/polkadotjs-examples"
     schedule:
       interval: "daily"

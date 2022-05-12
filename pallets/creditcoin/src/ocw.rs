@@ -245,10 +245,7 @@ impl<T: Config> Pallet<T> {
 #[cfg(test)]
 mod tests {
 	use core::fmt::Debug;
-	use std::{
-		convert::{TryFrom, TryInto},
-		str::FromStr,
-	};
+	use std::{convert::TryFrom, str::FromStr};
 
 	use super::errors::{
 		RpcUrlError,
@@ -258,18 +255,15 @@ mod tests {
 		mock::MockedRpcRequests,
 		mock::{
 			get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
-			get_mock_nonce, get_mock_to_address, set_rpc_uri, AccountId, ExtBuilder,
-			Test as TestRuntime,
+			get_mock_nonce, get_mock_to_address, set_rpc_uri, Test as TestRuntime,
 		},
 		ocw::{
 			errors::VerificationResult,
-			rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
+			rpc::{errors::RpcError, JsonRpcResponse},
 		},
 		tests::TestInfo,
-		types::DoubleMapExt,
-		Blockchain, ExternalAddress, Id, LoanTerms, TransferKind,
+		Id, LoanTerms, TransferKind,
 	};
-
 	use alloc::sync::Arc;
 	use assert_matches::assert_matches;
 	use codec::Decode;
@@ -292,17 +286,13 @@ mod tests {
 		rpc::{Address, EthTransaction, EthTransactionReceipt},
 		validate_ethless_transfer, ETH_CONFIRMATIONS,
 	};
+	use crate::{
+		mock::{AccountId, ExtBuilder},
+		Blockchain, ExternalAddress,
+	};
 
 	fn make_external_address(hex_str: &str) -> ExternalAddress {
 		BoundedVec::try_from(hex::decode(hex_str.trim_start_matches("0x")).unwrap()).unwrap()
-	}
-
-	// duplicate with tests.rs
-	#[extend::ext]
-	impl<'a> &'a str {
-		fn hex_to_address(self) -> ExternalAddress {
-			hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
-		}
 	}
 
 	#[track_caller]
@@ -745,39 +735,7 @@ mod tests {
 		});
 	}
 
-	#[test]
-	#[tracing_test::traced_test]
-	fn offchain_worker_logs_error_when_transfer_validation_errors() {
-		let mut ext = ExtBuilder::default();
-		ext.generate_authority();
-		ext.build_offchain_and_execute_with_state(|state, _pool| {
-			crate::mock::roll_to(1);
-
-			let (_unverified, mut requests) = set_up_verify_transfer_env(true);
-
-			requests.get_transaction.as_mut().unwrap().response = Some(
-				serde_json::to_vec(&JsonRpcResponse::<bool> {
-					jsonrpc: "2.0".into(),
-					id: 1,
-					error: Some(JsonRpcError {
-						code: 555,
-						message: "this is supposed to fail".into(),
-					}),
-					result: None,
-				})
-				.unwrap(),
-			);
-
-			requests.mock_get_transaction(&mut state.write());
-
-			crate::mock::roll_by_with_ocw(1);
-			assert!(logs_contain("transfer verification encountered an error"));
-		});
-	}
-
-	fn set_up_verify_transfer_env(
-		register_transfer: bool,
-	) -> (MockUnverifiedTransfer, MockedRpcRequests) {
+	fn set_up_verify_transfer_env() -> (MockUnverifiedTransfer, MockedRpcRequests) {
 		let rpc_uri = "http://localhost:8545";
 		set_rpc_uri(&Blockchain::Rinkeby, rpc_uri);
 
@@ -800,20 +758,7 @@ mod tests {
 			crate::mock::get_mock_tx_hash(),
 			crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
 		);
-		let unverified = make_unverified_transfer(transfer.clone());
-
-		if register_transfer {
-			let contract = get_mock_contract().hex_to_address();
-
-			crate::DealOrders::<TestRuntime>::insert_id(deal_order_id.clone(), deal_order);
-
-			assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
-				crate::mock::Origin::signed(test_info.lender.account_id),
-				TransferKind::Ethless(contract.clone()),
-				deal_order_id,
-				transfer.tx_id,
-			));
-		}
+		let unverified = make_unverified_transfer(transfer);
 
 		(
 			unverified,
@@ -829,7 +774,7 @@ mod tests {
 	fn verify_transfer_ocw_works() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (unverified, requests) = set_up_verify_transfer_env(false);
+			let (unverified, requests) = set_up_verify_transfer_env();
 
 			requests.mock_all(&mut state.write());
 
@@ -844,7 +789,7 @@ mod tests {
 	fn verify_transfer_get_transaction_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (unverified, mut requests) = set_up_verify_transfer_env(false);
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
 			requests.get_transaction.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
@@ -870,7 +815,7 @@ mod tests {
 	fn verify_transfer_get_transaction_receipt_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (unverified, mut requests) = set_up_verify_transfer_env(false);
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
 			requests.get_transaction_receipt.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
@@ -896,7 +841,7 @@ mod tests {
 	fn verify_transfer_get_block_number_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (unverified, mut requests) = set_up_verify_transfer_env(false);
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
 			requests.get_block_number.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
@@ -922,7 +867,7 @@ mod tests {
 	fn verify_transfer_get_block_by_number_error() {
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (unverified, mut requests) = set_up_verify_transfer_env(false);
+			let (unverified, mut requests) = set_up_verify_transfer_env();
 
 			requests.get_block_by_number.as_mut().unwrap().response = Some(
 				serde_json::to_vec(&JsonRpcResponse::<bool> {
@@ -955,7 +900,7 @@ mod tests {
 		}
 		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _pool| {
 			crate::mock::roll_to(1);
-			let (mut unverified, ..) = set_up_verify_transfer_env(false);
+			let (mut unverified, ..) = set_up_verify_transfer_env();
 
 			mock_requests(&state);
 

@@ -1,9 +1,8 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { extrinsics } from './extrinsics/extrinsics';
 import { utils } from './utils';
-import type { CreditcoinApi } from './types';
 
-export const creditcoinApi = async (wsUrl: string): Promise<CreditcoinApi> => {
+export const creditcoinApi = async (wsUrl: string) => {
     const provider = new WsProvider(wsUrl);
     const api = await ApiPromise.create({ provider });
 
