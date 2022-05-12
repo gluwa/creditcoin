@@ -52,7 +52,7 @@ describe('AddAskOrder', (): void => {
                 .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
-                .catch((reason) => reject(reason));
+                .catch((error) => reject(error));
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
