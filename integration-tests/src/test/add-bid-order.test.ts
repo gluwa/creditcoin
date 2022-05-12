@@ -51,7 +51,7 @@ describe('AddBidOrder', (): void => {
                     bidGuid.toString(),
                 )
                 .signAndSend(borrower, { nonce: -1 }, async ({ dispatchError, events, status }) => {
-                    extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
+                    await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
