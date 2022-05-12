@@ -8,8 +8,13 @@ on:
 jobs:
   hardware-benchmarks:
     runs-on: self-hosted
+    permissions: write-all
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 10
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set env
         run: |
@@ -49,7 +54,7 @@ jobs:
         env:
           PALLET: rewards
         run: |
-          ./scripts/bench.sh -p $PALLET -cb
+          ./scripts/bench.sh -p $PALLET -b
 
       # Run creditcoin pallet with lesser steps
       - name: Creditcoin
@@ -60,13 +65,11 @@ jobs:
           REPEAT: 8
           PALLET: creditcoin
         run: |
-          ./scripts/bench.sh -p $PALLET -cb -r $REPEAT -s $STEPS
+          ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
         with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
           author_name: hardwareBenchmark
           author_email: creditcoin@gluwa.com
           message: 'Creditcoin benchmarks added'
