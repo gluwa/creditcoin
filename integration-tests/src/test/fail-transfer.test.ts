@@ -1,10 +1,7 @@
 import { KeyringPair } from '@polkadot/keyring/types';
-import { createCreditcoinLoanTerms } from 'creditcoin-js/transforms';
 import { AUTHORITY_SURI } from 'creditcoin-js/examples/setup-authority';
-import { AddressRegistered } from 'creditcoin-js/extrinsics/register-address';
 import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
 import { POINT_01_CTC } from '../constants';
-import { signAccountId } from 'creditcoin-js/utils';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { testData } from './common';
@@ -14,7 +11,7 @@ describe('FailTransfer', (): void => {
     let ccApi: CreditcoinApi;
     let authority: KeyringPair;
 
-    const { blockchain, expirationBlock, loanTerms, keyring } = testData;
+    const { blockchain, keyring } = testData;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -37,7 +34,7 @@ describe('FailTransfer', (): void => {
                 .signAndSend(authority, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
-                .catch((reason) => reject(reason));
+                .catch((error) => reject(error));
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
