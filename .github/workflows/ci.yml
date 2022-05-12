@@ -191,18 +191,6 @@ jobs:
           sudo apt-get install -y nodejs
           sudo npm install -g yarn
 
-          pushd javascript/
-
-          # prepare typescript environment and wait for creditcoin-node to initialize
-          ./prepare-devel-env.sh
-
-          yarn test
-
-          popd
-
-      - name: Run new integration tests
-        run: |
-          # Note: NodeJS is installed in the previous step
           pushd integration-tests/
 
           # wait for creditcoin-node to initialize
