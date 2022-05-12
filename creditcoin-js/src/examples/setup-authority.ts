@@ -28,9 +28,9 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
         await addAuthorityAsync(api, AUTHORITY_ACCOUNTID, sudoSigner);
     }
     await api.tx.sudo
-        .sudo(api.tx.balances.setBalance(AUTHORITY_ACCOUNTID, '1000000000000000000', '0'))
+        .sudo(api.tx.balances.setBalance(AUTHORITY_ACCOUNTID, '10000000000000000000', '0'))
         .signAndSend(sudoSigner, { nonce: -1 });
     await api.tx.sudo
-        .sudo(api.tx.balances.setBalance(sudoSigner.address, '1000000000000000000', '0'))
+        .sudo(api.tx.balances.setBalance(sudoSigner.address, '10000000000000000000', '0'))
         .signAndSend(sudoSigner, { nonce: -1 });
 };
