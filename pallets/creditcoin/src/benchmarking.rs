@@ -184,7 +184,7 @@ benchmarks! {
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,false,true,0u8);
-		let cause = crate::ocw::VerificationFailureCause::TransferFailed;
+		let cause = crate::ocw::VerificationFailureCause::TaskFailed;
 	}: _(RawOrigin::Signed(authority), transfer_id, cause)
 
 	fund_deal_order {

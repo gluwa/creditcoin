@@ -2591,7 +2591,7 @@ fn fail_transfer_should_work() {
 		let tx = "0xafafaf".hex_to_address();
 		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
 
-		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 
 		assert_ok!(Creditcoin::fail_transfer(
 			Origin::signed(test_info.lender.account_id),
@@ -2623,7 +2623,7 @@ fn fail_transfer_should_error_when_not_signed() {
 		let tx = "0xafafaf".hex_to_address();
 		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
 
-		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 
 		assert_noop!(
 			Creditcoin::fail_transfer(Origin::none(), transfer_id.clone(), failure_cause),
@@ -2644,7 +2644,7 @@ fn fail_transfer_should_error_when_not_authority() {
 		let tx = "0xafafaf".hex_to_address();
 		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
 
-		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 
 		assert_noop!(
 			Creditcoin::fail_transfer(
@@ -2674,7 +2674,7 @@ fn fail_transfer_should_error_when_transfer_registered() {
 			test_info.lender.account_id.clone(),
 		));
 
-		let failure_cause = crate::ocw::errors::VerificationFailureCause::TransferFailed;
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 
 		assert_noop!(
 			Creditcoin::fail_transfer(
@@ -3022,6 +3022,6 @@ fn register_transfer_internal_should_error_when_unverified_transfer_queue_is_ful
 			tx.as_bytes().into_bounded(),
 		)
 		.unwrap_err();
-		assert_eq!(result, crate::Error::<Test>::UnverifiedTransferPoolFull);
+		assert_eq!(result, crate::Error::<Test>::UnverifiedTaskPoolFull);
 	})
 }
