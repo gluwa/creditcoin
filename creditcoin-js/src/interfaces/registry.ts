@@ -53,6 +53,7 @@ import type {
     PalletCreditcoinLoanTermsDuration,
     PalletCreditcoinLoanTermsInterestRate,
     PalletCreditcoinLoanTermsInterestType,
+    PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinOrderId,
@@ -139,6 +140,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinLoanTermsDuration: PalletCreditcoinLoanTermsDuration;
         PalletCreditcoinLoanTermsInterestRate: PalletCreditcoinLoanTermsInterestRate;
         PalletCreditcoinLoanTermsInterestType: PalletCreditcoinLoanTermsInterestType;
+        PalletCreditcoinOcwErrorsVerificationFailureCause: PalletCreditcoinOcwErrorsVerificationFailureCause;
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;
         PalletCreditcoinOrderId: PalletCreditcoinOrderId;
