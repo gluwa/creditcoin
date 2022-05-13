@@ -15,6 +15,7 @@ import type {
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLegacySighash,
+    PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinTransfer,
@@ -101,22 +102,23 @@ declare module '@polkadot/api-base/types/events' {
             /**
              * A deal order has been closed by a borrower. This indicates that the borrower
              * has repaid the loan in full and is now closing out the loan.
-             * [closed_deal_order_id, closed_deal_order]
+             * [closed_deal_order_id]
              **/
-            DealOrderClosed: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
+            DealOrderClosed: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId]>;
             /**
              * A deal order has been funded by a lender. This indicates that the lender
              * has initiated the actual loan by transferring the loan amount to the borrower
              * on an external chain.
-             * [funded_deal_order_id, funded_deal_order]
+             * [funded_deal_order_id]
              **/
-            DealOrderFunded: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
+            DealOrderFunded: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId]>;
             /**
              * A deal order has been locked by a borrower. This indicates that the borrower
              * is preparing to make a repayment and locks the loan from being sold or transferred
              * to another party.
+             * [deal_order_id]
              **/
-            DealOrderLocked: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId, PalletCreditcoinDealOrder]>;
+            DealOrderLocked: AugmentedEvent<ApiType, [PalletCreditcoinDealOrderId]>;
             /**
              * A legacy wallet from Creditcoin 1.X has been claimed. The balance of the legacy wallet
              * has been transferred to the owner's Creditcoin 2.0 account.
@@ -125,7 +127,7 @@ declare module '@polkadot/api-base/types/events' {
             LegacyWalletClaimed: AugmentedEvent<ApiType, [AccountId32, PalletCreditcoinLegacySighash, u128]>;
             /**
              * A loan exemption has been granted by a lender. This indicates that the lender
-             * is releasing some or all of the outstanding debt on the loan. The borrower
+             * is releasing all of the outstanding debt on the loan. The borrower
              * is no longer responsible for repaying the amount.
              * [exempted_deal_order_id]
              **/
@@ -136,11 +138,15 @@ declare module '@polkadot/api-base/types/events' {
              * [offer_id, offer]
              **/
             OfferAdded: AugmentedEvent<ApiType, [PalletCreditcoinOfferId, PalletCreditcoinOffer]>;
+            TransferFailedVerification: AugmentedEvent<
+                ApiType,
+                [H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
+            >;
             /**
              * An external transfer has been processed and marked as part of a loan.
-             * [processed_transfer_id, processed_transfer]
+             * [processed_transfer_id]
              **/
-            TransferProcessed: AugmentedEvent<ApiType, [H256, PalletCreditcoinTransfer]>;
+            TransferProcessed: AugmentedEvent<ApiType, [H256]>;
             /**
              * An external transfer has been registered and will be verified.
              * [registered_transfer_id, registered_transfer]
@@ -148,9 +154,9 @@ declare module '@polkadot/api-base/types/events' {
             TransferRegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinTransfer]>;
             /**
              * An external transfer has been successfully verified.
-             * [verified_transfer_id, verified_transfer]
+             * [verified_transfer_id]
              **/
-            TransferVerified: AugmentedEvent<ApiType, [H256, PalletCreditcoinTransfer]>;
+            TransferVerified: AugmentedEvent<ApiType, [H256]>;
             /**
              * Generic event
              **/
