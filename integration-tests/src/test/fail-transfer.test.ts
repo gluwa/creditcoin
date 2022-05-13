@@ -26,7 +26,7 @@ describe('FailTransfer', (): void => {
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
         const transferId = createFundingTransferId(blockchain, '0xffffffffffffffffffffffffffffffffffffffff');
-        const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TransferFailed');
+        const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
 
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
