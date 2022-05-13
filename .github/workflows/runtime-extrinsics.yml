@@ -1,4 +1,4 @@
-name: Check Runtime n Extrinsics
+name: Check Runtime and Extrinsics
 
 # This CI checks for changes in Creditcoin runtime and extrinsic ordering
 
@@ -19,7 +19,7 @@ jobs:
       - name: Install Node Dependencies
         uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 16.x
       - run: npm install --ignore-scripts -g @polkadot/metadata-cmp
 
       - name: Set-Up
@@ -42,7 +42,7 @@ jobs:
           command: build
           args: --release
 
-      - name: Run Extrinsice Ordering
+      - name: Run Extrinsics Ordering
         shell: bash
         continue-on-error: true
         run: |
@@ -63,7 +63,7 @@ jobs:
           repository: gluwa/substrate
           path: substrate
 
-      - name: Runtime Checkheck
+      - name: Runtime Check
         shell: bash
         run: |
           ./scripts/runtime_check.sh
