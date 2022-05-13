@@ -180,17 +180,14 @@ jobs:
         run: |
           docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
 
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
+
       - name: Run integration test
         run: |
-          # remove pre-installed packages
-          sudo apt remove npm nodejs
-
-          # Install Node.js 16.x from upstream b/c polkadot/jest can't work withh old versions
-          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-
-          sudo apt-get install -y nodejs
-          sudo npm install -g yarn
-
           pushd integration-tests/
 
           # wait for creditcoin-node to initialize
@@ -224,19 +221,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set-Up
-        run: |
-          sudo apt-get update
-          sudo apt install -y curl
-
-          # remove pre-installed packages
-          sudo apt remove npm nodejs
-
-          # Install Node.js 16.x from upstream b/c polkadot/jest can't work withh old versions
-          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-
-          sudo apt-get install -y nodejs
-          sudo npm install -g yarn
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
 
       - name: Run tools
         run: |
@@ -257,19 +246,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set-Up
-        run: |
-          sudo apt-get update
-          sudo apt install -y curl
-
-          # remove pre-installed packages
-          sudo apt remove npm nodejs
-
-          # Install Node.js 16.x from upstream b/c polkadot/jest can't work withh old versions
-          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-
-          sudo apt-get install -y nodejs
-          sudo npm install -g yarn
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
 
       - name: Run tools
         run: |
@@ -290,19 +271,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set-Up
-        run: |
-          sudo apt-get update
-          sudo apt install -y curl
-
-          # remove pre-installed packages
-          sudo apt remove npm nodejs
-
-          # Install Node.js 16.x from upstream b/c polkadot/jest can't work withh old versions
-          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-
-          sudo apt-get install -y nodejs
-          sudo npm install -g yarn
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
 
       - name: Run tools
         run: |
