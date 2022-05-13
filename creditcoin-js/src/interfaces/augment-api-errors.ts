@@ -245,9 +245,9 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             UnsupportedTransferKind: AugmentedError<ApiType>;
             /**
-             * The queue of unverified transfers is full for this block.
+             * The pool of unverified tasks pending verification is full.
              **/
-            UnverifiedTransferPoolFull: AugmentedError<ApiType>;
+            UnverifiedTaskPoolFull: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
