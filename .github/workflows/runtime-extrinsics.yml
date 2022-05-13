@@ -4,8 +4,6 @@ name: Check Runtime n Extrinsics
 
 # Controls when the action will run.
 on:
-  push:
-    branches: [CSUB-69-extrinsics-check]
   pull_request:
     branches: [dev]
 
