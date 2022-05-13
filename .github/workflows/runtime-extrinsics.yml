@@ -1,4 +1,6 @@
-name: CI
+name: Check Runtime n Extrinsics
+
+# This CI checks for changes in Creditcoin runtime and extrinsic ordering
 
 # Controls when the action will run.
 on:
@@ -46,7 +48,7 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          ./scripts/extrinsic_ordering.sh
+          ./scripts/extrinsic_check.sh
 
   check_runtime:
     name: Runtime
@@ -66,4 +68,4 @@ jobs:
       - name: Runtime Checkheck
         shell: bash
         run: |
-          ./scripts/check_runtime.sh
+          ./scripts/runtime_check.sh
