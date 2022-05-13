@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+# This script:
+# - Checks for changes in transaction version in runtime/src/lib.rs
+# - Downloads latest release binary from gluwa/creditcoin (RELEASE_BIN)
+# - Compiles and build a binary from the current branch (HEAD_BIN)
+# - Runs the two nodes
+
 set -e
 
 HEAD_BIN=./target/release/creditcoin-node
