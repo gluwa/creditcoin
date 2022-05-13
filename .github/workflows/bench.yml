@@ -72,5 +72,5 @@ jobs:
         with:
           author_name: hardwareBenchmark
           author_email: creditcoin@gluwa.com
-          message: 'Creditcoin benchmarks added'
+          message: 'Auto-update pallet weights'
           github_token: ${{ secrets.GITHUB_TOKEN }}
