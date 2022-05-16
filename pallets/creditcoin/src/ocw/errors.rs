@@ -53,7 +53,7 @@ impl VerificationFailureCause {
 pub enum RpcUrlError {
 	StorageFailure(StorageRetrievalError),
 	InvalidUrl(FromUtf8Error),
-	InvalidChain(Utf8Error), 
+	InvalidChain(Utf8Error),
 	NoValue,
 }
 
