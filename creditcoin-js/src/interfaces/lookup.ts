@@ -407,6 +407,7 @@ export default {
      **/
     PalletCreditcoinOcwErrorsVerificationFailureCause: {
         _enum: [
+            'TaskNonexistent',
             'TaskFailed',
             'TaskPending',
             'TaskUnconfirmed',
@@ -754,9 +755,11 @@ export default {
                 dealOrderId: 'PalletCreditcoinDealOrderId',
             },
             verify_transfer: {
+                deadline: 'u32',
                 transfer: 'PalletCreditcoinTransfer',
             },
             fail_transfer: {
+                deadline: 'u32',
                 transferId: 'H256',
                 cause: 'PalletCreditcoinOcwErrorsVerificationFailureCause',
             },
@@ -835,9 +838,10 @@ export default {
         transfer: 'PalletCreditcoinTransfer',
         fromExternal: 'Bytes',
         toExternal: 'Bytes',
+        deadline: 'u32',
     },
     /**
-     * Lookup131: pallet_creditcoin::pallet::Error<T>
+     * Lookup130: pallet_creditcoin::pallet::Error<T>
      **/
     PalletCreditcoinError: {
         _enum: [
@@ -881,7 +885,6 @@ export default {
             'NotBorrower',
             'MalformedDealOrder',
             'NotLender',
-            'UnverifiedTaskPoolFull',
             'RepaymentOrderUnsupported',
             'NotLegacyWalletOwner',
             'LegacyWalletNotFound',
@@ -894,44 +897,44 @@ export default {
         ],
     },
     /**
-     * Lookup133: pallet_difficulty::DifficultyAndTimestamp<Moment>
+     * Lookup132: pallet_difficulty::DifficultyAndTimestamp<Moment>
      **/
     PalletDifficultyDifficultyAndTimestamp: {
         difficulty: 'U256',
         timestamp: 'u64',
     },
     /**
-     * Lookup135: pallet_difficulty::pallet::Error<T>
+     * Lookup134: pallet_difficulty::pallet::Error<T>
      **/
     PalletDifficultyError: {
         _enum: ['ZeroTargetTime', 'ZeroAdjustmentPeriod', 'NegativeAdjustmentPeriod'],
     },
     /**
-     * Lookup138: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
+     * Lookup137: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
      **/
     FrameSystemExtensionsCheckSpecVersion: 'Null',
     /**
-     * Lookup139: frame_system::extensions::check_tx_version::CheckTxVersion<T>
+     * Lookup138: frame_system::extensions::check_tx_version::CheckTxVersion<T>
      **/
     FrameSystemExtensionsCheckTxVersion: 'Null',
     /**
-     * Lookup140: frame_system::extensions::check_genesis::CheckGenesis<T>
+     * Lookup139: frame_system::extensions::check_genesis::CheckGenesis<T>
      **/
     FrameSystemExtensionsCheckGenesis: 'Null',
     /**
-     * Lookup143: frame_system::extensions::check_nonce::CheckNonce<T>
+     * Lookup142: frame_system::extensions::check_nonce::CheckNonce<T>
      **/
     FrameSystemExtensionsCheckNonce: 'Compact<u32>',
     /**
-     * Lookup144: frame_system::extensions::check_weight::CheckWeight<T>
+     * Lookup143: frame_system::extensions::check_weight::CheckWeight<T>
      **/
     FrameSystemExtensionsCheckWeight: 'Null',
     /**
-     * Lookup145: pallet_transaction_payment::ChargeTransactionPayment<T>
+     * Lookup144: pallet_transaction_payment::ChargeTransactionPayment<T>
      **/
     PalletTransactionPaymentChargeTransactionPayment: 'Compact<u128>',
     /**
-     * Lookup146: creditcoin_node_runtime::Runtime
+     * Lookup145: creditcoin_node_runtime::Runtime
      **/
     CreditcoinNodeRuntimeRuntime: 'Null',
 };

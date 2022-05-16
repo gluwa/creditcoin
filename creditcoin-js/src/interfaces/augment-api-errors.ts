@@ -245,10 +245,6 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             UnsupportedTransferKind: AugmentedError<ApiType>;
             /**
-             * The pool of unverified tasks pending verification is full.
-             **/
-            UnverifiedTaskPoolFull: AugmentedError<ApiType>;
-            /**
              * Generic error
              **/
             [key: string]: AugmentedError<ApiType>;
