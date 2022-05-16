@@ -284,7 +284,6 @@ impl pallet_creditcoin::Config for Runtime {
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
 	type HashIntoNonce = Hash;
-	type UnverifiedPoolsLimit = ConstU32<10000>;
 	type UnverifiedTransferTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
 }
