@@ -888,7 +888,7 @@ mod tests {
 
 			assert_matches!(
 				crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-				Ok(VerificationResult::Failure(TransferNonexistent))
+				Err(OffchainError::InvalidTask(TaskNonexistent))
 			);
 		});
 	}
