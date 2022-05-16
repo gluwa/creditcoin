@@ -143,10 +143,13 @@ declare module '@polkadot/api-base/types/storage' {
                 QueryableStorageEntry<ApiType, [H256]>;
             unverifiedTransfers: AugmentedQuery<
                 ApiType,
-                () => Observable<Vec<PalletCreditcoinUnverifiedTransfer>>,
-                []
+                (
+                    arg1: u32 | AnyNumber | Uint8Array,
+                    arg2: H256 | string | Uint8Array,
+                ) => Observable<Option<PalletCreditcoinUnverifiedTransfer>>,
+                [u32, H256]
             > &
-                QueryableStorageEntry<ApiType, []>;
+                QueryableStorageEntry<ApiType, [u32, H256]>;
             usedGuids: AugmentedQuery<
                 ApiType,
                 (arg: Bytes | string | Uint8Array) => Observable<Option<Null>>,

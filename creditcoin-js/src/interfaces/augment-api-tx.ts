@@ -272,9 +272,11 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             failTransfer: AugmentedSubmittable<
                 (
+                    deadline: u32 | AnyNumber | Uint8Array,
                     transferId: H256 | string | Uint8Array,
                     cause:
                         | PalletCreditcoinOcwErrorsVerificationFailureCause
+                        | 'TaskNonexistent'
                         | 'TaskFailed'
                         | 'TaskPending'
                         | 'TaskUnconfirmed'
@@ -294,7 +296,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
+                [u32, H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
             >;
             fundDealOrder: AugmentedSubmittable<
                 (
@@ -397,6 +399,7 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             verifyTransfer: AugmentedSubmittable<
                 (
+                    deadline: u32 | AnyNumber | Uint8Array,
                     transfer:
                         | PalletCreditcoinTransfer
                         | {
@@ -415,7 +418,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinTransfer]
+                [u32, PalletCreditcoinTransfer]
             >;
             /**
              * Generic tx
