@@ -590,7 +590,12 @@ pub mod pallet {
 								Ok(()) => {
 									transfer_status.mark_complete();
 								},
-								Err(e) => { log::error!("Failed to send verify_transfer transaction: {:?}", e); },
+								Err(e) => {
+									log::error!(
+										"Failed to send verify_transfer transaction: {:?}",
+										e
+									);
+								},
 							}
 						},
 						Err(OffchainError::InvalidTask(cause)) => {
@@ -613,10 +618,12 @@ pub mod pallet {
 									Ok(()) => {
 										transfer_status.mark_complete();
 									},
-									Err(e) => {log::error!(
-										"Failed to send fail_transfer transaction: {:?}",
-										e
-									);},
+									Err(e) => {
+										log::error!(
+											"Failed to send fail_transfer transaction: {:?}",
+											e
+										);
+									},
 								}
 							}
 						},
