@@ -317,6 +317,8 @@ pub fn roll_by_with_ocw(n: BlockNumber) {
 		Creditcoin::offchain_worker(now);
 		now += 1;
 		System::set_block_number(now);
+		System::reset_events();
+		System::on_initialize(now);
 		Creditcoin::on_initialize(now);
 		Creditcoin::on_finalize(now);
 	}
