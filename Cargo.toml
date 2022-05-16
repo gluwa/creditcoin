@@ -8,6 +8,7 @@ members = [
     'pallets/rewards',
     'pallets/difficulty',
     'pallets/creditcoin',
+    'pallets/voting-oracle',
     'runtime',
     "sha3pow",
     "primitives",
