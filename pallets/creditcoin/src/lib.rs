@@ -125,8 +125,6 @@ pub mod pallet {
 			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
 			+ Clone;
 
-		type UnverifiedPoolsLimit: Get<u32>;
-
 		type UnverifiedTransferTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
@@ -448,9 +446,6 @@ pub mod pallet {
 
 		/// Only the lender can perform the action.
 		NotLender,
-
-		/// The pool of unverified tasks pending verification is full.
-		UnverifiedTaskPoolFull,
 
 		/// Repayment orders are not currently supported.
 		RepaymentOrderUnsupported,
