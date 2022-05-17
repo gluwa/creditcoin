@@ -14,7 +14,7 @@ const signTransfer = async (
     to: string,
     amount: BN,
     fee: number,
-    nonce: BigInt,
+    nonce: bigint,
 ) => {
     const fromAddress = await from.getAddress();
     const hash = ethers.utils.solidityKeccak256(
@@ -44,7 +44,7 @@ const ethlessTransfer = async (
     to: string,
     amount: BN,
     fee: number,
-    nonce: BigInt,
+    nonce: bigint,
 ) => {
     const chainId = await token.chainID();
     const fromAddress = await fromSigner.getAddress();
