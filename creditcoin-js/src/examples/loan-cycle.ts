@@ -227,4 +227,6 @@ export const main = async () => {
     await api.disconnect().catch(console.error);
 };
 
-main().catch(console.error);
+if (require.main === module) {
+    main().catch(console.error);
+}
