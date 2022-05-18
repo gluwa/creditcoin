@@ -1,4 +1,4 @@
-import { main } from 'creditcoin-js/examples/loan-cycle';
+import { fullLoanCycleExample } from 'creditcoin-js/examples/loan-cycle';
 
 describe('Full Loan Cycle', (): void => {
     beforeAll(() => {
@@ -6,6 +6,6 @@ describe('Full Loan Cycle', (): void => {
     });
 
     it('works as expected', async (): Promise<void> => {
-        await expect(main()).resolves.toBeUndefined();
+        await expect(fullLoanCycleExample()).resolves.toBeUndefined();
     }, 900000);
 });
