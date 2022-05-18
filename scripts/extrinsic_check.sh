@@ -50,8 +50,8 @@ for RUNTIME in "${runtimes[@]}"; do
   fi
 
   # Start running the nodes in the background
-  $HEAD_BIN --chain=./chainspecs/qaSpec.json --tmp &
-  $RELEASE_BIN --chain=./chainspecs/qaSpec.json --ws-port 9945 --tmp &
+  $HEAD_BIN --chain=local --tmp &
+  $RELEASE_BIN --chain=local --ws-port 9945 --tmp &
   jobs
 
   # Sleep a little to allow the nodes to spin up and start listening
