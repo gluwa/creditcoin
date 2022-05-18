@@ -1244,7 +1244,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			who: T::AccountId,
 		) -> DispatchResultWithPostInfo {
-			ensure_root(origin)?;
+			ensure_signed(origin)?;
 
 			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
 
