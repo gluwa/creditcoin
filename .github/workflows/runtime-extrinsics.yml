@@ -47,6 +47,17 @@ jobs:
         run: |
           ./scripts/extrinsic_check.sh
 
+      #Upload logs if nodes are not connecting.
+      #head-node.log and release-node.log are created in ./scripts/extrinsic_check.sh
+      - name: Upload error logs
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: 'extrinsic-logs'
+          path: |
+            head-node.log
+            release-node.log
+
   check_runtime:
     name: Runtime
     runs-on: ubuntu-latest
