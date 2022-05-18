@@ -618,6 +618,20 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		#[pallet::weight(<T as Config>::WeightInfo::add_authority())]
+		pub fn add_authority(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
+
+			Authorities::<T>::insert(who, ());
+
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
 		/// Claims legacy wallet and transfers the balance to the sender's account.
 		#[pallet::weight(<T as Config>::WeightInfo::claim_legacy_wallet())]
 		pub fn claim_legacy_wallet(
@@ -688,41 +702,6 @@ pub mod pallet {
 			Self::deposit_event(Event::<T>::AddressRegistered(address_id.clone(), entry.clone()));
 			<Addresses<T>>::insert(address_id, entry);
 
-			Ok(())
-		}
-
-		#[pallet::weight(<T as Config>::WeightInfo::add_ask_order())]
-		pub fn add_ask_order(
-			origin: OriginFor<T>,
-			address_id: AddressId<T::Hash>,
-			terms: LoanTerms,
-			expiration_block: BlockNumberFor<T>,
-			guid: Guid,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let head = Self::block_number();
-			ensure!(expiration_block >= head, Error::<T>::AskOrderExpired);
-
-			let ask_order_id = AskOrderId::new::<T>(expiration_block, &guid);
-			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
-
-			let address = Self::get_address(&address_id)?;
-			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
-
-			let ask_order = AskOrder {
-				blockchain: address.blockchain,
-				lender_address_id: address_id,
-				terms: terms.try_into().map_err(Error::<T>::from)?,
-				expiration_block,
-				block: <frame_system::Pallet<T>>::block_number(),
-				lender: who,
-			};
-
-			Self::use_guid(&guid)?;
-			sp_io::offchain_index::set(&guid, &ask_order.encode());
-			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id.clone(), ask_order.clone()));
-			AskOrders::<T>::insert_id(ask_order_id, ask_order);
 			Ok(())
 		}
 
@@ -1239,18 +1218,40 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(<T as Config>::WeightInfo::add_authority())]
-		pub fn add_authority(
+		#[pallet::weight(<T as Config>::WeightInfo::add_ask_order())]
+		pub fn add_ask_order(
 			origin: OriginFor<T>,
-			who: T::AccountId,
-		) -> DispatchResultWithPostInfo {
-			ensure_root(origin)?;
+			address_id: AddressId<T::Hash>,
+			terms: LoanTerms,
+			expiration_block: BlockNumberFor<T>,
+			guid: Guid,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
 
-			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
+			let head = Self::block_number();
+			ensure!(expiration_block >= head, Error::<T>::AskOrderExpired);
 
-			Authorities::<T>::insert(who, ());
+			let ask_order_id = AskOrderId::new::<T>(expiration_block, &guid);
+			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
 
-			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+			let address = Self::get_address(&address_id)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			let ask_order = AskOrder {
+				blockchain: address.blockchain,
+				lender_address_id: address_id,
+				terms: terms.try_into().map_err(Error::<T>::from)?,
+				expiration_block,
+				block: <frame_system::Pallet<T>>::block_number(),
+				lender: who,
+			};
+
+			Self::use_guid(&guid)?;
+			sp_io::offchain_index::set(&guid, &ask_order.encode());
+			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id.clone(), ask_order.clone()));
+			AskOrders::<T>::insert_id(ask_order_id, ask_order);
+			Ok(())
 		}
+
 	}
 }
