@@ -8,7 +8,7 @@ import { ethConnection } from './ethereum';
 import { LoanTerms, TransferKind } from '../model';
 import { setupAuthority } from './setup-authority';
 
-export const main = async () => {
+export const fullLoanCycleExample = async () => {
     const {
         api,
         extrinsics,
@@ -227,4 +227,6 @@ export const main = async () => {
     await api.disconnect().catch(console.error);
 };
 
-main().catch(console.error);
+if (require.main === module) {
+    fullLoanCycleExample().catch(console.error);
+}
