@@ -1252,5 +1252,18 @@ pub mod pallet {
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
+
+		#[pallet::weight(<T as Config>::WeightInfo::exempt())]
+		pub fn dont_do_anything(
+			origin: OriginFor<T>,
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+                        // used only for testing. Emits same event as exempt()
+			Self::deposit_event(Event::<T>::LoanExempted(deal_order_id));
+			Ok(())
+		}
+
 	}
 }
