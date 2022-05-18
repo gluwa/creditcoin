@@ -64,7 +64,7 @@ for RUNTIME in "${runtimes[@]}"; do
       fi
       if [ "$i" == $TIMEOUT ]; then
         echo "[!] Both nodes not listening after $i seconds. Exiting"
-        jobs -p | xargs kill; sleep 5
+        jobs -p | xargs kill -9
         exit 1
       fi
   done
@@ -82,8 +82,5 @@ for RUNTIME in "${runtimes[@]}"; do
   fi
 
   echo "[+] No change in extrinsics ordering for the ${RUNTIME} runtime"
-  jobs -p | xargs kill; sleep 5
+  jobs -p | xargs kill -9
 done
-
-# Sleep a little to let the jobs die properly
-sleep 5
