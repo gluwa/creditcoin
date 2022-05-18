@@ -978,7 +978,7 @@ pub mod pallet {
 			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressPlatformMismatch);
 
 			let ask_order_id = AskOrderId::new::<T>(expiration_block, &ask_guid);
-			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
+			ensure!(AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
 
 			let bid_order_id = BidOrderId::new::<T>(expiration_block, &bid_guid);
 			ensure!(!BidOrders::<T>::contains_id(&bid_order_id), Error::<T>::DuplicateId);
