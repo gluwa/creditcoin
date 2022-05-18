@@ -191,7 +191,7 @@ jobs:
           pushd integration-tests/
 
           # wait for creditcoin-node to initialize
-          ./wait-for-creditcoin.sh
+          ./yarn-install-and-wait-for-creditcoin.sh
 
           yarn test
 
