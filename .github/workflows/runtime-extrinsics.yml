@@ -44,7 +44,6 @@ jobs:
 
       - name: Run Extrinsics Ordering
         shell: bash
-        continue-on-error: true
         run: |
           ./scripts/extrinsic_check.sh
 
