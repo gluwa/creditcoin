@@ -1,5 +1,5 @@
 use crate as pallet_voting_oracle;
-use frame_support::{parameter_types, traits::ConstU32};
+use frame_support::{parameter_types, traits::{ConstU32, ConstU64}};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
@@ -58,6 +58,11 @@ impl system::Config for Test {
 impl pallet_voting_oracle::Config for Test {
 	type Origin = Origin;
 	type Event = Event;
+	type Proposal = Call;
+	type MaxProposals = ConstU32<100>;
+	type DisagreementReason = ();
+	type TimeLimit = ConstU64<10>;
+	type QuorumPercentage = ConstU32<50>;
 }
 
 // Build genesis storage according to the mock runtime.
