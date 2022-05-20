@@ -7,8 +7,6 @@ describe('System RPC sanity test', (): void => {
     let api: ApiPromise;
 
     beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
-
         const provider = new WsProvider('ws://127.0.0.1:9944');
 
         api = await ApiPromise.create({ provider });
