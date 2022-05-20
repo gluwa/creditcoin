@@ -7,12 +7,22 @@ test('Hashrate prometheus metric works', async () => {
     const metricsBase: string = (global as any).CREDITCOIN_METRICS_BASE;
     const { data } = await axios.get<string>(`${metricsBase}/metrics`);
     expect(data).toContain('creditcoin_node_hash_count');
-    const re = /creditcoin_node_hash_count\{chain="dev"\} (\d+)/;
+
+    const shortName: string = (global as any).CREDITCOIN_NETWORK_SHORT_NAME;
+    const re = new RegExp(`creditcoin_node_hash_count\\{chain="${shortName}"\\} (\\d+)`);
+
     const match = data.match(re);
     expect(match).not.toBeNull();
     if (match) {
         // so TS sees the match is non-null
         const value = parseInt(match[1], 10);
-        expect(value).toBeGreaterThan(0);
+
+        // the nodes dedicated to serving RPCs don't mine blocks
+        // and therefore don't produce any hashes
+        if (shortName === 'creditcoin_testnet') {
+            expect(value).toBe(0);
+        } else {
+            expect(value).toBeGreaterThan(0);
+        }
     }
 });
