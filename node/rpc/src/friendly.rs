@@ -91,12 +91,6 @@ impl Event {
 				},
 				_ => None?,
 			},
-			creditcoin_node_runtime::Event::Rewards(e) => match e {
-				pallet_rewards::Event::RewardIssued(to, amount) => {
-					Event::RewardIssued { to, amount: amount.to_string() }
-				},
-				_ => None?,
-			},
 			creditcoin_node_runtime::Event::Sudo(_) => None?,
 			creditcoin_node_runtime::Event::Creditcoin(e) => match e {
 				pallet_creditcoin::Event::AddressRegistered(address_id, address) => {
