@@ -2,6 +2,8 @@ import { setupAuthority } from 'creditcoin-js/examples/setup-authority';
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
 
 const setup = async () => {
+    process.env.NODE_ENV = 'test';
+
     const api = await ApiPromise.create({
         provider: new WsProvider('ws://127.0.0.1:9944'),
     });

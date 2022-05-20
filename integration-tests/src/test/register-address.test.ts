@@ -10,8 +10,6 @@ describe('RegisterAddress', () => {
     let alice: KeyringPair;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
-
         api = await ApiPromise.create({
             provider: new WsProvider('ws://127.0.0.1:9944'),
         });
