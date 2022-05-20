@@ -21,7 +21,6 @@ describe('LockDealOrder', (): void => {
     const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
         ccApi = await creditcoinApi('ws://127.0.0.1:9944');
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
@@ -32,7 +31,6 @@ describe('LockDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
         const {
             api,
             extrinsics: { fundDealOrder, registerAddress, registerDealOrder, registerFundingTransfer },

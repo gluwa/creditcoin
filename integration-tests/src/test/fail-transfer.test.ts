@@ -14,7 +14,6 @@ describe('FailTransfer', (): void => {
     const { blockchain, keyring } = testData;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
         ccApi = await creditcoinApi('ws://127.0.0.1:9944');
         authority = keyring.createFromUri(AUTHORITY_SURI);
     });

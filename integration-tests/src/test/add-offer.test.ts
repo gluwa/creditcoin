@@ -16,7 +16,6 @@ describe('AddOffer', (): void => {
     const { expirationBlock, keyring } = testData;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
         ccApi = await creditcoinApi('ws://127.0.0.1:9944');
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
@@ -27,7 +26,6 @@ describe('AddOffer', (): void => {
     });
 
     beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
         [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
     }, 210000);
 
