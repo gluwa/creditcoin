@@ -18,7 +18,7 @@ describe('System RPC sanity test', (): void => {
 
     it('rpc.system.chain() works', async (): Promise<void> => {
         const result = await api.rpc.system.chain();
-        expect(result.toString()).toBe('Development');
+        expect(result.toString()).toBe((global as any).CREDITCOIN_NETWORK_LONG_NAME);
     });
 
     it('rpc.system.name() works', async (): Promise<void> => {
