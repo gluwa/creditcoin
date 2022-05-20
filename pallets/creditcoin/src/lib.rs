@@ -1239,18 +1239,5 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(<T as Config>::WeightInfo::add_authority())]
-		pub fn add_authority(
-			origin: OriginFor<T>,
-			who: T::AccountId,
-		) -> DispatchResultWithPostInfo {
-			ensure_root(origin)?;
-
-			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
-
-			Authorities::<T>::insert(who, ());
-
-			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
-		}
 	}
 }

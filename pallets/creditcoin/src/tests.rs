@@ -2,7 +2,7 @@ use crate::{
 	helpers::{EVMAddress, PublicToAddress},
 	mock::*,
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder,
 	DealOrderId, DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash,
 	LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers,
 };
@@ -12,7 +12,6 @@ use bstr::B;
 use codec::{Decode, Encode};
 use ethereum_types::{BigEndianHash, H256};
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
-use frame_system::RawOrigin;
 
 use sp_core::Pair;
 use sp_runtime::{
@@ -1500,53 +1499,6 @@ fn claim_legacy_wallet_works() {
 }
 
 #[test]
-fn add_authority_errors_for_non_root() {
-	ExtBuilder::default().build_and_execute(|| {
-		let acct: AccountId = AccountId::new([0; 32]);
-
-		assert_noop!(
-			Creditcoin::add_authority(Origin::signed(acct.clone()), acct.clone()),
-			BadOrigin
-		);
-	});
-}
-
-#[test]
-fn add_authority_should_fail_when_authority_already_exists() {
-	ExtBuilder::default().build_and_execute(|| {
-		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
-
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
-			acct.clone(),
-		));
-
-		// try again
-		assert_noop!(
-			Creditcoin::add_authority(crate::mock::Origin::from(root.clone()), acct.clone(),),
-			crate::Error::<Test>::AlreadyAuthority,
-		);
-	});
-}
-
-#[test]
-fn add_authority_works_for_root() {
-	ExtBuilder::default().build_and_execute(|| {
-		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
-
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
-			acct.clone(),
-		));
-
-		let value = Authorities::<Test>::take(acct.clone());
-		assert_eq!(value, Some(()))
-	});
-}
-
-#[test]
 fn register_deal_order_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -2499,119 +2451,6 @@ fn verify_transfer_should_error_when_signer_not_authorized() {
 }
 
 #[test]
-fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-
-		// authorize lender
-		let root = RawOrigin::Root;
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
-			test_info.lender.account_id.clone(),
-		));
-
-		let (_deal_order, deal_order_id) = test_info.create_deal_order();
-		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
-
-		assert_noop!(
-			Creditcoin::verify_transfer(Origin::signed(test_info.lender.account_id), transfer),
-			crate::Error::<Test>::TransferAlreadyRegistered,
-		);
-	});
-}
-
-#[test]
-fn verify_transfer_should_work() {
-	ExtBuilder::default().build_and_execute(|| {
-		System::set_block_number(1);
-
-		let test_info = TestInfo::new_defaults();
-
-		// authorize lender
-		let root = RawOrigin::Root;
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
-			test_info.lender.account_id.clone(),
-		));
-
-		let (deal_order, deal_order_id) = test_info.create_deal_order();
-
-		// create a transfer but don't add it into storage
-		let tx = "0xafafaf".as_bytes().into_bounded();
-		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
-		let transfer = Transfer {
-			blockchain: test_info.blockchain.clone(),
-			kind: TransferKind::Native,
-			from: test_info.lender.address_id.clone(),
-			to: test_info.borrower.address_id.clone(),
-			order_id: OrderId::Deal(deal_order_id.clone()),
-			amount: deal_order.terms.amount.into(),
-			tx_id: tx,
-			block: System::block_number(),
-			is_processed: false,
-			account_id: test_info.lender.account_id.clone(),
-			timestamp: None,
-		};
-
-		assert_ok!(Creditcoin::verify_transfer(
-			Origin::signed(test_info.lender.account_id),
-			transfer.clone()
-		));
-
-		let mut all_events = <frame_system::Pallet<Test>>::events();
-
-		// assert events in reversed order
-		let last_event = all_events.pop().expect("At least one EventRecord").event;
-		assert_matches!(
-			last_event,
-			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(id)) =>{
-				assert_eq!(transfer_id,id)
-			}
-		);
-
-		assert_eq!(Transfers::<Test>::get(&transfer_id), Some(transfer));
-	});
-}
-
-#[test]
-fn fail_transfer_should_work() {
-	ExtBuilder::default().build_and_execute(|| {
-		System::set_block_number(1);
-
-		let test_info = TestInfo::new_defaults();
-
-		let root = RawOrigin::Root;
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
-			test_info.lender.account_id.clone(),
-		));
-
-		let _ = test_info.create_deal_order();
-
-		let tx = "0xafafaf".hex_to_address();
-		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
-
-		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
-
-		assert_ok!(Creditcoin::fail_transfer(
-			Origin::signed(test_info.lender.account_id),
-			transfer_id.clone(),
-			failure_cause
-		));
-
-		let mut all_events = System::events();
-
-		assert_matches!(
-			all_events.pop().unwrap().event,
-			crate::mock::Event::Creditcoin(crate::Event::<Test>::TransferFailedVerification(id, cause)) => {
-				assert_eq!(id, transfer_id);
-				assert_eq!(cause, failure_cause);
-			}
-		);
-	})
-}
-
-#[test]
 fn fail_transfer_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
@@ -2653,36 +2492,6 @@ fn fail_transfer_should_error_when_not_authority() {
 				failure_cause
 			),
 			crate::Error::<Test>::InsufficientAuthority
-		);
-	})
-}
-
-#[test]
-fn fail_transfer_should_error_when_transfer_registered() {
-	ExtBuilder::default().build_and_execute(|| {
-		System::set_block_number(1);
-
-		let test_info = TestInfo::new_defaults();
-
-		let (_, deal_order_id) = test_info.create_deal_order();
-
-		let (_, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
-
-		let root = RawOrigin::Root;
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
-			test_info.lender.account_id.clone(),
-		));
-
-		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
-
-		assert_noop!(
-			Creditcoin::fail_transfer(
-				Origin::signed(test_info.lender.account_id),
-				transfer_id.clone(),
-				failure_cause
-			),
-			crate::Error::<Test>::TransferAlreadyRegistered
 		);
 	})
 }
