@@ -3,6 +3,9 @@ import { ApiPromise } from '@polkadot/api';
 import type { EventRecord } from '@polkadot/types/interfaces/system';
 import type { Balance, DispatchError } from '@polkadot/types/interfaces';
 
+export const testIf = (condition: Boolean, name: string, fn: any, timeout: number = 30000) =>
+    condition ? test(name, fn, timeout) : test.skip(name, fn, timeout);
+
 const expectNoDispatchError = (api: ApiPromise, dispatchError?: DispatchError): void => {
     if (dispatchError) {
         if (dispatchError.isModule) {

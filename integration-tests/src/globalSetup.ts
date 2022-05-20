@@ -4,16 +4,24 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
 const setup = async () => {
     process.env.NODE_ENV = 'test';
 
-    if (!(global as any).CREDITCOIN_API_URL) {
+    if ((global as any).CREDITCOIN_API_URL === undefined) {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
     }
 
-    if (!(global as any).CREDITCOIN_METRICS_BASE) {
-        (global as any).CREDITCOIN_METRICS_BASE = 'http://127.0.0.1:9615';
+    if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY === undefined) {
+        (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY = true;
     }
 
-    if (!(global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
-        (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY = true;
+    if ((global as any).CREDITCOIN_NETWORK_LONG_NAME === undefined) {
+        (global as any).CREDITCOIN_NETWORK_LONG_NAME = 'Development';
+    }
+
+    if ((global as any).CREDITCOIN_NETWORK_SHORT_NAME === undefined) {
+        (global as any).CREDITCOIN_NETWORK_SHORT_NAME = 'dev';
+    }
+
+    if ((global as any).CREDITCOIN_METRICS_BASE === undefined) {
+        (global as any).CREDITCOIN_METRICS_BASE = 'http://127.0.0.1:9615';
     }
 
     const api = await ApiPromise.create({

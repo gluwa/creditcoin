@@ -163,9 +163,19 @@ describe('Creditcoin RPC', (): void => {
         };
         const rate = await (api.rpc as any).creditcoin.hashrate();
         const rateObj: HashrateStats = JSON.parse(rate);
-        expect(rateObj.rate).toBeGreaterThan(0);
+
+        const shortName: string = (global as any).CREDITCOIN_NETWORK_SHORT_NAME;
+
+        // the nodes dedicated to serving RPCs don't mine blocks
+        // and therefore don't produce any hashes
+        if (shortName === 'creditcoin_testnet') {
+            expect(rateObj.rate).toBe(0);
+            expect(rateObj.hash_count).toBe(0); // eslint-disable-line
+        } else {
+            expect(rateObj.rate).toBeGreaterThan(0);
+            expect(rateObj.hash_count).toBeGreaterThan(0); // eslint-disable-line
+        }
         expect(rateObj.elapsed.secs).toBeGreaterThan(0);
         expect(rateObj.elapsed.nanos).toBeGreaterThan(0);
-        expect(rateObj.hash_count).toBeGreaterThan(0); // eslint-disable-line
     });
 });
