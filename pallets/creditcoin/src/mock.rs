@@ -56,7 +56,7 @@ parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
 	// used in tests, lower values == faster execution
-	pub const PendingTxLimit: u32 = 500;
+	pub const PendingTxLimit: u32 = 10;
 }
 
 impl system::Config for Test {

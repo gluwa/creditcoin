@@ -142,6 +142,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {}
 
 	#[pallet::error]
+	#[derive(PartialEq)]
 	pub enum Error<T> {
 		NotMember,
 		NonexistentProposal,
@@ -202,7 +203,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn open_proposal(
+		pub(crate) fn open_proposal(
 			proposal: Box<T::Proposal>,
 			proposal_hash: T::Hash,
 			who: T::AccountId,
@@ -225,7 +226,7 @@ pub mod pallet {
 			Ok(votes)
 		}
 
-		fn add_vote(
+		pub(crate) fn add_vote(
 			proposal_hash: &T::Hash,
 			who: T::AccountId,
 			vote: Vote<T::DisagreementReason>,
@@ -253,7 +254,7 @@ pub mod pallet {
 			Ok(vote_count.saturated_into())
 		}
 
-		fn meets_quorum(voted: MemberCount, member_count: MemberCount) -> bool {
+		pub(crate) fn meets_quorum(voted: MemberCount, member_count: MemberCount) -> bool {
 			let cutoff = member_count * T::QuorumPercentage::get() / 100;
 			voted >= cutoff
 		}
