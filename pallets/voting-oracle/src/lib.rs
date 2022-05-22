@@ -4,6 +4,7 @@
 use frame_support::pallet_prelude::*;
 use frame_support::sp_runtime::traits::{Hash, SaturatedConversion};
 pub use pallet::*;
+use sp_std::collections::btree_set::BTreeSet;
 
 #[cfg(test)]
 mod mock;
@@ -31,6 +32,12 @@ pub struct Votes<AccountId, BlockNumber, Reason> {
 	ayes: Vec<AccountId>,
 	nays: Vec<Disagreement<AccountId, Reason>>,
 	end: BlockNumber,
+}
+
+impl<AccountId, BlockNumber, Reason> Votes<AccountId, BlockNumber, Reason> {
+	pub fn count(&self) -> usize {
+		self.ayes.len() + self.nays.len()
+	}
 }
 
 #[derive(PartialEq, Eq, Clone, RuntimeDebug, Encode, Decode, TypeInfo, MaxEncodedLen)]
@@ -114,6 +121,7 @@ pub mod pallet {
 
 		type QuorumPercentage: Get<MemberCount>;
 
+		type DisagreementReason: Parameter + Ord;
 
 		type OnProposalComplete: OnProposalComplete<
 			<Self as frame_system::Config>::Hash,
@@ -180,45 +188,23 @@ pub mod pallet {
 			proposal: ProposalOrHash<T::Proposal, T::Hash>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let members = Self::members();
-			ensure!(members.contains(&who), Error::<T>::NotMember);
 
-			let proposal_hash = proposal.hash::<T>();
-			let proposal_open = ProposalOf::<T>::contains_key(&proposal_hash);
-			let vote_count = if proposal_open {
-				Self::add_vote(&proposal_hash, who.clone(), Vote::Aye)?
-			} else {
-				match proposal {
-					ProposalOrHash::Proposal(proposal) => {
-						Self::open_proposal(proposal, proposal_hash, who, Vote::Aye)?;
-						1
-					},
-					ProposalOrHash::Hash(_) => {
-						return Err(Error::<T>::NonexistentProposal.into());
-					},
-				}
-			};
-
-			// close if threshold met
-
-			if Self::meets_quorum(vote_count, members.len().saturated_into()) {
-				// Self::close_proposal(&proposal_hash)?;
-			}
+			Self::vote_on_proposal(who, proposal, Vote::Aye)?;
 
 			Ok(())
 		}
 
 		#[pallet::weight(T::DbWeight::get().reads_writes(3, 3))]
 		#[transactional]
-		#[allow(unused_variables)]
 		pub fn reject(
 			origin: OriginFor<T>,
 			proposal: ProposalOrHash<T::Proposal, T::Hash>,
 			reason: T::DisagreementReason,
 		) -> DispatchResult {
-			todo!();
+			let who = ensure_signed(origin)?;
 
-			#[allow(unreachable_code)]
+			Self::vote_on_proposal(who, proposal, Vote::Nay(reason))?;
+
 			Ok(())
 		}
 	}
@@ -280,12 +266,112 @@ pub mod pallet {
 			voted >= cutoff
 		}
 
-		#[allow(unused_variables)]
-		fn close_proposal(
+		pub(crate) fn close_proposal(
 			proposal_hash: &T::Hash,
-			votes: Votes<T::AccountId, T::BlockNumber, T::DisagreementReason>,
+			proposal: Box<T::Proposal>,
+			votes: &Votes<T::AccountId, T::BlockNumber, T::DisagreementReason>,
 		) -> Result<(), Error<T>> {
-			todo!()
+			let ayes_count = votes.ayes.len() as MemberCount;
+			let nays_count = votes.nays.len() as MemberCount;
+			let vote_count = votes.count() as MemberCount;
+
+			if ayes_count >= nays_count {
+				// enact proposal
+				let _proposal_weight =
+					Self::do_accept_proposal(vote_count, ayes_count, proposal_hash, proposal);
+			} else {
+				// veto proposal
+				Self::do_reject_proposal(proposal_hash, &proposal, votes);
+			}
+
+			Ok(())
 		}
+
+		#[must_use]
+		pub(crate) fn do_accept_proposal(
+			members: MemberCount,
+			approvals: MemberCount,
+			proposal_hash: &T::Hash,
+			proposal: Box<T::Proposal>,
+		) -> Weight {
+			T::OnProposalComplete::on_proposal_accepted(proposal_hash, &proposal);
+			let dispatch_weight = proposal.get_dispatch_info().weight;
+
+			let origin = RawOrigin::Members(approvals, members).into();
+			let result = proposal.dispatch(origin);
+
+			let proposal_weight = get_result_weight(result).unwrap_or(dispatch_weight);
+
+			Self::remove_proposal(proposal_hash);
+
+			proposal_weight
+		}
+
+		pub(crate) fn do_reject_proposal(
+			proposal_hash: &T::Hash,
+			proposal: &T::Proposal,
+			votes: &Votes<T::AccountId, T::BlockNumber, T::DisagreementReason>,
+		) {
+			let reasons =
+				votes.nays.iter().map(|vote| vote.reason.clone()).collect::<BTreeSet<_>>();
+
+			T::OnProposalComplete::on_proposal_rejected(proposal_hash, &proposal, &reasons);
+
+			Self::remove_proposal(proposal_hash);
+		}
+
+		pub(crate) fn remove_proposal(proposal_hash: &T::Hash) {
+			ProposalOf::<T>::remove(proposal_hash);
+			Voting::<T>::remove(proposal_hash);
+			Proposals::<T>::mutate(|proposals| {
+				proposals.retain(|proposal| proposal.hash != *proposal_hash);
+			});
+		}
+
+		pub(crate) fn vote_on_proposal(
+			who: T::AccountId,
+			proposal: ProposalOrHash<T::Proposal, T::Hash>,
+			vote: Vote<T::DisagreementReason>,
+		) -> Result<(), Error<T>> {
+			let members = Self::members();
+			ensure!(members.contains(&who), Error::<T>::NotMember);
+
+			let proposal_hash = proposal.hash::<T>();
+			let proposal_open = ProposalOf::<T>::get(&proposal_hash);
+			let (vote_count, proposal) = if let Some(proposal) = proposal_open {
+				let count = Self::add_vote(&proposal_hash, who.clone(), vote)?;
+				(count, Box::new(proposal))
+			} else {
+				match proposal {
+					ProposalOrHash::Proposal(proposal) => {
+						Self::open_proposal(proposal.clone(), proposal_hash, who, vote)?;
+						(1, proposal)
+					},
+					ProposalOrHash::Hash(_) => {
+						return Err(Error::<T>::NonexistentProposal.into());
+					},
+				}
+			};
+
+			// close if threshold met
+
+			if Self::meets_quorum(vote_count, members.len().saturated_into()) {
+				let votes = Voting::<T>::get(&proposal_hash)
+					.ok_or_else(|| Error::<T>::NonexistentProposal)?;
+				Self::close_proposal(&proposal_hash, proposal, &votes)?;
+			}
+
+			Ok(())
+		}
+	}
+}
+
+/// Return the weight of a dispatch call result as an `Option`.
+///
+/// Will return the weight regardless of what the state of the result is.
+fn get_result_weight(result: DispatchResultWithPostInfo) -> Option<Weight> {
+	match result {
+		Ok(post_info) => post_info.actual_weight,
+		Err(err) => err.post_info.actual_weight,
 	}
 }

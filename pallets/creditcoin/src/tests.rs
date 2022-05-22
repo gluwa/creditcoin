@@ -482,7 +482,6 @@ fn verify_ethless_transfer() {
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn register_transfer_ocw() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
