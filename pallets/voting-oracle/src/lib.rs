@@ -73,6 +73,22 @@ enum Vote<Reason> {
 	Nay(Reason),
 }
 
+pub trait OnProposalComplete<Hash, Proposal, Reason> {
+	fn on_proposal_accepted(proposal_hash: &Hash, proposal: &Proposal);
+
+	fn on_proposal_rejected(proposal_hash: &Hash, proposal: &Proposal, reasons: &BTreeSet<Reason>);
+
+	fn on_proposal_expired(proposal_hash: &Hash, proposal: &Proposal);
+}
+
+impl<H, P, R> OnProposalComplete<H, P, R> for () {
+	fn on_proposal_accepted(_: &H, _: &P) {}
+
+	fn on_proposal_rejected(_: &H, _: &P, _: &BTreeSet<R>) {}
+
+	fn on_proposal_expired(_: &H, _: &P) {}
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
@@ -98,7 +114,12 @@ pub mod pallet {
 
 		type QuorumPercentage: Get<MemberCount>;
 
-		type DisagreementReason: Parameter;
+
+		type OnProposalComplete: OnProposalComplete<
+			<Self as frame_system::Config>::Hash,
+			Self::Proposal,
+			Self::DisagreementReason,
+		>;
 	}
 
 	#[pallet::pallet]
