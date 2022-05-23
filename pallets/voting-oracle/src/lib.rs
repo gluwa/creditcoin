@@ -3,6 +3,7 @@
 
 use frame_support::pallet_prelude::*;
 use frame_support::sp_runtime::traits::{Hash, SaturatedConversion};
+use frame_support::traits::{ChangeMembers, InitializeMembers};
 pub use pallet::*;
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -94,6 +95,46 @@ impl<H, P, R> OnProposalComplete<H, P, R> for () {
 	fn on_proposal_rejected(_: &H, _: &P, _: &BTreeSet<R>) {}
 
 	fn on_proposal_expired(_: &H, _: &P) {}
+}
+
+impl<T: Config> ChangeMembers<T::AccountId> for Pallet<T> {
+	fn change_members_sorted(
+		_incoming: &[T::AccountId],
+		outgoing: &[T::AccountId],
+		new: &[T::AccountId],
+	) {
+		let mut outgoing = outgoing.to_vec();
+		outgoing.sort();
+		for info in Self::proposals() {
+			Voting::<T>::mutate(info.hash, |v| {
+				if let Some(mut votes) = v.take() {
+					votes.ayes = votes
+						.ayes
+						.into_iter()
+						.filter(|i| outgoing.binary_search(i).is_err())
+						.collect();
+					votes.nays = votes
+						.nays
+						.into_iter()
+						.filter(|i| outgoing.binary_search(&i.who).is_err())
+						.collect();
+					*v = Some(votes);
+				}
+			});
+		}
+
+		Members::<T>::put(new);
+	}
+}
+
+impl<T: Config> InitializeMembers<T::AccountId> for Pallet<T> {
+	fn initialize_members(members: &[T::AccountId]) {
+		if !members.is_empty() {
+			assert!(Members::<T>::get().is_empty(), "Members are already initialized!");
+
+			Members::<T>::put(members);
+		}
+	}
 }
 
 #[frame_support::pallet]
