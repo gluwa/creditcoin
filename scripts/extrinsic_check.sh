@@ -54,21 +54,10 @@ for RUNTIME in "${runtimes[@]}"; do
   $RELEASE_BIN --chain=local --ws-port 9945 --tmp --port 30334 --rpc-port 9934 >release-node.log 2>&1 &
   jobs
 
-  # Sleep a little to allow the nodes to spin up and start listening
-  TIMEOUT=30
-  for i in $(seq $TIMEOUT); do
-    sleep 1
-      if [ "$(lsof -nP -iTCP -sTCP:LISTEN | grep -c '994[45]')" == 2 ]; then
-        echo "[+] Both nodes listening"
-        break
-      fi
-      if [ "$i" == $TIMEOUT ]; then
-        echo "[!] Both nodes not listening after $i seconds. Exiting"
-        jobs -p | xargs kill -9
-        exit 1
-      fi
-  done
-  sleep 5
+  #Wait for HEAD BINARY
+  ../integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9944'
+  #Wait for RELEASE BINARY
+  ../integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9945'
 
   changed_extrinsics=$(
     polkadot-js-metadata-cmp "$RELEASE_WS" "$HEAD_WS" \
