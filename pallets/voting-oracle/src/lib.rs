@@ -220,6 +220,20 @@ pub mod pallet {
 		AlreadyVoted,
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_initialize(block_num: BlockNumberFor<T>) -> Weight {
+			let proposals = Proposals::<T>::get();
+			for proposal in proposals.iter().filter(|p| p.end <= block_num) {
+				if let Err(e) = Self::expire_proposal(&proposal.hash) {
+					log::error!("Error expiring proposal: {:?}", e);
+				}
+			}
+			// TODO: proper weight calculation
+			0
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(T::DbWeight::get().reads_writes(3, 3))]
@@ -367,6 +381,14 @@ pub mod pallet {
 			Proposals::<T>::mutate(|proposals| {
 				proposals.retain(|proposal| proposal.hash != *proposal_hash);
 			});
+		}
+
+		pub(crate) fn expire_proposal(proposal_hash: &T::Hash) -> Result<(), Error<T>> {
+			Self::remove_proposal(proposal_hash);
+			let proposal = ProposalOf::<T>::get(proposal_hash)
+				.ok_or_else(|| Error::<T>::NonexistentProposal)?;
+			T::OnProposalComplete::on_proposal_expired(proposal_hash, &proposal);
+			Ok(())
 		}
 
 		pub(crate) fn vote_on_proposal(
