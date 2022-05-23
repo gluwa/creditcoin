@@ -209,7 +209,9 @@ pub mod pallet {
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {}
+	pub enum Event<T: Config> {
+		Executed { proposal_hash: T::Hash, result: DispatchResult },
+	}
 
 	#[pallet::error]
 	#[derive(PartialEq)]
@@ -354,7 +356,10 @@ pub mod pallet {
 
 			let origin = RawOrigin::Members(approvals, members).into();
 			let result = proposal.dispatch(origin);
-
+			Self::deposit_event(Event::<T>::Executed {
+				proposal_hash: proposal_hash.clone(),
+				result: result.map(|_| ()).map_err(|e| e.error),
+			});
 			let proposal_weight = get_result_weight(result).unwrap_or(dispatch_weight);
 
 			Self::remove_proposal(proposal_hash);
