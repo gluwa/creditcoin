@@ -179,10 +179,13 @@ pub mod pallet {
 			+ From<frame_system::Call<Self>>
 			+ GetDispatchInfo;
 
+		#[pallet::constant]
 		type MaxProposals: Get<ProposalIndex>;
 
+		#[pallet::constant]
 		type TimeLimit: Get<Self::BlockNumber>;
 
+		#[pallet::constant]
 		type QuorumPercentage: Get<MemberCount>;
 
 		type DisagreementReason: Parameter + Ord;
