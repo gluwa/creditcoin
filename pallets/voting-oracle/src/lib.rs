@@ -6,6 +6,7 @@ use frame_support::sp_runtime::traits::{Hash, SaturatedConversion};
 use frame_support::traits::{ChangeMembers, InitializeMembers};
 pub use pallet::*;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::prelude::*;
 
 #[cfg(test)]
 mod mock;
