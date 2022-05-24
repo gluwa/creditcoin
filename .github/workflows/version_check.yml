@@ -1,0 +1,20 @@
+name: Version
+
+on:
+  pull_request:
+    branches:
+      - testnet
+
+jobs:
+  check-RuntimeVersion:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check if version.rs was modified
+      run: |
+        if curl -o- -L "${{ github.event.pull_request.diff_url }}" 2>/dev/null | grep "^diff --git" | grep "runtime/src/version.rs"; then
+            echo "PASS: version.rs is modified!"
+            exit 0
+        else
+            echo "FAIL: version.rs was not modified!"
+            exit 1
+        fi
