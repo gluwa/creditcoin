@@ -439,10 +439,10 @@ pub mod pallet {
 		}
 
 		pub(crate) fn expire_proposal(proposal_hash: &T::Hash) -> Result<(), Error<T>> {
-			Self::remove_proposal(proposal_hash);
 			let proposal = ProposalOf::<T>::get(proposal_hash)
 				.ok_or_else(|| Error::<T>::NonexistentProposal)?;
 			T::OnProposalComplete::on_proposal_expired(proposal_hash, &proposal);
+			Self::remove_proposal(proposal_hash);
 			Ok(())
 		}
 
