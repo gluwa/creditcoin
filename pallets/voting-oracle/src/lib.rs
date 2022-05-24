@@ -138,6 +138,28 @@ impl<T: Config> InitializeMembers<T::AccountId> for Pallet<T> {
 	}
 }
 
+pub struct EnsureProportionAtLeast<AccountId, const N: u32, const D: u32>(PhantomData<AccountId>);
+impl<
+		O: Into<Result<RawOrigin<AccountId>, O>> + From<RawOrigin<AccountId>>,
+		AccountId,
+		const N: u32,
+		const D: u32,
+	> EnsureOrigin<O> for EnsureProportionAtLeast<AccountId, N, D>
+{
+	type Success = ();
+	fn try_origin(o: O) -> Result<Self::Success, O> {
+		o.into().and_then(|o| match o {
+			RawOrigin::Members(n, m) if n * D >= N * m => Ok(()),
+			r => Err(O::from(r)),
+		})
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn successful_origin() -> O {
+		O::from(RawOrigin::Members(0u32, 0u32))
+	}
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
