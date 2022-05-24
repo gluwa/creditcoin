@@ -1,4 +1,6 @@
-use crate as pallet_voting_oracle;
+use sp_std::cell::RefCell;
+
+use crate::{self as pallet_voting_oracle, OnProposalComplete};
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, ConstU64},
@@ -13,6 +15,8 @@ use sp_runtime::{
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 pub type BlockNumber = u64;
+pub type AccountId = u64;
+pub type Reason = ();
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -22,7 +26,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		VotingOracle: pallet_voting_oracle::{Pallet, Origin<T>, Storage, Event<T>},
+		VotingOracle: pallet_voting_oracle::{Pallet, Call, Origin<T>, Storage, Event<T>},
 	}
 );
 
@@ -42,7 +46,7 @@ impl system::Config for Test {
 	type BlockNumber = BlockNumber;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = Event;
@@ -63,15 +67,70 @@ impl pallet_voting_oracle::Config for Test {
 	type Event = Event;
 	type Proposal = Call;
 	type MaxProposals = ConstU32<10>;
-	type DisagreementReason = ();
+	type DisagreementReason = Reason;
 	type TimeLimit = ConstU64<10>;
 	type QuorumPercentage = ConstU32<50>;
-	type OnProposalComplete = ();
+	type OnProposalComplete = CountCalls;
+}
+
+pub struct CountCalls;
+
+impl OnProposalComplete<H256, Call, Reason> for CountCalls {
+	fn on_proposal_accepted(_proposal_hash: &H256, _proposal: &Call) {
+		ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow_mut().accept += 1);
+	}
+
+	fn on_proposal_rejected(
+		_proposal_hash: &H256,
+		_proposal: &Call,
+		_reasons: &sp_std::collections::btree_set::BTreeSet<Reason>,
+	) {
+		ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow_mut().reject += 1);
+	}
+
+	fn on_proposal_expired(_proposal_hash: &H256, _proposal: &Call) {
+		ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow_mut().expire += 1);
+	}
+}
+
+#[derive(Clone, Default)]
+struct OnProposalCompleteCallCounts {
+	accept: u32,
+	reject: u32,
+	expire: u32,
+}
+impl OnProposalCompleteCallCounts {
+	fn reset(&mut self) {
+		self.accept = 0;
+		self.reject = 0;
+		self.expire = 0;
+	}
+}
+
+thread_local! {
+	static ON_PROPOSAL_COMPLETE_COUNTS: RefCell<OnProposalCompleteCallCounts>  = RefCell::new(OnProposalCompleteCallCounts::default());
+}
+
+pub fn on_proposal_accepted_calls() -> u32 {
+	ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow().accept)
+}
+
+pub fn on_proposal_rejected_calls() -> u32 {
+	ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow().reject)
+}
+
+pub fn on_proposal_expired_calls() -> u32 {
+	ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow().expire)
+}
+
+pub fn reset_call_counts() {
+	ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow_mut().reset());
 }
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	sp_tracing::try_init_simple();
+	reset_call_counts();
 	let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));

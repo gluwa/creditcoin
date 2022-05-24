@@ -1,11 +1,14 @@
-use crate::{mock::*, Vote};
+use crate::{mock::*, Disagreement, Vote, Votes};
 use codec::Encode;
 use frame_support::sp_runtime::traits::Hash;
 use frame_support::traits::Get;
+use frame_support::traits::Hooks;
 use sp_core::H256;
 
 type Proposal = Box<Call>;
 type ProposalHash = H256;
+type TestVotes = Votes<AccountId, BlockNumber, ()>;
+type TestVote = Vote<()>;
 
 fn make_proposal(value: u64) -> Box<Call> {
 	Box::new(Call::System(frame_system::Call::remark_with_event {
@@ -15,6 +18,19 @@ fn make_proposal(value: u64) -> Box<Call> {
 
 fn hash_of<S: Encode>(s: &S) -> H256 {
 	<Test as frame_system::Config>::Hashing::hash_of(s)
+}
+
+impl TestVotes {
+	fn with_ayes_nays(num_ayes: u64, num_nays: u64) -> Self {
+		let time_limit: BlockNumber = <Test as crate::Config>::TimeLimit::get();
+		Self {
+			ayes: (0..num_ayes).collect(),
+			nays: (0..num_nays)
+				.map(|acct| Disagreement { who: acct + num_ayes, reason: () })
+				.collect(),
+			end: System::block_number() + time_limit,
+		}
+	}
 }
 
 struct TestProposal {
@@ -50,7 +66,8 @@ mod extrinsics {}
 mod helpers {
 	use core::convert::TryInto;
 
-	use frame_support::{assert_noop, assert_ok};
+	use frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo};
+	use sp_runtime::DispatchError;
 
 	use crate::{Config, Disagreement, ProposalInfo, Vote, Votes};
 
@@ -59,23 +76,43 @@ mod helpers {
 	#[test]
 	fn open_proposal_works() {
 		new_test_ext().execute_with(|| {
-			let proposal = TestProposal::new(false);
+			let assert_votes = |prop: Proposal, hash, initial_vote: TestVote, votes| {
+				assert_eq!(
+					VotingOracle::open_proposal(prop.clone(), hash, 0, initial_vote),
+					Ok(votes)
+				);
+			};
+			let assert_proposal_info = |hash, end| {
+				assert!(
+					crate::Proposals::<Test>::get().contains(&crate::ProposalInfo { hash, end })
+				);
+			};
+			let assert_proposal_value = |hash: H256, proposal: Proposal| {
+				assert_eq!(crate::ProposalOf::<Test>::get(hash).unwrap(), *proposal);
+			};
+
 			let time_limit: u64 = <Test as crate::Config>::TimeLimit::get();
 			let end = System::block_number() + time_limit;
-			assert_eq!(
-				VotingOracle::open_proposal(proposal.proposal.clone(), proposal.hash, 0, Vote::Aye),
-				Ok(Votes { ayes: vec![0], nays: vec![], end })
+
+			let proposal = TestProposal::new(false);
+			assert_votes(
+				proposal.proposal.clone(),
+				proposal.hash,
+				TestVote::Aye,
+				Votes { ayes: vec![0], nays: vec![], end },
 			);
+			assert_proposal_info(proposal.hash, end);
+			assert_proposal_value(proposal.hash, proposal.proposal);
 
-			assert!(crate::Proposals::<Test>::get()
-				.contains(&crate::ProposalInfo { hash: proposal.hash, end }));
-
-			assert_eq!(crate::ProposalOf::<Test>::get(proposal.hash).unwrap(), *proposal.proposal);
-
-			assert_eq!(
-				crate::Voting::<Test>::get(proposal.hash).unwrap(),
-				Votes { ayes: vec![0], nays: vec![], end }
+			let second_proposal = TestProposal::with(2, false);
+			assert_votes(
+				second_proposal.proposal.clone(),
+				second_proposal.hash,
+				TestVote::Nay(()),
+				Votes { ayes: vec![], nays: vec![Disagreement { reason: (), who: 0 }], end },
 			);
+			assert_proposal_info(second_proposal.hash, end);
+			assert_proposal_value(second_proposal.hash, second_proposal.proposal);
 		});
 	}
 
@@ -165,5 +202,71 @@ mod helpers {
 	#[test]
 	fn meets_quorum_no_members() {
 		assert!(VotingOracle::meets_quorum(0, 0));
+	}
+
+	#[test]
+	fn do_accept_proposal_works() {
+		new_test_ext().execute_with(|| {
+			let proposal = TestProposal::new(true);
+			VotingOracle::add_vote(&proposal.hash, 1, Vote::Aye).unwrap();
+			let prop_weight = proposal.proposal.get_dispatch_info().weight;
+
+			assert_eq!(
+				VotingOracle::do_accept_proposal(2, 2, &proposal.hash, proposal.proposal.clone()),
+				prop_weight
+			);
+
+			assert_eq!(on_proposal_accepted_calls(), 1);
+
+			assert_eq!(
+				System::events().pop().unwrap().event,
+				Event::VotingOracle(crate::Event::<Test>::Executed {
+					proposal_hash: proposal.hash,
+					result: Err(DispatchError::BadOrigin),
+				})
+			);
+
+			assert!(crate::ProposalOf::<Test>::get(&proposal.hash).is_none());
+			assert!(crate::Voting::<Test>::get(&proposal.hash).is_none());
+			assert!(Proposals::get().into_iter().find(|p| p.hash == proposal.hash).is_none());
+		});
+	}
+
+	#[test]
+	fn remove_proposal_works() {
+		new_test_ext().execute_with(|| {
+			let proposal = TestProposal::new(true);
+
+			assert!(crate::ProposalOf::<Test>::get(&proposal.hash).is_some());
+			assert!(crate::Voting::<Test>::get(&proposal.hash).is_some());
+			assert!(Proposals::get().into_iter().find(|p| p.hash == proposal.hash).is_some());
+
+			VotingOracle::remove_proposal(&proposal.hash);
+
+			assert!(crate::ProposalOf::<Test>::get(&proposal.hash).is_none());
+			assert!(crate::Voting::<Test>::get(&proposal.hash).is_none());
+			assert!(Proposals::get().into_iter().find(|p| p.hash == proposal.hash).is_none());
+		});
+	}
+
+	#[test]
+	fn on_initialize_removes_expired_proposals() {
+		new_test_ext().execute_with(|| {
+			let proposal = TestProposal::new(true);
+			let hash = proposal.hash;
+			let time_limit: u64 = <Test as crate::Config>::TimeLimit::get();
+
+			assert!(crate::ProposalOf::<Test>::get(&hash).is_some());
+			assert!(crate::Voting::<Test>::get(&hash).is_some());
+			assert!(Proposals::get().into_iter().find(|p| p.hash == hash).is_some());
+
+			System::set_block_number(System::block_number() + time_limit);
+
+			VotingOracle::on_initialize(System::block_number());
+
+			assert!(crate::ProposalOf::<Test>::get(&hash).is_none());
+			assert!(crate::Voting::<Test>::get(&hash).is_none());
+			assert!(Proposals::get().into_iter().find(|p| p.hash == hash).is_none());
+		});
 	}
 }
