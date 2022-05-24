@@ -194,6 +194,33 @@ pub mod pallet {
 		>;
 	}
 
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub members: Vec<T::AccountId>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self { members: Default::default() }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			use sp_std::collections::btree_set::BTreeSet;
+			let members_set: BTreeSet<_> = self.members.iter().collect();
+			assert_eq!(
+				members_set.len(),
+				self.members.len(),
+				"Members cannot contain duplicate accounts."
+			);
+
+			Pallet::<T>::initialize_members(&self.members)
+		}
+	}
+
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
