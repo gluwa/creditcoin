@@ -56,7 +56,6 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 #[frame_support::pallet]
 pub mod pallet {
-	use crate::ocw::errors::OffchainError;
 
 	use super::*;
 	use frame_support::{
@@ -561,79 +560,49 @@ pub mod pallet {
 		}
 
 		fn offchain_worker(_block_number: T::BlockNumber) {
-			if let Some(auth_id) = Self::authority_id() {
-				let auth_id = T::FromAccountId::from(auth_id);
-				for (deadline, transfer_id, pending) in UnverifiedTransfers::<T>::iter() {
-					let storage_key =
-						ocw::transfer_local_status_storage_key::<T>(deadline, &transfer_id);
-					let transfer_status = ocw::LocalVerificationStatus::new(&storage_key);
-					if transfer_status.is_complete() {
-						log::debug!("Already handled transfer ({:?}, {:?})", deadline, transfer_id);
-						continue;
-					}
-					log::debug!("verifying OCW task");
-					let verify_result = Self::verify_transfer_ocw(&pending);
-					log::debug!("verify_transfer result: {:?}", verify_result);
-					match verify_result {
-						Ok(timestamp) => {
-							match Self::offchain_signed_tx(auth_id.clone(), |_| {
-								Call::verify_transfer {
-									transfer: Transfer { timestamp, ..pending.transfer.clone() },
-									deadline,
-								}
-							}) {
-								Ok(()) => {
-									transfer_status.mark_complete();
-								},
-								Err(e) => {
-									log::error!(
-										"Failed to send verify_transfer transaction: {:?}",
-										e
-									);
-								},
-							}
-						},
-						Err(OffchainError::InvalidTask(cause)) => {
-							log::warn!(
-								"failed to verify pending transfer {:?}: {:?}",
-								pending,
-								cause
-							);
-							if cause.is_fatal() {
-								match Self::offchain_signed_tx(auth_id.clone(), |_| {
-									Call::fail_transfer {
-										transfer_id: TransferId::new::<T>(
-											&pending.transfer.blockchain,
-											&pending.transfer.tx_id,
-										),
-										cause,
-										deadline,
-									}
-								}) {
-									Ok(()) => {
-										transfer_status.mark_complete();
-									},
-									Err(e) => {
-										log::error!(
-											"Failed to send fail_transfer transaction: {:?}",
-											e
-										);
-									},
-								}
-							}
-						},
-						Err(error) => {
-							log::error!(
-								"transfer verification encountered an error {:?}: {:?}",
-								pending,
-								error
-							);
-						},
-					}
-				}
-			} else {
+			let my_authority = Self::authority_id();
+			if my_authority.is_none() {
 				log::trace!("Not authority, skipping off chain work");
+				return;
 			}
+
+			let auth_id = T::FromAccountId::from(my_authority.unwrap());
+
+			let u_transfer = UnverifiedTransfers::<T>::iter().map(|(deadline, id, u_t)| {
+				let storage_key = ocw::transfer_local_status_storage_key::<T>(deadline, &id);
+				let transfer_status = ocw::LocalVerificationStatus::new(&storage_key);
+				if transfer_status.is_complete() {
+					log::debug!("Already handled transfer ({:?}, {:?})", deadline, id);
+					return;
+				}
+
+				let verify_result = Self::verify_transfer_ocw(&u_t);
+				let on_success = |timestamp: Option<T::Moment>| {
+					Self::offchain_signed_tx(auth_id.clone(), |_| Call::verify_transfer {
+						transfer: Transfer { timestamp, ..u_t.transfer.clone() },
+						deadline,
+					})
+				};
+				let on_failure = |cause| {
+					Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_transfer {
+						transfer_id: TransferId::new::<T>(
+							&u_t.transfer.blockchain,
+							&u_t.transfer.tx_id,
+						),
+						cause,
+						deadline,
+					})
+				};
+				Self::ocw_result_handler(
+					verify_result,
+					on_success,
+					on_failure,
+					transfer_status,
+					&u_t as &dyn core::fmt::Debug,
+				);
+			});
+
+			u_transfer.for_each(drop);
 		}
 
 		fn on_runtime_upgrade() -> Weight {
