@@ -1,6 +1,6 @@
 [package]
 name = "pallet-creditcoin"
-version = "2.0.0-beta.6"
+version = "2.0.0-beta.7"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -49,55 +49,55 @@ default-features = false
 git = "https://github.com/gluwa/substrate.git"
 optional = true
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.frame-system]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.sp-core]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.sp-io]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.pallet-balances]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.pallet-timestamp]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.scale-info]
 default-features = false
@@ -115,19 +115,19 @@ assert_matches = "1.5.0"
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dev-dependencies.sp-tracing]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dev-dependencies.sp-core]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [features]
 default = ['std']
