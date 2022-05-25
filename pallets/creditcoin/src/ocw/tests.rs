@@ -517,7 +517,7 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 		requests.mock_get_transaction(&mut state.write());
 
 		crate::mock::roll_by_with_ocw(1);
-		assert!(logs_contain("transfer verification encountered an error"));
+		assert!(logs_contain("Task verification encountered an error"));
 	});
 }
 

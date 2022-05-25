@@ -146,6 +146,38 @@ fn validate_ethless_transfer(
 }
 
 impl<T: Config> Pallet<T> {
+	pub(crate) fn ocw_result_handler(
+		verify_result: VerificationResult<T::Moment>,
+		success_dispatcher: impl Fn(Option<T::Moment>) -> Result<(), Error<T>>,
+		failure_dispatcher: impl Fn(VerificationFailureCause) -> Result<(), Error<T>>,
+		transfer_status: LocalVerificationStatus,
+		unverified_task: &dyn core::fmt::Debug,
+	) {
+		log::debug!("Task Verification result: {:?}", verify_result);
+		match verify_result {
+			Ok(timestamp) => {
+				if let Err(e) = success_dispatcher(timestamp) {
+					log::error!("Failed to send success dispatchable transaction: {:?}", e);
+				} else {
+					transfer_status.mark_complete();
+				}
+			},
+			Err(OffchainError::InvalidTask(cause)) => {
+				log::warn!("Failed to verify pending task {:?} : {:?}", unverified_task, cause);
+				if cause.is_fatal() {
+					if let Err(e) = failure_dispatcher(cause) {
+						log::error!("Failed to send fail dispatchable transaction: {:?}", e);
+					} else {
+						transfer_status.mark_complete();
+					}
+				}
+			},
+			Err(error) => {
+				log::error!("Task verification encountered an error {:?}", error);
+			},
+		}
+	}
+
 	pub fn verify_transfer_ocw(
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
 	) -> VerificationResult<T::Moment> {
@@ -155,6 +187,7 @@ impl<T: Config> Pallet<T> {
 			to_external: to,
 			..
 		} = transfer;
+		log::debug!("verifying OCW transfer");
 		match kind {
 			TransferKind::Ethless(contract) => {
 				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
