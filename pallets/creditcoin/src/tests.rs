@@ -619,7 +619,7 @@ fn register_transfer_ocw_fail_to_send() {
 
 			roll_by_with_ocw(1);
 
-			assert!(logs_contain("Failed to send fail_transfer"));
+			assert!(logs_contain("Failed to send fail dispatchable transaction"));
 		});
 
 		crate::UnverifiedTransfers::<Test>::remove_all(None);
@@ -637,7 +637,7 @@ fn register_transfer_ocw_fail_to_send() {
 
 			roll_by_with_ocw(1);
 
-			assert!(logs_contain("Failed to send verify_transfer"));
+			assert!(logs_contain("Failed to send success dispatchable transaction"));
 		});
 	});
 }
