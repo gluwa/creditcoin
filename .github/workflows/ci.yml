@@ -60,7 +60,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings -A clippy::too_many_arguments -A clippy::type_complexity
+          args: --all-targets --all-features -- -D warnings -A clippy::too_many_arguments -A clippy::type_complexity
 
   check:
     # The type of runner that the job will run on
