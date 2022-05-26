@@ -7,7 +7,7 @@ parameters:
 
   artifactName: target
   assetUploadMode: replace
-  action: create
+  action: edit
   isPreRelease: false
   repositoryName: '$(Build.Repository.Name)'
 
