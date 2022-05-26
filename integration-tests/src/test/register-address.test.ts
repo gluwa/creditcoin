@@ -11,7 +11,7 @@ describe('RegisterAddress', () => {
 
     beforeAll(async () => {
         api = await ApiPromise.create({
-            provider: new WsProvider('ws://127.0.0.1:9944'),
+            provider: new WsProvider((global as any).CREDITCOIN_API_URL),
         });
         alice = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
     });

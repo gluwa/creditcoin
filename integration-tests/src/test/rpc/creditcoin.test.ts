@@ -8,7 +8,7 @@ describe('Creditcoin RPC', (): void => {
     let api: ApiPromise;
 
     beforeEach(async () => {
-        const provider = new WsProvider('ws://127.0.0.1:9944');
+        const provider = new WsProvider((global as any).CREDITCOIN_API_URL);
 
         api = await ApiPromise.create({
             provider,
@@ -59,7 +59,7 @@ describe('Creditcoin RPC', (): void => {
         expect.assertions(1);
 
         let subscriptionId: string;
-        const ws = new WebSocket('ws://127.0.0.1:9944');
+        const ws = new WebSocket((global as any).CREDITCOIN_API_URL);
 
         ws.on('open', () => {
             const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
@@ -85,7 +85,7 @@ describe('Creditcoin RPC', (): void => {
         expect.assertions(1);
 
         let subscriptionId: string;
-        const ws = new WebSocket('ws://127.0.0.1:9944');
+        const ws = new WebSocket((global as any).CREDITCOIN_API_URL);
 
         ws.on('open', () => {
             const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
@@ -119,7 +119,7 @@ describe('Creditcoin RPC', (): void => {
         expect.assertions(1);
 
         let firstTime = true;
-        const ws = new WebSocket('ws://127.0.0.1:9944');
+        const ws = new WebSocket((global as any).CREDITCOIN_API_URL);
 
         ws.on('open', () => {
             const rpc = { id: 1, jsonrpc: '2.0', method: 'creditcoin_eventsSubscribe' };
