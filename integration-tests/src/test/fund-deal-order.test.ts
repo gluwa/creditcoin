@@ -23,7 +23,7 @@ describe('FundDealOrder', (): void => {
     const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
-        ccApi = await creditcoinApi('ws://127.0.0.1:9944');
+        ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
     });

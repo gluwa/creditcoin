@@ -7,7 +7,7 @@ describe('System RPC sanity test', (): void => {
     let api: ApiPromise;
 
     beforeEach(async () => {
-        const provider = new WsProvider('ws://127.0.0.1:9944');
+        const provider = new WsProvider((global as any).CREDITCOIN_API_URL);
 
         api = await ApiPromise.create({ provider });
     });
