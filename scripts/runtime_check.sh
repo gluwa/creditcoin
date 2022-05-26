@@ -13,7 +13,6 @@ set -e
 
 SUBSTRATE_REPO="https://github.com/gluwa/substrate"
 SUBSTRATE_REPO_CARGO="git+${SUBSTRATE_REPO}"
-SUBSTRATE_VERSIONS_FILE="bin/node/runtime/src/lib.rs"
 MAIN_BRANCH=dev
 RELEASE_BRANCH=main
 RUNTIME="creditcoin-node-runtime"
