@@ -729,6 +729,10 @@ fn ocw_retries() {
 			verify_tx.call,
 			super::mock::Call::Creditcoin(crate::Call::verify_transfer { .. })
 		);
+
+		roll_by_with_ocw(1);
+
+		assert!(logs_contain("Already handled transfer"));
 	});
 }
 
