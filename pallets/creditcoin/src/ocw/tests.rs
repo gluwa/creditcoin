@@ -84,8 +84,8 @@ struct TransferContractInput {
 impl Default for TransferContractInput {
 	fn default() -> Self {
 		Self {
-			from: ETHLESS_FROM_ADDR.clone(),
-			to: ETHLESS_TO_ADDR.clone(),
+			from: *ETHLESS_FROM_ADDR,
+			to: *ETHLESS_TO_ADDR,
 			value: U256::from(100),
 			fee: 1.into(),
 			nonce: default_nonce(),
@@ -137,8 +137,8 @@ static ETHLESS_TO_ADDR: Lazy<Address> =
 
 static ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| EthTransaction {
 	block_number: Some(5u64.into()),
-	from: Some(ETHLESS_FROM_ADDR.clone()),
-	to: Some(ETHLESS_CONTRACT_ADDR.clone()),
+	from: Some(*ETHLESS_FROM_ADDR),
+	to: Some(*ETHLESS_CONTRACT_ADDR),
 	input: hex::decode(&*ETHLESS_INPUT).unwrap().into(),
 	..Default::default()
 });
@@ -157,13 +157,13 @@ struct EthlessTestArgs {
 impl Default for EthlessTestArgs {
 	fn default() -> Self {
 		Self {
-			from: ETHLESS_FROM_ADDR.clone(),
-			to: ETHLESS_TO_ADDR.clone(),
-			contract: ETHLESS_CONTRACT_ADDR.clone(),
+			from: *ETHLESS_FROM_ADDR,
+			to: *ETHLESS_TO_ADDR,
+			contract: *ETHLESS_CONTRACT_ADDR,
 			amount: get_mock_amount(),
 			receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
 			transaction: ETH_TRANSACTION.clone(),
-			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS),
+			tip: (ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS),
 			nonce: get_mock_nonce(),
 		}
 	}
@@ -208,7 +208,7 @@ fn ethless_transfer_tx_failed() {
 fn ethless_transfer_tx_unconfirmed() {
 	assert_invalid_transfer(
 		test_validate_ethless_transfer(EthlessTestArgs {
-			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
+			tip: (ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
 			..Default::default()
 		}),
 		TaskUnconfirmed,
@@ -230,7 +230,7 @@ fn ethless_transfer_tx_missing_to() {
 fn ethless_transfer_tx_ahead_of_tip() {
 	assert_invalid_transfer(
 		test_validate_ethless_transfer(EthlessTestArgs {
-			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() - 1),
+			tip: (ETH_TRANSACTION.block_number.unwrap() - 1),
 			..Default::default()
 		}),
 		TaskInFuture,
@@ -422,8 +422,8 @@ type MockUnverifiedTransfer = crate::UnverifiedTransfer<
 fn make_unverified_transfer(transfer: MockTransfer) -> MockUnverifiedTransfer {
 	MockUnverifiedTransfer {
 		transfer,
-		to_external: ExternalAddress::try_from(ETHLESS_TO_ADDR.clone().0.to_vec()).unwrap(),
-		from_external: ExternalAddress::try_from(ETHLESS_FROM_ADDR.clone().0.to_vec()).unwrap(),
+		to_external: ExternalAddress::try_from((*ETHLESS_TO_ADDR).0.to_vec()).unwrap(),
+		from_external: ExternalAddress::try_from((*ETHLESS_FROM_ADDR).0.to_vec()).unwrap(),
 		deadline: 10000,
 	}
 }
@@ -463,7 +463,7 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 		);
 
 		transfer.kind = crate::TransferKind::Other(ExternalAddress::default());
-		let unverified = make_unverified_transfer(transfer.clone());
+		let unverified = make_unverified_transfer(transfer);
 		assert_matches!(
 			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
@@ -555,7 +555,7 @@ fn set_up_verify_transfer_env(
 
 		assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
 			crate::mock::Origin::signed(test_info.lender.account_id),
-			TransferKind::Ethless(contract.clone()),
+			TransferKind::Ethless(contract),
 			deal_order_id,
 			transfer.tx_id,
 		));

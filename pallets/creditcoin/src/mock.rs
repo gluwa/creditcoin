@@ -210,7 +210,7 @@ impl ExtBuilder {
 	pub fn generate_authority(&mut self) -> sp_core::sr25519::Public {
 		const PHRASE: &str =
 			"news slush supreme milk chapter athlete soap sausage put clutch what kitten";
-		if let None = self.keystore {
+		if self.keystore.is_none() {
 			self.keystore = Some(KeyStore::new());
 		}
 		let pubkey = self
@@ -222,7 +222,7 @@ impl ExtBuilder {
 				Some(&format!("{}/auth{}", PHRASE, self.authorities.len() + 1)),
 			)
 			.unwrap();
-		self.authorities.push(AccountId::new(pubkey.clone().into_account().0));
+		self.authorities.push(AccountId::new(pubkey.into_account().0));
 		pubkey
 	}
 	pub fn legacy_wallets(
@@ -254,7 +254,7 @@ impl ExtBuilder {
 	pub fn build_offchain(
 		mut self,
 	) -> (sp_io::TestExternalities, Arc<RwLock<OffchainState>>, Arc<RwLock<PoolState>>) {
-		if let None = self.keystore {
+		if self.keystore.is_none() {
 			self.keystore = Some(KeyStore::new());
 		}
 		let keystore = core::mem::take(&mut self.keystore);
@@ -432,7 +432,7 @@ pub(crate) fn get_mock_timestamp() -> u64 {
 		.as_str()
 		.unwrap()
 		.to_string();
-	u64::from_str_radix(&timestamp_hex.trim_start_matches("0x"), 16).unwrap()
+	u64::from_str_radix(timestamp_hex.trim_start_matches("0x"), 16).unwrap()
 }
 
 #[extend::ext(name = PendingRequestExt)]
@@ -486,14 +486,14 @@ impl MockedRpcRequests {
 			"eth_getTransactionReceipt",
 			vec![tx_hash.into()],
 			uri,
-			&responses,
+			responses,
 		));
-		let get_block_number = Some(pending_rpc_request("eth_blockNumber", None, uri, &responses));
+		let get_block_number = Some(pending_rpc_request("eth_blockNumber", None, uri, responses));
 		let get_block_by_number = Some(pending_rpc_request(
 			"eth_getBlockByNumber",
 			vec![tx_block_number.into(), false.into()],
 			uri,
-			&responses,
+			responses,
 		));
 		Self { get_transaction, get_transaction_receipt, get_block_number, get_block_by_number }
 	}

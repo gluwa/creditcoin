@@ -5,7 +5,7 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as Difficulty;
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller};
+use frame_benchmarking::{benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::UniqueSaturatedFrom;
 
@@ -25,4 +25,4 @@ benchmarks! {
 
 }
 
-impl_benchmark_test_suite!(Template, crate::mock::new_test_ext(), crate::mock::Test);
+//impl_benchmark_test_suite!(Template, crate::mock::new_test_ext(), crate::mock::Test);
