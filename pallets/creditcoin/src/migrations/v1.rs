@@ -274,7 +274,7 @@ mod tests {
 				}),
 				expiration_block: 100,
 				block: 0,
-				lender: test_info.lender.account_id.clone(),
+				lender: test_info.lender.account_id,
 			};
 			OldAskOrders::insert_id(&ask_id, &old_ask);
 
@@ -316,9 +316,9 @@ mod tests {
 
 			let old_bid = OldBidOrder {
 				blockchain: Blockchain::Ethereum,
-				borrower_address_id: address_id.clone(),
+				borrower_address_id: address_id,
 				terms: OldBidTerms(OldLoanTerms {
-					amount: amount.clone(),
+					amount,
 					interest_rate: 1000,
 					maturity: 2000,
 				}),
@@ -338,7 +338,7 @@ mod tests {
 					blockchain: old_bid.blockchain,
 					borrower_address_id: old_bid.borrower_address_id,
 					terms: BidTerms(LoanTerms {
-						amount: amount.clone(),
+						amount,
 						interest_rate: InterestRate {
 							rate_per_period: old_bid.terms.0.interest_rate,
 							decimals: OLD_INTEREST_RATE_DECIMALS,
@@ -348,7 +348,7 @@ mod tests {
 					}),
 					expiration_block,
 					block,
-					borrower: test_info.borrower.account_id.clone(),
+					borrower: test_info.borrower.account_id,
 				}
 			)
 		})
@@ -365,13 +365,13 @@ mod tests {
 				lender_address_id: test_info.lender.address_id.clone(),
 				terms: OldLoanTerms { amount: 1000u64.into(), interest_rate: 1000, maturity: 2000 },
 				expiration_block: 100,
-				offer_id: offer_id.clone(),
+				offer_id,
 				borrower_address_id: test_info.borrower.address_id.clone(),
 				timestamp: 0,
 				funding_transfer_id: None,
 				repayment_transfer_id: None,
 				lock: None,
-				borrower: test_info.borrower.account_id.clone(),
+				borrower: test_info.borrower.account_id,
 			};
 
 			OldDealOrders::insert_id(&deal_id, &old_deal);

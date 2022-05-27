@@ -108,7 +108,7 @@ benchmarks! {
 
 		let sighash = LegacySighash::from(&pubkey);
 		let cash = <Balances<T> as Currency<T::AccountId>>::minimum_balance();
-		LegacyWallets::<T>::insert(sighash, cash.clone());
+		LegacyWallets::<T>::insert(sighash, cash);
 
 		let keeper: T::AccountId = account("keeper", 1, 1);
 		<Balances<T> as Currency<T::AccountId>>::make_free_balance_be(&keeper,cash);
@@ -117,7 +117,7 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(claimer.clone()), pubkey)
 	verify {
-		assert!(Balances::<T>::free_balance(&keeper.clone()).is_zero());
+		assert!(Balances::<T>::free_balance(&keeper).is_zero());
 		assert_eq!(Balances::<T>::free_balance(&claimer),cash);
 	}
 
@@ -129,7 +129,7 @@ benchmarks! {
 
 		let (address_id,ask_id,guid) = generate_ask::<T>(&who,&terms,&expiration_block,false,0).unwrap();
 
-	}: _(RawOrigin::Signed(who),address_id,terms,expiration_block.into(),guid.into_bounded())
+	}: _(RawOrigin::Signed(who),address_id,terms,expiration_block,guid.into_bounded())
 
 	add_bid_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -315,17 +315,17 @@ fn generate_transfer<T: Config>(
 	if swap_sender {
 		Creditcoin::<T>::register_repayment_transfer(
 			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract.clone()),
+			TransferKind::Ethless(contract),
 			gain.into(),
-			deal_id.clone(),
+			deal_id,
 			tx,
 		)
 		.unwrap();
 	} else {
 		Creditcoin::<T>::register_funding_transfer(
 			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract.clone()),
-			deal_id.clone(),
+			TransferKind::Ethless(contract),
+			deal_id,
 			tx,
 		)
 		.unwrap();
@@ -402,10 +402,10 @@ fn generate_deal<T: Config>(
 	let origin = RawOrigin::Signed(borrower).into();
 	let (offer_id, _, _) = generate_offer::<T>(&lender, &terms, &expiration_block, true, seed)?;
 
-	let deal_id = DealOrderId::new::<T>(expiration_block.clone(), &offer_id);
+	let deal_id = DealOrderId::new::<T>(expiration_block, &offer_id);
 
 	if insert {
-		Creditcoin::<T>::add_deal_order(origin, offer_id, expiration_block.clone()).unwrap();
+		Creditcoin::<T>::add_deal_order(origin, offer_id, expiration_block).unwrap();
 	}
 
 	Ok(deal_id)
@@ -427,18 +427,18 @@ fn generate_offer<T: Config>(
 > {
 	let origin = RawOrigin::Signed(who.clone());
 
-	let (_, ask_id, _) = generate_ask::<T>(&who, &loan_terms, &expiration_block, true, seed)?;
+	let (_, ask_id, _) = generate_ask::<T>(who, loan_terms, expiration_block, true, seed)?;
 	let borrower: T::AccountId = borrower_account::<T>(false);
-	let (_, bid_id, _) = generate_bid::<T>(&borrower, &loan_terms, &expiration_block, true, seed)?;
+	let (_, bid_id, _) = generate_bid::<T>(&borrower, loan_terms, expiration_block, true, seed)?;
 
-	let offer_id = OfferId::new::<T>(expiration_block.clone(), &ask_id, &bid_id);
+	let offer_id = OfferId::new::<T>(*expiration_block, &ask_id, &bid_id);
 
 	if call {
 		Creditcoin::<T>::add_offer(
 			origin.into(),
 			ask_id.clone(),
 			bid_id.clone(),
-			expiration_block.clone(),
+			*expiration_block,
 		)
 		.unwrap();
 	}
@@ -474,14 +474,14 @@ fn generate_ask<T: Config>(
 	let guid = format!("ask_guid{:02x}", seed);
 	let guid = guid.as_bytes();
 
-	let ask_order_id = AskOrderId::new::<T>(expiration_block.clone(), guid);
+	let ask_order_id = AskOrderId::new::<T>(*expiration_block, guid);
 	let origin = RawOrigin::Signed(who.clone());
 	if call {
 		Creditcoin::<T>::add_ask_order(
 			origin.into(),
 			address_id.clone(),
 			loan_terms.clone(),
-			expiration_block.clone(),
+			*expiration_block,
 			guid.into_bounded(),
 		)
 		.unwrap();
@@ -502,7 +502,7 @@ fn generate_bid<T: Config>(
 	let guid = format!("bid_guid{:02x}", seed);
 	let guid = guid.as_bytes();
 
-	let bid_order_id = BidOrderId::new::<T>(expiration_block.clone(), guid);
+	let bid_order_id = BidOrderId::new::<T>(*expiration_block, guid);
 	let origin = RawOrigin::Signed(who.clone());
 
 	if call {
@@ -510,7 +510,7 @@ fn generate_bid<T: Config>(
 			origin.into(),
 			address_id.clone(),
 			loan_terms.clone(),
-			expiration_block.clone(),
+			*expiration_block,
 			guid.into_bounded(),
 		)
 		.unwrap();
