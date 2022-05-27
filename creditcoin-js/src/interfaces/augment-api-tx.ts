@@ -9,6 +9,7 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
+    PalletCreditcoinCollectCoins,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
@@ -270,6 +271,35 @@ declare module '@polkadot/api-base/types/submittable' {
                 (dealOrderId: PalletCreditcoinDealOrderId) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinDealOrderId]
             >;
+            failCollectCoins: AugmentedSubmittable<
+                (
+                    collectCoinsId: H256 | string | Uint8Array,
+                    cause:
+                        | PalletCreditcoinOcwErrorsVerificationFailureCause
+                        | 'TaskNonexistent'
+                        | 'TaskFailed'
+                        | 'TaskPending'
+                        | 'TaskUnconfirmed'
+                        | 'TaskInFuture'
+                        | 'IncorrectContract'
+                        | 'MissingReceiver'
+                        | 'MissingSender'
+                        | 'AbiMismatch'
+                        | 'IncorrectInputLength'
+                        | 'EmptyInput'
+                        | 'IncorrectInputType'
+                        | 'IncorrectAmount'
+                        | 'IncorrectNonce'
+                        | 'IncorrectReceiver'
+                        | 'IncorrectSender'
+                        | 'InvalidAddress'
+                        | 'UnsupportedMethod'
+                        | number
+                        | Uint8Array,
+                    deadline: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [H256, PalletCreditcoinOcwErrorsVerificationFailureCause, u32]
+            >;
             failTransfer: AugmentedSubmittable<
                 (
                     deadline: u32 | AnyNumber | Uint8Array,
@@ -286,6 +316,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'MissingSender'
                         | 'AbiMismatch'
                         | 'IncorrectInputLength'
+                        | 'EmptyInput'
                         | 'IncorrectInputType'
                         | 'IncorrectAmount'
                         | 'IncorrectNonce'
@@ -308,6 +339,17 @@ declare module '@polkadot/api-base/types/submittable' {
             lockDealOrder: AugmentedSubmittable<
                 (dealOrderId: PalletCreditcoinDealOrderId) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinDealOrderId]
+            >;
+            persistCollectCoins: AugmentedSubmittable<
+                (
+                    collectCoins:
+                        | PalletCreditcoinCollectCoins
+                        | { to?: any; amount?: any; txId?: any }
+                        | string
+                        | Uint8Array,
+                    deadline: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinCollectCoins, u32]
             >;
             /**
              * Registers an external address on `blockchain` and `network` with value `address`
@@ -396,6 +438,13 @@ declare module '@polkadot/api-base/types/submittable' {
                     blockchainTxId: Bytes | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
+            >;
+            requestCollectCoins: AugmentedSubmittable<
+                (
+                    evmAddress: Bytes | string | Uint8Array,
+                    txId: Bytes | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [Bytes, Bytes]
             >;
             verifyTransfer: AugmentedSubmittable<
                 (

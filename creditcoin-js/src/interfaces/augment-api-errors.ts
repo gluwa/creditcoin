@@ -69,9 +69,17 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AskOrderExpired: AugmentedError<ApiType>;
             /**
+             * The balance would overflow.
+             **/
+            BalanceOverflow: AugmentedError<ApiType>;
+            /**
              * The bid order has expired and is no longer valid.
              **/
             BidOrderExpired: AugmentedError<ApiType>;
+            /**
+             * The coin collection has already been registered.
+             **/
+            CollectCoinsAlreadyRegistered: AugmentedError<ApiType>;
             /**
              * The deal cannot be locked because it is not funded yet.
              **/
