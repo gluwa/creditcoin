@@ -24,7 +24,7 @@ latest_release() {
 latest_release=$(latest_release 'gluwa/creditcoin')
 RELEASE_BIN="./creditcoin-node"
 echo "[+] Fetching binary for Creditcoin version $latest_release"
-curl -L "https://github.com/gluwa/creditcoin/releases/download/$latest_release/creditcoin-v${latest_release}-x86_64-unknown-linux-gnu.tar.gz"  --output creditcoin.tar.gz && tar -xzf creditcoin.tar.gz || exit 1
+curl -L "https://github.com/gluwa/creditcoin/releases/download/$latest_release/creditcoin-v${latest_release}-x86_64-unknown-linux-gnu.tar"  --output creditcoin.tar && tar -xzf creditcoin.tar || exit 1
 chmod +x "$RELEASE_BIN"
 git fetch --depth="${GIT_DEPTH:-100}" origin 'refs/tags/*:refs/tags/*'
 
