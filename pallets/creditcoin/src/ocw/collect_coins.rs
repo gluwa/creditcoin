@@ -1,0 +1,757 @@
+use super::{
+	errors::{VerificationFailureCause, VerificationResult},
+	rpc::{self, EthBlock, EthTransaction, EthTransactionReceipt},
+	OffchainResult, ETH_CONFIRMATIONS,
+};
+
+use crate::pallet::{Config, Pallet};
+use crate::{
+	types::{AddressId, Blockchain, CollectCoins, UnverifiedCollectCoins},
+	ExternalAddress, ExternalAmount,
+};
+use sp_runtime::traits::UniqueSaturatedFrom;
+
+use ethabi::{Function, Param, ParamType, StateMutability, Token};
+use ethereum_types::{H160, U64};
+use frame_support::ensure;
+use sp_std::prelude::*;
+
+pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
+
+///exchange has been deprecated, use burn instead
+fn burn_vested_cc_abi() -> Function {
+	#[allow(deprecated)]
+	Function {
+		name: "exchange".into(),
+		inputs: vec![Param {
+			name: "value".into(),
+			kind: ParamType::Uint(256),
+			internal_type: None,
+		}],
+		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
+		constant: false,
+		state_mutability: StateMutability::NonPayable,
+	}
+}
+pub fn validate_collect_coins(
+	to: &ExternalAddress,
+	amount: &mut Option<ExternalAmount>,
+	receipt: &EthTransactionReceipt,
+	transaction: &EthTransaction,
+	eth_tip: U64,
+) -> OffchainResult<()> {
+	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
+	let vesting_contract = hex::decode(b"a3EE21C306A700E682AbCdfe9BaA6A08F3820419").unwrap();
+	let vesting_contract = &H160::from(<[u8; 20]>::try_from(vesting_contract.as_slice()).unwrap());
+
+	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
+
+	let diff = (eth_tip).checked_sub(block_number);
+	ensure!(diff.is_some(), VerificationFailureCause::TaskInFuture);
+
+	ensure!(diff.unwrap().as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
+
+	if let Some(to) = &transaction.to {
+		ensure!(to == vesting_contract, VerificationFailureCause::IncorrectContract);
+	} else {
+		return Err(VerificationFailureCause::MissingReceiver.into());
+	}
+
+	if let Some(from) = &transaction.from {
+		ensure!(from[..] == to[..], VerificationFailureCause::IncorrectSender)
+	} else {
+		return Err(VerificationFailureCause::MissingSender.into());
+	}
+
+	let transfer_fn = burn_vested_cc_abi();
+	//is ignoring the selector a good idea? test? Same input, diff call (not exchange)?
+	ensure!(transaction.input.0.len() > 4, VerificationFailureCause::EmptyInput);
+	let inputs = transfer_fn.decode_input(&transaction.input.0[4..]).map_err(|e| {
+		log::error!("failed to decode inputs: {:?}", e);
+		VerificationFailureCause::AbiMismatch
+	})?;
+
+	let input_amount = match inputs.get(0) {
+		Some(Token::Uint(value)) => ExternalAmount::from(value),
+		_ => return Err(VerificationFailureCause::IncorrectInputType.into()),
+	};
+
+	*amount = Some(input_amount);
+
+	Ok(())
+}
+
+impl<T: Config> Pallet<T> {
+	///Amount is saturated to u128, don't exchange more than u128::MAX at once.
+	pub fn verify_cc_ocw(
+		u_cc: &UnverifiedCollectCoins,
+		collect_coins: &mut Option<CollectCoins<T::Hash, T::Balance>>,
+	) -> VerificationResult<T::Moment> {
+		log::debug!("verifying OCW Collect Coins");
+		let UnverifiedCollectCoins { to, tx_id } = u_cc;
+		let rpc_url = &CONTRACT_CHAIN.rpc_url()?;
+		let tx = rpc::eth_get_transaction(tx_id, rpc_url)?;
+		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
+		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
+
+		let amount = &mut None;
+		validate_collect_coins(to, amount, &tx_receipt, &tx, eth_tip)?;
+		let amount = amount.expect("Validate fails or mutates collect_coins");
+
+		{
+			*collect_coins =
+				Some(CollectCoins {
+					to: AddressId::new::<T>(&CONTRACT_CHAIN, u_cc.to.as_slice()),
+					amount: T::Balance::unique_saturated_from(
+						if let Ok(a) = u128::try_from(amount) { a } else { u128::MAX },
+					),
+					tx_id: u_cc.tx_id.clone(),
+				})
+		}
+
+		let timestamp = if let Some(num) = tx.block_number {
+			if let Ok(EthBlock { timestamp: block_timestamp }) =
+				rpc::eth_get_block_by_number(num, rpc_url)
+			{
+				Some(T::Moment::unique_saturated_from(block_timestamp.as_u64()))
+			} else {
+				None
+			}
+		} else {
+			None
+		};
+
+		Ok(timestamp)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+
+	use super::*;
+	use std::collections::HashMap;
+
+	// txn.from has been overriden by 'generate_address_with_proof("collector")'
+	static RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
+		Lazy::new(|| serde_json::from_slice(include_bytes!("../tests/collectCoins.json")).unwrap());
+
+	static BLOCK_NUMBER: Lazy<U64> = Lazy::new(|| {
+		let responses = &*RESPONSES;
+		let bn =
+			responses["eth_getTransactionByHash"].result.clone().unwrap()["blockNumber"].clone();
+		serde_json::from_value(bn).unwrap()
+	});
+
+	static BLOCK_NUMBER_STR: Lazy<String> = Lazy::new(|| {
+		let responses = &*RESPONSES;
+		let bn =
+			responses["eth_getTransactionByHash"].result.clone().unwrap()["blockNumber"].clone();
+		serde_json::from_value(bn).unwrap()
+	});
+
+	static VESTING_CONTRACT: Lazy<H160> = Lazy::new(|| {
+		let responses = &*RESPONSES;
+		let val = responses["eth_getTransactionByHash"].result.clone().unwrap()["to"].clone();
+		let val: String = serde_json::from_value(val).unwrap();
+		let vesting_contract = hex::decode(val.trim_start_matches("0x")).unwrap();
+		H160::from(<[u8; 20]>::try_from(vesting_contract.as_slice()).unwrap())
+	});
+
+	// txn.from has been overriden by 'generate_address_with_proof("collector")'
+	static FROM: Lazy<String> = Lazy::new(|| {
+		let responses = &*RESPONSES;
+		let val = responses["eth_getTransactionByHash"].result.clone().unwrap()["from"].clone();
+		serde_json::from_value(val).unwrap()
+	});
+
+	static INPUT: Lazy<rpc::Bytes> = Lazy::new(|| {
+		let responses = &*RESPONSES;
+		let val = responses["eth_getTransactionByHash"].result.clone().unwrap()["input"].clone();
+		let val: String = serde_json::from_value(val).unwrap();
+		let input_bytes = hex::decode(val.trim_start_matches("0x")).unwrap();
+		input_bytes.into()
+	});
+
+	static TX_HASH: Lazy<String> = Lazy::new(|| {
+		let responses = &*RESPONSES;
+		let val = responses["eth_getTransactionByHash"].result.clone().unwrap()["hash"].clone();
+		serde_json::from_value(val).unwrap()
+	});
+
+	static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
+		let transfer_fn = burn_vested_cc_abi();
+
+		let inputs = transfer_fn.decode_input(&(INPUT.0)[4..]).unwrap();
+
+		let amount = inputs.get(0).unwrap();
+		if let Token::Uint(value) = amount {
+			ExternalAmount::from(value)
+		} else {
+			panic!("Not Token::Uint");
+		}
+	});
+
+	use std::convert::{TryFrom, TryInto};
+
+	use assert_matches::assert_matches;
+	use codec::Decode;
+	use ethereum_types::{H160, U64};
+	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy};
+	use frame_system::Pallet as System;
+	use sp_runtime::traits::IdentifyAccount;
+
+	use crate::mock::{
+		roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, Origin, Test,
+	};
+	use crate::ocw::{
+		errors::{OffchainError, VerificationFailureCause as Cause},
+		rpc::{EthTransaction, EthTransactionReceipt},
+		ETH_CONFIRMATIONS,
+	};
+	use crate::tests::generate_address_with_proof;
+	use crate::types::CollectCoinsId;
+	use crate::Pallet as Creditcoin;
+	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
+
+	// duplicate with tests.rs
+	#[extend::ext]
+	impl<'a> &'a str {
+		fn hex_to_address(self) -> ExternalAddress {
+			hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+		}
+	}
+
+	struct PassingCollectCoins {
+		to: ExternalAddress,
+		amount: Option<ExternalAmount>,
+		receipt: EthTransactionReceipt,
+		transaction: EthTransaction,
+		eth_tip: U64,
+	}
+
+	impl Default for PassingCollectCoins {
+		fn default() -> Self {
+			let base_height = *BLOCK_NUMBER;
+			let vesting_contract = *VESTING_CONTRACT;
+			let to = FROM.hex_to_address();
+			let tx_from = H160::from(<[u8; 20]>::try_from(to.as_slice()).unwrap());
+
+			Self {
+				to,
+				amount: Default::default(),
+				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
+				transaction: EthTransaction {
+					block_number: Some(base_height),
+					from: Some(tx_from),
+					to: Some(vesting_contract),
+					input: INPUT.clone(),
+					..Default::default()
+				},
+				eth_tip: (base_height + ETH_CONFIRMATIONS),
+			}
+		}
+	}
+
+	impl PassingCollectCoins {
+		fn validate(self) -> OffchainResult<()> {
+			let PassingCollectCoins { to, mut amount, receipt, transaction, eth_tip } = self;
+			super::validate_collect_coins(&to, &mut amount, &receipt, &transaction, eth_tip)
+		}
+	}
+
+	fn assert_invalid(res: OffchainResult<()>, cause: VerificationFailureCause) {
+		assert_matches!(res, Err(OffchainError::InvalidTask(c)) =>{ assert_eq!(c,cause); });
+	}
+
+	#[test]
+	fn valid() {
+		assert_matches!(PassingCollectCoins::default().validate(), Ok(()));
+	}
+
+	#[test]
+	fn txn_success() {
+		let mut pcc = PassingCollectCoins::default();
+		pcc.receipt.status = Some(0u64.into());
+		assert_invalid(pcc.validate(), Cause::TaskFailed);
+	}
+
+	#[test]
+	fn pending() {
+		let pcc = PassingCollectCoins {
+			transaction: EthTransaction { block_number: None, ..Default::default() },
+			..Default::default()
+		};
+		assert_invalid(pcc.validate(), Cause::TaskPending);
+	}
+
+	#[test]
+	fn in_the_future() {
+		let pcc = PassingCollectCoins { eth_tip: 0u64.into(), ..Default::default() };
+		assert_invalid(pcc.validate(), Cause::TaskInFuture);
+	}
+
+	#[test]
+	fn unconfirmed() {
+		let mut pcc = PassingCollectCoins::default();
+		pcc.eth_tip = pcc.transaction.block_number.unwrap();
+		assert_invalid(pcc.validate(), Cause::TaskUnconfirmed);
+	}
+
+	#[test]
+	fn missing_receiver() {
+		let mut pcc = PassingCollectCoins::default();
+		pcc.transaction.to = None;
+		assert_invalid(pcc.validate(), Cause::MissingReceiver);
+	}
+
+	#[test]
+	fn incorrect_contract() {
+		let mut pcc = PassingCollectCoins::default();
+		let address = [0u8; 20];
+		let address = H160::from(<[u8; 20]>::try_from(address.as_slice()).unwrap());
+		pcc.transaction.to = Some(address);
+		assert_invalid(pcc.validate(), Cause::IncorrectContract);
+	}
+
+	#[test]
+	fn missing_sender() {
+		let mut pcc = PassingCollectCoins::default();
+		pcc.transaction.from = None;
+		assert_invalid(pcc.validate(), Cause::MissingSender);
+	}
+
+	#[test]
+	fn incorrect_sender() {
+		let mut pcc = PassingCollectCoins::default();
+		let address = [0u8; 20];
+		let address = H160::from(<[u8; 20]>::try_from(address.as_slice()).unwrap());
+		pcc.transaction.from = Some(address);
+		assert_invalid(pcc.validate(), Cause::IncorrectSender);
+	}
+
+	#[test]
+	fn empty_input() {
+		let mut pcc = PassingCollectCoins::default();
+		pcc.transaction.input.0 = b"".to_vec();
+		assert_invalid(pcc.validate(), Cause::EmptyInput);
+	}
+
+	#[test]
+	fn amount_set() -> OffchainResult<()> {
+		let pcc = PassingCollectCoins::default();
+		let PassingCollectCoins { to, mut amount, receipt, transaction, eth_tip } = pcc;
+		super::validate_collect_coins(&to, &mut amount, &receipt, &transaction, eth_tip)?;
+		assert_matches!(amount, Some(a) => {assert_eq!(a,*RPC_RESPONSE_AMOUNT)});
+		Ok(())
+	}
+
+	#[test]
+	fn ocw_fail_collect_coins_works() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let acct = AccountId::from(acct_pubkey.into_account().0);
+		let collect_coins_id = crate::CollectCoinsId::new::<crate::mock::Test>(&[0]);
+		ext.build_offchain_and_execute_with_state(|_state, pool| {
+			crate::mock::roll_to(1);
+			let call = crate::Call::<crate::mock::Test>::fail_collect_coins {
+				collect_coins_id,
+				cause: Cause::AbiMismatch,
+				deadline: Test::unverified_transfer_deadline(),
+			};
+			assert_ok!(crate::Pallet::<crate::mock::Test>::offchain_signed_tx(
+				acct.clone(),
+				|_| call.clone(),
+			));
+			crate::mock::roll_to(2);
+
+			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+			let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
+			assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
+			});
+		});
+	}
+
+	#[test]
+	#[tracing_test::traced_test]
+	fn persist_collect_coins() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			System::<Test>::set_block_number(1);
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc),
+				CONTRACT_CHAIN,
+				addr,
+				sign
+			));
+
+			let deadline = Test::unverified_transfer_deadline();
+
+			let pcc = PassingCollectCoins::default();
+
+			let collect_coins = CollectCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+				Origin::signed(auth),
+				collect_coins.clone(),
+				deadline
+			));
+
+			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+
+			let collect_coins_id = CollectCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+
+			assert_matches!(
+				event,
+				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectCoinsMinted(id, item)) => {
+					assert_eq!(id, collect_coins_id);
+					assert_eq!(item, collect_coins);
+				}
+			);
+		});
+	}
+
+	#[test]
+	#[tracing_test::traced_test]
+	fn persist_unregistered_address() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let pcc = PassingCollectCoins::default();
+
+			let collect_coins = CollectCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			let deadline = Test::unverified_transfer_deadline();
+
+			assert_noop!(
+				Creditcoin::<Test>::persist_collect_coins(
+					Origin::signed(auth),
+					collect_coins,
+					deadline
+				),
+				crate::Error::<Test>::NonExistentAddress
+			);
+		});
+	}
+
+	#[test]
+	#[tracing_test::traced_test]
+	fn request_persisted_not_reentrant() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _pool| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc.clone()),
+				CONTRACT_CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			let collect_coins = CollectCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+				Origin::signed(auth),
+				collect_coins,
+				Test::unverified_transfer_deadline()
+			));
+
+			roll_by_with_ocw(1);
+
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins(
+					Origin::signed(acc),
+					addr,
+					TX_HASH.hex_to_address(),
+				),
+				crate::Error::<Test>::CollectCoinsAlreadyRegistered
+			);
+		});
+	}
+
+	#[test]
+	#[tracing_test::traced_test]
+	fn request_pending_not_reentrant() {
+		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc.clone()),
+				CONTRACT_CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			assert_ok!(Creditcoin::<Test>::request_collect_coins(
+				Origin::signed(acc.clone()),
+				addr.clone(),
+				TX_HASH.hex_to_address()
+			));
+
+			let collect_coins_id = CollectCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+
+			assert!(Creditcoin::<Test>::pending_collect_coins(
+				Test::unverified_transfer_deadline(),
+				collect_coins_id.clone()
+			)
+			.is_some());
+
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins(
+					Origin::signed(acc),
+					addr,
+					TX_HASH.hex_to_address(),
+				),
+				crate::Error::<Test>::CollectCoinsAlreadyRegistered
+			);
+
+			assert!(Creditcoin::<Test>::collect_coins(collect_coins_id).is_none());
+		});
+	}
+
+	#[test]
+	fn request_address_not_registered() {
+		let ext = ExtBuilder::default();
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, _, _) = generate_address_with_proof("collector");
+
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins(
+					Origin::signed(acc),
+					addr,
+					TX_HASH.hex_to_address(),
+				),
+				crate::Error::<Test>::NonExistentAddress
+			);
+		});
+	}
+
+	#[test]
+	fn request_not_owner() {
+		let ext = ExtBuilder::default();
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+			let (molly, _, _, _) = generate_address_with_proof("malicious");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc),
+				CONTRACT_CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins(
+					Origin::signed(molly),
+					addr,
+					TX_HASH.hex_to_address(),
+				),
+				crate::Error::<Test>::NotAddressOwner
+			);
+		});
+	}
+
+	#[test]
+	fn persist_not_authority() {
+		let ext = ExtBuilder::default();
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (molly, addr, _, _) = generate_address_with_proof("malicious");
+
+			let collect_coins = CollectCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_noop!(
+				Creditcoin::<Test>::persist_collect_coins(
+					Origin::signed(molly),
+					collect_coins,
+					Test::unverified_transfer_deadline()
+				),
+				crate::Error::<Test>::InsufficientAuthority
+			);
+		});
+	}
+
+	#[test]
+	fn persist_is_submitted() {
+		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
+		ext.build_offchain_and_execute_with_state(|state, pool| {
+			let dummy_url = "dummy";
+			set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
+
+			let mut rpcs =
+				MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
+			rpcs.mock_get_block_by_number(&mut state.write());
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc.clone()),
+				CONTRACT_CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			assert_ok!(Creditcoin::<Test>::request_collect_coins(
+				Origin::signed(acc),
+				addr.clone(),
+				TX_HASH.hex_to_address()
+			));
+
+			let deadline = Test::unverified_transfer_deadline();
+
+			roll_by_with_ocw(1);
+
+			assert!(!pool.read().transactions.is_empty());
+
+			let collect_coins = CollectCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			let call =
+				crate::Call::<crate::mock::Test>::persist_collect_coins { collect_coins, deadline };
+
+			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+			let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
+			assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
+			});
+		});
+	}
+
+	#[test]
+	fn persist_not_reentrant() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc),
+				CONTRACT_CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			let collect_coins = CollectCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+				Origin::signed(auth.clone()),
+				collect_coins.clone(),
+				Test::unverified_transfer_deadline()
+			));
+
+			assert_noop!(
+				Creditcoin::<Test>::persist_collect_coins(
+					Origin::signed(auth),
+					collect_coins,
+					Test::unverified_transfer_deadline()
+				),
+				crate::Error::<Test>::CollectCoinsAlreadyRegistered
+			);
+		});
+	}
+
+	#[test]
+	#[tracing_test::traced_test]
+	fn unverified_collect_coins_are_removed() {
+		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let dummy_url = "dummy";
+			set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
+
+			let mut rpcs =
+				MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
+			rpcs.mock_get_block_by_number(&mut state.write());
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc.clone()),
+				CONTRACT_CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			assert_ok!(Creditcoin::<Test>::request_collect_coins(
+				Origin::signed(acc),
+				addr,
+				TX_HASH.hex_to_address()
+			));
+			let deadline = Test::unverified_transfer_deadline();
+
+			roll_by_with_ocw(deadline);
+
+			let collect_coins_id = CollectCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+
+			roll_by_with_ocw(1);
+
+			assert!(Creditcoin::<Test>::pending_collect_coins(deadline, collect_coins_id).is_none());
+		});
+	}
+
+	#[test]
+	fn owner_credited() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			let collect_coins = CollectCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc.clone()),
+				CONTRACT_CHAIN,
+				addr,
+				sign
+			));
+
+			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+				Origin::signed(auth.clone()),
+				collect_coins.clone(),
+				Test::unverified_transfer_deadline()
+			));
+
+			assert_eq!(
+				frame_system::pallet::Account::<Test>::get(&acc).data.free,
+				collect_coins.amount
+			);
+		});
+	}
+}

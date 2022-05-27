@@ -12,7 +12,7 @@ use crate::{
 	mock::{
 		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
 		get_mock_nonce, get_mock_to_address, set_rpc_uri, AccountId, ExtBuilder,
-		Test as TestRuntime,
+		Test as TestRuntime, ETHLESS_RESPONSES,
 	},
 	mock::{MockedRpcRequests, PendingRequestExt},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
@@ -57,7 +57,7 @@ impl<'a> &'a str {
 }
 
 #[track_caller]
-fn assert_invalid_transfer<T: Debug>(
+fn assert_invalid_task<T: Debug>(
 	result: Result<T, OffchainError>,
 	cause: VerificationFailureCause,
 ) {
@@ -112,8 +112,8 @@ fn eth_address_bad_len() {
 	let too_long = make_external_address("0xb794f5ea0ba39494ce839613fffba742795792688888");
 	let too_short = make_external_address("0xb794f5ea0b");
 
-	assert_invalid_transfer(parse_eth_address(&too_long), InvalidAddress);
-	assert_invalid_transfer(parse_eth_address(&too_short), InvalidAddress);
+	assert_invalid_task(parse_eth_address(&too_long), InvalidAddress);
+	assert_invalid_task(parse_eth_address(&too_short), InvalidAddress);
 }
 
 #[test]
@@ -195,7 +195,7 @@ fn ethless_transfer_valid() {
 
 #[test]
 fn ethless_transfer_tx_failed() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			receipt: EthTransactionReceipt { status: Some(0u64.into()), ..Default::default() },
 			..Default::default()
@@ -206,7 +206,7 @@ fn ethless_transfer_tx_failed() {
 
 #[test]
 fn ethless_transfer_tx_unconfirmed() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			tip: (ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
 			..Default::default()
@@ -217,7 +217,7 @@ fn ethless_transfer_tx_unconfirmed() {
 
 #[test]
 fn ethless_transfer_tx_missing_to() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			transaction: EthTransaction { to: None, ..ETH_TRANSACTION.clone() },
 			..Default::default()
@@ -228,7 +228,7 @@ fn ethless_transfer_tx_missing_to() {
 
 #[test]
 fn ethless_transfer_tx_ahead_of_tip() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			tip: (ETH_TRANSACTION.block_number.unwrap() - 1),
 			..Default::default()
@@ -239,7 +239,7 @@ fn ethless_transfer_tx_ahead_of_tip() {
 
 #[test]
 fn ethless_transfer_contract_mismatch() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			contract: Address::from_str("0xbad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap(),
 			..Default::default()
@@ -250,7 +250,7 @@ fn ethless_transfer_contract_mismatch() {
 
 #[test]
 fn ethless_transfer_from_mismatch() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			from: Address::from_str("0xbad349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap(),
 			..Default::default()
@@ -261,7 +261,7 @@ fn ethless_transfer_from_mismatch() {
 
 #[test]
 fn ethless_transfer_to_mismatch() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			to: Address::from_str("0xbad8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap(),
 			..Default::default()
@@ -272,7 +272,7 @@ fn ethless_transfer_to_mismatch() {
 
 #[test]
 fn ethless_transfer_invalid_input_data() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			transaction: EthTransaction {
 				input: Vec::from("badbad".as_bytes()).into(),
@@ -286,7 +286,7 @@ fn ethless_transfer_invalid_input_data() {
 
 #[test]
 fn ethless_transfer_amount_mismatch() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			amount: U256::from(1),
 			..Default::default()
@@ -301,7 +301,7 @@ fn ethless_transfer_nonce_mismatch() {
 	let input_args = TransferContractInput { nonce: 1.into(), ..Default::default() };
 	let input = transfer.encode_input(&input_args.into_tokens()).unwrap().into();
 	let transaction = EthTransaction { input, ..ETH_TRANSACTION.clone() };
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs { transaction, ..Default::default() }),
 		IncorrectNonce,
 	);
@@ -309,7 +309,7 @@ fn ethless_transfer_nonce_mismatch() {
 
 #[test]
 fn ethless_transfer_pending() {
-	assert_invalid_transfer(
+	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs {
 			transaction: EthTransaction { block_number: None, ..ETH_TRANSACTION.clone() },
 			..Default::default()
@@ -567,6 +567,7 @@ fn set_up_verify_transfer_env(
 			Some(rpc_uri),
 			&crate::mock::get_mock_tx_hash(),
 			&crate::mock::get_mock_tx_block_num(),
+			&*ETHLESS_RESPONSES,
 		),
 	)
 }
@@ -683,6 +684,7 @@ fn verify_transfer_get_block_invalid_address() {
 			Some("http://localhost:8545"),
 			&crate::mock::get_mock_tx_hash(),
 			&crate::mock::get_mock_tx_block_num(),
+			&*ETHLESS_RESPONSES,
 		)
 		.mock_get_block_number(&mut state.write());
 	}

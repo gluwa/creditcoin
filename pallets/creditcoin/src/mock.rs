@@ -11,6 +11,7 @@ use frame_support::{
 };
 use frame_system as system;
 use parking_lot::RwLock;
+use serde_json::Value;
 use sp_core::H256;
 use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
 use sp_runtime::{
@@ -113,14 +114,14 @@ impl pallet_creditcoin::Config for Test {
 
 	type HashIntoNonce = H256;
 
-	type UnverifiedTransferTimeout = ConstU64<5>;
+	type UnverifiedTaskTimeout = ConstU64<5>;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
 }
 
 impl Test {
 	pub(crate) fn unverified_transfer_timeout() -> u64 {
-		<<Test as crate::Config>::UnverifiedTransferTimeout as Get<u64>>::get()
+		<<Test as crate::Config>::UnverifiedTaskTimeout as Get<u64>>::get()
 	}
 
 	pub(crate) fn unverified_transfer_deadline() -> u64 {
@@ -337,7 +338,8 @@ pub fn pending_rpc_request(
 	uri: &str,
 	responses: &HashMap<String, JsonRpcResponse<serde_json::Value>>,
 ) -> PendingRequest {
-	let rpc = JsonRpcRequest::new(method, params).to_bytes();
+	let x = JsonRpcRequest::new(method, params);
+	let rpc = x.to_bytes();
 	let response = &responses[method];
 	let response_body = serde_json::to_vec(response).unwrap();
 	PendingRequest {
@@ -464,7 +466,7 @@ impl Default for MockedRpcRequests {
 		let tx_hash = get_mock_tx_hash();
 		let tx_block_number = get_mock_tx_block_num();
 
-		Self::new(rpc_uri, &tx_hash, &tx_block_number)
+		Self::new(rpc_uri, &tx_hash, &tx_block_number, &*ETHLESS_RESPONSES)
 	}
 }
 
@@ -473,8 +475,8 @@ impl MockedRpcRequests {
 		rpc_uri: impl Into<Option<&'a str>>,
 		tx_hash: &str,
 		tx_block_number: &str,
+		responses: &HashMap<String, JsonRpcResponse<Value>>,
 	) -> Self {
-		let responses = &*ETHLESS_RESPONSES;
 		let uri = rpc_uri.into().unwrap_or("dummy");
 		let get_transaction = Some(pending_rpc_request(
 			"eth_getTransactionByHash",
@@ -519,14 +521,14 @@ impl MockedRpcRequests {
 	}
 
 	/// Mocks the RPC responses up to (inclusive) get_block_by_number
-	pub(crate) fn mock_get_block_by_number(mut self, state: &mut OffchainState) {
+	pub(crate) fn mock_get_block_by_number(&mut self, state: &mut OffchainState) {
 		self.mock_get_block_number(state);
 		let get_block_by_number = self.get_block_by_number.take().unwrap();
 		state.expect_request(get_block_by_number);
 	}
 
 	/// Mocks all of the RPC responses
-	pub(crate) fn mock_all(self, state: &mut OffchainState) {
+	pub(crate) fn mock_all(mut self, state: &mut OffchainState) {
 		self.mock_get_block_by_number(state);
 	}
 }
