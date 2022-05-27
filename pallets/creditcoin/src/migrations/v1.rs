@@ -317,11 +317,7 @@ mod tests {
 			let old_bid = OldBidOrder {
 				blockchain: Blockchain::Ethereum,
 				borrower_address_id: address_id,
-				terms: OldBidTerms(OldLoanTerms {
-					amount,
-					interest_rate: 1000,
-					maturity: 2000,
-				}),
+				terms: OldBidTerms(OldLoanTerms { amount, interest_rate: 1000, maturity: 2000 }),
 				expiration_block,
 				block,
 				borrower: test_info.borrower.account_id.clone(),

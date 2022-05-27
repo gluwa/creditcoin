@@ -196,10 +196,7 @@ impl TestInfo {
 		));
 
 		let bid_order_id = BidOrderId::new::<Test>(*expiration_block, bid_guid);
-		(
-			Creditcoin::bid_orders(*expiration_block, bid_order_id.hash()).unwrap(),
-			bid_order_id,
-		)
+		(Creditcoin::bid_orders(*expiration_block, bid_order_id.hash()).unwrap(), bid_order_id)
 	}
 
 	pub fn create_offer(&self) -> TestOffer {
@@ -415,12 +412,7 @@ fn register_address_should_error_when_address_too_long() {
 		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
 		let blockchain = Blockchain::Rinkeby;
 		assert_noop!(
-			Creditcoin::register_address(
-				Origin::signed(who),
-				blockchain,
-				address,
-				ownership_proof
-			),
+			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
 			crate::Error::<Test>::AddressFormatNotSupported
 		);
 	})
@@ -437,12 +429,7 @@ fn register_address_should_error_when_signature_is_invalid() {
 
 		let blockchain = Blockchain::Rinkeby;
 		assert_noop!(
-			Creditcoin::register_address(
-				Origin::signed(who),
-				blockchain,
-				address,
-				ownership_proof
-			),
+			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
 			crate::Error::<Test>::InvalidSignature
 		);
 	})
@@ -601,8 +588,7 @@ fn register_transfer_ocw_fail_to_send() {
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
 
-		let test_info =
-			TestInfo { blockchain, loan_terms: terms, ..Default::default() };
+		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
 
 		let (_, deal_order_id) = test_info.create_deal_order();
 
@@ -674,8 +660,7 @@ fn ocw_retries() {
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
 
-		let test_info =
-			TestInfo { blockchain, loan_terms: terms, ..Default::default() };
+		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
 
 		let (_, deal_order_id) = test_info.create_deal_order();
 
@@ -1617,10 +1602,7 @@ fn add_authority_errors_for_non_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: AccountId = AccountId::new([0; 32]);
 
-		assert_noop!(
-			Creditcoin::add_authority(Origin::signed(acct.clone()), acct),
-			BadOrigin
-		);
+		assert_noop!(Creditcoin::add_authority(Origin::signed(acct.clone()), acct), BadOrigin);
 	});
 }
 
@@ -1649,10 +1631,7 @@ fn add_authority_works_for_root() {
 		let root = RawOrigin::Root;
 		let acct: AccountId = AccountId::new([0; 32]);
 
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
-			acct.clone(),
-		));
+		assert_ok!(Creditcoin::add_authority(crate::mock::Origin::from(root), acct.clone(),));
 
 		let value = Authorities::<Test>::take(acct);
 		assert_eq!(value, Some(()))
@@ -1852,11 +1831,7 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key,
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
