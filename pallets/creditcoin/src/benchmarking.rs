@@ -3,6 +3,8 @@ use super::*;
 
 use crate::benchmarking::alloc::format;
 use crate::helpers::{EVMAddress, PublicToAddress};
+use crate::ocw::collect_coins::CONTRACT_CHAIN;
+use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
@@ -13,6 +15,7 @@ use frame_support::{
 	pallet_prelude::*,
 	traits::{Currency, Get},
 };
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use pallet_balances::Pallet as Balances;
 use pallet_timestamp::Pallet as Timestamp;
@@ -20,6 +23,7 @@ use sp_core::ecdsa::{self};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign};
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::One;
+use sp_runtime::traits::UniqueSaturatedFrom;
 
 #[extend::ext]
 impl<'a, S> &'a [u8]
@@ -48,6 +52,8 @@ benchmarks! {
 		let f in 16..32;
 		//insert u unverifiedtransfers
 		let u in 0..16;
+		//insert c unverifiedcollectcoins
+		let c in 0..64;
 
 		<Timestamp<T>>::set_timestamp(1u32.into());
 
@@ -82,7 +88,24 @@ benchmarks! {
 			}
 		}
 
-	}:{ Creditcoin::<T>::on_initialize(T::BlockNumber::one()) }
+		let deadline = T::BlockNumber::one();
+
+		for i in 0..c {
+			let collector: T::AccountId = lender_account::<T>(true);
+			let evm_address = format!("{:03x}",i).as_bytes() .into_bounded();
+			let address_id = AddressId::new::<T>(&CONTRACT_CHAIN, &evm_address);
+			let entry = Address { blockchain: CONTRACT_CHAIN, value: evm_address.clone(), owner: collector.clone() };
+			<Addresses<T>>::insert(address_id, entry);
+
+			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
+			let collect_coins_id = CollectCoinsId::new::<T>(&tx_id);
+
+			let pending = types::UnverifiedCollectCoins { to: evm_address.clone(), tx_id: tx_id.clone() };
+
+			<Creditcoin<T> as Store>::UnverifiedCollectCoins::insert(deadline, collect_coins_id, pending.clone());
+		}
+
+	}:{ Creditcoin::<T>::on_initialize(deadline) }
 	verify {
 	}
 
@@ -252,6 +275,44 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(lender),lender_addr_id,borrower_addr_id,terms,expiry,ask_guid.into_bounded(),bid_guid.into_bounded(),pkey.into(),signature.into())
 
+	request_collect_coins{
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let collector: T::AccountId = lender_account::<T>(true);
+		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
+		let address = Creditcoin::<T>::addresses(&collector_addr_id).unwrap();
+		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
+			.as_bytes()
+			.into_bounded();
+	}: _( RawOrigin::Signed(collector), address.value, tx_id)
+
+	fail_collect_coins{
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let authority = authority_account::<T>(true);
+		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab".as_bytes();
+		let collect_coins_id = crate::CollectCoinsId::new::<T>(tx_id);
+		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
+
+	}: _(RawOrigin::Signed(authority), collect_coins_id, Cause::AbiMismatch, deadline)
+
+	persist_collect_coins{
+
+	<Timestamp<T>>::set_timestamp(1u32.into());
+	let authority = authority_account::<T>(true);
+	<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+	let collector: T::AccountId = lender_account::<T>(true);
+	let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
+	let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
+		.as_bytes()
+		.into_bounded();
+	let collect_coins_id = crate::CollectCoinsId::new::<T>(&tx_id);
+
+	let collect_coins =
+		crate::types::CollectCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount: T::Balance::unique_saturated_from(1u32), tx_id };
+
+	let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
+	}: _(RawOrigin::Signed(authority), collect_coins, deadline)
+
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
@@ -393,8 +454,6 @@ fn generate_deal<T: Config>(
 	seed: u8,
 ) -> Result<DealOrderId<T::BlockNumber, T::Hash>, crate::Error<T>> {
 	let lender = lender_account::<T>(true);
-	//let authority = authority_account::<T>(false);
-	//<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 	let terms = get_all_fit_terms::<T>();
 	let expiration_block = T::BlockNumber::one();
 

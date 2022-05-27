@@ -34,6 +34,7 @@ pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin DealOrders (r:65 w:64)
 	// Storage: Creditcoin BidOrders (r:0 w:255)
+	// Storage: Creditcoin UnverifiedCollectCoins (r:0 w:1)
 	// Storage: Creditcoin AskOrders (r:0 w:128)
 	// Storage: Creditcoin Offers (r:0 w:128)
 	fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, _u: u32, ) -> Weight {
@@ -54,6 +55,7 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(o as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
+			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Creditcoin Addresses (r:1 w:1)
 	fn register_address() -> Weight {
@@ -176,5 +178,27 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 		(389_400_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	// Storage: Creditcoin CollectCoins (r:1 w:0)
+	// Storage: Creditcoin UnverifiedCollectCoins (r:1 w:1)
+	// Storage: Creditcoin Addresses (r:1 w:0)
+	fn request_collect_coins() -> Weight {
+		(53_500_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+	}
+	// Storage: Creditcoin Authorities (r:1 w:0)
+	// Storage: Creditcoin CollectCoins (r:1 w:0)
+	fn fail_collect_coins() -> Weight {
+		(32_900_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+	}
+	// Storage: Creditcoin Authorities (r:1 w:0)
+	// Storage: Creditcoin CollectCoins (r:1 w:1)
+	// Storage: Creditcoin Addresses (r:1 w:0)
+	fn persist_collect_coins() -> Weight {
+		(186_200_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 }

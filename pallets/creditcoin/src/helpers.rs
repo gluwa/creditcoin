@@ -158,7 +158,7 @@ impl<T: Config> Pallet<T> {
 			timestamp: None,
 		};
 
-		let deadline = block.saturating_add(T::UnverifiedTransferTimeout::get());
+		let deadline = block.saturating_add(T::UnverifiedTaskTimeout::get());
 
 		let pending = UnverifiedTransfer {
 			from_external: from.value,

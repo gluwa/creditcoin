@@ -27,6 +27,7 @@ pub enum VerificationFailureCause {
 	MissingSender,
 	AbiMismatch,
 	IncorrectInputLength,
+	EmptyInput,
 	IncorrectInputType,
 	IncorrectAmount,
 	IncorrectNonce,
@@ -42,7 +43,7 @@ impl VerificationFailureCause {
 		match self {
 			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
 			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
-			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender
+			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender | EmptyInput
 			| IncorrectReceiver | TaskNonexistent => true,
 			TaskPending | TaskUnconfirmed => false,
 		}

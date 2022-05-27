@@ -1,7 +1,7 @@
+pub mod collect_coins;
 pub mod errors;
 pub mod rpc;
-use crate::{Blockchain, Call, Id, Transfer, TransferId, TransferKind, UnverifiedTransfer};
-use codec::Encode;
+use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::{
@@ -279,13 +279,6 @@ impl<T: Config> Pallet<T> {
 pub(crate) struct LocalVerificationStatus<'a> {
 	storage_ref: StorageValueRef<'a>,
 	key: &'a [u8],
-}
-
-pub(crate) fn transfer_local_status_storage_key<T: Config>(
-	deadline: T::BlockNumber,
-	transfer_id: &TransferId<T::Hash>,
-) -> Vec<u8> {
-	(deadline, transfer_id).encode()
 }
 
 impl<'a> LocalVerificationStatus<'a> {

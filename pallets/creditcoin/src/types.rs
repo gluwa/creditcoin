@@ -87,6 +87,16 @@ impl<AccountId> Address<AccountId> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct CollectCoins<Hash, Balance> {
+	pub to: AddressId<Hash>,
+	pub amount: Balance,
+	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
+	pub tx_id: ExternalTxId,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub kind: TransferKind,
@@ -100,6 +110,16 @@ pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub is_processed: bool,
 	pub account_id: AccountId,
 	pub timestamp: Option<Moment>,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct UnverifiedCollectCoins {
+	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
+	pub to: ExternalAddress,
+	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
+	pub tx_id: ExternalTxId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -218,6 +238,11 @@ pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct TransferId<Hash>(Hash);
 
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct CollectCoinsId<Hash>(Hash);
+
 fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
 	let mut hex = Vec::with_capacity(bytes.len() * 2);
@@ -318,6 +343,18 @@ impl<H> TransferId<H> {
 	{
 		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
 		TransferId(Config::Hashing::hash(&key))
+	}
+}
+
+use crate::ocw::collect_coins::CONTRACT_CHAIN;
+impl<H> CollectCoinsId<H> {
+	pub fn new<Config>(blockchain_tx_id: &[u8]) -> CollectCoinsId<H>
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+	{
+		let key = concatenate!(CONTRACT_CHAIN.as_bytes(), blockchain_tx_id);
+		CollectCoinsId(Config::Hashing::hash(&key))
 	}
 }
 

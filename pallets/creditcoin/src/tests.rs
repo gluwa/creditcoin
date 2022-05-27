@@ -109,7 +109,7 @@ impl RegisteredAddress {
 	}
 }
 
-fn generate_address_with_proof(
+pub(crate) fn generate_address_with_proof(
 	seed: &str,
 ) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
 	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
@@ -445,7 +445,8 @@ fn verify_ethless_transfer() {
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
 
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+			.mock_all(&mut state.write());
 
 		let from = get_mock_from_address().hex_to_address();
 		let to = get_mock_to_address().hex_to_address();
@@ -481,10 +482,11 @@ fn register_transfer_ocw() {
 		let blockchain = Blockchain::Rinkeby;
 
 		// mocks for when we expect failure
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num)
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
 			.mock_get_block_number(&mut state.write());
 		// mocks for when we expect success
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+			.mock_all(&mut state.write());
 
 		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
 
@@ -578,10 +580,11 @@ fn register_transfer_ocw_fail_to_send() {
 
 		// we're going to verify a transfer twice:
 		// First when we expect failure, which means we won't make all of the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num)
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
 			.mock_get_block_number(&mut state.write());
 		// Second when we expect success, where we'll do all the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+			.mock_all(&mut state.write());
 
 		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
 
@@ -622,7 +625,6 @@ fn register_transfer_ocw_fail_to_send() {
 			));
 
 			roll_by_with_ocw(1);
-
 			assert!(logs_contain("Failed to send success dispatchable transaction"));
 		});
 	});
@@ -675,7 +677,8 @@ fn ocw_retries() {
 		));
 
 		let mock_unconfirmed_tx = || {
-			let mut requests = MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num);
+			let mut requests =
+				MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES);
 			requests.get_block_number.set_response(JsonRpcResponse {
 				jsonrpc: "2.0".into(),
 				id: 1,
@@ -701,7 +704,8 @@ fn ocw_retries() {
 
 		// now mock requests so the tx is confirmed
 
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+			.mock_all(&mut state.write());
 
 		roll_by_with_ocw(1);
 
@@ -717,7 +721,7 @@ fn ocw_retries() {
 
 		roll_by_with_ocw(1);
 
-		assert!(logs_contain("Already handled transfer"));
+		assert!(logs_contain("Already handled Transfer"));
 	});
 }
 
