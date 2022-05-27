@@ -7,10 +7,6 @@ trigger:
   branches:
     include:
     - refs/tags/*
-  paths:
-    exclude:
-    - README.md
-    - ci-linux/*
 
 pr: none
 
@@ -29,7 +25,7 @@ variables:
 
 stages:
 # Docker Image
-- stage: BuildContainer
+- stage: build
   displayName: 'Build Containers & Artifacts'
   jobs:
   - job: Build
@@ -70,4 +66,16 @@ stages:
 #Binaries
   - template: ./ci/templates/build.yml
     parameters:
+      artifactName: target
+
+
+- stage: PublishArtifacts
+  displayName: 'Publish Artifacts'
+  dependsOn:
+    - build
+  jobs:
+  - template: ./ci/templates/release.yml
+    parameters:
+      job_condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/CSUB-175-automate-github-release'))
+      gitHubConnection: 'CreditcoinRelease'
       artifactName: target
