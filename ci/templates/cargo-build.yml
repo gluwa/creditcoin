@@ -3,7 +3,7 @@ parameters:
   job_name: cargo_build             # Default job name
   job_displayName: Cargo build      # Default displayName
   job_dependsOn: []                 # Dependencies to for the job to start
-  job_condition: true               # Job condition
+  # job_condition: true               # Job condition
   job_post-steps: []                # Custom steps running after job
   job_pre-steps: []                 # Custom steps before job start
   job_pool:
@@ -45,7 +45,7 @@ parameters:
 jobs:
 - job: ${{ parameters['job_name'] }}
   displayName: ${{ parameters['job_displayName'] }}
-  condition: ${{ parameters['job_condition'] }}
+  # condition: ${{ parameters['job_condition'] }}
   dependsOn: ${{ parameters['job_dependsOn'] }}
   pool:
     vmImage: ${{ parameters.job_pool['vmImage'] }}
