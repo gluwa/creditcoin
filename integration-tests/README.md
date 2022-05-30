@@ -34,3 +34,22 @@ yarn install
 ```bash
 yarn test
 ```
+
+## Testing against Testnet
+
+1. Install dependencies:
+
+```bash
+pushd ../creditcoin-js/ && yarn install && popd
+yarn install
+```
+
+2. Execute the test suite:
+
+```bash
+export ETHEREUM_NODE_URL=https://rinkeby.infura.io/v3/abcdef
+export LENDER_PRIVATE_KEY=XXXX
+export BORROWER_PRIVATE_KEY=YYYY
+
+yarn test --config testnet.config.ts
+```

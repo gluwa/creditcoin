@@ -33,7 +33,7 @@ export const testData: TestData = {
     } as LoanTerms,
     blockchain: 'Ethereum' as Blockchain,
     expirationBlock: 10_000_000,
-    createWallet: Wallet.createRandom, // eslint-disable-line
+    createWallet: (global as any).CREDITCOIN_CREATE_WALLET ? (global as any).CREDITCOIN_CREATE_WALLET : Wallet.createRandom, // eslint-disable-line
     keyring: new Keyring({ type: 'sr25519' }),
 };
 
