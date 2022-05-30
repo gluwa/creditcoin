@@ -4,6 +4,11 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
 const setup = async () => {
     process.env.NODE_ENV = 'test';
 
+    // WARNING: when setting global variables `undefined' means no value has been assigned
+    // to this variable up to now so we fall-back to the defaults.
+    // WARNING: don't change the comparison expression here b/c some variables are actually
+    // configured to have a true or false value in different environments!
+
     if ((global as any).CREDITCOIN_API_URL === undefined) {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
     }
