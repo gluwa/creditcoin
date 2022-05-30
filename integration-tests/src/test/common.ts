@@ -2,9 +2,13 @@ import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { Option } from '@polkadot/types';
+import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/model';
 import { CreditcoinApi } from 'creditcoin-js/types';
+import { createAddress } from 'creditcoin-js/transforms';
 import { ethConnection } from 'creditcoin-js/examples/ethereum';
+import { AddressRegistered, createAddressId } from 'creditcoin-js/extrinsics/register-address';
 import { Keyring } from '@polkadot/api';
 
 type TestData = {
@@ -33,7 +37,9 @@ export const testData: TestData = {
     } as LoanTerms,
     blockchain: 'Ethereum' as Blockchain,
     expirationBlock: 10_000_000,
-    createWallet: (global as any).CREDITCOIN_CREATE_WALLET ? (global as any).CREDITCOIN_CREATE_WALLET : Wallet.createRandom, // eslint-disable-line
+    createWallet: (global as any).CREDITCOIN_CREATE_WALLET
+        ? (global as any).CREDITCOIN_CREATE_WALLET
+        : Wallet.createRandom, // eslint-disable-line
     keyring: new Keyring({ type: 'sr25519' }),
 };
 
@@ -68,7 +74,7 @@ export const lendOnEth = async (
     dealOrderId: DealOrderId,
     loanTerms: LoanTerms,
 ) => {
-    const { lend, waitUntilTip } = await ethConnection();
+    const { lend, waitUntilTip } = await ethConnection((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
 
     // Lender lends to borrower on ethereum
     const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
@@ -82,4 +88,32 @@ export const lendOnEth = async (
     await waitUntilTip(lendBlockNumber + 15);
 
     return [tokenAddress, lendTxHash];
+};
+
+export const tryRegisterAddress = async (
+    ccApi: CreditcoinApi,
+    externalAddress: string,
+    blockchain: Blockchain,
+    ownershipProof: string,
+    signer: KeyringPair,
+    checkForExisting: boolean = false,
+): Promise<AddressRegistered> => {
+    const {
+        api,
+        extrinsics: { registerAddress },
+    } = ccApi;
+
+    if (checkForExisting) {
+        const existingAddressId = createAddressId(blockchain, externalAddress);
+        const result = await api.query.creditcoin.addresses<Option<PalletCreditcoinAddress>>(existingAddressId);
+
+        if (result.isSome) {
+            return {
+                itemId: existingAddressId,
+                item: createAddress(result.unwrap()),
+            } as AddressRegistered;
+        }
+    }
+
+    return registerAddress(externalAddress, blockchain, ownershipProof, signer);
 };
