@@ -5,13 +5,13 @@ import { POINT_01_CTC } from '../constants';
 import { BN } from '@polkadot/util';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
+import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/transforms';
-import { testData, lendOnEth } from './common';
+import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 import { Wallet } from 'ethers';
-import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
 
 describe('RegisterFundingTransfer', (): void => {
     let ccApi: CreditcoinApi;
@@ -38,18 +38,27 @@ describe('RegisterFundingTransfer', (): void => {
     beforeEach(async () => {
         const {
             api,
-            extrinsics: { registerAddress, registerDealOrder },
+            extrinsics: { registerDealOrder },
             utils: { signAccountId },
         } = ccApi;
         lenderWallet = createWallet('lender');
         borrowerWallet = createWallet('borrower');
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-            registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
-            registerAddress(
+            tryRegisterAddress(
+                ccApi,
+                lenderWallet.address,
+                blockchain,
+                signAccountId(lenderWallet, lender.address),
+                lender,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            ),
+            tryRegisterAddress(
+                ccApi,
                 borrowerWallet.address,
                 blockchain,
                 signAccountId(borrowerWallet, borrower.address),
                 borrower,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
         const askGuid = Guid.newGuid();
@@ -74,7 +83,7 @@ describe('RegisterFundingTransfer', (): void => {
             dealOrder.dealOrder.itemId,
             loanTerms,
         );
-    }, 90000);
+    }, 900000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
@@ -93,7 +102,7 @@ describe('RegisterFundingTransfer', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 30000);
+    }, 300000);
 
     it('failure event is emitted if transfer is invalid', async (): Promise<void> => {
         // wrong amount
@@ -135,5 +144,5 @@ describe('RegisterFundingTransfer', (): void => {
                 })
                 .catch(reject);
         });
-    }, 60000);
+    }, 12000000);
 });
