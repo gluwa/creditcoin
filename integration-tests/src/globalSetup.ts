@@ -13,6 +13,10 @@ const setup = async () => {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
     }
 
+    if ((global as any).CREDITCOIN_ETHEREUM_NODE_URL === undefined) {
+        (global as any).CREDITCOIN_ETHEREUM_NODE_URL = 'http://localhost:8545';
+    }
+
     if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY === undefined) {
         (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY = true;
     }
@@ -27,6 +31,10 @@ const setup = async () => {
 
     if ((global as any).CREDITCOIN_METRICS_BASE === undefined) {
         (global as any).CREDITCOIN_METRICS_BASE = 'http://127.0.0.1:9615';
+    }
+
+    if ((global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES === undefined) {
+        (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = false;
     }
 
     const api = await ApiPromise.create({
