@@ -35,8 +35,8 @@ describe('RegisterDealOrder', (): void => {
             extrinsics: { registerAddress },
             utils: { signAccountId },
         } = ccApi;
-        const lenderWallet = createWallet();
-        const borrowerWallet = createWallet();
+        const lenderWallet = createWallet('lender');
+        const borrowerWallet = createWallet('borrower');
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
             registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
             registerAddress(
