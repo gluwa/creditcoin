@@ -38,8 +38,8 @@ describe('FundDealOrder', (): void => {
             extrinsics: { registerAddress, registerDealOrder, registerFundingTransfer },
             utils: { signAccountId },
         } = ccApi;
-        lenderWallet = createWallet();
-        borrowerWallet = createWallet();
+        lenderWallet = createWallet('lender');
+        borrowerWallet = createWallet('borrower');
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
             registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
             registerAddress(

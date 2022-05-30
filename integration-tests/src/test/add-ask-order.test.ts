@@ -27,7 +27,7 @@ describe('AddAskOrder', (): void => {
     });
 
     beforeEach(async () => {
-        const lenderWallet = createWallet();
+        const lenderWallet = createWallet('lender');
 
         lenderRegAddr = await ccApi.extrinsics.registerAddress(
             lenderWallet.address,

@@ -12,7 +12,7 @@ type TestData = {
     blockchain: Blockchain;
     expirationBlock: number;
     keyring: Keyring;
-    createWallet: () => Wallet;
+    createWallet: (who: string) => Wallet;
 };
 export const testData: TestData = {
     loanTerms: {
