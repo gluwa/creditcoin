@@ -5,6 +5,7 @@ import * as child_process from 'child_process';
 import { promisify } from 'util';
 import * as _ from '@polkadot/api/augment';
 
+// From https://github.com/chevdor/subwasm/blob/c2e5b62384537875bfd0497c2b2d706265699798/lib/src/runtime_info.rs#L8-L20
 type WasmRuntimeInfo = {
     size: number;
     compression: {
@@ -22,17 +23,28 @@ type WasmRuntimeInfo = {
     blake2_256: string;
 };
 
+// these normally use callbacks, but promises are more convenient
 const readFile = promisify(fs.readFile);
 const exec = promisify(child_process.exec);
 
+/**
+ * Performs an upgrade to the runtime at the provided path.
+ * @param wsUrl The URL of the node to send the upgrade transaction to. Should be a websocket URL, like `ws://127.0.0.1:9944`
+ * @param wasmBlobPath The path to the wasm blob to upgrade to.
+ * @param sudoKeyUri The the secret key (SURI, either a mnemonic or raw secret) of the account to use to send the upgrade transaction.
+ * Must be the sudo account.
+ * @param hasSubwasm Whether the subwasm CLI tool is installed. If true subwasm is used to get info about the runtime and checks are performed.
+ */
 async function doRuntimeUpgrade(
     wsUrl: string,
     wasmBlobPath: string,
     sudoKeyUri: string,
     hasSubwasm: boolean = false,
 ): Promise<void> {
+    // init the api client
     const { api } = await creditcoinApi(wsUrl);
     try {
+        // make the keyring for the sudo account
         const keyring = new Keyring({ type: 'sr25519' }).createFromUri(sudoKeyUri);
 
         if (hasSubwasm) {
@@ -46,6 +58,7 @@ async function doRuntimeUpgrade(
             // e.g. the core version is reasonable, it's compressed, etc.
         }
 
+        // read the wasm blob from the give path
         const wasmBlob = await readFile(wasmBlobPath);
 
         const u8aToHex = (bytes: Uint8Array | Buffer): string => {
@@ -53,6 +66,7 @@ async function doRuntimeUpgrade(
             return byteArray.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
         };
 
+        // submit the upgrade transaction
         const unsub = await api.tx.sudo
             .sudoUncheckedWeight(api.tx.system.setCode(u8aToHex(wasmBlob)), 1)
             .signAndSend(keyring, { nonce: -1 }, (result) => {
@@ -79,4 +93,4 @@ const wsUrl = process.argv[2];
 const wasmBlobPath = process.argv[3];
 const sudoKeyUri = process.argv[4];
 
-doRuntimeUpgrade(wsUrl, wasmBlobPath, sudoKeyUri).catch(console.error);
+doRuntimeUpgrade(wsUrl, wasmBlobPath, sudoKeyUri, true).catch(console.error);
