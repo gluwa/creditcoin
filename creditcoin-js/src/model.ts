@@ -121,3 +121,16 @@ export type Transfer = {
 };
 
 export type TransferProcessed = EventReturnJoinType<TransferId, Transfer>;
+
+export type CollectcoinsId = string;
+
+export type Collectcoins = {
+    to: ExternalAddress;
+    txHash: string;
+    amount: BN;
+};
+
+export type UnverifiedCollectcoins = {
+    to: ExternalAddress;
+    txHash: string;
+};

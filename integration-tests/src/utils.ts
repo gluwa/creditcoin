@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { ApiPromise } from '@polkadot/api';
 import type { EventRecord } from '@polkadot/types/interfaces/system';
 import type { Balance, DispatchError } from '@polkadot/types/interfaces';
