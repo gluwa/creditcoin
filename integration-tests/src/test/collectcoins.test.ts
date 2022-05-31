@@ -18,8 +18,7 @@ describe('CollectCoins', (): void => {
     const addressId = createAddressId(blockchain, evmAddress);
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
-        ccApi = await creditcoinApi('ws://127.0.0.1:9944');
+        ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         authority = keyring.createFromUri(AUTHORITY_SURI);
     });
 
@@ -27,38 +26,44 @@ describe('CollectCoins', (): void => {
         await ccApi.api.disconnect();
     });
 
-    it('fail; fee is min 0.01 CTC', async (): Promise<void> => {
-        const { api } = ccApi;
-        const collectcoinsId = createCollectcoinsId(evmAddress);
-        const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
+    describe('request', (): void => {
+        it('fee is min 0.01 CTC', async (): Promise<void> => {
+            const { api } = ccApi;
 
-        const { partialFee } = await api.tx.creditcoin
-            .failCollectCoins(collectcoinsId, cause, 1000)
-            .paymentInfo(authority, { nonce: -1 });
-
-        expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
+            const { partialFee } = await api.tx.creditcoin
+                .requestCollectCoins(evmAddress, badHash)
+                .paymentInfo(authority, { nonce: -1 });
+            expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
+        });
     });
 
-    it('request; fee is min 0.01 CTC', async (): Promise<void> => {
-        const { api } = ccApi;
+    describe('fail', (): void => {
+        it('fee is min 0.01 CTC', async (): Promise<void> => {
+            const { api } = ccApi;
+            const collectcoinsId = createCollectcoinsId(evmAddress);
+            const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
 
-        const { partialFee } = await api.tx.creditcoin
-            .requestCollectCoins(evmAddress, badHash)
-            .paymentInfo(authority, { nonce: -1 });
-        expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
+            const { partialFee } = await api.tx.creditcoin
+                .failCollectCoins(collectcoinsId, cause, 1000)
+                .paymentInfo(authority, { nonce: -1 });
+
+            expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
+        });
     });
 
-    it('persist; fee is min 0.01 CTC but bypassed by OCW', async (): Promise<void> => {
-        const { api } = ccApi;
-        const collectcoins = {
-            to: addressId,
-            amount: 1000,
-            txHash: badHash,
-        };
+    describe('persist', (): void => {
+        it('fee is min 0.01 CTC but bypassed by OCW', async (): Promise<void> => {
+            const { api } = ccApi;
+            const collectcoins = {
+                to: addressId,
+                amount: 1000,
+                txHash: badHash,
+            };
 
-        const { partialFee } = await api.tx.creditcoin
-            .persistCollectCoins(collectcoins, 1000)
-            .paymentInfo(authority, { nonce: -1 });
-        expect(partialFee.toBigInt()).toEqual(BigInt(0));
+            const { partialFee } = await api.tx.creditcoin
+                .persistCollectCoins(collectcoins, 1000)
+                .paymentInfo(authority, { nonce: -1 });
+            expect(partialFee.toBigInt()).toEqual(BigInt(0));
+        });
     });
 });
