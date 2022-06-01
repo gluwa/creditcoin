@@ -3,7 +3,7 @@
 
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { Bytes, Compact, U256, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
-import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
+import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from '@polkadot/types/interfaces/runtime';
 import type {
     PalletCreditcoinAskOrderId,
@@ -479,7 +479,7 @@ declare module '@polkadot/api-base/types/submittable' {
              * # </weight>
              **/
             sudo: AugmentedSubmittable<
-                (call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                (call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Call]
             >;
             /**
@@ -506,7 +506,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | { Address20: any }
                         | string
                         | Uint8Array,
-                    call: Call | { callIndex?: any; args?: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [MultiAddress, Call]
             >;
@@ -524,7 +524,7 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             sudoUncheckedWeight: AugmentedSubmittable<
                 (
-                    call: Call | { callIndex?: any; args?: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                     weight: u64 | AnyNumber | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [Call, u64]
