@@ -988,7 +988,7 @@
     "@polkadot/util-crypto" "^9.3.1"
     rxjs "^7.5.5"
 
-"@polkadot/api@8.6.2", "@polkadot/api@^8.3.2":
+"@polkadot/api@8.6.2", "@polkadot/api@^8.6.2":
   version "8.6.2"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-8.6.2.tgz#058048e69f55646074b23936dbeb654ec4bbf641"
   integrity sha512-dmgz9msxQG/K2ol7X0jlcZR1cPtw2qA9OhJ7GxGDc1t0WQiPtU/VRgZg4hBV2qR3n3V4fmbojQwPjBELzfhL+Q==
@@ -1473,7 +1473,7 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@typescript-eslint/eslint-plugin@^5.22.0":
+"@typescript-eslint/eslint-plugin@^5.27.0":
   version "5.27.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/eslint-plugin/-/eslint-plugin-5.27.0.tgz#23d82a4f21aaafd8f69dbab7e716323bb6695cc8"
   integrity sha512-DDrIA7GXtmHXr1VCcx9HivA39eprYBIFxbQEHI6NyraRDxCGpxAFiYQAT/1Y0vh1C+o2vfBiy4IuPoXxtTZCAQ==
@@ -1488,7 +1488,7 @@
     semver "^7.3.7"
     tsutils "^3.21.0"
 
-"@typescript-eslint/parser@^5.22.0":
+"@typescript-eslint/parser@^5.27.0":
   version "5.27.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/parser/-/parser-5.27.0.tgz#62bb091ed5cf9c7e126e80021bb563dcf36b6b12"
   integrity sha512-8oGjQF46c52l7fMiPPvX4It3u3V3JipssqDfHQ2hcR0AeR8Zge+OYyKUCm5b70X72N1qXt0qgHenwN6Gc2SXZA==
@@ -2140,7 +2140,7 @@ eslint-visitor-keys@^3.3.0:
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-3.3.0.tgz#f6480fa6b1f30efe2d1968aa8ac745b862469826"
   integrity sha512-mQ+suqKJVyeuwGYHAdjMFqjCyfl8+Ldnxuyp3ldiMBFKkvytrXUZWaiPCEav8qDHKty44bD+qV1IP4T+w+xXRA==
 
-eslint@^8.14.0:
+eslint@^8.16.0:
   version "8.16.0"
   resolved "https://registry.yarnpkg.com/eslint/-/eslint-8.16.0.tgz#6d936e2d524599f2a86c708483b4c372c5d3bbae"
   integrity sha512-MBndsoXY/PeVTDJeWsYj7kLZ5hQpJOfMYLsF6LicLHQWbRDG19lK5jOix4DPl8yY4SUFcE3txy86OzFLWT+yoA==
@@ -2224,7 +2224,7 @@ esutils@^2.0.2:
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.3.tgz#74d2eb4de0b8da1293711910d50775b9b710ef64"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
 
-ethers@^5.6.5:
+ethers@^5.6.8:
   version "5.6.8"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.6.8.tgz#d36b816b4896341a80a8bbd2a44e8cb6e9b98dd4"
   integrity sha512-YxIGaltAOdvBFPZwIkyHnXbW40f1r8mHUgapW6dxkO+6t7H6wY8POUn0Kbxrd/N7I4hHxyi7YCddMAH/wmho2w==
@@ -3777,7 +3777,7 @@ ts-jest@^28.0.1:
     semver "7.x"
     yargs-parser "^20.x"
 
-ts-node@^10.7.0:
+ts-node@^10.8.0:
   version "10.8.0"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.8.0.tgz#3ceb5ac3e67ae8025c1950626aafbdecb55d82ce"
   integrity sha512-/fNd5Qh+zTt8Vt1KbYZjRHCE9sI5i7nqfD/dzBBRDeVXZXS6kToW6R7tTU6Nd4XavFs0mAVCg29Q//ML7WsZYA==
@@ -3857,7 +3857,7 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@^4.6.4:
+typescript@^4.7.2:
   version "4.7.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.7.2.tgz#1f9aa2ceb9af87cca227813b4310fff0b51593c4"
   integrity sha512-Mamb1iX2FDUpcTRzltPxgWMKy3fhg0TN378ylbktPGPK/99KbDtMQ4W1hwgsbPAsG3a0xKa1vmw4VKZQbkvz5A==
