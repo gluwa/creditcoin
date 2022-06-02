@@ -16,6 +16,7 @@ targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
 itertools = { version = "~0.10", default-features = false }
+lazy_static = { version = "*", features = ["spin_no_std"] }
 log = "0.4.17"
 extend = "1.1.2"
 ethabi = { version = "16.0.0", features = ["rlp"], default-features = false }
