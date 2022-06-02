@@ -3,17 +3,23 @@ use codec::Encode;
 use frame_support::sp_runtime::traits::Hash;
 use frame_support::traits::Get;
 use frame_support::traits::Hooks;
+use maplit::btreemap;
 use sp_core::H256;
 
 type Proposal = Box<Call>;
 type ProposalHash = H256;
-type TestVotes = Votes<AccountId, BlockNumber, ()>;
-type TestVote = Vote<()>;
+type TestVotes = Votes<AccountId, BlockNumber, (), ()>;
+type TestVote = Vote<(), ()>;
+const AYE: TestVote = TestVote::Aye(());
+const NAY: TestVote = TestVote::Nay(());
 
-fn make_proposal(value: u64) -> Box<Call> {
-	Box::new(Call::System(frame_system::Call::remark_with_event {
-		remark: value.to_be_bytes().to_vec(),
-	}))
+fn make_proposal(value: u64) -> Box<BaseProposal> {
+	Box::new(
+		Call::System(frame_system::Call::remark_with_event {
+			remark: value.to_be_bytes().to_vec(),
+		})
+		.into(),
+	)
 }
 
 fn hash_of<S: Encode>(s: &S) -> H256 {
@@ -29,13 +35,14 @@ impl TestVotes {
 				.map(|acct| Disagreement { who: acct + num_ayes, reason: () })
 				.collect(),
 			end: System::block_number() + time_limit,
+			extra_data: btreemap! {},
 		}
 	}
 }
 
 struct TestProposal {
 	hash: H256,
-	proposal: Proposal,
+	proposal: Box<BaseProposal>,
 }
 
 impl TestProposal {
@@ -43,7 +50,7 @@ impl TestProposal {
 		let proposal = make_proposal(1);
 		let hash = hash_of(&proposal);
 		if open {
-			VotingOracle::open_proposal(proposal.clone(), hash, 0, Vote::Aye).unwrap();
+			VotingOracle::open_proposal(proposal.clone(), hash, 0, AYE).unwrap();
 		}
 		Self { proposal, hash }
 	}
@@ -52,7 +59,7 @@ impl TestProposal {
 		let proposal = make_proposal(value);
 		let hash = hash_of(&proposal);
 		if open {
-			VotingOracle::open_proposal(proposal.clone(), hash, 0, Vote::Aye).unwrap();
+			VotingOracle::open_proposal(proposal.clone(), hash, 0, AYE).unwrap();
 		}
 		Self { proposal, hash }
 	}
@@ -68,15 +75,16 @@ mod helpers {
 
 	use frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo};
 	use sp_runtime::DispatchError;
+	use sp_std::collections::btree_map::BTreeMap;
 
-	use crate::{Config, Disagreement, ProposalInfo, Vote, Votes};
+	use crate::{Config, Disagreement, MakeProposal, ProposalInfo, Vote, Votes};
 
 	use super::*;
 
 	#[test]
 	fn open_proposal_works() {
 		new_test_ext().execute_with(|| {
-			let assert_votes = |prop: Proposal, hash, initial_vote: TestVote, votes| {
+			let assert_votes = |prop: Box<BaseProposal>, hash, initial_vote: TestVote, votes| {
 				assert_eq!(
 					VotingOracle::open_proposal(prop.clone(), hash, 0, initial_vote),
 					Ok(votes)
@@ -87,7 +95,7 @@ mod helpers {
 					crate::Proposals::<Test>::get().contains(&crate::ProposalInfo { hash, end })
 				);
 			};
-			let assert_proposal_value = |hash: H256, proposal: Proposal| {
+			let assert_proposal_value = |hash: H256, proposal: Box<BaseProposal>| {
 				assert_eq!(crate::ProposalOf::<Test>::get(hash).unwrap(), *proposal);
 			};
 
@@ -98,8 +106,8 @@ mod helpers {
 			assert_votes(
 				proposal.proposal.clone(),
 				proposal.hash,
-				TestVote::Aye,
-				Votes { ayes: vec![0], nays: vec![], end },
+				AYE,
+				Votes { ayes: vec![0], nays: vec![], end, extra_data: btreemap! {} },
 			);
 			assert_proposal_info(proposal.hash, end);
 			assert_proposal_value(proposal.hash, proposal.proposal);
@@ -108,8 +116,13 @@ mod helpers {
 			assert_votes(
 				second_proposal.proposal.clone(),
 				second_proposal.hash,
-				TestVote::Nay(()),
-				Votes { ayes: vec![], nays: vec![Disagreement { reason: (), who: 0 }], end },
+				NAY,
+				Votes {
+					ayes: vec![],
+					nays: vec![Disagreement { reason: (), who: 0 }],
+					end,
+					extra_data: btreemap! {},
+				},
 			);
 			assert_proposal_info(second_proposal.hash, end);
 			assert_proposal_value(second_proposal.hash, second_proposal.proposal);
@@ -130,7 +143,7 @@ mod helpers {
 			let proposal = TestProposal::with(cap as u64 + 1, false);
 
 			assert_noop!(
-				VotingOracle::open_proposal(proposal.proposal, proposal.hash, 1, Vote::Aye),
+				VotingOracle::open_proposal(proposal.proposal, proposal.hash, 1, AYE),
 				TestError::TooManyProposals
 			);
 		});
@@ -141,7 +154,7 @@ mod helpers {
 		new_test_ext().execute_with(|| {
 			let proposal = TestProposal::new(true);
 
-			let vote = Vote::Aye;
+			let vote = AYE;
 			let voter = 2;
 
 			assert_ok!(VotingOracle::add_vote(&proposal.hash, voter, vote));
@@ -175,10 +188,10 @@ mod helpers {
 
 			let voter = 1;
 
-			assert_eq!(VotingOracle::add_vote(&proposal.hash, voter, Vote::Aye), Ok(2));
+			assert_eq!(VotingOracle::add_vote(&proposal.hash, voter, AYE), Ok(2));
 
 			assert_noop!(
-				VotingOracle::add_vote(&proposal.hash, voter, Vote::Aye),
+				VotingOracle::add_vote(&proposal.hash, voter, AYE),
 				TestError::AlreadyVoted
 			);
 
@@ -208,12 +221,20 @@ mod helpers {
 	fn do_accept_proposal_works() {
 		new_test_ext().execute_with(|| {
 			let proposal = TestProposal::new(true);
-			VotingOracle::add_vote(&proposal.hash, 1, Vote::Aye).unwrap();
-			let prop_weight = proposal.proposal.get_dispatch_info().weight;
+			VotingOracle::add_vote(&proposal.hash, 1, AYE).unwrap();
+
+			let prop = proposal.proposal.clone().make_proposal(()).unwrap();
+			let prop_weight = prop.get_dispatch_info().weight;
 
 			assert_eq!(
-				VotingOracle::do_accept_proposal(2, 2, &proposal.hash, proposal.proposal.clone()),
-				prop_weight
+				VotingOracle::do_accept_proposal(
+					2,
+					2,
+					&proposal.hash,
+					proposal.proposal.clone(),
+					&BTreeMap::new()
+				),
+				Ok(prop_weight)
 			);
 
 			assert_eq!(on_proposal_accepted_calls(), 1);

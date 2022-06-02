@@ -1,6 +1,6 @@
-use sp_std::cell::RefCell;
+use sp_std::{cell::RefCell, collections::btree_map::BTreeMap};
 
-use crate::{self as pallet_voting_oracle, OnProposalComplete};
+use crate::{self as pallet_voting_oracle, AggregateData, OnProposalComplete};
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, ConstU64},
@@ -71,24 +71,38 @@ impl pallet_voting_oracle::Config for Test {
 	type TimeLimit = ConstU64<10>;
 	type QuorumPercentage = ConstU32<50>;
 	type OnProposalComplete = CountCalls;
+	type ProposalExtraData = ();
+	type ProposalWithoutData = crate::MakeProposalIdentity<Test, Call>;
+	type DataAggregator = TakeFirst;
+}
+
+pub struct TakeFirst;
+impl AggregateData<Test> for TakeFirst {
+	fn aggregate_data(
+		extra_data: &BTreeMap<<Test as pallet_voting_oracle::Config>::ProposalExtraData, u32>,
+	) -> Result<<Test as pallet_voting_oracle::Config>::ProposalExtraData, ()> {
+		Ok(*extra_data.iter().next().unwrap().0)
+	}
 }
 
 pub struct CountCalls;
 
-impl OnProposalComplete<H256, Call, Reason> for CountCalls {
-	fn on_proposal_accepted(_proposal_hash: &H256, _proposal: &Call) {
+pub(crate) type BaseProposal = <Test as crate::Config>::ProposalWithoutData;
+
+impl OnProposalComplete<H256, BaseProposal, Reason> for CountCalls {
+	fn on_proposal_accepted(_proposal_hash: &H256, _proposal: &BaseProposal) {
 		ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow_mut().accept += 1);
 	}
 
 	fn on_proposal_rejected(
 		_proposal_hash: &H256,
-		_proposal: &Call,
+		_proposal: &BaseProposal,
 		_reasons: &sp_std::collections::btree_set::BTreeSet<Reason>,
 	) {
 		ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow_mut().reject += 1);
 	}
 
-	fn on_proposal_expired(_proposal_hash: &H256, _proposal: &Call) {
+	fn on_proposal_expired(_proposal_hash: &H256, _proposal: &BaseProposal) {
 		ON_PROPOSAL_COMPLETE_COUNTS.with(|c| c.borrow_mut().expire += 1);
 	}
 }

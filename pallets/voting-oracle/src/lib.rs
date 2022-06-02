@@ -182,15 +182,16 @@ pub trait MakeProposal<T: Config> {
 	fn make_proposal(self, extra_data: T::ProposalExtraData) -> Result<T::Proposal, ()>;
 }
 
-pub struct MakeProposalIdentity<P>(P);
+#[derive(TypeInfo, Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
+pub struct MakeProposalIdentity<T, P>(P, PhantomData<T>);
 
-impl<P> From<P> for MakeProposalIdentity<P> {
+impl<T, P> From<P> for MakeProposalIdentity<T, P> {
 	fn from(p: P) -> Self {
-		MakeProposalIdentity(p)
+		MakeProposalIdentity(p, PhantomData)
 	}
 }
 
-impl<T, P> MakeProposal<T> for MakeProposalIdentity<P>
+impl<T, P> MakeProposal<T> for MakeProposalIdentity<T, P>
 where
 	T: Config<ProposalExtraData = (), Proposal = P>,
 {
