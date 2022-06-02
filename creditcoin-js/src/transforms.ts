@@ -11,8 +11,8 @@ import {
     PalletCreditcoinOffer,
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
-    PalletCreditcoinCollectCoins,
-    PalletCreditcoinUnverifiedCollectCoins,
+    PalletCreditcoinCollectedCoins,
+    PalletCreditcoinUnverifiedCollectedCoins,
 } from '@polkadot/types/lookup';
 import {
     Address,
@@ -29,8 +29,8 @@ import {
     DealOrderId,
     Transfer,
     TransferKind,
-    UnverifiedCollectcoins,
-    Collectcoins,
+    UnverifiedCollectedcoins,
+    Collectedcoins,
 } from './model';
 
 export const createAddress = ({ value, blockchain, owner }: PalletCreditcoinAddress): Address => ({
@@ -200,8 +200,8 @@ export const createTransfer = (transfer: PalletCreditcoinTransfer): Transfer => 
 };
 
 export const createUnverifiedCollectCoins = (
-    collectCoins: PalletCreditcoinUnverifiedCollectCoins,
-): UnverifiedCollectcoins => {
+    collectCoins: PalletCreditcoinUnverifiedCollectedCoins,
+): UnverifiedCollectedcoins => {
     const { to, txId } = collectCoins;
     return {
         to: to.toString(),
@@ -209,7 +209,7 @@ export const createUnverifiedCollectCoins = (
     };
 };
 
-export const createCollectCoins = (collectCoins: PalletCreditcoinCollectCoins): Collectcoins => {
+export const createCollectCoins = (collectCoins: PalletCreditcoinCollectedCoins): Collectedcoins => {
     const { to, txId, amount } = collectCoins;
     return {
         to: to.toString(),
