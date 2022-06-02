@@ -9,7 +9,7 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
-    PalletCreditcoinCollectCoins,
+    PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
@@ -273,7 +273,7 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             failCollectCoins: AugmentedSubmittable<
                 (
-                    collectCoinsId: H256 | string | Uint8Array,
+                    collectedCoinsId: H256 | string | Uint8Array,
                     cause:
                         | PalletCreditcoinOcwErrorsVerificationFailureCause
                         | 'TaskNonexistent'
@@ -342,14 +342,14 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             persistCollectCoins: AugmentedSubmittable<
                 (
-                    collectCoins:
-                        | PalletCreditcoinCollectCoins
+                    collectedCoins:
+                        | PalletCreditcoinCollectedCoins
                         | { to?: any; amount?: any; txId?: any }
                         | string
                         | Uint8Array,
                     deadline: u32 | AnyNumber | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinCollectCoins, u32]
+                [PalletCreditcoinCollectedCoins, u32]
             >;
             /**
              * Registers an external address on `blockchain` and `network` with value `address`

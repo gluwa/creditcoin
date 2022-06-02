@@ -12,7 +12,7 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
-    PalletCreditcoinCollectCoins,
+    PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLegacySighash,
@@ -20,7 +20,7 @@ import type {
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinTransfer,
-    PalletCreditcoinUnverifiedCollectCoins,
+    PalletCreditcoinUnverifiedCollectedCoins,
     SpRuntimeDispatchError,
 } from '@polkadot/types/lookup';
 
@@ -97,22 +97,22 @@ declare module '@polkadot/api-base/types/events' {
             BidOrderAdded: AugmentedEvent<ApiType, [PalletCreditcoinBidOrderId, PalletCreditcoinBidOrder]>;
             /**
              * exchanging vested ERC-20 CC for native CC failed.
-             * [collect_coins_id, cause]
+             * [collected_coins_id, cause]
              **/
             CollectCoinsFailedVerification: AugmentedEvent<
                 ApiType,
                 [H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
             >;
             /**
-             * CollectCoins has been successfully verified and minted.
-             * [collect_coins_id]
-             **/
-            CollectCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectCoins]>;
-            /**
              * Collecting coins from Eth ERC-20 has been registered and will be verified.
-             * [collect_coins_id, registered_collect_coins]
+             * [collected_coins_id, registered_collect_coins]
              **/
-            CollectCoinsRegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinUnverifiedCollectCoins]>;
+            CollectCoinsRegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinUnverifiedCollectedCoins]>;
+            /**
+             * CollectCoins has been successfully verified and minted.
+             * [collected_coins_id]
+             **/
+            CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectedCoins]>;
             /**
              * A deal order has been added by a borrower. This indicates that the borrower
              * has accepted a lender's offer and intends to enter the loan.
