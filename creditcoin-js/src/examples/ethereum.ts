@@ -65,11 +65,18 @@ const ethlessTransfer = async (
     return receipt;
 };
 
-export const ethConnection = async (providerRpcUrl = 'http://localhost:8545') => {
+export const ethConnection = async (
+    providerRpcUrl = 'http://localhost:8545',
+    minterWallet: Wallet | undefined = undefined,
+    decreaseMiningInterval = true,
+) => {
     const provider = new JsonRpcProvider(providerRpcUrl);
-    const minter = new Wallet(MINTER, provider);
+    const minter = minterWallet || new Wallet(MINTER, provider);
     const testToken = await deployTestToken(minter);
-    await provider.send('evm_setIntervalMining', [500]);
+
+    if (decreaseMiningInterval) {
+        await provider.send('evm_setIntervalMining', [500]);
+    }
 
     const sleep = (delay: number) => new Promise((resolve) => setTimeout(resolve, delay));
 
