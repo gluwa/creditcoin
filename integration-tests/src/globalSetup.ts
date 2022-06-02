@@ -8,6 +8,10 @@ const setup = async () => {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
     }
 
+    if ((global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL === undefined) {
+        (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL = true;
+    }
+
     if ((global as any).CREDITCOIN_ETHEREUM_NODE_URL === undefined) {
         (global as any).CREDITCOIN_ETHEREUM_NODE_URL = 'http://localhost:8545';
     }
