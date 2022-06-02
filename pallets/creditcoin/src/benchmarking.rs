@@ -52,7 +52,7 @@ benchmarks! {
 		let f in 16..32;
 		//insert u unverifiedtransfers
 		let u in 0..16;
-		//insert c unverifiedcollectcoins
+		//insert c unverifiedcollectedcoins
 		let c in 0..64;
 
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -98,11 +98,11 @@ benchmarks! {
 			<Addresses<T>>::insert(address_id, entry);
 
 			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
-			let collect_coins_id = CollectCoinsId::new::<T>(&tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<T>(&tx_id);
 
-			let pending = types::UnverifiedCollectCoins { to: evm_address.clone(), tx_id: tx_id.clone() };
+			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() };
 
-			<Creditcoin<T> as Store>::UnverifiedCollectCoins::insert(deadline, collect_coins_id, pending.clone());
+			<Creditcoin<T> as Store>::UnverifiedCollectedCoins::insert(deadline, collected_coins_id, pending.clone());
 		}
 
 	}:{ Creditcoin::<T>::on_initialize(deadline) }
@@ -290,28 +290,27 @@ benchmarks! {
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab".as_bytes();
-		let collect_coins_id = crate::CollectCoinsId::new::<T>(tx_id);
+		let collected_coins_id = crate::CollectedCoinsId::new::<T>(tx_id);
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 
-	}: _(RawOrigin::Signed(authority), collect_coins_id, Cause::AbiMismatch, deadline)
+	}: _(RawOrigin::Signed(authority), collected_coins_id, Cause::AbiMismatch, deadline)
 
 	persist_collect_coins{
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let authority = authority_account::<T>(true);
+		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+		let collector: T::AccountId = lender_account::<T>(true);
+		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
+		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
+			.as_bytes()
+			.into_bounded();
+		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&tx_id);
 
-	<Timestamp<T>>::set_timestamp(1u32.into());
-	let authority = authority_account::<T>(true);
-	<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
-	let collector: T::AccountId = lender_account::<T>(true);
-	let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
-	let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
-		.as_bytes()
-		.into_bounded();
-	let collect_coins_id = crate::CollectCoinsId::new::<T>(&tx_id);
+		let collected_coins =
+			crate::types::CollectedCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount: T::Balance::unique_saturated_from(1u32), tx_id };
 
-	let collect_coins =
-		crate::types::CollectCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount: T::Balance::unique_saturated_from(1u32), tx_id };
-
-	let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
-	}: _(RawOrigin::Signed(authority), collect_coins, deadline)
+		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
+	}: _(RawOrigin::Signed(authority), collected_coins, deadline)
 
 }
 

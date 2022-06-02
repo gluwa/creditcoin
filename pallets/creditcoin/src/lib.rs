@@ -182,13 +182,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn pending_collect_coins)]
-	pub type UnverifiedCollectCoins<T: Config> = StorageDoubleMap<
+	pub type UnverifiedCollectedCoins<T: Config> = StorageDoubleMap<
 		_,
 		Identity,
 		T::BlockNumber,
 		Identity,
-		CollectCoinsId<T::Hash>,
-		types::UnverifiedCollectCoins,
+		CollectedCoinsId<T::Hash>,
+		types::UnverifiedCollectedCoins,
 	>;
 
 	#[pallet::storage]
@@ -254,9 +254,13 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn collect_coins)]
-	pub type CollectCoins<T: Config> =
-		StorageMap<_, Identity, CollectCoinsId<T::Hash>, types::CollectCoins<T::Hash, T::Balance>>;
+	#[pallet::getter(fn collected_coins)]
+	pub type CollectedCoins<T: Config> = StorageMap<
+		_,
+		Identity,
+		CollectedCoinsId<T::Hash>,
+		types::CollectedCoins<T::Hash, T::Balance>,
+	>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -266,8 +270,8 @@ pub mod pallet {
 		AddressRegistered(AddressId<T::Hash>, Address<T::AccountId>),
 
 		/// Collecting coins from Eth ERC-20 has been registered and will be verified.
-		/// [collect_coins_id, registered_collect_coins]
-		CollectCoinsRegistered(CollectCoinsId<T::Hash>, types::UnverifiedCollectCoins),
+		/// [collected_coins_id, registered_collect_coins]
+		CollectCoinsRegistered(CollectedCoinsId<T::Hash>, types::UnverifiedCollectedCoins),
 
 		/// An external transfer has been registered and will be verified.
 		/// [registered_transfer_id, registered_transfer]
@@ -281,10 +285,10 @@ pub mod pallet {
 		TransferVerified(TransferId<T::Hash>),
 
 		/// CollectCoins has been successfully verified and minted.
-		/// [collect_coins_id]
-		CollectCoinsMinted(
-			types::CollectCoinsId<T::Hash>,
-			types::CollectCoins<T::Hash, T::Balance>,
+		/// [collected_coins_id]
+		CollectedCoinsMinted(
+			types::CollectedCoinsId<T::Hash>,
+			types::CollectedCoins<T::Hash, T::Balance>,
 		),
 
 		/// An external transfer has been processed and marked as part of a loan.
@@ -351,8 +355,8 @@ pub mod pallet {
 		TransferFailedVerification(TransferId<T::Hash>, VerificationFailureCause),
 
 		/// exchanging vested ERC-20 CC for native CC failed.
-		/// [collect_coins_id, cause]
-		CollectCoinsFailedVerification(CollectCoinsId<T::Hash>, VerificationFailureCause),
+		/// [collected_coins_id, cause]
+		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
 	}
 
 	// Errors inform users that something went wrong.
@@ -557,7 +561,7 @@ pub mod pallet {
 			log::debug!("Cleaning up expired entries");
 
 			let unverified_collect_coins_count =
-				match UnverifiedCollectCoins::<T>::remove_prefix(block_number, None) {
+				match UnverifiedCollectedCoins::<T>::remove_prefix(block_number, None) {
 					KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
 				};
 
@@ -648,27 +652,27 @@ pub mod pallet {
 			});
 
 			let u_collect_coins =
-				UnverifiedCollectCoins::<T>::iter().map(|(deadline, id, u_cc)| {
+				UnverifiedCollectedCoins::<T>::iter().map(|(deadline, id, u_cc)| {
 					let storage_key = (deadline, id.clone()).encode();
 					let status = ocw::LocalVerificationStatus::new(&storage_key);
 					if status.is_complete() {
 						log::debug!("Already handled CollectCoins ({:?}, {:?})", deadline, id);
 						return;
 					}
-					let mut collect_coins = None;
-					let verify_result = Self::verify_cc_ocw(&u_cc, &mut collect_coins);
+					let mut collected_coins = None;
+					let verify_result = Self::verify_collect_coins_ocw(&u_cc, &mut collected_coins);
 
 					let on_success = |_: Option<T::Moment>| {
 						Self::offchain_signed_tx(auth_id.clone(), |_| {
-							let collect_coins = collect_coins
+							let collected_coins = collected_coins
 								.clone()
-								.expect("Validate fails or mutates collect_coins");
-							Call::persist_collect_coins { collect_coins, deadline }
+								.expect("Validate fails or mutates collected_coins");
+							Call::persist_collect_coins { collected_coins, deadline }
 						})
 					};
 					let on_failure = |cause| {
 						Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_collect_coins {
-							collect_coins_id: CollectCoinsId::new::<T>(&u_cc.tx_id),
+							collected_coins_id: CollectedCoinsId::new::<T>(&u_cc.tx_id),
 							cause,
 							deadline,
 						})
@@ -1184,16 +1188,16 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let collect_coins_id = CollectCoinsId::new::<T>(&tx_id);
+			let collect_coins_id = CollectedCoinsId::new::<T>(&tx_id);
 			ensure!(
-				!CollectCoins::<T>::contains_key(&collect_coins_id),
+				!CollectedCoins::<T>::contains_key(&collect_coins_id),
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
 			let deadline = Self::block_number().saturating_add(T::UnverifiedTaskTimeout::get());
 
 			ensure!(
-				!UnverifiedCollectCoins::<T>::contains_key(deadline, &collect_coins_id),
+				!UnverifiedCollectedCoins::<T>::contains_key(deadline, &collect_coins_id),
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
@@ -1201,9 +1205,9 @@ pub mod pallet {
 			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
-			let pending = types::UnverifiedCollectCoins { to: evm_address, tx_id };
+			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id };
 
-			UnverifiedCollectCoins::<T>::insert(deadline, &collect_coins_id, pending.clone());
+			UnverifiedCollectedCoins::<T>::insert(deadline, &collect_coins_id, pending.clone());
 
 			Self::deposit_event(Event::<T>::CollectCoinsRegistered(collect_coins_id, pending));
 
@@ -1316,36 +1320,36 @@ pub mod pallet {
 		#[pallet::weight((<T as Config>::WeightInfo::persist_collect_coins(), DispatchClass::Normal, Pays::No))]
 		pub fn persist_collect_coins(
 			origin: OriginFor<T>,
-			collect_coins: types::CollectCoins<T::Hash, T::Balance>,
+			collected_coins: types::CollectedCoins<T::Hash, T::Balance>,
 			deadline: T::BlockNumber,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
-			let key = CollectCoinsId::new::<T>(&collect_coins.tx_id);
+			let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
 			ensure!(
-				!CollectCoins::<T>::contains_key(&key),
+				!CollectedCoins::<T>::contains_key(&key),
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
-			let amount = collect_coins.amount;
+			let amount = collected_coins.amount;
 			let imbalance = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::issue(amount);
 			ensure!(amount == imbalance.peek(), Error::<T>::BalanceOverflow);
 
 			let address =
-				Self::addresses(&collect_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
+				Self::addresses(&collected_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
 
 			<pallet_balances::Pallet<T> as Currency<T::AccountId>>::resolve_creating(
 				&address.owner,
 				imbalance,
 			);
 
-			CollectCoins::<T>::insert(key.clone(), collect_coins.clone());
+			CollectedCoins::<T>::insert(key.clone(), collected_coins.clone());
 
-			UnverifiedCollectCoins::<T>::remove(&deadline, &key);
+			UnverifiedCollectedCoins::<T>::remove(&deadline, &key);
 
-			Self::deposit_event(Event::<T>::CollectCoinsMinted(key, collect_coins));
+			Self::deposit_event(Event::<T>::CollectedCoinsMinted(key, collected_coins));
 
 			Ok(())
 		}
@@ -1398,7 +1402,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::fail_collect_coins())]
 		pub fn fail_collect_coins(
 			origin: OriginFor<T>,
-			collect_coins_id: CollectCoinsId<T::Hash>,
+			collected_coins_id: CollectedCoinsId<T::Hash>,
 			cause: VerificationFailureCause,
 			deadline: T::BlockNumber,
 		) -> DispatchResultWithPostInfo {
@@ -1407,14 +1411,14 @@ pub mod pallet {
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
 			ensure!(
-				!CollectCoins::<T>::contains_key(&collect_coins_id),
+				!CollectedCoins::<T>::contains_key(&collected_coins_id),
 				Error::<T>::TransferAlreadyRegistered
 			);
 
-			UnverifiedCollectCoins::<T>::remove(&deadline, &collect_coins_id);
+			UnverifiedCollectedCoins::<T>::remove(&deadline, &collected_coins_id);
 
 			Self::deposit_event(Event::<T>::CollectCoinsFailedVerification(
-				collect_coins_id,
+				collected_coins_id,
 				cause,
 			));
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })

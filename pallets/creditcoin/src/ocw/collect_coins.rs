@@ -6,7 +6,7 @@ use super::{
 
 use crate::pallet::{Config, Pallet};
 use crate::{
-	types::{AddressId, Blockchain, CollectCoins, UnverifiedCollectCoins},
+	types::{AddressId, Blockchain, CollectedCoins, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
 use sp_runtime::traits::UniqueSaturatedFrom;
@@ -46,10 +46,10 @@ pub fn validate_collect_coins(
 
 	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
 
-	let diff = (eth_tip).checked_sub(block_number);
-	ensure!(diff.is_some(), VerificationFailureCause::TaskInFuture);
-
-	ensure!(diff.unwrap().as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
+	let diff = (eth_tip)
+		.checked_sub(block_number)
+		.ok_or(VerificationFailureCause::TaskInFuture)?;
+	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
 	if let Some(to) = &transaction.to {
 		ensure!(to == vesting_contract, VerificationFailureCause::IncorrectContract);
@@ -83,12 +83,12 @@ pub fn validate_collect_coins(
 
 impl<T: Config> Pallet<T> {
 	///Amount is saturated to u128, don't exchange more than u128::MAX at once.
-	pub fn verify_cc_ocw(
-		u_cc: &UnverifiedCollectCoins,
-		collect_coins: &mut Option<CollectCoins<T::Hash, T::Balance>>,
+	pub fn verify_collect_coins_ocw(
+		u_cc: &UnverifiedCollectedCoins,
+		collected_coins: &mut Option<CollectedCoins<T::Hash, T::Balance>>,
 	) -> VerificationResult<T::Moment> {
 		log::debug!("verifying OCW Collect Coins");
-		let UnverifiedCollectCoins { to, tx_id } = u_cc;
+		let UnverifiedCollectedCoins { to, tx_id } = u_cc;
 		let rpc_url = &CONTRACT_CHAIN.rpc_url()?;
 		let tx = rpc::eth_get_transaction(tx_id, rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
@@ -99,14 +99,11 @@ impl<T: Config> Pallet<T> {
 		let amount = amount.expect("Validate fails or mutates collect_coins");
 
 		{
-			*collect_coins =
-				Some(CollectCoins {
-					to: AddressId::new::<T>(&CONTRACT_CHAIN, u_cc.to.as_slice()),
-					amount: T::Balance::unique_saturated_from(
-						if let Ok(a) = u128::try_from(amount) { a } else { u128::MAX },
-					),
-					tx_id: u_cc.tx_id.clone(),
-				})
+			*collected_coins = Some(CollectedCoins {
+				to: AddressId::new::<T>(&CONTRACT_CHAIN, u_cc.to.as_slice()),
+				amount: T::Balance::unique_saturated_from(u128::unique_saturated_from(amount)),
+				tx_id: u_cc.tx_id.clone(),
+			})
 		}
 
 		let timestamp = if let Some(num) = tx.block_number {
@@ -209,7 +206,7 @@ mod tests {
 		ETH_CONFIRMATIONS,
 	};
 	use crate::tests::generate_address_with_proof;
-	use crate::types::CollectCoinsId;
+	use crate::types::CollectedCoinsId;
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
 
@@ -350,11 +347,11 @@ mod tests {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
 		let acct = AccountId::from(acct_pubkey.into_account().0);
-		let collect_coins_id = crate::CollectCoinsId::new::<crate::mock::Test>(&[0]);
+		let collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
 		ext.build_offchain_and_execute_with_state(|_state, pool| {
 			crate::mock::roll_to(1);
 			let call = crate::Call::<crate::mock::Test>::fail_collect_coins {
-				collect_coins_id,
+				collected_coins_id,
 				cause: Cause::AbiMismatch,
 				deadline: Test::unverified_transfer_deadline(),
 			};
@@ -393,7 +390,7 @@ mod tests {
 
 			let pcc = PassingCollectCoins::default();
 
-			let collect_coins = CollectCoins {
+			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -401,19 +398,20 @@ mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
 				Origin::signed(auth),
-				collect_coins.clone(),
+				collected_coins.clone(),
 				deadline
 			));
 
 			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
 
-			let collect_coins_id = CollectCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+			let collected_coins_id =
+				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 
 			assert_matches!(
 				event,
-				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectCoinsMinted(id, item)) => {
-					assert_eq!(id, collect_coins_id);
-					assert_eq!(item, collect_coins);
+				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectedCoinsMinted(id, item)) => {
+					assert_eq!(id, collected_coins_id);
+					assert_eq!(item, collected_coins);
 				}
 			);
 		});
@@ -428,7 +426,7 @@ mod tests {
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let pcc = PassingCollectCoins::default();
 
-			let collect_coins = CollectCoins {
+			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -439,7 +437,7 @@ mod tests {
 			assert_noop!(
 				Creditcoin::<Test>::persist_collect_coins(
 					Origin::signed(auth),
-					collect_coins,
+					collected_coins,
 					deadline
 				),
 				crate::Error::<Test>::NonExistentAddress
@@ -463,7 +461,7 @@ mod tests {
 				sign
 			));
 
-			let collect_coins = CollectCoins {
+			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -471,7 +469,7 @@ mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
 				Origin::signed(auth),
-				collect_coins,
+				collected_coins,
 				Test::unverified_transfer_deadline()
 			));
 
@@ -509,11 +507,12 @@ mod tests {
 				TX_HASH.hex_to_address()
 			));
 
-			let collect_coins_id = CollectCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+			let collected_coins_id =
+				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 
 			assert!(Creditcoin::<Test>::pending_collect_coins(
 				Test::unverified_transfer_deadline(),
-				collect_coins_id.clone()
+				collected_coins_id.clone()
 			)
 			.is_some());
 
@@ -526,7 +525,7 @@ mod tests {
 				crate::Error::<Test>::CollectCoinsAlreadyRegistered
 			);
 
-			assert!(Creditcoin::<Test>::collect_coins(collect_coins_id).is_none());
+			assert!(Creditcoin::<Test>::collected_coins(collected_coins_id).is_none());
 		});
 	}
 
@@ -578,7 +577,7 @@ mod tests {
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let (molly, addr, _, _) = generate_address_with_proof("malicious");
 
-			let collect_coins = CollectCoins {
+			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -587,7 +586,7 @@ mod tests {
 			assert_noop!(
 				Creditcoin::<Test>::persist_collect_coins(
 					Origin::signed(molly),
-					collect_coins,
+					collected_coins,
 					Test::unverified_transfer_deadline()
 				),
 				crate::Error::<Test>::InsufficientAuthority
@@ -628,14 +627,16 @@ mod tests {
 
 			assert!(!pool.read().transactions.is_empty());
 
-			let collect_coins = CollectCoins {
+			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
 
-			let call =
-				crate::Call::<crate::mock::Test>::persist_collect_coins { collect_coins, deadline };
+			let call = crate::Call::<crate::mock::Test>::persist_collect_coins {
+				collected_coins,
+				deadline,
+			};
 
 			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
 			let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
@@ -659,7 +660,7 @@ mod tests {
 				sign
 			));
 
-			let collect_coins = CollectCoins {
+			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -667,14 +668,14 @@ mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
 				Origin::signed(auth.clone()),
-				collect_coins.clone(),
+				collected_coins.clone(),
 				Test::unverified_transfer_deadline()
 			));
 
 			assert_noop!(
 				Creditcoin::<Test>::persist_collect_coins(
 					Origin::signed(auth),
-					collect_coins,
+					collected_coins,
 					Test::unverified_transfer_deadline()
 				),
 				crate::Error::<Test>::CollectCoinsAlreadyRegistered
@@ -713,11 +714,14 @@ mod tests {
 
 			roll_by_with_ocw(deadline);
 
-			let collect_coins_id = CollectCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+			let collected_coins_id =
+				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 
 			roll_by_with_ocw(1);
 
-			assert!(Creditcoin::<Test>::pending_collect_coins(deadline, collect_coins_id).is_none());
+			assert!(
+				Creditcoin::<Test>::pending_collect_coins(deadline, collected_coins_id).is_none()
+			);
 		});
 	}
 
@@ -729,7 +733,7 @@ mod tests {
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
-			let collect_coins = CollectCoins {
+			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -744,13 +748,13 @@ mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
 				Origin::signed(auth.clone()),
-				collect_coins.clone(),
+				collected_coins.clone(),
 				Test::unverified_transfer_deadline()
 			));
 
 			assert_eq!(
 				frame_system::pallet::Account::<Test>::get(&acc).data.free,
-				collect_coins.amount
+				collected_coins.amount
 			);
 		});
 	}
