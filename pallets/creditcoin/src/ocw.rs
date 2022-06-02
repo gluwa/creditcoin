@@ -165,10 +165,13 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn offchain_signed_tx(
+	pub fn offchain_signed_tx<C>(
 		auth_id: T::FromAccountId,
-		call: impl Fn(&Account<T>) -> Call<T>,
-	) -> Result<(), Error<T>> {
+		call: impl Fn(&Account<T>) -> C,
+	) -> Result<(), Error<T>>
+	where
+		T: frame_system::offchain::CreateSignedTransaction<C>,
+	{
 		use sp_core::crypto::UncheckedFrom;
 		let auth_bytes: &[u8; 32] = auth_id.as_ref();
 		let public: T::PublicSigning = T::InternalPublic::unchecked_from(*auth_bytes).into();
