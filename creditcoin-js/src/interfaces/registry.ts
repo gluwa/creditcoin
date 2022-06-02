@@ -42,7 +42,7 @@ import type {
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
     PalletCreditcoinCall,
-    PalletCreditcoinCollectCoins,
+    PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinError,
@@ -61,7 +61,7 @@ import type {
     PalletCreditcoinRepaymentOrderId,
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
-    PalletCreditcoinUnverifiedCollectCoins,
+    PalletCreditcoinUnverifiedCollectedCoins,
     PalletCreditcoinUnverifiedTransfer,
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
@@ -131,7 +131,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinBidOrderId: PalletCreditcoinBidOrderId;
         PalletCreditcoinBlockchain: PalletCreditcoinBlockchain;
         PalletCreditcoinCall: PalletCreditcoinCall;
-        PalletCreditcoinCollectCoins: PalletCreditcoinCollectCoins;
+        PalletCreditcoinCollectedCoins: PalletCreditcoinCollectedCoins;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
         PalletCreditcoinDealOrderId: PalletCreditcoinDealOrderId;
         PalletCreditcoinError: PalletCreditcoinError;
@@ -150,7 +150,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinRepaymentOrderId: PalletCreditcoinRepaymentOrderId;
         PalletCreditcoinTransfer: PalletCreditcoinTransfer;
         PalletCreditcoinTransferKind: PalletCreditcoinTransferKind;
-        PalletCreditcoinUnverifiedCollectCoins: PalletCreditcoinUnverifiedCollectCoins;
+        PalletCreditcoinUnverifiedCollectedCoins: PalletCreditcoinUnverifiedCollectedCoins;
         PalletCreditcoinUnverifiedTransfer: PalletCreditcoinUnverifiedTransfer;
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;

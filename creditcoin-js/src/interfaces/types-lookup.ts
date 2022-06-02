@@ -285,13 +285,13 @@ declare module '@polkadot/types/lookup' {
         readonly isAddressRegistered: boolean;
         readonly asAddressRegistered: ITuple<[H256, PalletCreditcoinAddress]>;
         readonly isCollectCoinsRegistered: boolean;
-        readonly asCollectCoinsRegistered: ITuple<[H256, PalletCreditcoinUnverifiedCollectCoins]>;
+        readonly asCollectCoinsRegistered: ITuple<[H256, PalletCreditcoinUnverifiedCollectedCoins]>;
         readonly isTransferRegistered: boolean;
         readonly asTransferRegistered: ITuple<[H256, PalletCreditcoinTransfer]>;
         readonly isTransferVerified: boolean;
         readonly asTransferVerified: H256;
-        readonly isCollectCoinsMinted: boolean;
-        readonly asCollectCoinsMinted: ITuple<[H256, PalletCreditcoinCollectCoins]>;
+        readonly isCollectedCoinsMinted: boolean;
+        readonly asCollectedCoinsMinted: ITuple<[H256, PalletCreditcoinCollectedCoins]>;
         readonly isTransferProcessed: boolean;
         readonly asTransferProcessed: H256;
         readonly isAskOrderAdded: boolean;
@@ -321,7 +321,7 @@ declare module '@polkadot/types/lookup' {
             | 'CollectCoinsRegistered'
             | 'TransferRegistered'
             | 'TransferVerified'
-            | 'CollectCoinsMinted'
+            | 'CollectedCoinsMinted'
             | 'TransferProcessed'
             | 'AskOrderAdded'
             | 'BidOrderAdded'
@@ -354,8 +354,8 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'Ethereum' | 'Rinkeby' | 'Luniverse' | 'Bitcoin' | 'Other';
     }
 
-    /** @name PalletCreditcoinUnverifiedCollectCoins (37) */
-    export interface PalletCreditcoinUnverifiedCollectCoins extends Struct {
+    /** @name PalletCreditcoinUnverifiedCollectedCoins (37) */
+    export interface PalletCreditcoinUnverifiedCollectedCoins extends Struct {
         readonly to: Bytes;
         readonly txId: Bytes;
     }
@@ -402,8 +402,8 @@ declare module '@polkadot/types/lookup' {
     /** @name PalletCreditcoinRepaymentOrderId (43) */
     export interface PalletCreditcoinRepaymentOrderId extends ITuple<[u32, H256]> {}
 
-    /** @name PalletCreditcoinCollectCoins (48) */
-    export interface PalletCreditcoinCollectCoins extends Struct {
+    /** @name PalletCreditcoinCollectedCoins (48) */
+    export interface PalletCreditcoinCollectedCoins extends Struct {
         readonly to: H256;
         readonly amount: u128;
         readonly txId: Bytes;
@@ -909,7 +909,7 @@ declare module '@polkadot/types/lookup' {
         } & Struct;
         readonly isPersistCollectCoins: boolean;
         readonly asPersistCollectCoins: {
-            readonly collectCoins: PalletCreditcoinCollectCoins;
+            readonly collectedCoins: PalletCreditcoinCollectedCoins;
             readonly deadline: u32;
         } & Struct;
         readonly isVerifyTransfer: boolean;
@@ -925,7 +925,7 @@ declare module '@polkadot/types/lookup' {
         } & Struct;
         readonly isFailCollectCoins: boolean;
         readonly asFailCollectCoins: {
-            readonly collectCoinsId: H256;
+            readonly collectedCoinsId: H256;
             readonly cause: PalletCreditcoinOcwErrorsVerificationFailureCause;
             readonly deadline: u32;
         } & Struct;
