@@ -87,7 +87,7 @@ impl<AccountId> Address<AccountId> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct CollectCoins<Hash, Balance> {
+pub struct CollectedCoins<Hash, Balance> {
 	pub to: AddressId<Hash>,
 	pub amount: Balance,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
@@ -115,7 +115,7 @@ pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct UnverifiedCollectCoins {
+pub struct UnverifiedCollectedCoins {
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub to: ExternalAddress,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
@@ -241,7 +241,7 @@ pub struct TransferId<Hash>(Hash);
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct CollectCoinsId<Hash>(Hash);
+pub struct CollectedCoinsId<Hash>(Hash);
 
 fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
@@ -347,14 +347,14 @@ impl<H> TransferId<H> {
 }
 
 use crate::ocw::collect_coins::CONTRACT_CHAIN;
-impl<H> CollectCoinsId<H> {
-	pub fn new<Config>(blockchain_tx_id: &[u8]) -> CollectCoinsId<H>
+impl<H> CollectedCoinsId<H> {
+	pub fn new<Config>(blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
 		let key = concatenate!(CONTRACT_CHAIN.as_bytes(), blockchain_tx_id);
-		CollectCoinsId(Config::Hashing::hash(&key))
+		CollectedCoinsId(Config::Hashing::hash(&key))
 	}
 }
 
