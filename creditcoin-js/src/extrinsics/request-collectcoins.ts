@@ -1,9 +1,9 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { Option } from '@polkadot/types';
 import {
-    Collectcoins,
-    UnverifiedCollectcoins,
-    CollectcoinsId,
+    Collectedcoins,
+    UnverifiedCollectedcoins,
+    CollectedcoinsId,
     Blockchain,
     ExternalAddress,
     EventReturnJoinType,
@@ -14,16 +14,16 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, handleTransactionFailed, processEvents } from './common';
 import { TxCallback } from '..';
 import { createCollectCoins, createUnverifiedCollectCoins } from '../transforms';
-import { PalletCreditcoinCollectCoins } from '@polkadot/types/lookup';
+import { PalletCreditcoinCollectedCoins } from '@polkadot/types/lookup';
 
 export type CollectcoinsEventKind = 'CollectCoinsRegistered' | 'CollectCoinsMinted' | 'CollectCoinsFailed';
 
 export type CollectcoinsEvent = {
-    collectcoinsId: CollectcoinsId;
-    collectcoins?: Collectcoins;
-    unverifiedCollectcoins?: UnverifiedCollectcoins;
+    collectcoinsId: CollectedcoinsId;
+    collectcoins?: Collectedcoins;
+    unverifiedCollectcoins?: UnverifiedCollectedcoins;
 
-    waitForVerification: (timeout?: number) => Promise<Collectcoins>;
+    waitForVerification: (timeout?: number) => Promise<Collectedcoins>;
 };
 
 export const createCollectcoinsId = (txHash: string) => {
@@ -33,7 +33,7 @@ export const createCollectcoinsId = (txHash: string) => {
     return blake2AsHex(key);
 };
 
-export { Collectcoins };
+export { Collectedcoins as Collectcoins };
 
 export const requestCollectcoins = async (
     api: ApiPromise,
@@ -50,13 +50,13 @@ export const requestCollectcoins = async (
         );
 };
 
-type CollectCoinsRegisteredEvent = EventReturnJoinType<CollectcoinsId, UnverifiedCollectcoins>;
+type CollectCoinsRegisteredEvent = EventReturnJoinType<CollectedcoinsId, UnverifiedCollectedcoins>;
 
-const persistedCollectCoins = (api: ApiPromise, collectcoinsId: CollectcoinsId, timeout = 20_000) => {
-    return new Promise<Collectcoins>((resolve, reject) => {
+const persistedCollectCoins = (api: ApiPromise, collectcoinsId: CollectedcoinsId, timeout = 20_000) => {
+    return new Promise<Collectedcoins>((resolve, reject) => {
         let timer: NodeJS.Timeout | undefined;
         api.query.creditcoin
-            .collectCoins(collectcoinsId, (result: Option<PalletCreditcoinCollectCoins>) => {
+            .collectCoins(collectcoinsId, (result: Option<PalletCreditcoinCollectedCoins>) => {
                 if (!timer) timer = setTimeout(() => reject(new Error('Collectcoins verification timed out')), timeout);
                 if (result.isSome) {
                     clearTimeout(timer);
