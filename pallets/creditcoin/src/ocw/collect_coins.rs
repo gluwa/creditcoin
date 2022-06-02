@@ -1,6 +1,6 @@
 use super::{
 	errors::{VerificationFailureCause, VerificationResult},
-	rpc::{self, EthBlock, EthTransaction, EthTransactionReceipt},
+	rpc::{self, EthTransaction, EthTransactionReceipt},
 	OffchainResult, ETH_CONFIRMATIONS,
 };
 
@@ -46,11 +46,10 @@ fn burn_vested_cc_abi() -> Function {
 }
 pub fn validate_collect_coins(
 	to: &ExternalAddress,
-	amount: &mut Option<ExternalAmount>,
 	receipt: &EthTransactionReceipt,
 	transaction: &EthTransaction,
 	eth_tip: U64,
-) -> OffchainResult<()> {
+) -> OffchainResult<ExternalAmount> {
 	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
 
 	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
@@ -89,22 +88,17 @@ pub fn validate_collect_coins(
 		VerificationFailureCause::AbiMismatch
 	})?;
 
-	let input_amount = match inputs.get(0) {
-		Some(Token::Uint(value)) => ExternalAmount::from(value),
-		_ => return Err(VerificationFailureCause::IncorrectInputType.into()),
-	};
-
-	*amount = Some(input_amount);
-
-	Ok(())
+	match inputs.get(0) {
+		Some(Token::Uint(value)) => Ok(ExternalAmount::from(value)),
+		_ => Err(VerificationFailureCause::IncorrectInputType.into()),
+	}
 }
 
 impl<T: Config> Pallet<T> {
 	///Amount is saturated to u128, don't exchange more than u128::MAX at once.
 	pub fn verify_collect_coins_ocw(
 		u_cc: &UnverifiedCollectedCoins,
-		collected_coins: &mut Option<CollectedCoins<T::Hash, T::Balance>>,
-	) -> VerificationResult<T::Moment> {
+	) -> VerificationResult<CollectedCoins<T::Hash, T::Balance>> {
 		log::debug!("verifying OCW Collect Coins");
 		let UnverifiedCollectedCoins { to, tx_id } = u_cc;
 		let rpc_url = &CONTRACT_CHAIN.rpc_url()?;
@@ -112,31 +106,16 @@ impl<T: Config> Pallet<T> {
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
 
-		let amount = &mut None;
-		validate_collect_coins(to, amount, &tx_receipt, &tx, eth_tip)?;
-		let amount = amount.expect("Validate fails or mutates collect_coins");
+		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip)?;
 
-		{
-			*collected_coins = Some(CollectedCoins {
-				to: AddressId::new::<T>(&CONTRACT_CHAIN, u_cc.to.as_slice()),
-				amount: T::Balance::unique_saturated_from(u128::unique_saturated_from(amount)),
-				tx_id: u_cc.tx_id.clone(),
-			})
-		}
-
-		let timestamp = if let Some(num) = tx.block_number {
-			if let Ok(EthBlock { timestamp: block_timestamp }) =
-				rpc::eth_get_block_by_number(num, rpc_url)
-			{
-				Some(T::Moment::unique_saturated_from(block_timestamp.as_u64()))
-			} else {
-				None
-			}
-		} else {
-			None
+		let collected_coins = CollectedCoins {
+			to: AddressId::new::<T>(&CONTRACT_CHAIN, u_cc.to.as_slice()),
+			//TODO
+			amount: T::Balance::unique_saturated_from(u128::unique_saturated_from(amount)),
+			tx_id: u_cc.tx_id.clone(),
 		};
 
-		Ok(timestamp)
+		Ok(collected_coins)
 	}
 }
 
@@ -238,7 +217,6 @@ mod tests {
 
 	struct PassingCollectCoins {
 		to: ExternalAddress,
-		amount: Option<ExternalAmount>,
 		receipt: EthTransactionReceipt,
 		transaction: EthTransaction,
 		eth_tip: U64,
@@ -253,7 +231,6 @@ mod tests {
 
 			Self {
 				to,
-				amount: Default::default(),
 				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
 				transaction: EthTransaction {
 					block_number: Some(base_height),
@@ -268,19 +245,19 @@ mod tests {
 	}
 
 	impl PassingCollectCoins {
-		fn validate(self) -> OffchainResult<()> {
-			let PassingCollectCoins { to, mut amount, receipt, transaction, eth_tip } = self;
-			super::validate_collect_coins(&to, &mut amount, &receipt, &transaction, eth_tip)
+		fn validate(self) -> OffchainResult<ExternalAmount> {
+			let PassingCollectCoins { to, receipt, transaction, eth_tip } = self;
+			super::validate_collect_coins(&to, &receipt, &transaction, eth_tip)
 		}
 	}
 
-	fn assert_invalid(res: OffchainResult<()>, cause: VerificationFailureCause) {
+	fn assert_invalid(res: OffchainResult<ExternalAmount>, cause: VerificationFailureCause) {
 		assert_matches!(res, Err(OffchainError::InvalidTask(c)) =>{ assert_eq!(c,cause); });
 	}
 
 	#[test]
 	fn valid() {
-		assert_matches!(PassingCollectCoins::default().validate(), Ok(()));
+		assert_matches!(PassingCollectCoins::default().validate(), Ok(_));
 	}
 
 	#[test]
@@ -354,9 +331,9 @@ mod tests {
 	#[test]
 	fn amount_set() -> OffchainResult<()> {
 		let pcc = PassingCollectCoins::default();
-		let PassingCollectCoins { to, mut amount, receipt, transaction, eth_tip } = pcc;
-		super::validate_collect_coins(&to, &mut amount, &receipt, &transaction, eth_tip)?;
-		assert_matches!(amount, Some(a) => {assert_eq!(a,*RPC_RESPONSE_AMOUNT)});
+		let PassingCollectCoins { to, receipt, transaction, eth_tip } = pcc;
+		let amount = super::validate_collect_coins(&to, &receipt, &transaction, eth_tip)?;
+		assert_eq!(amount, *RPC_RESPONSE_AMOUNT);
 		Ok(())
 	}
 
@@ -622,7 +599,7 @@ mod tests {
 
 			let mut rpcs =
 				MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
-			rpcs.mock_get_block_by_number(&mut state.write());
+			rpcs.mock_get_block_number(&mut state.write());
 
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
@@ -712,7 +689,7 @@ mod tests {
 
 			let mut rpcs =
 				MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
-			rpcs.mock_get_block_by_number(&mut state.write());
+			rpcs.mock_get_block_number(&mut state.write());
 
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 

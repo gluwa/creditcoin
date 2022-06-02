@@ -642,13 +642,7 @@ pub mod pallet {
 						deadline,
 					})
 				};
-				Self::ocw_result_handler(
-					verify_result,
-					on_success,
-					on_failure,
-					status,
-					&u_t as &dyn core::fmt::Debug,
-				);
+				Self::ocw_result_handler(verify_result, on_success, on_failure, status, &u_t);
 			});
 
 			let u_collect_coins =
@@ -659,15 +653,15 @@ pub mod pallet {
 						log::debug!("Already handled CollectCoins ({:?}, {:?})", deadline, id);
 						return;
 					}
-					let mut collected_coins = None;
-					let verify_result = Self::verify_collect_coins_ocw(&u_cc, &mut collected_coins);
+					let verify_result = Self::verify_collect_coins_ocw(&u_cc);
 
-					let on_success = |_: Option<T::Moment>| {
-						Self::offchain_signed_tx(auth_id.clone(), |_| {
-							let collected_coins = collected_coins
-								.clone()
-								.expect("Validate fails or mutates collected_coins");
-							Call::persist_collect_coins { collected_coins, deadline }
+					let on_success = |collected_coins: types::CollectedCoins<
+						T::Hash,
+						T::Balance,
+					>| {
+						Self::offchain_signed_tx(auth_id.clone(), |_| Call::persist_collect_coins {
+							collected_coins: collected_coins.clone(),
+							deadline,
 						})
 					};
 					let on_failure = |cause| {
@@ -677,13 +671,7 @@ pub mod pallet {
 							deadline,
 						})
 					};
-					Self::ocw_result_handler(
-						verify_result,
-						on_success,
-						on_failure,
-						status,
-						&u_cc as &dyn core::fmt::Debug,
-					);
+					Self::ocw_result_handler(verify_result, on_success, on_failure, status, &u_cc);
 				});
 
 			let schedule = interleave(u_transfer, u_collect_coins);
