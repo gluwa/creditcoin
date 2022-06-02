@@ -75,7 +75,6 @@ mod helpers {
 
 	use frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo};
 	use sp_runtime::DispatchError;
-	use sp_std::collections::btree_map::BTreeMap;
 
 	use crate::{Config, Disagreement, MakeProposal, ProposalInfo, Vote, Votes};
 
@@ -107,7 +106,7 @@ mod helpers {
 				proposal.proposal.clone(),
 				proposal.hash,
 				AYE,
-				Votes { ayes: vec![0], nays: vec![], end, extra_data: btreemap! {} },
+				Votes { ayes: vec![0], nays: vec![], end, extra_data: btreemap! { () => 1 } },
 			);
 			assert_proposal_info(proposal.hash, end);
 			assert_proposal_value(proposal.hash, proposal.proposal);
@@ -232,7 +231,7 @@ mod helpers {
 					2,
 					&proposal.hash,
 					proposal.proposal.clone(),
-					&BTreeMap::new()
+					&btreemap! { () => 2 },
 				),
 				Ok(prop_weight)
 			);

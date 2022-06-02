@@ -3,7 +3,7 @@ name = 'pallet-voting-oracle'
 version = '2.0.0-beta.6'
 description = 'FRAME pallet for oracles based on voting.'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
-edition = '2018'
+edition = '2021'
 license = 'Unlicense'
 publish = false
 repository = 'https://github.com/gluwa/creditcoin-substrate/'
@@ -62,6 +62,9 @@ git = 'https://github.com/gluwa/substrate.git'
 rev = '57cab2f30bcc5343771c8bc763dd6c9c9e10f0a8'
 version = '4.1.0-dev'
 
+[dev-dependencies]
+assert_matches = "1.5.0"
+maplit = "1.0.2"
 
 [dev-dependencies.sp-core]
 default-features = false
