@@ -5,7 +5,7 @@ use frame_support::pallet_prelude::*;
 use frame_support::sp_runtime::traits::{Hash, SaturatedConversion};
 use frame_support::traits::{ChangeMembers, InitializeMembers};
 pub use pallet::*;
-use sp_std::collections::btree_set::BTreeSet;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -30,13 +30,16 @@ pub enum RawOrigin<AccountId> {
 }
 
 #[derive(PartialEq, Eq, Clone, RuntimeDebug, Encode, Decode, TypeInfo)]
-pub struct Votes<AccountId, BlockNumber, Reason> {
+pub struct Votes<AccountId, BlockNumber, ProposalExtraData, Reason> {
 	ayes: Vec<AccountId>,
 	nays: Vec<Disagreement<AccountId, Reason>>,
+	extra_data: BTreeMap<ProposalExtraData, u32>,
 	end: BlockNumber,
 }
 
-impl<AccountId, BlockNumber, Reason> Votes<AccountId, BlockNumber, Reason> {
+impl<AccountId, BlockNumber, ProposalExtraData, Reason>
+	Votes<AccountId, BlockNumber, ProposalExtraData, Reason>
+{
 	pub fn count(&self) -> usize {
 		self.ayes.len() + self.nays.len()
 	}
@@ -49,14 +52,14 @@ pub struct Disagreement<AccountId, Reason> {
 }
 
 #[derive(PartialEq, Eq, Clone, RuntimeDebug, Encode, Decode, TypeInfo)]
-pub enum ProposalOrHash<Proposal, Hash> {
-	Proposal(Box<Proposal>),
+pub enum ProposalOrHash<ProposalWithoutData, Hash> {
+	Proposal(Box<ProposalWithoutData>),
 	Hash(Hash),
 }
 
-impl<Proposal, Hash> ProposalOrHash<Proposal, Hash>
+impl<ProposalWithoutData, Hash> ProposalOrHash<ProposalWithoutData, Hash>
 where
-	Proposal: Encode,
+	ProposalWithoutData: Encode,
 	Hash: Clone,
 {
 	pub fn hash<T: Config>(&self) -> Hash
@@ -64,7 +67,7 @@ where
 		<T as frame_system::Config>::Hashing: sp_runtime::traits::Hash<Output = Hash>,
 	{
 		match self {
-			ProposalOrHash::Proposal(proposal) => T::Hashing::hash_of(proposal),
+			ProposalOrHash::Proposal(base_proposal) => T::Hashing::hash_of(base_proposal),
 			ProposalOrHash::Hash(hash) => hash.clone(),
 		}
 	}
@@ -77,9 +80,24 @@ pub struct ProposalInfo<Hash, BlockNumber> {
 }
 
 #[derive(Clone)]
-enum Vote<Reason> {
-	Aye,
+enum Vote<ProposalExtraData, Reason> {
+	Aye(ProposalExtraData),
 	Nay(Reason),
+}
+
+type VoteOf<T> = Vote<<T as Config>::ProposalExtraData, <T as Config>::DisagreementReason>;
+
+impl<D, R> sp_std::fmt::Debug for Vote<D, R>
+where
+	D: sp_std::fmt::Debug,
+	R: sp_std::fmt::Debug,
+{
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
+		match self {
+			Vote::Aye(extra_data) => write!(f, "Vote::Aye({:?})", extra_data),
+			Vote::Nay(reason) => write!(f, "Vote::Nay({:?})", reason),
+		}
+	}
 }
 
 pub trait OnProposalComplete<Hash, Proposal, Reason> {
@@ -106,8 +124,8 @@ impl<T: Config> ChangeMembers<T::AccountId> for Pallet<T> {
 	) {
 		let mut outgoing = outgoing.to_vec();
 		outgoing.sort();
-		for info in Self::proposals() {
-			Voting::<T>::mutate(info.hash, |v| {
+		for ProposalInfo { hash, .. } in Self::proposals() {
+			Voting::<T>::mutate(hash, |v| {
 				if let Some(mut votes) = v.take() {
 					votes.ayes = votes
 						.ayes
@@ -160,6 +178,51 @@ impl<
 	}
 }
 
+pub trait MakeProposal<T: Config> {
+	fn make_proposal(self, extra_data: T::ProposalExtraData) -> Result<T::Proposal, ()>;
+}
+
+pub struct MakeProposalIdentity<P>(P);
+
+impl<P> From<P> for MakeProposalIdentity<P> {
+	fn from(p: P) -> Self {
+		MakeProposalIdentity(p)
+	}
+}
+
+impl<T, P> MakeProposal<T> for MakeProposalIdentity<P>
+where
+	T: Config<ProposalExtraData = (), Proposal = P>,
+{
+	fn make_proposal(self, _extra_data: ()) -> Result<<T as Config>::Proposal, ()> {
+		Ok(self.0)
+	}
+}
+
+pub trait AggregateData<T: Config> {
+	fn aggregate_data(
+		extra_data: &BTreeMap<T::ProposalExtraData, u32>,
+	) -> Result<T::ProposalExtraData, ()>;
+}
+
+impl<T: Config> AggregateData<T> for ()
+where
+	T::ProposalExtraData: Clone,
+{
+	fn aggregate_data(
+		extra_data: &BTreeMap<T::ProposalExtraData, u32>,
+	) -> Result<T::ProposalExtraData, ()> {
+		extra_data.keys().next().ok_or(()).map(|k| k.clone())
+	}
+}
+
+#[allow(type_alias_bounds)]
+pub type ProposalOrHashOf<T: Config> = ProposalOrHash<T::ProposalWithoutData, T::Hash>;
+
+#[allow(type_alias_bounds)]
+pub type VotesOf<T: Config> =
+	Votes<T::AccountId, T::BlockNumber, T::ProposalExtraData, T::DisagreementReason>;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
@@ -179,6 +242,12 @@ pub mod pallet {
 			+ From<frame_system::Call<Self>>
 			+ GetDispatchInfo;
 
+		type ProposalWithoutData: Parameter + MakeProposal<Self>;
+
+		type ProposalExtraData: Parameter + Ord;
+
+		type DataAggregator: AggregateData<Self>;
+
 		#[pallet::constant]
 		type MaxProposals: Get<ProposalIndex>;
 
@@ -192,7 +261,7 @@ pub mod pallet {
 
 		type OnProposalComplete: OnProposalComplete<
 			<Self as frame_system::Config>::Hash,
-			Self::Proposal,
+			Self::ProposalWithoutData,
 			Self::DisagreementReason,
 		>;
 	}
@@ -248,22 +317,18 @@ pub mod pallet {
 	#[pallet::getter(fn proposal_of)]
 	#[pallet::unbounded]
 	pub type ProposalOf<T: Config> =
-		StorageMap<_, Identity, T::Hash, <T as Config>::Proposal, OptionQuery>;
+		StorageMap<_, Identity, T::Hash, <T as Config>::ProposalWithoutData, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn voting)]
 	#[pallet::unbounded]
-	pub type Voting<T: Config> = StorageMap<
-		_,
-		Identity,
-		T::Hash,
-		Votes<T::AccountId, T::BlockNumber, T::DisagreementReason>,
-	>;
+	pub type Voting<T: Config> = StorageMap<_, Identity, T::Hash, VotesOf<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		Executed { proposal_hash: T::Hash, result: DispatchResult },
+		Opened { proposal_hash: T::Hash },
 	}
 
 	#[pallet::error]
@@ -273,6 +338,8 @@ pub mod pallet {
 		NonexistentProposal,
 		TooManyProposals,
 		AlreadyVoted,
+		AggregationFailed,
+		MakeProposalFailed,
 	}
 
 	#[pallet::hooks]
@@ -295,11 +362,12 @@ pub mod pallet {
 		#[transactional]
 		pub fn accept(
 			origin: OriginFor<T>,
-			proposal: ProposalOrHash<T::Proposal, T::Hash>,
+			proposal: ProposalOrHashOf<T>,
+			extra_data: T::ProposalExtraData,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::vote_on_proposal(who, proposal, Vote::Aye)?;
+			Self::vote_on_proposal(who, proposal, Vote::Aye(extra_data))?;
 
 			Ok(())
 		}
@@ -308,7 +376,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn reject(
 			origin: OriginFor<T>,
-			proposal: ProposalOrHash<T::Proposal, T::Hash>,
+			proposal: ProposalOrHashOf<T>,
 			reason: T::DisagreementReason,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -321,11 +389,11 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		pub(crate) fn open_proposal(
-			proposal: Box<T::Proposal>,
+			proposal: Box<T::ProposalWithoutData>,
 			proposal_hash: T::Hash,
 			who: T::AccountId,
-			initial_vote: Vote<T::DisagreementReason>,
-		) -> Result<Votes<T::AccountId, T::BlockNumber, T::DisagreementReason>, Error<T>> {
+			initial_vote: VoteOf<T>,
+		) -> Result<VotesOf<T>, Error<T>> {
 			let end = frame_system::Pallet::<T>::block_number() + T::TimeLimit::get();
 			let proposal_info = ProposalInfo { hash: proposal_hash, end };
 			Proposals::<T>::try_mutate(|proposals| -> Result<usize, Error<T>> {
@@ -333,20 +401,28 @@ pub mod pallet {
 				Ok(proposals.len())
 			})?;
 			ProposalOf::<T>::insert(&proposal_hash, proposal);
-			let votes: Votes<_, _, T::DisagreementReason> = match initial_vote {
-				Vote::Aye => Votes { end, ayes: vec![who.clone()], nays: vec![] },
-				Vote::Nay(reason) => {
-					Votes { end, ayes: vec![], nays: vec![Disagreement { who, reason }] }
+			let votes: VotesOf<T> = match initial_vote {
+				Vote::Aye(data) => {
+					let mut extra_data = BTreeMap::new();
+					extra_data.insert(data, 1);
+					Votes { end, ayes: vec![who.clone()], nays: vec![], extra_data }
+				},
+				Vote::Nay(reason) => Votes {
+					end,
+					ayes: vec![],
+					nays: vec![Disagreement { who, reason }],
+					extra_data: BTreeMap::new(),
 				},
 			};
 			Voting::<T>::insert(&proposal_hash, &votes);
+			Self::deposit_event(Event::<T>::Opened { proposal_hash });
 			Ok(votes)
 		}
 
 		pub(crate) fn add_vote(
 			proposal_hash: &T::Hash,
 			who: T::AccountId,
-			vote: Vote<T::DisagreementReason>,
+			vote: VoteOf<T>,
 		) -> Result<MemberCount, Error<T>> {
 			let mut voting = Self::voting(&proposal_hash).ok_or(Error::<T>::NonexistentProposal)?;
 
@@ -357,8 +433,9 @@ pub mod pallet {
 			);
 
 			match vote {
-				Vote::Aye => {
+				Vote::Aye(data) => {
 					voting.ayes.push(who);
+					*voting.extra_data.entry(data).or_insert(0) += 1;
 				},
 				Vote::Nay(reason) => {
 					voting.nays.push(Disagreement { who, reason });
@@ -373,22 +450,33 @@ pub mod pallet {
 
 		pub(crate) fn meets_quorum(voted: MemberCount, member_count: MemberCount) -> bool {
 			let cutoff = member_count * T::QuorumPercentage::get() / 100;
+			log::info!(
+				"meets_quorum: voted = {voted}, member_count = {member_count}, cutoff = {cutoff}"
+			);
 			voted >= cutoff
 		}
 
 		pub(crate) fn close_proposal(
 			proposal_hash: &T::Hash,
-			proposal: Box<T::Proposal>,
-			votes: &Votes<T::AccountId, T::BlockNumber, T::DisagreementReason>,
+			proposal: Box<T::ProposalWithoutData>,
+			votes: &VotesOf<T>,
 		) -> Result<(), Error<T>> {
+			log::info!("Closing proposal {:?}", proposal_hash);
 			let ayes_count = votes.ayes.len() as MemberCount;
 			let nays_count = votes.nays.len() as MemberCount;
 			let vote_count = votes.count() as MemberCount;
 
+			log::info!("Ayes: {ayes_count}, Nays: {nays_count}, Votes: {vote_count}");
+
 			if ayes_count >= nays_count {
 				// enact proposal
-				let _proposal_weight =
-					Self::do_accept_proposal(vote_count, ayes_count, proposal_hash, proposal);
+				let _proposal_weight = Self::do_accept_proposal(
+					vote_count,
+					ayes_count,
+					proposal_hash,
+					proposal,
+					&votes.extra_data,
+				)?;
 			} else {
 				// veto proposal
 				Self::do_reject_proposal(proposal_hash, &proposal, votes);
@@ -402,9 +490,19 @@ pub mod pallet {
 			members: MemberCount,
 			approvals: MemberCount,
 			proposal_hash: &T::Hash,
-			proposal: Box<T::Proposal>,
-		) -> Weight {
-			T::OnProposalComplete::on_proposal_accepted(proposal_hash, &proposal);
+			base_proposal: Box<T::ProposalWithoutData>,
+			extra_data: &BTreeMap<T::ProposalExtraData, u32>,
+		) -> Result<Weight, Error<T>> {
+			T::OnProposalComplete::on_proposal_accepted(proposal_hash, &base_proposal);
+			let aggregate = T::DataAggregator::aggregate_data(extra_data)
+				.map_err(|_| Error::<T>::AggregationFailed)?;
+
+			let proposal: T::Proposal = <T::ProposalWithoutData as MakeProposal<T>>::make_proposal(
+				*base_proposal,
+				aggregate,
+			)
+			.map_err(|_| Error::<T>::MakeProposalFailed)?;
+
 			let dispatch_weight = proposal.get_dispatch_info().weight;
 
 			let origin = RawOrigin::Members(approvals, members).into();
@@ -417,13 +515,13 @@ pub mod pallet {
 
 			Self::remove_proposal(proposal_hash);
 
-			proposal_weight
+			Ok(proposal_weight)
 		}
 
 		pub(crate) fn do_reject_proposal(
 			proposal_hash: &T::Hash,
-			proposal: &T::Proposal,
-			votes: &Votes<T::AccountId, T::BlockNumber, T::DisagreementReason>,
+			proposal: &T::ProposalWithoutData,
+			votes: &VotesOf<T>,
 		) {
 			let reasons =
 				votes.nays.iter().map(|vote| vote.reason.clone()).collect::<BTreeSet<_>>();
@@ -451,9 +549,10 @@ pub mod pallet {
 
 		pub(crate) fn vote_on_proposal(
 			who: T::AccountId,
-			proposal: ProposalOrHash<T::Proposal, T::Hash>,
-			vote: Vote<T::DisagreementReason>,
+			proposal: ProposalOrHashOf<T>,
+			vote: VoteOf<T>,
 		) -> Result<(), Error<T>> {
+			log::info!("vote_on_proposal: {who:?} {:?} {vote:?}", proposal.hash::<T>());
 			let members = Self::members();
 			ensure!(members.contains(&who), Error::<T>::NotMember);
 
@@ -464,9 +563,9 @@ pub mod pallet {
 				(count, Box::new(proposal))
 			} else {
 				match proposal {
-					ProposalOrHash::Proposal(proposal) => {
-						Self::open_proposal(proposal.clone(), proposal_hash, who, vote)?;
-						(1, proposal)
+					ProposalOrHash::Proposal(base_proposal) => {
+						Self::open_proposal(base_proposal.clone(), proposal_hash, who, vote)?;
+						(1, base_proposal)
 					},
 					ProposalOrHash::Hash(_) => {
 						return Err(Error::<T>::NonexistentProposal.into());
