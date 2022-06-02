@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@polkadot/api": "^8.6.2",
-    "@types/jest": "^27.5.0",
+    "@types/jest": "^28.1.0",
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
