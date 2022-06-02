@@ -180,6 +180,7 @@ impl<
 
 pub trait MakeProposal<T: Config> {
 	fn make_proposal(self, extra_data: T::ProposalExtraData) -> Result<T::Proposal, ()>;
+	fn make_failure_proposal(self, reason: T::DisagreementReason) -> Result<T::Proposal, ()>;
 }
 
 #[derive(TypeInfo, Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
@@ -196,6 +197,12 @@ where
 	T: Config<ProposalExtraData = (), Proposal = P>,
 {
 	fn make_proposal(self, _extra_data: ()) -> Result<<T as Config>::Proposal, ()> {
+		Ok(self.0)
+	}
+	fn make_failure_proposal(
+		self,
+		_reason: <T as Config>::DisagreementReason,
+	) -> Result<<T as Config>::Proposal, ()> {
 		Ok(self.0)
 	}
 }
