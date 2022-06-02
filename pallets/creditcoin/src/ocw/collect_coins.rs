@@ -14,15 +14,26 @@ use sp_runtime::traits::UniqueSaturatedFrom;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::{H160, U64};
 use frame_support::ensure;
+use lazy_static::lazy_static;
 use sp_std::prelude::*;
 
 pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
+lazy_static! {
+	static ref CONTRACT_ADDRESS: H160 = {
+		let vesting_contract =
+			hex::decode("0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419".trim_start_matches("0x"))
+				.unwrap();
+		H160::from(<[u8; 20]>::try_from(vesting_contract.as_slice()).unwrap())
+	};
+	static ref BURN_SELECTOR: [u8; 4] =
+		hex::decode("0x42966c68".trim_start_matches("0x")).unwrap().try_into().unwrap();
+}
 
 ///exchange has been deprecated, use burn instead
 fn burn_vested_cc_abi() -> Function {
 	#[allow(deprecated)]
 	Function {
-		name: "exchange".into(),
+		name: "burn".into(),
 		inputs: vec![Param {
 			name: "value".into(),
 			kind: ParamType::Uint(256),
@@ -41,8 +52,6 @@ pub fn validate_collect_coins(
 	eth_tip: U64,
 ) -> OffchainResult<()> {
 	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
-	let vesting_contract = hex::decode(b"a3EE21C306A700E682AbCdfe9BaA6A08F3820419").unwrap();
-	let vesting_contract = &H160::from(<[u8; 20]>::try_from(vesting_contract.as_slice()).unwrap());
 
 	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
 
@@ -52,7 +61,7 @@ pub fn validate_collect_coins(
 	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
 	if let Some(to) = &transaction.to {
-		ensure!(to == vesting_contract, VerificationFailureCause::IncorrectContract);
+		ensure!(to == &*CONTRACT_ADDRESS, VerificationFailureCause::IncorrectContract);
 	} else {
 		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
@@ -66,6 +75,15 @@ pub fn validate_collect_coins(
 	let transfer_fn = burn_vested_cc_abi();
 	//is ignoring the selector a good idea? test? Same input, diff call (not exchange)?
 	ensure!(transaction.input.0.len() > 4, VerificationFailureCause::EmptyInput);
+
+	{
+		let selector = transfer_fn.short_signature();
+		if selector != *BURN_SELECTOR {
+			log::error!("function selector mismatch: {}", hex::encode(selector));
+			return Err(VerificationFailureCause::AbiMismatch.into());
+		}
+	}
+
 	let inputs = transfer_fn.decode_input(&transaction.input.0[4..]).map_err(|e| {
 		log::error!("failed to decode inputs: {:?}", e);
 		VerificationFailureCause::AbiMismatch
