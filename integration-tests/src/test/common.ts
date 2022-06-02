@@ -74,7 +74,11 @@ export const lendOnEth = async (
     dealOrderId: DealOrderId,
     loanTerms: LoanTerms,
 ) => {
-    const { lend, waitUntilTip } = await ethConnection((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+    const { lend, waitUntilTip } = await ethConnection(
+        (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+        (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+        (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+    );
 
     // Lender lends to borrower on ethereum
     const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
@@ -96,7 +100,7 @@ export const tryRegisterAddress = async (
     blockchain: Blockchain,
     ownershipProof: string,
     signer: KeyringPair,
-    checkForExisting: boolean = false,
+    checkForExisting = false,
 ): Promise<AddressRegistered> => {
     const {
         api,
