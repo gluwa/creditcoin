@@ -3,7 +3,11 @@
 
 extern crate alloc;
 
-use frame_support::traits::StorageVersion;
+use frame_support::traits::{ChangeMembers, StorageVersion};
+pub use ocw::{
+	voting::{BaseTaskProposal, OracleData},
+	VerificationFailureCause,
+};
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
@@ -81,15 +85,21 @@ pub mod pallet {
 		+ pallet_balances::Config
 		+ pallet_timestamp::Config
 		+ CreateSignedTransaction<Call<Self>>
+		+ CreateSignedTransaction<pallet_voting_oracle::Call<Self>>
 	where
 		<Self as frame_system::Config>::BlockNumber: UniqueSaturatedInto<u64>,
 		<Self as pallet_timestamp::Config>::Moment:
 			UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
+		Self: pallet_voting_oracle::Config<
+			ProposalWithoutData = crate::BaseTaskProposal<Self>,
+			ProposalExtraData = crate::OracleData<<Self as pallet_timestamp::Config>::Moment>,
+			DisagreementReason = crate::VerificationFailureCause,
+		>,
 	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		type Call: From<Call<Self>>;
+		type Call: From<Call<Self>> + Into<<Self as pallet_voting_oracle::Config>::Proposal>;
 
 		type AuthorityId: AppCrypto<
 			Self::Public,
@@ -128,6 +138,8 @@ pub mod pallet {
 		type UnverifiedTransferTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
+
+		type AuthorityMajorityOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 	}
 
 	pub trait WeightInfo {
@@ -573,13 +585,16 @@ pub mod pallet {
 					}
 					log::debug!("verifying OCW task");
 					let verify_result = Self::verify_transfer_ocw(&pending);
-					log::debug!("verify_transfer result: {:?}", verify_result);
+					log::info!("verify_transfer result: {:?}", verify_result);
 					match verify_result {
 						Ok(timestamp) => {
 							match Self::offchain_signed_tx(auth_id.clone(), |_| {
-								Call::verify_transfer {
-									transfer: Transfer { timestamp, ..pending.transfer.clone() },
-									deadline,
+								let prop = crate::BaseTaskProposal::<T>::Transfer(pending.clone());
+								pallet_voting_oracle::Call::accept {
+									proposal: pallet_voting_oracle::ProposalOrHash::Proposal(
+										Box::new(prop),
+									),
+									extra_data: crate::OracleData::<T::Moment>::Transfer(timestamp),
 								}
 							}) {
 								Ok(()) => {
@@ -601,13 +616,13 @@ pub mod pallet {
 							);
 							if cause.is_fatal() {
 								match Self::offchain_signed_tx(auth_id.clone(), |_| {
-									Call::fail_transfer {
-										transfer_id: TransferId::new::<T>(
-											&pending.transfer.blockchain,
-											&pending.transfer.tx_id,
+									let prop =
+										crate::BaseTaskProposal::<T>::Transfer(pending.clone());
+									pallet_voting_oracle::Call::reject {
+										proposal: pallet_voting_oracle::ProposalOrHash::Proposal(
+											Box::new(prop),
 										),
-										cause,
-										deadline,
+										reason: cause,
 									}
 								}) {
 									Ok(()) => {
@@ -1161,7 +1176,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
+			let order: DealOrder<_, _, _, _> =
+				try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
 			let (transfer_id, transfer) = Self::register_transfer_internal(
 				who,
@@ -1232,9 +1248,7 @@ pub mod pallet {
 			deadline: T::BlockNumber,
 			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+			T::AuthorityMajorityOrigin::ensure_origin(origin)?;
 
 			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
@@ -1280,7 +1294,13 @@ pub mod pallet {
 
 			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
 
-			Authorities::<T>::insert(who, ());
+			Authorities::<T>::insert(&who, ());
+
+			pallet_voting_oracle::Pallet::<T>::change_members(
+				&[who.clone()],
+				&[],
+				vec![who.clone()],
+			);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}

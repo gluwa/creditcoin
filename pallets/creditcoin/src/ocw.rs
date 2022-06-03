@@ -1,6 +1,7 @@
 pub mod errors;
 pub mod rpc;
-use crate::{Blockchain, Call, Id, Transfer, TransferId, TransferKind, UnverifiedTransfer};
+pub mod voting;
+use crate::{Blockchain, Id, Transfer, TransferId, TransferKind, UnverifiedTransfer};
 use codec::Encode;
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 

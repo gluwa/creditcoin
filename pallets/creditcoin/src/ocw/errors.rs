@@ -15,7 +15,9 @@ pub enum OffchainError {
 
 pub type VerificationResult<Moment> = Result<Option<Moment>, OffchainError>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen, PartialOrd, Ord,
+)]
 pub enum VerificationFailureCause {
 	TaskNonexistent,
 	TaskFailed,

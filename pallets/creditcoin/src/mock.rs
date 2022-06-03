@@ -1,7 +1,7 @@
 use crate::{
 	self as pallet_creditcoin,
 	ocw::rpc::{JsonRpcRequest, JsonRpcResponse},
-	Blockchain, LegacySighash,
+	Blockchain, LegacySighash, VerificationFailureCause,
 };
 use ethereum_types::U256;
 use frame_support::{
@@ -48,7 +48,8 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage}
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage},
+		VotingOracle: pallet_voting_oracle::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -96,6 +97,20 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
+impl pallet_voting_oracle::Config for Test {
+	type Origin = Origin;
+	type Event = Event;
+	type Proposal = Call;
+	type MaxProposals = ConstU32<100>;
+	type TimeLimit = ConstU64<5>;
+	type QuorumPercentage = ConstU32<50>;
+	type DisagreementReason = VerificationFailureCause;
+	type OnProposalComplete = ();
+	type ProposalWithoutData = crate::BaseTaskProposal<Test>;
+	type ProposalExtraData = crate::OracleData<u64>;
+	type DataAggregator = ();
+}
+
 impl pallet_creditcoin::Config for Test {
 	type Event = Event;
 
@@ -116,6 +131,8 @@ impl pallet_creditcoin::Config for Test {
 	type UnverifiedTransferTimeout = ConstU64<5>;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
+
+	type AuthorityMajorityOrigin = pallet_voting_oracle::EnsureProportionAtLeast<AccountId, 1, 2>;
 }
 
 impl Test {
@@ -148,6 +165,25 @@ impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> fo
 		_account: Self::AccountId,
 		nonce: Self::Index,
 	) -> Option<(Call, <Extrinsic as ExtrinsicT>::SignaturePayload)> {
+		CREATE_TRANSACTION_FAIL.with(|should_fail| {
+			if should_fail.get() {
+				eprintln!("Failing!");
+				None
+			} else {
+				eprintln!("Not failing!");
+				Some((call, (nonce, ())))
+			}
+		})
+	}
+}
+
+impl system::offchain::CreateSignedTransaction<pallet_voting_oracle::Call<Test>> for Test {
+	fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+		call: Self::OverarchingCall,
+		_public: Self::Public,
+		_account: Self::AccountId,
+		nonce: Self::Index,
+	) -> Option<(Self::OverarchingCall, <Self::Extrinsic as ExtrinsicT>::SignaturePayload)> {
 		CREATE_TRANSACTION_FAIL.with(|should_fail| {
 			if should_fail.get() {
 				eprintln!("Failing!");
@@ -321,6 +357,10 @@ pub fn roll_by_with_ocw(n: BlockNumber) {
 		Creditcoin::on_initialize(now);
 		Creditcoin::on_finalize(now);
 	}
+}
+
+pub fn voted_origin(approvals: u32, authorities: u32) -> Origin {
+	Origin::from(pallet_voting_oracle::RawOrigin::Members(approvals, authorities))
 }
 
 // must be called in an externalities-provided environment

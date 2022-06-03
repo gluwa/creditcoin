@@ -546,20 +546,29 @@ fn register_transfer_ocw() {
 			fake_deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
-		let expected_transfer = crate::Transfer {
-			blockchain: test_info.blockchain.clone(),
-			kind: TransferKind::Ethless(contract.clone()),
-			amount: loan_amount,
-			block: System::block_number(),
-			from: test_info.lender.address_id.clone(),
-			to: test_info.borrower.address_id.clone(),
-			order_id: OrderId::Deal(fake_deal_order_id.clone()),
-			is_processed: false,
-			account_id: lender.clone(),
-			tx_id: tx_hash.hex_to_address(),
-			timestamp: Some(get_mock_timestamp()),
-		};
+
 		let deadline = Test::unverified_transfer_deadline();
+		let lender_address = Creditcoin::addresses(&test_info.lender.address_id).unwrap();
+		let borrower_address = Creditcoin::addresses(&test_info.borrower.address_id).unwrap();
+		let timestamp = get_mock_timestamp();
+		let expected_transfer = crate::UnverifiedTransfer {
+			transfer: crate::Transfer {
+				blockchain: test_info.blockchain.clone(),
+				kind: TransferKind::Ethless(contract.clone()),
+				amount: loan_amount,
+				block: System::block_number(),
+				from: test_info.lender.address_id.clone(),
+				to: test_info.borrower.address_id.clone(),
+				order_id: OrderId::Deal(fake_deal_order_id.clone()),
+				is_processed: false,
+				account_id: lender.clone(),
+				tx_id: tx_hash.hex_to_address(),
+				timestamp: None,
+			},
+			from_external: lender_address.value,
+			to_external: borrower_address.value,
+			deadline,
+		};
 
 		roll_by_with_ocw(1);
 
@@ -568,9 +577,11 @@ fn register_transfer_ocw() {
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_eq!(
 			verify_tx.call,
-			Call::Creditcoin(crate::Call::verify_transfer {
-				transfer: expected_transfer,
-				deadline
+			Call::VotingOracle(pallet_voting_oracle::Call::accept {
+				proposal: pallet_voting_oracle::ProposalOrHash::Proposal(Box::new(
+					crate::BaseTaskProposal::Transfer(expected_transfer.clone())
+				)),
+				extra_data: crate::OracleData::Transfer(Some(timestamp))
 			})
 		);
 	});
@@ -726,7 +737,10 @@ fn ocw_retries() {
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_matches!(
 			verify_tx.call,
-			super::mock::Call::Creditcoin(crate::Call::verify_transfer { .. })
+			super::mock::Call::VotingOracle(pallet_voting_oracle::Call::accept {
+				proposal: pallet_voting_oracle::ProposalOrHash::Proposal(_),
+				..
+			})
 		);
 	});
 }
@@ -2593,7 +2607,7 @@ fn verify_transfer_should_error_when_not_signed() {
 }
 
 #[test]
-fn verify_transfer_should_error_when_signer_not_authorized() {
+fn verify_transfer_should_error_when_not_enough_approvals() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
@@ -2601,11 +2615,11 @@ fn verify_transfer_should_error_when_signer_not_authorized() {
 		let deadline = Test::unverified_transfer_deadline();
 		assert_noop!(
 			Creditcoin::verify_transfer(
-				Origin::signed(test_info.lender.account_id),
+				Origin::from(pallet_voting_oracle::RawOrigin::Members(1, 5)),
 				deadline,
 				transfer
 			),
-			crate::Error::<Test>::InsufficientAuthority,
+			sp_runtime::traits::BadOrigin,
 		);
 	});
 }
@@ -2627,11 +2641,7 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::verify_transfer(
-				Origin::signed(test_info.lender.account_id),
-				deadline,
-				transfer
-			),
+			Creditcoin::verify_transfer(voted_origin(1, 1), deadline, transfer),
 			crate::Error::<Test>::TransferAlreadyRegistered,
 		);
 	});
@@ -2671,11 +2681,7 @@ fn verify_transfer_should_work() {
 		};
 		let deadline = Test::unverified_transfer_deadline();
 
-		assert_ok!(Creditcoin::verify_transfer(
-			Origin::signed(test_info.lender.account_id),
-			deadline,
-			transfer.clone()
-		));
+		assert_ok!(Creditcoin::verify_transfer(voted_origin(1, 1), deadline, transfer.clone()));
 
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 
