@@ -3,6 +3,8 @@ use frame_support::{traits::StorageVersion, weights::Weight};
 
 mod v1;
 mod v2;
+mod v3;
+mod v4;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
@@ -16,6 +18,16 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	if version < 2 {
 		weight = weight.saturating_add(v2::migrate::<T>());
 		StorageVersion::new(2).put::<Pallet<T>>();
+	}
+
+	if version < 3 {
+		weight = weight.saturating_add(v3::migrate::<T>());
+		StorageVersion::new(3).put::<Pallet<T>>();
+	}
+
+	if version < 4 {
+		weight = weight.saturating_add(v4::migrate::<T>());
+		StorageVersion::new(4).put::<Pallet<T>>();
 	}
 
 	weight

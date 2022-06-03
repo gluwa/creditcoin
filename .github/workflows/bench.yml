@@ -1,0 +1,76 @@
+name: BENCHMARK
+
+# Controls when the action will run.
+on:
+  pull_request:
+    branches: testnet
+
+jobs:
+  hardware-benchmarks:
+    runs-on: self-hosted
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 10
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set env
+        run: |
+          echo "HOME=/home/actions" >> $GITHUB_ENV
+
+      - name: Inspect benchmark CI config
+        run: |
+          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
+          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              exit 1
+          fi
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-03-21
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+        continue-on-error: true
+
+      - name: Difficulty
+        shell: bash
+        continue-on-error: true
+        env:
+          PALLET: difficulty
+        run: |
+          ./scripts/bench.sh -p $PALLET -cb
+
+      - name: Rewards
+        shell: bash
+        continue-on-error: true
+        env:
+          PALLET: rewards
+        run: |
+          ./scripts/bench.sh -p $PALLET -b
+
+      # Run creditcoin pallet with lesser steps
+      - name: Creditcoin
+        shell: bash
+        continue-on-error: true
+        env:
+          STEPS: 8
+          REPEAT: 8
+          PALLET: creditcoin
+        run: |
+          ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: hardwareBenchmark
+          author_email: creditcoin@gluwa.com
+          message: 'Auto-update pallet weights'
+          github_token: ${{ secrets.GITHUB_TOKEN }}

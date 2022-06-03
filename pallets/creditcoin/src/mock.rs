@@ -1,7 +1,13 @@
-use crate::{self as pallet_creditcoin, ocw::rpc::JsonRpcRequest, LegacySighash};
+use crate::{
+	self as pallet_creditcoin,
+	ocw::rpc::{JsonRpcRequest, JsonRpcResponse},
+	Blockchain, LegacySighash,
+};
+use ethereum_types::U256;
 use frame_support::{
+	once_cell::sync::Lazy,
 	parameter_types,
-	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
+	traits::{ConstU32, ConstU64, GenesisBuild, Get, Hooks},
 };
 use frame_system as system;
 use parking_lot::RwLock;
@@ -9,6 +15,7 @@ use sp_core::H256;
 use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
 use sp_runtime::{
 	offchain::{
+		storage::StorageValueRef,
 		testing::{
 			OffchainState, PendingRequest, PoolState, TestOffchainExt, TestTransactionPoolExt,
 		},
@@ -18,7 +25,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, Extrinsic as ExtrinsicT, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, RuntimeAppPublic,
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{cell::Cell, collections::HashMap, sync::Arc};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -48,7 +55,8 @@ frame_support::construct_runtime!(
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
-	pub const PendingTxLimit: u32 = 10000;
+	// used in tests, lower values == faster execution
+	pub const PendingTxLimit: u32 = 500;
 }
 
 impl system::Config for Test {
@@ -105,9 +113,32 @@ impl pallet_creditcoin::Config for Test {
 
 	type HashIntoNonce = H256;
 
-	type UnverifiedTransferLimit = PendingTxLimit;
+	type UnverifiedTransferTimeout = ConstU64<5>;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
+}
+
+impl Test {
+	pub(crate) fn unverified_transfer_timeout() -> u64 {
+		<<Test as crate::Config>::UnverifiedTransferTimeout as Get<u64>>::get()
+	}
+
+	pub(crate) fn unverified_transfer_deadline() -> u64 {
+		System::block_number() + Self::unverified_transfer_timeout()
+	}
+}
+
+thread_local! {
+	pub static CREATE_TRANSACTION_FAIL: Cell<bool> = Cell::new(false);
+}
+
+pub(crate) fn with_failing_create_transaction<R>(f: impl FnOnce() -> R) -> R {
+	CREATE_TRANSACTION_FAIL.with(|c| {
+		c.set(true);
+		let result = f();
+		c.set(false);
+		result
+	})
 }
 
 impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> for Test {
@@ -117,7 +148,15 @@ impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> fo
 		_account: Self::AccountId,
 		nonce: Self::Index,
 	) -> Option<(Call, <Extrinsic as ExtrinsicT>::SignaturePayload)> {
-		Some((call, (nonce, ())))
+		CREATE_TRANSACTION_FAIL.with(|should_fail| {
+			if should_fail.get() {
+				eprintln!("Failing!");
+				None
+			} else {
+				eprintln!("Not failing!");
+				Some((call, (nonce, ())))
+			}
+		})
 	}
 }
 
@@ -168,7 +207,7 @@ impl ExtBuilder {
 		self.balances.push((account, amount));
 		self
 	}
-	pub fn generate_authority(&mut self) -> &mut ExtBuilder {
+	pub fn generate_authority(&mut self) -> sp_core::sr25519::Public {
 		const PHRASE: &str =
 			"news slush supreme milk chapter athlete soap sausage put clutch what kitten";
 		if let None = self.keystore {
@@ -183,8 +222,8 @@ impl ExtBuilder {
 				Some(&format!("{}/auth{}", PHRASE, self.authorities.len() + 1)),
 			)
 			.unwrap();
-		self.authorities.push(AccountId::new(pubkey.into_account().0));
-		self
+		self.authorities.push(AccountId::new(pubkey.clone().into_account().0));
+		pubkey
 	}
 	pub fn legacy_wallets(
 		&mut self,
@@ -239,6 +278,14 @@ impl ExtBuilder {
 		let (mut ext, _, _) = self.build_offchain();
 		ext.execute_with(test)
 	}
+	#[allow(dead_code)]
+	pub fn build_offchain_and_execute_with_state<R>(
+		self,
+		test: impl FnOnce(Arc<RwLock<OffchainState>>, Arc<RwLock<PoolState>>) -> R,
+	) -> R {
+		let (mut ext, state, pool) = self.build_offchain();
+		ext.execute_with(|| test(state, pool))
+	}
 }
 
 #[allow(dead_code)]
@@ -266,22 +313,29 @@ pub fn roll_to_with_ocw(n: BlockNumber) {
 pub fn roll_by_with_ocw(n: BlockNumber) {
 	let mut now = System::block_number();
 	for _ in 0..n {
-		if now == 0 {
-			Creditcoin::offchain_worker(now);
-		}
+		Creditcoin::offchain_worker(now);
 		now += 1;
 		System::set_block_number(now);
+		System::reset_events();
+		System::on_initialize(now);
 		Creditcoin::on_initialize(now);
-		Creditcoin::offchain_worker(now);
 		Creditcoin::on_finalize(now);
 	}
+}
+
+// must be called in an externalities-provided environment
+pub fn set_rpc_uri(blockchain: &Blockchain, value: impl AsRef<[u8]>) {
+	let mut key = Vec::from(blockchain.as_bytes());
+	key.extend(b"-rpc-uri");
+	let rpc_url_storage = StorageValueRef::persistent(&key);
+	rpc_url_storage.set(&value.as_ref());
 }
 
 pub fn pending_rpc_request(
 	method: &str,
 	params: impl IntoIterator<Item = serde_json::Value>,
 	uri: &str,
-	responses: &HashMap<String, serde_json::Value>,
+	responses: &HashMap<String, JsonRpcResponse<serde_json::Value>>,
 ) -> PendingRequest {
 	let rpc = JsonRpcRequest::new(method, params).to_bytes();
 	let response = &responses[method];
@@ -295,6 +349,185 @@ pub fn pending_rpc_request(
 		response_headers: vec![("Content-Type".into(), "application/json".into())],
 		sent: true,
 		..Default::default()
+	}
+}
+
+pub(crate) static ETHLESS_RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
+	Lazy::new(|| serde_json::from_slice(include_bytes!("tests/ethlessTransfer.json")).unwrap());
+
+pub(crate) fn get_mock_tx_hash() -> String {
+	let responses = &*ETHLESS_RESPONSES;
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["hash"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string()
+}
+
+pub(crate) fn get_mock_contract() -> String {
+	let responses = &*ETHLESS_RESPONSES;
+
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["to"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string()
+}
+
+pub(crate) fn get_mock_tx_block_num() -> String {
+	let responses = &*ETHLESS_RESPONSES;
+
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["blockNumber"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string()
+}
+
+pub(crate) fn get_mock_from_address() -> String {
+	format!("{:?}", get_mock_contract_input(0, ethabi::Token::into_address))
+}
+
+fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) -> Option<T>) -> T {
+	let responses = &*ETHLESS_RESPONSES;
+
+	let abi = crate::ocw::ethless_transfer_function_abi();
+	let input = responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string();
+	let input_bytes = hex::decode(&input.trim_start_matches("0x")).unwrap();
+	let inputs = abi.decode_input(&input_bytes[4..]).unwrap();
+	convert(inputs[index].clone()).unwrap()
+}
+
+pub(crate) fn get_mock_input_data() -> String {
+	let responses = &*ETHLESS_RESPONSES;
+
+	responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string()
+}
+
+pub(crate) fn get_mock_to_address() -> String {
+	format!("{:?}", get_mock_contract_input(1, ethabi::Token::into_address))
+}
+
+pub(crate) fn get_mock_amount() -> U256 {
+	get_mock_contract_input(2, ethabi::Token::into_uint)
+}
+
+pub(crate) fn get_mock_nonce() -> U256 {
+	get_mock_contract_input(4, ethabi::Token::into_uint)
+}
+
+pub(crate) fn get_mock_timestamp() -> u64 {
+	let responses = &*ETHLESS_RESPONSES;
+
+	let timestamp_hex = responses["eth_getBlockByNumber"].result.clone().unwrap()["timestamp"]
+		.clone()
+		.as_str()
+		.unwrap()
+		.to_string();
+	u64::from_str_radix(&timestamp_hex.trim_start_matches("0x"), 16).unwrap()
+}
+
+#[extend::ext(name = PendingRequestExt)]
+pub(crate) impl Option<PendingRequest> {
+	fn set_response(&mut self, response: impl serde::Serialize) {
+		self.as_mut().unwrap().response = Some(serde_json::to_vec(&response).unwrap());
+	}
+
+	fn set_empty_response(&mut self) {
+		self.set_response(JsonRpcResponse::<()> {
+			jsonrpc: "2.0".into(),
+			id: 1,
+			error: None,
+			result: None,
+		});
+	}
+}
+
+pub(crate) struct MockedRpcRequests {
+	pub(crate) get_transaction: Option<PendingRequest>,
+	pub(crate) get_transaction_receipt: Option<PendingRequest>,
+	pub(crate) get_block_number: Option<PendingRequest>,
+	pub(crate) get_block_by_number: Option<PendingRequest>,
+}
+
+impl Default for MockedRpcRequests {
+	fn default() -> Self {
+		let rpc_uri = "http://localhost:8545";
+		let tx_hash = get_mock_tx_hash();
+		let tx_block_number = get_mock_tx_block_num();
+
+		Self::new(rpc_uri, &tx_hash, &tx_block_number)
+	}
+}
+
+impl MockedRpcRequests {
+	pub(crate) fn new<'a>(
+		rpc_uri: impl Into<Option<&'a str>>,
+		tx_hash: &str,
+		tx_block_number: &str,
+	) -> Self {
+		let responses = &*ETHLESS_RESPONSES;
+		let uri = rpc_uri.into().unwrap_or("dummy");
+		let get_transaction = Some(pending_rpc_request(
+			"eth_getTransactionByHash",
+			vec![tx_hash.into()],
+			uri,
+			responses,
+		));
+		let get_transaction_receipt = Some(pending_rpc_request(
+			"eth_getTransactionReceipt",
+			vec![tx_hash.into()],
+			uri,
+			&responses,
+		));
+		let get_block_number = Some(pending_rpc_request("eth_blockNumber", None, uri, &responses));
+		let get_block_by_number = Some(pending_rpc_request(
+			"eth_getBlockByNumber",
+			vec![tx_block_number.into(), false.into()],
+			uri,
+			&responses,
+		));
+		Self { get_transaction, get_transaction_receipt, get_block_number, get_block_by_number }
+	}
+
+	/// Mocks only the RPC response for get_transaction
+	pub(crate) fn mock_get_transaction(&mut self, state: &mut OffchainState) {
+		let get_transaction = self.get_transaction.take().unwrap();
+		state.expect_request(get_transaction);
+	}
+
+	/// Mocks the RPC responses up to (inclusive) get_transaction_receipt
+	pub(crate) fn mock_get_transaction_receipt(&mut self, state: &mut OffchainState) {
+		self.mock_get_transaction(state);
+		let get_transaction_receipt = self.get_transaction_receipt.take().unwrap();
+		state.expect_request(get_transaction_receipt);
+	}
+
+	/// Mocks the RPC responses up to (inclusive) get_block_number
+	pub(crate) fn mock_get_block_number(&mut self, state: &mut OffchainState) {
+		self.mock_get_transaction_receipt(state);
+		let get_block_number = self.get_block_number.take().unwrap();
+		state.expect_request(get_block_number);
+	}
+
+	/// Mocks the RPC responses up to (inclusive) get_block_by_number
+	pub(crate) fn mock_get_block_by_number(mut self, state: &mut OffchainState) {
+		self.mock_get_block_number(state);
+		let get_block_by_number = self.get_block_by_number.take().unwrap();
+		state.expect_request(get_block_by_number);
+	}
+
+	/// Mocks all of the RPC responses
+	pub(crate) fn mock_all(self, state: &mut OffchainState) {
+		self.mock_get_block_by_number(state);
 	}
 }
 

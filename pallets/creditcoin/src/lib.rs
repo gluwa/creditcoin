@@ -5,6 +5,7 @@ extern crate alloc;
 
 use frame_support::traits::StorageVersion;
 pub use pallet::*;
+use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
 use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
@@ -51,10 +52,12 @@ pub mod crypto {
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
-pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::ocw::errors::OffchainError;
+
 	use super::*;
 	use frame_support::{
 		dispatch::DispatchResult,
@@ -68,6 +71,7 @@ pub mod pallet {
 		offchain::{AppCrypto, CreateSignedTransaction},
 		pallet_prelude::*,
 	};
+	use ocw::errors::VerificationFailureCause;
 	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -121,14 +125,14 @@ pub mod pallet {
 			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
 			+ Clone;
 
-		type UnverifiedTransferLimit: Get<u32>;
+		type UnverifiedTransferTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
 	}
 
 	pub trait WeightInfo {
-		fn on_initialize(_u: u32, a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
-		fn register_address(b: u32, e: u32) -> Weight;
+		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32) -> Weight;
+		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
 		fn add_bid_order() -> Weight;
@@ -136,6 +140,7 @@ pub mod pallet {
 		fn add_deal_order() -> Weight;
 		fn add_authority() -> Weight;
 		fn verify_transfer() -> Weight;
+		fn fail_transfer() -> Weight;
 		fn fund_deal_order() -> Weight;
 		fn lock_deal_order() -> Weight;
 		fn register_transfer_ocw() -> Weight;
@@ -161,13 +166,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn pending_transfers)]
-	pub type UnverifiedTransfers<T: Config> = StorageValue<
+	pub type UnverifiedTransfers<T: Config> = StorageDoubleMap<
 		_,
-		BoundedVec<
-			UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-			T::UnverifiedTransferLimit,
-		>,
-		ValueQuery,
+		Identity,
+		T::BlockNumber,
+		Identity,
+		TransferId<T::Hash>,
+		UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
 	#[pallet::storage]
@@ -247,18 +252,12 @@ pub mod pallet {
 		),
 
 		/// An external transfer has been successfully verified.
-		/// [verified_transfer_id, verified_transfer]
-		TransferVerified(
-			TransferId<T::Hash>,
-			Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [verified_transfer_id]
+		TransferVerified(TransferId<T::Hash>),
 
 		/// An external transfer has been processed and marked as part of a loan.
-		/// [processed_transfer_id, processed_transfer]
-		TransferProcessed(
-			TransferId<T::Hash>,
-			Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [processed_transfer_id]
+		TransferProcessed(TransferId<T::Hash>),
 
 		/// An ask order has been added by a prospective lender. This indicates that the lender
 		/// is looking to issue a loan with certain terms.
@@ -292,22 +291,22 @@ pub mod pallet {
 		/// A deal order has been funded by a lender. This indicates that the lender
 		/// has initiated the actual loan by transferring the loan amount to the borrower
 		/// on an external chain.
-		/// [funded_deal_order_id, funded_deal_order]
-		DealOrderFunded(
-			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [funded_deal_order_id]
+		DealOrderFunded(DealOrderId<T::BlockNumber, T::Hash>),
+
+		/// A deal order has been locked by a borrower. This indicates that the borrower
+		/// is preparing to make a repayment and locks the loan from being sold or transferred
+		/// to another party.
+		/// [deal_order_id]
+		DealOrderLocked(DealOrderId<T::BlockNumber, T::Hash>),
 
 		/// A deal order has been closed by a borrower. This indicates that the borrower
 		/// has repaid the loan in full and is now closing out the loan.
-		/// [closed_deal_order_id, closed_deal_order]
-		DealOrderClosed(
-			DealOrderId<T::BlockNumber, T::Hash>,
-			DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		),
+		/// [closed_deal_order_id]
+		DealOrderClosed(DealOrderId<T::BlockNumber, T::Hash>),
 
 		/// A loan exemption has been granted by a lender. This indicates that the lender
-		/// is releasing some or all of the outstanding debt on the loan. The borrower
+		/// is releasing all of the outstanding debt on the loan. The borrower
 		/// is no longer responsible for repaying the amount.
 		/// [exempted_deal_order_id]
 		LoanExempted(DealOrderId<T::BlockNumber, T::Hash>),
@@ -316,9 +315,12 @@ pub mod pallet {
 		/// has been transferred to the owner's Creditcoin 2.0 account.
 		/// [legacy_wallet_claimer, legacy_wallet_sighash, legacy_wallet_balance]
 		LegacyWalletClaimed(T::AccountId, LegacySighash, T::Balance),
+
+		TransferFailedVerification(TransferId<T::Hash>, VerificationFailureCause),
 	}
 
 	// Errors inform users that something went wrong.
+	#[derive(PartialEq)]
 	#[pallet::error]
 	pub enum Error<T> {
 		/// The specified address has already been registered to another account
@@ -445,9 +447,6 @@ pub mod pallet {
 		/// Only the lender can perform the action.
 		NotLender,
 
-		/// The queue of unverified transfers is full for this block.
-		UnverifiedTransferPoolFull,
-
 		/// Repayment orders are not currently supported.
 		RepaymentOrderUnsupported,
 
@@ -469,6 +468,12 @@ pub mod pallet {
 
 		/// The external address is malformed or otherwise invalid for the platform.
 		MalformedExternalAddress,
+
+		/// The address format was not recognized for the given blockchain and external address.
+		AddressFormatNotSupported,
+
+		/// The address retrieved from the proof-of-ownership signature did not match the external address being registered.
+		OwnershipNotSatisfied,
 	}
 
 	#[pallet::genesis_config]
@@ -507,8 +512,14 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
-			UnverifiedTransfers::<T>::kill();
 			log::debug!("Cleaning up expired entries");
+
+			let unverified_count = match UnverifiedTransfers::<T>::remove_prefix(block_number, None)
+			{
+				KillStorageResult::SomeRemaining(u) => u,
+				KillStorageResult::AllRemoved(u) => u,
+			};
+
 			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
 				KillStorageResult::SomeRemaining(u) => u,
 				KillStorageResult::AllRemoved(u) => u,
@@ -522,10 +533,10 @@ pub mod pallet {
 				KillStorageResult::AllRemoved(u) => u,
 			};
 
-			let mut deals_count = 0usize;
+			let mut deals_count = 0u32;
 			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
 				.filter_map(|(hash, deal)| {
-					deals_count += 1;
+					deals_count = deals_count.saturating_add(1);
 					if deal.funding_transfer_id.is_some() {
 						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
 					} else {
@@ -533,45 +544,89 @@ pub mod pallet {
 					}
 				})
 				.collect();
-			let funded_deals_count = deals_to_keep.len();
-			let deals_count = deals_count - funded_deals_count;
+			let funded_deals_count = deals_to_keep.len().unique_saturated_into();
+			let deals_count = deals_count.saturating_sub(funded_deals_count);
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
 			}
 
 			<T as Config>::WeightInfo::on_initialize(
-				0,
 				ask_count,
 				bid_count,
 				offer_count,
-				deals_count.unique_saturated_into(),
-				funded_deals_count.unique_saturated_into(),
+				deals_count,
+				funded_deals_count,
+				unverified_count,
 			)
 		}
 
 		fn offchain_worker(_block_number: T::BlockNumber) {
 			if let Some(auth_id) = Self::authority_id() {
 				let auth_id = T::FromAccountId::from(auth_id);
-				for mut pending in UnverifiedTransfers::<T>::get() {
-					log::debug!("verifying transfer");
-					let transfer_validity = Self::verify_transfer_ocw(&mut pending);
-					log::debug!("verify_transfer result: {:?}", transfer_validity);
-					match transfer_validity {
-						Ok(()) => {
-							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
-								Call::verify_transfer { transfer: pending.transfer.clone() }
+				for (deadline, transfer_id, pending) in UnverifiedTransfers::<T>::iter() {
+					let storage_key =
+						ocw::transfer_local_status_storage_key::<T>(deadline, &transfer_id);
+					let transfer_status = ocw::LocalVerificationStatus::new(&storage_key);
+					if transfer_status.is_complete() {
+						log::debug!("Already handled transfer ({:?}, {:?})", deadline, transfer_id);
+						continue;
+					}
+					log::debug!("verifying OCW task");
+					let verify_result = Self::verify_transfer_ocw(&pending);
+					log::debug!("verify_transfer result: {:?}", verify_result);
+					match verify_result {
+						Ok(timestamp) => {
+							match Self::offchain_signed_tx(auth_id.clone(), |_| {
+								Call::verify_transfer {
+									transfer: Transfer { timestamp, ..pending.transfer.clone() },
+									deadline,
+								}
 							}) {
-								log::error!(
-									"Failed to send finalize transfer transaction: {:?}",
-									e
-								);
+								Ok(()) => {
+									transfer_status.mark_complete();
+								},
+								Err(e) => {
+									log::error!(
+										"Failed to send verify_transfer transaction: {:?}",
+										e
+									);
+								},
 							}
 						},
-						Err(err) => {
+						Err(OffchainError::InvalidTask(cause)) => {
 							log::warn!(
 								"failed to verify pending transfer {:?}: {:?}",
 								pending,
-								err
+								cause
+							);
+							if cause.is_fatal() {
+								match Self::offchain_signed_tx(auth_id.clone(), |_| {
+									Call::fail_transfer {
+										transfer_id: TransferId::new::<T>(
+											&pending.transfer.blockchain,
+											&pending.transfer.tx_id,
+										),
+										cause,
+										deadline,
+									}
+								}) {
+									Ok(()) => {
+										transfer_status.mark_complete();
+									},
+									Err(e) => {
+										log::error!(
+											"Failed to send fail_transfer transaction: {:?}",
+											e
+										);
+									},
+								}
+							}
+						},
+						Err(error) => {
+							log::error!(
+								"transfer verification encountered an error {:?}: {:?}",
+								pending,
+								error
 							);
 						},
 					}
@@ -619,19 +674,36 @@ pub mod pallet {
 		}
 
 		/// Registers an external address on `blockchain` and `network` with value `address`
-		#[pallet::weight(<T as Config>::WeightInfo::register_address(blockchain.as_bytes().len().unique_saturated_into(),address.as_slice().len().unique_saturated_into()))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address())]
 		pub fn register_address(
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
 			address: ExternalAddress,
+			ownership_proof: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+
+			let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+			let message = &sp_io::hashing::blake2_256(message.as_ref());
+			let signature = <[u8; 65]>::from(ownership_proof);
+			let raw_pubkey = secp256k1_ecdsa_recover_compressed(&signature, message)
+				.map_err(|_| Error::<T>::InvalidSignature)?;
+			let recreated_address = helpers::generate_external_address(
+				&blockchain,
+				&address,
+				sp_core::ecdsa::Public::from_raw(raw_pubkey),
+			)
+			.ok_or(Error::<T>::AddressFormatNotSupported)?;
+			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
+
 			let address_id = AddressId::new::<T>(&blockchain, &address);
 			ensure!(
 				!Addresses::<T>::contains_key(&address_id),
 				Error::<T>::AddressAlreadyRegistered
 			);
 
+			// note: this error condition is unreachable!
+			// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
 			ensure!(
 				helpers::address_is_well_formed(&blockchain, &address),
 				Error::<T>::MalformedExternalAddress
@@ -834,6 +906,7 @@ pub mod pallet {
 					ensure!(deal_order.borrower == who, Error::<T>::NotBorrower);
 
 					deal_order.lock = Some(who);
+					Self::deposit_event(Event::<T>::DealOrderLocked(deal_order_id.clone()));
 					Ok(())
 				},
 			)?;
@@ -871,7 +944,7 @@ pub mod pallet {
 					deal_order.funding_transfer_id = Some(transfer_id.clone());
 					deal_order.timestamp = now;
 
-					Ok(Some(Event::<T>::DealOrderFunded(deal_order_id.clone(), deal_order.clone())))
+					Ok(Some(Event::<T>::DealOrderFunded(deal_order_id.clone())))
 				},
 				|transfer, deal_order| {
 					ensure!(
@@ -886,7 +959,7 @@ pub mod pallet {
 					ensure!(!transfer.is_processed, Error::<T>::TransferAlreadyProcessed);
 
 					transfer.is_processed = true;
-					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
+					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone())))
 				},
 			)?;
 
@@ -1031,7 +1104,7 @@ pub mod pallet {
 
 					deal_order.repayment_transfer_id = Some(transfer_id.clone());
 
-					Ok(Some(Event::<T>::DealOrderClosed(deal_order_id.clone(), deal_order.clone())))
+					Ok(Some(Event::<T>::DealOrderClosed(deal_order_id.clone())))
 				},
 				|transfer, _deal_order| {
 					ensure!(
@@ -1044,7 +1117,7 @@ pub mod pallet {
 					ensure!(!transfer.is_processed, Error::<T>::TransferAlreadyProcessed);
 
 					transfer.is_processed = true;
-					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone(), transfer.clone())))
+					Ok(Some(Event::<T>::TransferProcessed(transfer_id.clone())))
 				},
 			)?;
 
@@ -1156,6 +1229,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
 		pub fn verify_transfer(
 			origin: OriginFor<T>,
+			deadline: T::BlockNumber,
 			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
@@ -1164,11 +1238,36 @@ pub mod pallet {
 
 			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
+
+			UnverifiedTransfers::<T>::remove(&deadline, &key);
+
 			let mut transfer = transfer;
 			transfer.block = frame_system::Pallet::<T>::block_number();
 
-			Self::deposit_event(Event::<T>::TransferVerified(key.clone(), transfer.clone()));
+			Self::deposit_event(Event::<T>::TransferVerified(key.clone()));
 			Transfers::<T>::insert(key, transfer);
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
+		#[pallet::weight(<T as Config>::WeightInfo::fail_transfer())]
+		pub fn fail_transfer(
+			origin: OriginFor<T>,
+			deadline: T::BlockNumber,
+			transfer_id: TransferId<T::Hash>,
+			cause: VerificationFailureCause,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+
+			ensure!(
+				!Transfers::<T>::contains_key(&transfer_id),
+				Error::<T>::TransferAlreadyRegistered
+			);
+
+			UnverifiedTransfers::<T>::remove(&deadline, &transfer_id);
+
+			Self::deposit_event(Event::<T>::TransferFailedVerification(transfer_id, cause));
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 

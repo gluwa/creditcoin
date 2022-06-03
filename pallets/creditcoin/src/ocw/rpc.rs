@@ -201,14 +201,14 @@ impl JsonRpcRequest {
 	}
 }
 
-#[derive(serde::Deserialize, Clone, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct JsonRpcResponse<T> {
 	#[allow(dead_code)]
-	jsonrpc: VecString,
+	pub jsonrpc: VecString,
 	#[allow(dead_code)]
-	id: u64,
-	error: Option<JsonRpcError>,
-	result: Option<T>,
+	pub id: u64,
+	pub error: Option<JsonRpcError>,
+	pub result: Option<T>,
 }
 
 impl<T> JsonRpcResponse<T> {
@@ -225,10 +225,10 @@ impl<T> JsonRpcResponse<T> {
 }
 
 #[allow(dead_code)]
-#[derive(serde::Deserialize, Clone, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct JsonRpcError {
-	code: i32,
-	message: String,
+	pub code: i32,
+	pub message: String,
 }
 
 #[derive(serde::Deserialize, Clone, Debug, Default)]

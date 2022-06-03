@@ -1,10 +1,12 @@
 pub mod errors;
 pub mod rpc;
-use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
+use crate::{Blockchain, Call, Id, Transfer, TransferId, TransferKind, UnverifiedTransfer};
+use codec::Encode;
+pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::{
-	errors::{OffchainError, RpcUrlError},
-	rpc::{Address, EthBlock, EthTransaction, EthTransactionReceipt},
+	errors::RpcUrlError,
+	rpc::{errors::RpcError, Address, EthBlock, EthTransaction, EthTransactionReceipt},
 };
 
 use super::{
@@ -53,12 +55,12 @@ const ETH_CONFIRMATIONS: u64 = 12;
 
 fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> {
 	let address_bytes = <[u8; 20]>::try_from(address.as_slice())
-		.map_err(|_| OffchainError::InvalidTransfer("ethless transfer address is not 20 bytes"))?;
+		.map_err(|_| VerificationFailureCause::InvalidAddress)?;
 	let address = rpc::Address::from(address_bytes);
 	Ok(address)
 }
 
-fn ethless_transfer_function_abi() -> Function {
+pub(crate) fn ethless_transfer_function_abi() -> Function {
 	#[allow(deprecated)]
 	Function {
 		name: "transfer".into(),
@@ -87,132 +89,79 @@ fn validate_ethless_transfer(
 	id_hash: impl ethereum_types::BigEndianHash<Uint = U256>,
 ) -> OffchainResult<()> {
 	let transfer_fn = ethless_transfer_function_abi();
+	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
 
-	ensure!(
-		receipt.is_success(),
-		OffchainError::InvalidTransfer("ethless transfer was not successful")
-	);
-	let block_number = transaction
-		.block_number
-		.ok_or(OffchainError::InvalidTransfer("ethless transfer is still pending"))?;
-	ensure!(
-		block_number < eth_tip,
-		OffchainError::InvalidTransfer(
-			"block number of ethless transfer is greater than the ethereum tip"
-		)
-	);
+	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
+
+	ensure!(block_number <= eth_tip, VerificationFailureCause::TaskInFuture);
+
 	let diff = eth_tip - block_number;
-	ensure!(
-		diff.as_u64() >= ETH_CONFIRMATIONS,
-		OffchainError::InvalidTransfer("ethless transfer does not have enough confirmations")
-	);
+
+	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
 	if let Some(to) = &transaction.to {
-		ensure!(
-			to == contract,
-			OffchainError::InvalidTransfer("transaction was not sent through the ethless contract")
-		);
+		ensure!(to == contract, VerificationFailureCause::IncorrectContract);
 	} else {
-		return Err(OffchainError::InvalidTransfer(
-			"ethless transaction lacks a receiver (contract creation transaction)",
-		));
+		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
 
 	let inputs = transfer_fn.decode_input(&transaction.input.0[4..]).map_err(|e| {
 		log::error!("failed to decode inputs: {:?}", e);
-		OffchainError::InvalidTransfer(
-			"ethless transfer inputs were not decodable with the expected ABI",
-		)
+		VerificationFailureCause::AbiMismatch
 	})?;
+
+	// IncorrectInputLength and IncorrectInputType are unreachable
+	// under normal circumstances. We get AbiMismatch or InvalidData errors
 	ensure!(
 		inputs.len() == transfer_fn.inputs.len(),
-		OffchainError::InvalidTransfer("ethless transfer inputs were not of the expected length")
+		VerificationFailureCause::IncorrectInputLength
 	);
 
 	let input_from = match inputs.get(0) {
 		Some(Token::Address(addr)) => addr,
-		_ => {
-			return Err(OffchainError::InvalidTransfer(
-				"first input to ethless transfer was not an address",
-			))
-		},
+		_ => return Err(VerificationFailureCause::IncorrectInputType.into()),
 	};
-	ensure!(
-		input_from == from,
-		OffchainError::InvalidTransfer(
-			"sender of ethless transfer does not match expected address"
-		)
-	);
+	ensure!(input_from == from, VerificationFailureCause::IncorrectSender);
 
 	let input_to = match inputs.get(1) {
 		Some(Token::Address(addr)) => addr,
-		_ => {
-			return Err(OffchainError::InvalidTransfer(
-				"second input to ethless transfer was not an address",
-			))
-		},
+		_ => return Err(VerificationFailureCause::IncorrectInputType.into()),
 	};
-	ensure!(
-		input_to == to,
-		OffchainError::InvalidTransfer(
-			"receiver of ethless transfer does not match expected address"
-		)
-	);
+	ensure!(input_to == to, VerificationFailureCause::IncorrectReceiver);
 
 	let input_amount = match inputs.get(2) {
 		Some(Token::Uint(value)) => ExternalAmount::from(value),
-		_ => {
-			return Err(OffchainError::InvalidTransfer(
-				"third input to ethless transfer was not a Uint",
-			))
-		},
+		_ => return Err(VerificationFailureCause::IncorrectInputType.into()),
 	};
-	ensure!(
-		&input_amount == amount,
-		OffchainError::InvalidTransfer(
-			"ethless transfer input amount does not match expected amount"
-		)
-	);
+	ensure!(&input_amount == amount, VerificationFailureCause::IncorrectAmount);
 
 	let nonce = match inputs.get(4) {
 		Some(Token::Uint(value)) => ExternalAmount::from(value),
-		_ => {
-			return Err(OffchainError::InvalidTransfer(
-				"fifth input to ethless transfer was not a Uint",
-			))
-		},
+		_ => return Err(VerificationFailureCause::IncorrectInputType.into()),
 	};
 	let expected_nonce = id_hash.into_uint();
-	ensure!(
-		nonce == expected_nonce,
-		OffchainError::InvalidTransfer("ethless transfer nonce does not match the expected nonce")
-	);
+	ensure!(nonce == expected_nonce, VerificationFailureCause::IncorrectNonce);
 
 	Ok(())
 }
 
 impl<T: Config> Pallet<T> {
 	pub fn verify_transfer_ocw(
-		transfer: &mut UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
-	) -> OffchainResult<()> {
+		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
+	) -> VerificationResult<T::Moment> {
 		let UnverifiedTransfer {
-			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, timestamp, .. },
+			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
+			..
 		} = transfer;
 		match kind {
-			TransferKind::Native => Err(OffchainError::InvalidTransfer(
-				"support for native transfers is not yet implemented",
-			)),
-			TransferKind::Erc20(_) => Err(OffchainError::InvalidTransfer(
-				"support for erc20 transfers is not yet implemented",
-			)),
-			TransferKind::Ethless(contract) => Self::verify_ethless_transfer(
-				blockchain, contract, from, to, order_id, amount, tx, timestamp,
-			),
-			TransferKind::Other(_) => Err(OffchainError::InvalidTransfer(
-				"support for other transfers is not yet implemented",
-			)),
+			TransferKind::Ethless(contract) => {
+				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
+			},
+			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
+				Err(VerificationFailureCause::UnsupportedMethod.into())
+			},
 		}
 	}
 
@@ -248,10 +197,15 @@ impl<T: Config> Pallet<T> {
 		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
-		timestamp: &mut Option<T::Moment>,
-	) -> OffchainResult<()> {
+	) -> VerificationResult<T::Moment> {
 		let rpc_url = blockchain.rpc_url()?;
-		let tx = rpc::eth_get_transaction(tx_id, &rpc_url)?;
+		let tx = rpc::eth_get_transaction(tx_id, &rpc_url).map_err(|e| {
+			if let RpcError::NoResult = e {
+				OffchainError::InvalidTask(VerificationFailureCause::TaskNonexistent)
+			} else {
+				e.into()
+			}
+		})?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
 
@@ -273,236 +227,58 @@ impl<T: Config> Pallet<T> {
 			T::HashIntoNonce::from(order_id.hash()),
 		)?;
 
-		if let Some(num) = tx_block_num {
+		let timestamp = if let Some(num) = tx_block_num {
 			if let Ok(EthBlock { timestamp: block_timestamp }) =
 				rpc::eth_get_block_by_number(num, &rpc_url)
 			{
-				*timestamp = Some(T::Moment::unique_saturated_from(block_timestamp.as_u64()));
+				Some(T::Moment::unique_saturated_from(block_timestamp.as_u64()))
+			} else {
+				None
 			}
-		}
+		} else {
+			None
+		};
 
-		Ok(())
+		Ok(timestamp)
+	}
+}
+
+pub(crate) struct LocalVerificationStatus<'a> {
+	storage_ref: StorageValueRef<'a>,
+	key: &'a [u8],
+}
+
+pub(crate) fn transfer_local_status_storage_key<T: Config>(
+	deadline: T::BlockNumber,
+	transfer_id: &TransferId<T::Hash>,
+) -> Vec<u8> {
+	(deadline, transfer_id).encode()
+}
+
+impl<'a> LocalVerificationStatus<'a> {
+	pub(crate) fn new(storage_key: &'a [u8]) -> Self {
+		Self { storage_ref: StorageValueRef::persistent(storage_key), key: storage_key }
+	}
+
+	pub(crate) fn is_complete(&self) -> bool {
+		match self.storage_ref.get::<()>() {
+			Ok(Some(())) => true,
+			Ok(None) => false,
+			Err(e) => {
+				log::warn!(
+					"Failed to decode offchain storage for {}: {:?}",
+					hex::encode(self.key),
+					e
+				);
+				true
+			},
+		}
+	}
+
+	pub(crate) fn mark_complete(&self) {
+		self.storage_ref.set(&());
 	}
 }
 
 #[cfg(test)]
-mod tests {
-	use std::{convert::TryFrom, str::FromStr};
-
-	use ethabi::Token;
-	use ethereum_types::{BigEndianHash, H160, U256, U64};
-	use frame_support::{assert_ok, once_cell::sync::Lazy, BoundedVec};
-	use sp_core::H256;
-
-	use super::{
-		errors::OffchainError,
-		ethless_transfer_function_abi, parse_eth_address,
-		rpc::{Address, EthTransaction, EthTransactionReceipt},
-		validate_ethless_transfer, ETH_CONFIRMATIONS,
-	};
-	use crate::ExternalAddress;
-
-	fn make_external_address(bytes: impl AsRef<[u8]>) -> ExternalAddress {
-		BoundedVec::try_from(bytes.as_ref().to_vec()).unwrap()
-	}
-
-	fn assert_invalid_transfer<T>(result: Result<T, OffchainError>) {
-		assert!(matches!(result, Err(OffchainError::InvalidTransfer(_))));
-	}
-
-	#[test]
-	fn eth_address_non_utf8() {
-		let address = make_external_address([0xfeu8, 0xfeu8, 0xffu8, 0xffu8]);
-
-		assert!(matches!(parse_eth_address(&address), Err(OffchainError::InvalidTransfer(_))));
-	}
-
-	#[test]
-	fn eth_address_bad_hex() {
-		let address = make_external_address("0xP794f5ea0ba39494ce839613fffba74279579268");
-
-		assert_invalid_transfer(parse_eth_address(&address));
-	}
-
-	#[test]
-	fn eth_address_bad_len() {
-		let too_long = make_external_address("0xb794f5ea0ba39494ce839613fffba742795792688888");
-		let too_short = make_external_address("0xb794f5ea0b");
-
-		assert_invalid_transfer(parse_eth_address(&too_long));
-		assert_invalid_transfer(parse_eth_address(&too_short));
-	}
-
-	#[test]
-	fn eth_address_valid() {
-		let address_str = "b794f5ea0ba39494ce839613fffba74279579268";
-		let address_bytes = hex::decode(address_str).unwrap();
-		let address: ExternalAddress = BoundedVec::try_from(address_bytes.clone()).unwrap();
-
-		let expected = H160::from(<[u8; 20]>::try_from(address_bytes).unwrap());
-		assert_ok!(parse_eth_address(&address).map_err(|_| ()), expected);
-	}
-
-	const INPUT: &str = "0982d5b0000000000000000000000000f04349b4a760f5aed02131e0daa9bb99a1d1d1e5000000000000000000000000bbb8bbaf43fe8b9e5572b1860d5c94ac7ed87bb900000000000000000\
-		000000000000000000000000000000000000000033336ec000000000000000000000000000000000000000000000000000000000323f4ac022a8243b45b35d97d7eb3192e7b95a3bbbe5cd0170059bd3a4c8da2912\
-		841b500000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000410bec91682052bb53450c69a82ebc006d08113\
-		6aef6cdb910bffab429620168792ab3b859b97d18cf53e6057208e20615b8a3ce6128fcb278b324d3e7ed9461671b00000000000000000000000000000000000000000000000000000000000000";
-
-	const ETHLESS_FROM_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str("0xf04349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap());
-	const ETHLESS_CONTRACT_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str("0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap());
-	const ETHLESS_TO_ADDR: Lazy<Address> =
-		Lazy::new(|| Address::from_str("0xBBb8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap());
-
-	const ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| EthTransaction {
-		block_number: Some(5u64.into()),
-		from: Some(ETHLESS_FROM_ADDR.clone()),
-		to: Some(ETHLESS_CONTRACT_ADDR.clone()),
-		input: hex::decode(INPUT).unwrap().into(),
-		..Default::default()
-	});
-
-	struct EthlessTestArgs {
-		from: Address,
-		to: Address,
-		contract: Address,
-		amount: U256,
-		receipt: EthTransactionReceipt,
-		transaction: EthTransaction,
-		tip: U64,
-		nonce: U256,
-	}
-
-	impl Default for EthlessTestArgs {
-		fn default() -> Self {
-			Self {
-				from: ETHLESS_FROM_ADDR.clone(),
-				to: ETHLESS_TO_ADDR.clone(),
-				contract: ETHLESS_CONTRACT_ADDR.clone(),
-				amount: U256::from(53688044u64),
-				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
-				transaction: ETH_TRANSACTION.clone(),
-				tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS),
-				nonce: U256::from_dec_str(
-					"979732326222468652918279417612319888321218652914508214827914231471334244789",
-				)
-				.unwrap(),
-			}
-		}
-	}
-
-	fn test_validate_ethless_transfer(args: EthlessTestArgs) -> Result<(), OffchainError> {
-		let EthlessTestArgs { from, to, contract, amount, receipt, transaction, tip, nonce } = args;
-
-		validate_ethless_transfer(
-			&from,
-			&to,
-			&contract,
-			&amount,
-			&receipt,
-			&transaction,
-			tip,
-			H256::from_uint(&nonce),
-		)
-	}
-
-	#[test]
-	fn ethless_transfer_valid() {
-		assert_ok!(test_validate_ethless_transfer(EthlessTestArgs::default()));
-	}
-
-	#[test]
-	fn ethless_transfer_tx_failed() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			receipt: EthTransactionReceipt { status: Some(0u64.into()), ..Default::default() },
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_tx_unconfirmed() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() + ETH_CONFIRMATIONS / 2),
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_tx_ahead_of_tip() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			tip: U64::from(ETH_TRANSACTION.block_number.unwrap() - 1),
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_contract_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			contract: Address::from_str("0xbad1439a0e0bfdcd49939f9722866651a4aa9b3c").unwrap(),
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_from_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			from: Address::from_str("0xbad349B4A760F5Aed02131e0dAA9bB99a1d1d1e5").unwrap(),
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_to_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			to: Address::from_str("0xbad8bbAF43fE8b9E5572B1860d5c94aC7ed87Bb9").unwrap(),
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_invalid_input_data() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			transaction: EthTransaction {
-				input: Vec::from("badbad".as_bytes()).into(),
-				..ETH_TRANSACTION.clone()
-			},
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_amount_mismatch() {
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			amount: U256::from(1),
-			..Default::default()
-		}));
-	}
-
-	#[test]
-	fn ethless_transfer_nonce_mismatch() {
-		let transfer = ethless_transfer_function_abi();
-		let input = transfer
-			.encode_input(&[
-				// from
-				Token::Address(ETHLESS_FROM_ADDR.clone()),
-				// to
-				Token::Address(ETHLESS_TO_ADDR.clone()),
-				// value
-				Token::Uint(U256::from(53688044)),
-				// fee
-				Token::Uint(1.into()),
-				// nonce
-				Token::Uint(1.into()),
-				// sig
-				Token::Bytes(Vec::new()),
-			])
-			.unwrap()
-			.into();
-		let transaction = EthTransaction { input, ..ETH_TRANSACTION.clone() };
-		assert_invalid_transfer(test_validate_ethless_transfer(EthlessTestArgs {
-			transaction,
-			..Default::default()
-		}));
-	}
-}
+mod tests;

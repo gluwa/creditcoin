@@ -1,6 +1,55 @@
 use crate::{Blockchain, ExternalAddress};
 use base58::FromBase58;
+use core::convert::TryFrom;
+use frame_support::BoundedVec;
+use sp_core::ecdsa::Public;
+use sp_io::hashing::keccak_256;
 use sp_io::hashing::sha2_256;
+
+pub fn generate_external_address(
+	blockchain: &Blockchain,
+	reference: &ExternalAddress,
+	public_key: Public,
+) -> Option<ExternalAddress> {
+	match blockchain {
+		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby
+			if EVMAddress::try_extract_addresss_type(reference).is_some() =>
+		{
+			Some(EVMAddress::from_public(&public_key))
+		},
+		Blockchain::Bitcoin => None,
+		Blockchain::Other(_) => None,
+		_ => None,
+	}
+}
+
+pub trait PublicToAddress {
+	type AddressType;
+	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType>;
+	fn from_public(pkey: &Public) -> ExternalAddress;
+}
+
+pub struct EVMAddress;
+
+impl PublicToAddress for EVMAddress {
+	type AddressType = ();
+	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType> {
+		if eth_address_is_well_formed(addr) {
+			Some(())
+		} else {
+			None
+		}
+	}
+
+	fn from_public(pkey: &Public) -> ExternalAddress {
+		let pkey = libsecp256k1::PublicKey::parse_slice((*pkey).as_ref(), None)
+			.expect("Public can't have invalid input length; qed")
+			.serialize();
+		//pkey uncompressed, 64 bytes
+		let address_bytes = keccak_256(&pkey[1..])[12..].to_vec();
+		BoundedVec::try_from(address_bytes).expect("20 bytes fit within bounds; qed")
+	}
+}
 
 pub fn address_is_well_formed(blockchain: &Blockchain, address: &ExternalAddress) -> bool {
 	match blockchain {
@@ -8,7 +57,7 @@ pub fn address_is_well_formed(blockchain: &Blockchain, address: &ExternalAddress
 		Blockchain::Ethereum | Blockchain::Luniverse | Blockchain::Rinkeby => {
 			eth_address_is_well_formed(address)
 		},
-		Blockchain::Other(_) => true,
+		Blockchain::Other(_) => false,
 	}
 }
 
@@ -60,6 +109,7 @@ fn eth_address_is_well_formed(address: &[u8]) -> bool {
 mod tests {
 	use core::convert::{TryFrom, TryInto};
 	use frame_support::BoundedVec;
+	use sp_core::Pair;
 
 	use super::*;
 
@@ -137,7 +187,31 @@ mod tests {
 		assert!(address_is_well_formed(&rinkeby, &eth_addr));
 		assert!(address_is_well_formed(&luniverse, &eth_addr));
 		assert!(address_is_well_formed(&bitcoin, &btc_addr));
-		assert!(address_is_well_formed(&other, &eth_addr));
-		assert!(address_is_well_formed(&other, &btc_addr));
+		assert!(!address_is_well_formed(&other, &eth_addr));
+		assert!(!address_is_well_formed(&other, &btc_addr));
+	}
+
+	#[test]
+	#[allow(non_snake_case)]
+	fn EVMAddress_roundtrip() {
+		let pair = sp_core::ecdsa::Pair::from_seed_slice(
+			&hex::decode("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+				.unwrap(),
+		)
+		.unwrap();
+		let public = pair.public();
+		assert_eq!(
+			public.clone(),
+			Public::from_full(
+				&hex::decode("8db55b05db86c0b1786ca49f095d76344c9e6056b2f02701a7e7f3c20aabfd913ebbe148dd17c56551a52952371071a6c604b3f3abe8f2c8fa742158ea6dd7d4").unwrap()[..],
+			).unwrap(),
+		);
+
+		let address = ExternalAddress::try_from(
+			hex::decode("09231da7b19A016f9e576d23B16277062F4d46A8").unwrap(),
+		)
+		.unwrap();
+		let address2 = EVMAddress::from_public(&public);
+		assert!(address == address2);
 	}
 }

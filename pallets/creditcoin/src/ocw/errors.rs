@@ -2,16 +2,54 @@ use core::str::Utf8Error;
 
 use super::rpc::errors::RpcError;
 use alloc::string::FromUtf8Error;
+use codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 use sp_runtime::offchain::storage::StorageRetrievalError;
 
 #[derive(Debug)]
 pub enum OffchainError {
-	InvalidTransfer(&'static str),
+	InvalidTask(VerificationFailureCause),
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
 }
 
-#[derive(Debug)]
+pub type VerificationResult<Moment> = Result<Option<Moment>, OffchainError>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub enum VerificationFailureCause {
+	TaskNonexistent,
+	TaskFailed,
+	TaskPending,
+	TaskUnconfirmed,
+	TaskInFuture,
+	IncorrectContract,
+	MissingReceiver,
+	MissingSender,
+	AbiMismatch,
+	IncorrectInputLength,
+	IncorrectInputType,
+	IncorrectAmount,
+	IncorrectNonce,
+	IncorrectReceiver,
+	IncorrectSender,
+	InvalidAddress,
+	UnsupportedMethod,
+}
+
+impl VerificationFailureCause {
+	pub fn is_fatal(self) -> bool {
+		use VerificationFailureCause::*;
+		match self {
+			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
+			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
+			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender
+			| IncorrectReceiver | TaskNonexistent => true,
+			TaskPending | TaskUnconfirmed => false,
+		}
+	}
+}
+
+#[derive(Debug, PartialEq)]
 pub enum RpcUrlError {
 	StorageFailure(StorageRetrievalError),
 	InvalidUrl(FromUtf8Error),
@@ -42,7 +80,8 @@ pub(crate) use _impl_from_error as impl_from_error;
 impl_from_error!(
 	OffchainError,
 	RpcUrlError => NoRpcUrl,
-	RpcError => RpcError
+	RpcError => RpcError,
+	VerificationFailureCause => InvalidTask,
 );
 impl_from_error!(
 	RpcUrlError,

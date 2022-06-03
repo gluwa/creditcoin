@@ -53,7 +53,7 @@ pub type Signer = <Signature as Verify>::Signer;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = <Signer as IdentifyAccount>::AccountId;
 
 /// Balance of an account.
 pub type Balance = u128;
@@ -93,10 +93,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 202,
-	impl_version: 1,
+	spec_version: 203,
+	impl_version: 2,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 4,
+	transaction_version: 5,
 	state_version: 1,
 };
 
@@ -244,7 +244,7 @@ impl WeightToFeePolynomial for WeightToCtcFee {
 	type Balance = Balance;
 
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		let base = Balance::from(creditcoin_weights::<Runtime>::register_address(0, 0));
+		let base = Balance::from(creditcoin_weights::<Runtime>::lock_deal_order());
 		let ratio = TARGET_FEE_CREDO / base;
 		let rem = TARGET_FEE_CREDO % base;
 		smallvec::smallvec!(WeightToFeeCoefficient {
@@ -284,7 +284,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
 	type HashIntoNonce = Hash;
-	type UnverifiedTransferLimit = ConstU32<10000>;
+	type UnverifiedTransferTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
 }
 

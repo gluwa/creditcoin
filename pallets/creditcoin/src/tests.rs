@@ -1,26 +1,27 @@
 use crate::{
-	mock::*, types::DoubleMapExt, AddressId, AskOrder, AskOrderId, Authorities, BidOrder,
-	BidOrderId, Blockchain, DealOrder, DealOrderId, DealOrders, Duration, ExternalAddress,
-	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
-	TransferId, TransferKind, Transfers,
+	helpers::{EVMAddress, PublicToAddress},
+	mock::*,
+	ocw::{rpc::JsonRpcResponse, VerificationFailureCause},
+	types::DoubleMapExt,
+	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
+	DealOrderId, DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers,
 };
 
+use assert_matches::assert_matches;
 use bstr::B;
 use codec::{Decode, Encode};
-use ethereum_types::{BigEndianHash, H256};
+use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
 
-use sp_core::{Pair, U256};
+use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
 	MultiSigner,
 };
-use std::{
-	collections::HashMap,
-	convert::{TryFrom, TryInto},
-};
+use std::convert::{TryFrom, TryInto};
 
 //Duplicated code; pallet_creditcoin::benchmarking.rs
 #[extend::ext]
@@ -45,34 +46,81 @@ impl<'a> &'a str {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RegisteredAddress {
-	address_id: AddressId<H256>,
-	account_id: AccountId,
+	pub(crate) address_id: AddressId<H256>,
+	pub(crate) account_id: AccountId,
 }
 impl RegisteredAddress {
+	pub fn from_pubkey_distinct_owner(
+		owners_account_id: AccountId,
+		blockchain: Blockchain,
+		address_key: impl Into<MultiSigner>,
+		signature: sp_core::ecdsa::Signature,
+	) -> RegisteredAddress {
+		let signer = address_key.into();
+		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
+			EVMAddress::from_public(&pkey)
+		} else {
+			unimplemented!();
+		};
+
+		let address_id = AddressId::new::<Test>(&blockchain, &address);
+
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(owners_account_id.clone()),
+			blockchain,
+			address,
+			signature
+		));
+		RegisteredAddress { account_id: owners_account_id, address_id }
+	}
 	pub fn from_pubkey(
 		public_key: impl Into<MultiSigner>,
 		blockchain: Blockchain,
+		signature: sp_core::ecdsa::Signature,
 	) -> RegisteredAddress {
-		let account_id = public_key.into().into_account();
-		let address = "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB".hex_to_address();
+		let signer = public_key.into();
+		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
+			EVMAddress::from_public(&pkey)
+		} else {
+			unimplemented!();
+		};
+		let account_id = signer.into_account();
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
+
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(account_id.clone()),
 			blockchain,
-			address
+			address,
+			signature
 		));
 		RegisteredAddress { account_id, address_id }
 	}
-	pub fn new(address: ExternalAddress, i: u8, blockchain: Blockchain) -> RegisteredAddress {
-		let account_id = AccountId::new([i; 32]);
+	pub fn new(seed: &str, blockchain: Blockchain) -> RegisteredAddress {
+		let (who, address, ownership_proof, _) = generate_address_with_proof(seed);
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
-			Origin::signed(account_id.clone()),
+			Origin::signed(who.clone()),
 			blockchain,
-			address
+			address,
+			ownership_proof
 		));
-		RegisteredAddress { account_id, address_id }
+
+		RegisteredAddress { account_id: who, address_id }
 	}
+}
+
+fn generate_address_with_proof(
+	seed: &str,
+) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
+	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
+	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
+	let pkey = key_pair.public();
+	let signer: MultiSigner = pkey.clone().into();
+	let who = signer.into_account();
+	let message = get_register_address_message(who.clone());
+	let ownership_proof = key_pair.sign(message.as_slice());
+	let address = EVMAddress::from_public(&pkey);
+	(who, address, ownership_proof, key_pair)
 }
 
 type TestAskOrderId = AskOrderId<u64, H256>;
@@ -88,21 +136,19 @@ type TestTransfer = (Transfer<AccountId, u64, H256, u64>, TestTransferId);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
-	blockchain: Blockchain,
-	loan_terms: LoanTerms,
-	lender: RegisteredAddress,
-	borrower: RegisteredAddress,
-	ask_guid: Guid,
-	bid_guid: Guid,
-	expiration_block: u64,
+	pub(crate) blockchain: Blockchain,
+	pub(crate) loan_terms: LoanTerms,
+	pub(crate) lender: RegisteredAddress,
+	pub(crate) borrower: RegisteredAddress,
+	pub(crate) ask_guid: Guid,
+	pub(crate) bid_guid: Guid,
+	pub(crate) expiration_block: u64,
 }
 
-impl TestInfo {
-	pub fn new_defaults() -> TestInfo {
-		let address1 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".hex_to_address();
-		let address2 = "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359".hex_to_address();
-		let lender = RegisteredAddress::new(address1, 1, Blockchain::Rinkeby);
-		let borrower = RegisteredAddress::new(address2, 2, Blockchain::Rinkeby);
+impl Default for TestInfo {
+	fn default() -> Self {
+		let lender = RegisteredAddress::new("lender", Blockchain::Rinkeby);
+		let borrower = RegisteredAddress::new("borrower", Blockchain::Rinkeby);
 		let blockchain = Blockchain::Rinkeby;
 
 		let loan_terms =
@@ -112,6 +158,12 @@ impl TestInfo {
 		let bid_guid = "bid_guid".as_bytes().into_bounded();
 		let expiration_block = 1_000;
 		TestInfo { blockchain, lender, borrower, loan_terms, ask_guid, bid_guid, expiration_block }
+	}
+}
+
+impl TestInfo {
+	pub fn new_defaults() -> TestInfo {
+		TestInfo::default()
 	}
 
 	pub fn create_ask_order(&self) -> TestAskOrder {
@@ -213,6 +265,40 @@ impl TestInfo {
 		self.mock_transfer(&self.borrower, &self.lender, amount, deal_order_id, tx)
 	}
 
+	pub fn make_transfer(
+		&self,
+		from: &RegisteredAddress,
+		to: &RegisteredAddress,
+		amount: impl Into<ExternalAmount>,
+		deal_order_id: &TestDealOrderId,
+		blockchain_tx_id: impl AsRef<[u8]>,
+		transfer_kind: impl Into<Option<TransferKind>>,
+	) -> TestTransfer {
+		let blockchain_tx_id = blockchain_tx_id.as_ref();
+		let tx = if blockchain_tx_id.starts_with(&*b"0x") {
+			core::str::from_utf8(blockchain_tx_id).unwrap().hex_to_address()
+		} else {
+			blockchain_tx_id.into_bounded()
+		};
+		let id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+		(
+			Transfer {
+				blockchain: self.blockchain.clone(),
+				kind: transfer_kind.into().unwrap_or(TransferKind::Native),
+				from: from.address_id.clone(),
+				to: to.address_id.clone(),
+				order_id: OrderId::Deal(deal_order_id.clone()),
+				amount: amount.into(),
+				tx_id: tx,
+				block: System::block_number(),
+				is_processed: false,
+				account_id: from.account_id.clone(),
+				timestamp: None,
+			},
+			id,
+		)
+	}
+
 	pub fn mock_transfer(
 		&self,
 		from: &RegisteredAddress,
@@ -221,21 +307,8 @@ impl TestInfo {
 		deal_order_id: &TestDealOrderId,
 		blockchain_tx_id: impl AsRef<[u8]>,
 	) -> TestTransfer {
-		let tx = blockchain_tx_id.as_ref().into_bounded();
-		let id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
-		let transfer = Transfer {
-			blockchain: self.blockchain.clone(),
-			kind: TransferKind::Native,
-			from: from.address_id.clone(),
-			to: to.address_id.clone(),
-			order_id: OrderId::Deal(deal_order_id.clone()),
-			amount: amount.into(),
-			tx_id: tx,
-			block: System::block_number(),
-			is_processed: false,
-			account_id: from.account_id.clone(),
-			timestamp: None,
-		};
+		let (transfer, id) =
+			self.make_transfer(from, to, amount, deal_order_id, blockchain_tx_id, None);
 		Transfers::<Test>::insert(&id, &transfer);
 		(transfer, id)
 	}
@@ -251,112 +324,150 @@ impl TestInfo {
 	}
 }
 
-#[test]
-fn register_address_basic() {
-	ExtBuilder::default().build_and_execute(|| {
-		let acct: AccountId = AccountId::new([0; 32]);
-		let blockchain = Blockchain::Rinkeby;
-		let value = "0x52908400098527886E0F7030069857D2E4169EE7".hex_to_address();
-		assert_ok!(Creditcoin::register_address(
-			Origin::signed(acct.clone()),
-			blockchain.clone(),
-			value.clone(),
-		));
-		let address_id = crate::AddressId::new::<Test>(&blockchain, &value);
-		let address = crate::Address { blockchain, value, owner: acct };
+pub fn get_register_address_message(who: AccountId) -> [u8; 32] {
+	sp_io::hashing::sha2_256(who.encode().as_slice())
+}
 
-		assert_eq!(Creditcoin::addresses(address_id), Some(address));
+#[test]
+fn register_address_should_work() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			address.clone(),
+			ownership_proof
+		));
+		let address_id = crate::AddressId::new::<Test>(&blockchain, &address);
+		let address = crate::Address { blockchain, value: address, owner: who };
+		assert_eq!(Creditcoin::addresses(address_id.clone()), Some(address.clone()));
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+
+		assert_matches!(
+			event,
+			crate::mock::Event::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+				assert_eq!(registered_address_id, address_id);
+				assert_eq!(registered_address, address);
+			}
+		);
 	});
 }
 
 #[test]
 fn register_address_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
-		let acct: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
-		let address = "0x52908400098527886E0F7030069857D2E4169EE7".hex_to_address();
 		assert_ok!(Creditcoin::register_address(
-			Origin::signed(acct.clone()),
+			Origin::signed(who.clone()),
 			blockchain.clone(),
 			address.clone(),
+			ownership_proof.clone()
 		));
 
 		assert_noop!(
-			Creditcoin::register_address(Origin::signed(acct.clone()), blockchain, address,),
+			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
 			crate::Error::<Test>::AddressAlreadyRegistered
 		);
 	})
 }
 
 #[test]
-fn register_address_malformed_address() {
+fn register_address_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
-		let acct: <Test as frame_system::Config>::AccountId = AccountId::new([0; 32]);
+		let (_who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
-		let address = B("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").into_bounded();
+
 		assert_noop!(
-			Creditcoin::register_address(Origin::signed(acct.clone()), blockchain, address),
-			crate::Error::<Test>::MalformedExternalAddress
+			Creditcoin::register_address(Origin::none(), blockchain, address, ownership_proof),
+			BadOrigin,
 		);
 	})
 }
 
-const ETHLESS_RESPONSES: &[u8] = include_bytes!("tests/ethlessTransfer.json");
+#[test]
+fn register_address_should_error_when_using_wrong_ownership_proof() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+		let (_who2, _address2, ownership_proof2, _) = generate_address_with_proof("bogus");
+
+		let blockchain = Blockchain::Rinkeby;
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who.clone()),
+				blockchain,
+				address,
+				ownership_proof2
+			),
+			crate::Error::<Test>::OwnershipNotSatisfied
+		);
+	})
+}
+
+#[test]
+fn register_address_should_error_when_address_too_long() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
+		let blockchain = Blockchain::Rinkeby;
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who.clone()),
+				blockchain,
+				address,
+				ownership_proof
+			),
+			crate::Error::<Test>::AddressFormatNotSupported
+		);
+	})
+}
+
+#[test]
+fn register_address_should_error_when_signature_is_invalid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+
+		// NOTE: No checking goes on to ensure this is a real signature! See
+		// https://docs.rs/sp-core/2.0.0-rc4/sp_core/ecdsa/struct.Signature.html#method.from_raw
+		let ownership_proof = sp_core::ecdsa::Signature::from_raw([0; 65]);
+
+		let blockchain = Blockchain::Rinkeby;
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who.clone()),
+				blockchain,
+				address,
+				ownership_proof
+			),
+			crate::Error::<Test>::InvalidSignature
+		);
+	})
+}
 
 #[test]
 fn verify_ethless_transfer() {
-	let (mut ext, state, _) = ExtBuilder::default().build_offchain();
-	let dummy_url = "dummy";
-	let tx_hash = "0xdd1b7aa5ff8e6e7afef3c825be716629737bc427348038a1cb2468ee66f0cf76";
-	let contract = "0xb377a2eed7566ac9fcb0ba673604f9bf875e2bab".hex_to_address();
-	let tx_block_num = "0x1c56";
-	{
-		let mut state = state.write();
-		let responses: HashMap<String, serde_json::Value> =
-			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
-		let get_transaction = pending_rpc_request(
-			"eth_getTransactionByHash",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_transaction_receipt = pending_rpc_request(
-			"eth_getTransactionReceipt",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
-		let timestamp = pending_rpc_request(
-			"eth_getBlockByNumber",
-			vec![tx_block_num.into(), false.into()],
-			dummy_url,
-			&responses,
-		);
-		state.expect_request(get_transaction);
-		state.expect_request(get_transaction_receipt);
-		state.expect_request(get_block_number);
-		state.expect_request(timestamp);
-	}
-
-	ext.execute_with(|| {
+	ExtBuilder::default().build_offchain_and_execute_with_state(|state, _| {
+		let dummy_url = "dummy";
+		let tx_hash = get_mock_tx_hash();
+		let contract = get_mock_contract().hex_to_address();
+		let tx_block_num = get_mock_tx_block_num();
 		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
 		rpc_url_storage.set(&dummy_url);
 
-		let from = "0xf7c8067032f58539a14d773bd71b42c5e2109792".hex_to_address();
-		let to = "0x0df1ccab6ae966428bb00f2c09f38e786a4306b9".hex_to_address();
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+
+		let from = get_mock_from_address().hex_to_address();
+		let to = get_mock_to_address().hex_to_address();
 		let order_id = crate::OrderId::Deal(crate::DealOrderId::with_expiration_hash::<Test>(
 			10000,
-			H256::from_uint(
-				&U256::from_dec_str(
-					"7913845638721091072082372344789841956592324632742257657176664029723484163082",
-				)
-				.unwrap(),
-			),
+			H256::from_uint(&get_mock_nonce()),
 		));
-		let amount = U256::from(100);
+		let amount = get_mock_amount();
 		let tx_id = tx_hash.hex_to_address();
-		let mut timestamp = None;
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
 			&Blockchain::Rinkeby,
@@ -366,134 +477,69 @@ fn verify_ethless_transfer() {
 			&order_id,
 			&amount,
 			&tx_id,
-			&mut timestamp
 		));
 	});
 }
 
 #[test]
+#[tracing_test::traced_test]
 fn register_transfer_ocw() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
-	let (mut ext, state, pool) = ext.build_offchain();
-	let dummy_url = "dummy";
-	let tx_hash = "0xdd1b7aa5ff8e6e7afef3c825be716629737bc427348038a1cb2468ee66f0cf76";
-	let contract = "0xb377a2eed7566ac9fcb0ba673604f9bf875e2bab".hex_to_address();
-	let tx_block_num = "0x1c56";
-	{
-		let mut state = state.write();
-		let responses: HashMap<String, serde_json::Value> =
-			serde_json::from_slice(ETHLESS_RESPONSES).unwrap();
-		let get_transaction = pending_rpc_request(
-			"eth_getTransactionByHash",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_transaction_receipt = pending_rpc_request(
-			"eth_getTransactionReceipt",
-			vec![tx_hash.into()],
-			dummy_url,
-			&responses,
-		);
-		let get_block_number = pending_rpc_request("eth_blockNumber", None, dummy_url, &responses);
-		let timestamp = pending_rpc_request(
-			"eth_getBlockByNumber",
-			vec![tx_block_num.into(), false.into()],
-			dummy_url,
-			&responses,
-		);
-		state.expect_request(get_transaction);
-		state.expect_request(get_transaction_receipt);
-		state.expect_request(get_block_number);
-		state.expect_request(timestamp);
-	}
-
-	ext.execute_with(|| {
-		let rpc_url_storage = StorageValueRef::persistent(B("rinkeby-rpc-uri"));
-		rpc_url_storage.set(&dummy_url);
-
-		let lender = AccountId::new([0; 32]);
-		let debtor = AccountId::new([1; 32]);
-
-		let loan_amount = ExternalAmount::from(100);
-
+	ext.build_offchain_and_execute_with_state(|state, pool| {
+		let dummy_url = "dummy";
+		let tx_hash = get_mock_tx_hash();
+		let contract = get_mock_contract().hex_to_address();
+		let tx_block_num = get_mock_tx_block_num();
 		let blockchain = Blockchain::Rinkeby;
-		let expiration = 1000000;
 
-		let lender_addr = "0xf7c8067032f58539a14d773bd71b42c5e2109792".hex_to_address();
-		let lender_address_id = crate::AddressId::new::<Test>(&blockchain, &lender_addr);
-		assert_ok!(Creditcoin::register_address(
-			Origin::signed(lender.clone()),
-			blockchain.clone(),
-			lender_addr
-		));
+		// mocks for when we expect failure
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num)
+			.mock_get_block_number(&mut state.write());
+		// mocks for when we expect success
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
 
-		let debtor_addr = "0x0df1ccab6ae966428bb00f2c09f38e786a4306b9".hex_to_address();
-		let debtor_address_id = crate::AddressId::new::<Test>(&blockchain, &debtor_addr);
-		assert_ok!(Creditcoin::register_address(
-			Origin::signed(debtor.clone()),
-			blockchain.clone(),
-			debtor_addr
-		));
+		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
 
+		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
 
-		let ask_guid = B("deadbeef").into_bounded();
-		let ask_id = crate::AskOrderId::new::<Test>(System::block_number() + expiration, &ask_guid);
-		assert_ok!(Creditcoin::add_ask_order(
+		let test_info =
+			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
+		let (_, deal_order_id) = test_info.create_deal_order();
+		let lender = test_info.lender.account_id.clone();
+
+		// test that we get a "fail_transfer" tx when verification fails
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			lender_address_id.clone(),
-			terms.clone(),
-			expiration,
-			ask_guid.clone()
+			TransferKind::Ethless(contract.clone()),
+			deal_order_id.clone(),
+			tx_hash.hex_to_address(),
 		));
+		let deadline = Test::unverified_transfer_deadline();
 
-		let bid_guid = B("beaddeef").into_bounded();
-		let bid_id = crate::BidOrderId::new::<Test>(System::block_number() + expiration, &bid_guid);
-		assert_ok!(Creditcoin::add_bid_order(
-			Origin::signed(debtor.clone()),
-			debtor_address_id.clone(),
-			terms.clone(),
-			expiration,
-			bid_guid.clone()
-		));
+		roll_by_with_ocw(1);
 
-		let offer_id =
-			crate::OfferId::new::<Test>(System::block_number() + expiration, &ask_id, &bid_id);
-		assert_ok!(Creditcoin::add_offer(
-			Origin::signed(lender.clone()),
-			ask_id.clone(),
-			bid_id.clone(),
-			expiration
-		));
-
-		let deal_order_id =
-			crate::DealOrderId::new::<Test>(System::block_number() + expiration, &offer_id);
-		assert_ok!(Creditcoin::add_deal_order(
-			Origin::signed(debtor.clone()),
-			offer_id.clone(),
-			expiration
-		));
-
-		let deal_id_hash = H256::from_uint(
-			&U256::from_dec_str(
-				"7913845638721091072082372344789841956592324632742257657176664029723484163082",
-			)
-			.unwrap(),
+		let transfer_id = TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
+		let tx = pool.write().transactions.pop().expect("fail transfer");
+		assert!(pool.read().transactions.is_empty());
+		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
+		assert_eq!(
+			fail_tx.call,
+			Call::Creditcoin(crate::Call::fail_transfer {
+				transfer_id,
+				deadline,
+				cause: VerificationFailureCause::IncorrectNonce
+			})
 		);
+
+		// test for successful verification
 
 		// this is kind of a gross hack, basically when I made the test transfer on luniverse to pull the mock responses
 		// I didn't pass the proper `nonce` to the smart contract, and it's a pain to redo the transaction and update all the tests,
 		// so here we just "change" the deal_order_id to one with a `hash` that matches the expected nonce so that the transfer
 		// verification logic is happy
-		let deal = crate::DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
-		crate::DealOrders::<Test>::remove(deal_order_id.expiration(), deal_order_id.hash());
-		let fake_deal_order_id = crate::DealOrderId::with_expiration_hash::<Test>(
-			deal_order_id.expiration(),
-			deal_id_hash,
-		);
-		crate::DealOrders::<Test>::insert_id(fake_deal_order_id.clone(), deal);
+		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
@@ -502,27 +548,186 @@ fn register_transfer_ocw() {
 			tx_hash.hex_to_address(),
 		));
 		let expected_transfer = crate::Transfer {
-			blockchain,
+			blockchain: test_info.blockchain.clone(),
 			kind: TransferKind::Ethless(contract.clone()),
 			amount: loan_amount,
 			block: System::block_number(),
-			from: lender_address_id.clone(),
-			to: debtor_address_id.clone(),
+			from: test_info.lender.address_id.clone(),
+			to: test_info.borrower.address_id.clone(),
 			order_id: OrderId::Deal(fake_deal_order_id.clone()),
 			is_processed: false,
 			account_id: lender.clone(),
 			tx_id: tx_hash.hex_to_address(),
-			timestamp: Some(1649986116),
+			timestamp: Some(get_mock_timestamp()),
 		};
+		let deadline = Test::unverified_transfer_deadline();
 
 		roll_by_with_ocw(1);
 
-		let tx = pool.write().transactions.pop().unwrap();
+		let tx = pool.write().transactions.pop().expect("verify transfer");
 		assert!(pool.read().transactions.is_empty());
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_eq!(
 			verify_tx.call,
-			Call::Creditcoin(crate::Call::verify_transfer { transfer: expected_transfer })
+			Call::Creditcoin(crate::Call::verify_transfer {
+				transfer: expected_transfer,
+				deadline
+			})
+		);
+	});
+}
+
+#[test]
+#[tracing_test::traced_test]
+fn register_transfer_ocw_fail_to_send() {
+	let mut ext = ExtBuilder::default();
+	ext.generate_authority();
+	ext.build_offchain_and_execute_with_state(|state, _| {
+		let dummy_url = "dummy";
+		let tx_hash = get_mock_tx_hash();
+		let contract = get_mock_contract().hex_to_address();
+		let tx_block_num = get_mock_tx_block_num();
+		let blockchain = Blockchain::Rinkeby;
+
+		// we're going to verify a transfer twice:
+		// First when we expect failure, which means we won't make all of the requests
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num)
+			.mock_get_block_number(&mut state.write());
+		// Second when we expect success, where we'll do all the requests
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+
+		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+
+		let loan_amount = get_mock_amount();
+		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
+
+		let test_info =
+			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		let lender = test_info.lender.account_id.clone();
+
+		// exercise when we try to send a fail_transfer but tx send fails
+		with_failing_create_transaction(|| {
+			assert_ok!(Creditcoin::register_funding_transfer(
+				Origin::signed(lender.clone()),
+				TransferKind::Ethless(contract.clone()),
+				deal_order_id.clone(),
+				tx_hash.hex_to_address(),
+			));
+
+			roll_by_with_ocw(1);
+
+			assert!(logs_contain("Failed to send fail_transfer"));
+		});
+
+		crate::UnverifiedTransfers::<Test>::remove_all(None);
+
+		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
+
+		// exercise when we try to send a verify_transfer but tx send fails
+		with_failing_create_transaction(|| {
+			assert_ok!(Creditcoin::register_funding_transfer(
+				Origin::signed(lender.clone()),
+				TransferKind::Ethless(contract.clone()),
+				fake_deal_order_id.clone(),
+				tx_hash.hex_to_address(),
+			));
+
+			roll_by_with_ocw(1);
+
+			assert!(logs_contain("Failed to send verify_transfer"));
+		});
+	});
+}
+
+fn adjust_deal_order_to_nonce(deal_order_id: &TestDealOrderId, nonce: U256) -> TestDealOrderId {
+	let deal_id_hash = H256::from_uint(&nonce);
+	let deal = crate::DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
+	crate::DealOrders::<Test>::remove(deal_order_id.expiration(), deal_order_id.hash());
+	let fake_deal_order_id =
+		crate::DealOrderId::with_expiration_hash::<Test>(deal_order_id.expiration(), deal_id_hash);
+	crate::DealOrders::<Test>::insert_id(fake_deal_order_id.clone(), deal);
+	fake_deal_order_id
+}
+
+#[test]
+#[tracing_test::traced_test]
+fn ocw_retries() {
+	let mut ext = ExtBuilder::default();
+	ext.generate_authority();
+	ext.build_offchain_and_execute_with_state(|state, pool| {
+		System::set_block_number(1);
+
+		let dummy_url = "dummy";
+		let tx_hash = get_mock_tx_hash();
+		let contract = get_mock_contract().hex_to_address();
+		let tx_block_num = get_mock_tx_block_num();
+		let blockchain = Blockchain::Rinkeby;
+
+		let tx_block_num_value =
+			u64::from_str_radix(tx_block_num.trim_start_matches("0x"), 16).unwrap();
+
+		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+
+		let loan_amount = get_mock_amount();
+		let terms = LoanTerms { amount: loan_amount.clone(), ..Default::default() };
+
+		let test_info =
+			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		let deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
+
+		let lender = test_info.lender.account_id.clone();
+		assert_ok!(Creditcoin::register_funding_transfer(
+			Origin::signed(lender.clone()),
+			TransferKind::Ethless(contract.clone()),
+			deal_order_id.clone(),
+			tx_hash.hex_to_address(),
+		));
+
+		let mock_unconfirmed_tx = || {
+			let mut requests = MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num);
+			requests.get_block_number.set_response(JsonRpcResponse {
+				jsonrpc: "2.0".into(),
+				id: 1,
+				error: None,
+				result: Some(format!("0x{:x}", tx_block_num_value + 1)),
+			});
+
+			requests.mock_get_block_number(&mut state.write());
+		};
+
+		// mock requests so the tx is unconfirmed
+		mock_unconfirmed_tx();
+
+		roll_by_with_ocw(1);
+		assert!(logs_contain("TaskUnconfirmed"));
+
+		// we failed, we should retry again here
+
+		mock_unconfirmed_tx();
+
+		roll_by_with_ocw(1);
+		assert!(logs_contain("TaskUnconfirmed"));
+
+		// now mock requests so the tx is confirmed
+
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num).mock_all(&mut state.write());
+
+		roll_by_with_ocw(1);
+
+		// we should have retried and successfully verified the transfer
+
+		let tx = pool.write().transactions.pop().expect("verify transfer");
+		assert!(pool.read().transactions.is_empty());
+		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
+		assert_matches!(
+			verify_tx.call,
+			super::mock::Call::Creditcoin(crate::Call::verify_transfer { .. })
 		);
 	});
 }
@@ -859,6 +1064,35 @@ fn add_deal_order_existing() {
 }
 
 #[test]
+fn lock_deal_order_should_emit_deal_order_locked_event() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+		let test_info = TestInfo::new_defaults();
+
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+
+		crate::DealOrders::<Test>::mutate(
+			&deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order_storage| {
+				deal_order_storage.as_mut().unwrap().funding_transfer_id =
+					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
+			},
+		);
+
+		assert_ok!(Creditcoin::lock_deal_order(
+			Origin::signed(deal_order.borrower),
+			deal_order_id.clone()
+		));
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
+
+		assert_matches!(event, crate::mock::Event::Creditcoin(crate::Event::DealOrderLocked(id))=>{
+			assert_eq!(id,deal_order_id);
+		});
+	});
+}
+
+#[test]
 fn lock_deal_order_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -1138,13 +1372,11 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 		// this is the primary deal_order
 		let test_info = TestInfo::new_defaults();
 		let (_, deal_order_id) = test_info.create_deal_order();
-		let address1 = "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB".hex_to_address();
-		let address2 = "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb".hex_to_address();
 
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(address1, 100, Blockchain::Rinkeby),
-			borrower: RegisteredAddress::new(address2, 200, Blockchain::Rinkeby),
+			lender: RegisteredAddress::new("lender2", Blockchain::Rinkeby),
+			borrower: RegisteredAddress::new("borrower2", Blockchain::Rinkeby),
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
@@ -1317,24 +1549,29 @@ fn fund_deal_order_works() {
 
 		assert_ok!(Creditcoin::fund_deal_order(
 			Origin::signed(test_info.lender.account_id.clone()),
-			deal_order_id,
-			transfer_id
+			deal_order_id.clone(),
+			transfer_id.clone()
 		));
 
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 
-		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+		let event2 = all_events.pop().expect("Second EventRecord").event;
+		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+				assert_eq!(transfer_id, id)
 
-		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+			}
+		);
+
+		let event1 = all_events.pop().expect("First EventRecord").event;
+		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderFunded(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::DealOrderFunded(id))=>{
+				assert_eq!(deal_order_id, id)
+			}
+		);
 	});
 }
 
@@ -1345,11 +1582,11 @@ fn claim_legacy_wallet_works() {
 	let sighash =
 		LegacySighash::try_from("f0bdc887e4d7928623081f30b1bc87b9e4443cca6b52c4364ce578cb6bf4")
 			.unwrap();
-	let pubkey = sp_core::ecdsa::Public::from_full(
+	let pub_key = sp_core::ecdsa::Public::from_full(
 		&hex::decode("0399d6e7c784494fd7edc26fc9ca460a68c97cc64c49c85dfbb68148f0607893bf").unwrap(),
 	)
 	.unwrap();
-	let claimer = MultiSigner::from(pubkey.clone()).into_account();
+	let claimer = MultiSigner::from(pub_key.clone()).into_account();
 
 	let mut ext = ExtBuilder::default();
 	ext.fund(keeper.clone(), legacy_amount)
@@ -1359,7 +1596,7 @@ fn claim_legacy_wallet_works() {
 	ext.build_and_execute(|| {
 		System::set_block_number(1);
 
-		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pubkey));
+		assert_ok!(Creditcoin::claim_legacy_wallet(Origin::signed(claimer.clone()), pub_key));
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
@@ -1478,7 +1715,7 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 
 		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1490,7 +1727,7 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 				test_info.ask_guid,
 				test_info.bid_guid,
 				key_pair.public().into(),
-				signature.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::NotAddressOwner
 		);
@@ -1500,33 +1737,31 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 #[test]
 fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			borrower: RegisteredAddress::from_pubkey(
+				key_pair.public(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
-		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(
-				"0x8617E340B3D01FA5F11F306F4090FD50E238070D".hex_to_address(),
-				111,
-				Blockchain::Rinkeby,
-			),
-			..test_info.clone()
-		};
+
+		let lender = RegisteredAddress::new("lender2", Blockchain::Rinkeby);
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
 				Origin::signed(test_info.lender.account_id),
-				second_test_info.lender.address_id, // <-- bogus
+				lender.address_id,
 				test_info.borrower.address_id,
 				test_info.loan_terms,
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
 				key_pair.public().into(),
-				signature.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::NotAddressOwner
 		);
@@ -1536,19 +1771,21 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 #[test]
 fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_chains() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
 		let test_info = TestInfo {
-			lender: RegisteredAddress::new(
-				"0x8617E340B3D01FA5F11F306F4090FD50E238070D".hex_to_address(),
-				111,
-				Blockchain::Ethereum,
+			lender: RegisteredAddress::new("lender2", Blockchain::Ethereum),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
 			),
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
 			..TestInfo::new_defaults()
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1559,8 +1796,8 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public().into(),
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::AddressPlatformMismatch
 		);
@@ -1570,16 +1807,22 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 #[test]
 fn register_deal_order_should_error_when_ask_order_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 		// create AskOrder which will use-up the default ID
 		test_info.create_ask_order();
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1590,8 +1833,8 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public().into(),
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateId
 		);
@@ -1601,16 +1844,23 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 #[test]
 fn register_deal_order_should_error_when_bid_order_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof.clone(),
+			),
 			..TestInfo::new_defaults()
 		};
+
 		// create BidOrder which will use-up the default ID
 		test_info.create_bid_order();
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1622,7 +1872,7 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 				test_info.ask_guid,
 				test_info.bid_guid,
 				key_pair.public().into(),
-				signature.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateId
 		);
@@ -1632,9 +1882,15 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 #[test]
 fn register_deal_order_should_error_when_offer_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 
@@ -1658,7 +1914,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 		crate::Offers::<Test>::insert_id(offer_id, offer);
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_noop!(
 			Creditcoin::register_deal_order(
@@ -1669,8 +1925,8 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public().into(),
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateOffer
 		);
@@ -1680,14 +1936,20 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 #[test]
 fn register_deal_order_should_error_when_deal_order_id_exists() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		// create DealOrder w/o creating AskOrder, BidOrder & Offer to avoid
 		// erroring out when checking for their existence
@@ -1725,8 +1987,8 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 				test_info.expiration_block,
 				test_info.ask_guid,
 				test_info.bid_guid,
-				key_pair.public().into(),
-				signature.into(),
+				pub_key.into(),
+				compliance_proof.into(),
 			),
 			crate::Error::<Test>::DuplicateDealOrder
 		);
@@ -1738,14 +2000,20 @@ fn register_deal_order_should_succeed() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let (key_pair, _) = sp_core::ecdsa::Pair::generate();
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::Rinkeby,
+				ownership_proof,
+			),
 			..TestInfo::new_defaults()
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
 			Origin::signed(test_info.lender.account_id),
@@ -1755,8 +2023,8 @@ fn register_deal_order_should_succeed() {
 			test_info.expiration_block,
 			test_info.ask_guid,
 			test_info.bid_guid,
-			key_pair.public().into(),
-			signature.into(),
+			pub_key.into(),
+			compliance_proof.into(),
 		));
 
 		// assert events in reversed order
@@ -1780,14 +2048,29 @@ fn register_deal_order_accepts_sr25519() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let (key_pair, _) = sp_core::sr25519::Pair::generate();
-		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
-			..TestInfo::new_defaults()
+		let (owners_key_pair, _) = sp_core::sr25519::Pair::generate();
+		let o_pubkey = owners_key_pair.public();
+		let o_signer: MultiSigner = o_pubkey.into();
+		let owners_account = o_signer.clone().into_account();
+
+		let test_info = {
+			let (b_key_pair, _) = sp_core::ecdsa::Pair::generate();
+			let b_pubkey = b_key_pair.public();
+			let message = get_register_address_message(owners_account.clone());
+			let ownership_proof = b_key_pair.sign(message.as_slice());
+			TestInfo {
+				borrower: RegisteredAddress::from_pubkey_distinct_owner(
+					owners_account,
+					Blockchain::Rinkeby,
+					b_pubkey,
+					ownership_proof,
+				),
+				..TestInfo::new_defaults()
+			}
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = owners_key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
 			Origin::signed(test_info.lender.account_id),
@@ -1797,8 +2080,8 @@ fn register_deal_order_accepts_sr25519() {
 			test_info.expiration_block,
 			test_info.ask_guid,
 			test_info.bid_guid,
-			key_pair.public().into(),
-			signature.into(),
+			o_pubkey.into(),
+			compliance_proof.into(),
 		));
 	});
 }
@@ -1808,14 +2091,29 @@ fn register_deal_order_accepts_ed25519() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let (key_pair, _) = sp_core::ed25519::Pair::generate();
-		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(key_pair.public(), Blockchain::Rinkeby),
-			..TestInfo::new_defaults()
+		let (owners_key_pair, _) = sp_core::ed25519::Pair::generate();
+		let o_pubkey = owners_key_pair.public();
+		let o_signer: MultiSigner = o_pubkey.into();
+		let owners_account = o_signer.clone().into_account();
+
+		let test_info = {
+			let (b_key_pair, _) = sp_core::ecdsa::Pair::generate();
+			let b_pubkey = b_key_pair.public();
+			let message = get_register_address_message(owners_account.clone());
+			let ownership_proof = b_key_pair.sign(message.as_slice());
+			TestInfo {
+				borrower: RegisteredAddress::from_pubkey_distinct_owner(
+					owners_account,
+					Blockchain::Rinkeby,
+					b_pubkey,
+					ownership_proof,
+				),
+				..TestInfo::new_defaults()
+			}
 		};
 
 		let message = test_info.get_register_deal_msg();
-		let signature = key_pair.sign(&message);
+		let compliance_proof = owners_key_pair.sign(&message);
 
 		assert_ok!(Creditcoin::register_deal_order(
 			Origin::signed(test_info.lender.account_id),
@@ -1825,8 +2123,8 @@ fn register_deal_order_accepts_ed25519() {
 			test_info.expiration_block,
 			test_info.ask_guid,
 			test_info.bid_guid,
-			key_pair.public().into(),
-			signature.into(),
+			o_signer,
+			compliance_proof.into(),
 		));
 	});
 }
@@ -1991,13 +2289,10 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 					Some(test_info.borrower.account_id.clone());
 			},
 		);
-
-		let address1 = "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB".hex_to_address();
-		let address2 = "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb".hex_to_address();
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new(address1, 100, Blockchain::Rinkeby),
-			borrower: RegisteredAddress::new(address2, 200, Blockchain::Rinkeby),
+			lender: RegisteredAddress::new("lender2", Blockchain::Rinkeby),
+			borrower: RegisteredAddress::new("borrower2", Blockchain::Rinkeby),
 			blockchain: Blockchain::Rinkeby,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
@@ -2194,17 +2489,21 @@ fn close_deal_order_should_succeed() {
 
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
-		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+		let event2 = all_events.pop().expect("Second EventRecord").event;
+		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+				assert_eq!(id,transfer_id);
+			}
+		);
 
-		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
+		let event1 = all_events.pop().expect("First EventRecord").event;
+		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderClosed(..))
-		));
+			crate::mock::Event::Creditcoin(crate::Event::DealOrderClosed(id)) =>{
+				assert_eq!(id,deal_order_id);
+			}
+		);
 	});
 }
 
@@ -2289,8 +2588,8 @@ fn verify_transfer_should_error_when_not_signed() {
 		let test_info = TestInfo::new_defaults();
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
 		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
-
-		assert_noop!(Creditcoin::verify_transfer(Origin::none(), transfer), BadOrigin);
+		let deadline = Test::unverified_transfer_deadline();
+		assert_noop!(Creditcoin::verify_transfer(Origin::none(), deadline, transfer), BadOrigin);
 	});
 }
 
@@ -2300,9 +2599,13 @@ fn verify_transfer_should_error_when_signer_not_authorized() {
 		let test_info = TestInfo::new_defaults();
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
 		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
-
+		let deadline = Test::unverified_transfer_deadline();
 		assert_noop!(
-			Creditcoin::verify_transfer(Origin::signed(test_info.lender.account_id), transfer),
+			Creditcoin::verify_transfer(
+				Origin::signed(test_info.lender.account_id),
+				deadline,
+				transfer
+			),
 			crate::Error::<Test>::InsufficientAuthority,
 		);
 	});
@@ -2322,9 +2625,14 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
 		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::verify_transfer(Origin::signed(test_info.lender.account_id), transfer),
+			Creditcoin::verify_transfer(
+				Origin::signed(test_info.lender.account_id),
+				deadline,
+				transfer
+			),
 			crate::Error::<Test>::TransferAlreadyRegistered,
 		);
 	});
@@ -2362,23 +2670,148 @@ fn verify_transfer_should_work() {
 			account_id: test_info.lender.account_id.clone(),
 			timestamp: None,
 		};
+		let deadline = Test::unverified_transfer_deadline();
 
 		assert_ok!(Creditcoin::verify_transfer(
 			Origin::signed(test_info.lender.account_id),
+			deadline,
 			transfer.clone()
 		));
 
-		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 
-		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(
-			event1,
-			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(..))
-		));
+		// assert events in reversed order
+		let last_event = all_events.pop().expect("At least one EventRecord").event;
+		assert_matches!(
+			last_event,
+			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(id)) =>{
+				assert_eq!(transfer_id,id)
+			}
+		);
 
 		assert_eq!(Transfers::<Test>::get(&transfer_id), Some(transfer));
 	});
+}
+
+#[test]
+fn fail_transfer_should_work() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let root = RawOrigin::Root;
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			test_info.lender.account_id.clone(),
+		));
+
+		let _ = test_info.create_deal_order();
+
+		let tx = "0xafafaf".hex_to_address();
+		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
+		let deadline = Test::unverified_transfer_deadline();
+
+		assert_ok!(Creditcoin::fail_transfer(
+			Origin::signed(test_info.lender.account_id),
+			deadline,
+			transfer_id.clone(),
+			failure_cause
+		));
+
+		let mut all_events = System::events();
+
+		assert_matches!(
+			all_events.pop().unwrap().event,
+			crate::mock::Event::Creditcoin(crate::Event::<Test>::TransferFailedVerification(id, cause)) => {
+				assert_eq!(id, transfer_id);
+				assert_eq!(cause, failure_cause);
+			}
+		);
+	})
+}
+
+#[test]
+fn fail_transfer_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let _ = test_info.create_deal_order();
+
+		let tx = "0xafafaf".hex_to_address();
+		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
+		let deadline = Test::unverified_transfer_deadline();
+
+		assert_noop!(
+			Creditcoin::fail_transfer(Origin::none(), deadline, transfer_id.clone(), failure_cause),
+			BadOrigin
+		);
+	})
+}
+
+#[test]
+fn fail_transfer_should_error_when_not_authority() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let _ = test_info.create_deal_order();
+
+		let tx = "0xafafaf".hex_to_address();
+		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
+		let deadline = Test::unverified_transfer_deadline();
+
+		assert_noop!(
+			Creditcoin::fail_transfer(
+				Origin::signed(test_info.lender.account_id),
+				deadline,
+				transfer_id.clone(),
+				failure_cause
+			),
+			crate::Error::<Test>::InsufficientAuthority
+		);
+	})
+}
+
+#[test]
+fn fail_transfer_should_error_when_transfer_registered() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		let (_, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		let root = RawOrigin::Root;
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			test_info.lender.account_id.clone(),
+		));
+
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
+		let deadline = Test::unverified_transfer_deadline();
+
+		assert_noop!(
+			Creditcoin::fail_transfer(
+				Origin::signed(test_info.lender.account_id),
+				deadline,
+				transfer_id.clone(),
+				failure_cause
+			),
+			crate::Error::<Test>::TransferAlreadyRegistered
+		);
+	})
 }
 
 #[test]
@@ -2389,16 +2822,12 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 
 		let now = System::block_number();
 		for expiration_block in now..=20 {
-			let address1 =
-				format!("0x{:02}F03B407c01E7cD3CBea99509d93f8DDDC8C6FB", expiration_block.clone())
-					.hex_to_address();
-			let address2 =
-				format!("0x{:02}220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb", expiration_block.clone())
-					.hex_to_address();
+			let seed1 = format!("{:02}0", expiration_block.clone());
+			let seed2 = format!("{:02}1", expiration_block.clone());
 
 			let test_info = TestInfo {
-				lender: RegisteredAddress::new(address1, 111, Blockchain::Rinkeby),
-				borrower: RegisteredAddress::new(address2, 222, Blockchain::Rinkeby),
+				lender: RegisteredAddress::new(&seed1, Blockchain::Rinkeby),
+				borrower: RegisteredAddress::new(&seed2, Blockchain::Rinkeby),
 				blockchain: Blockchain::Rinkeby,
 				loan_terms: LoanTerms {
 					amount: 2_000_000u64.into(),
@@ -2462,4 +2891,228 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 			let _order = DealOrders::<Test>::try_get_id(&expected_order_id).unwrap();
 		}
 	});
+}
+
+#[test]
+fn register_funding_transfer_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (_, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+
+		assert_noop!(
+			Creditcoin::register_funding_transfer(
+				Origin::none(),
+				TransferKind::Native,
+				deal_order_id,
+				tx.as_bytes().into_bounded()
+			),
+			BadOrigin
+		);
+	})
+}
+
+#[test]
+fn register_funding_transfer_should_error_when_not_deal_order_not_found() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, _) = test_info.create_deal_order();
+		let DealOrder { offer_id, .. } = deal_order.clone();
+		// expiration_block set to 0
+		let deal_order_id = DealOrderId::new::<Test>(0, &offer_id);
+
+		let tx = "0xabcabcabc";
+
+		assert_noop!(
+			Creditcoin::register_funding_transfer(
+				Origin::signed(test_info.lender.account_id.clone()),
+				TransferKind::Native,
+				deal_order_id,
+				tx.as_bytes().into_bounded()
+			),
+			crate::Error::<Test>::NonExistentDealOrder
+		);
+	})
+}
+
+#[test]
+fn register_repayment_transfer_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (_, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+
+		assert_noop!(
+			Creditcoin::register_repayment_transfer(
+				Origin::none(),
+				TransferKind::Native,
+				21u64.into(),
+				deal_order_id,
+				tx.as_bytes().into_bounded()
+			),
+			BadOrigin
+		);
+	})
+}
+
+#[test]
+fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, _) = test_info.create_deal_order();
+		let DealOrder { offer_id, .. } = deal_order.clone();
+		// expiration_block set to 0
+		let deal_order_id = DealOrderId::new::<Test>(0, &offer_id);
+
+		let tx = "0xabcabcabc";
+
+		assert_noop!(
+			Creditcoin::register_repayment_transfer(
+				Origin::signed(test_info.borrower.account_id.clone()),
+				TransferKind::Native,
+				21u64.into(),
+				deal_order_id,
+				tx.as_bytes().into_bounded()
+			),
+			crate::Error::<Test>::NonExistentDealOrder
+		);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_with_non_existent_lender_address() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+		let bogus_address =
+			AddressId::new::<Test>(&Blockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			bogus_address,
+			deal_order.borrower_address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_with_non_existent_borrower_address() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+		let bogus_address =
+			AddressId::new::<Test>(&Blockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			bogus_address,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_signer_doesnt_own_from_address() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.borrower_address_id, // should match 1st argument
+			deal_order.lender_address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::NotAddressOwner);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_blockchain() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let second_borrower = RegisteredAddress::new("borrower2", Blockchain::Luniverse);
+		let tx = "0xabcabcabc";
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			second_borrower.address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::AddressPlatformMismatch);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_transfer_kind_is_not_supported() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xabcabcabc";
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			deal_order.borrower_address_id,
+			// not supported on Blockchain::Rinkeby
+			TransferKind::Other(BoundedVec::try_from(b"other".to_vec()).unwrap()),
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			tx.as_bytes().into_bounded(),
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::UnsupportedTransferKind);
+	})
+}
+
+#[test]
+fn register_transfer_internal_should_error_when_transfer_is_already_registered() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		let result = Creditcoin::register_transfer_internal(
+			test_info.lender.account_id.clone(),
+			deal_order.lender_address_id,
+			deal_order.borrower_address_id,
+			TransferKind::Native,
+			deal_order.terms.amount,
+			OrderId::Deal(deal_order_id),
+			transfer.tx_id,
+		)
+		.unwrap_err();
+
+		assert_eq!(result, crate::Error::<Test>::TransferAlreadyRegistered);
+	})
 }

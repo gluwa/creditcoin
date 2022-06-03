@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "target": "es2017",
+        "module": "commonjs",
+        "declaration": true,
+        "outDir": "./lib",
+        "strict": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": ".",
+        "paths": {
+            "@polkadot/api/augment": ["./src/interfaces/augment-api.ts"],
+            "@polkadot/types/augment": ["./src/interfaces/augment-types.ts"],
+            "@polkadot/types/lookup": ["./src/interfaces/types-lookup.ts"]
+        },
+        "resolveJsonModule": true
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "**/__tests__/*"],
+
+    "ts-node": {
+        "require": ["tsconfig-paths/register"],
+        "compilerOptions": {
+            "rootDir": "."
+        }
+    }
+}
