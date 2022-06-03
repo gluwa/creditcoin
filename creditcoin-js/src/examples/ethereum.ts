@@ -4,6 +4,7 @@ import TestTokenArtifact from './ethless/contracts/TestToken.sol/TestToken.json'
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { BN } from '@polkadot/util';
 
+// Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
 const MINTER = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
 
 const signTransfer = async (
