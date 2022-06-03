@@ -1050,6 +1050,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-voting-oracle",
  "parity-scale-codec",
  "primitives",
  "scale-info",
@@ -3983,6 +3984,7 @@ dependencies = [
  "log",
  "pallet-balances",
  "pallet-timestamp",
+ "pallet-voting-oracle",
  "parity-scale-codec",
  "parking_lot",
  "scale-info",
@@ -4131,10 +4133,12 @@ dependencies = [
 name = "pallet-voting-oracle"
 version = "2.0.0-beta.6"
 dependencies = [
+ "assert_matches",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
+ "maplit",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",

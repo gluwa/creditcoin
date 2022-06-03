@@ -286,6 +286,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type HashIntoNonce = Hash;
 	type UnverifiedTransferTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
+	type AuthorityMajorityOrigin = pallet_voting_oracle::EnsureProportionAtLeast<AccountId, 1, 2>;
 }
 
 impl pallet_difficulty::Config for Runtime {
@@ -297,6 +298,20 @@ impl pallet_rewards::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type WeightInfo = pallet_rewards::weights::WeightInfo<Runtime>;
+}
+
+impl pallet_voting_oracle::Config for Runtime {
+	type Event = Event;
+	type DisagreementReason = pallet_creditcoin::VerificationFailureCause;
+	type Origin = Origin;
+	type Proposal = Call;
+	type MaxProposals = ConstU32<100>;
+	type TimeLimit = ConstU32<60>;
+	type QuorumPercentage = ConstU32<60>;
+	type OnProposalComplete = ();
+	type ProposalWithoutData = pallet_creditcoin::BaseTaskProposal<Runtime>;
+	type ProposalExtraData = pallet_creditcoin::OracleData<u64>;
+	type DataAggregator = ();
 }
 
 pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
@@ -354,7 +369,8 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
-		Rewards: pallet_rewards::{Pallet, Storage, Event<T>}
+		Rewards: pallet_rewards::{Pallet, Storage, Event<T>},
+		VotingOracle: pallet_voting_oracle::{Pallet, Call, Storage, Event<T>, Origin<T>}
 	}
 );
 
