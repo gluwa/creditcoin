@@ -102,7 +102,6 @@ impl<T: Config> Pallet<T> {
 
 		let collected_coins = CollectedCoins {
 			to: AddressId::new::<T>(&CONTRACT_CHAIN, u_cc.to.as_slice()),
-			//TODO
 			amount: T::Balance::unique_saturated_from(u128::unique_saturated_from(amount)),
 			tx_id: u_cc.tx_id.clone(),
 		};
