@@ -3978,6 +3978,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hex",
+ "hex-literal",
  "itertools",
  "lexical",
  "libsecp256k1",

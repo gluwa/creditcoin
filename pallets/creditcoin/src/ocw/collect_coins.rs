@@ -14,20 +14,12 @@ use sp_runtime::traits::UniqueSaturatedFrom;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::{H160, U64};
 use frame_support::ensure;
-use lazy_static::lazy_static;
+use hex_literal::hex;
 use sp_std::prelude::*;
 
 pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
-lazy_static! {
-	static ref CONTRACT_ADDRESS: H160 = {
-		let vesting_contract =
-			hex::decode("0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419".trim_start_matches("0x"))
-				.unwrap();
-		H160::from(<[u8; 20]>::try_from(vesting_contract.as_slice()).unwrap())
-	};
-	static ref BURN_SELECTOR: [u8; 4] =
-		hex::decode("0x42966c68".trim_start_matches("0x")).unwrap().try_into().unwrap();
-}
+const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
+const BURN_SELECTOR: [u8; 4] = hex!("42966c68");
 
 ///exchange has been deprecated, use burn instead
 fn burn_vested_cc_abi() -> Function {
@@ -60,7 +52,7 @@ pub fn validate_collect_coins(
 	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
 	if let Some(to) = &transaction.to {
-		ensure!(to == &*CONTRACT_ADDRESS, VerificationFailureCause::IncorrectContract);
+		ensure!(to == &CONTRACT_ADDRESS, VerificationFailureCause::IncorrectContract);
 	} else {
 		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
@@ -77,7 +69,7 @@ pub fn validate_collect_coins(
 
 	{
 		let selector = transfer_fn.short_signature();
-		if selector != *BURN_SELECTOR {
+		if selector != BURN_SELECTOR {
 			log::error!("function selector mismatch: {}", hex::encode(selector));
 			return Err(VerificationFailureCause::AbiMismatch.into());
 		}
