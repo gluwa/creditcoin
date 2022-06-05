@@ -625,7 +625,7 @@ pub mod pallet {
 					return;
 				}
 
-				let verify_result = Self::verify_transfer_ocw(&u_t);
+				let verification_result = Self::verify_transfer_ocw(&u_t);
 				let on_success = |timestamp: Option<T::Moment>| {
 					Self::offchain_signed_tx(auth_id.clone(), |_| Call::verify_transfer {
 						transfer: Transfer { timestamp, ..u_t.transfer.clone() },
@@ -642,7 +642,7 @@ pub mod pallet {
 						deadline,
 					})
 				};
-				Self::ocw_result_handler(verify_result, on_success, on_failure, status, &u_t);
+				Self::ocw_result_handler(verification_result, on_success, on_failure, status, &u_t);
 			});
 
 			let u_collect_coins =
@@ -653,7 +653,7 @@ pub mod pallet {
 						log::debug!("Already handled CollectCoins ({:?}, {:?})", deadline, id);
 						return;
 					}
-					let verify_result = Self::verify_collect_coins_ocw(&u_cc);
+					let verification_result = Self::verify_collect_coins_ocw(&u_cc);
 
 					let on_success = |collected_coins: types::CollectedCoins<
 						T::Hash,
@@ -671,7 +671,13 @@ pub mod pallet {
 							deadline,
 						})
 					};
-					Self::ocw_result_handler(verify_result, on_success, on_failure, status, &u_cc);
+					Self::ocw_result_handler(
+						verification_result,
+						on_success,
+						on_failure,
+						status,
+						&u_cc,
+					);
 				});
 
 			let schedule = interleave(u_transfer, u_collect_coins);

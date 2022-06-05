@@ -147,19 +147,19 @@ fn validate_ethless_transfer(
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn ocw_result_handler<O: core::fmt::Debug>(
-		verify_result: VerificationResult<O>,
+		verification_result: VerificationResult<O>,
 		success_dispatcher: impl Fn(O) -> Result<(), Error<T>>,
 		failure_dispatcher: impl Fn(VerificationFailureCause) -> Result<(), Error<T>>,
-		transfer_status: LocalVerificationStatus,
+		task_status: LocalVerificationStatus,
 		unverified_task: &impl core::fmt::Debug,
 	) {
-		log::debug!("Task Verification result: {:?}", verify_result);
-		match verify_result {
+		log::debug!("Task Verification result: {:?}", verification_result);
+		match verification_result {
 			Ok(output) => {
 				if let Err(e) = success_dispatcher(output) {
 					log::error!("Failed to send success dispatchable transaction: {:?}", e);
 				} else {
-					transfer_status.mark_complete();
+					task_status.mark_complete();
 				}
 			},
 			Err(OffchainError::InvalidTask(cause)) => {
@@ -168,7 +168,7 @@ impl<T: Config> Pallet<T> {
 					if let Err(e) = failure_dispatcher(cause) {
 						log::error!("Failed to send fail dispatchable transaction: {:?}", e);
 					} else {
-						transfer_status.mark_complete();
+						task_status.mark_complete();
 					}
 				}
 			},
