@@ -517,19 +517,20 @@ fn register_transfer_ocw() {
 		));
 		let deadline = Test::unverified_transfer_deadline();
 
+		let transfer_id = TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
+		let transfer = crate::UnverifiedTransfers::<Test>::get(deadline, &transfer_id).unwrap();
+
 		roll_by_with_ocw(1);
 
-		let transfer_id = TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
 		let tx = pool.write().transactions.pop().expect("fail transfer");
 		assert!(pool.read().transactions.is_empty());
 		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_eq!(
 			fail_tx.call,
-			Call::Creditcoin(crate::Call::fail_transfer {
-				transfer_id,
-				deadline,
-				cause: VerificationFailureCause::IncorrectNonce
-			})
+			reject_proposal(
+				crate::BaseTaskProposal::Transfer(transfer),
+				VerificationFailureCause::IncorrectNonce
+			)
 		);
 
 		// test for successful verification
@@ -577,12 +578,10 @@ fn register_transfer_ocw() {
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_eq!(
 			verify_tx.call,
-			Call::VotingOracle(pallet_voting_oracle::Call::accept {
-				proposal: pallet_voting_oracle::ProposalOrHash::Proposal(Box::new(
-					crate::BaseTaskProposal::Transfer(expected_transfer.clone())
-				)),
-				extra_data: crate::OracleData::Transfer(Some(timestamp))
-			})
+			accept_proposal(
+				crate::BaseTaskProposal::Transfer(expected_transfer.clone()),
+				crate::OracleData::Transfer(Some(timestamp))
+			)
 		);
 	});
 }

@@ -1,7 +1,7 @@
 use crate::{
 	self as pallet_creditcoin,
 	ocw::rpc::{JsonRpcRequest, JsonRpcResponse},
-	Blockchain, LegacySighash, VerificationFailureCause,
+	BaseTaskProposal, Blockchain, LegacySighash, OracleData, VerificationFailureCause,
 };
 use ethereum_types::U256;
 use frame_support::{
@@ -361,6 +361,20 @@ pub fn roll_by_with_ocw(n: BlockNumber) {
 
 pub fn voted_origin(approvals: u32, authorities: u32) -> Origin {
 	Origin::from(pallet_voting_oracle::RawOrigin::Members(approvals, authorities))
+}
+
+pub fn reject_proposal(prop: BaseTaskProposal<Test>, reason: VerificationFailureCause) -> Call {
+	Call::VotingOracle(pallet_voting_oracle::Call::reject {
+		proposal: pallet_voting_oracle::ProposalOrHash::Proposal(Box::new(prop)),
+		reason,
+	})
+}
+
+pub fn accept_proposal(prop: BaseTaskProposal<Test>, extra_data: OracleData<u64>) -> Call {
+	Call::VotingOracle(pallet_voting_oracle::Call::accept {
+		proposal: pallet_voting_oracle::ProposalOrHash::Proposal(Box::new(prop)),
+		extra_data,
+	})
 }
 
 // must be called in an externalities-provided environment
