@@ -6,7 +6,7 @@ import { POINT_01_CTC } from '../constants';
 import { signAccountId } from 'creditcoin-js/utils';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
-import { testData } from './common';
+import { testData, tryRegisterAddress } from './common';
 
 import { extractFee } from '../utils';
 
@@ -30,11 +30,13 @@ describe('AddBidOrder', (): void => {
     beforeEach(async () => {
         const borrowerWallet = createWallet('borrower');
 
-        borrowerRegAddr = await ccApi.extrinsics.registerAddress(
+        borrowerRegAddr = await tryRegisterAddress(
+            ccApi,
             borrowerWallet.address,
             blockchain,
             signAccountId(ccApi.api, borrowerWallet, borrower.address),
             borrower,
+            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
         );
         bidGuid = Guid.newGuid();
     }, 60000);
