@@ -8,7 +8,7 @@ import { createCreditcoinLoanTerms } from 'creditcoin-js/transforms';
 import { signLoanParams } from 'creditcoin-js/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
-import { testData } from './common';
+import { testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 
 describe('RegisterDealOrder', (): void => {
@@ -32,18 +32,26 @@ describe('RegisterDealOrder', (): void => {
 
     beforeEach(async () => {
         const {
-            extrinsics: { registerAddress },
             utils: { signAccountId },
         } = ccApi;
         const lenderWallet = createWallet('lender');
         const borrowerWallet = createWallet('borrower');
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-            registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
-            registerAddress(
+            tryRegisterAddress(
+                ccApi,
+                lenderWallet.address,
+                blockchain,
+                signAccountId(lenderWallet, lender.address),
+                lender,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            ),
+            tryRegisterAddress(
+                ccApi,
                 borrowerWallet.address,
                 blockchain,
                 signAccountId(borrowerWallet, borrower.address),
                 borrower,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
 

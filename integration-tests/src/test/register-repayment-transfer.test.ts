@@ -7,7 +7,7 @@ import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/re
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/transforms';
-import { testData, lendOnEth } from './common';
+import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 import { Wallet } from 'ethers';
 
@@ -36,18 +36,27 @@ describe('RegisterRepaymentTransfer', (): void => {
     beforeEach(async () => {
         const {
             api,
-            extrinsics: { fundDealOrder, lockDealOrder, registerAddress, registerDealOrder, registerFundingTransfer },
+            extrinsics: { fundDealOrder, lockDealOrder, registerDealOrder, registerFundingTransfer },
             utils: { signAccountId },
         } = ccApi;
         lenderWallet = createWallet('lender');
         borrowerWallet = createWallet('borrower');
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-            registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
-            registerAddress(
+            tryRegisterAddress(
+                ccApi,
+                lenderWallet.address,
+                blockchain,
+                signAccountId(lenderWallet, lender.address),
+                lender,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            ),
+            tryRegisterAddress(
+                ccApi,
                 borrowerWallet.address,
                 blockchain,
                 signAccountId(borrowerWallet, borrower.address),
                 borrower,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
         const askGuid = Guid.newGuid();
@@ -83,7 +92,6 @@ describe('RegisterRepaymentTransfer', (): void => {
 
         await fundDealOrder(dealOrder.dealOrder.itemId, fundingEvent.transferId, lender);
         await lockDealOrder(dealOrder.dealOrder.itemId, borrower);
-
         // borrower repays the money on Ethereum
         [repaymentTokenAddress, repaymentTxHash] = await lendOnEth(
             borrowerWallet,
@@ -91,7 +99,7 @@ describe('RegisterRepaymentTransfer', (): void => {
             dealOrder.dealOrder.itemId,
             loanTerms,
         );
-    }, 900000);
+    }, 18000000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
@@ -115,5 +123,5 @@ describe('RegisterRepaymentTransfer', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 90000);
+    }, 18000000);
 });
