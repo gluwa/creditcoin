@@ -118,7 +118,7 @@ describe('CloseDealOrder', (): void => {
         );
         const repaymentTransferVerified = await repaymentEvent.waitForVerification().catch();
         expect(repaymentTransferVerified).toBeTruthy();
-    }, 900000);
+    }, 9000000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
@@ -133,5 +133,5 @@ describe('CloseDealOrder', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 60000);
+    }, 600000);
 });
