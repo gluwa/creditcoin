@@ -5,7 +5,7 @@ import { POINT_01_CTC } from '../constants';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { testData } from './common';
-import { extractFee } from '../utils';
+import { extractFee, testIf } from '../utils';
 
 describe('FailTransfer', (): void => {
     let ccApi: CreditcoinApi;
@@ -15,14 +15,16 @@ describe('FailTransfer', (): void => {
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        authority = keyring.createFromUri(AUTHORITY_SURI);
+        if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
+            authority = keyring.createFromUri(AUTHORITY_SURI);
+        }
     });
 
     afterAll(async () => {
         await ccApi.api.disconnect();
     });
 
-    it('fee is min 0.01 CTC', async (): Promise<void> => {
+    testIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
         const transferId = createFundingTransferId(blockchain, '0xffffffffffffffffffffffffffffffffffffffff');
         const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
