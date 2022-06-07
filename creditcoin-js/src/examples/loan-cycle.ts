@@ -9,7 +9,7 @@ import { ethConnection } from './ethereum';
 import { LoanTerms, TransferKind } from '../model';
 import { setupAuthority } from './setup-authority';
 
-export type RegisteredWallet = {
+export type PostAddressRegistrationInfo = {
     wallet: Wallet;
     keyringPair: KeyringPair;
     registeredAddress: { address: string; itemId: string };
@@ -17,7 +17,10 @@ export type RegisteredWallet = {
 
 export const fullLoanCycleExample = async (
     wsUrl: string = 'ws://127.0.0.1:9944',
-    registeredWallets?: { registeredLender: RegisteredWallet; registeredBorrower: RegisteredWallet },
+    registeredWallets?: { registeredLender: PostAddressRegistrationInfo; registeredBorrower: PostAddressRegistrationInfo },
+    ethereumRpcUrl = 'http://localhost:8545',
+    decreaseMiningInterval = true,
+    minterWallet?: Wallet,
 ) => {
     const {
         api,
@@ -119,7 +122,7 @@ export const fullLoanCycleExample = async (
         console.log(dealOrderId);
 
         // connect to ethereum to lend and repay
-        const { lend, repay, waitUntilTip } = await ethConnection();
+        const { lend, repay, waitUntilTip } = await ethConnection(ethereumRpcUrl, decreaseMiningInterval, minterWallet);
 
         // Lender lends to borrower on ethereum
         const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
@@ -214,7 +217,7 @@ export const fullLoanCycleExample = async (
         const { itemId: dealOrderId } = dealOrder;
 
         // connect to ethereum to lend and repay
-        const { lend, waitUntilTip } = await ethConnection();
+        const { lend, waitUntilTip } = await ethConnection(ethereumRpcUrl, decreaseMiningInterval, minterWallet);
 
         // Lender lends to borrower on ethereum
         const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(

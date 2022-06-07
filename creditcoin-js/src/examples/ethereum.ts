@@ -67,8 +67,8 @@ const ethlessTransfer = async (
 
 export const ethConnection = async (
     providerRpcUrl = 'http://localhost:8545',
-    minterWallet: Wallet | undefined = undefined,
     decreaseMiningInterval = true,
+    minterWallet?: Wallet,
 ) => {
     const provider = new JsonRpcProvider(providerRpcUrl);
     const minter = minterWallet || new Wallet(MINTER, provider);
