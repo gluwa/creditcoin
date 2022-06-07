@@ -3,7 +3,8 @@
 
 extern crate alloc;
 
-use frame_support::traits::StorageVersion;
+use frame_support::traits::{Imbalance, StorageVersion};
+use itertools::interleave;
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
@@ -71,7 +72,9 @@ pub mod pallet {
 		pallet_prelude::*,
 	};
 	use ocw::errors::VerificationFailureCause;
-	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
+	use sp_runtime::traits::{
+		IdentifyAccount, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto, Verify,
+	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -124,13 +127,13 @@ pub mod pallet {
 			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
 			+ Clone;
 
-		type UnverifiedTransferTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
+		type UnverifiedTaskTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
 	}
 
 	pub trait WeightInfo {
-		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32) -> Weight;
+		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
@@ -146,6 +149,9 @@ pub mod pallet {
 		fn close_deal_order() -> Weight;
 		fn exempt() -> Weight;
 		fn register_deal_order() -> Weight;
+		fn request_collect_coins() -> Weight;
+		fn persist_collect_coins() -> Weight;
+		fn fail_collect_coins() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -172,6 +178,17 @@ pub mod pallet {
 		Identity,
 		TransferId<T::Hash>,
 		UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn pending_collect_coins)]
+	pub type UnverifiedCollectedCoins<T: Config> = StorageDoubleMap<
+		_,
+		Identity,
+		T::BlockNumber,
+		Identity,
+		CollectedCoinsId<T::Hash>,
+		types::UnverifiedCollectedCoins,
 	>;
 
 	#[pallet::storage]
@@ -236,12 +253,25 @@ pub mod pallet {
 		Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn collected_coins)]
+	pub type CollectedCoins<T: Config> = StorageMap<
+		_,
+		Identity,
+		CollectedCoinsId<T::Hash>,
+		types::CollectedCoins<T::Hash, T::Balance>,
+	>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// An address on an external chain has been registered.
 		/// [registered_address_id, registered_address]
 		AddressRegistered(AddressId<T::Hash>, Address<T::AccountId>),
+
+		/// Collecting coins from Eth ERC-20 has been registered and will be verified.
+		/// [collected_coins_id, registered_collect_coins]
+		CollectCoinsRegistered(CollectedCoinsId<T::Hash>, types::UnverifiedCollectedCoins),
 
 		/// An external transfer has been registered and will be verified.
 		/// [registered_transfer_id, registered_transfer]
@@ -253,6 +283,13 @@ pub mod pallet {
 		/// An external transfer has been successfully verified.
 		/// [verified_transfer_id]
 		TransferVerified(TransferId<T::Hash>),
+
+		/// CollectCoins has been successfully verified and minted.
+		/// [collected_coins_id]
+		CollectedCoinsMinted(
+			types::CollectedCoinsId<T::Hash>,
+			types::CollectedCoins<T::Hash, T::Balance>,
+		),
 
 		/// An external transfer has been processed and marked as part of a loan.
 		/// [processed_transfer_id]
@@ -316,6 +353,10 @@ pub mod pallet {
 		LegacyWalletClaimed(T::AccountId, LegacySighash, T::Balance),
 
 		TransferFailedVerification(TransferId<T::Hash>, VerificationFailureCause),
+
+		/// exchanging vested ERC-20 CC for native CC failed.
+		/// [collected_coins_id, cause]
+		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
 	}
 
 	// Errors inform users that something went wrong.
@@ -345,6 +386,12 @@ pub mod pallet {
 
 		/// The transfer has already been registered.
 		TransferAlreadyRegistered,
+
+		/// The coin collection has already been registered.
+		CollectCoinsAlreadyRegistered,
+
+		/// The balance would overflow.
+		BalanceOverflow,
 
 		/// The account that registered the transfer does
 		/// not match the account attempting to use the transfer.
@@ -513,23 +560,24 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
 
-			let unverified_count = match UnverifiedTransfers::<T>::remove_prefix(block_number, None)
-			{
-				KillStorageResult::SomeRemaining(u) => u,
-				KillStorageResult::AllRemoved(u) => u,
-			};
+			let unverified_collect_coins_count =
+				match UnverifiedCollectedCoins::<T>::remove_prefix(block_number, None) {
+					KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
+				};
+
+			let unverified_transfer_count =
+				match UnverifiedTransfers::<T>::remove_prefix(block_number, None) {
+					KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
+				};
 
 			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) => u,
-				KillStorageResult::AllRemoved(u) => u,
+				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
 			};
 			let bid_count = match BidOrders::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) => u,
-				KillStorageResult::AllRemoved(u) => u,
+				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
 			};
 			let offer_count = match Offers::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) => u,
-				KillStorageResult::AllRemoved(u) => u,
+				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
 			};
 
 			let mut deals_count = 0u32;
@@ -555,7 +603,8 @@ pub mod pallet {
 				offer_count,
 				deals_count,
 				funded_deals_count,
-				unverified_count,
+				unverified_transfer_count,
+				unverified_collect_coins_count,
 			)
 		}
 
@@ -569,14 +618,14 @@ pub mod pallet {
 			let auth_id = T::FromAccountId::from(my_authority.unwrap());
 
 			let u_transfer = UnverifiedTransfers::<T>::iter().map(|(deadline, id, u_t)| {
-				let storage_key = ocw::transfer_local_status_storage_key::<T>(deadline, &id);
-				let transfer_status = ocw::LocalVerificationStatus::new(&storage_key);
-				if transfer_status.is_complete() {
-					log::debug!("Already handled transfer ({:?}, {:?})", deadline, id);
+				let storage_key = (deadline, id.clone()).encode();
+				let status = ocw::LocalVerificationStatus::new(&storage_key);
+				if status.is_complete() {
+					log::debug!("Already handled Transfer ({:?}, {:?})", deadline, id);
 					return;
 				}
 
-				let verify_result = Self::verify_transfer_ocw(&u_t);
+				let verification_result = Self::verify_transfer_ocw(&u_t);
 				let on_success = |timestamp: Option<T::Moment>| {
 					Self::offchain_signed_tx(auth_id.clone(), |_| Call::verify_transfer {
 						transfer: Transfer { timestamp, ..u_t.transfer.clone() },
@@ -593,16 +642,47 @@ pub mod pallet {
 						deadline,
 					})
 				};
-				Self::ocw_result_handler(
-					verify_result,
-					on_success,
-					on_failure,
-					transfer_status,
-					&u_t as &dyn core::fmt::Debug,
-				);
+				Self::ocw_result_handler(verification_result, on_success, on_failure, status, &u_t);
 			});
 
-			u_transfer.for_each(drop);
+			let u_collect_coins =
+				UnverifiedCollectedCoins::<T>::iter().map(|(deadline, id, u_cc)| {
+					let storage_key = (deadline, id.clone()).encode();
+					let status = ocw::LocalVerificationStatus::new(&storage_key);
+					if status.is_complete() {
+						log::debug!("Already handled CollectCoins ({:?}, {:?})", deadline, id);
+						return;
+					}
+					let verification_result = Self::verify_collect_coins_ocw(&u_cc);
+
+					let on_success = |collected_coins: types::CollectedCoins<
+						T::Hash,
+						T::Balance,
+					>| {
+						Self::offchain_signed_tx(auth_id.clone(), |_| Call::persist_collect_coins {
+							collected_coins: collected_coins.clone(),
+							deadline,
+						})
+					};
+					let on_failure = |cause| {
+						Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_collect_coins {
+							collected_coins_id: CollectedCoinsId::new::<T>(&u_cc.tx_id),
+							cause,
+							deadline,
+						})
+					};
+					Self::ocw_result_handler(
+						verification_result,
+						on_success,
+						on_failure,
+						status,
+						&u_cc,
+					);
+				});
+
+			let schedule = interleave(u_transfer, u_collect_coins);
+
+			schedule.for_each(drop);
 		}
 
 		fn on_runtime_upgrade() -> Weight {
@@ -1094,6 +1174,41 @@ pub mod pallet {
 		}
 
 		#[transactional]
+		#[pallet::weight(<T as Config>::WeightInfo::request_collect_coins())]
+		pub fn request_collect_coins(
+			origin: OriginFor<T>,
+			evm_address: ExternalAddress,
+			tx_id: ExternalTxId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let collect_coins_id = CollectedCoinsId::new::<T>(&tx_id);
+			ensure!(
+				!CollectedCoins::<T>::contains_key(&collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let deadline = Self::block_number().saturating_add(T::UnverifiedTaskTimeout::get());
+
+			ensure!(
+				!UnverifiedCollectedCoins::<T>::contains_key(deadline, &collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let address_id = AddressId::new::<T>(&ocw::collect_coins::CONTRACT_CHAIN, &evm_address);
+			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id };
+
+			UnverifiedCollectedCoins::<T>::insert(deadline, &collect_coins_id, pending.clone());
+
+			Self::deposit_event(Event::<T>::CollectCoinsRegistered(collect_coins_id, pending));
+
+			Ok(())
+		}
+
+		#[transactional]
 		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
@@ -1195,6 +1310,44 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
+		#[pallet::weight((<T as Config>::WeightInfo::persist_collect_coins(), DispatchClass::Normal, Pays::No))]
+		pub fn persist_collect_coins(
+			origin: OriginFor<T>,
+			collected_coins: types::CollectedCoins<T::Hash, T::Balance>,
+			deadline: T::BlockNumber,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+
+			let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
+			ensure!(
+				!CollectedCoins::<T>::contains_key(&key),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let amount = collected_coins.amount;
+			let imbalance = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::issue(amount);
+			ensure!(amount == imbalance.peek(), Error::<T>::BalanceOverflow);
+
+			let address =
+				Self::addresses(&collected_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
+
+			<pallet_balances::Pallet<T> as Currency<T::AccountId>>::resolve_creating(
+				&address.owner,
+				imbalance,
+			);
+
+			CollectedCoins::<T>::insert(key.clone(), collected_coins.clone());
+
+			UnverifiedCollectedCoins::<T>::remove(&deadline, &key);
+
+			Self::deposit_event(Event::<T>::CollectedCoinsMinted(key, collected_coins));
+
+			Ok(())
+		}
+
 		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
 		pub fn verify_transfer(
 			origin: OriginFor<T>,
@@ -1237,6 +1390,31 @@ pub mod pallet {
 			UnverifiedTransfers::<T>::remove(&deadline, &transfer_id);
 
 			Self::deposit_event(Event::<T>::TransferFailedVerification(transfer_id, cause));
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
+		#[pallet::weight(<T as Config>::WeightInfo::fail_collect_coins())]
+		pub fn fail_collect_coins(
+			origin: OriginFor<T>,
+			collected_coins_id: CollectedCoinsId<T::Hash>,
+			cause: VerificationFailureCause,
+			deadline: T::BlockNumber,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+
+			ensure!(
+				!CollectedCoins::<T>::contains_key(&collected_coins_id),
+				Error::<T>::TransferAlreadyRegistered
+			);
+
+			UnverifiedCollectedCoins::<T>::remove(&deadline, &collected_coins_id);
+
+			Self::deposit_event(Event::<T>::CollectCoinsFailedVerification(
+				collected_coins_id,
+				cause,
+			));
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 

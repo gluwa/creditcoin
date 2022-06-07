@@ -13,7 +13,7 @@ pub enum OffchainError {
 	RpcError(RpcError),
 }
 
-pub type VerificationResult<Moment> = Result<Option<Moment>, OffchainError>;
+pub type VerificationResult<T> = Result<T, OffchainError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum VerificationFailureCause {
@@ -27,6 +27,7 @@ pub enum VerificationFailureCause {
 	MissingSender,
 	AbiMismatch,
 	IncorrectInputLength,
+	EmptyInput,
 	IncorrectInputType,
 	IncorrectAmount,
 	IncorrectNonce,
@@ -42,7 +43,7 @@ impl VerificationFailureCause {
 		match self {
 			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
 			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
-			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender
+			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender | EmptyInput
 			| IncorrectReceiver | TaskNonexistent => true,
 			TaskPending | TaskUnconfirmed => false,
 		}

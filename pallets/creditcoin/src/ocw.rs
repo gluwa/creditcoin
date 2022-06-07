@@ -1,7 +1,7 @@
+pub mod collect_coins;
 pub mod errors;
 pub mod rpc;
-use crate::{Blockchain, Call, Id, Transfer, TransferId, TransferKind, UnverifiedTransfer};
-use codec::Encode;
+use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::{
@@ -146,20 +146,20 @@ fn validate_ethless_transfer(
 }
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn ocw_result_handler(
-		verify_result: VerificationResult<T::Moment>,
-		success_dispatcher: impl Fn(Option<T::Moment>) -> Result<(), Error<T>>,
+	pub(crate) fn ocw_result_handler<O: core::fmt::Debug>(
+		verification_result: VerificationResult<O>,
+		success_dispatcher: impl Fn(O) -> Result<(), Error<T>>,
 		failure_dispatcher: impl Fn(VerificationFailureCause) -> Result<(), Error<T>>,
-		transfer_status: LocalVerificationStatus,
-		unverified_task: &dyn core::fmt::Debug,
+		task_status: LocalVerificationStatus,
+		unverified_task: &impl core::fmt::Debug,
 	) {
-		log::debug!("Task Verification result: {:?}", verify_result);
-		match verify_result {
-			Ok(timestamp) => {
-				if let Err(e) = success_dispatcher(timestamp) {
+		log::debug!("Task Verification result: {:?}", verification_result);
+		match verification_result {
+			Ok(output) => {
+				if let Err(e) = success_dispatcher(output) {
 					log::error!("Failed to send success dispatchable transaction: {:?}", e);
 				} else {
-					transfer_status.mark_complete();
+					task_status.mark_complete();
 				}
 			},
 			Err(OffchainError::InvalidTask(cause)) => {
@@ -168,7 +168,7 @@ impl<T: Config> Pallet<T> {
 					if let Err(e) = failure_dispatcher(cause) {
 						log::error!("Failed to send fail dispatchable transaction: {:?}", e);
 					} else {
-						transfer_status.mark_complete();
+						task_status.mark_complete();
 					}
 				}
 			},
@@ -180,7 +180,7 @@ impl<T: Config> Pallet<T> {
 
 	pub fn verify_transfer_ocw(
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
-	) -> VerificationResult<T::Moment> {
+	) -> VerificationResult<Option<T::Moment>> {
 		let UnverifiedTransfer {
 			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
 			from_external: from,
@@ -230,7 +230,7 @@ impl<T: Config> Pallet<T> {
 		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
-	) -> VerificationResult<T::Moment> {
+	) -> VerificationResult<Option<T::Moment>> {
 		let rpc_url = blockchain.rpc_url()?;
 		let tx = rpc::eth_get_transaction(tx_id, &rpc_url).map_err(|e| {
 			if let RpcError::NoResult = e {
@@ -279,13 +279,6 @@ impl<T: Config> Pallet<T> {
 pub(crate) struct LocalVerificationStatus<'a> {
 	storage_ref: StorageValueRef<'a>,
 	key: &'a [u8],
-}
-
-pub(crate) fn transfer_local_status_storage_key<T: Config>(
-	deadline: T::BlockNumber,
-	transfer_id: &TransferId<T::Hash>,
-) -> Vec<u8> {
-	(deadline, transfer_id).encode()
 }
 
 impl<'a> LocalVerificationStatus<'a> {
