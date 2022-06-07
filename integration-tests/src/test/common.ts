@@ -35,7 +35,7 @@ export const testData: TestData = {
             nanos: 0,
         },
     } as LoanTerms,
-    blockchain: 'Ethereum' as Blockchain,
+    blockchain: (global as any).CREDITCOIN_ETHEREUM_NAME as Blockchain,
     expirationBlock: 10_000_000,
     createWallet: (global as any).CREDITCOIN_CREATE_WALLET
         ? (global as any).CREDITCOIN_CREATE_WALLET
