@@ -22,7 +22,11 @@ describe('RegisterAddress', () => {
         return new Promise((resolve, reject) => {
             const wallet = Wallet.createRandom();
             const unsubscribe = api.tx.creditcoin
-                .registerAddress('Ethereum', wallet.address, signAccountId(api, wallet, alice.address))
+                .registerAddress(
+                    (global as any).CREDITCOIN_ETHEREUM_NAME,
+                    wallet.address,
+                    signAccountId(api, wallet, alice.address),
+                )
                 .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
