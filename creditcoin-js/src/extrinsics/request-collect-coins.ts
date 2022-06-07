@@ -27,8 +27,7 @@ export type CollectCoinsEvent = {
 };
 
 export const createCollectCoinsId = (txHash: string) => {
-    const blockchain: Blockchain = 'Ethereum';
-    const blockchainBytes = Buffer.from(blockchain.toLowerCase());
+    const blockchainBytes = Buffer.from('ethereum');
     const key = u8aConcat(blockchainBytes, u8aToU8a(txHash));
     return blake2AsHex(key);
 };
