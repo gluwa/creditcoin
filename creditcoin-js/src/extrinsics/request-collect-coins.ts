@@ -16,26 +16,25 @@ import { TxCallback } from '..';
 import { createCollectCoins, createUnverifiedCollectCoins } from '../transforms';
 import { PalletCreditcoinCollectedCoins } from '@polkadot/types/lookup';
 
-export type CollectcoinsEventKind = 'CollectCoinsRegistered' | 'CollectCoinsMinted' | 'CollectCoinsFailed';
+export type CollectCoinsEventKind = 'CollectCoinsRegistered' | 'CollectCoinsMinted' | 'CollectCoinsFailed';
 
-export type CollectcoinsEvent = {
-    collectcoinsId: CollectedcoinsId;
-    collectcoins?: Collectedcoins;
-    unverifiedCollectcoins?: UnverifiedCollectedcoins;
+export type CollectCoinsEvent = {
+    collectCoinsId: CollectedcoinsId;
+    collectCoins?: Collectedcoins;
+    unverifiedCollectCoins?: UnverifiedCollectedcoins;
 
     waitForVerification: (timeout?: number) => Promise<Collectedcoins>;
 };
 
-export const createCollectcoinsId = (txHash: string) => {
+export const createCollectCoinsId = (txHash: string) => {
     const blockchain: Blockchain = 'Ethereum';
     const blockchainBytes = Buffer.from(blockchain.toLowerCase());
     const key = u8aConcat(blockchainBytes, u8aToU8a(txHash));
     return blake2AsHex(key);
 };
 
-export { Collectedcoins as Collectcoins };
 
-export const requestCollectcoins = async (
+export const requestCollectCoins = async (
     api: ApiPromise,
     evmAddress: ExternalAddress,
     collector: KeyringPair,
@@ -44,7 +43,7 @@ export const requestCollectcoins = async (
     onFail: TxCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
-        .requestCollectcoins(evmAddress, txHash)
+        .requestCollectCoins(evmAddress, txHash)
         .signAndSend(collector, { nonce: -1 }, (result) =>
             handleTransaction(api, unsubscribe, result, onSuccess, onFail),
         );
@@ -52,12 +51,12 @@ export const requestCollectcoins = async (
 
 type CollectCoinsRegisteredEvent = EventReturnJoinType<CollectedcoinsId, UnverifiedCollectedcoins>;
 
-const persistedCollectCoins = (api: ApiPromise, collectcoinsId: CollectedcoinsId, timeout = 20_000) => {
+const persistedCollectCoins = (api: ApiPromise, collectCoinsId: CollectedcoinsId, timeout = 20_000) => {
     return new Promise<Collectedcoins>((resolve, reject) => {
         let timer: NodeJS.Timeout | undefined;
         api.query.creditcoin
-            .collectCoins(collectcoinsId, (result: Option<PalletCreditcoinCollectedCoins>) => {
-                if (!timer) timer = setTimeout(() => reject(new Error('Collectcoins verification timed out')), timeout);
+            .collectCoins(collectCoinsId, (result: Option<PalletCreditcoinCollectedCoins>) => {
+                if (!timer) timer = setTimeout(() => reject(new Error('CollectCoins verification timed out')), timeout);
                 if (result.isSome) {
                     clearTimeout(timer);
                     const object = createCollectCoins(result.unwrap());
@@ -71,8 +70,8 @@ const persistedCollectCoins = (api: ApiPromise, collectcoinsId: CollectedcoinsId
 const createCollectCoinsRegisteredEvent = (
     api: ApiPromise,
     result: SubmittableResult,
-    kind: CollectcoinsEventKind,
-): CollectcoinsEvent => {
+    kind: CollectCoinsEventKind,
+): CollectCoinsEvent => {
     const { itemId, item } = processEvents(
         api,
         result,
@@ -81,25 +80,25 @@ const createCollectCoinsRegisteredEvent = (
         createUnverifiedCollectCoins,
     ) as CollectCoinsRegisteredEvent;
 
-    const collectcoinsEventData = {
-        collectcoinsId: itemId,
-        unverifiedCollectcoins: item,
+    const collectCoinsEventData = {
+        collectCoinsId: itemId,
+        unverifiedCollectCoins: item,
         waitForVerification: (timeout = 180_000) => persistedCollectCoins(api, itemId, timeout),
     };
 
-    return collectcoinsEventData;
+    return collectCoinsEventData;
 };
 
-export const requestCollectcoinsAsync = async (
+export const requestCollectCoinsAsync = async (
     api: ApiPromise,
     evmAddress: ExternalAddress,
     collector: KeyringPair,
     txHash: string,
 ) => {
-    return new Promise<CollectcoinsEvent>((resolve, reject) => {
+    return new Promise<CollectCoinsEvent>((resolve, reject) => {
         const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) =>
             resolve(createCollectCoinsRegisteredEvent(api, result, 'CollectCoinsRegistered'));
-        requestCollectcoins(api, evmAddress, collector, txHash, onSuccess, onFail).catch((reason) => reject(reason));
+        requestCollectCoins(api, evmAddress, collector, txHash, onSuccess, onFail).catch((reason) => reject(reason));
     });
 };
