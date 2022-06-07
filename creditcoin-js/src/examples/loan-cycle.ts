@@ -8,12 +8,12 @@ import { ethConnection } from './ethereum';
 import { LoanTerms, TransferKind } from '../model';
 import { setupAuthority } from './setup-authority';
 
-export const fullLoanCycleExample = async () => {
+export const fullLoanCycleExample = async (wsUrl: string) => {
     const {
         api,
         extrinsics,
         utils: { signAccountId },
-    } = await creditcoinApi('ws://127.0.0.1:9944');
+    } = await creditcoinApi(wsUrl);
     const {
         registerAddress,
         addAskOrder,
@@ -53,9 +53,12 @@ export const fullLoanCycleExample = async () => {
         },
     };
 
+// TODO: wallets need to be passed as arguments
     const lenderWallet = Wallet.createRandom();
     const borrowerWallet = Wallet.createRandom();
 
+//TODO: for testnet we register addresses differently
+//TODO: blockchain is also different
     // Prepare a borrower and lender by registering their ethereum addresses
     const [lenderAddress, borrowerAddress] = await Promise.all([
         registerAddress(lenderWallet.address, 'Ethereum', signAccountId(lenderWallet, lender.address), lender),
@@ -228,5 +231,5 @@ export const fullLoanCycleExample = async () => {
 };
 
 if (require.main === module) {
-    fullLoanCycleExample().catch(console.error);
+    fullLoanCycleExample('ws://127.0.0.1:9944').catch(console.error);
 }
