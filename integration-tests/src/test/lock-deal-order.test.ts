@@ -88,7 +88,7 @@ describe('LockDealOrder', (): void => {
         expect(fundingTransferVerified).toBeTruthy();
 
         await fundDealOrder(dealOrder.dealOrder.itemId, fundingEvent.transferId, lender);
-    }, 600000);
+    }, 9000000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
@@ -103,5 +103,5 @@ describe('LockDealOrder', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 60000);
+    }, 600000);
 });
