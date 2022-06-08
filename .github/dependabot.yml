@@ -74,3 +74,8 @@ updates:
     directory: "/creditcoin-js"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "npm"
+    directory: "/scripts/js"
+    schedule:
+      interval: "daily"
