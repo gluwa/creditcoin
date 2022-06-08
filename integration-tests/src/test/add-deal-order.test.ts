@@ -1,4 +1,4 @@
-import { KeyringPair } from '@polkadot/keyring/types';
+import { KeyringPair } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
 import { OfferId } from 'creditcoin-js/model';
 import { creditcoinApi } from 'creditcoin-js';

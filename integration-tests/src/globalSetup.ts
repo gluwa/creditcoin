@@ -1,5 +1,5 @@
-import { setupAuthority } from 'creditcoin-js/examples/setup-authority';
-import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
+import { ApiPromise, WsProvider, Keyring } from 'creditcoin-js';
+import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 
 const setup = async () => {
     process.env.NODE_ENV = 'test';

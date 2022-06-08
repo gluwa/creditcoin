@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: The Unlicense
 
 import { WebSocket } from 'ws';
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, WsProvider } from 'creditcoin-js';
 
 describe('Creditcoin RPC', (): void => {
     let api: ApiPromise;

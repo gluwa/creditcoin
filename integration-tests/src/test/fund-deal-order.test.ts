@@ -1,6 +1,6 @@
-import { KeyringPair } from '@polkadot/keyring/types';
+import { KeyringPair } from 'creditcoin-js';
 
-import { Guid } from 'js-guid';
+import { Guid } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
@@ -9,7 +9,7 @@ import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
-import { Wallet } from 'ethers';
+import { Wallet } from 'creditcoin-js';
 
 describe('FundDealOrder', (): void => {
     let ccApi: CreditcoinApi;

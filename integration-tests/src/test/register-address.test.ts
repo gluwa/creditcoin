@@ -1,6 +1,6 @@
-import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { Wallet } from 'ethers';
+import { ApiPromise, Keyring, WsProvider } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js';
+import { Wallet } from 'creditcoin-js';
 import { signAccountId } from 'creditcoin-js/utils';
 import { POINT_01_CTC } from '../constants';
 import { extractFee } from '../utils';

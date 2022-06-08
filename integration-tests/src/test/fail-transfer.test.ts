@@ -1,4 +1,4 @@
-import { KeyringPair } from '@polkadot/keyring/types';
+import { KeyringPair } from 'creditcoin-js';
 import { AUTHORITY_SURI } from 'creditcoin-js/examples/setup-authority';
 import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
 import { POINT_01_CTC } from '../constants';

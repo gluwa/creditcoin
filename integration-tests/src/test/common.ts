@@ -1,15 +1,10 @@
-import { Wallet } from 'ethers';
-import { Guid } from 'js-guid';
-import { BN } from '@polkadot/util';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { Option } from '@polkadot/types';
-import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
+import { Wallet, Guid, BN } from 'creditcoin-js';
+import { KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
 import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/model';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { createAddress } from 'creditcoin-js/transforms';
 import { ethConnection } from 'creditcoin-js/examples/ethereum';
 import { AddressRegistered, createAddressId } from 'creditcoin-js/extrinsics/register-address';
-import { Keyring } from '@polkadot/api';
 
 type TestData = {
     loanTerms: LoanTerms;

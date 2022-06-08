@@ -1,5 +1,5 @@
-import { Guid } from 'js-guid';
-import { KeyringPair } from '@polkadot/keyring/types';
+import { Guid } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/transforms';
 import { AddressRegistered } from 'creditcoin-js/extrinsics/register-address';
 import { POINT_01_CTC } from '../constants';
