@@ -4,7 +4,6 @@ import {
     Collectedcoins,
     UnverifiedCollectedcoins,
     CollectedcoinsId,
-    Blockchain,
     ExternalAddress,
     EventReturnJoinType,
 } from '../model';
@@ -31,7 +30,6 @@ export const createCollectCoinsId = (txHash: string) => {
     const key = u8aConcat(blockchainBytes, u8aToU8a(txHash));
     return blake2AsHex(key);
 };
-
 
 export const requestCollectCoins = async (
     api: ApiPromise,

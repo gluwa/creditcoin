@@ -3,7 +3,7 @@ import { AUTHORITY_SURI } from 'creditcoin-js/examples/setup-authority';
 import { createCollectCoinsId } from 'creditcoin-js/extrinsics/request-collect-coins';
 import { createAddressId } from 'creditcoin-js/extrinsics/register-address';
 import { POINT_01_CTC } from '../constants';
-import { Blockchain, creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/types';
 import { testData } from './common';
 
@@ -11,10 +11,9 @@ describe('CollectCoins', (): void => {
     let ccApi: CreditcoinApi;
     let authority: KeyringPair;
 
-    const { keyring } = testData;
+    const { keyring, blockchain } = testData;
     const evmAddress = '0xffffffffffffffffffffffffffffffffffffffff';
     const badHash = '0xbad';
-    const blockchain: Blockchain = 'Ethereum';
     const addressId = createAddressId(blockchain, evmAddress);
 
     beforeAll(async () => {
