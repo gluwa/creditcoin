@@ -32,7 +32,6 @@ export const createCollectCoinsId = (txHash: string) => {
     return blake2AsHex(key);
 };
 
-
 export const requestCollectCoins = async (
     api: ApiPromise,
     evmAddress: ExternalAddress,
