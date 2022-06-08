@@ -226,16 +226,28 @@ pub struct WeightToCtcFee;
 impl WeightToFeePolynomial for WeightToCtcFee {
 	type Balance = Balance;
 
-	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		let base = Balance::from(creditcoin_weights::<Runtime>::lock_deal_order());
+	/// 0.01CTC*(1 + 0.5x/lock_deal_order)
+	/// let the most expensive extrinsic scale close to 13:1.
+	/// fees: within aprox. range [0.015, 0.08) CTC before load_adjustment
+		fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+		let base = Balance::from(creditcoin_weights::<Runtime>::lock_deal_order() / 2 );
 		let ratio = TARGET_FEE_CREDO / base;
 		let rem = TARGET_FEE_CREDO % base;
-		smallvec::smallvec!(WeightToFeeCoefficient {
-			coeff_integer: ratio,
-			coeff_frac: Perbill::from_rational(rem, base),
-			negative: false,
-			degree: 1,
-		})
+		let intercept = TARGET_FEE_CREDO;
+		smallvec::smallvec![
+			WeightToFeeCoefficient {
+				coeff_integer: ratio,
+				coeff_frac: Perbill::from_rational(rem, base),
+				negative: false,
+				degree: 1,
+			},
+			WeightToFeeCoefficient {
+				coeff_integer: intercept,
+				coeff_frac: Perbill::zero(),
+				negative: false,
+				degree: 0,
+			}
+		]
 	}
 }
 
