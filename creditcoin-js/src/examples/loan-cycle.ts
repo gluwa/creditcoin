@@ -16,8 +16,11 @@ export type PostAddressRegistrationInfo = {
 };
 
 export const fullLoanCycleExample = async (
-    wsUrl: string = 'ws://127.0.0.1:9944',
-    registeredWallets?: { registeredLender: PostAddressRegistrationInfo; registeredBorrower: PostAddressRegistrationInfo },
+    wsUrl = 'ws://127.0.0.1:9944',
+    registeredWallets?: {
+        registeredLender: PostAddressRegistrationInfo;
+        registeredBorrower: PostAddressRegistrationInfo;
+    },
     ethereumRpcUrl = 'http://localhost:8545',
     decreaseMiningInterval = true,
     minterWallet?: Wallet,
@@ -45,34 +48,34 @@ export const fullLoanCycleExample = async (
 
     const initLenderAndBorrower = async () => {
         const keyring = new Keyring({ type: 'sr25519' });
-        const lender = keyring.addFromUri('//Alice');
-        const borrower = keyring.addFromUri('//Bob');
-        await setupAuthority(api, lender);
+        const iLender = keyring.addFromUri('//Alice');
+        const iBorrower = keyring.addFromUri('//Bob');
+        await setupAuthority(api, iLender);
 
-        const lenderWallet = Wallet.createRandom();
-        const borrowerWallet = Wallet.createRandom();
+        const iLenderWallet = Wallet.createRandom();
+        const iBorrowerWallet = Wallet.createRandom();
 
-        const [lenderAddress, borrowerAddress] = await Promise.all([
-            registerAddress(lenderWallet.address, 'Ethereum', signAccountId(lenderWallet, lender.address), lender),
+        const [iLenderAddress, iBorrowerAddress] = await Promise.all([
+            registerAddress(iLenderWallet.address, 'Ethereum', signAccountId(iLenderWallet, iLender.address), iLender),
             registerAddress(
-                borrowerWallet.address,
+                iBorrowerWallet.address,
                 'Ethereum',
-                signAccountId(borrowerWallet, borrower.address),
-                borrower,
+                signAccountId(iBorrowerWallet, iBorrower.address),
+                iBorrower,
             ),
         ]);
-        console.log('lender address', lenderAddress);
-        console.log('borrower address', borrowerAddress);
+        console.log('lender address', iLenderAddress);
+        console.log('borrower address', iBorrowerAddress);
         return {
             registeredLender: {
-                wallet: lenderWallet,
-                keyringPair: lender,
-                registeredAddress: lenderAddress,
+                wallet: iLenderWallet,
+                keyringPair: iLender,
+                registeredAddress: iLenderAddress,
             },
             registeredBorrower: {
-                wallet: borrowerWallet,
-                keyringPair: borrower,
-                registeredAddress: borrowerAddress,
+                wallet: iBorrowerWallet,
+                keyringPair: iBorrower,
+                registeredAddress: iBorrowerAddress,
             },
         };
     };
