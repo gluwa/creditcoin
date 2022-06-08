@@ -1,4 +1,5 @@
 import { Keyring } from '@polkadot/api';
+import { KeyringPair } from '@polkadot/keyring/types';
 import { BN } from '@polkadot/util';
 import { creditcoinApi } from '../creditcoin-api';
 import { Wallet } from 'ethers';
@@ -8,12 +9,22 @@ import { ethConnection } from './ethereum';
 import { LoanTerms, TransferKind } from '../model';
 import { setupAuthority } from './setup-authority';
 
-export const fullLoanCycleExample = async () => {
+export type RegisteredWallet = {
+    wallet: Wallet;
+    keyringPair: KeyringPair;
+    registeredAddress: { address: string; itemId: string };
+};
+
+export const fullLoanCycleExample = async (
+    wsUrl: string = 'ws://127.0.0.1:9944',
+    registeredWallets?: { registeredLender: RegisteredWallet; registeredBorrower: RegisteredWallet },
+) => {
     const {
         api,
         extrinsics,
         utils: { signAccountId },
-    } = await creditcoinApi('ws://127.0.0.1:9944');
+    } = await creditcoinApi(wsUrl);
+
     const {
         registerAddress,
         addAskOrder,
@@ -29,13 +40,41 @@ export const fullLoanCycleExample = async () => {
         exemptLoan,
     } = extrinsics;
 
-    const keyring = new Keyring({ type: 'sr25519' });
-    const lender = keyring.addFromUri('//Alice');
-    const borrower = keyring.addFromUri('//Bob');
+    const initLenderAndBorrower = async () => {
+        const keyring = new Keyring({ type: 'sr25519' });
+        const lender = keyring.addFromUri('//Alice');
+        const borrower = keyring.addFromUri('//Bob');
+        await setupAuthority(api, lender);
 
-    await setupAuthority(api, lender);
+        const lenderWallet = Wallet.createRandom();
+        const borrowerWallet = Wallet.createRandom();
 
-    const expBlock = 1000000;
+        const [lenderAddress, borrowerAddress] = await Promise.all([
+            registerAddress(lenderWallet.address, 'Ethereum', signAccountId(lenderWallet, lender.address), lender),
+            registerAddress(
+                borrowerWallet.address,
+                'Ethereum',
+                signAccountId(borrowerWallet, borrower.address),
+                borrower,
+            ),
+        ]);
+        console.log('lender address', lenderAddress);
+        console.log('borrower address', borrowerAddress);
+        return {
+            registeredLender: {
+                wallet: lenderWallet,
+                keyringPair: lender,
+                registeredAddress: lenderAddress,
+            },
+            registeredBorrower: {
+                wallet: borrowerWallet,
+                keyringPair: borrower,
+                registeredAddress: borrowerAddress,
+            },
+        };
+    };
+
+    const expBlock = 100_000_000;
     const loanTerms: LoanTerms = {
         amount: new BN(100),
         interestRate: {
@@ -53,16 +92,9 @@ export const fullLoanCycleExample = async () => {
         },
     };
 
-    const lenderWallet = Wallet.createRandom();
-    const borrowerWallet = Wallet.createRandom();
-
-    // Prepare a borrower and lender by registering their ethereum addresses
-    const [lenderAddress, borrowerAddress] = await Promise.all([
-        registerAddress(lenderWallet.address, 'Ethereum', signAccountId(lenderWallet, lender.address), lender),
-        registerAddress(borrowerWallet.address, 'Ethereum', signAccountId(borrowerWallet, borrower.address), borrower),
-    ]);
-    console.log('lender address', lenderAddress);
-    console.log('borrower address', borrowerAddress);
+    const { registeredLender, registeredBorrower } = registeredWallets || (await initLenderAndBorrower());
+    const { keyringPair: lender, wallet: lenderWallet, registeredAddress: lenderAddress } = registeredLender;
+    const { keyringPair: borrower, wallet: borrowerWallet, registeredAddress: borrowerAddress } = registeredBorrower;
 
     // Execute a full loan cycle
     const fullLoanCycle = async () => {
