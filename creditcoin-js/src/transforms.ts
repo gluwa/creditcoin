@@ -29,8 +29,8 @@ import {
     DealOrderId,
     Transfer,
     TransferKind,
-    UnverifiedCollectedcoins,
-    Collectedcoins,
+    UnverifiedCollectedCoins,
+    CollectedCoins,
 } from './model';
 
 export const createAddress = ({ value, blockchain, owner }: PalletCreditcoinAddress): Address => ({
@@ -199,18 +199,18 @@ export const createTransfer = (transfer: PalletCreditcoinTransfer): Transfer => 
     };
 };
 
-export const createUnverifiedCollectCoins = (
-    collectCoins: PalletCreditcoinUnverifiedCollectedCoins,
-): UnverifiedCollectedcoins => {
-    const { to, txId } = collectCoins;
+export const createUnverifiedCollectedCoins = (
+    collectedCoins: PalletCreditcoinUnverifiedCollectedCoins,
+): UnverifiedCollectedCoins => {
+    const { to, txId } = collectedCoins;
     return {
         to: to.toString(),
         txHash: txId.toString(),
     };
 };
 
-export const createCollectCoins = (collectCoins: PalletCreditcoinCollectedCoins): Collectedcoins => {
-    const { to, txId, amount } = collectCoins;
+export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectedCoins): CollectedCoins => {
+    const { to, txId, amount } = collectedCoins;
     return {
         to: to.toString(),
         txHash: txId.toString(),

@@ -1,6 +1,6 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { AUTHORITY_SURI } from 'creditcoin-js/examples/setup-authority';
-import { createCollectCoinsId } from 'creditcoin-js/extrinsics/request-collect-coins';
+import { createCollectedCoinsId } from 'creditcoin-js/extrinsics/request-collect-coins';
 import { createAddressId } from 'creditcoin-js/extrinsics/register-address';
 import { POINT_01_CTC } from '../constants';
 import { creditcoinApi } from 'creditcoin-js';
@@ -39,11 +39,11 @@ describe('CollectCoins', (): void => {
     describe('fail', (): void => {
         it('fee is min 0.01 CTC', async (): Promise<void> => {
             const { api } = ccApi;
-            const collectCoinsId = createCollectCoinsId(evmAddress);
+            const collectedCoinsId = createCollectedCoinsId(evmAddress);
             const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
 
             const { partialFee } = await api.tx.creditcoin
-                .failCollectCoins(collectCoinsId, cause, 1000)
+                .failCollectCoins(collectedCoinsId, cause, 1000)
                 .paymentInfo(authority, { nonce: -1 });
 
             expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
@@ -53,14 +53,14 @@ describe('CollectCoins', (): void => {
     describe('persist', (): void => {
         it('fee is min 0.01 CTC but bypassed by OCW', async (): Promise<void> => {
             const { api } = ccApi;
-            const collectCoins = {
+            const collectedCoins = {
                 to: addressId,
                 amount: 1000,
                 txHash: badHash,
             };
 
             const { partialFee } = await api.tx.creditcoin
-                .persistCollectCoins(collectCoins, 1000)
+                .persistCollectCoins(collectedCoins, 1000)
                 .paymentInfo(authority, { nonce: -1 });
             expect(partialFee.toBigInt()).toEqual(BigInt(0));
         });
