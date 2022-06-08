@@ -39,6 +39,7 @@ libsecp256k1 = { version = "0.7", default-features = false, features = [
 ] }
 base58 = "0.2.0"
 bitcoin-bech32 = { version = "0.12.1", git = "https://github.com/nathanwhit/rust-bech32-bitcoin", default-features = false, branch = "no-std" }
+strum = { version = "0.24.0", features = ["derive"], default-features = false }
 
 [dependencies.codec]
 default-features = false

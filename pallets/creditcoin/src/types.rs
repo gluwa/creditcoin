@@ -1,6 +1,8 @@
 pub mod loan_terms;
+pub mod platform;
 
 pub use loan_terms::*;
+pub use platform::*;
 
 use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use extend::ext;
