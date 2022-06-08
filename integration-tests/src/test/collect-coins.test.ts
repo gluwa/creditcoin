@@ -1,10 +1,10 @@
 import { KeyringPair } from '@polkadot/keyring/types';
-import { AUTHORITY_SURI } from 'creditcoin-js/examples/setup-authority';
-import { createCollectedCoinsId } from 'creditcoin-js/extrinsics/request-collect-coins';
-import { createAddressId } from 'creditcoin-js/extrinsics/register-address';
+import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
+import { createCollectedCoinsId } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
+import { createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 import { POINT_01_CTC } from '../constants';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData } from './common';
 import { testIf } from '../utils';
 
