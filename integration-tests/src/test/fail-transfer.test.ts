@@ -1,9 +1,9 @@
-import { KeyringPair } from '@polkadot/keyring/types';
-import { AUTHORITY_SURI } from 'creditcoin-js/examples/setup-authority';
-import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
+import { KeyringPair } from 'creditcoin-js';
+import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
+import { createFundingTransferId } from 'creditcoin-js/lib/extrinsics/register-transfers';
 import { POINT_01_CTC } from '../constants';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData } from './common';
 import { extractFee, testIf } from '../utils';
 

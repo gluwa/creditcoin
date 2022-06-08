@@ -1,7 +1,7 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, WsProvider } from 'creditcoin-js';
 
 describe('System RPC sanity test', (): void => {
     let api: ApiPromise;

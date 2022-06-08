@@ -1,13 +1,13 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { Guid } from 'js-guid';
+import { Guid } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { createCreditcoinLoanTerms } from 'creditcoin-js/transforms';
-import { signLoanParams } from 'creditcoin-js/extrinsics/register-deal-order';
+import { KeyringPair } from 'creditcoin-js';
+import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
+import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 

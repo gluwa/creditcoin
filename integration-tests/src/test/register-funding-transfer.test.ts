@@ -1,17 +1,17 @@
-import { KeyringPair } from '@polkadot/keyring/types';
+import { KeyringPair } from 'creditcoin-js';
 
-import { Guid } from 'js-guid';
+import { Guid } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
 import { BN } from '@polkadot/util';
 
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
-import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
+import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
+import { createFundingTransferId } from 'creditcoin-js/lib/extrinsics/register-transfers';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
-import { createCreditcoinTransferKind } from 'creditcoin-js/transforms';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
 import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
-import { Wallet } from 'ethers';
+import { Wallet } from 'creditcoin-js';
 
 describe('RegisterFundingTransfer', (): void => {
     let ccApi: CreditcoinApi;

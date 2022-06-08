@@ -229,7 +229,7 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd creditcoin-js/ && yarn install && popd
+          pushd creditcoin-js/ && yarn install && npm pack && popd
           pushd ${{ matrix.directory }}
 
           yarn install
@@ -254,7 +254,7 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd creditcoin-js/ && yarn install && popd
+          pushd creditcoin-js/ && yarn install && npm pack && popd
           pushd ${{ matrix.directory }}
 
           yarn install
@@ -279,7 +279,7 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd creditcoin-js/ && yarn install && popd
+          pushd creditcoin-js/ && yarn install && npm pack && popd
           pushd ${{ matrix.directory }}
 
           yarn install

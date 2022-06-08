@@ -13,22 +13,21 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@polkadot/api": "^8.10.1",
-    "@types/jest": "^28.1.1",
     "@types/ws": "^8.5.3",
-    "@typescript-eslint/eslint-plugin": "^5.22.0",
-    "@typescript-eslint/parser": "^5.22.0",
     "axios": "^0.27.2",
-    "creditcoin-js": "file:../../creditcoin-js/lib",
-    "eslint": "^8.14.0",
-    "eslint-config-prettier": "^8.5.0",
-    "ethers": "^5.6.5",
-    "jest": "^28.0.3",
-    "js-guid": "^1.0.0",
-    "prettier": "^2.6.2",
-    "ts-jest": "^28.0.1",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.6.4",
+    "creditcoin-js": "file:../../creditcoin-js/creditcoin-js-0.1.1.tgz",
     "ws": "^8.5.0"
+  },
+  "devDependencies": {
+    "jest": "^28.0.3",
+    "ts-jest": "^28.0.1",
+    "@types/jest": "^28.1.1",
+    "@typescript-eslint/eslint-plugin": "^5.27.0",
+    "@typescript-eslint/parser": "^5.27.0",
+    "eslint": "^8.16.0",
+    "eslint-config-prettier": "^8.5.0",
+    "prettier": "^2.6.2",
+    "ts-node": "^10.8.0",
+    "typescript": "^4.7.2"
   }
 }
