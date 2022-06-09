@@ -645,40 +645,10 @@ pub mod pallet {
 				Self::ocw_result_handler(verification_result, on_success, on_failure, status, &u_t);
 			});
 
-			let u_collect_coins =
-				UnverifiedCollectedCoins::<T>::iter().map(|(deadline, id, u_cc)| {
-					let storage_key = (deadline, id.clone()).encode();
-					let status = ocw::LocalVerificationStatus::new(&storage_key);
-					if status.is_complete() {
-						log::debug!("Already handled CollectCoins ({:?}, {:?})", deadline, id);
-						return;
-					}
-					let verification_result = Self::verify_collect_coins_ocw(&u_cc);
-
-					let on_success = |collected_coins: types::CollectedCoins<
-						T::Hash,
-						T::Balance,
-					>| {
-						Self::offchain_signed_tx(auth_id.clone(), |_| Call::persist_collect_coins {
-							collected_coins: collected_coins.clone(),
-							deadline,
-						})
-					};
-					let on_failure = |cause| {
-						Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_collect_coins {
-							collected_coins_id: CollectedCoinsId::new::<T>(&u_cc.tx_id),
-							cause,
-							deadline,
-						})
-					};
-					Self::ocw_result_handler(
-						verification_result,
-						on_success,
-						on_failure,
-						status,
-						&u_cc,
-					);
-				});
+			let u_collect_coins = ocw::task::TaskIterator::<_, _, T, _>::new(
+				UnverifiedCollectedCoins::<T>::iter(),
+				auth_id.clone(),
+			);
 
 			let schedule = interleave(u_transfer, u_collect_coins);
 
