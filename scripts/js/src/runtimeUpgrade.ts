@@ -3,9 +3,9 @@ import { Keyring } from '@polkadot/api';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { promisify } from 'util';
-import * as _ from '@polkadot/api/augment';
 
 // From https://github.com/chevdor/subwasm/blob/c2e5b62384537875bfd0497c2b2d706265699798/lib/src/runtime_info.rs#L8-L20
+/* eslint-disable @typescript-eslint/naming-convention */
 type WasmRuntimeInfo = {
     size: number;
     compression: {
@@ -13,7 +13,7 @@ type WasmRuntimeInfo = {
         size_decompressed: number;
         compressed: boolean;
     };
-    reserved_meta: Array<number>;
+    reserved_meta: number[];
     reserved_meta_valid: boolean;
     metadata_version: number;
     core_version: string;
@@ -22,6 +22,7 @@ type WasmRuntimeInfo = {
     ipfs_hash: string;
     blake2_256: string;
 };
+/* eslint-enable */
 
 // these normally use callbacks, but promises are more convenient
 const readFile = promisify(fs.readFile);
@@ -39,7 +40,7 @@ async function doRuntimeUpgrade(
     wsUrl: string,
     wasmBlobPath: string,
     sudoKeyUri: string,
-    hasSubwasm: boolean = false,
+    hasSubwasm = false,
 ): Promise<void> {
     // init the api client
     const { api } = await creditcoinApi(wsUrl);
@@ -53,6 +54,7 @@ async function doRuntimeUpgrade(
             if (output.stderr.length > 0) {
                 throw new Error(`subwasm info failed: ${output.stderr}`);
             }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const info = JSON.parse(output.stdout) as WasmRuntimeInfo;
             // should probably do some checks here to see that the runtime is right
             // e.g. the core version is reasonable, it's compressed, etc.
@@ -74,7 +76,7 @@ async function doRuntimeUpgrade(
                     console.log('Runtime upgrade successful');
                     unsub();
                 } else if (result.isError) {
-                    console.error(`Runtime upgrade failed: ${result}`);
+                    console.error(`Runtime upgrade failed: ${result.toString()}`);
                     unsub();
                 }
             });
@@ -89,8 +91,8 @@ if (process.argv.length < 5) {
 }
 
 console.log(process.argv);
-const wsUrl = process.argv[2];
-const wasmBlobPath = process.argv[3];
-const sudoKeyUri = process.argv[4];
+const inputWsUrl = process.argv[2];
+const inputWasmBlobPath = process.argv[3];
+const inputSudoKeyUri = process.argv[4];
 
-doRuntimeUpgrade(wsUrl, wasmBlobPath, sudoKeyUri, true).catch(console.error);
+doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true).catch(console.error);
