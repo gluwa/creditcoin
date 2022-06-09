@@ -1,6 +1,7 @@
 pub mod collect_coins;
 pub mod errors;
 pub mod rpc;
+pub mod task;
 use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
