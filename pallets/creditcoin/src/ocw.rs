@@ -180,18 +180,21 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub fn verify_transfer_ocw(
-		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
-	) -> VerificationResult<Option<T::Moment>> {
+		u_transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
+	) -> VerificationResult<Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>> {
 		let UnverifiedTransfer {
 			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
 			..
-		} = transfer;
+		} = u_transfer;
 		log::debug!("verifying OCW transfer");
 		match kind {
 			TransferKind::Ethless(contract) => {
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
+				let timestamp = Self::verify_ethless_transfer(
+					blockchain, contract, from, to, order_id, amount, tx,
+				)?;
+				Ok(Transfer { timestamp, ..u_transfer.transfer.clone() })
 			},
 			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
 				Err(VerificationFailureCause::UnsupportedMethod.into())
@@ -304,6 +307,33 @@ impl<'a> LocalVerificationStatus<'a> {
 
 	pub(crate) fn mark_complete(&self) {
 		self.storage_ref.set(&());
+	}
+}
+
+impl<T> task::Task<T, T::BlockNumber>
+	for UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
+where
+	T: Config,
+{
+	type VerifiedTask = Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>;
+
+	fn verify(&self) -> VerificationResult<Self::VerifiedTask> {
+		Pallet::<T>::verify_transfer_ocw(self)
+	}
+
+	fn failure_call(&self, deadline: T::BlockNumber, cause: VerificationFailureCause) -> Call<T> {
+		Call::fail_transfer {
+			deadline,
+			transfer_id: crate::types::TransferId::new::<T>(
+				&self.transfer.blockchain,
+				&self.transfer.tx_id,
+			),
+			cause,
+		}
+	}
+
+	fn success_call(&self, deadline: T::BlockNumber, verified_task: Self::VerifiedTask) -> Call<T> {
+		Call::verify_transfer { transfer: verified_task, deadline }
 	}
 }
 

@@ -1,15 +1,14 @@
 use super::{
 	errors::{VerificationFailureCause, VerificationResult},
 	rpc::{self, EthTransaction, EthTransactionReceipt},
+	task::Task,
 	OffchainResult, ETH_CONFIRMATIONS,
-	task::Task
 };
 
 use crate::pallet::{Config, Pallet};
 use crate::{
 	types::{AddressId, Blockchain, CollectedCoins, UnverifiedCollectedCoins},
-	ExternalAddress, ExternalAmount,
-	Call
+	Call, ExternalAddress, ExternalAmount,
 };
 use sp_runtime::traits::UniqueSaturatedFrom;
 
@@ -112,7 +111,6 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-
 impl<T> Task<T, T::BlockNumber> for crate::types::UnverifiedCollectedCoins
 where
 	T: Config,
@@ -120,7 +118,7 @@ where
 	type VerifiedTask = crate::types::CollectedCoins<T::Hash, T::Balance>;
 
 	fn verify(&self) -> VerificationResult<Self::VerifiedTask> {
-		Pallet::<T>::verify_collect_coins_ocw(&self)
+		Pallet::<T>::verify_collect_coins_ocw(self)
 	}
 
 	fn failure_call(

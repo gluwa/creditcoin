@@ -580,10 +580,7 @@ fn verify_transfer_ocw_works() {
 
 		requests.mock_all(&mut state.write());
 
-		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-			Ok(Some(_))
-		);
+		assert_matches!(crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified), Ok(_));
 	});
 }
 
@@ -673,7 +670,7 @@ fn verify_transfer_get_block_by_number_error() {
 
 		requests.mock_all(&mut state.write());
 
-		assert_matches!(crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified), Ok(None));
+		assert_matches!(crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified), Ok(transfer) => {assert!(transfer.timestamp.is_none())});
 	});
 }
 

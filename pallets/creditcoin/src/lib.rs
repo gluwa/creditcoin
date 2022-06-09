@@ -71,7 +71,7 @@ pub mod pallet {
 		offchain::{AppCrypto, CreateSignedTransaction},
 		pallet_prelude::*,
 	};
-	use ocw::errors::VerificationFailureCause;
+	use ocw::{errors::VerificationFailureCause, task::TaskIterator};
 	use sp_runtime::traits::{
 		IdentifyAccount, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto, Verify,
 	};
@@ -617,38 +617,11 @@ pub mod pallet {
 
 			let auth_id = T::FromAccountId::from(my_authority.unwrap());
 
-			let u_transfer = UnverifiedTransfers::<T>::iter().map(|(deadline, id, u_t)| {
-				let storage_key = (deadline, id.clone()).encode();
-				let status = ocw::LocalVerificationStatus::new(&storage_key);
-				if status.is_complete() {
-					log::debug!("Already handled Transfer ({:?}, {:?})", deadline, id);
-					return;
-				}
+			let u_transfer =
+				TaskIterator::<_, _, T, _>::new(UnverifiedTransfers::<T>::iter(), auth_id.clone());
 
-				let verification_result = Self::verify_transfer_ocw(&u_t);
-				let on_success = |timestamp: Option<T::Moment>| {
-					Self::offchain_signed_tx(auth_id.clone(), |_| Call::verify_transfer {
-						transfer: Transfer { timestamp, ..u_t.transfer.clone() },
-						deadline,
-					})
-				};
-				let on_failure = |cause| {
-					Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_transfer {
-						transfer_id: TransferId::new::<T>(
-							&u_t.transfer.blockchain,
-							&u_t.transfer.tx_id,
-						),
-						cause,
-						deadline,
-					})
-				};
-				Self::ocw_result_handler(verification_result, on_success, on_failure, status, &u_t);
-			});
-
-			let u_collect_coins = ocw::task::TaskIterator::<_, _, T, _>::new(
-				UnverifiedCollectedCoins::<T>::iter(),
-				auth_id.clone(),
-			);
+			let u_collect_coins =
+				TaskIterator::<_, _, T, _>::new(UnverifiedCollectedCoins::<T>::iter(), auth_id);
 
 			let schedule = interleave(u_transfer, u_collect_coins);
 

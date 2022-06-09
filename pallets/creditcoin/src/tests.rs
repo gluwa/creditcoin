@@ -721,7 +721,7 @@ fn ocw_retries() {
 
 		roll_by_with_ocw(1);
 
-		assert!(logs_contain("Already handled Transfer"));
+		assert!(logs_contain("Already handled Task"));
 	});
 }
 
