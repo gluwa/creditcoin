@@ -1,4 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
+import { BN } from '@polkadot/util';
 import {
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
@@ -10,6 +11,8 @@ import {
     PalletCreditcoinOffer,
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
+    PalletCreditcoinCollectedCoins,
+    PalletCreditcoinUnverifiedCollectedCoins,
 } from '@polkadot/types/lookup';
 import {
     Address,
@@ -26,6 +29,8 @@ import {
     DealOrderId,
     Transfer,
     TransferKind,
+    UnverifiedCollectedCoins,
+    CollectedCoins,
 } from './model';
 
 export const createAddress = ({ value, blockchain, owner }: PalletCreditcoinAddress): Address => ({
@@ -191,5 +196,24 @@ export const createTransfer = (transfer: PalletCreditcoinTransfer): Transfer => 
         processed: isProcessed.isTrue,
         accountId: accountId.toString(),
         timestamp: timestamp.isSome ? new Date(timestamp.unwrap().toNumber()) : undefined,
+    };
+};
+
+export const createUnverifiedCollectedCoins = (
+    collectedCoins: PalletCreditcoinUnverifiedCollectedCoins,
+): UnverifiedCollectedCoins => {
+    const { to, txId } = collectedCoins;
+    return {
+        to: to.toString(),
+        txHash: txId.toString(),
+    };
+};
+
+export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectedCoins): CollectedCoins => {
+    const { to, txId, amount } = collectedCoins;
+    return {
+        to: to.toString(),
+        txHash: txId.toString(),
+        amount: amount as BN,
     };
 };

@@ -18,12 +18,12 @@ import type {
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinBidOrder,
-    PalletCreditcoinCollectCoins,
+    PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
     PalletCreditcoinOffer,
     PalletCreditcoinTransfer,
-    PalletCreditcoinUnverifiedCollectCoins,
+    PalletCreditcoinUnverifiedCollectedCoins,
     PalletCreditcoinUnverifiedTransfer,
     PalletDifficultyDifficultyAndTimestamp,
     PalletTransactionPaymentReleases,
@@ -111,9 +111,9 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
-            collectCoins: AugmentedQuery<
+            collectedCoins: AugmentedQuery<
                 ApiType,
-                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectCoins>>,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectedCoins>>,
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
@@ -149,12 +149,12 @@ declare module '@polkadot/api-base/types/storage' {
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
-            unverifiedCollectCoins: AugmentedQuery<
+            unverifiedCollectedCoins: AugmentedQuery<
                 ApiType,
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
                     arg2: H256 | string | Uint8Array,
-                ) => Observable<Option<PalletCreditcoinUnverifiedCollectCoins>>,
+                ) => Observable<Option<PalletCreditcoinUnverifiedCollectedCoins>>,
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;

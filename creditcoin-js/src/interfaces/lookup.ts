@@ -219,10 +219,10 @@ export default {
     PalletCreditcoinEvent: {
         _enum: {
             AddressRegistered: '(H256,PalletCreditcoinAddress)',
-            CollectCoinsRegistered: '(H256,PalletCreditcoinUnverifiedCollectCoins)',
+            CollectCoinsRegistered: '(H256,PalletCreditcoinUnverifiedCollectedCoins)',
             TransferRegistered: '(H256,PalletCreditcoinTransfer)',
             TransferVerified: 'H256',
-            CollectCoinsMinted: '(H256,PalletCreditcoinCollectCoins)',
+            CollectedCoinsMinted: '(H256,PalletCreditcoinCollectedCoins)',
             TransferProcessed: 'H256',
             AskOrderAdded: '(PalletCreditcoinAskOrderId,PalletCreditcoinAskOrder)',
             BidOrderAdded: '(PalletCreditcoinBidOrderId,PalletCreditcoinBidOrder)',
@@ -258,9 +258,9 @@ export default {
         },
     },
     /**
-     * Lookup37: pallet_creditcoin::types::UnverifiedCollectCoins
+     * Lookup37: pallet_creditcoin::types::UnverifiedCollectedCoins
      **/
-    PalletCreditcoinUnverifiedCollectCoins: {
+    PalletCreditcoinUnverifiedCollectedCoins: {
         to: 'Bytes',
         txId: 'Bytes',
     },
@@ -309,9 +309,9 @@ export default {
      **/
     PalletCreditcoinRepaymentOrderId: '(u32,H256)',
     /**
-     * Lookup48: pallet_creditcoin::types::CollectCoins<primitive_types::H256, Balance>
+     * Lookup48: pallet_creditcoin::types::CollectedCoins<primitive_types::H256, Balance>
      **/
-    PalletCreditcoinCollectCoins: {
+    PalletCreditcoinCollectedCoins: {
         to: 'H256',
         amount: 'u128',
         txId: 'Bytes',
@@ -778,7 +778,7 @@ export default {
                 dealOrderId: 'PalletCreditcoinDealOrderId',
             },
             persist_collect_coins: {
-                collectCoins: 'PalletCreditcoinCollectCoins',
+                collectedCoins: 'PalletCreditcoinCollectedCoins',
                 deadline: 'u32',
             },
             verify_transfer: {
@@ -791,7 +791,7 @@ export default {
                 cause: 'PalletCreditcoinOcwErrorsVerificationFailureCause',
             },
             fail_collect_coins: {
-                collectCoinsId: 'H256',
+                collectedCoinsId: 'H256',
                 cause: 'PalletCreditcoinOcwErrorsVerificationFailureCause',
                 deadline: 'u32',
             },
