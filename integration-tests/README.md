@@ -53,3 +53,13 @@ export BORROWER_PRIVATE_KEY=YYYY
 
 yarn test --config testnet.config.ts
 ```
+
+**WARNING:**
+when running this test-suite against `testnet` or `mainnet` make sure that the
+source code matches the version of testnet/mainnet running on the nodes. Try
+branching the tests from the relavant branch/tag before executing them.
+
+Running a test-suite from `dev` against downstream branches is not supported and
+will generally fail. The most likely failures will be missing extrinsics, different
+parameters to extrinsics and/or mismatched TypeScript type definitions which are
+automatically generated from the running version of `creditcoin-node`.
