@@ -11,6 +11,7 @@ pub enum OffchainError {
 	InvalidTask(VerificationFailureCause),
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
+	InvalidData,
 }
 
 pub type VerificationResult<T> = Result<T, OffchainError>;
