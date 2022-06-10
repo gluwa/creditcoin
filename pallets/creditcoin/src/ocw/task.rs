@@ -6,11 +6,15 @@ use super::{
 	Config, LocalVerificationStatus, Pallet, VerificationFailureCause, VerificationResult,
 };
 
+pub(crate) const TASK_GUARD: &[u8] = b"creditcoin/task/guard";
+
 pub(super) trait Task<T: Config, D: core::fmt::Debug> {
 	type VerifiedTask;
 	fn verify(&self) -> VerificationResult<Self::VerifiedTask>;
 	fn status_key<Id: Encode>(id: &Id) -> Vec<u8> {
-		id.encode()
+		id.using_encoded(|encoded_id| {
+			TASK_GUARD.iter().chain(b"/".iter()).chain(encoded_id).copied().collect()
+		})
 	}
 	fn status(storage_key: &[u8]) -> LocalVerificationStatus {
 		LocalVerificationStatus::new(storage_key)
