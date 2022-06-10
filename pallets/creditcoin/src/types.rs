@@ -575,3 +575,39 @@ impl<'de> serde::Deserialize<'de> for LegacySighash {
 			.map_err(|()| serde::de::Error::custom("expected 60 bytes"))
 	}
 }
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum Task<AccountId, BlockNum, Hash, Moment> {
+	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(UnverifiedCollectedCoins),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskId<Hash> {
+	VerifyTransfer(TransferId<Hash>),
+	CollectCoins(CollectedCoinsId<Hash>),
+}
+
+impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
+	fn from(id: TransferId<Hash>) -> Self {
+		TaskId::VerifyTransfer(id)
+	}
+}
+
+impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
+	fn from(id: CollectedCoinsId<Hash>) -> Self {
+		TaskId::CollectCoins(id)
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
+	VerifyTransfer(Transfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(CollectedCoins<Hash, Balance>),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskOracleData<Balance, Moment> {
+	VerifyTransfer(Option<Moment>),
+	CollectCoins(Balance),
+}
