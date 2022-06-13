@@ -329,15 +329,43 @@ mod tests {
 	}
 
 	#[test]
+	fn fail_collect_coins_emits_events() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			System::<Test>::set_block_number(1);
+
+			assert_ok!(Creditcoin::<Test>::fail_collect_coins(
+				Origin::signed(auth),
+				expected_collected_coins_id.clone(),
+				Cause::AbiMismatch,
+				Test::unverified_transfer_deadline(),
+			));
+
+			let event = System::<Test>::events().pop().expect("an event").event;
+			assert_matches!(
+				event,
+				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectCoinsFailedVerification(collected_coins_id, cause)) => {
+					assert_eq!(collected_coins_id, expected_collected_coins_id);
+					assert_eq!(cause, Cause::AbiMismatch);
+				}
+			);
+		});
+	}
+
+	#[test]
 	fn ocw_fail_collect_coins_works() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
 		let acct = AccountId::from(acct_pubkey.into_account().0);
-		let collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
 		ext.build_offchain_and_execute_with_state(|_state, pool| {
 			crate::mock::roll_to(1);
 			let call = crate::Call::<crate::mock::Test>::fail_collect_coins {
-				collected_coins_id,
+				collected_coins_id: expected_collected_coins_id.clone(),
 				cause: Cause::AbiMismatch,
 				deadline: Test::unverified_transfer_deadline(),
 			};
@@ -478,6 +506,8 @@ mod tests {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
 		ext.build_offchain_and_execute_with_state(|_, _| {
+			System::<Test>::set_block_number(1);
+
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
 			assert_ok!(Creditcoin::<Test>::register_address(
@@ -495,6 +525,18 @@ mod tests {
 
 			let collected_coins_id =
 				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+
+			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+			assert_matches!(
+				event,
+				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectCoinsRegistered(collect_coins_id, pending)) => {
+					assert_eq!(collect_coins_id, collected_coins_id);
+
+					let UnverifiedCollectedCoins { to, tx_id } = pending;
+					assert_eq!(to, addr);
+					assert_eq!(tx_id, TX_HASH.hex_to_address());
+				}
+			);
 
 			assert!(Creditcoin::<Test>::pending_collect_coins(
 				Test::unverified_transfer_deadline(),
