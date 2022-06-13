@@ -181,7 +181,7 @@ mod tests {
 	use assert_matches::assert_matches;
 	use codec::Decode;
 	use ethereum_types::{H160, U64};
-	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy};
+	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
 	use sp_runtime::traits::IdentifyAccount;
 
@@ -455,6 +455,44 @@ mod tests {
 					deadline
 				),
 				crate::Error::<Test>::NonExistentAddress
+			);
+		});
+	}
+
+	#[test]
+	#[tracing_test::traced_test]
+	fn persist_more_than_available_balance_should_error() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc),
+				CONTRACT_CHAIN,
+				addr,
+				sign
+			));
+
+			let pcc = PassingCollectCoins::default();
+
+			// lower free balance so that collect coins would overflow
+			let cash = <crate::mock::Balances as Currency<AccountId>>::minimum_balance();
+			<crate::mock::Balances as Currency<AccountId>>::make_free_balance_be(&auth, cash);
+
+			let collected_coins = CollectedCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				amount: u128::MAX,
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_noop!(
+				Creditcoin::<Test>::persist_collect_coins(
+					Origin::signed(auth),
+					collected_coins,
+					Test::unverified_transfer_deadline()
+				),
+				crate::Error::<Test>::BalanceOverflow
 			);
 		});
 	}
