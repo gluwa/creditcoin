@@ -183,7 +183,7 @@ mod tests {
 	use ethereum_types::{H160, U64};
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
-	use sp_runtime::traits::IdentifyAccount;
+	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, Origin, Test,
@@ -326,6 +326,89 @@ mod tests {
 		let amount = super::validate_collect_coins(&to, &receipt, &transaction, eth_tip)?;
 		assert_eq!(amount, *RPC_RESPONSE_AMOUNT);
 		Ok(())
+	}
+
+	#[test]
+	fn fail_collect_coins_should_error_when_not_signed() {
+		let ext = ExtBuilder::default();
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			assert_noop!(
+				Creditcoin::<Test>::fail_collect_coins(
+					Origin::none(),
+					expected_collected_coins_id.clone(),
+					Cause::AbiMismatch,
+					Test::unverified_transfer_deadline(),
+				),
+				BadOrigin
+			);
+		});
+	}
+
+	#[test]
+	fn fail_collect_coins_should_error_when_no_authority() {
+		let ext = ExtBuilder::default();
+		let (molly, _, _, _) = generate_address_with_proof("malicious");
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			assert_noop!(
+				Creditcoin::<Test>::fail_collect_coins(
+					Origin::signed(molly),
+					expected_collected_coins_id.clone(),
+					Cause::AbiMismatch,
+					Test::unverified_transfer_deadline(),
+				),
+				crate::Error::<Test>::InsufficientAuthority
+			);
+		});
+	}
+
+	#[test]
+	fn fail_collect_coins_should_fail_when_transfer_has_already_been_registered() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			System::<Test>::set_block_number(1);
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc),
+				CONTRACT_CHAIN,
+				addr,
+				sign
+			));
+
+			let deadline = Test::unverified_transfer_deadline();
+
+			let pcc = PassingCollectCoins::default();
+
+			let collected_coins = CollectedCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+				Origin::signed(auth.clone()),
+				collected_coins.clone(),
+				deadline
+			));
+
+			assert_noop!(
+				Creditcoin::<Test>::fail_collect_coins(
+					Origin::signed(auth),
+					CollectedCoinsId::new::<Test>(&collected_coins.tx_id),
+					Cause::AbiMismatch,
+					Test::unverified_transfer_deadline(),
+				),
+				crate::Error::<Test>::TransferAlreadyRegistered
+			);
+		});
 	}
 
 	#[test]
