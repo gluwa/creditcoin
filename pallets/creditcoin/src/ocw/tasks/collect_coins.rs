@@ -1,4 +1,4 @@
-use super::{
+use crate::ocw::{
 	errors::{VerificationFailureCause, VerificationResult},
 	rpc::{self, EthTransaction, EthTransactionReceipt},
 	OffchainResult, ETH_CONFIRMATIONS,
@@ -118,7 +118,7 @@ mod tests {
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
 	static RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
-		Lazy::new(|| serde_json::from_slice(include_bytes!("../tests/collectCoins.json")).unwrap());
+		Lazy::new(|| serde_json::from_slice(include_bytes!("../../tests/collectCoins.json")).unwrap());
 
 	static BLOCK_NUMBER: Lazy<U64> = Lazy::new(|| {
 		let responses = &*RESPONSES;

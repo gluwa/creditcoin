@@ -36,9 +36,9 @@ use sp_runtime::{
 
 use super::{
 	errors::OffchainError,
-	ethless_transfer_function_abi, parse_eth_address,
+	tasks::verify_transfer::ethless_transfer_function_abi, parse_eth_address,
 	rpc::{Address, EthTransaction, EthTransactionReceipt},
-	validate_ethless_transfer, ETH_CONFIRMATIONS,
+	tasks::verify_transfer::validate_ethless_transfer, ETH_CONFIRMATIONS,
 };
 
 fn make_external_address(hex_str: &str) -> ExternalAddress {
