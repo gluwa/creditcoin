@@ -52,38 +52,6 @@ fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> 
 }
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn ocw_result_handler<O: core::fmt::Debug>(
-		verification_result: VerificationResult<O>,
-		success_dispatcher: impl Fn(O) -> Result<(), Error<T>>,
-		failure_dispatcher: impl Fn(VerificationFailureCause) -> Result<(), Error<T>>,
-		task_status: LocalVerificationStatus,
-		unverified_task: &impl core::fmt::Debug,
-	) {
-		log::debug!("Task Verification result: {:?}", verification_result);
-		match verification_result {
-			Ok(output) => {
-				if let Err(e) = success_dispatcher(output) {
-					log::error!("Failed to send success dispatchable transaction: {:?}", e);
-				} else {
-					task_status.mark_complete();
-				}
-			},
-			Err(OffchainError::InvalidTask(cause)) => {
-				log::warn!("Failed to verify pending task {:?} : {:?}", unverified_task, cause);
-				if cause.is_fatal() {
-					if let Err(e) = failure_dispatcher(cause) {
-						log::error!("Failed to send fail dispatchable transaction: {:?}", e);
-					} else {
-						task_status.mark_complete();
-					}
-				}
-			},
-			Err(error) => {
-				log::error!("Task verification encountered an error {:?}", error);
-			},
-		}
-	}
-
 	pub fn offchain_signed_tx(
 		auth_id: T::FromAccountId,
 		call: impl Fn(&Account<T>) -> Call<T>,

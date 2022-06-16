@@ -4,7 +4,6 @@
 extern crate alloc;
 
 use frame_support::traits::{Imbalance, StorageVersion};
-use itertools::interleave;
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
@@ -645,26 +644,35 @@ pub mod pallet {
 				match result {
 					Ok(data) => {
 						let output = task.into_output::<T>(data).unwrap();
-						Self::offchain_signed_tx(auth_id.clone(), |_| Call::persist_task_output {
-							deadline,
-							task_id: id.clone(),
-							task_output: output.clone(),
-						})
-						.unwrap();
-						status.mark_complete();
+						match Self::offchain_signed_tx(auth_id.clone(), |_| {
+							Call::persist_task_output {
+								deadline,
+								task_id: id.clone(),
+								task_output: output.clone(),
+							}
+						}) {
+							Err(e) => {
+								log::error!(
+									"Failed to send persist dispatchable transaction: {:?}",
+									e
+								)
+							},
+							Ok(_) => status.mark_complete(),
+						}
 					},
 					Err(ocw::OffchainError::InvalidTask(cause)) => {
 						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
 						if cause.is_fatal() {
-							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
-								Call::fail_task { deadline, task_id: id.clone(), cause }
+							match Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_task {
+								deadline,
+								task_id: id.clone(),
+								cause,
 							}) {
-								log::error!(
+								Err(e) => log::error!(
 									"Failed to send fail dispatchable transaction: {:?}",
 									e
-								);
-							} else {
-								status.mark_complete();
+								),
+								Ok(_) => status.mark_complete(),
 							}
 						}
 					},
@@ -673,73 +681,6 @@ pub mod pallet {
 					},
 				}
 			}
-
-			let u_transfer = UnverifiedTransfers::<T>::iter().map(|(deadline, id, u_t)| {
-				let storage_key = (deadline, id.clone()).encode();
-				let status = ocw::LocalVerificationStatus::new(&storage_key);
-				if status.is_complete() {
-					log::debug!("Already handled Transfer ({:?}, {:?})", deadline, id);
-					return;
-				}
-
-				let verification_result = Self::verify_transfer_ocw(&u_t);
-				let on_success = |timestamp: Option<T::Moment>| {
-					Self::offchain_signed_tx(auth_id.clone(), |_| Call::verify_transfer {
-						transfer: Transfer { timestamp, ..u_t.transfer.clone() },
-						deadline,
-					})
-				};
-				let on_failure = |cause| {
-					Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_transfer {
-						transfer_id: TransferId::new::<T>(
-							&u_t.transfer.blockchain,
-							&u_t.transfer.tx_id,
-						),
-						cause,
-						deadline,
-					})
-				};
-				Self::ocw_result_handler(verification_result, on_success, on_failure, status, &u_t);
-			});
-
-			let u_collect_coins =
-				UnverifiedCollectedCoins::<T>::iter().map(|(deadline, id, u_cc)| {
-					let storage_key = (deadline, id.clone()).encode();
-					let status = ocw::LocalVerificationStatus::new(&storage_key);
-					if status.is_complete() {
-						log::debug!("Already handled CollectCoins ({:?}, {:?})", deadline, id);
-						return;
-					}
-					let verification_result = Self::verify_collect_coins_ocw(&u_cc);
-
-					let on_success = |collected_coins: types::CollectedCoins<
-						T::Hash,
-						T::Balance,
-					>| {
-						Self::offchain_signed_tx(auth_id.clone(), |_| Call::persist_collect_coins {
-							collected_coins: collected_coins.clone(),
-							deadline,
-						})
-					};
-					let on_failure = |cause| {
-						Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_collect_coins {
-							collected_coins_id: CollectedCoinsId::new::<T>(&u_cc.tx_id),
-							cause,
-							deadline,
-						})
-					};
-					Self::ocw_result_handler(
-						verification_result,
-						on_success,
-						on_failure,
-						status,
-						&u_cc,
-					);
-				});
-
-			let schedule = interleave(u_transfer, u_collect_coins);
-
-			schedule.for_each(drop);
 		}
 
 		fn on_runtime_upgrade() -> Weight {
@@ -1252,7 +1193,8 @@ pub mod pallet {
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
-			let address_id = AddressId::new::<T>(&ocw::tasks::collect_coins::CONTRACT_CHAIN, &evm_address);
+			let address_id =
+				AddressId::new::<T>(&ocw::tasks::collect_coins::CONTRACT_CHAIN, &evm_address);
 			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
@@ -1368,66 +1310,6 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight((<T as Config>::WeightInfo::persist_collect_coins(), DispatchClass::Normal, Pays::No))]
-		pub fn persist_collect_coins(
-			origin: OriginFor<T>,
-			collected_coins: types::CollectedCoins<T::Hash, T::Balance>,
-			deadline: T::BlockNumber,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
-
-			let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
-			ensure!(
-				!CollectedCoins::<T>::contains_key(&key),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let amount = collected_coins.amount;
-			let imbalance = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::issue(amount);
-			ensure!(amount == imbalance.peek(), Error::<T>::BalanceOverflow);
-
-			let address =
-				Self::addresses(&collected_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
-
-			<pallet_balances::Pallet<T> as Currency<T::AccountId>>::resolve_creating(
-				&address.owner,
-				imbalance,
-			);
-
-			CollectedCoins::<T>::insert(key.clone(), collected_coins.clone());
-
-			UnverifiedCollectedCoins::<T>::remove(&deadline, &key);
-
-			Self::deposit_event(Event::<T>::CollectedCoinsMinted(key, collected_coins));
-
-			Ok(())
-		}
-
-		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
-		pub fn verify_transfer(
-			origin: OriginFor<T>,
-			deadline: T::BlockNumber,
-			transfer: Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
-
-			let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
-			ensure!(!Transfers::<T>::contains_key(&key), Error::<T>::TransferAlreadyRegistered);
-
-			UnverifiedTransfers::<T>::remove(&deadline, &key);
-
-			let mut transfer = transfer;
-			transfer.block = frame_system::Pallet::<T>::block_number();
-
-			Self::deposit_event(Event::<T>::TransferVerified(key.clone()));
-			Transfers::<T>::insert(key, transfer);
-			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
-		}
-
 		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
@@ -1515,53 +1397,6 @@ pub mod pallet {
 			PendingTasks::<T>::remove(&deadline, &task_id);
 			Self::deposit_event(event);
 
-			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
-		}
-
-		#[pallet::weight(<T as Config>::WeightInfo::fail_transfer())]
-		pub fn fail_transfer(
-			origin: OriginFor<T>,
-			deadline: T::BlockNumber,
-			transfer_id: TransferId<T::Hash>,
-			cause: VerificationFailureCause,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
-
-			ensure!(
-				!Transfers::<T>::contains_key(&transfer_id),
-				Error::<T>::TransferAlreadyRegistered
-			);
-
-			UnverifiedTransfers::<T>::remove(&deadline, &transfer_id);
-			PendingTasks::<T>::remove(&deadline, &TaskId::VerifyTransfer(transfer_id.clone()));
-			Self::deposit_event(Event::<T>::TransferFailedVerification(transfer_id, cause));
-			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
-		}
-
-		#[pallet::weight(<T as Config>::WeightInfo::fail_collect_coins())]
-		pub fn fail_collect_coins(
-			origin: OriginFor<T>,
-			collected_coins_id: CollectedCoinsId<T::Hash>,
-			cause: VerificationFailureCause,
-			deadline: T::BlockNumber,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
-
-			ensure!(
-				!CollectedCoins::<T>::contains_key(&collected_coins_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			UnverifiedCollectedCoins::<T>::remove(&deadline, &collected_coins_id);
-
-			Self::deposit_event(Event::<T>::CollectCoinsFailedVerification(
-				collected_coins_id,
-				cause,
-			));
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
