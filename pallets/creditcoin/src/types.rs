@@ -606,6 +606,22 @@ pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
 	CollectCoins(CollectedCoins<Hash, Balance>),
 }
 
+impl<AccountId, Balance, BlockNum, Hash, Moment> From<Transfer<AccountId, BlockNum, Hash, Moment>>
+	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+{
+	fn from(transfer: Transfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+		TaskOutput::VerifyTransfer(transfer)
+	}
+}
+
+impl<AccountId, Balance, BlockNum, Hash, Moment> From<CollectedCoins<Hash, Balance>>
+	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+{
+	fn from(collected_coins: CollectedCoins<Hash, Balance>) -> Self {
+		TaskOutput::CollectCoins(collected_coins)
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskOracleData<Balance, Moment> {
 	VerifyTransfer(Option<Moment>),

@@ -36,9 +36,11 @@ use sp_runtime::{
 
 use super::{
 	errors::OffchainError,
-	tasks::verify_transfer::ethless_transfer_function_abi, parse_eth_address,
+	parse_eth_address,
 	rpc::{Address, EthTransaction, EthTransactionReceipt},
-	tasks::verify_transfer::validate_ethless_transfer, ETH_CONFIRMATIONS,
+	tasks::verify_transfer::ethless_transfer_function_abi,
+	tasks::verify_transfer::validate_ethless_transfer,
+	ETH_CONFIRMATIONS,
 };
 
 fn make_external_address(hex_str: &str) -> ExternalAddress {
@@ -378,8 +380,8 @@ fn offchain_signed_tx_works() {
 	let transfer_id = crate::TransferId::new::<crate::mock::Test>(&Blockchain::Ethereum, &[0]);
 	ext.build_offchain_and_execute_with_state(|_state, pool| {
 		crate::mock::roll_to(1);
-		let call = crate::Call::<crate::mock::Test>::fail_transfer {
-			transfer_id,
+		let call = crate::Call::<crate::mock::Test>::fail_task {
+			task_id: transfer_id.into(),
 			deadline: 10000,
 			cause: IncorrectAmount,
 		};

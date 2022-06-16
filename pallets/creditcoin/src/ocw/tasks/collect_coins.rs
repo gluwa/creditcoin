@@ -117,8 +117,9 @@ mod tests {
 	use std::collections::HashMap;
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
-	static RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
-		Lazy::new(|| serde_json::from_slice(include_bytes!("../../tests/collectCoins.json")).unwrap());
+	static RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> = Lazy::new(|| {
+		serde_json::from_slice(include_bytes!("../../tests/collectCoins.json")).unwrap()
+	});
 
 	static BLOCK_NUMBER: Lazy<U64> = Lazy::new(|| {
 		let responses = &*RESPONSES;
@@ -439,8 +440,8 @@ mod tests {
 		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
 		ext.build_offchain_and_execute_with_state(|_state, pool| {
 			crate::mock::roll_to(1);
-			let call = crate::Call::<crate::mock::Test>::fail_collect_coins {
-				collected_coins_id: expected_collected_coins_id.clone(),
+			let call = crate::Call::<crate::mock::Test>::fail_task {
+				task_id: expected_collected_coins_id.into(),
 				cause: Cause::AbiMismatch,
 				deadline: Test::unverified_transfer_deadline(),
 			};
@@ -458,7 +459,7 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
+	// #[tracing_test::traced_test]
 	fn persist_collect_coins() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -485,10 +486,13 @@ mod tests {
 				tx_id: TX_HASH.hex_to_address(),
 			};
 
-			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+
+			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth),
-				collected_coins.clone(),
-				deadline
+				deadline,
+				collected_coins_id.into(),
+				collected_coins.clone().into(),
 			));
 
 			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
@@ -520,14 +524,16 @@ mod tests {
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
 			let deadline = Test::unverified_transfer_deadline();
 
 			assert_noop!(
-				Creditcoin::<Test>::persist_collect_coins(
+				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(auth),
-					collected_coins,
-					deadline
+					deadline,
+					collected_coins_id.into(),
+					collected_coins.into(),
 				),
 				crate::Error::<Test>::NonExistentAddress
 			);
@@ -593,11 +599,13 @@ mod tests {
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
-			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth),
-				collected_coins,
-				Test::unverified_transfer_deadline()
+				Test::unverified_transfer_deadline(),
+				collected_coins_id.into(),
+				collected_coins.into(),
 			));
 
 			roll_by_with_ocw(1);
@@ -723,12 +731,14 @@ mod tests {
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
 			assert_noop!(
-				Creditcoin::<Test>::persist_collect_coins(
+				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(molly),
-					collected_coins,
-					Test::unverified_transfer_deadline()
+					Test::unverified_transfer_deadline(),
+					collected_coins_id.into(),
+					collected_coins.into(),
 				),
 				crate::Error::<Test>::InsufficientAuthority
 			);
@@ -773,9 +783,11 @@ mod tests {
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
-			let call = crate::Call::<crate::mock::Test>::persist_collect_coins {
-				collected_coins,
+			let call = crate::Call::<crate::mock::Test>::persist_task_output {
+				task_id: collected_coins_id.into(),
+				task_output: collected_coins.into(),
 				deadline,
 			};
 
@@ -806,18 +818,21 @@ mod tests {
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
-			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
-				collected_coins.clone(),
-				Test::unverified_transfer_deadline()
+				Test::unverified_transfer_deadline(),
+				collected_coins_id.clone().into(),
+				collected_coins.clone().into(),
 			));
 
 			assert_noop!(
-				Creditcoin::<Test>::persist_collect_coins(
+				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(auth),
-					collected_coins,
-					Test::unverified_transfer_deadline()
+					Test::unverified_transfer_deadline(),
+					collected_coins_id.into(),
+					collected_coins.into(),
 				),
 				crate::Error::<Test>::CollectCoinsAlreadyRegistered
 			);
@@ -879,6 +894,7 @@ mod tests {
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
@@ -887,10 +903,11 @@ mod tests {
 				sign
 			));
 
-			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
-				collected_coins.clone(),
-				Test::unverified_transfer_deadline()
+				Test::unverified_transfer_deadline(),
+				collected_coins_id.into(),
+				collected_coins.clone().into(),
 			));
 
 			assert_eq!(

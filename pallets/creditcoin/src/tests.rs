@@ -470,8 +470,8 @@ fn verify_ethless_transfer() {
 }
 
 #[test]
-#[tracing_test::traced_test]
-fn register_transfer_ocw() {
+// #[tracing_test::traced_test]
+fn register_transfer_ocww() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
 	ext.build_offchain_and_execute_with_state(|state, pool| {
@@ -515,8 +515,8 @@ fn register_transfer_ocw() {
 		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_eq!(
 			fail_tx.call,
-			Call::Creditcoin(crate::Call::fail_transfer {
-				transfer_id,
+			Call::Creditcoin(crate::Call::fail_task {
+				task_id: transfer_id.clone().into(),
 				deadline,
 				cause: VerificationFailureCause::IncorrectNonce
 			})
@@ -558,8 +558,9 @@ fn register_transfer_ocw() {
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_eq!(
 			verify_tx.call,
-			Call::Creditcoin(crate::Call::verify_transfer {
-				transfer: expected_transfer,
+			Call::Creditcoin(crate::Call::persist_task_output {
+				task_id: transfer_id.into(),
+				task_output: expected_transfer.into(),
 				deadline
 			})
 		);
@@ -716,7 +717,7 @@ fn ocw_retries() {
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_matches!(
 			verify_tx.call,
-			super::mock::Call::Creditcoin(crate::Call::verify_transfer { .. })
+			super::mock::Call::Creditcoin(crate::Call::persist_task_output { .. })
 		);
 
 		roll_by_with_ocw(1);
@@ -2570,9 +2571,17 @@ fn verify_transfer_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
-		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
 		let deadline = Test::unverified_transfer_deadline();
-		assert_noop!(Creditcoin::verify_transfer(Origin::none(), deadline, transfer), BadOrigin);
+		assert_noop!(
+			Creditcoin::persist_task_output(
+				Origin::none(),
+				deadline,
+				transfer_id.into(),
+				transfer.into()
+			),
+			BadOrigin
+		);
 	});
 }
 
@@ -2581,13 +2590,14 @@ fn verify_transfer_should_error_when_signer_not_authorized() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
-		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
 		let deadline = Test::unverified_transfer_deadline();
 		assert_noop!(
-			Creditcoin::verify_transfer(
+			Creditcoin::persist_task_output(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				transfer
+				transfer_id.into(),
+				transfer.into(),
 			),
 			crate::Error::<Test>::InsufficientAuthority,
 		);
@@ -2607,14 +2617,15 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 		));
 
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
-		let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::verify_transfer(
+			Creditcoin::persist_task_output(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				transfer
+				transfer_id.into(),
+				transfer.into(),
 			),
 			crate::Error::<Test>::TransferAlreadyRegistered,
 		);
@@ -2655,10 +2666,11 @@ fn verify_transfer_should_work() {
 		};
 		let deadline = Test::unverified_transfer_deadline();
 
-		assert_ok!(Creditcoin::verify_transfer(
+		assert_ok!(Creditcoin::persist_task_output(
 			Origin::signed(test_info.lender.account_id),
 			deadline,
-			transfer.clone()
+			transfer_id.clone().into(),
+			transfer.clone().into(),
 		));
 
 		let mut all_events = <frame_system::Pallet<Test>>::events();
@@ -2667,8 +2679,8 @@ fn verify_transfer_should_work() {
 		let last_event = all_events.pop().expect("At least one EventRecord").event;
 		assert_matches!(
 			last_event,
-			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(id)) =>{
-				assert_eq!(transfer_id,id)
+			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(id)) => {
+				assert_eq!(transfer_id, id)
 			}
 		);
 
@@ -2697,10 +2709,10 @@ fn fail_transfer_should_work() {
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 		let deadline = Test::unverified_transfer_deadline();
 
-		assert_ok!(Creditcoin::fail_transfer(
+		assert_ok!(Creditcoin::fail_task(
 			Origin::signed(test_info.lender.account_id),
 			deadline,
-			transfer_id.clone(),
+			transfer_id.clone().into(),
 			failure_cause
 		));
 
@@ -2732,7 +2744,7 @@ fn fail_transfer_should_error_when_not_signed() {
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::fail_transfer(Origin::none(), deadline, transfer_id, failure_cause),
+			Creditcoin::fail_task(Origin::none(), deadline, transfer_id.into(), failure_cause),
 			BadOrigin
 		);
 	})
@@ -2754,10 +2766,10 @@ fn fail_transfer_should_error_when_not_authority() {
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::fail_transfer(
+			Creditcoin::fail_task(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				transfer_id,
+				transfer_id.into(),
 				failure_cause
 			),
 			crate::Error::<Test>::InsufficientAuthority
@@ -2786,10 +2798,10 @@ fn fail_transfer_should_error_when_transfer_registered() {
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::fail_transfer(
+			Creditcoin::fail_task(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				transfer_id,
+				transfer_id.into(),
 				failure_cause
 			),
 			crate::Error::<Test>::TransferAlreadyRegistered
