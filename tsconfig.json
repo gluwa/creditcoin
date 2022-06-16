@@ -1,0 +1,9 @@
+{
+  "references": [
+    { "path": "./creditcoin-js" },
+    { "path": "./integration-tests" }
+  ]
+  // "files": [],
+  // "include": [],
+  // "exclude": ["**/node_modules"]
+}

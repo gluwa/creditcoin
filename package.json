@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "workspaces": [
+    "creditcoin-js",
+    "integration-tests"
+  ],
+  "name": "creditcoin",
+  "version": "1.0.0",
+  "devDependencies": {
+    "typescript": "^4.7.2"
+  }
+}
