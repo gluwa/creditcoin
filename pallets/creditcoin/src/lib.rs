@@ -61,9 +61,9 @@ pub mod pallet {
 
 	use super::*;
 	use frame_support::{
-		dispatch::{DispatchErrorWithPostInfo, DispatchResult},
+		dispatch::DispatchResult,
 		pallet_prelude::*,
-		traits::{tokens::ExistenceRequirement, Currency},
+		traits::tokens::{currency::Currency as CurrencyT, ExistenceRequirement},
 		transactional,
 		weights::PostDispatchInfo,
 	};
@@ -251,6 +251,9 @@ pub mod pallet {
 		CollectedCoinsId<T::Hash>,
 		types::CollectedCoins<T::Hash, T::Balance>,
 	>;
+
+	#[pallet::storage]
+	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -510,6 +513,9 @@ pub mod pallet {
 
 		/// The address retrieved from the proof-of-ownership signature did not match the external address being registered.
 		OwnershipNotSatisfied,
+
+		/// The currency has already been registered.
+		CurrencyAlreadyRegistered,
 	}
 
 	#[pallet::genesis_config]
@@ -674,7 +680,7 @@ pub mod pallet {
 			let legacy_keeper =
 				LegacyBalanceKeeper::<T>::get().ok_or(Error::<T>::LegacyBalanceKeeperMissing)?;
 
-			<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+			<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
 				&legacy_keeper,
 				&who,
 				legacy_balance,
@@ -1316,13 +1322,13 @@ pub mod pallet {
 
 					let amount = collected_coins.amount;
 					let imbalance =
-						<pallet_balances::Pallet<T> as Currency<T::AccountId>>::issue(amount);
+						<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::issue(amount);
 					ensure!(amount == imbalance.peek(), Error::<T>::BalanceOverflow);
 
 					let address = Self::addresses(&collected_coins.to)
 						.ok_or(Error::<T>::NonExistentAddress)?;
 
-					<pallet_balances::Pallet<T> as Currency<T::AccountId>>::resolve_creating(
+					<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::resolve_creating(
 						&address.owner,
 						imbalance,
 					);
@@ -1387,6 +1393,17 @@ pub mod pallet {
 			Authorities::<T>::insert(who, ());
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
+		#[pallet::weight(T::DbWeight::get().reads_writes(1,1))]
+		pub fn register_currency(
+			origin: OriginFor<T>,
+			_currency: Currency,
+			_proofs: TransferKindProofs,
+		) -> DispatchResult {
+			let _who = ensure_signed(origin)?;
+
+			Ok(())
 		}
 	}
 }

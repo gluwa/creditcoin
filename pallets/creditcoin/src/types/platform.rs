@@ -1,15 +1,17 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{traits::ConstU32, BoundedVec, RuntimeDebug};
 use scale_info::TypeInfo;
+use sp_runtime::traits::Hash as HashT;
 use strum::EnumCount;
 
-use crate::ExternalAddress;
+use crate::{ExternalAddress, ExternalTxId};
 
 // as of EIP-155 the max chain ID is 9,223,372,036,854,775,771 which fits well within a u64
 #[derive(
 	Copy, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
-pub struct EvmChainId(u64);
+#[repr(transparent)]
+pub struct EvmChainId(#[codec(compact)] u64);
 
 impl From<u64> for EvmChainId {
 	fn from(value: u64) -> Self {
@@ -30,10 +32,8 @@ pub struct EvmInfo {
 	chain_id: EvmChainId,
 }
 
-#[derive(
-	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
-)]
-enum Blockchain {
+#[derive(Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub enum NewBlockchain {
 	Evm(EvmInfo),
 }
 
@@ -72,9 +72,46 @@ pub enum Currency {
 	Evm(EvmCurrencyType, EvmInfo),
 }
 
-#[derive(
-	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
-)]
-enum TransferKind {
+#[derive(Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub enum NewTransferKind {
 	Evm(EvmTransferKind),
+}
+
+#[derive(Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub struct CurrencyId<Hash>(Hash);
+
+impl<H> CurrencyId<H> {
+	pub fn new<T>(currency: &Currency) -> Self
+	where
+		T: frame_system::Config,
+		<T as frame_system::Config>::Hashing: sp_runtime::traits::Hash<Output = H>,
+	{
+		match currency {
+			Currency::Evm(EvmCurrencyType::SmartContract(address, _), evm_info) => {
+				let encoded = (address, evm_info.chain_id).encode();
+				CurrencyId(T::Hashing::hash(&encoded))
+			},
+		}
+	}
+}
+
+macro_rules! max {
+	($a: expr $(,)?) => {
+		$a
+	};
+	($a: expr, $b: expr $(, $rest: expr)* $(,)?) => {
+		if $a > $b {
+			max!($a $(,$rest)*)
+		} else {
+			max!($b $(,$rest)*)
+		}
+	}
+}
+
+pub type TransferKindProofs = BoundedVec<TransferKindProof, ConstU32<{max!(EvmTransferKind::COUNT) as u32}>>;
+
+#[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub struct TransferKindProof {
+	transfer_kind: NewTransferKind,
+	example_tx_hash: ExternalTxId,
 }
