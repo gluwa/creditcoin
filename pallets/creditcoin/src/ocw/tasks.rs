@@ -8,6 +8,7 @@ use crate::types::{
 };
 use crate::Config;
 use sp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
+
 impl<AccountId, BlockNum, Hash, Moment> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>
 where
 	Moment: UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
