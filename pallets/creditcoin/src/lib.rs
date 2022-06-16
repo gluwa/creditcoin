@@ -371,7 +371,7 @@ pub mod pallet {
 	}
 
 	// Errors inform users that something went wrong.
-	#[derive(PartialEq)]
+	#[derive(PartialEq, Eq)]
 	#[pallet::error]
 	pub enum Error<T> {
 		/// The specified address has already been registered to another account
@@ -1451,7 +1451,7 @@ pub mod pallet {
 					transfer.block = frame_system::Pallet::<T>::block_number();
 
 					Transfers::<T>::insert(&key, transfer);
-					Event::<T>::TransferVerified(key.clone())
+					Event::<T>::TransferVerified(key)
 				},
 				TaskOutput::CollectCoins(collected_coins) => {
 					let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);

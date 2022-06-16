@@ -48,10 +48,10 @@ pub enum Blockchain {
 impl Blockchain {
 	pub fn as_bytes(&self) -> &[u8] {
 		match self {
-			Blockchain::Ethereum => &*b"ethereum",
-			Blockchain::Rinkeby => &*b"rinkeby",
-			Blockchain::Luniverse => &*b"luniverse",
-			Blockchain::Bitcoin => &*b"bitcoin",
+			Blockchain::Ethereum => b"ethereum",
+			Blockchain::Rinkeby => b"rinkeby",
+			Blockchain::Luniverse => b"luniverse",
+			Blockchain::Bitcoin => b"bitcoin",
 			Blockchain::Other(chain) => chain.as_slice(),
 		}
 	}
