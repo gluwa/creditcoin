@@ -644,23 +644,25 @@ pub mod pallet {
 
 				match result {
 					Ok(data) => {
-						let output = task.to_output::<T>(data).unwrap();
+						let output = task.into_output::<T>(data).unwrap();
 						Self::offchain_signed_tx(auth_id.clone(), |_| Call::persist_task_output {
 							deadline,
 							task_id: id.clone(),
 							task_output: output.clone(),
-						}).unwrap();
+						})
+						.unwrap();
 						status.mark_complete();
 					},
 					Err(ocw::OffchainError::InvalidTask(cause)) => {
 						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
 						if cause.is_fatal() {
-							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_task {
-								deadline,
-								task_id: id.clone(),
-								cause,
+							if let Err(e) = Self::offchain_signed_tx(auth_id.clone(), |_| {
+								Call::fail_task { deadline, task_id: id.clone(), cause }
 							}) {
-								log::error!("Failed to send fail dispatchable transaction: {:?}", e);
+								log::error!(
+									"Failed to send fail dispatchable transaction: {:?}",
+									e
+								);
 							} else {
 								status.mark_complete();
 							}
@@ -1250,7 +1252,7 @@ pub mod pallet {
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
-			let address_id = AddressId::new::<T>(&ocw::collect_coins::CONTRACT_CHAIN, &evm_address);
+			let address_id = AddressId::new::<T>(&ocw::tasks::collect_coins::CONTRACT_CHAIN, &evm_address);
 			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 

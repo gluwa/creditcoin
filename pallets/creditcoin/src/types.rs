@@ -348,7 +348,7 @@ impl<H> TransferId<H> {
 	}
 }
 
-use crate::ocw::collect_coins::CONTRACT_CHAIN;
+use crate::ocw::tasks::collect_coins::CONTRACT_CHAIN;
 impl<H> CollectedCoinsId<H> {
 	pub fn new<Config>(blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
 	where

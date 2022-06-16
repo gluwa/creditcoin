@@ -393,7 +393,7 @@ pub(crate) fn get_mock_from_address() -> String {
 fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) -> Option<T>) -> T {
 	let responses = &*ETHLESS_RESPONSES;
 
-	let abi = crate::ocw::ethless_transfer_function_abi();
+	let abi = crate::ocw::tasks::verify_transfer::ethless_transfer_function_abi();
 	let input = responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
 		.clone()
 		.as_str()
