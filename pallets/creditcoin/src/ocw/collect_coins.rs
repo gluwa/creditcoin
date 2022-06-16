@@ -5,13 +5,15 @@ use super::{
 	OffchainResult, ETH_CONFIRMATIONS,
 };
 
-use crate::pallet::{Config, Pallet};
+use crate::pallet::{Config, Pallet, Store};
+
 use crate::{
 	types::{AddressId, Blockchain, CollectedCoins, UnverifiedCollectedCoins},
 	Call, ExternalAddress, ExternalAmount,
 };
 use sp_runtime::traits::UniqueSaturatedFrom;
 
+use codec::EncodeLike;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::{H160, U64};
 use frame_support::ensure;
@@ -111,9 +113,10 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T> Task<T, T::BlockNumber> for crate::types::UnverifiedCollectedCoins
+impl<T, K2> Task<T, T::BlockNumber, K2> for crate::types::UnverifiedCollectedCoins
 where
 	T: Config,
+	K2: EncodeLike<crate::types::CollectedCoinsId<T::Hash>>,
 {
 	type VerifiedTask = crate::types::CollectedCoins<T::Hash, T::Balance>;
 
@@ -139,6 +142,10 @@ where
 		verified_task: Self::VerifiedTask,
 	) -> crate::Call<T> {
 		Call::persist_collect_coins { collected_coins: verified_task, deadline }
+	}
+
+	fn is_complete(persistent_storage_key: K2) -> bool {
+		<Pallet<T> as Store>::CollectedCoins::contains_key(persistent_storage_key)
 	}
 }
 

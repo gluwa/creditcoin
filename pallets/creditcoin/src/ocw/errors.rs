@@ -20,6 +20,7 @@ pub enum VerificationFailureCause {
 	TaskNonexistent,
 	TaskFailed,
 	TaskPending,
+	TaskDuplicated,
 	TaskUnconfirmed,
 	TaskInFuture,
 	IncorrectContract,
@@ -44,7 +45,7 @@ impl VerificationFailureCause {
 			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
 			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
 			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender | EmptyInput
-			| IncorrectReceiver | TaskNonexistent => true,
+			| IncorrectReceiver | TaskNonexistent | TaskDuplicated => true,
 			TaskPending | TaskUnconfirmed => false,
 		}
 	}

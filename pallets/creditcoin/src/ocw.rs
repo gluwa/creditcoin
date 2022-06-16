@@ -3,8 +3,9 @@ pub mod errors;
 pub mod rpc;
 pub mod task;
 use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
+use codec::EncodeLike;
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
-use task::LocalVerificationStatus;
+use task::LocalTaskStatus;
 
 use self::{
 	errors::RpcUrlError,
@@ -12,7 +13,7 @@ use self::{
 };
 
 use super::{
-	pallet::{Config, Error, Pallet},
+	pallet::{Config, Error, Pallet, Store},
 	ExternalAddress, ExternalAmount, ExternalTxId, OrderId,
 };
 use alloc::string::String;
@@ -152,16 +153,16 @@ impl<T: Config> Pallet<T> {
 		verification_result: VerificationResult<O>,
 		success_dispatcher: impl Fn(O) -> Result<(), Error<T>>,
 		failure_dispatcher: impl Fn(VerificationFailureCause) -> Result<(), Error<T>>,
-		task_status: LocalVerificationStatus,
+		status: LocalTaskStatus,
 		unverified_task: &impl core::fmt::Debug,
 	) {
 		log::debug!("Task Verification result: {:?}", verification_result);
+		//test branches
 		match verification_result {
 			Ok(output) => {
 				if let Err(e) = success_dispatcher(output) {
 					log::error!("Failed to send success dispatchable transaction: {:?}", e);
-				} else {
-					task_status.mark_complete();
+					status.keep_alive();
 				}
 			},
 			Err(OffchainError::InvalidTask(cause)) => {
@@ -169,13 +170,15 @@ impl<T: Config> Pallet<T> {
 				if cause.is_fatal() {
 					if let Err(e) = failure_dispatcher(cause) {
 						log::error!("Failed to send fail dispatchable transaction: {:?}", e);
-					} else {
-						task_status.mark_complete();
+						status.keep_alive();
 					}
+				} else {
+					status.keep_alive();
 				}
 			},
 			Err(error) => {
 				log::error!("Task verification encountered an error {:?}", error);
+				status.keep_alive();
 			},
 		}
 	}
@@ -281,10 +284,11 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T> task::Task<T, T::BlockNumber>
+impl<T, K2> task::Task<T, T::BlockNumber, K2>
 	for UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
 where
 	T: Config,
+	K2: EncodeLike<crate::types::TransferId<T::Hash>>,
 {
 	type VerifiedTask = Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>;
 
@@ -305,6 +309,10 @@ where
 
 	fn success_call(&self, deadline: T::BlockNumber, verified_task: Self::VerifiedTask) -> Call<T> {
 		Call::verify_transfer { transfer: verified_task, deadline }
+	}
+
+	fn is_complete(persistent_storage_key: K2) -> bool {
+		<Pallet<T> as Store>::Transfers::contains_key(persistent_storage_key)
 	}
 }
 
