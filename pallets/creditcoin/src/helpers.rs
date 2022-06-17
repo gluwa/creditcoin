@@ -7,8 +7,8 @@ pub use external_address::{EVMAddress, PublicToAddress};
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Transfer, TransferId,
-	TransferKind, UnverifiedTransfer,
+	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, TaskId, Transfer,
+	TransferId, TransferKind, UnverifiedTransfer,
 };
 
 use frame_support::{ensure, traits::Get};
@@ -166,7 +166,9 @@ impl<T: Config> Pallet<T> {
 			transfer: transfer.clone(),
 			deadline,
 		};
-		UnverifiedTransfers::<T>::insert(&deadline, &transfer_id, &pending);
+		let task_id = TaskId::from(transfer_id.clone());
+		let pending = Task::from(pending);
+		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
 
 		Ok((transfer_id, transfer))
 	}

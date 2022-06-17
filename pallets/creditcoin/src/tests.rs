@@ -612,7 +612,7 @@ fn register_transfer_ocw_fail_to_send() {
 			assert!(logs_contain("Failed to send fail dispatchable transaction"));
 		});
 
-		crate::UnverifiedTransfers::<Test>::remove_all(None);
+		crate::PendingTasks::<Test>::remove_all(None);
 
 		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
@@ -626,7 +626,7 @@ fn register_transfer_ocw_fail_to_send() {
 			));
 
 			roll_by_with_ocw(1);
-			assert!(logs_contain("Failed to send success dispatchable transaction"));
+			assert!(logs_contain("Failed to send persist dispatchable transaction"));
 		});
 	});
 }
@@ -722,7 +722,7 @@ fn ocw_retries() {
 
 		roll_by_with_ocw(1);
 
-		assert!(logs_contain("Already handled Transfer"));
+		assert!(logs_contain("Already handled Task"));
 	});
 }
 
