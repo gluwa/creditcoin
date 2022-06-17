@@ -169,28 +169,6 @@ pub mod pallet {
 	pub type LegacyBalanceKeeper<T: Config> = StorageValue<_, T::AccountId>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn pending_transfers)]
-	pub type UnverifiedTransfers<T: Config> = StorageDoubleMap<
-		_,
-		Identity,
-		T::BlockNumber,
-		Identity,
-		TransferId<T::Hash>,
-		UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-	>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn pending_collect_coins)]
-	pub type UnverifiedCollectedCoins<T: Config> = StorageDoubleMap<
-		_,
-		Identity,
-		T::BlockNumber,
-		Identity,
-		CollectedCoinsId<T::Hash>,
-		types::UnverifiedCollectedCoins,
-	>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn pending_tasks)]
 	pub type PendingTasks<T: Config> = StorageDoubleMap<
 		_,
@@ -570,15 +548,9 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
 
-			let unverified_collect_coins_count =
-				match UnverifiedCollectedCoins::<T>::remove_prefix(block_number, None) {
-					KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-				};
-
-			let unverified_transfer_count =
-				match UnverifiedTransfers::<T>::remove_prefix(block_number, None) {
-					KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-				};
+			let unverified_task_count = match PendingTasks::<T>::remove_prefix(block_number, None) {
+				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
+			};
 
 			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
 				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
@@ -613,8 +585,8 @@ pub mod pallet {
 				offer_count,
 				deals_count,
 				funded_deals_count,
-				unverified_transfer_count,
-				unverified_collect_coins_count,
+				unverified_task_count,
+				0,
 			)
 		}
 
@@ -627,11 +599,7 @@ pub mod pallet {
 
 			let auth_id = T::FromAccountId::from(my_authority.unwrap());
 
-			for (deadline, id, task) in PendingTasks::<T>::iter().filter(|(deadline, id, _)| {
-				let storage_key = (deadline, &id).encode();
-				let status = ocw::LocalVerificationStatus::new(&storage_key);
-				!status.is_complete()
-			}) {
+			for (deadline, id, task) in PendingTasks::<T>::iter() {
 				let storage_key = (deadline, &id).encode();
 				let status = ocw::LocalVerificationStatus::new(&storage_key);
 				if status.is_complete() {
@@ -1189,7 +1157,7 @@ pub mod pallet {
 			let deadline = Self::block_number().saturating_add(T::UnverifiedTaskTimeout::get());
 
 			ensure!(
-				!UnverifiedCollectedCoins::<T>::contains_key(deadline, &collect_coins_id),
+				!PendingTasks::<T>::contains_key(deadline, &TaskId::from(collect_coins_id.clone())),
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
@@ -1200,7 +1168,11 @@ pub mod pallet {
 
 			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id };
 
-			UnverifiedCollectedCoins::<T>::insert(deadline, &collect_coins_id, pending.clone());
+			PendingTasks::<T>::insert(
+				deadline,
+				TaskId::from(collect_coins_id.clone()),
+				Task::from(pending.clone()),
+			);
 
 			Self::deposit_event(Event::<T>::CollectCoinsRegistered(collect_coins_id, pending));
 

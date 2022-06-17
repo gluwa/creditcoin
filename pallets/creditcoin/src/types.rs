@@ -582,6 +582,22 @@ pub enum Task<AccountId, BlockNum, Hash, Moment> {
 	CollectCoins(UnverifiedCollectedCoins),
 }
 
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+		Task::VerifyTransfer(transfer)
+	}
+}
+
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCollectedCoins>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(coins: UnverifiedCollectedCoins) -> Self {
+		Task::CollectCoins(coins)
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskId<Hash> {
 	VerifyTransfer(TransferId<Hash>),

@@ -114,6 +114,7 @@ impl<T: Config> Pallet<T> {
 mod tests {
 
 	use super::*;
+	use crate::TaskId;
 	use std::collections::HashMap;
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
@@ -659,9 +660,9 @@ mod tests {
 				}
 			);
 
-			assert!(Creditcoin::<Test>::pending_collect_coins(
+			assert!(Creditcoin::<Test>::pending_tasks(
 				Test::unverified_transfer_deadline(),
-				collected_coins_id.clone()
+				TaskId::from(collected_coins_id.clone()),
 			)
 			.is_some());
 
@@ -875,9 +876,8 @@ mod tests {
 
 			roll_by_with_ocw(1);
 
-			assert!(
-				Creditcoin::<Test>::pending_collect_coins(deadline, collected_coins_id).is_none()
-			);
+			assert!(Creditcoin::<Test>::pending_tasks(deadline, TaskId::from(collected_coins_id))
+				.is_none());
 		});
 	}
 
