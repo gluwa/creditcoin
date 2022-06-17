@@ -1406,7 +1406,7 @@ pub mod pallet {
 
 			ensure!(
 				!CollectedCoins::<T>::contains_key(&collected_coins_id),
-				Error::<T>::TransferAlreadyRegistered
+				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
 			UnverifiedCollectedCoins::<T>::remove(&deadline, &collected_coins_id);

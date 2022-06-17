@@ -406,7 +406,7 @@ mod tests {
 					Cause::AbiMismatch,
 					Test::unverified_transfer_deadline(),
 				),
-				crate::Error::<Test>::TransferAlreadyRegistered
+				crate::Error::<Test>::CollectCoinsAlreadyRegistered
 			);
 		});
 	}
@@ -544,7 +544,7 @@ mod tests {
 
 	#[test]
 	#[tracing_test::traced_test]
-	fn persist_more_than_available_balance_should_error() {
+	fn persist_more_than_max_balance_should_error() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
 		let auth = AccountId::from(acct_pubkey.into_account().0);
