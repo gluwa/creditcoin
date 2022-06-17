@@ -181,9 +181,9 @@ mod tests {
 	use assert_matches::assert_matches;
 	use codec::Decode;
 	use ethereum_types::{H160, U64};
-	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy};
+	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
-	use sp_runtime::traits::IdentifyAccount;
+	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, Origin, Test,
@@ -329,15 +329,126 @@ mod tests {
 	}
 
 	#[test]
+	fn fail_collect_coins_should_error_when_not_signed() {
+		let ext = ExtBuilder::default();
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			assert_noop!(
+				Creditcoin::<Test>::fail_collect_coins(
+					Origin::none(),
+					expected_collected_coins_id.clone(),
+					Cause::AbiMismatch,
+					Test::unverified_transfer_deadline(),
+				),
+				BadOrigin
+			);
+		});
+	}
+
+	#[test]
+	fn fail_collect_coins_should_error_when_no_authority() {
+		let ext = ExtBuilder::default();
+		let (molly, _, _, _) = generate_address_with_proof("malicious");
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			assert_noop!(
+				Creditcoin::<Test>::fail_collect_coins(
+					Origin::signed(molly),
+					expected_collected_coins_id.clone(),
+					Cause::AbiMismatch,
+					Test::unverified_transfer_deadline(),
+				),
+				crate::Error::<Test>::InsufficientAuthority
+			);
+		});
+	}
+
+	#[test]
+	fn fail_collect_coins_should_fail_when_transfer_has_already_been_registered() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			System::<Test>::set_block_number(1);
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc),
+				CONTRACT_CHAIN,
+				addr,
+				sign
+			));
+
+			let deadline = Test::unverified_transfer_deadline();
+
+			let pcc = PassingCollectCoins::default();
+
+			let collected_coins = CollectedCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+				Origin::signed(auth.clone()),
+				collected_coins.clone(),
+				deadline
+			));
+
+			assert_noop!(
+				Creditcoin::<Test>::fail_collect_coins(
+					Origin::signed(auth),
+					CollectedCoinsId::new::<Test>(&collected_coins.tx_id),
+					Cause::AbiMismatch,
+					Test::unverified_transfer_deadline(),
+				),
+				crate::Error::<Test>::CollectCoinsAlreadyRegistered
+			);
+		});
+	}
+
+	#[test]
+	fn fail_collect_coins_emits_events() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+
+		ext.build_offchain_and_execute_with_state(|_state, _pool| {
+			System::<Test>::set_block_number(1);
+
+			assert_ok!(Creditcoin::<Test>::fail_collect_coins(
+				Origin::signed(auth),
+				expected_collected_coins_id.clone(),
+				Cause::AbiMismatch,
+				Test::unverified_transfer_deadline(),
+			));
+
+			let event = System::<Test>::events().pop().expect("an event").event;
+			assert_matches!(
+				event,
+				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectCoinsFailedVerification(collected_coins_id, cause)) => {
+					assert_eq!(collected_coins_id, expected_collected_coins_id);
+					assert_eq!(cause, Cause::AbiMismatch);
+				}
+			);
+		});
+	}
+
+	#[test]
 	fn ocw_fail_collect_coins_works() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
 		let acct = AccountId::from(acct_pubkey.into_account().0);
-		let collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
 		ext.build_offchain_and_execute_with_state(|_state, pool| {
 			crate::mock::roll_to(1);
 			let call = crate::Call::<crate::mock::Test>::fail_collect_coins {
-				collected_coins_id,
+				collected_coins_id: expected_collected_coins_id.clone(),
 				cause: Cause::AbiMismatch,
 				deadline: Test::unverified_transfer_deadline(),
 			};
@@ -433,6 +544,44 @@ mod tests {
 
 	#[test]
 	#[tracing_test::traced_test]
+	fn persist_more_than_max_balance_should_error() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc),
+				CONTRACT_CHAIN,
+				addr,
+				sign
+			));
+
+			let pcc = PassingCollectCoins::default();
+
+			// lower free balance so that collect coins would overflow
+			let cash = <crate::mock::Balances as Currency<AccountId>>::minimum_balance();
+			<crate::mock::Balances as Currency<AccountId>>::make_free_balance_be(&auth, cash);
+
+			let collected_coins = CollectedCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				amount: u128::MAX,
+				tx_id: TX_HASH.hex_to_address(),
+			};
+
+			assert_noop!(
+				Creditcoin::<Test>::persist_collect_coins(
+					Origin::signed(auth),
+					collected_coins,
+					Test::unverified_transfer_deadline()
+				),
+				crate::Error::<Test>::BalanceOverflow
+			);
+		});
+	}
+
+	#[test]
+	#[tracing_test::traced_test]
 	fn request_persisted_not_reentrant() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -478,6 +627,8 @@ mod tests {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
 		ext.build_offchain_and_execute_with_state(|_, _| {
+			System::<Test>::set_block_number(1);
+
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
 			assert_ok!(Creditcoin::<Test>::register_address(
@@ -495,6 +646,18 @@ mod tests {
 
 			let collected_coins_id =
 				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+
+			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+			assert_matches!(
+				event,
+				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectCoinsRegistered(collect_coins_id, pending)) => {
+					assert_eq!(collect_coins_id, collected_coins_id);
+
+					let UnverifiedCollectedCoins { to, tx_id } = pending;
+					assert_eq!(to, addr);
+					assert_eq!(tx_id, TX_HASH.hex_to_address());
+				}
+			);
 
 			assert!(Creditcoin::<Test>::pending_collect_coins(
 				Test::unverified_transfer_deadline(),
