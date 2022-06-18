@@ -176,7 +176,7 @@ mod tests {
 		}
 	});
 
-	use std::convert::{TryFrom, TryInto};
+	use std::convert::TryFrom;
 
 	use assert_matches::assert_matches;
 	use codec::Decode;
@@ -193,18 +193,10 @@ mod tests {
 		rpc::{EthTransaction, EthTransactionReceipt},
 		ETH_CONFIRMATIONS,
 	};
-	use crate::tests::generate_address_with_proof;
+	use crate::tests::{generate_address_with_proof, RefstrExt};
 	use crate::types::CollectedCoinsId;
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
-
-	// duplicate with tests.rs
-	#[extend::ext]
-	impl<'a> &'a str {
-		fn hex_to_address(self) -> ExternalAddress {
-			hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
-		}
-	}
 
 	struct PassingCollectCoins {
 		to: ExternalAddress,
