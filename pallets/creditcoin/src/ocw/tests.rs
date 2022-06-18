@@ -1,8 +1,5 @@
 use core::fmt::Debug;
-use std::{
-	convert::{TryFrom, TryInto},
-	str::FromStr,
-};
+use std::{convert::TryFrom, str::FromStr};
 
 use super::errors::{
 	RpcUrlError,
@@ -16,7 +13,7 @@ use crate::{
 	},
 	mock::{MockedRpcRequests, PendingRequestExt},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
-	tests::TestInfo,
+	tests::{RefstrExt, TestInfo},
 	types::DoubleMapExt,
 	Blockchain, ExternalAddress, Id, LoanTerms, TransferKind,
 };
@@ -46,14 +43,6 @@ use super::{
 
 fn make_external_address(hex_str: &str) -> ExternalAddress {
 	BoundedVec::try_from(hex::decode(hex_str.trim_start_matches("0x")).unwrap()).unwrap()
-}
-
-// duplicate with tests.rs
-#[extend::ext]
-impl<'a> &'a str {
-	fn hex_to_address(self) -> ExternalAddress {
-		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
-	}
 }
 
 #[track_caller]
