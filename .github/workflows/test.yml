@@ -1,5 +1,6 @@
 name: az test
-on: [workflow_dispatch]
+on: 
+  workflow_dispatch:
 jobs:
   login:
     name: test login
