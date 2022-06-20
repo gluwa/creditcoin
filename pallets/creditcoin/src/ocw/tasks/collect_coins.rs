@@ -329,11 +329,11 @@ mod tests {
 
 		ext.build_offchain_and_execute_with_state(|_state, _pool| {
 			assert_noop!(
-				Creditcoin::<Test>::fail_collect_coins(
+				Creditcoin::<Test>::fail_task(
 					Origin::none(),
-					expected_collected_coins_id.clone(),
-					Cause::AbiMismatch,
 					Test::unverified_transfer_deadline(),
+					expected_collected_coins_id.clone().into(),
+					Cause::AbiMismatch,
 				),
 				BadOrigin
 			);
@@ -348,11 +348,11 @@ mod tests {
 
 		ext.build_offchain_and_execute_with_state(|_state, _pool| {
 			assert_noop!(
-				Creditcoin::<Test>::fail_collect_coins(
+				Creditcoin::<Test>::fail_task(
 					Origin::signed(molly),
-					expected_collected_coins_id.clone(),
-					Cause::AbiMismatch,
 					Test::unverified_transfer_deadline(),
+					expected_collected_coins_id.clone().into(),
+					Cause::AbiMismatch,
 				),
 				crate::Error::<Test>::InsufficientAuthority
 			);
@@ -386,19 +386,22 @@ mod tests {
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
+			let collected_coins_id =
+				crate::CollectedCoinsId::new::<crate::mock::Test>(&collected_coins.tx_id);
 
-			assert_ok!(Creditcoin::<Test>::persist_collect_coins(
+			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
-				collected_coins.clone(),
-				deadline
+				deadline,
+				collected_coins_id.clone().into(),
+				collected_coins.clone().into(),
 			));
 
 			assert_noop!(
-				Creditcoin::<Test>::fail_collect_coins(
+				Creditcoin::<Test>::fail_task(
 					Origin::signed(auth),
-					CollectedCoinsId::new::<Test>(&collected_coins.tx_id),
-					Cause::AbiMismatch,
 					Test::unverified_transfer_deadline(),
+					collected_coins_id.into(),
+					Cause::AbiMismatch,
 				),
 				crate::Error::<Test>::CollectCoinsAlreadyRegistered
 			);
@@ -415,11 +418,11 @@ mod tests {
 		ext.build_offchain_and_execute_with_state(|_state, _pool| {
 			System::<Test>::set_block_number(1);
 
-			assert_ok!(Creditcoin::<Test>::fail_collect_coins(
+			assert_ok!(Creditcoin::<Test>::fail_task(
 				Origin::signed(auth),
-				expected_collected_coins_id.clone(),
-				Cause::AbiMismatch,
 				Test::unverified_transfer_deadline(),
+				expected_collected_coins_id.clone().into(),
+				Cause::AbiMismatch,
 			));
 
 			let event = System::<Test>::events().pop().expect("an event").event;
@@ -562,6 +565,8 @@ mod tests {
 			let cash = <crate::mock::Balances as Currency<AccountId>>::minimum_balance();
 			<crate::mock::Balances as Currency<AccountId>>::make_free_balance_be(&auth, cash);
 
+			let collected_coins_id =
+				crate::CollectedCoinsId::new::<Test>(&TX_HASH.hex_to_address());
 			let collected_coins = CollectedCoins {
 				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
 				amount: u128::MAX,
@@ -569,10 +574,11 @@ mod tests {
 			};
 
 			assert_noop!(
-				Creditcoin::<Test>::persist_collect_coins(
+				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(auth),
-					collected_coins,
-					Test::unverified_transfer_deadline()
+					Test::unverified_transfer_deadline(),
+					collected_coins_id.into(),
+					collected_coins.into(),
 				),
 				crate::Error::<Test>::BalanceOverflow
 			);
