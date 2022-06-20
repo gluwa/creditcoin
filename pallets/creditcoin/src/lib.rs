@@ -1367,7 +1367,7 @@ pub mod pallet {
 				TaskId::CollectCoins(collected_coins_id) => {
 					ensure!(
 						!CollectedCoins::<T>::contains_key(&collected_coins_id),
-						Error::<T>::TransferAlreadyRegistered
+						Error::<T>::CollectCoinsAlreadyRegistered
 					);
 					Event::<T>::CollectCoinsFailedVerification(collected_coins_id.clone(), cause)
 				},
