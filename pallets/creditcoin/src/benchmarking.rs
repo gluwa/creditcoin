@@ -38,7 +38,7 @@ where
 	}
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum DealKind {
 	Funded,
 	Unfunded,
@@ -644,7 +644,7 @@ fn fake_offer_id<T: Config>(
 	ask_id: &AskOrderId<T::BlockNumber, T::Hash>,
 	bid_id: &BidOrderId<T::BlockNumber, T::Hash>,
 ) -> OfferId<T::BlockNumber, T::Hash> {
-	OfferId::new::<T>(expiration_block, &ask_id, &bid_id)
+	OfferId::new::<T>(expiration_block, ask_id, bid_id)
 }
 
 fn insert_fake_offer<T: Config>(
@@ -672,7 +672,7 @@ fn fake_deal_id<T: Config>(
 	expiration_block: BlockNumberFor<T>,
 	offer_id: &OfferId<T::BlockNumber, T::Hash>,
 ) -> DealOrderId<T::BlockNumber, T::Hash> {
-	DealOrderId::new::<T>(expiration_block, &offer_id)
+	DealOrderId::new::<T>(expiration_block, offer_id)
 }
 
 fn fake_transfer_id<T: Config>(seed: u32) -> TransferId<T::Hash> {
