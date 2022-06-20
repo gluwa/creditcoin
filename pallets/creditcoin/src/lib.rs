@@ -140,7 +140,7 @@ pub mod pallet {
 		fn add_offer() -> Weight;
 		fn add_deal_order() -> Weight;
 		fn add_authority() -> Weight;
-		fn verify_transfer() -> Weight;
+		fn persist_transfer() -> Weight;
 		fn fail_transfer() -> Weight;
 		fn fund_deal_order() -> Weight;
 		fn lock_deal_order() -> Weight;
@@ -1282,7 +1282,10 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(<T as Config>::WeightInfo::verify_transfer())]
+		#[pallet::weight(match &task_id {
+			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
+			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
+		})]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
 			deadline: T::BlockNumber,
@@ -1339,7 +1342,10 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(<T as Config>::WeightInfo::fail_transfer())]
+		#[pallet::weight(match &task_id {
+			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::fail_transfer(),
+			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::fail_collect_coins(),
+		})]
 		pub fn fail_task(
 			origin: OriginFor<T>,
 			deadline: T::BlockNumber,
