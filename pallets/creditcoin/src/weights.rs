@@ -114,7 +114,7 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin Authorities (r:1 w:0)
 	// Storage: Creditcoin Transfers (r:1 w:1)
 	// Storage: Creditcoin UnverifiedTransfers (r:0 w:1)
-	fn verify_transfer() -> Weight {
+	fn persist_transfer() -> Weight {
 		(42_100_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
