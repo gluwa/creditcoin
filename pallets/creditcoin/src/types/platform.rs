@@ -7,7 +7,7 @@ use crate::ExternalAddress;
 
 // as of EIP-155 the max chain ID is 9,223,372,036,854,775,771 which fits well within a u64
 #[derive(
-	Copy, Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+	Copy, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
 pub struct EvmChainId(u64);
 
@@ -23,12 +23,16 @@ impl EvmChainId {
 	}
 }
 
-#[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 pub struct EvmInfo {
 	chain_id: EvmChainId,
 }
 
-#[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 enum Blockchain {
 	Evm(EvmInfo),
 }
@@ -38,6 +42,7 @@ enum Blockchain {
 	Clone,
 	RuntimeDebug,
 	PartialEq,
+	Eq,
 	PartialOrd,
 	Encode,
 	Decode,
@@ -53,17 +58,23 @@ pub enum EvmTransferKind {
 pub type EvmSupportedTransferKinds =
 	BoundedVec<EvmTransferKind, ConstU32<{ EvmTransferKind::COUNT as u32 }>>;
 
-#[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 pub enum EvmCurrencyType {
 	SmartContract(ExternalAddress, EvmSupportedTransferKinds),
 }
 
-#[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 pub enum Currency {
 	Evm(EvmCurrencyType, EvmInfo),
 }
 
-#[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 enum TransferKind {
 	Evm(EvmTransferKind),
 }

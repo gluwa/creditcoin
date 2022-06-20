@@ -393,7 +393,7 @@ mod tests {
 				Origin::signed(auth.clone()),
 				deadline,
 				collected_coins_id.clone().into(),
-				collected_coins.clone().into(),
+				collected_coins.into(),
 			));
 
 			assert_noop!(
