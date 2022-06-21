@@ -3,9 +3,9 @@ pub mod errors;
 pub mod rpc;
 pub mod task;
 use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
-use codec::EncodeLike;
+pub use codec::EncodeLike;
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
-use task::LocalTaskStatus;
+use task::guard::LocalTaskStatus;
 
 use self::{
 	errors::RpcUrlError,

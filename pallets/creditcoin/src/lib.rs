@@ -12,7 +12,7 @@ use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
 
 #[cfg(test)]
-mod mock;
+pub mod mock;
 
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
@@ -24,7 +24,7 @@ mod tests;
 #[macro_use]
 mod helpers;
 mod migrations;
-mod ocw;
+pub mod ocw;
 mod types;
 
 pub use types::*;
