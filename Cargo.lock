@@ -4053,6 +4053,7 @@ dependencies = [
  "base58",
  "bitcoin-bech32",
  "bstr",
+ "creditcoin-node-runtime",
  "criterion",
  "ethabi",
  "ethereum-types",

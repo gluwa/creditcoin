@@ -25,21 +25,21 @@ log = "0.4.17"
 extend = "1.1.2"
 ethabi = { version = "16.0.0", features = ["rlp"], default-features = false }
 ethereum-types = { version = "0.12.1", features = [
-    "rlp",
-    "serialize",
+  "rlp",
+  "serialize",
 ], default-features = false }
 serde = { version = "1.0.137", features = ["derive"], default-features = false }
 serde_json = { version = "1.0.81", features = [
-    "alloc",
+  "alloc",
 ], default-features = false }
 hex = { version = "0.4.3", features = ["alloc"], default-features = false }
 lexical = { version = "6.1.1", features = [
-    "write-integers",
+  "write-integers",
 ], default-features = false }
 sha2 = { version = "0.10.2", default-features = false }
 libsecp256k1 = { version = "0.7", default-features = false, features = [
-    "hmac",
-    "static-context",
+  "hmac",
+  "static-context",
 ] }
 base58 = "0.2.0"
 bitcoin-bech32 = { version = "0.12.1", git = "https://github.com/nathanwhit/rust-bech32-bitcoin", default-features = false, branch = "no-std" }
@@ -111,6 +111,8 @@ features = ['derive']
 version = '1.0'
 
 [dev-dependencies]
+
+runtime = { package = "creditcoin-node-runtime", path = "../../runtime" }
 bstr = { version = "0.2.17", default-features = false }
 parking_lot = "0.11.0"
 tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
@@ -140,16 +142,16 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
-    'codec/std',
-    'scale-info/std',
-    'frame-support/std',
-    'frame-system/std',
-    'frame-benchmarking/std',
-    'pallet-balances/std',
-    'pallet-timestamp/std',
-    'sp-core/std',
-    'serde/std',
-    'serde_json/std',
-    'hex/std',
+  'codec/std',
+  'scale-info/std',
+  'frame-support/std',
+  'frame-system/std',
+  'frame-benchmarking/std',
+  'pallet-balances/std',
+  'pallet-timestamp/std',
+  'sp-core/std',
+  'serde/std',
+  'serde_json/std',
+  'hex/std',
 ]
 try-runtime = ['frame-support/try-runtime']

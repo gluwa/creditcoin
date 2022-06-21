@@ -1,17 +1,23 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use frame_system::Config;
+use frame_system::Pallet as System;
 use pallet_creditcoin::ocw::task::guard::LocalTaskStatus;
+use runtime::Runtime;
 use sp_core::offchain::{testing, OffchainDbExt, OffchainWorkerExt};
 use sp_io::TestExternalities;
-use sp_runtime::offchain::storage_lock::{StorageLock, Time};
+use sp_runtime::offchain::storage_lock::{BlockAndTime, Lockable, StorageLock};
+
+type Y = System<Runtime>;
+type X = BlockAndTime<Y>;
 
 const KEY: &[u8; 7] = b"storage";
 
 fn lock(key: &[u8]) {
-	let mut lock = StorageLock::<Time>::new(key);
+	let mut lock = StorageLock::<X>::new(key);
 	let _ = lock.try_lock();
 }
 
-fn lock_skip(lock: &mut StorageLock) {
+fn lock_skip<L>(lock: &mut StorageLock<L>) where L: Lockable{
 	let _ = lock.try_lock();
 }
 
@@ -48,7 +54,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 		let mut t = TestExternalities::default();
 		t.register_extension(OffchainDbExt::new(offchain.clone()));
 		t.register_extension(OffchainWorkerExt::new(offchain));
-		let mut lock_ = StorageLock::<Time>::new(KEY);
+		let mut lock_ = StorageLock::<X>::new(KEY);
 		t.execute_with(|| b.iter(|| lock_skip(black_box(&mut lock_))));
 	});
 
