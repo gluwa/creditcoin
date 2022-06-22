@@ -61,7 +61,7 @@ pub mod pallet {
 
 	use super::*;
 	use frame_support::{
-		dispatch::DispatchResult,
+		dispatch::{DispatchErrorWithPostInfo, DispatchResult},
 		pallet_prelude::*,
 		traits::{tokens::ExistenceRequirement, Currency},
 		transactional,

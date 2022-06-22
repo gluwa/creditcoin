@@ -325,6 +325,18 @@ pub fn get_register_address_message(who: AccountId) -> [u8; 32] {
 	sp_io::hashing::sha2_256(who.encode().as_slice())
 }
 
+pub fn non_paying_error(
+	error: crate::Error<Test>,
+) -> frame_support::dispatch::DispatchErrorWithPostInfo {
+	frame_support::dispatch::DispatchErrorWithPostInfo {
+		error: error.into(),
+		post_info: frame_support::dispatch::PostDispatchInfo {
+			actual_weight: None,
+			pays_fee: frame_support::weights::Pays::No,
+		},
+	}
+}
+
 #[test]
 fn register_address_should_work() {
 	ExtBuilder::default().build_and_execute(|| {
