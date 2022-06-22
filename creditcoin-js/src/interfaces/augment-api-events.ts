@@ -4,25 +4,7 @@
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { Null, Option, Result, u128 } from '@polkadot/types-codec';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
-import type {
-    FrameSupportTokensMiscBalanceStatus,
-    FrameSupportWeightsDispatchInfo,
-    PalletCreditcoinAddress,
-    PalletCreditcoinAskOrder,
-    PalletCreditcoinAskOrderId,
-    PalletCreditcoinBidOrder,
-    PalletCreditcoinBidOrderId,
-    PalletCreditcoinCollectedCoins,
-    PalletCreditcoinDealOrder,
-    PalletCreditcoinDealOrderId,
-    PalletCreditcoinLegacySighash,
-    PalletCreditcoinOcwErrorsVerificationFailureCause,
-    PalletCreditcoinOffer,
-    PalletCreditcoinOfferId,
-    PalletCreditcoinTransfer,
-    PalletCreditcoinUnverifiedCollectedCoins,
-    SpRuntimeDispatchError,
-} from '@polkadot/types/lookup';
+import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCreditcoinAddress, PalletCreditcoinAskOrder, PalletCreditcoinAskOrderId, PalletCreditcoinBidOrder, PalletCreditcoinBidOrderId, PalletCreditcoinCollectedCoins, PalletCreditcoinDealOrder, PalletCreditcoinDealOrderId, PalletCreditcoinLegacySighash, PalletCreditcoinOcwErrorsVerificationFailureCause, PalletCreditcoinOffer, PalletCreditcoinOfferId, PalletCreditcoinTransfer, PalletCreditcoinUnverifiedCollectedCoins, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/events' {
     export interface AugmentedEvents<ApiType extends ApiTypes> {
