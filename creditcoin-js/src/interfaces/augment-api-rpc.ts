@@ -25,7 +25,14 @@ import type { BeefySignedCommitment } from '@polkadot/types/interfaces/beefy';
 import type { BlockHash } from '@polkadot/types/interfaces/chain';
 import type { PrefixedStorageKey } from '@polkadot/types/interfaces/childstate';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
-import type { CodeUploadRequest, CodeUploadResult, ContractCallRequest, ContractExecResult, ContractInstantiateResult, InstantiateRequest } from '@polkadot/types/interfaces/contracts';
+import type {
+    CodeUploadRequest,
+    CodeUploadResult,
+    ContractCallRequest,
+    ContractExecResult,
+    ContractInstantiateResult,
+    InstantiateRequest,
+} from '@polkadot/types/interfaces/contracts';
 import type { BlockStats } from '@polkadot/types/interfaces/dev';
 import type { CreatedBlock } from '@polkadot/types/interfaces/engine';
 import type {
@@ -45,14 +52,45 @@ import type {
     EthWork,
 } from '@polkadot/types/interfaces/eth';
 import type { Extrinsic } from '@polkadot/types/interfaces/extrinsics';
-import type { EncodedFinalityProofs, JustificationNotification, ReportedRoundStates } from '@polkadot/types/interfaces/grandpa';
+import type {
+    EncodedFinalityProofs,
+    JustificationNotification,
+    ReportedRoundStates,
+} from '@polkadot/types/interfaces/grandpa';
 import type { MmrLeafBatchProof, MmrLeafProof } from '@polkadot/types/interfaces/mmr';
 import type { StorageKind } from '@polkadot/types/interfaces/offchain';
 import type { FeeDetails, RuntimeDispatchInfo } from '@polkadot/types/interfaces/payment';
 import type { RpcMethods } from '@polkadot/types/interfaces/rpc';
-import type { AccountId, BlockNumber, H160, H256, H64, Hash, Header, Index, Justification, KeyValue, SignedBlock, StorageData } from '@polkadot/types/interfaces/runtime';
-import type { MigrationStatusResult, ReadProof, RuntimeVersion, TraceBlockResponse } from '@polkadot/types/interfaces/state';
-import type { ApplyExtrinsicResult, ChainProperties, ChainType, Health, NetworkState, NodeRole, PeerInfo, SyncState } from '@polkadot/types/interfaces/system';
+import type {
+    AccountId,
+    BlockNumber,
+    H160,
+    H256,
+    H64,
+    Hash,
+    Header,
+    Index,
+    Justification,
+    KeyValue,
+    SignedBlock,
+    StorageData,
+} from '@polkadot/types/interfaces/runtime';
+import type {
+    MigrationStatusResult,
+    ReadProof,
+    RuntimeVersion,
+    TraceBlockResponse,
+} from '@polkadot/types/interfaces/state';
+import type {
+    ApplyExtrinsicResult,
+    ChainProperties,
+    ChainType,
+    Health,
+    NetworkState,
+    NodeRole,
+    PeerInfo,
+    SyncState,
+} from '@polkadot/types/interfaces/system';
 import type { IExtrinsic, Observable } from '@polkadot/types/types';
 
 declare module '@polkadot/rpc-core/types/jsonrpc' {
