@@ -29,9 +29,12 @@ describe('FailTransfer', (): void => {
         const transferId = createFundingTransferId(blockchain, '0xffffffffffffffffffffffffffffffffffffffff');
         const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
 
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const taskId = api.createType('PalletCreditcoinTaskId', { VerifyTransfer: transferId });
+
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
-                .failTransfer(1000, transferId, cause)
+                .failTask(1000, taskId, cause)
                 .signAndSend(authority, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
