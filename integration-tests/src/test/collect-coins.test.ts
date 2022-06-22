@@ -45,8 +45,11 @@ describe('CollectCoins', (): void => {
             const collectedCoinsId = createCollectedCoinsId(evmAddress);
             const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
 
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            const taskId = api.createType('PalletCreditcoinTaskId', { CollectCoins: collectedCoinsId });
+
             const { partialFee } = await api.tx.creditcoin
-                .failCollectCoins(collectedCoinsId, cause, 1000)
+                .failTask(1000, taskId, cause)
                 .paymentInfo(authority, { nonce: -1 });
 
             expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
@@ -64,11 +67,16 @@ describe('CollectCoins', (): void => {
                     amount: 1000,
                     txHash: badHash,
                 };
+                const collectedCoinsId = createCollectedCoinsId(evmAddress);
+                /* eslint-disable @typescript-eslint/naming-convention */
+                const taskId = api.createType('PalletCreditcoinTaskId', { CollectCoins: collectedCoinsId });
+                const taskOutput = api.createType('PalletCreditcoinTaskOutput', { CollectCoins: collectedCoins });
 
                 const { partialFee } = await api.tx.creditcoin
-                    .persistCollectCoins(collectedCoins, 1000)
+                    .persistTaskOutput(1000, taskId, taskOutput)
                     .paymentInfo(authority, { nonce: -1 });
-                expect(partialFee.toBigInt()).toEqual(BigInt(0));
+                /* eslint-enable */
+                expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
             },
         );
     });
