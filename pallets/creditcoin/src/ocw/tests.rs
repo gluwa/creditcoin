@@ -328,7 +328,7 @@ fn blockchain_rpc_url_non_utf8() {
 #[test]
 fn blockchain_rpc_url_invalid_scale() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
-		let rpc_url_storage = StorageValueRef::persistent(&*b"ethereum-rpc-uri");
+		let rpc_url_storage = StorageValueRef::persistent(b"ethereum-rpc-uri");
 		rpc_url_storage.set(&[0x80]);
 
 		assert_matches!(

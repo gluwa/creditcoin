@@ -64,7 +64,7 @@ struct OldDealOrder<AccountId, BlockNum, Hash, Moment> {
 }
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub offer_id: OfferId<BlockNum, Hash>,
@@ -80,7 +80,7 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 }
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct InterestRate {
 	pub rate_per_period: RatePerPeriod,
 	pub decimals: Decimals,
@@ -88,7 +88,7 @@ pub struct InterestRate {
 }
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct LoanTerms {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
@@ -96,15 +96,15 @@ pub struct LoanTerms {
 }
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct AskTerms(pub LoanTerms);
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct BidTerms(pub LoanTerms);
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct AskOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub lender_address_id: AddressId<Hash>,
@@ -115,7 +115,7 @@ pub struct AskOrder<AccountId, BlockNum, Hash> {
 }
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct BidOrder<AccountId, BlockNum, Hash> {
 	pub blockchain: Blockchain,
 	pub borrower_address_id: AddressId<Hash>,
