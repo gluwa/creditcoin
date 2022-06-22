@@ -622,19 +622,26 @@ pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
 	CollectCoins(CollectedCoins<Hash, Balance>),
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment> From<Transfer<AccountId, BlockNum, Hash, Moment>>
-	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
-{
-	fn from(transfer: Transfer<AccountId, BlockNum, Hash, Moment>) -> Self {
-		TaskOutput::VerifyTransfer(transfer)
-	}
+macro_rules! same_variant {
+	($self_id: ident : $self_ty: ident, $other_id: ident : $other_ty: ident => [$($variant: ident),* $(,)?]) => {
+		match (&$self_id, &$other_id) {
+			$(
+				($self_ty::$variant(..), $other_ty::$variant(..)) => true,
+			)*
+			_ => false
+		}
+	};
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment> From<CollectedCoins<Hash, Balance>>
-	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
-{
-	fn from(collected_coins: CollectedCoins<Hash, Balance>) -> Self {
-		TaskOutput::CollectCoins(collected_coins)
+impl<Hash> TaskId<Hash> {
+	pub fn matches_output<AccountId, Balance, BlockNum, Moment>(
+		&self,
+		other: &TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>,
+	) -> bool {
+		same_variant!(self: TaskId, other: TaskOutput => [
+			VerifyTransfer,
+			CollectCoins,
+		])
 	}
 }
 

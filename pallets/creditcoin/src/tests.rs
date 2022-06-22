@@ -2810,6 +2810,42 @@ fn fail_transfer_should_error_when_transfer_registered() {
 }
 
 #[test]
+fn persist_task_output_should_error_when_task_mismatch() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let test_info = TestInfo::new_defaults();
+
+		let (_, deal_order_id) = test_info.create_deal_order();
+
+		let (_, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+
+		let bad_output = crate::types::CollectedCoins {
+			to: test_info.borrower.address_id,
+			amount: 5,
+			tx_id: "0xafafaf".hex_to_address(),
+		};
+		let root = RawOrigin::Root;
+		assert_ok!(Creditcoin::add_authority(
+			crate::mock::Origin::from(root.clone()),
+			test_info.lender.account_id.clone(),
+		));
+
+		let deadline = Test::unverified_transfer_deadline();
+
+		assert_noop!(
+			Creditcoin::persist_task_output(
+				Origin::signed(test_info.lender.account_id),
+				deadline,
+				crate::TaskId::from(transfer_id),
+				crate::TaskOutput::from(bad_output)
+			),
+			crate::Error::<Test>::TaskMismatch
+		);
+	})
+}
+
+#[test]
 fn on_initialize_removes_expired_deals_without_transfers() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		System::set_block_number(1);

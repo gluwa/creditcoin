@@ -508,6 +508,9 @@ pub mod pallet {
 
 		/// The address retrieved from the proof-of-ownership signature did not match the external address being registered.
 		OwnershipNotSatisfied,
+
+		/// Internal error: data provided about a task did not match the expectation
+		TaskMismatch,
 	}
 
 	#[pallet::genesis_config]
@@ -1293,6 +1296,8 @@ pub mod pallet {
 			task_output: TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
+
+			ensure!(task_id.matches_output(&task_output), Error::<T>::TaskMismatch);
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
