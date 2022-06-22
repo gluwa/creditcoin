@@ -622,6 +622,22 @@ pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
 	CollectCoins(CollectedCoins<Hash, Balance>),
 }
 
+impl<AccountId, Balance, BlockNum, Hash, Moment> From<Transfer<AccountId, BlockNum, Hash, Moment>>
+	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+{
+	fn from(transfer: Transfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+		Self::VerifyTransfer(transfer)
+	}
+}
+
+impl<AccountId, Balance, BlockNum, Hash, Moment> From<CollectedCoins<Hash, Balance>>
+	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+{
+	fn from(coins: CollectedCoins<Hash, Balance>) -> Self {
+		Self::CollectCoins(coins)
+	}
+}
+
 macro_rules! same_variant {
 	($self_id: ident : $self_ty: ident, $other_id: ident : $other_ty: ident => [$($variant: ident),* $(,)?]) => {
 		match (&$self_id, &$other_id) {
