@@ -482,8 +482,7 @@ fn verify_ethless_transfer() {
 }
 
 #[test]
-// #[tracing_test::traced_test]
-fn register_transfer_ocww() {
+fn register_transfer_ocw() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
 	ext.build_offchain_and_execute_with_state(|state, pool| {
