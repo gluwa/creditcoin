@@ -59,7 +59,7 @@ pub mod pallet {
 
 	use super::*;
 	use frame_support::{
-		dispatch::DispatchResult,
+		dispatch::{DispatchErrorWithPostInfo, DispatchResult},
 		pallet_prelude::*,
 		traits::{tokens::ExistenceRequirement, Currency},
 		transactional,
@@ -1301,12 +1301,17 @@ pub mod pallet {
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
+			let error_no_pay = |err: crate::Error<T>| DispatchErrorWithPostInfo {
+				error: err.into(),
+				post_info: PostDispatchInfo { actual_weight: None, pays_fee: Pays::No },
+			};
+
 			let event = match task_output {
 				TaskOutput::VerifyTransfer(transfer) => {
 					let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 					ensure!(
 						!Transfers::<T>::contains_key(&key),
-						Error::<T>::TransferAlreadyRegistered
+						error_no_pay(Error::<T>::TransferAlreadyRegistered)
 					);
 
 					let mut transfer = transfer;
@@ -1319,7 +1324,7 @@ pub mod pallet {
 					let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
 					ensure!(
 						!CollectedCoins::<T>::contains_key(&key),
-						Error::<T>::CollectCoinsAlreadyRegistered
+						error_no_pay(Error::<T>::CollectCoinsAlreadyRegistered)
 					);
 
 					let amount = collected_coins.amount;

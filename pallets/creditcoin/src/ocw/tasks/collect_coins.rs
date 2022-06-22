@@ -195,7 +195,7 @@ mod tests {
 		rpc::{EthTransaction, EthTransactionReceipt},
 		ETH_CONFIRMATIONS,
 	};
-	use crate::tests::{generate_address_with_proof, RefstrExt};
+	use crate::tests::{generate_address_with_proof, non_paying_error, RefstrExt};
 	use crate::types::CollectedCoinsId;
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
@@ -841,7 +841,7 @@ mod tests {
 					collected_coins_id.into(),
 					collected_coins.into(),
 				),
-				crate::Error::<Test>::CollectCoinsAlreadyRegistered
+				non_paying_error(crate::Error::<Test>::CollectCoinsAlreadyRegistered)
 			);
 		});
 	}
