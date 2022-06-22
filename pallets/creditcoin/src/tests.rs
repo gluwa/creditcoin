@@ -272,7 +272,7 @@ impl TestInfo {
 		transfer_kind: impl Into<Option<TransferKind>>,
 	) -> TestTransfer {
 		let blockchain_tx_id = blockchain_tx_id.as_ref();
-		let tx = if blockchain_tx_id.starts_with(&*b"0x") {
+		let tx = if blockchain_tx_id.starts_with(b"0x") {
 			core::str::from_utf8(blockchain_tx_id).unwrap().hex_to_address()
 		} else {
 			blockchain_tx_id.into_bounded()
@@ -2562,7 +2562,7 @@ fn exempt_should_succeed() {
 			deal_order_id.clone()
 		));
 
-		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, &*b"0");
+		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"0");
 
 		// assert field values were updated in storage
 		let saved_deal_order = DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
@@ -2839,7 +2839,7 @@ fn persist_task_output_should_error_when_task_mismatch() {
 		};
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
+			crate::mock::Origin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 

@@ -26,7 +26,7 @@ struct OldTransfer<AccountId, BlockNum, Hash> {
 }
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub offer_id: OfferId<BlockNum, Hash>,
