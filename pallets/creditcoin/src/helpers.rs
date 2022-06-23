@@ -173,3 +173,15 @@ impl<T: Config> Pallet<T> {
 		Ok((transfer_id, transfer))
 	}
 }
+
+pub fn non_paying_error<T: Config>(
+	error: crate::Error<T>,
+) -> frame_support::dispatch::DispatchErrorWithPostInfo {
+	frame_support::dispatch::DispatchErrorWithPostInfo {
+		error: error.into(),
+		post_info: frame_support::dispatch::PostDispatchInfo {
+			actual_weight: None,
+			pays_fee: frame_support::weights::Pays::No,
+		},
+	}
+}
