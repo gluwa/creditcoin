@@ -6,16 +6,17 @@ use crate::ocw::{
 
 use crate::pallet::{Config, Pallet};
 use crate::{
-	types::{AddressId, Blockchain, CollectedCoins, UnverifiedCollectedCoins},
+	types::{Blockchain, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
-use sp_runtime::traits::UniqueSaturatedFrom;
+use sp_runtime::SaturatedConversion;
+#[cfg_attr(feature = "std", allow(unused_imports))]
+use sp_std::prelude::*;
 
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::{H160, U64};
 use frame_support::ensure;
 use hex_literal::hex;
-use sp_std::prelude::*;
 
 pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
 const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
@@ -90,7 +91,7 @@ impl<T: Config> Pallet<T> {
 	///Amount is saturated to u128, don't exchange more than u128::MAX at once.
 	pub fn verify_collect_coins_ocw(
 		u_cc: &UnverifiedCollectedCoins,
-	) -> VerificationResult<CollectedCoins<T::Hash, T::Balance>> {
+	) -> VerificationResult<T::Balance> {
 		log::debug!("verifying OCW Collect Coins");
 		let UnverifiedCollectedCoins { to, tx_id } = u_cc;
 		let rpc_url = &CONTRACT_CHAIN.rpc_url()?;
@@ -100,13 +101,9 @@ impl<T: Config> Pallet<T> {
 
 		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip)?;
 
-		let collected_coins = CollectedCoins {
-			to: AddressId::new::<T>(&CONTRACT_CHAIN, u_cc.to.as_slice()),
-			amount: T::Balance::unique_saturated_from(u128::unique_saturated_from(amount)),
-			tx_id: u_cc.tx_id.clone(),
-		};
+		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
 
-		Ok(collected_coins)
+		Ok(amount)
 	}
 }
 
@@ -197,7 +194,7 @@ mod tests {
 		ETH_CONFIRMATIONS,
 	};
 	use crate::tests::{generate_address_with_proof, RefstrExt};
-	use crate::types::CollectedCoinsId;
+	use crate::types::{AddressId, CollectedCoins, CollectedCoinsId};
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
 

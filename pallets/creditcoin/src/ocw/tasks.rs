@@ -37,7 +37,7 @@ impl UnverifiedCollectedCoins {
 	where
 		T: Config,
 	{
-		crate::Pallet::<T>::verify_collect_coins_ocw(self).map(|c| c.amount)
+		crate::Pallet::<T>::verify_collect_coins_ocw(self)
 	}
 
 	pub fn into_output<T: Config>(self, amount: T::Balance) -> CollectedCoins<T::Hash, T::Balance>
