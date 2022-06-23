@@ -57,9 +57,11 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 #[frame_support::pallet]
 pub mod pallet {
 
+	use crate::helpers::non_paying_error;
+
 	use super::*;
 	use frame_support::{
-		dispatch::{DispatchErrorWithPostInfo, DispatchResult},
+		dispatch::DispatchResult,
 		pallet_prelude::*,
 		traits::{tokens::ExistenceRequirement, Currency},
 		transactional,
@@ -1301,17 +1303,12 @@ pub mod pallet {
 
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
-			let error_no_pay = |err: crate::Error<T>| DispatchErrorWithPostInfo {
-				error: err.into(),
-				post_info: PostDispatchInfo { actual_weight: None, pays_fee: Pays::No },
-			};
-
 			let event = match task_output {
 				TaskOutput::VerifyTransfer(transfer) => {
 					let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 					ensure!(
 						!Transfers::<T>::contains_key(&key),
-						error_no_pay(Error::<T>::TransferAlreadyRegistered)
+						non_paying_error(Error::<T>::TransferAlreadyRegistered)
 					);
 
 					let mut transfer = transfer;
@@ -1324,7 +1321,7 @@ pub mod pallet {
 					let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
 					ensure!(
 						!CollectedCoins::<T>::contains_key(&key),
-						error_no_pay(Error::<T>::CollectCoinsAlreadyRegistered)
+						non_paying_error(Error::<T>::CollectCoinsAlreadyRegistered)
 					);
 
 					let amount = collected_coins.amount;

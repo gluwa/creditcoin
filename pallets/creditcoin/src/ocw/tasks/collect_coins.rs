@@ -187,6 +187,7 @@ mod tests {
 	use frame_system::Pallet as System;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 
+	use crate::helpers::non_paying_error;
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, Origin, Test,
 	};
@@ -195,7 +196,7 @@ mod tests {
 		rpc::{EthTransaction, EthTransactionReceipt},
 		ETH_CONFIRMATIONS,
 	};
-	use crate::tests::{generate_address_with_proof, non_paying_error, RefstrExt};
+	use crate::tests::{generate_address_with_proof, RefstrExt};
 	use crate::types::CollectedCoinsId;
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
