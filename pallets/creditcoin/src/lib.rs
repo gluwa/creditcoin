@@ -596,13 +596,13 @@ pub mod pallet {
 		}
 
 		fn offchain_worker(_block_number: T::BlockNumber) {
-			let my_authority = Self::authority_id();
-			if my_authority.is_none() {
-				log::trace!("Not authority, skipping off chain work");
-				return;
-			}
-
-			let auth_id = T::FromAccountId::from(my_authority.unwrap());
+			let auth_id = match Self::authority_id() {
+				None => {
+					log::trace!("Not authority, skipping off chain work");
+					return;
+				},
+				Some(auth) => T::FromAccountId::from(auth),
+			};
 
 			for (deadline, id, task) in PendingTasks::<T>::iter() {
 				let storage_key = (deadline, &id).encode();

@@ -399,19 +399,27 @@ fn generate_transfer<T: Config>(
 	}
 
 	let transfer = PendingTasks::<T>::iter_values()
-		.filter_map(|task| match task {
-			crate::Task::VerifyTransfer(transfer) => Some(transfer),
+		.find_map(|task| match task {
+			crate::Task::VerifyTransfer(ut) => {
+				let transfer = &ut.transfer;
+				let seek_id = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
+				if transfer_id == seek_id {
+					Some(ut)
+				} else {
+					None
+				}
+			},
 			_ => None,
-		})
-		.find(|ut| {
-			let transfer = &ut.transfer;
-			let seek_id = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
-			transfer_id == seek_id
 		})
 		.unwrap()
 		.transfer;
 	if kill_unverified {
-		PendingTasks::<T>::remove_all(None);
+		let to_remove: Vec<_> = PendingTasks::<T>::iter_keys()
+			.filter(|(_, id)| matches!(id, crate::TaskId::VerifyTransfer(..)))
+			.collect();
+		for (deadline, id) in to_remove {
+			PendingTasks::<T>::remove(deadline, id);
+		}
 	}
 
 	if insert {
