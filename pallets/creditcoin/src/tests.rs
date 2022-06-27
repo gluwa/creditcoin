@@ -558,8 +558,7 @@ fn register_transfer_ocw() {
 		assert_eq!(
 			verify_tx.call,
 			Call::Creditcoin(crate::Call::persist_task_output {
-				task_id: transfer_id.into(),
-				task_output: expected_transfer.into(),
+				task_output: (transfer_id, expected_transfer).into(),
 				deadline
 			})
 		);
@@ -2576,8 +2575,7 @@ fn verify_transfer_should_error_when_not_signed() {
 			Creditcoin::persist_task_output(
 				Origin::none(),
 				deadline,
-				transfer_id.into(),
-				transfer.into()
+				(transfer_id, transfer).into()
 			),
 			BadOrigin
 		);
@@ -2595,8 +2593,7 @@ fn verify_transfer_should_error_when_signer_not_authorized() {
 			Creditcoin::persist_task_output(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				transfer_id.into(),
-				transfer.into(),
+				(transfer_id, transfer).into(),
 			),
 			crate::Error::<Test>::InsufficientAuthority,
 		);
@@ -2623,8 +2620,7 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 			Creditcoin::persist_task_output(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				transfer_id.into(),
-				transfer.into(),
+				(transfer_id, transfer).into(),
 			),
 			non_paying_error(crate::Error::<Test>::TransferAlreadyRegistered),
 		);
@@ -2668,8 +2664,7 @@ fn verify_transfer_should_work() {
 		assert_ok!(Creditcoin::persist_task_output(
 			Origin::signed(test_info.lender.account_id),
 			deadline,
-			transfer_id.clone().into(),
-			transfer.clone().into(),
+			(transfer_id.clone(), transfer.clone()).into(),
 		));
 
 		let mut all_events = <frame_system::Pallet<Test>>::events();
@@ -2804,42 +2799,6 @@ fn fail_transfer_should_error_when_transfer_registered() {
 				failure_cause
 			),
 			crate::Error::<Test>::TransferAlreadyRegistered
-		);
-	})
-}
-
-#[test]
-fn persist_task_output_should_error_when_task_mismatch() {
-	ExtBuilder::default().build_and_execute(|| {
-		System::set_block_number(1);
-
-		let test_info = TestInfo::new_defaults();
-
-		let (_, deal_order_id) = test_info.create_deal_order();
-
-		let (_, transfer_id) = test_info.create_funding_transfer(&deal_order_id);
-
-		let bad_output = crate::types::CollectedCoins {
-			to: test_info.borrower.address_id,
-			amount: 5,
-			tx_id: "0xafafaf".hex_to_address(),
-		};
-		let root = RawOrigin::Root;
-		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
-			test_info.lender.account_id.clone(),
-		));
-
-		let deadline = Test::unverified_transfer_deadline();
-
-		assert_noop!(
-			Creditcoin::persist_task_output(
-				Origin::signed(test_info.lender.account_id),
-				deadline,
-				crate::TaskId::from(transfer_id),
-				crate::TaskOutput::from(bad_output)
-			),
-			crate::Error::<Test>::TaskMismatch
 		);
 	})
 }

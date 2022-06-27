@@ -618,47 +618,34 @@ impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
-	VerifyTransfer(Transfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(CollectedCoins<Hash, Balance>),
+	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>),
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment> From<Transfer<AccountId, BlockNum, Hash, Moment>>
+impl<AccountId, Balance, BlockNum, Hash, Moment>
+	From<(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>)>
 	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
 {
-	fn from(transfer: Transfer<AccountId, BlockNum, Hash, Moment>) -> Self {
-		Self::VerifyTransfer(transfer)
+	fn from(
+		(id, transfer): (TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
+	) -> Self {
+		Self::VerifyTransfer(id, transfer)
 	}
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment> From<CollectedCoins<Hash, Balance>>
+impl<AccountId, Balance, BlockNum, Hash, Moment>
+	From<(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)>
 	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
 {
-	fn from(coins: CollectedCoins<Hash, Balance>) -> Self {
-		Self::CollectCoins(coins)
+	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)) -> Self {
+		Self::CollectCoins(id, coins)
 	}
 }
 
-macro_rules! same_variant {
-	($self_id: ident : $self_ty: ident, $other_id: ident : $other_ty: ident => [$($variant: ident),* $(,)?]) => {
-		match (&$self_id, &$other_id) {
-			$(
-				($self_ty::$variant(..), $other_ty::$variant(..)) => true,
-			)*
-			_ => false
-		}
-	};
-}
-
-impl<Hash> TaskId<Hash> {
-	pub fn matches_output<AccountId, Balance, BlockNum, Moment>(
-		&self,
-		other: &TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>,
-	) -> bool {
-		same_variant!(self: TaskId, other: TaskOutput => [
-			VerifyTransfer,
-			CollectCoins,
-		])
-	}
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
+	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>, Option<Moment>),
+	CollectCoins(UnverifiedCollectedCoins, Balance),
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]

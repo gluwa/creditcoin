@@ -390,8 +390,7 @@ mod tests {
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
 				deadline,
-				collected_coins_id.clone().into(),
-				collected_coins.into(),
+				(collected_coins_id.clone(), collected_coins).into(),
 			));
 
 			assert_noop!(
@@ -493,8 +492,7 @@ mod tests {
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth),
 				deadline,
-				collected_coins_id.into(),
-				collected_coins.clone().into(),
+				(collected_coins_id, collected_coins.clone()).into(),
 			));
 
 			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
@@ -534,8 +532,7 @@ mod tests {
 				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(auth),
 					deadline,
-					collected_coins_id.into(),
-					collected_coins.into(),
+					(collected_coins_id, collected_coins).into(),
 				),
 				crate::Error::<Test>::NonExistentAddress
 			);
@@ -575,8 +572,7 @@ mod tests {
 				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(auth),
 					Test::unverified_transfer_deadline(),
-					collected_coins_id.into(),
-					collected_coins.into(),
+					(collected_coins_id, collected_coins).into(),
 				),
 				crate::Error::<Test>::BalanceOverflow
 			);
@@ -609,8 +605,7 @@ mod tests {
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth),
 				Test::unverified_transfer_deadline(),
-				collected_coins_id.into(),
-				collected_coins.into(),
+				(collected_coins_id, collected_coins).into(),
 			));
 
 			roll_by_with_ocw(1);
@@ -742,8 +737,7 @@ mod tests {
 				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(molly),
 					Test::unverified_transfer_deadline(),
-					collected_coins_id.into(),
-					collected_coins.into(),
+					(collected_coins_id, collected_coins).into(),
 				),
 				crate::Error::<Test>::InsufficientAuthority
 			);
@@ -791,8 +785,7 @@ mod tests {
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
 			let call = crate::Call::<crate::mock::Test>::persist_task_output {
-				task_id: collected_coins_id.into(),
-				task_output: collected_coins.into(),
+				task_output: (collected_coins_id, collected_coins).into(),
 				deadline,
 			};
 
@@ -828,16 +821,14 @@ mod tests {
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
 				Test::unverified_transfer_deadline(),
-				collected_coins_id.clone().into(),
-				collected_coins.clone().into(),
+				(collected_coins_id.clone(), collected_coins.clone()).into(),
 			));
 
 			assert_noop!(
 				Creditcoin::<Test>::persist_task_output(
 					Origin::signed(auth),
 					Test::unverified_transfer_deadline(),
-					collected_coins_id.into(),
-					collected_coins.into(),
+					(collected_coins_id, collected_coins).into(),
 				),
 				non_paying_error(crate::Error::<Test>::CollectCoinsAlreadyRegistered)
 			);
@@ -910,8 +901,7 @@ mod tests {
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
 				Test::unverified_transfer_deadline(),
-				collected_coins_id.into(),
-				collected_coins.clone().into(),
+				(collected_coins_id, collected_coins.clone()).into(),
 			));
 
 			assert_eq!(
