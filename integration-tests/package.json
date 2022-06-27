@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@polkadot/api": "^8.6.2",
+    "@polkadot/api": "^8.10.1",
     "@types/jest": "^28.1.1",
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
