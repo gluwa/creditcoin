@@ -319,12 +319,6 @@ declare module '@polkadot/api-base/types/submittable' {
             persistTaskOutput: AugmentedSubmittable<
                 (
                     deadline: u32 | AnyNumber | Uint8Array,
-                    taskId:
-                        | PalletCreditcoinTaskId
-                        | { VerifyTransfer: any }
-                        | { CollectCoins: any }
-                        | string
-                        | Uint8Array,
                     taskOutput:
                         | PalletCreditcoinTaskOutput
                         | { VerifyTransfer: any }
@@ -332,7 +326,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, PalletCreditcoinTaskId, PalletCreditcoinTaskOutput]
+                [u32, PalletCreditcoinTaskOutput]
             >;
             /**
              * Registers an external address on `blockchain` and `network` with value `address`

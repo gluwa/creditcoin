@@ -779,7 +779,6 @@ export default {
             },
             persist_task_output: {
                 deadline: 'u32',
-                taskId: 'PalletCreditcoinTaskId',
                 taskOutput: 'PalletCreditcoinTaskOutput',
             },
             fail_task: {
@@ -837,21 +836,21 @@ export default {
      **/
     SpCoreSr25519Signature: '[u8;64]',
     /**
-     * Lookup127: pallet_creditcoin::types::TaskId<primitive_types::H256>
+     * Lookup127: pallet_creditcoin::types::TaskOutput<sp_core::crypto::AccountId32, Balance, BlockNum, primitive_types::H256, Moment>
+     **/
+    PalletCreditcoinTaskOutput: {
+        _enum: {
+            VerifyTransfer: '(H256,PalletCreditcoinTransfer)',
+            CollectCoins: '(H256,PalletCreditcoinCollectedCoins)',
+        },
+    },
+    /**
+     * Lookup128: pallet_creditcoin::types::TaskId<primitive_types::H256>
      **/
     PalletCreditcoinTaskId: {
         _enum: {
             VerifyTransfer: 'H256',
             CollectCoins: 'H256',
-        },
-    },
-    /**
-     * Lookup128: pallet_creditcoin::types::TaskOutput<sp_core::crypto::AccountId32, Balance, BlockNum, primitive_types::H256, Moment>
-     **/
-    PalletCreditcoinTaskOutput: {
-        _enum: {
-            VerifyTransfer: 'PalletCreditcoinTransfer',
-            CollectCoins: 'PalletCreditcoinCollectedCoins',
         },
     },
     /**

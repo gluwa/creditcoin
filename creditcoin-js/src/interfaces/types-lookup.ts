@@ -910,7 +910,6 @@ declare module '@polkadot/types/lookup' {
         readonly isPersistTaskOutput: boolean;
         readonly asPersistTaskOutput: {
             readonly deadline: u32;
-            readonly taskId: PalletCreditcoinTaskId;
             readonly taskOutput: PalletCreditcoinTaskOutput;
         } & Struct;
         readonly isFailTask: boolean;
@@ -983,21 +982,21 @@ declare module '@polkadot/types/lookup' {
     /** @name SpCoreSr25519Signature (126) */
     export interface SpCoreSr25519Signature extends U8aFixed {}
 
-    /** @name PalletCreditcoinTaskId (127) */
+    /** @name PalletCreditcoinTaskOutput (127) */
+    export interface PalletCreditcoinTaskOutput extends Enum {
+        readonly isVerifyTransfer: boolean;
+        readonly asVerifyTransfer: ITuple<[H256, PalletCreditcoinTransfer]>;
+        readonly isCollectCoins: boolean;
+        readonly asCollectCoins: ITuple<[H256, PalletCreditcoinCollectedCoins]>;
+        readonly type: 'VerifyTransfer' | 'CollectCoins';
+    }
+
+    /** @name PalletCreditcoinTaskId (128) */
     export interface PalletCreditcoinTaskId extends Enum {
         readonly isVerifyTransfer: boolean;
         readonly asVerifyTransfer: H256;
         readonly isCollectCoins: boolean;
         readonly asCollectCoins: H256;
-        readonly type: 'VerifyTransfer' | 'CollectCoins';
-    }
-
-    /** @name PalletCreditcoinTaskOutput (128) */
-    export interface PalletCreditcoinTaskOutput extends Enum {
-        readonly isVerifyTransfer: boolean;
-        readonly asVerifyTransfer: PalletCreditcoinTransfer;
-        readonly isCollectCoins: boolean;
-        readonly asCollectCoins: PalletCreditcoinCollectedCoins;
         readonly type: 'VerifyTransfer' | 'CollectCoins';
     }
 
