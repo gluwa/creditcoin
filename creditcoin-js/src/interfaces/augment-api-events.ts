@@ -30,48 +30,75 @@ declare module '@polkadot/api-base/types/events' {
             /**
              * A balance was set by root.
              **/
-            BalanceSet: AugmentedEvent<ApiType, [AccountId32, u128, u128]>;
+            BalanceSet: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, free: u128, reserved: u128],
+                { who: AccountId32; free: u128; reserved: u128 }
+            >;
             /**
              * Some amount was deposited (e.g. for transaction fees).
              **/
-            Deposit: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            Deposit: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
             /**
              * An account was removed whose balance was non-zero but below ExistentialDeposit,
              * resulting in an outright loss.
              **/
-            DustLost: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            DustLost: AugmentedEvent<
+                ApiType,
+                [account: AccountId32, amount: u128],
+                { account: AccountId32; amount: u128 }
+            >;
             /**
              * An account was created with some free balance.
              **/
-            Endowed: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            Endowed: AugmentedEvent<
+                ApiType,
+                [account: AccountId32, freeBalance: u128],
+                { account: AccountId32; freeBalance: u128 }
+            >;
             /**
              * Some balance was reserved (moved from free to reserved).
              **/
-            Reserved: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            Reserved: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
             /**
              * Some balance was moved from the reserve of the first account to the second account.
              * Final argument indicates the destination balance type.
              **/
             ReserveRepatriated: AugmentedEvent<
                 ApiType,
-                [AccountId32, AccountId32, u128, FrameSupportTokensMiscBalanceStatus]
+                [
+                    from: AccountId32,
+                    to: AccountId32,
+                    amount: u128,
+                    destinationStatus: FrameSupportTokensMiscBalanceStatus,
+                ],
+                {
+                    from: AccountId32;
+                    to: AccountId32;
+                    amount: u128;
+                    destinationStatus: FrameSupportTokensMiscBalanceStatus;
+                }
             >;
             /**
              * Some amount was removed from the account (e.g. for misbehavior).
              **/
-            Slashed: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            Slashed: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
             /**
              * Transfer succeeded.
              **/
-            Transfer: AugmentedEvent<ApiType, [AccountId32, AccountId32, u128]>;
+            Transfer: AugmentedEvent<
+                ApiType,
+                [from: AccountId32, to: AccountId32, amount: u128],
+                { from: AccountId32; to: AccountId32; amount: u128 }
+            >;
             /**
              * Some balance was unreserved (moved from reserved to free).
              **/
-            Unreserved: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            Unreserved: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
             /**
              * Some amount was withdrawn from the account (e.g. for transaction fees).
              **/
-            Withdraw: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
             /**
              * Generic event
              **/
@@ -196,15 +223,23 @@ declare module '@polkadot/api-base/types/events' {
             /**
              * The \[sudoer\] just switched identity; the old key is supplied if one existed.
              **/
-            KeyChanged: AugmentedEvent<ApiType, [Option<AccountId32>]>;
+            KeyChanged: AugmentedEvent<ApiType, [oldSudoer: Option<AccountId32>], { oldSudoer: Option<AccountId32> }>;
             /**
              * A sudo just took place. \[result\]
              **/
-            Sudid: AugmentedEvent<ApiType, [Result<Null, SpRuntimeDispatchError>]>;
+            Sudid: AugmentedEvent<
+                ApiType,
+                [sudoResult: Result<Null, SpRuntimeDispatchError>],
+                { sudoResult: Result<Null, SpRuntimeDispatchError> }
+            >;
             /**
              * A sudo just took place. \[result\]
              **/
-            SudoAsDone: AugmentedEvent<ApiType, [Result<Null, SpRuntimeDispatchError>]>;
+            SudoAsDone: AugmentedEvent<
+                ApiType,
+                [sudoResult: Result<Null, SpRuntimeDispatchError>],
+                { sudoResult: Result<Null, SpRuntimeDispatchError> }
+            >;
             /**
              * Generic event
              **/
@@ -218,23 +253,31 @@ declare module '@polkadot/api-base/types/events' {
             /**
              * An extrinsic failed.
              **/
-            ExtrinsicFailed: AugmentedEvent<ApiType, [SpRuntimeDispatchError, FrameSupportWeightsDispatchInfo]>;
+            ExtrinsicFailed: AugmentedEvent<
+                ApiType,
+                [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSupportWeightsDispatchInfo],
+                { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSupportWeightsDispatchInfo }
+            >;
             /**
              * An extrinsic completed successfully.
              **/
-            ExtrinsicSuccess: AugmentedEvent<ApiType, [FrameSupportWeightsDispatchInfo]>;
+            ExtrinsicSuccess: AugmentedEvent<
+                ApiType,
+                [dispatchInfo: FrameSupportWeightsDispatchInfo],
+                { dispatchInfo: FrameSupportWeightsDispatchInfo }
+            >;
             /**
              * An account was reaped.
              **/
-            KilledAccount: AugmentedEvent<ApiType, [AccountId32]>;
+            KilledAccount: AugmentedEvent<ApiType, [account: AccountId32], { account: AccountId32 }>;
             /**
              * A new account was created.
              **/
-            NewAccount: AugmentedEvent<ApiType, [AccountId32]>;
+            NewAccount: AugmentedEvent<ApiType, [account: AccountId32], { account: AccountId32 }>;
             /**
              * On on-chain remark happened.
              **/
-            Remarked: AugmentedEvent<ApiType, [AccountId32, H256]>;
+            Remarked: AugmentedEvent<ApiType, [sender: AccountId32, hash_: H256], { sender: AccountId32; hash_: H256 }>;
             /**
              * Generic event
              **/
