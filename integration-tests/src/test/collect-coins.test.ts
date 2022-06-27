@@ -69,11 +69,12 @@ describe('CollectCoins', (): void => {
                 };
                 const collectedCoinsId = createCollectedCoinsId(evmAddress);
                 /* eslint-disable @typescript-eslint/naming-convention */
-                const taskId = api.createType('PalletCreditcoinTaskId', { CollectCoins: collectedCoinsId });
-                const taskOutput = api.createType('PalletCreditcoinTaskOutput', { CollectCoins: collectedCoins });
+                const taskOutput = api.createType('PalletCreditcoinTaskOutput', {
+                    CollectCoins: [collectedCoinsId, collectedCoins],
+                });
 
                 const { partialFee } = await api.tx.creditcoin
-                    .persistTaskOutput(1000, taskId, taskOutput)
+                    .persistTaskOutput(1000, taskOutput)
                     .paymentInfo(authority, { nonce: -1 });
                 /* eslint-enable */
                 expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
