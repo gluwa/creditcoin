@@ -3,10 +3,9 @@ pub mod verify_transfer;
 
 use crate::ocw::errors::{OffchainError, VerificationResult};
 use crate::types::{
-	CollectedCoins, Task, TaskOracleData, TaskOutput, Transfer, UnverifiedCollectedCoins,
-	UnverifiedTransfer,
+	CollectedCoins, Task, TaskOutput, Transfer, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
-use crate::Config;
+use crate::{CollectedCoinsId, Config, TaskData, TransferId};
 use sp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
 
 impl<AccountId, BlockNum, Hash, Moment> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>
@@ -30,6 +29,13 @@ where
 	{
 		Transfer { timestamp, ..self.transfer }
 	}
+
+	pub fn to_id<T: Config>(&self) -> TransferId<Hash>
+	where
+		T: Config<AccountId = AccountId, BlockNumber = BlockNum, Hash = Hash, Moment = Moment>,
+	{
+		TransferId::new::<T>(&self.transfer.blockchain, &self.transfer.tx_id)
+	}
 }
 
 impl UnverifiedCollectedCoins {
@@ -40,13 +46,20 @@ impl UnverifiedCollectedCoins {
 		crate::Pallet::<T>::verify_collect_coins_ocw(self)
 	}
 
-	pub fn into_output<T: Config>(self, amount: T::Balance) -> CollectedCoins<T::Hash, T::Balance>
+	pub fn into_output<T>(self, amount: T::Balance) -> CollectedCoins<T::Hash, T::Balance>
 	where
 		T: Config,
 	{
 		let Self { to, tx_id } = self;
 		let to = crate::AddressId::new::<T>(&collect_coins::CONTRACT_CHAIN, to.as_slice());
 		CollectedCoins { amount, to, tx_id }
+	}
+
+	pub fn to_id<T>(&self) -> CollectedCoinsId<T::Hash>
+	where
+		T: Config,
+	{
+		CollectedCoinsId::new::<T>(&self.tx_id)
 	}
 }
 
@@ -55,40 +68,52 @@ where
 	Moment: UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
 	BlockNum: UniqueSaturatedInto<u64>,
 {
-	pub fn verify_ocw<T>(&self) -> VerificationResult<TaskOracleData<T::Balance, Moment>>
+	pub fn verify_ocw<T>(
+		self,
+	) -> Result<TaskData<AccountId, T::Balance, BlockNum, Hash, Moment>, (Self, OffchainError)>
 	where
 		T: Config<AccountId = AccountId, BlockNumber = BlockNum, Hash = Hash, Moment = Moment>,
 	{
 		match self {
-			Task::VerifyTransfer(transfer) => {
-				transfer.verify_ocw::<T>().map(|t| TaskOracleData::VerifyTransfer(t))
+			Task::VerifyTransfer(transfer) => match transfer.verify_ocw::<T>() {
+				Ok(data) => Ok(TaskData::VerifyTransfer(transfer, data)),
+				Err(e) => Err((transfer.into(), e)),
 			},
-			Task::CollectCoins(collect_coins) => {
-				collect_coins.verify_ocw::<T>().map(|a| TaskOracleData::CollectCoins(a))
+			Task::CollectCoins(collect_coins) => match collect_coins.verify_ocw::<T>() {
+				Ok(data) => Ok(TaskData::CollectCoins(collect_coins, data)),
+				Err(e) => Err((collect_coins.into(), e)),
 			},
 		}
 	}
+}
 
+impl<AccountId, Balance, BlockNum, Hash, Moment>
+	TaskData<AccountId, Balance, BlockNum, Hash, Moment>
+where
+	Moment: UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
+	BlockNum: UniqueSaturatedInto<u64>,
+{
 	pub fn into_output<T: Config>(
 		self,
-		data: TaskOracleData<T::Balance, T::Moment>,
-	) -> Result<
-		TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
-		OffchainError,
-	>
+	) -> TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>
 	where
-		T: Config<AccountId = AccountId, BlockNumber = BlockNum, Hash = Hash, Moment = Moment>,
+		T: Config<
+			AccountId = AccountId,
+			Balance = Balance,
+			BlockNumber = BlockNum,
+			Hash = Hash,
+			Moment = Moment,
+		>,
 	{
-		match (self, data) {
-			(Task::VerifyTransfer(transfer), TaskOracleData::VerifyTransfer(data)) => {
-				let transfer = transfer.into_output::<T>(data);
-				Ok(TaskOutput::VerifyTransfer(transfer))
+		match self {
+			TaskData::VerifyTransfer(transfer, data) => {
+				let id = transfer.to_id::<T>();
+				TaskOutput::VerifyTransfer(id, transfer.into_output::<T>(data))
 			},
-			(Task::CollectCoins(collect_coins), TaskOracleData::CollectCoins(data)) => {
-				let collect_coins = collect_coins.into_output::<T>(data);
-				Ok(TaskOutput::CollectCoins(collect_coins))
+			TaskData::CollectCoins(collected_coins, data) => {
+				let id = collected_coins.to_id::<T>();
+				TaskOutput::CollectCoins(id, collected_coins.into_output::<T>(data))
 			},
-			_ => Err(OffchainError::InvalidData),
 		}
 	}
 }

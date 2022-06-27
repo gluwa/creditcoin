@@ -510,9 +510,6 @@ pub mod pallet {
 
 		/// The address retrieved from the proof-of-ownership signature did not match the external address being registered.
 		OwnershipNotSatisfied,
-
-		/// Internal error: data provided about a task did not match the expectation
-		TaskMismatch,
 	}
 
 	#[pallet::genesis_config]
@@ -615,14 +612,10 @@ pub mod pallet {
 				let result = task.verify_ocw::<T>();
 
 				match result {
-					Ok(data) => {
-						let output = task.into_output::<T>(data).unwrap();
+					Ok(task_data) => {
+						let output = task_data.into_output::<T>();
 						match Self::offchain_signed_tx(auth_id.clone(), |_| {
-							Call::persist_task_output {
-								deadline,
-								task_id: id.clone(),
-								task_output: output.clone(),
-							}
+							Call::persist_task_output { deadline, task_output: output.clone() }
 						}) {
 							Err(e) => {
 								log::error!(
@@ -633,7 +626,7 @@ pub mod pallet {
 							Ok(_) => status.mark_complete(),
 						}
 					},
-					Err(ocw::OffchainError::InvalidTask(cause)) => {
+					Err((task, ocw::OffchainError::InvalidTask(cause))) => {
 						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
 						if cause.is_fatal() {
 							match Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_task {
@@ -1287,24 +1280,21 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(match &task_id {
-			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
-			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
+		#[pallet::weight(match &task_output {
+			crate::TaskOutput::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
+			crate::TaskOutput::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
 		})]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
 			deadline: T::BlockNumber,
-			task_id: TaskId<T::Hash>,
 			task_output: TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(task_id.matches_output(&task_output), Error::<T>::TaskMismatch);
-
 			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
 
-			let event = match task_output {
-				TaskOutput::VerifyTransfer(transfer) => {
+			let (task_id, event) = match task_output {
+				TaskOutput::VerifyTransfer(id, transfer) => {
 					let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 					ensure!(
 						!Transfers::<T>::contains_key(&key),
@@ -1315,9 +1305,9 @@ pub mod pallet {
 					transfer.block = frame_system::Pallet::<T>::block_number();
 
 					Transfers::<T>::insert(&key, transfer);
-					Event::<T>::TransferVerified(key)
+					(TaskId::from(id), Event::<T>::TransferVerified(key))
 				},
-				TaskOutput::CollectCoins(collected_coins) => {
+				TaskOutput::CollectCoins(id, collected_coins) => {
 					let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
 					ensure!(
 						!CollectedCoins::<T>::contains_key(&key),
@@ -1338,7 +1328,7 @@ pub mod pallet {
 					);
 
 					CollectedCoins::<T>::insert(key.clone(), collected_coins.clone());
-					Event::<T>::CollectedCoinsMinted(key, collected_coins)
+					(TaskId::from(id), Event::<T>::CollectedCoinsMinted(key, collected_coins))
 				},
 			};
 

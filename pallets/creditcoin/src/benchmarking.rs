@@ -204,9 +204,8 @@ benchmarks! {
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let deadline = T::BlockNumber::one();
 		let (transfer_id, transfer)= generate_transfer::<T>(deal_id,false,false,true,0u8);
-		let task_id = crate::TaskId::from(transfer_id);
-		let task_output = crate::TaskOutput::from(transfer);
-	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_id, task_output)
+		let task_output = crate::TaskOutput::from((transfer_id, transfer));
+	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
 	fail_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -315,9 +314,8 @@ benchmarks! {
 		let collected_coins =
 			crate::types::CollectedCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount: T::Balance::unique_saturated_from(1u32), tx_id };
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
-		let task_id = crate::TaskId::from(collected_coins_id);
-		let task_output = crate::TaskOutput::from(collected_coins);
-	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_id, task_output)
+		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
+	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
 }
 
