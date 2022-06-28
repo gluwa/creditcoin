@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider, Keyring } from 'creditcoin-js';
+import { ApiPromise, WsProvider, Keyring } from 'creditcoin-js/lib';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 
 const setup = async () => {

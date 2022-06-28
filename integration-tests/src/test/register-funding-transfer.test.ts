@@ -1,18 +1,17 @@
-import { KeyringPair } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js/lib';
 
-import { Guid } from 'creditcoin-js';
+import { Guid } from 'creditcoin-js/lib';
 import { POINT_01_CTC } from '../constants';
 import { BN } from '@polkadot/util';
 
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
-import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
-import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
-import { createCreditcoinTransferKind } from 'creditcoin-js/transforms';
+import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
+import { createFundingTransferId } from 'creditcoin-js/lib/extrinsics/register-transfers';
+import { creditcoinApi } from 'creditcoin-js/lib';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
 import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
-import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
+import { Wallet } from 'creditcoin-js/lib';
 
 describe('RegisterFundingTransfer', (): void => {
     let ccApi: CreditcoinApi;
@@ -136,7 +135,7 @@ describe('RegisterFundingTransfer', (): void => {
                         if (api.events.creditcoin.TransferFailedVerification.is(event)) {
                             const failedTransferId = event.data[0].toString();
                             if (failedTransferId === transferId) {
-                                const failureCause = event.data[1] ;
+                                const failureCause = event.data[1];
                                 expect(failureCause.isIncorrectAmount).toBeTruthy();
                                 resolve();
                             }

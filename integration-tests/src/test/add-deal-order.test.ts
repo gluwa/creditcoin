@@ -1,8 +1,8 @@
-import { KeyringPair } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js/lib';
 import { POINT_01_CTC } from '../constants';
-import { OfferId } from 'creditcoin-js/model';
-import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
+import { OfferId } from 'creditcoin-js/lib/model';
+import { creditcoinApi } from 'creditcoin-js/lib';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { addAskAndBidOrder, testData } from './common';
 import { extractFee } from '../utils';
 

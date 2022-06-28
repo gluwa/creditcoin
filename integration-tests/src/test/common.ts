@@ -1,10 +1,10 @@
-import { Wallet, Guid, BN } from 'creditcoin-js';
-import { KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
-import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/model';
-import { CreditcoinApi } from 'creditcoin-js/types';
-import { createAddress } from 'creditcoin-js/transforms';
-import { ethConnection } from 'creditcoin-js/examples/ethereum';
-import { AddressRegistered, createAddressId } from 'creditcoin-js/extrinsics/register-address';
+import { Wallet, Guid, BN } from 'creditcoin-js/lib';
+import { Keyring, KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js/lib';
+import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/lib/model';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { createAddress } from 'creditcoin-js/lib/transforms';
+import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
+import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 
 type TestData = {
     loanTerms: LoanTerms;

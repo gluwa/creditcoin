@@ -1,15 +1,15 @@
-import { KeyringPair } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js/lib';
 
-import { Guid } from 'creditcoin-js';
+import { Guid } from 'creditcoin-js/lib';
 import { POINT_01_CTC } from '../constants';
 
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
-import { TransferEvent } from 'creditcoin-js/extrinsics/register-transfers';
-import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
+import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
+import { TransferEvent } from 'creditcoin-js/lib/extrinsics/register-transfers';
+import { creditcoinApi } from 'creditcoin-js/lib';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
+import { Wallet } from 'creditcoin-js/lib';
 
 describe('FundDealOrder', (): void => {
     let ccApi: CreditcoinApi;

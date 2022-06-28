@@ -1,6 +1,6 @@
 /* eslint-disable */
-import { ApiPromise } from 'creditcoin-js';
-import type { EventRecord, Balance, DispatchError } from 'creditcoin-js';
+import { ApiPromise } from 'creditcoin-js/lib';
+import type { EventRecord, Balance, DispatchError } from 'creditcoin-js/lib';
 
 export const testIf = (condition: boolean, name: string, fn: any, timeout = 30000) =>
     condition ? test(name, fn, timeout) : test.skip(name, fn, timeout);
