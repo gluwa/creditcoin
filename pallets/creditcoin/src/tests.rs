@@ -1,7 +1,6 @@
 use crate::{
 	helpers::{non_paying_error, EVMAddress, PublicToAddress},
 	mock::*,
-	ocw::{rpc::JsonRpcResponse, VerificationFailureCause},
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currency,
 	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind,
@@ -11,7 +10,7 @@ use crate::{
 
 use assert_matches::assert_matches;
 use bstr::B;
-use codec::{Decode, Encode};
+use codec::Encode;
 use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
@@ -484,102 +483,6 @@ fn verify_ethless_transfer() {
 }
 
 #[test]
-fn register_transfer_ocw() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, pool| {
-		let dummy_url = "dummy";
-		let tx_hash = get_mock_tx_hash();
-		let contract = get_mock_contract().hex_to_address();
-		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = Blockchain::Rinkeby;
-
-		// mocks for when we expect failure
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
-			.mock_get_block_number(&mut state.write());
-		// mocks for when we expect success
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
-			.mock_all(&mut state.write());
-
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
-
-		let loan_amount = get_mock_amount();
-		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
-
-		let test_info =
-			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
-		let (_, deal_order_id) = test_info.create_deal_order();
-		let lender = test_info.lender.account_id.clone();
-
-		// test that we get a "fail_transfer" tx when verification fails
-		assert_ok!(Creditcoin::register_funding_transfer(
-			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
-			deal_order_id.clone(),
-			tx_hash.hex_to_address(),
-		));
-		let deadline = Test::unverified_transfer_deadline();
-
-		roll_by_with_ocw(1);
-
-		let transfer_id = TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
-		let tx = pool.write().transactions.pop().expect("fail transfer");
-		assert!(pool.read().transactions.is_empty());
-		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
-		assert_eq!(
-			fail_tx.call,
-			Call::Creditcoin(crate::Call::fail_task {
-				task_id: transfer_id.clone().into(),
-				deadline,
-				cause: VerificationFailureCause::IncorrectNonce
-			})
-		);
-
-		// test for successful verification
-
-		// this is kind of a gross hack, basically when I made the test transfer on luniverse to pull the mock responses
-		// I didn't pass the proper `nonce` to the smart contract, and it's a pain to redo the transaction and update all the tests,
-		// so here we just "change" the deal_order_id to one with a `hash` that matches the expected nonce so that the transfer
-		// verification logic is happy
-		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
-
-		assert_ok!(Creditcoin::register_funding_transfer(
-			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
-			fake_deal_order_id.clone(),
-			tx_hash.hex_to_address(),
-		));
-		let expected_transfer = crate::Transfer {
-			blockchain: test_info.blockchain.clone(),
-			kind: TransferKind::Ethless(contract),
-			amount: loan_amount,
-			block: System::block_number(),
-			from: test_info.lender.address_id.clone(),
-			to: test_info.borrower.address_id,
-			order_id: OrderId::Deal(fake_deal_order_id),
-			is_processed: false,
-			account_id: lender,
-			tx_id: tx_hash.hex_to_address(),
-			timestamp: Some(get_mock_timestamp()),
-		};
-		let deadline = Test::unverified_transfer_deadline();
-
-		roll_by_with_ocw(1);
-
-		let tx = pool.write().transactions.pop().expect("verify transfer");
-		assert!(pool.read().transactions.is_empty());
-		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
-		assert_eq!(
-			verify_tx.call,
-			Call::Creditcoin(crate::Call::persist_task_output {
-				task_output: (transfer_id, expected_transfer).into(),
-				deadline
-			})
-		);
-	});
-}
-
-#[test]
 #[tracing_test::traced_test]
 fn register_transfer_ocw_fail_to_send() {
 	let mut ext = ExtBuilder::default();
@@ -643,7 +546,10 @@ fn register_transfer_ocw_fail_to_send() {
 	});
 }
 
-fn adjust_deal_order_to_nonce(deal_order_id: &TestDealOrderId, nonce: U256) -> TestDealOrderId {
+pub(crate) fn adjust_deal_order_to_nonce(
+	deal_order_id: &TestDealOrderId,
+	nonce: U256,
+) -> TestDealOrderId {
 	let deal_id_hash = H256::from_uint(&nonce);
 	let deal = crate::DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
 	crate::DealOrders::<Test>::remove(deal_order_id.expiration(), deal_order_id.hash());
@@ -651,91 +557,6 @@ fn adjust_deal_order_to_nonce(deal_order_id: &TestDealOrderId, nonce: U256) -> T
 		crate::DealOrderId::with_expiration_hash::<Test>(deal_order_id.expiration(), deal_id_hash);
 	crate::DealOrders::<Test>::insert_id(fake_deal_order_id.clone(), deal);
 	fake_deal_order_id
-}
-
-#[test]
-#[tracing_test::traced_test]
-fn ocw_retries() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, pool| {
-		System::set_block_number(1);
-
-		let dummy_url = "dummy";
-		let tx_hash = get_mock_tx_hash();
-		let contract = get_mock_contract().hex_to_address();
-		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = Blockchain::Rinkeby;
-
-		let tx_block_num_value =
-			u64::from_str_radix(tx_block_num.trim_start_matches("0x"), 16).unwrap();
-
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
-
-		let loan_amount = get_mock_amount();
-		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
-
-		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
-
-		let (_, deal_order_id) = test_info.create_deal_order();
-
-		let deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
-
-		let lender = test_info.lender.account_id;
-		assert_ok!(Creditcoin::register_funding_transfer(
-			Origin::signed(lender),
-			TransferKind::Ethless(contract),
-			deal_order_id,
-			tx_hash.hex_to_address(),
-		));
-
-		let mock_unconfirmed_tx = || {
-			let mut requests =
-				MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES);
-			requests.get_block_number.set_response(JsonRpcResponse {
-				jsonrpc: "2.0".into(),
-				id: 1,
-				error: None,
-				result: Some(format!("0x{:x}", tx_block_num_value + 1)),
-			});
-
-			requests.mock_get_block_number(&mut state.write());
-		};
-
-		// mock requests so the tx is unconfirmed
-		mock_unconfirmed_tx();
-
-		roll_by_with_ocw(1);
-		assert!(logs_contain("TaskUnconfirmed"));
-
-		// we failed, we should retry again here
-
-		mock_unconfirmed_tx();
-
-		roll_by_with_ocw(1);
-		assert!(logs_contain("TaskUnconfirmed"));
-
-		// now mock requests so the tx is confirmed
-
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
-			.mock_all(&mut state.write());
-
-		roll_by_with_ocw(1);
-
-		// we should have retried and successfully verified the transfer
-
-		let tx = pool.write().transactions.pop().expect("verify transfer");
-		assert!(pool.read().transactions.is_empty());
-		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
-		assert_matches!(
-			verify_tx.call,
-			super::mock::Call::Creditcoin(crate::Call::persist_task_output { .. })
-		);
-
-		roll_by_with_ocw(1);
-
-		assert!(logs_contain("Already handled Task"));
-	});
 }
 
 #[test]
