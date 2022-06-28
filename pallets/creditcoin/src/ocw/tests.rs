@@ -753,7 +753,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 		roll_to(2);
 		let deadline_2 = TestRuntime::unverified_transfer_deadline();
 		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
-			Origin::signed(acc.clone()),
+			Origin::signed(acc),
 			addr.clone(),
 			TX_HASH.hex_to_address()
 		));
@@ -775,10 +775,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 		let tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_eq!(
 			tx.call,
-			Call::Creditcoin(crate::Call::persist_collect_coins {
-				collected_coins: collected_coins.clone(),
-				deadline
-			})
+			Call::Creditcoin(crate::Call::persist_collect_coins { collected_coins, deadline })
 		);
 
 		assert_ok!(tx.call.dispatch(Origin::signed(auth)));
@@ -829,8 +826,8 @@ fn task_deadline_oversubscription() {
 		roll_to(2);
 		let deadline_2 = TestRuntime::unverified_transfer_deadline();
 		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
-			Origin::signed(acc.clone()),
-			addr.clone(),
+			Origin::signed(acc),
+			addr,
 			TX_HASH.hex_to_address()
 		));
 
@@ -973,7 +970,7 @@ fn duplicate_retry_fail_and_succeed() {
 		assert_eq!(
 			fail_tx.call,
 			Call::Creditcoin(crate::Call::fail_transfer {
-				transfer_id: transfer_id.clone(),
+				transfer_id,
 				deadline,
 				cause: VerificationFailureCause::IncorrectNonce
 			})
@@ -1052,7 +1049,7 @@ fn effective_guard_lifetime_until_task_expiration() {
 		roll_to(1);
 		let deadline = TestRuntime::unverified_transfer_deadline();
 		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
-			Origin::signed(acc.clone()),
+			Origin::signed(acc),
 			addr.clone(),
 			TX_HASH.hex_to_address()
 		));
