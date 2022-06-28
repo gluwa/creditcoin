@@ -2,19 +2,19 @@ pub mod collect_coins;
 pub mod errors;
 pub mod rpc;
 pub mod task;
-use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
-pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::{
 	errors::RpcUrlError,
 	rpc::{errors::RpcError, Address, EthBlock, EthTransaction, EthTransactionReceipt},
 };
-
 use super::{
-	pallet::{Config, Error, Pallet},
+	pallet::{Config, Error, Pallet, Store},
 	ExternalAddress, ExternalAmount, ExternalTxId, OrderId,
 };
+use crate::{Blockchain, Call, Id, Transfer, TransferKind, UnverifiedTransfer};
 use alloc::string::String;
+pub use codec::EncodeLike;
+pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::{U256, U64};
 use frame_support::ensure;
@@ -22,9 +22,10 @@ use frame_system::{
 	offchain::{Account, SendSignedTransaction, Signer},
 	pallet_prelude::BlockNumberFor,
 };
-use sp_runtime::offchain::storage::StorageValueRef;
+use sp_runtime::offchain::{storage::StorageValueRef, storage_lock::Lockable};
 use sp_runtime::traits::UniqueSaturatedFrom;
 use sp_std::prelude::*;
+use task::StorageLockGuard;
 
 pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
@@ -147,29 +148,27 @@ fn validate_ethless_transfer(
 }
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn ocw_result_handler<O: core::fmt::Debug>(
+	pub(crate) fn ocw_result_handler<O: core::fmt::Debug, L: Lockable>(
 		verification_result: VerificationResult<O>,
 		success_dispatcher: impl Fn(O) -> Result<(), Error<T>>,
 		failure_dispatcher: impl Fn(VerificationFailureCause) -> Result<(), Error<T>>,
-		task_status: LocalVerificationStatus,
+		guard: StorageLockGuard<'_, '_, L>,
 		unverified_task: &impl core::fmt::Debug,
 	) {
 		log::debug!("Task Verification result: {:?}", verification_result);
 		match verification_result {
-			Ok(output) => {
-				if let Err(e) = success_dispatcher(output) {
-					log::error!("Failed to send success dispatchable transaction: {:?}", e);
-				} else {
-					task_status.mark_complete();
-				}
+			Ok(output) => match success_dispatcher(output) {
+				Ok(_) => guard.forget(),
+				Err(e) => log::error!("Failed to send success dispatchable transaction: {:?}", e),
 			},
 			Err(OffchainError::InvalidTask(cause)) => {
 				log::warn!("Failed to verify pending task {:?} : {:?}", unverified_task, cause);
 				if cause.is_fatal() {
-					if let Err(e) = failure_dispatcher(cause) {
-						log::error!("Failed to send fail dispatchable transaction: {:?}", e);
-					} else {
-						task_status.mark_complete();
+					match failure_dispatcher(cause) {
+						Ok(_) => guard.forget(),
+						Err(e) => {
+							log::error!("Failed to send fail dispatchable transaction: {:?}", e)
+						},
 					}
 				}
 			},
@@ -280,40 +279,11 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-pub(crate) struct LocalVerificationStatus<'a> {
-	storage_ref: StorageValueRef<'a>,
-	key: &'a [u8],
-}
-
-impl<'a> LocalVerificationStatus<'a> {
-	pub(crate) fn new(storage_key: &'a [u8]) -> Self {
-		Self { storage_ref: StorageValueRef::persistent(storage_key), key: storage_key }
-	}
-
-	pub(crate) fn is_complete(&self) -> bool {
-		match self.storage_ref.get::<()>() {
-			Ok(Some(())) => true,
-			Ok(None) => false,
-			Err(e) => {
-				log::warn!(
-					"Failed to decode offchain storage for {}: {:?}",
-					hex::encode(self.key),
-					e
-				);
-				true
-			},
-		}
-	}
-
-	pub(crate) fn mark_complete(&self) {
-		self.storage_ref.set(&());
-	}
-}
-
-impl<T> task::Task<T, T::BlockNumber>
+impl<T, K2> task::Task<T, T::BlockNumber, K2>
 	for UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
 where
 	T: Config,
+	K2: EncodeLike<crate::types::TransferId<T::Hash>>,
 {
 	type VerifiedTask = Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>;
 
@@ -334,6 +304,10 @@ where
 
 	fn success_call(&self, deadline: T::BlockNumber, verified_task: Self::VerifiedTask) -> Call<T> {
 		Call::verify_transfer { transfer: verified_task, deadline }
+	}
+
+	fn is_complete(persistent_storage_key: K2) -> bool {
+		<Pallet<T> as Store>::Transfers::contains_key(persistent_storage_key)
 	}
 }
 

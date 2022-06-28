@@ -5,13 +5,15 @@ use super::{
 	OffchainResult, ETH_CONFIRMATIONS,
 };
 
-use crate::pallet::{Config, Pallet};
+use crate::pallet::{Config, Pallet, Store};
+
 use crate::{
 	types::{AddressId, Blockchain, CollectedCoins, UnverifiedCollectedCoins},
 	Call, ExternalAddress, ExternalAmount,
 };
 use sp_runtime::traits::UniqueSaturatedFrom;
 
+use codec::EncodeLike;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::{H160, U64};
 use frame_support::ensure;
@@ -111,9 +113,10 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T> Task<T, T::BlockNumber> for crate::types::UnverifiedCollectedCoins
+impl<T, K2> Task<T, T::BlockNumber, K2> for crate::types::UnverifiedCollectedCoins
 where
 	T: Config,
+	K2: EncodeLike<crate::types::CollectedCoinsId<T::Hash>>,
 {
 	type VerifiedTask = crate::types::CollectedCoins<T::Hash, T::Balance>;
 
@@ -140,16 +143,20 @@ where
 	) -> crate::Call<T> {
 		Call::persist_collect_coins { collected_coins: verified_task, deadline }
 	}
+
+	fn is_complete(persistent_storage_key: K2) -> bool {
+		<Pallet<T> as Store>::CollectedCoins::contains_key(persistent_storage_key)
+	}
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
 
 	use super::*;
 	use std::collections::HashMap;
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
-	static RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
+	pub(crate) static RESPONSES: Lazy<HashMap<String, JsonRpcResponse<serde_json::Value>>> =
 		Lazy::new(|| serde_json::from_slice(include_bytes!("../tests/collectCoins.json")).unwrap());
 
 	static BLOCK_NUMBER: Lazy<U64> = Lazy::new(|| {
@@ -159,7 +166,7 @@ mod tests {
 		serde_json::from_value(bn).unwrap()
 	});
 
-	static BLOCK_NUMBER_STR: Lazy<String> = Lazy::new(|| {
+	pub(crate) static BLOCK_NUMBER_STR: Lazy<String> = Lazy::new(|| {
 		let responses = &*RESPONSES;
 		let bn =
 			responses["eth_getTransactionByHash"].result.clone().unwrap()["blockNumber"].clone();
@@ -189,13 +196,13 @@ mod tests {
 		input_bytes.into()
 	});
 
-	static TX_HASH: Lazy<String> = Lazy::new(|| {
+	pub(crate) static TX_HASH: Lazy<String> = Lazy::new(|| {
 		let responses = &*RESPONSES;
 		let val = responses["eth_getTransactionByHash"].result.clone().unwrap()["hash"].clone();
 		serde_json::from_value(val).unwrap()
 	});
 
-	static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
+	pub(crate) static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
 		let transfer_fn = burn_vested_cc_abi();
 
 		let inputs = transfer_fn.decode_input(&(INPUT.0)[4..]).unwrap();
@@ -208,7 +215,7 @@ mod tests {
 		}
 	});
 
-	use std::convert::{TryFrom, TryInto};
+	use std::convert::TryFrom;
 
 	use assert_matches::assert_matches;
 	use codec::Decode;
@@ -230,16 +237,10 @@ mod tests {
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
 
-	// duplicate with tests.rs
-	#[extend::ext]
-	impl<'a> &'a str {
-		fn hex_to_address(self) -> ExternalAddress {
-			hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
-		}
-	}
+	use crate::tests::RefstrExt;
 
-	struct PassingCollectCoins {
-		to: ExternalAddress,
+	pub(crate) struct PassingCollectCoins {
+		pub to: ExternalAddress,
 		receipt: EthTransactionReceipt,
 		transaction: EthTransaction,
 		eth_tip: U64,
