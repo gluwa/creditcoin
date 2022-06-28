@@ -1396,12 +1396,14 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::DbWeight::get().reads_writes(1,1))]
-		pub fn register_currency(
-			origin: OriginFor<T>,
-			_currency: Currency,
-			_proofs: TransferKindProofs,
-		) -> DispatchResult {
-			let _who = ensure_signed(origin)?;
+		pub fn register_currency(origin: OriginFor<T>, currency: Currency) -> DispatchResult {
+			ensure_root(origin)?;
+
+			let id = CurrencyId::new::<T>(&currency);
+
+			ensure!(!Currencies::<T>::contains_key(&id), Error::<T>::CurrencyAlreadyRegistered);
+
+			Currencies::<T>::insert(&id, &currency);
 
 			Ok(())
 		}
