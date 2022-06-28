@@ -203,8 +203,8 @@ benchmarks! {
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let deadline = T::BlockNumber::one();
-		let (transfer_id, transfer)= generate_transfer::<T>(deal_id,false,false,true,0u8);
-		let task_output = crate::TaskOutput::from((transfer_id, transfer));
+		let transfer = generate_transfer::<T>(deal_id,false,false,true,0u8);
+		let task_output = crate::TaskOutput::from(transfer);
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
 	fail_transfer {
