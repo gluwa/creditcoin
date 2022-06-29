@@ -29,10 +29,12 @@ impl EvmChainId {
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
 pub struct EvmInfo {
-	chain_id: EvmChainId,
+	pub chain_id: EvmChainId,
 }
 
-#[derive(Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 pub enum NewBlockchain {
 	Evm(EvmInfo),
 }
@@ -72,12 +74,16 @@ pub enum Currency {
 	Evm(EvmCurrencyType, EvmInfo),
 }
 
-#[derive(Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 pub enum NewTransferKind {
 	Evm(EvmTransferKind),
 }
 
-#[derive(Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+)]
 pub struct CurrencyId<Hash>(Hash);
 
 impl<H> CurrencyId<H> {
@@ -108,7 +114,8 @@ macro_rules! max {
 	}
 }
 
-pub type TransferKindProofs = BoundedVec<TransferKindProof, ConstU32<{max!(EvmTransferKind::COUNT) as u32}>>;
+pub type TransferKindProofs =
+	BoundedVec<TransferKindProof, ConstU32<{ max!(EvmTransferKind::COUNT) as u32 }>>;
 
 #[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub struct TransferKindProof {
