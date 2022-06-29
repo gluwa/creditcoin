@@ -46,10 +46,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run:
-          |
+      - run: |
           npm install -g yarn
-          pushd ./creditcoin-js && yarn install && npm pack && popd
+          pushd ./creditcoin-js && yarn install && yarn pack && popd
           yarn --cwd ./scripts/js install
 
       - name: Install Subwasm
@@ -63,7 +62,6 @@ jobs:
         env:
           CTCQA_URL: ${{ secrets.CTCQA_URL }}
           QA_SUDO_KEY: ${{ secrets.QA_SUDO_KEY }}
-        run:
-          |
+        run: |
           yarn runtimeUpgrade $CTCQA_URL \
           ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm $QA_SUDO_KEY
