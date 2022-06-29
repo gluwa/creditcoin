@@ -232,6 +232,7 @@ jobs:
           pushd creditcoin-js/ && yarn install && npm pack && popd
           pushd ${{ matrix.directory }}
 
+          yarn --update-checksums
           yarn install
           yarn lint
           popd
@@ -257,6 +258,7 @@ jobs:
           pushd creditcoin-js/ && yarn install && npm pack && popd
           pushd ${{ matrix.directory }}
 
+          yarn --update-checksums
           yarn install
           yarn typecheck
           popd
@@ -282,6 +284,7 @@ jobs:
           pushd creditcoin-js/ && yarn install && npm pack && popd
           pushd ${{ matrix.directory }}
 
+          yarn --update-checksums
           yarn install
           yarn format
 
