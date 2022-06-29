@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pushd ../creditcoin-js/ && yarn install && npm pack && popd
+pushd ../creditcoin-js/ && yarn install && yarn pack && popd
 yarn install
 
 ./wait-for-creditcoin.sh $@
