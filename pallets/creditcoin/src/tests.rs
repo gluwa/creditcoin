@@ -3,9 +3,10 @@ use crate::{
 	mock::*,
 	ocw::{rpc::JsonRpcResponse, VerificationFailureCause},
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, DealOrder,
-	DealOrderId, DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash,
-	LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers,
+	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currency,
+	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind,
+	ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
+	Transfer, TransferId, TransferKind, Transfers,
 };
 
 use assert_matches::assert_matches;
@@ -25,14 +26,15 @@ use std::convert::{TryFrom, TryInto};
 
 //Duplicated code; pallet_creditcoin::benchmarking.rs
 #[extend::ext]
-impl<'a, S> &'a [u8]
+impl<'a, S, T> &'a [T]
 where
 	S: Get<u32>,
+	T: Clone,
 {
-	fn try_into_bounded(self) -> Result<BoundedVec<u8, S>, ()> {
+	fn try_into_bounded(self) -> Result<BoundedVec<T, S>, ()> {
 		core::convert::TryFrom::try_from(self.to_vec())
 	}
-	fn into_bounded(self) -> BoundedVec<u8, S> {
+	fn into_bounded(self) -> BoundedVec<T, S> {
 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
 	}
 }
@@ -143,6 +145,18 @@ pub struct TestInfo {
 	pub(crate) ask_guid: Guid,
 	pub(crate) bid_guid: Guid,
 	pub(crate) expiration_block: u64,
+}
+
+impl Default for Currency {
+	fn default() -> Self {
+		Currency::Evm(
+			crate::EvmCurrencyType::SmartContract(
+				"0x0000000000000000000000000000000000000000".hex_to_address(),
+				[EvmTransferKind::Ethless].into_bounded(),
+			),
+			EvmInfo { chain_id: 0.into() },
+		)
+	}
 }
 
 impl Default for TestInfo {
@@ -3103,5 +3117,32 @@ fn register_transfer_internal_should_error_when_transfer_is_already_registered()
 		.unwrap_err();
 
 		assert_eq!(result, crate::Error::<Test>::TransferAlreadyRegistered);
+	})
+}
+
+#[test]
+fn register_currency_should_error_when_not_sudo() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::default();
+
+		assert_noop!(
+			Creditcoin::register_currency(
+				Origin::signed(test_info.lender.account_id),
+				Currency::default(),
+			),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn register_currency_works() {
+	ExtBuilder::default().build_and_execute(|| {
+		let currency = Currency::default();
+
+		assert_ok!(Creditcoin::register_currency(Origin::root(), currency.clone()));
+
+		let id = CurrencyId::new::<Test>(&currency);
+		assert_eq!(crate::Currencies::<Test>::get(&id), Some(currency));
 	})
 }
