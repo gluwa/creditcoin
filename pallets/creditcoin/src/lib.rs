@@ -608,7 +608,7 @@ pub mod pallet {
 			};
 
 			for (deadline, id, task) in PendingTasks::<T>::iter() {
-				let storage_key = (deadline, &id).encode();
+				let storage_key = ocw::tasks::storage_key(&(deadline, &id));
 				let status = ocw::LocalVerificationStatus::new(&storage_key);
 				if status.is_complete() {
 					log::debug!("Already handled Task ({:?}, {:?})", deadline, id);

@@ -6,7 +6,15 @@ use crate::types::{
 	CollectedCoins, Task, TaskOutput, Transfer, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
 use crate::{CollectedCoinsId, Config, TaskData, TransferId};
+use alloc::vec::Vec;
+use codec::Encode;
 use sp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
+
+#[inline]
+pub(crate) fn storage_key<Id: Encode>(id: &Id) -> Vec<u8> {
+	const TASK_GUARD: &[u8] = b"creditcoin/task/guard/";
+	id.using_encoded(|encoded_id| TASK_GUARD.iter().chain(encoded_id).copied().collect())
+}
 
 impl<AccountId, BlockNum, Hash, Moment> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>
 where
