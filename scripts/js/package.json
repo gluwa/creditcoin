@@ -7,6 +7,7 @@
     "runtimeUpgrade": "ts-node ./src/runtimeUpgrade.ts",
     "lint": "eslint -c .eslintrc.js --ext .ts ./src",
     "format": "prettier --write \"src/**/*.ts\"",
+    "check-format": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

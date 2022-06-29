@@ -286,11 +286,7 @@ jobs:
 
           yarn --update-checksums
           yarn install
-          yarn format
-
-          git status
-          if [ -n "$(git status --short)" ]; then
-              git diff
+          if ! yarn check-format; then
               echo "FAIL: JavaScript is not formatted properly!"
               echo "HELP: Execute 'yarn format' and commit the changes to fix this"
               exit 1
