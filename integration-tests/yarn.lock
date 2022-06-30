@@ -1970,9 +1970,9 @@ create-require@^1.1.0:
   resolved "https://registry.yarnpkg.com/create-require/-/create-require-1.1.1.tgz#c1d7e8f1e5f6cfc9ff65f9cd352d37348756c333"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
 
-"creditcoin-js@file:../creditcoin-js/creditcoin-js-0.1.1.tgz":
-  version "0.1.1"
-  resolved "file:../creditcoin-js/creditcoin-js-0.1.1.tgz#d9f410ca6d1bc5413806a63618dfcc75b57915de"
+"creditcoin-js@file:../creditcoin-js/creditcoin-js-v0.1.2.tgz":
+  version "0.1.2"
+  resolved "file:../creditcoin-js/creditcoin-js-v0.1.2.tgz#635d9cb2d9366b011d754ef34e430a89a91427ae"
   dependencies:
     "@polkadot/api" "^8.10.1"
     ethers "^5.6.9"
