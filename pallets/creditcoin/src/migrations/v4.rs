@@ -4,6 +4,8 @@ use frame_support::dispatch::Weight;
 use frame_support::traits::Get;
 use sp_runtime::SaturatedConversion;
 
+pub use super::v3::*;
+
 use crate::Config;
 
 pub(crate) fn migrate<T: Config>() -> Weight {

@@ -190,6 +190,13 @@ pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct TransferId<Hash>(Hash);
 
+#[cfg(test)]
+impl<Hash> TransferId<Hash> {
+	pub fn make(hash: Hash) -> Self {
+		Self(hash)
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct CollectedCoinsId<Hash>(Hash);
 
