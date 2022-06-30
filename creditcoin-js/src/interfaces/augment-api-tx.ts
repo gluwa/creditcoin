@@ -13,6 +13,7 @@ import type {
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOfferId,
+    PalletCreditcoinPlatformCurrency,
     PalletCreditcoinTaskId,
     PalletCreditcoinTaskOutput,
     PalletCreditcoinTransferKind,
@@ -346,6 +347,12 @@ declare module '@polkadot/api-base/types/submittable' {
                     ownershipProof: SpCoreEcdsaSignature | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinBlockchain, Bytes, SpCoreEcdsaSignature]
+            >;
+            registerCurrency: AugmentedSubmittable<
+                (
+                    currency: PalletCreditcoinPlatformCurrency | { Evm: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinPlatformCurrency]
             >;
             registerDealOrder: AugmentedSubmittable<
                 (

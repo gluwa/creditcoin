@@ -81,6 +81,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             CollectCoinsAlreadyRegistered: AugmentedError<ApiType>;
             /**
+             * The currency has already been registered.
+             **/
+            CurrencyAlreadyRegistered: AugmentedError<ApiType>;
+            /**
              * The deal cannot be locked because it is not funded yet.
              **/
             DealNotFunded: AugmentedError<ApiType>;

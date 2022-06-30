@@ -58,6 +58,11 @@ import type {
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinOrderId,
+    PalletCreditcoinPlatformCurrency,
+    PalletCreditcoinPlatformEvmChainId,
+    PalletCreditcoinPlatformEvmCurrencyType,
+    PalletCreditcoinPlatformEvmInfo,
+    PalletCreditcoinPlatformEvmTransferKind,
     PalletCreditcoinRepaymentOrderId,
     PalletCreditcoinTask,
     PalletCreditcoinTaskId,
@@ -150,6 +155,11 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;
         PalletCreditcoinOrderId: PalletCreditcoinOrderId;
+        PalletCreditcoinPlatformCurrency: PalletCreditcoinPlatformCurrency;
+        PalletCreditcoinPlatformEvmChainId: PalletCreditcoinPlatformEvmChainId;
+        PalletCreditcoinPlatformEvmCurrencyType: PalletCreditcoinPlatformEvmCurrencyType;
+        PalletCreditcoinPlatformEvmInfo: PalletCreditcoinPlatformEvmInfo;
+        PalletCreditcoinPlatformEvmTransferKind: PalletCreditcoinPlatformEvmTransferKind;
         PalletCreditcoinRepaymentOrderId: PalletCreditcoinRepaymentOrderId;
         PalletCreditcoinTask: PalletCreditcoinTask;
         PalletCreditcoinTaskId: PalletCreditcoinTaskId;

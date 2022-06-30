@@ -922,6 +922,10 @@ declare module '@polkadot/types/lookup' {
         readonly asAddAuthority: {
             readonly who: AccountId32;
         } & Struct;
+        readonly isRegisterCurrency: boolean;
+        readonly asRegisterCurrency: {
+            readonly currency: PalletCreditcoinPlatformCurrency;
+        } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
             | 'RegisterAddress'
@@ -939,7 +943,8 @@ declare module '@polkadot/types/lookup' {
             | 'Exempt'
             | 'PersistTaskOutput'
             | 'FailTask'
-            | 'AddAuthority';
+            | 'AddAuthority'
+            | 'RegisterCurrency';
     }
 
     /** @name SpCoreEcdsaPublic (116) */
@@ -1000,7 +1005,36 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'VerifyTransfer' | 'CollectCoins';
     }
 
-    /** @name PalletDifficultyCall (129) */
+    /** @name PalletCreditcoinPlatformCurrency (129) */
+    export interface PalletCreditcoinPlatformCurrency extends Enum {
+        readonly isEvm: boolean;
+        readonly asEvm: ITuple<[PalletCreditcoinPlatformEvmCurrencyType, PalletCreditcoinPlatformEvmInfo]>;
+        readonly type: 'Evm';
+    }
+
+    /** @name PalletCreditcoinPlatformEvmCurrencyType (130) */
+    export interface PalletCreditcoinPlatformEvmCurrencyType extends Enum {
+        readonly isSmartContract: boolean;
+        readonly asSmartContract: ITuple<[Bytes, Vec<PalletCreditcoinPlatformEvmTransferKind>]>;
+        readonly type: 'SmartContract';
+    }
+
+    /** @name PalletCreditcoinPlatformEvmTransferKind (132) */
+    export interface PalletCreditcoinPlatformEvmTransferKind extends Enum {
+        readonly isErc20: boolean;
+        readonly isEthless: boolean;
+        readonly type: 'Erc20' | 'Ethless';
+    }
+
+    /** @name PalletCreditcoinPlatformEvmInfo (134) */
+    export interface PalletCreditcoinPlatformEvmInfo extends Struct {
+        readonly chainId: PalletCreditcoinPlatformEvmChainId;
+    }
+
+    /** @name PalletCreditcoinPlatformEvmChainId (135) */
+    export interface PalletCreditcoinPlatformEvmChainId extends Compact<u64> {}
+
+    /** @name PalletDifficultyCall (136) */
     export interface PalletDifficultyCall extends Enum {
         readonly isSetTargetBlockTime: boolean;
         readonly asSetTargetBlockTime: {
@@ -1013,13 +1047,13 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'SetTargetBlockTime' | 'SetAdjustmentPeriod';
     }
 
-    /** @name PalletSudoError (131) */
+    /** @name PalletSudoError (138) */
     export interface PalletSudoError extends Enum {
         readonly isRequireSudo: boolean;
         readonly type: 'RequireSudo';
     }
 
-    /** @name PalletCreditcoinTask (133) */
+    /** @name PalletCreditcoinTask (140) */
     export interface PalletCreditcoinTask extends Enum {
         readonly isVerifyTransfer: boolean;
         readonly asVerifyTransfer: PalletCreditcoinUnverifiedTransfer;
@@ -1028,7 +1062,7 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'VerifyTransfer' | 'CollectCoins';
     }
 
-    /** @name PalletCreditcoinUnverifiedTransfer (134) */
+    /** @name PalletCreditcoinUnverifiedTransfer (141) */
     export interface PalletCreditcoinUnverifiedTransfer extends Struct {
         readonly transfer: PalletCreditcoinTransfer;
         readonly fromExternal: Bytes;
@@ -1036,7 +1070,7 @@ declare module '@polkadot/types/lookup' {
         readonly deadline: u32;
     }
 
-    /** @name PalletCreditcoinError (136) */
+    /** @name PalletCreditcoinError (144) */
     export interface PalletCreditcoinError extends Enum {
         readonly isAddressAlreadyRegistered: boolean;
         readonly isNonExistentAddress: boolean;
@@ -1089,6 +1123,7 @@ declare module '@polkadot/types/lookup' {
         readonly isMalformedExternalAddress: boolean;
         readonly isAddressFormatNotSupported: boolean;
         readonly isOwnershipNotSatisfied: boolean;
+        readonly isCurrencyAlreadyRegistered: boolean;
         readonly type:
             | 'AddressAlreadyRegistered'
             | 'NonExistentAddress'
@@ -1140,16 +1175,17 @@ declare module '@polkadot/types/lookup' {
             | 'InvalidTermLength'
             | 'MalformedExternalAddress'
             | 'AddressFormatNotSupported'
-            | 'OwnershipNotSatisfied';
+            | 'OwnershipNotSatisfied'
+            | 'CurrencyAlreadyRegistered';
     }
 
-    /** @name PalletDifficultyDifficultyAndTimestamp (138) */
+    /** @name PalletDifficultyDifficultyAndTimestamp (146) */
     export interface PalletDifficultyDifficultyAndTimestamp extends Struct {
         readonly difficulty: U256;
         readonly timestamp: u64;
     }
 
-    /** @name PalletDifficultyError (140) */
+    /** @name PalletDifficultyError (148) */
     export interface PalletDifficultyError extends Enum {
         readonly isZeroTargetTime: boolean;
         readonly isZeroAdjustmentPeriod: boolean;
@@ -1157,24 +1193,24 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'ZeroTargetTime' | 'ZeroAdjustmentPeriod' | 'NegativeAdjustmentPeriod';
     }
 
-    /** @name FrameSystemExtensionsCheckSpecVersion (143) */
+    /** @name FrameSystemExtensionsCheckSpecVersion (151) */
     export type FrameSystemExtensionsCheckSpecVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckTxVersion (144) */
+    /** @name FrameSystemExtensionsCheckTxVersion (152) */
     export type FrameSystemExtensionsCheckTxVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckGenesis (145) */
+    /** @name FrameSystemExtensionsCheckGenesis (153) */
     export type FrameSystemExtensionsCheckGenesis = Null;
 
-    /** @name FrameSystemExtensionsCheckNonce (148) */
+    /** @name FrameSystemExtensionsCheckNonce (156) */
     export interface FrameSystemExtensionsCheckNonce extends Compact<u32> {}
 
-    /** @name FrameSystemExtensionsCheckWeight (149) */
+    /** @name FrameSystemExtensionsCheckWeight (157) */
     export type FrameSystemExtensionsCheckWeight = Null;
 
-    /** @name PalletTransactionPaymentChargeTransactionPayment (150) */
+    /** @name PalletTransactionPaymentChargeTransactionPayment (158) */
     export interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name CreditcoinNodeRuntimeRuntime (151) */
+    /** @name CreditcoinNodeRuntimeRuntime (159) */
     export type CreditcoinNodeRuntimeRuntime = Null;
 } // declare module
