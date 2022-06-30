@@ -77,35 +77,5 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-pub(crate) struct LocalVerificationStatus<'a> {
-	storage_ref: StorageValueRef<'a>,
-	key: &'a [u8],
-}
-
-impl<'a> LocalVerificationStatus<'a> {
-	pub(crate) fn new(storage_key: &'a [u8]) -> Self {
-		Self { storage_ref: StorageValueRef::persistent(storage_key), key: storage_key }
-	}
-
-	pub(crate) fn is_complete(&self) -> bool {
-		match self.storage_ref.get::<()>() {
-			Ok(Some(())) => true,
-			Ok(None) => false,
-			Err(e) => {
-				log::warn!(
-					"Failed to decode offchain storage for {}: {:?}",
-					hex::encode(self.key),
-					e
-				);
-				true
-			},
-		}
-	}
-
-	pub(crate) fn mark_complete(&self) {
-		self.storage_ref.set(&());
-	}
-}
-
 #[cfg(test)]
 mod tests;
