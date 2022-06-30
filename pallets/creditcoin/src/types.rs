@@ -240,6 +240,13 @@ pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct TransferId<Hash>(Hash);
 
+#[cfg(test)]
+impl<Hash> TransferId<Hash> {
+	pub fn make(hash: Hash) -> Self {
+		Self(hash)
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
