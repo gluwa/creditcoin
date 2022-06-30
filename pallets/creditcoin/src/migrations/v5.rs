@@ -7,6 +7,8 @@ use codec::{Decode, Encode};
 
 use frame_support::{generate_storage_alias, migration, pallet_prelude::*, Identity};
 
+pub use super::v4::*;
+
 mod old_type {
 	use super::*;
 
