@@ -96,7 +96,7 @@ mod tests {
 					kind: crate::TransferKind::Native,
 					from: crate::AddressId::new::<Test>(&eth, b"fromaddr"),
 					to: crate::AddressId::new::<Test>(&eth, b"toaddr"),
-					order_id: crate::OrderId::Deal(crate::DealOrderId::dummy()),
+					deal_order_id: crate::DealOrderId::dummy(),
 					amount: 1.into(),
 					tx_id: tx_id.clone(),
 					block: 1,

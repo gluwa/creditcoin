@@ -4,8 +4,8 @@ use crate::{
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currency, CurrencyId,
 	DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind, ExternalAddress,
-	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
-	TransferId, TransferKind, Transfers, WeightInfo,
+	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, Transfer, TransferId,
+	TransferKind, Transfers, WeightInfo,
 };
 use assert_matches::assert_matches;
 use bstr::B;
@@ -295,7 +295,7 @@ impl TestInfo {
 				kind: transfer_kind.into().unwrap_or(TransferKind::Native),
 				from: from.address_id.clone(),
 				to: to.address_id.clone(),
-				order_id: OrderId::Deal(deal_order_id.clone()),
+				deal_order_id: deal_order_id.clone(),
 				amount: amount.into(),
 				tx_id: tx,
 				block: System::block_number(),
@@ -460,10 +460,10 @@ fn verify_ethless_transfer() {
 
 		let from = get_mock_from_address().hex_to_address();
 		let to = get_mock_to_address().hex_to_address();
-		let order_id = crate::OrderId::Deal(crate::DealOrderId::with_expiration_hash::<Test>(
+		let deal_order_id = crate::DealOrderId::with_expiration_hash::<Test>(
 			10000,
 			H256::from_uint(&get_mock_nonce()),
-		));
+		);
 		let amount = get_mock_amount();
 		let tx_id = tx_hash.hex_to_address();
 
@@ -472,7 +472,7 @@ fn verify_ethless_transfer() {
 			&contract,
 			&from,
 			&to,
-			&order_id,
+			&deal_order_id,
 			&amount,
 			&tx_id,
 		));
@@ -1233,7 +1233,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 		let (transfer_id, _) = second_test_info.create_funding_transfer(&bogus_deal_order_id);
 
 		// try funding DealOrder from Person1 with the transfer from Person2,
-		// which points to a different order_id
+		// which points to a different deal_order_id
 		assert_noop!(
 			Creditcoin::fund_deal_order(
 				Origin::signed(test_info.lender.account_id),
@@ -2279,7 +2279,7 @@ fn close_deal_order_should_succeed() {
 			test_info.lender.address_id.clone(),
 			TransferKind::Ethless(contract),
 			33u64.into(),
-			OrderId::Deal(deal_order_id.clone()),
+			deal_order_id.clone(),
 			tx_hash
 		));
 
@@ -2488,7 +2488,7 @@ fn verify_transfer_should_work() {
 			kind: TransferKind::Native,
 			from: test_info.lender.address_id.clone(),
 			to: test_info.borrower.address_id.clone(),
-			order_id: OrderId::Deal(deal_order_id),
+			deal_order_id,
 			amount: deal_order.terms.amount,
 			tx_id: tx,
 			block: System::block_number(),
@@ -2820,7 +2820,7 @@ fn register_transfer_internal_should_error_with_non_existent_lender_address() {
 			deal_order.borrower_address_id,
 			TransferKind::Native,
 			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
+			deal_order_id,
 			tx.as_bytes().into_bounded(),
 		)
 		.unwrap_err();
@@ -2844,7 +2844,7 @@ fn register_transfer_internal_should_error_with_non_existent_borrower_address() 
 			bogus_address,
 			TransferKind::Native,
 			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
+			deal_order_id,
 			tx.as_bytes().into_bounded(),
 		)
 		.unwrap_err();
@@ -2866,7 +2866,7 @@ fn register_transfer_internal_should_error_when_signer_doesnt_own_from_address()
 			deal_order.lender_address_id,
 			TransferKind::Native,
 			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
+			deal_order_id,
 			tx.as_bytes().into_bounded(),
 		)
 		.unwrap_err();
@@ -2889,7 +2889,7 @@ fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_bl
 			second_borrower.address_id,
 			TransferKind::Native,
 			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
+			deal_order_id,
 			tx.as_bytes().into_bounded(),
 		)
 		.unwrap_err();
@@ -2912,7 +2912,7 @@ fn register_transfer_internal_should_error_when_transfer_kind_is_not_supported()
 			// not supported on Blockchain::Rinkeby
 			TransferKind::Other(BoundedVec::try_from(b"other".to_vec()).unwrap()),
 			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
+			deal_order_id,
 			tx.as_bytes().into_bounded(),
 		)
 		.unwrap_err();
@@ -2934,7 +2934,7 @@ fn register_transfer_internal_should_error_when_transfer_is_already_registered()
 			deal_order.borrower_address_id,
 			TransferKind::Native,
 			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
+			deal_order_id,
 			transfer.tx_id,
 		)
 		.unwrap_err();

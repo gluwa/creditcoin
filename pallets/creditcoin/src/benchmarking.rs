@@ -757,7 +757,7 @@ fn insert_fake_unverified_transfer<T: Config>(
 			to: fake_address_id::<T>(seed),
 			is_processed: false,
 			kind: TransferKind::Native,
-			order_id: OrderId::Deal(fake_deal_id::<T>(
+			deal_order_id: OrderId::Deal(fake_deal_id::<T>(
 				deadline,
 				&fake_offer_id::<T>(
 					deadline,

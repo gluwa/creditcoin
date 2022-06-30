@@ -35,7 +35,7 @@ use crate::{
 	ocw::tasks::StorageLock,
 	tests::TestInfo,
 	types::{DoubleMapExt, TransferId},
-	Blockchain, ExternalAddress, Id, LoanTerms, OrderId, TransferKind, Transfers,
+	Blockchain, ExternalAddress, Id, LoanTerms, TransferKind, Transfers,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
@@ -1020,7 +1020,7 @@ fn duplicate_retry_fail_and_succeed() {
 			block: System::<Test>::block_number(),
 			from: test_info.lender.address_id.clone(),
 			to: test_info.borrower.address_id,
-			order_id: OrderId::Deal(fake_deal_order_id),
+			deal_order_id: fake_deal_order_id,
 			is_processed: false,
 			account_id: lender,
 			tx_id: tx_hash.hex_to_address(),

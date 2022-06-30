@@ -13,8 +13,8 @@ use crate::{
 		rpc::{self, Address, EthBlock, EthTransaction, EthTransactionReceipt},
 		OffchainResult, VerificationFailureCause, VerificationResult, ETH_CONFIRMATIONS,
 	},
-	Blockchain, Config, ExternalAddress, ExternalAmount, ExternalTxId, Id, OrderId, Transfer,
-	TransferKind, UnverifiedTransfer,
+	Blockchain, Config, ExternalAddress, ExternalAmount, ExternalTxId, Id, Transfer, TransferKind,
+	UnverifiedTransfer, DealOrderId,
 };
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
@@ -107,16 +107,22 @@ impl<T: Config> crate::Pallet<T> {
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
 	) -> VerificationResult<Option<T::Moment>> {
 		let UnverifiedTransfer {
-			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
+			transfer: Transfer { blockchain, kind, deal_order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
 			..
 		} = transfer;
 		log::debug!("verifying OCW transfer");
 		match kind {
-			TransferKind::Ethless(contract) => {
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
-			},
+			TransferKind::Ethless(contract) => Self::verify_ethless_transfer(
+				blockchain,
+				contract,
+				from,
+				to,
+				deal_order_id,
+				amount,
+				tx,
+			),
 			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
 				Err(VerificationFailureCause::UnsupportedMethod.into())
 			},
@@ -128,7 +134,7 @@ impl<T: Config> crate::Pallet<T> {
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
-		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
+		deal_order_id: &DealOrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
 	) -> VerificationResult<Option<T::Moment>> {
@@ -152,7 +158,7 @@ impl<T: Config> crate::Pallet<T> {
 			&tx_receipt,
 			&tx,
 			eth_tip,
-			T::HashIntoNonce::from(order_id.hash()),
+			T::HashIntoNonce::from(deal_order_id.hash()),
 		)?;
 
 		let timestamp = if let Some(num) = tx_block_num {
