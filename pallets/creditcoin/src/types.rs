@@ -104,7 +104,7 @@ pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub kind: TransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
-	pub order_id: OrderId<BlockNum, Hash>,
+	pub deal_order_id: DealOrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub tx_id: ExternalTxId,
@@ -225,14 +225,6 @@ pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum OrderId<BlockNum, Hash> {
-	Deal(DealOrderId<BlockNum, Hash>),
-	Repayment(RepaymentOrderId<BlockNum, Hash>),
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -252,16 +244,6 @@ impl<Hash> TransferId<Hash> {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct CollectedCoinsId<Hash>(Hash);
 
-fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
-	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
-	let mut hex = Vec::with_capacity(bytes.len() * 2);
-	for byte in bytes {
-		hex.push(HEX_CHARS_LOWER[(byte >> 4) as usize]);
-		hex.push(HEX_CHARS_LOWER[(byte & 0x0F) as usize]);
-	}
-	hex
-}
-
 macro_rules! concatenate {
 	(@strip_plus + $($rest: tt)*) => {
 		$($rest)*
@@ -275,19 +257,6 @@ macro_rules! concatenate {
 	};
 }
 pub(crate) use concatenate;
-
-impl<B, H> OrderId<B, H>
-where
-	H: AsRef<[u8]>,
-{
-	pub fn to_hex(&self) -> Vec<u8> {
-		let bytes = match self {
-			OrderId::Deal(deal) => deal.1.as_ref(),
-			OrderId::Repayment(repay) => repay.1.as_ref(),
-		};
-		bytes_to_hex(bytes)
-	}
-}
 
 impl<H> AddressId<H> {
 	pub fn new<Config>(blockchain: &Blockchain, address: &[u8]) -> AddressId<H>
@@ -432,39 +401,6 @@ impl_id!(AskOrderId);
 impl_id!(BidOrderId);
 impl_id!(OfferId);
 impl_id!(RepaymentOrderId);
-
-impl<'a, B, H> Id<B, H> for &'a OrderId<B, H>
-where
-	B: Clone,
-	H: Clone,
-{
-	fn expiration(&self) -> B {
-		match self {
-			OrderId::Deal(deal) => deal.expiration(),
-			OrderId::Repayment(repay) => repay.expiration(),
-		}
-	}
-
-	fn hash(&self) -> H {
-		match self {
-			OrderId::Deal(deal) => deal.hash(),
-			OrderId::Repayment(repay) => repay.hash(),
-		}
-	}
-}
-impl<B, H> Id<B, H> for OrderId<B, H>
-where
-	B: Clone,
-	H: Clone,
-{
-	fn expiration(&self) -> B {
-		(&self).expiration()
-	}
-
-	fn hash(&self) -> H {
-		(&self).hash()
-	}
-}
 
 #[ext(name = DoubleMapExt)]
 pub(crate) impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value, QueryKind, OnEmpty, MaxValues, IdTy>
