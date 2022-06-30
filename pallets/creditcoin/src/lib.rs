@@ -987,7 +987,7 @@ pub mod pallet {
 				},
 				|transfer, deal_order| {
 					ensure!(
-						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
+						transfer.deal_order_id == deal_order_id.clone(),
 						Error::<T>::TransferDealOrderMismatch
 					);
 					ensure!(
@@ -1147,7 +1147,7 @@ pub mod pallet {
 				},
 				|transfer, _deal_order| {
 					ensure!(
-						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
+						transfer.deal_order_id == deal_order_id.clone(),
 						Error::<T>::TransferDealOrderMismatch
 					);
 
@@ -1221,7 +1221,7 @@ pub mod pallet {
 				order.borrower_address_id,
 				transfer_kind,
 				order.terms.amount,
-				OrderId::Deal(deal_order_id),
+				deal_order_id,
 				blockchain_tx_id,
 			)?;
 			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
@@ -1248,7 +1248,7 @@ pub mod pallet {
 				order.lender_address_id,
 				transfer_kind,
 				repayment_amount,
-				OrderId::Deal(deal_order_id),
+				deal_order_id,
 				blockchain_tx_id,
 			)?;
 			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
@@ -1278,7 +1278,7 @@ pub mod pallet {
 					ensure!(who == lender.owner, Error::<T>::NotLender);
 
 					let fake_transfer = Transfer {
-						order_id: OrderId::Deal(deal_order_id.clone()),
+						deal_order_id: deal_order_id.clone(),
 						block: Self::block_number(),
 						account_id: who,
 						amount: ExternalAmount::zero(),
