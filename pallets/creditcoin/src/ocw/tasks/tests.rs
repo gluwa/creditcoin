@@ -35,49 +35,6 @@ use std::sync::{
 };
 use std::thread;
 
-// The storage is not avialable outside of its context but, the context does not share state. Useless approach for testing concurrent primitives
-// Concurrent testing under this approach is futile.
-// TODO test a concurrent impl.
-#[test]
-fn concurrent_storage() {
-	let storage_key = b"demo_status";
-
-	let handles: Vec<_> = (0..20)
-		.into_iter()
-		.map(move |_| {
-			std::thread::spawn(move || {
-				let ext = ExtBuilder::default();
-				ext.build_offchain_and_execute_with_state(|_, _| {
-					let mut tries = 0;
-					let a = StorageValueRef::persistent(storage_key);
-					while tries < 10_000 {
-						tries += 1;
-						let res = a.mutate::<u32, (), _>(|a: Result<Option<u32>, _>| {
-							let v = if let Ok(a) = a { a } else { None };
-							match v {
-								Some(a) => Ok(a + 1),
-								None => Ok(1),
-							}
-						});
-						match res {
-							Ok(_) => (),
-							Err(e) => panic!("{:?}", e),
-						};
-					}
-
-					let val =
-						StorageValueRef::persistent(storage_key).get::<u32>().unwrap().unwrap();
-					assert!(val == 10_000u32);
-				});
-			})
-		})
-		.collect();
-
-	for h in handles {
-		h.join().expect("testing context is shared");
-	}
-}
-
 #[test]
 fn lock_released_when_guard_is_dropped() {
 	let ext = ExtBuilder::default();
