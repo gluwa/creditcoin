@@ -25,7 +25,7 @@ docker run --rm -it -p 8545:8545 gluwa/hardhat-dev
 2. Install dependencies:
 
 ```bash
-pushd ../creditcoin-js/ && yarn install && npm pack && popd
+pushd ../creditcoin-js/ && yarn install && yarn pack && popd
 yarn install
 ```
 
@@ -40,7 +40,7 @@ yarn test
 1. Install dependencies:
 
 ```bash
-pushd ../creditcoin-js/ && yarn install && npm pack && popd
+pushd ../creditcoin-js/ && yarn install && yarn pack && popd
 yarn install
 ```
 
