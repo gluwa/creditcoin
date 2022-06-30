@@ -3146,3 +3146,17 @@ fn register_currency_works() {
 		assert_eq!(crate::Currencies::<Test>::get(&id), Some(currency));
 	})
 }
+
+#[test]
+fn register_currency_should_error_when_currency_already_registered() {
+	ExtBuilder::default().build_and_execute(|| {
+		let currency = Currency::default();
+
+		assert_ok!(Creditcoin::register_currency(Origin::root(), currency.clone()));
+
+		assert_noop!(
+			Creditcoin::register_currency(Origin::root(), currency),
+			crate::Error::<Test>::CurrencyAlreadyRegistered
+		);
+	})
+}
