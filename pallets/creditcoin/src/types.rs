@@ -255,36 +255,19 @@ fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 	hex
 }
 
-macro_rules! strip_plus_ {
-    (+ $($rest: tt)*) => {
-        $($rest)*
-    }
-}
-
-macro_rules! concatenate_ {
+macro_rules! concatenate {
+	(@strip_plus + $($rest: tt)*) => {
+		$($rest)*
+	};
 	($($bytes: expr),+) => {
 		{
-			let mut buf = Vec::with_capacity($crate::types::strip_plus!($(+ $bytes.len())+));
+			let mut buf = Vec::with_capacity($crate::types::concatenate!(@strip_plus $(+ $bytes.len())+));
 			$(buf.extend($bytes);)+
 			buf
 		}
 	};
-
-	($($bytes: expr),+; $last_bytes: expr; sep = $sep: literal) => {
-		{
-			let mut buf = Vec::with_capacity($crate::types::strip_plus!($(+ $bytes.len())+) + count_tts!($($bytes)+) );
-			$(
-				buf.extend($bytes);
-				buf.push($sep);
-			)+
-			buf.extend($last_bytes);
-			buf
-		}
-	}
 }
-
-pub(crate) use concatenate_ as concatenate;
-pub(crate) use strip_plus_ as strip_plus;
+pub(crate) use concatenate;
 
 impl<B, H> OrderId<B, H>
 where

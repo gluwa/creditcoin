@@ -4,7 +4,7 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::Hash as HashT;
 use strum::EnumCount;
 
-use crate::{ExternalAddress, ExternalTxId};
+use crate::ExternalAddress;
 
 // as of EIP-155 the max chain ID is 9,223,372,036,854,775,771 which fits well within a u64
 #[derive(
@@ -99,26 +99,4 @@ impl<H> CurrencyId<H> {
 			},
 		}
 	}
-}
-
-macro_rules! max {
-	($a: expr $(,)?) => {
-		$a
-	};
-	($a: expr, $b: expr $(, $rest: expr)* $(,)?) => {
-		if $a > $b {
-			max!($a $(,$rest)*)
-		} else {
-			max!($b $(,$rest)*)
-		}
-	}
-}
-
-pub type TransferKindProofs =
-	BoundedVec<TransferKindProof, ConstU32<{ max!(EvmTransferKind::COUNT) as u32 }>>;
-
-#[derive(Clone, RuntimeDebug, PartialEq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen)]
-pub struct TransferKindProof {
-	transfer_kind: NewTransferKind,
-	example_tx_hash: ExternalTxId,
 }
