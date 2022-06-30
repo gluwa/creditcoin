@@ -789,6 +789,9 @@ export default {
             add_authority: {
                 who: 'AccountId32',
             },
+            register_currency: {
+                currency: 'PalletCreditcoinPlatformCurrency',
+            },
         },
     },
     /**
@@ -854,7 +857,39 @@ export default {
         },
     },
     /**
-     * Lookup129: pallet_difficulty::pallet::Call<T>
+     * Lookup129: pallet_creditcoin::types::platform::Currency
+     **/
+    PalletCreditcoinPlatformCurrency: {
+        _enum: {
+            Evm: '(PalletCreditcoinPlatformEvmCurrencyType,PalletCreditcoinPlatformEvmInfo)',
+        },
+    },
+    /**
+     * Lookup130: pallet_creditcoin::types::platform::EvmCurrencyType
+     **/
+    PalletCreditcoinPlatformEvmCurrencyType: {
+        _enum: {
+            SmartContract: '(Bytes,Vec<PalletCreditcoinPlatformEvmTransferKind>)',
+        },
+    },
+    /**
+     * Lookup132: pallet_creditcoin::types::platform::EvmTransferKind
+     **/
+    PalletCreditcoinPlatformEvmTransferKind: {
+        _enum: ['Erc20', 'Ethless'],
+    },
+    /**
+     * Lookup134: pallet_creditcoin::types::platform::EvmInfo
+     **/
+    PalletCreditcoinPlatformEvmInfo: {
+        chainId: 'PalletCreditcoinPlatformEvmChainId',
+    },
+    /**
+     * Lookup135: pallet_creditcoin::types::platform::EvmChainId
+     **/
+    PalletCreditcoinPlatformEvmChainId: 'Compact<u64>',
+    /**
+     * Lookup136: pallet_difficulty::pallet::Call<T>
      **/
     PalletDifficultyCall: {
         _enum: {
@@ -867,13 +902,13 @@ export default {
         },
     },
     /**
-     * Lookup131: pallet_sudo::pallet::Error<T>
+     * Lookup138: pallet_sudo::pallet::Error<T>
      **/
     PalletSudoError: {
         _enum: ['RequireSudo'],
     },
     /**
-     * Lookup133: pallet_creditcoin::types::Task<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
+     * Lookup140: pallet_creditcoin::types::Task<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
      **/
     PalletCreditcoinTask: {
         _enum: {
@@ -882,7 +917,7 @@ export default {
         },
     },
     /**
-     * Lookup134: pallet_creditcoin::types::UnverifiedTransfer<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
+     * Lookup141: pallet_creditcoin::types::UnverifiedTransfer<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
      **/
     PalletCreditcoinUnverifiedTransfer: {
         transfer: 'PalletCreditcoinTransfer',
@@ -891,7 +926,7 @@ export default {
         deadline: 'u32',
     },
     /**
-     * Lookup136: pallet_creditcoin::pallet::Error<T>
+     * Lookup144: pallet_creditcoin::pallet::Error<T>
      **/
     PalletCreditcoinError: {
         _enum: [
@@ -946,47 +981,48 @@ export default {
             'MalformedExternalAddress',
             'AddressFormatNotSupported',
             'OwnershipNotSatisfied',
+            'CurrencyAlreadyRegistered',
         ],
     },
     /**
-     * Lookup138: pallet_difficulty::DifficultyAndTimestamp<Moment>
+     * Lookup146: pallet_difficulty::DifficultyAndTimestamp<Moment>
      **/
     PalletDifficultyDifficultyAndTimestamp: {
         difficulty: 'U256',
         timestamp: 'u64',
     },
     /**
-     * Lookup140: pallet_difficulty::pallet::Error<T>
+     * Lookup148: pallet_difficulty::pallet::Error<T>
      **/
     PalletDifficultyError: {
         _enum: ['ZeroTargetTime', 'ZeroAdjustmentPeriod', 'NegativeAdjustmentPeriod'],
     },
     /**
-     * Lookup143: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
+     * Lookup151: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
      **/
     FrameSystemExtensionsCheckSpecVersion: 'Null',
     /**
-     * Lookup144: frame_system::extensions::check_tx_version::CheckTxVersion<T>
+     * Lookup152: frame_system::extensions::check_tx_version::CheckTxVersion<T>
      **/
     FrameSystemExtensionsCheckTxVersion: 'Null',
     /**
-     * Lookup145: frame_system::extensions::check_genesis::CheckGenesis<T>
+     * Lookup153: frame_system::extensions::check_genesis::CheckGenesis<T>
      **/
     FrameSystemExtensionsCheckGenesis: 'Null',
     /**
-     * Lookup148: frame_system::extensions::check_nonce::CheckNonce<T>
+     * Lookup156: frame_system::extensions::check_nonce::CheckNonce<T>
      **/
     FrameSystemExtensionsCheckNonce: 'Compact<u32>',
     /**
-     * Lookup149: frame_system::extensions::check_weight::CheckWeight<T>
+     * Lookup157: frame_system::extensions::check_weight::CheckWeight<T>
      **/
     FrameSystemExtensionsCheckWeight: 'Null',
     /**
-     * Lookup150: pallet_transaction_payment::ChargeTransactionPayment<T>
+     * Lookup158: pallet_transaction_payment::ChargeTransactionPayment<T>
      **/
     PalletTransactionPaymentChargeTransactionPayment: 'Compact<u128>',
     /**
-     * Lookup151: creditcoin_node_runtime::Runtime
+     * Lookup159: creditcoin_node_runtime::Runtime
      **/
     CreditcoinNodeRuntimeRuntime: 'Null',
 };

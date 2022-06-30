@@ -22,6 +22,7 @@ import type {
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
     PalletCreditcoinOffer,
+    PalletCreditcoinPlatformCurrency,
     PalletCreditcoinTask,
     PalletCreditcoinTaskId,
     PalletCreditcoinTransfer,
@@ -114,6 +115,12 @@ declare module '@polkadot/api-base/types/storage' {
             collectedCoins: AugmentedQuery<
                 ApiType,
                 (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectedCoins>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
+            currencies: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinPlatformCurrency>>,
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
