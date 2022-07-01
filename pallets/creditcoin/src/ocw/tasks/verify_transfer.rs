@@ -13,8 +13,8 @@ use crate::{
 		rpc::{self, Address, EthBlock, EthTransaction, EthTransactionReceipt},
 		OffchainResult, VerificationFailureCause, VerificationResult, ETH_CONFIRMATIONS,
 	},
-	Blockchain, Config, ExternalAddress, ExternalAmount, ExternalTxId, Id, Transfer, TransferKind,
-	UnverifiedTransfer, DealOrderId,
+	Blockchain, Config, DealOrderId, ExternalAddress, ExternalAmount, ExternalTxId, Id,
+	LegacyTransferKind, Transfer, UnverifiedTransfer,
 };
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
@@ -114,7 +114,7 @@ impl<T: Config> crate::Pallet<T> {
 		} = transfer;
 		log::debug!("verifying OCW transfer");
 		match kind {
-			TransferKind::Ethless(contract) => Self::verify_ethless_transfer(
+			LegacyTransferKind::Ethless(contract) => Self::verify_ethless_transfer(
 				blockchain,
 				contract,
 				from,
@@ -123,9 +123,9 @@ impl<T: Config> crate::Pallet<T> {
 				amount,
 				tx,
 			),
-			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
-				Err(VerificationFailureCause::UnsupportedMethod.into())
-			},
+			LegacyTransferKind::Native
+			| LegacyTransferKind::Erc20(_)
+			| LegacyTransferKind::Other(_) => Err(VerificationFailureCause::UnsupportedMethod.into()),
 		}
 	}
 

@@ -53,7 +53,7 @@ impl Blockchain {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum TransferKind {
+pub enum LegacyTransferKind {
 	Erc20(ExternalAddress),
 	Ethless(ExternalAddress),
 	Native,
@@ -83,7 +83,7 @@ pub struct CollectedCoins<Hash, Balance> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
-	pub kind: TransferKind,
+	pub kind: LegacyTransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
 	pub deal_order_id: DealOrderId<BlockNum, Hash>,
@@ -158,6 +158,13 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AddressId<Hash>(Hash);
+
+#[cfg(test)]
+impl<Hash> AddressId<Hash> {
+	pub fn make(hash: Hash) -> Self {
+		Self(hash)
+	}
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AskOrderId<BlockNum, Hash>(BlockNum, Hash);

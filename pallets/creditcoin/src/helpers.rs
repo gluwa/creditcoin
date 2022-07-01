@@ -7,8 +7,8 @@ pub use external_address::{EVMAddress, PublicToAddress};
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, Task, TaskId, Transfer, TransferId,
-	TransferKind, UnverifiedTransfer,
+	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, LegacyTransferKind, Task, TaskId,
+	Transfer, TransferId, UnverifiedTransfer,
 };
 use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
@@ -122,7 +122,7 @@ impl<T: Config> Pallet<T> {
 		who: T::AccountId,
 		from_id: AddressId<T::Hash>,
 		to_id: AddressId<T::Hash>,
-		transfer_kind: TransferKind,
+		transfer_kind: LegacyTransferKind,
 		amount: ExternalAmount,
 		deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
 		blockchain_tx_id: ExternalTxId,

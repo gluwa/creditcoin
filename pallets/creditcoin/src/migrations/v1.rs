@@ -129,7 +129,7 @@ type OtherChainLen = ConstU32<256>;
 pub type OtherChain = BoundedVec<u8, OtherChainLen>;
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
 pub enum Blockchain {
 	Ethereum,
 	Rinkeby,
