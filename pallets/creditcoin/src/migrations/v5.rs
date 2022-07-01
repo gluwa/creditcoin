@@ -1,8 +1,62 @@
 // task storage moved from UnverifiedTransfers + UnverifiedCollectedCoins to PendingTasks
-use crate::{CollectedCoinsId, Config, TransferId, UnverifiedTransfer};
+use crate::types::UnverifiedCollectedCoins as UnverifiedCc;
+use crate::{CollectedCoinsId, Config, ExternalAddress, TransferId};
 use frame_support::{generate_storage_alias, migration, pallet_prelude::*, Identity};
 
 pub use super::v4::*;
+
+pub use super::v4::Transfer;
+
+#[derive(Encode, Decode)]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
+	pub transfer: Transfer<AccountId, BlockNum, Hash, Moment>,
+	pub from_external: ExternalAddress,
+	pub to_external: ExternalAddress,
+	pub deadline: BlockNum,
+}
+
+#[derive(Encode, Decode)]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub enum Task<AccountId, BlockNum, Hash, Moment> {
+	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(UnverifiedCc),
+}
+
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+		Task::VerifyTransfer(transfer)
+	}
+}
+
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCc>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(coins: UnverifiedCc) -> Self {
+		Task::CollectCoins(coins)
+	}
+}
+
+#[derive(Encode, Decode)]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub enum TaskId<Hash> {
+	VerifyTransfer(TransferId<Hash>),
+	CollectCoins(CollectedCoinsId<Hash>),
+}
+
+impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
+	fn from(id: TransferId<Hash>) -> Self {
+		TaskId::VerifyTransfer(id)
+	}
+}
+
+impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
+	fn from(id: CollectedCoinsId<Hash>) -> Self {
+		TaskId::CollectCoins(id)
+	}
+}
 
 generate_storage_alias!(
 	Creditcoin,
@@ -18,9 +72,30 @@ generate_storage_alias!(
 	UnverifiedCollectedCoins<T: Config> => DoubleMap<
 		(Identity, T::BlockNumber),
 		(Identity, CollectedCoinsId<T::Hash>),
-		crate::types::UnverifiedCollectedCoins
+		UnverifiedCc
 	>
 );
+
+generate_storage_alias!(
+	Creditcoin,
+	PendingTasks<T: Config> => DoubleMap<
+		(Identity, T::BlockNumber),
+		(Identity, TaskId<T::Hash>),
+		Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
+	>
+);
+
+/*
+#[pallet::storage]
+#[pallet::getter(fn pending_tasks)]
+pub type PendingTasks<T: Config> = StorageDoubleMap<
+	_,
+	Identity,
+	T::BlockNumber,
+	Identity,
+	TaskId<T::Hash>,
+	Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+>; */
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = 0;
@@ -29,21 +104,13 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	for (deadline, id, transfer) in UnverifiedTransfers::<T>::iter() {
 		weight = weight.saturating_add(weight_each);
 
-		crate::PendingTasks::<T>::insert(
-			deadline,
-			crate::TaskId::from(id),
-			crate::Task::from(transfer),
-		);
+		PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(transfer));
 	}
 
 	for (deadline, id, collect_coins) in UnverifiedCollectedCoins::<T>::iter() {
 		weight = weight.saturating_add(weight_each);
 
-		crate::PendingTasks::<T>::insert(
-			deadline,
-			crate::TaskId::from(id),
-			crate::Task::from(collect_coins),
-		);
+		PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(collect_coins));
 	}
 
 	let module = crate::Pallet::<T>::name().as_bytes();
@@ -57,28 +124,33 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 mod tests {
 	use core::{convert::TryInto, ops::Not};
 
+	use ethereum_types::H256;
+
 	use crate::{
 		mock::{ExtBuilder, Test},
 		tests::TestInfo,
 		ExternalTxId, TransferId,
 	};
 
-	use super::{UnverifiedCollectedCoins, UnverifiedTransfers};
+	use super::{
+		Blockchain, OrderId, PendingTasks, Task, TaskId, Transfer, TransferKind,
+		UnverifiedCollectedCoins, UnverifiedTransfer, UnverifiedTransfers,
+	};
 
 	#[test]
 	fn unverified_transfer_migrates() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let eth = crate::Blockchain::Ethereum;
+			let eth = Blockchain::Ethereum;
 			let deadline = 11;
 			let tx_id: ExternalTxId = b"fafafafafafafa".to_vec().try_into().unwrap();
-			let transfer = crate::UnverifiedTransfer {
-				transfer: crate::Transfer {
+			let transfer = UnverifiedTransfer {
+				transfer: Transfer {
 					blockchain: eth.clone(),
-					kind: crate::TransferKind::Native,
-					from: crate::AddressId::new::<Test>(&eth, b"fromaddr"),
-					to: crate::AddressId::new::<Test>(&eth, b"toaddr"),
-					deal_order_id: crate::DealOrderId::dummy(),
+					kind: TransferKind::Native,
+					from: crate::AddressId::make(H256::random()),
+					to: crate::AddressId::make(H256::random()),
+					order_id: OrderId::Deal(crate::DealOrderId::dummy()),
 					amount: 1.into(),
 					tx_id: tx_id.clone(),
 					block: 1,
@@ -90,7 +162,7 @@ mod tests {
 				to_external: b"abab".to_vec().try_into().unwrap(),
 				deadline: 11,
 			};
-			let transfer_id = TransferId::new::<Test>(&eth, &tx_id);
+			let transfer_id = TransferId::new_old::<Test>(&eth, &tx_id);
 
 			UnverifiedTransfers::<Test>::insert(deadline, &transfer_id, &transfer);
 			assert!(UnverifiedTransfers::<Test>::contains_key(deadline, &transfer_id));
@@ -98,11 +170,8 @@ mod tests {
 			super::migrate::<Test>();
 
 			assert_eq!(
-				crate::PendingTasks::<Test>::get(
-					deadline,
-					crate::TaskId::VerifyTransfer(transfer_id.clone())
-				),
-				Some(crate::Task::VerifyTransfer(transfer))
+				PendingTasks::<Test>::get(deadline, TaskId::VerifyTransfer(transfer_id.clone())),
+				Some(Task::VerifyTransfer(transfer))
 			);
 
 			assert!(UnverifiedTransfers::<Test>::contains_key(deadline, transfer_id).not());
@@ -126,11 +195,8 @@ mod tests {
 			super::migrate::<Test>();
 
 			assert_eq!(
-				crate::PendingTasks::<Test>::get(
-					deadline,
-					crate::TaskId::CollectCoins(collect_coins_id.clone())
-				),
-				Some(crate::Task::CollectCoins(collect_coins))
+				PendingTasks::<Test>::get(deadline, TaskId::CollectCoins(collect_coins_id.clone())),
+				Some(Task::CollectCoins(collect_coins))
 			);
 
 			assert!(
