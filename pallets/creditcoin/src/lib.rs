@@ -1205,7 +1205,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
-			transfer_kind: TransferKind,
+			transfer_kind: LegacyTransferKind,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
 			blockchain_tx_id: ExternalTxId,
 		) -> DispatchResult {
@@ -1231,7 +1231,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
-			transfer_kind: TransferKind,
+			transfer_kind: LegacyTransferKind,
 			repayment_amount: ExternalAmount,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
 			blockchain_tx_id: ExternalTxId,
@@ -1281,7 +1281,7 @@ pub mod pallet {
 						account_id: who,
 						amount: ExternalAmount::zero(),
 						is_processed: true,
-						kind: TransferKind::Native,
+						kind: crate::LegacyTransferKind::Native,
 						tx_id: ExternalTxId::try_from(b"0".to_vec()).expect(
 							"0 is a length of one which will always be < size bound of ExternalTxId",
 						),
