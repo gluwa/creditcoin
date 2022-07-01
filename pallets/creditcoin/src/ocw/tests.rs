@@ -35,7 +35,7 @@ use crate::{
 	ocw::tasks::StorageLock,
 	tests::TestInfo,
 	types::{DoubleMapExt, TransferId},
-	Blockchain, ExternalAddress, Id, LoanTerms, TransferKind, Transfers,
+	Blockchain, ExternalAddress, Id, LegacyTransferKind, LoanTerms, Transfers,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
@@ -351,36 +351,36 @@ fn blockchain_rpc_url_invalid_scale() {
 
 #[test]
 fn blockchain_supports_etherlike() {
-	assert!(Blockchain::Ethereum.supports(&crate::TransferKind::Native));
-	assert!(Blockchain::Rinkeby.supports(&crate::TransferKind::Native));
-	assert!(Blockchain::Luniverse.supports(&crate::TransferKind::Native));
-	assert!(Blockchain::Ethereum.supports(&crate::TransferKind::Erc20(default())));
-	assert!(Blockchain::Rinkeby.supports(&crate::TransferKind::Erc20(default())));
-	assert!(Blockchain::Luniverse.supports(&crate::TransferKind::Erc20(default())));
-	assert!(Blockchain::Ethereum.supports(&crate::TransferKind::Ethless(default())));
-	assert!(Blockchain::Rinkeby.supports(&crate::TransferKind::Ethless(default())));
-	assert!(Blockchain::Luniverse.supports(&crate::TransferKind::Ethless(default())));
+	assert!(Blockchain::Ethereum.supports(&crate::LegacyTransferKind::Native));
+	assert!(Blockchain::Rinkeby.supports(&crate::LegacyTransferKind::Native));
+	assert!(Blockchain::Luniverse.supports(&crate::LegacyTransferKind::Native));
+	assert!(Blockchain::Ethereum.supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(Blockchain::Rinkeby.supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(Blockchain::Luniverse.supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(Blockchain::Ethereum.supports(&crate::LegacyTransferKind::Ethless(default())));
+	assert!(Blockchain::Rinkeby.supports(&crate::LegacyTransferKind::Ethless(default())));
+	assert!(Blockchain::Luniverse.supports(&crate::LegacyTransferKind::Ethless(default())));
 }
 
 #[test]
 fn blockchain_unsupported() {
-	assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Native));
-	assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Erc20(default())));
-	assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Ethless(default())));
-	assert!(!Blockchain::Other(default()).supports(&crate::TransferKind::Other(default())));
+	assert!(!Blockchain::Other(default()).supports(&crate::LegacyTransferKind::Native));
+	assert!(!Blockchain::Other(default()).supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(!Blockchain::Other(default()).supports(&crate::LegacyTransferKind::Ethless(default())));
+	assert!(!Blockchain::Other(default()).supports(&crate::LegacyTransferKind::Other(default())));
 
-	assert!(!Blockchain::Ethereum.supports(&crate::TransferKind::Other(default())));
-	assert!(!Blockchain::Rinkeby.supports(&crate::TransferKind::Other(default())));
-	assert!(!Blockchain::Luniverse.supports(&crate::TransferKind::Other(default())));
-	assert!(!Blockchain::Bitcoin.supports(&crate::TransferKind::Other(default())));
+	assert!(!Blockchain::Ethereum.supports(&crate::LegacyTransferKind::Other(default())));
+	assert!(!Blockchain::Rinkeby.supports(&crate::LegacyTransferKind::Other(default())));
+	assert!(!Blockchain::Luniverse.supports(&crate::LegacyTransferKind::Other(default())));
+	assert!(!Blockchain::Bitcoin.supports(&crate::LegacyTransferKind::Other(default())));
 
-	assert!(!Blockchain::Bitcoin.supports(&crate::TransferKind::Erc20(default())));
-	assert!(!Blockchain::Bitcoin.supports(&crate::TransferKind::Ethless(default())));
+	assert!(!Blockchain::Bitcoin.supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(!Blockchain::Bitcoin.supports(&crate::LegacyTransferKind::Ethless(default())));
 }
 
 #[test]
 fn blockchain_supports_bitcoin_native_transfer() {
-	assert!(Blockchain::Bitcoin.supports(&crate::TransferKind::Native));
+	assert!(Blockchain::Bitcoin.supports(&crate::LegacyTransferKind::Native));
 }
 
 #[test]
@@ -449,7 +449,7 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 			deal_order.terms.amount,
 			&deal_order_id,
 			"0xfafafa",
-			crate::TransferKind::Native,
+			crate::LegacyTransferKind::Native,
 		);
 		let unverified = make_unverified_transfer(transfer.clone());
 		assert_matches!(
@@ -457,14 +457,14 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
-		transfer.kind = crate::TransferKind::Erc20(ExternalAddress::default());
+		transfer.kind = crate::LegacyTransferKind::Erc20(ExternalAddress::default());
 		let unverified = make_unverified_transfer(transfer.clone());
 		assert_matches!(
 			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
-		transfer.kind = crate::TransferKind::Other(ExternalAddress::default());
+		transfer.kind = crate::LegacyTransferKind::Other(ExternalAddress::default());
 		let unverified = make_unverified_transfer(transfer);
 		assert_matches!(
 			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
@@ -485,7 +485,7 @@ fn verify_transfer_ocw_returns_err() {
 			deal_order.terms.amount,
 			&deal_order_id,
 			"0xfafafa",
-			crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
+			crate::LegacyTransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
 		);
 		let unverified = make_unverified_transfer(transfer);
 
@@ -574,7 +574,7 @@ fn set_up_verify_transfer_env(
 		deal_order.terms.amount,
 		&deal_order_id,
 		crate::mock::get_mock_tx_hash(),
-		crate::TransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
+		crate::LegacyTransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
 	);
 	let unverified = make_unverified_transfer(transfer.clone());
 
@@ -585,7 +585,7 @@ fn set_up_verify_transfer_env(
 
 		assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
 			crate::mock::Origin::signed(test_info.lender.account_id),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_order_id,
 			transfer.tx_id,
 		));
@@ -741,7 +741,7 @@ fn verify_transfer_get_block_invalid_address() {
 
 		mock_requests(&state);
 
-		unverified.transfer.kind = TransferKind::Ethless(default());
+		unverified.transfer.kind = LegacyTransferKind::Ethless(default());
 
 		assert_matches!(
 			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
@@ -895,7 +895,7 @@ fn ocw_retries() {
 		let lender = test_info.lender.account_id;
 		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
 			Origin::signed(lender),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_order_id,
 			tx_hash.hex_to_address(),
 		));
@@ -975,7 +975,7 @@ fn duplicate_retry_fail_and_succeed() {
 		// test that we get a "fail_transfer" tx when verification fails
 		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
+			LegacyTransferKind::Ethless(contract.clone()),
 			deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
@@ -1006,7 +1006,7 @@ fn duplicate_retry_fail_and_succeed() {
 
 		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
+			LegacyTransferKind::Ethless(contract.clone()),
 			fake_deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
@@ -1015,7 +1015,7 @@ fn duplicate_retry_fail_and_succeed() {
 
 		let expected_transfer = crate::Transfer {
 			blockchain: test_info.blockchain.clone(),
-			kind: TransferKind::Ethless(contract),
+			kind: LegacyTransferKind::Ethless(contract),
 			amount: loan_amount,
 			block: System::<Test>::block_number(),
 			from: test_info.lender.address_id.clone(),

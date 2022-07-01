@@ -8,7 +8,7 @@ use super::{
 	pallet::{Config, Error, Pallet},
 	ExternalAddress,
 };
-use crate::{Blockchain, Call, ExternalTxId, TransferKind};
+use crate::{Blockchain, Call, ExternalTxId, LegacyTransferKind};
 use alloc::string::String;
 pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use frame_support::traits::IsType;
@@ -35,13 +35,15 @@ impl Blockchain {
 			Err(RpcUrlError::NoValue)
 		}
 	}
-	pub fn supports(&self, kind: &TransferKind) -> bool {
+	pub fn supports(&self, kind: &LegacyTransferKind) -> bool {
 		match (self, kind) {
 			(
 				Blockchain::Ethereum | Blockchain::Luniverse | Blockchain::Rinkeby,
-				TransferKind::Erc20(_) | TransferKind::Ethless(_) | TransferKind::Native,
+				LegacyTransferKind::Erc20(_)
+				| LegacyTransferKind::Ethless(_)
+				| LegacyTransferKind::Native,
 			) => true,
-			(Blockchain::Bitcoin, TransferKind::Native) => true,
+			(Blockchain::Bitcoin, LegacyTransferKind::Native) => true,
 			(_, _) => false, // TODO: refine this later
 		}
 	}
