@@ -5,8 +5,8 @@ use crate::{
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currency,
 	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind,
-	ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, Transfer,
-	TransferId, TransferKind, Transfers,
+	ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind, LoanTerms, Offer,
+	OfferId, Transfer, TransferId, Transfers,
 };
 
 use assert_matches::assert_matches;
@@ -251,7 +251,7 @@ impl TestInfo {
 		let tx = "0xfafafa";
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(self.lender.account_id.clone()),
-			TransferKind::Native,
+			LegacyTransferKind::Native,
 			deal_order_id.clone(),
 			tx.as_bytes().into_bounded()
 		));
@@ -267,7 +267,7 @@ impl TestInfo {
 		let amount = amount.into();
 		assert_ok!(Creditcoin::register_repayment_transfer(
 			Origin::signed(self.borrower.account_id.clone()),
-			TransferKind::Native,
+			LegacyTransferKind::Native,
 			amount,
 			deal_order_id.clone(),
 			tx.as_bytes().into_bounded()
@@ -283,7 +283,7 @@ impl TestInfo {
 		amount: impl Into<ExternalAmount>,
 		deal_order_id: &TestDealOrderId,
 		blockchain_tx_id: impl AsRef<[u8]>,
-		transfer_kind: impl Into<Option<TransferKind>>,
+		transfer_kind: impl Into<Option<LegacyTransferKind>>,
 	) -> TestTransfer {
 		let blockchain_tx_id = blockchain_tx_id.as_ref();
 		let tx = if blockchain_tx_id.starts_with(b"0x") {
@@ -295,7 +295,7 @@ impl TestInfo {
 		(
 			Transfer {
 				blockchain: self.blockchain.clone(),
-				kind: transfer_kind.into().unwrap_or(TransferKind::Native),
+				kind: transfer_kind.into().unwrap_or(LegacyTransferKind::Native),
 				from: from.address_id.clone(),
 				to: to.address_id.clone(),
 				deal_order_id: deal_order_id.clone(),
@@ -514,7 +514,7 @@ fn register_transfer_ocw() {
 		// test that we get a "fail_transfer" tx when verification fails
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
+			LegacyTransferKind::Ethless(contract.clone()),
 			deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
@@ -545,13 +545,13 @@ fn register_transfer_ocw() {
 
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
+			LegacyTransferKind::Ethless(contract.clone()),
 			fake_deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
 		let expected_transfer = crate::Transfer {
 			blockchain: test_info.blockchain.clone(),
-			kind: TransferKind::Ethless(contract),
+			kind: LegacyTransferKind::Ethless(contract),
 			amount: loan_amount,
 			block: System::block_number(),
 			from: test_info.lender.address_id.clone(),
@@ -614,7 +614,7 @@ fn register_transfer_ocw_fail_to_send() {
 		with_failing_create_transaction(|| {
 			assert_ok!(Creditcoin::register_funding_transfer(
 				Origin::signed(lender.clone()),
-				TransferKind::Ethless(contract.clone()),
+				LegacyTransferKind::Ethless(contract.clone()),
 				deal_order_id.clone(),
 				tx_hash.hex_to_address(),
 			));
@@ -632,7 +632,7 @@ fn register_transfer_ocw_fail_to_send() {
 		with_failing_create_transaction(|| {
 			assert_ok!(Creditcoin::register_funding_transfer(
 				Origin::signed(lender.clone()),
-				TransferKind::Ethless(contract.clone()),
+				LegacyTransferKind::Ethless(contract.clone()),
 				fake_deal_order_id.clone(),
 				tx_hash.hex_to_address(),
 			));
@@ -684,7 +684,7 @@ fn ocw_retries() {
 		let lender = test_info.lender.account_id;
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(lender),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_order_id,
 			tx_hash.hex_to_address(),
 		));
@@ -1402,7 +1402,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(second_test_info.lender.account_id.clone()),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			bogus_deal_order_id.clone(),
 			tx_hash
 		));
@@ -1434,7 +1434,7 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_order_id.clone(),
 			tx_hash
 		));
@@ -1474,7 +1474,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_order_id.clone(),
 			tx_hash
 		));
@@ -1541,7 +1541,7 @@ fn fund_deal_order_works() {
 
 		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_order_id.clone(),
 			tx_hash
 		));
@@ -2454,7 +2454,7 @@ fn close_deal_order_should_succeed() {
 			test_info.borrower.account_id.clone(),
 			test_info.borrower.address_id.clone(),
 			test_info.lender.address_id.clone(),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			33u64.into(),
 			deal_order_id.clone(),
 			tx_hash
@@ -2662,7 +2662,7 @@ fn verify_transfer_should_work() {
 		let transfer_id = TransferId::new::<Test>(&Blockchain::Rinkeby, &tx);
 		let transfer = Transfer {
 			blockchain: test_info.blockchain.clone(),
-			kind: TransferKind::Native,
+			kind: LegacyTransferKind::Native,
 			from: test_info.lender.address_id.clone(),
 			to: test_info.borrower.address_id.clone(),
 			deal_order_id,
@@ -2861,7 +2861,7 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 				let tx = format!("0xfafafa{:02}", expiration_block.clone());
 				assert_ok!(Creditcoin::register_funding_transfer(
 					Origin::signed(test_info.lender.account_id.clone()),
-					TransferKind::Native,
+					LegacyTransferKind::Native,
 					deal_order_id.clone(),
 					tx.as_bytes().into_bounded()
 				));
@@ -2906,7 +2906,7 @@ fn register_funding_transfer_should_error_when_not_signed() {
 		assert_noop!(
 			Creditcoin::register_funding_transfer(
 				Origin::none(),
-				TransferKind::Native,
+				LegacyTransferKind::Native,
 				deal_order_id,
 				tx.as_bytes().into_bounded()
 			),
@@ -2929,7 +2929,7 @@ fn register_funding_transfer_should_error_when_not_deal_order_not_found() {
 		assert_noop!(
 			Creditcoin::register_funding_transfer(
 				Origin::signed(test_info.lender.account_id),
-				TransferKind::Native,
+				LegacyTransferKind::Native,
 				deal_order_id,
 				tx.as_bytes().into_bounded()
 			),
@@ -2948,7 +2948,7 @@ fn register_repayment_transfer_should_error_when_not_signed() {
 		assert_noop!(
 			Creditcoin::register_repayment_transfer(
 				Origin::none(),
-				TransferKind::Native,
+				LegacyTransferKind::Native,
 				21u64.into(),
 				deal_order_id,
 				tx.as_bytes().into_bounded()
@@ -2972,7 +2972,7 @@ fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
 		assert_noop!(
 			Creditcoin::register_repayment_transfer(
 				Origin::signed(test_info.borrower.account_id),
-				TransferKind::Native,
+				LegacyTransferKind::Native,
 				21u64.into(),
 				deal_order_id,
 				tx.as_bytes().into_bounded()
@@ -2995,7 +2995,7 @@ fn register_transfer_internal_should_error_with_non_existent_lender_address() {
 			test_info.lender.account_id,
 			bogus_address,
 			deal_order.borrower_address_id,
-			TransferKind::Native,
+			LegacyTransferKind::Native,
 			deal_order.terms.amount,
 			deal_order_id,
 			tx.as_bytes().into_bounded(),
@@ -3019,7 +3019,7 @@ fn register_transfer_internal_should_error_with_non_existent_borrower_address() 
 			test_info.lender.account_id,
 			deal_order.lender_address_id,
 			bogus_address,
-			TransferKind::Native,
+			LegacyTransferKind::Native,
 			deal_order.terms.amount,
 			deal_order_id,
 			tx.as_bytes().into_bounded(),
@@ -3041,7 +3041,7 @@ fn register_transfer_internal_should_error_when_signer_doesnt_own_from_address()
 			test_info.lender.account_id,
 			deal_order.borrower_address_id, // should match 1st argument
 			deal_order.lender_address_id,
-			TransferKind::Native,
+			LegacyTransferKind::Native,
 			deal_order.terms.amount,
 			deal_order_id,
 			tx.as_bytes().into_bounded(),
@@ -3064,7 +3064,7 @@ fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_bl
 			test_info.lender.account_id,
 			deal_order.lender_address_id,
 			second_borrower.address_id,
-			TransferKind::Native,
+			LegacyTransferKind::Native,
 			deal_order.terms.amount,
 			deal_order_id,
 			tx.as_bytes().into_bounded(),
@@ -3087,7 +3087,7 @@ fn register_transfer_internal_should_error_when_transfer_kind_is_not_supported()
 			deal_order.lender_address_id,
 			deal_order.borrower_address_id,
 			// not supported on Blockchain::Rinkeby
-			TransferKind::Other(BoundedVec::try_from(b"other".to_vec()).unwrap()),
+			LegacyTransferKind::Other(BoundedVec::try_from(b"other".to_vec()).unwrap()),
 			deal_order.terms.amount,
 			deal_order_id,
 			tx.as_bytes().into_bounded(),
@@ -3109,7 +3109,7 @@ fn register_transfer_internal_should_error_when_transfer_is_already_registered()
 			test_info.lender.account_id,
 			deal_order.lender_address_id,
 			deal_order.borrower_address_id,
-			TransferKind::Native,
+			LegacyTransferKind::Native,
 			deal_order.terms.amount,
 			deal_order_id,
 			transfer.tx_id,
