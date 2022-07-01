@@ -17,9 +17,6 @@ use super::{
 	tasks::verify_transfer::validate_ethless_transfer,
 	ETH_CONFIRMATIONS,
 };
-use crate::ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN};
-use crate::tests::adjust_deal_order_to_nonce;
-use crate::tests::generate_address_with_proof;
 use crate::types::{AddressId, CollectedCoins, CollectedCoinsId, TaskId};
 use crate::Pallet as Creditcoin;
 use crate::{
@@ -36,6 +33,8 @@ use crate::{
 	types::{DoubleMapExt, TransferId},
 	ExternalAddress, Id, LegacyTransferKind, LoanTerms, OldBlockchain, Transfers,
 };
+use crate::{ocw::tasks::collect_coins::tests::TX_HASH, tests::generate_address_with_proof};
+use crate::{ocw::tasks::collect_coins::CONTRACT_CHAIN, tests::adjust_deal_order_to_nonce};
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
 use codec::Decode;
