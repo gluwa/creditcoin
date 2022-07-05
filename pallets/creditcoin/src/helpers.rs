@@ -118,7 +118,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn register_transfer_internal(
+	pub fn register_transfer_internal_legacy(
 		who: T::AccountId,
 		from_id: AddressId<T::Hash>,
 		to_id: AddressId<T::Hash>,
