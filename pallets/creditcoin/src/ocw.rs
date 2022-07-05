@@ -8,7 +8,7 @@ use super::{
 	pallet::{Config, Error, Pallet},
 	ExternalAddress,
 };
-use crate::{Blockchain, Call, LegacyTransferKind};
+use crate::{Call, LegacyTransferKind, OldBlockchain};
 use alloc::string::String;
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use frame_support::traits::IsType;
@@ -22,7 +22,7 @@ use sp_std::prelude::*;
 
 pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
-impl Blockchain {
+impl OldBlockchain {
 	pub fn rpc_url(&self) -> OffchainResult<String, errors::RpcUrlError> {
 		let chain_prefix = self.as_bytes();
 		let mut buf = Vec::from(chain_prefix);
@@ -37,12 +37,12 @@ impl Blockchain {
 	pub fn supports(&self, kind: &LegacyTransferKind) -> bool {
 		match (self, kind) {
 			(
-				Blockchain::Ethereum | Blockchain::Luniverse | Blockchain::Rinkeby,
+				OldBlockchain::Ethereum | OldBlockchain::Luniverse | OldBlockchain::Rinkeby,
 				LegacyTransferKind::Erc20(_)
 				| LegacyTransferKind::Ethless(_)
 				| LegacyTransferKind::Native,
 			) => true,
-			(Blockchain::Bitcoin, LegacyTransferKind::Native) => true,
+			(OldBlockchain::Bitcoin, LegacyTransferKind::Native) => true,
 			(_, _) => false, // TODO: refine this later
 		}
 	}

@@ -6,7 +6,7 @@ use crate::ocw::{
 
 use crate::pallet::{Config, Pallet};
 use crate::{
-	types::{Blockchain, UnverifiedCollectedCoins},
+	types::{OldBlockchain, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
 use sp_runtime::SaturatedConversion;
@@ -18,7 +18,7 @@ use ethereum_types::{H160, U64};
 use frame_support::ensure;
 use hex_literal::hex;
 
-pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
+pub(crate) const CONTRACT_CHAIN: OldBlockchain = OldBlockchain::Ethereum;
 const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
 
 ///exchange has been deprecated, use burn instead
