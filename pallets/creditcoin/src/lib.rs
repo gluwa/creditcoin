@@ -576,7 +576,7 @@ pub mod pallet {
 					log::debug!("verify_transfer result: {:?}", verify_result);
 					match verify_result {
 						Ok(timestamp) => {
-							match Self::offchain_signed_tx(auth_id.clone(), |_| {
+							match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
 								Call::verify_transfer {
 									transfer: Transfer { timestamp, ..pending.transfer.clone() },
 									deadline,

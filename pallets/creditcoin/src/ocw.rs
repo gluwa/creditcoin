@@ -1,4 +1,5 @@
 pub mod errors;
+pub mod nonce;
 pub mod rpc;
 use crate::{Blockchain, Call, Id, Transfer, TransferId, TransferKind, UnverifiedTransfer};
 use codec::Encode;
@@ -16,13 +17,15 @@ use super::{
 use alloc::string::String;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::{U256, U64};
-use frame_support::ensure;
+use frame_support::{ensure, traits::IsType};
 use frame_system::{
 	offchain::{Account, SendSignedTransaction, Signer},
 	pallet_prelude::BlockNumberFor,
+	Config as SystemConfig, Pallet as System,
 };
+use nonce::{lock_key, nonce_key};
 use sp_runtime::offchain::storage::StorageValueRef;
-use sp_runtime::traits::UniqueSaturatedFrom;
+use sp_runtime::traits::{One, Saturating, UniqueSaturatedFrom};
 use sp_std::prelude::*;
 
 pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
@@ -146,7 +149,7 @@ fn validate_ethless_transfer(
 }
 
 impl<T: Config> Pallet<T> {
-	pub fn verify_transfer_ocw(
+	pub(crate) fn verify_transfer_ocw(
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
 	) -> VerificationResult<T::Moment> {
 		let UnverifiedTransfer {
@@ -187,6 +190,29 @@ impl<T: Config> Pallet<T> {
 
 		log::error!("No local account available");
 		Err(Error::NoLocalAcctForSignedTx)
+	}
+
+	pub fn submit_txn_with_synced_nonce(
+		auth_id: T::FromAccountId,
+		call: impl Fn(&Account<T>) -> Call<T>,
+	) -> Result<(), Error<T>> {
+		let acc_id: &<T as SystemConfig>::AccountId = auth_id.into_ref();
+		let mut account_data = System::<T>::account(acc_id);
+
+		let key = &lock_key(auth_id.into_ref());
+		let mut lock = Pallet::<T>::nonce_lock_new(key);
+		let _guard = lock.lock();
+
+		let key = &nonce_key(auth_id.into_ref());
+		let synced_nonce_storage = StorageValueRef::persistent(key);
+		let synced_nonce = synced_nonce_storage.get::<T::Index>().ok().flatten();
+		if let Some(nonce) = synced_nonce {
+			account_data.nonce = nonce;
+			frame_system::Account::<T>::insert(acc_id, account_data.clone());
+		}
+
+		Pallet::<T>::offchain_signed_tx(auth_id, call)
+			.map(|_| synced_nonce_storage.set(&account_data.nonce.saturating_add(One::one())))
 	}
 
 	pub fn verify_ethless_transfer(
