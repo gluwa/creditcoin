@@ -1,4 +1,4 @@
-use crate::{Blockchain, ExternalAddress};
+use crate::{ExternalAddress, OldBlockchain};
 use base58::FromBase58;
 use core::convert::TryFrom;
 use frame_support::BoundedVec;
@@ -7,18 +7,18 @@ use sp_io::hashing::keccak_256;
 use sp_io::hashing::sha2_256;
 
 pub fn generate_external_address(
-	blockchain: &Blockchain,
+	blockchain: &OldBlockchain,
 	reference: &ExternalAddress,
 	public_key: Public,
 ) -> Option<ExternalAddress> {
 	match blockchain {
-		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby
+		OldBlockchain::Luniverse | OldBlockchain::Ethereum | OldBlockchain::Rinkeby
 			if EVMAddress::try_extract_addresss_type(reference).is_some() =>
 		{
 			Some(EVMAddress::from_public(&public_key))
 		},
-		Blockchain::Bitcoin => None,
-		Blockchain::Other(_) => None,
+		OldBlockchain::Bitcoin => None,
+		OldBlockchain::Other(_) => None,
 		_ => None,
 	}
 }
@@ -51,13 +51,13 @@ impl PublicToAddress for EVMAddress {
 	}
 }
 
-pub fn address_is_well_formed(blockchain: &Blockchain, address: &ExternalAddress) -> bool {
+pub fn address_is_well_formed(blockchain: &OldBlockchain, address: &ExternalAddress) -> bool {
 	match blockchain {
-		Blockchain::Bitcoin => btc_address_is_well_formed(address),
-		Blockchain::Ethereum | Blockchain::Luniverse | Blockchain::Rinkeby => {
+		OldBlockchain::Bitcoin => btc_address_is_well_formed(address),
+		OldBlockchain::Ethereum | OldBlockchain::Luniverse | OldBlockchain::Rinkeby => {
 			eth_address_is_well_formed(address)
 		},
-		Blockchain::Other(_) => false,
+		OldBlockchain::Other(_) => false,
 	}
 }
 
@@ -171,11 +171,11 @@ mod tests {
 
 	#[test]
 	fn address_is_well_formed_works() {
-		let ethereum = Blockchain::Ethereum;
-		let bitcoin = Blockchain::Bitcoin;
-		let rinkeby = Blockchain::Rinkeby;
-		let luniverse = Blockchain::Luniverse;
-		let other = Blockchain::Other(BoundedVec::try_from(b"other".to_vec()).unwrap());
+		let ethereum = OldBlockchain::Ethereum;
+		let bitcoin = OldBlockchain::Bitcoin;
+		let rinkeby = OldBlockchain::Rinkeby;
+		let luniverse = OldBlockchain::Luniverse;
+		let other = OldBlockchain::Other(BoundedVec::try_from(b"other".to_vec()).unwrap());
 
 		let eth_addr = hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
 			.unwrap()

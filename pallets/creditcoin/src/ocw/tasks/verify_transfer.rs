@@ -13,8 +13,8 @@ use crate::{
 		rpc::{self, Address, EthBlock, EthTransaction, EthTransactionReceipt},
 		OffchainResult, VerificationFailureCause, VerificationResult, ETH_CONFIRMATIONS,
 	},
-	Blockchain, Config, DealOrderId, ExternalAddress, ExternalAmount, ExternalTxId, Id,
-	LegacyTransferKind, Transfer, UnverifiedTransfer,
+	Config, DealOrderId, ExternalAddress, ExternalAmount, ExternalTxId, Id, LegacyTransferKind,
+	OldBlockchain, Transfer, UnverifiedTransfer,
 };
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
@@ -130,7 +130,7 @@ impl<T: Config> crate::Pallet<T> {
 	}
 
 	pub fn verify_ethless_transfer(
-		blockchain: &Blockchain,
+		blockchain: &OldBlockchain,
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,

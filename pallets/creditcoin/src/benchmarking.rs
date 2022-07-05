@@ -5,6 +5,9 @@ use crate::benchmarking::alloc::format;
 use crate::helpers::{EVMAddress, PublicToAddress, RefSliceOfTExt, RefstrExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
+use crate::types::OldBlockchain;
+use crate::Duration;
+#[allow(unused)]
 use crate::Pallet as Creditcoin;
 use crate::{
 	types::{Blockchain, Currency::Evm as CurrencyEvm},
@@ -111,7 +114,7 @@ benchmarks! {
 		let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 
-	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address,signature)
+	}: _(RawOrigin::Signed(who), OldBlockchain::Ethereum, address,signature)
 
 	claim_legacy_wallet {
 		let pubkey = {
@@ -391,7 +394,7 @@ fn generate_transfer<T: Config>(
 		)
 	};
 	let tx = raw_tx.as_bytes().into_bounded();
-	let transfer_id = TransferId::new::<T>(&Blockchain::Ethereum, &tx);
+	let transfer_id = TransferId::new::<T>(&OldBlockchain::Ethereum, &tx);
 
 	let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
@@ -543,13 +546,13 @@ fn register_eth_addr<T: Config>(who: &T::AccountId, seed: &str) -> AddressId<<T>
 	let ktypeid = KeyTypeId(*b"dumy");
 	let pkey = ecdsa_generate(ktypeid, Some(format!("//{}", seed).as_bytes().to_vec()));
 	let address = EVMAddress::from_public(&pkey);
-	let address_id = crate::AddressId::new::<T>(&Blockchain::Ethereum, &address);
+	let address_id = crate::AddressId::new::<T>(&OldBlockchain::Ethereum, &address);
 
 	let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 	let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 
 	let origin = RawOrigin::Signed(who.clone());
-	Creditcoin::<T>::register_address(origin.into(), Blockchain::Ethereum, address, signature)
+	Creditcoin::<T>::register_address(origin.into(), OldBlockchain::Ethereum, address, signature)
 		.unwrap();
 
 	address_id
@@ -614,7 +617,7 @@ fn generate_bid<T: Config>(
 
 fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
 	let address = format!("somefakeaddress{}", seed);
-	crate::AddressId::new::<T>(&Blockchain::Ethereum, address.as_bytes())
+	crate::AddressId::new::<T>(&OldBlockchain::Ethereum, address.as_bytes())
 }
 
 fn fake_ask_id<T: Config>(
@@ -630,7 +633,6 @@ fn insert_fake_ask<T: Config>(who: &T::AccountId, expiration_block: BlockNumberF
 	let ask_id = fake_ask_id::<T>(seed, expiration_block);
 	let ask = crate::AskOrder {
 		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
 		expiration_block,
 		lender: who.clone(),
 		lender_address_id: address_id,
@@ -653,7 +655,6 @@ fn insert_fake_bid<T: Config>(who: &T::AccountId, expiration_block: BlockNumberF
 	let bid_id = fake_bid_id::<T>(seed, expiration_block);
 	let bid = crate::BidOrder {
 		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
 		expiration_block,
 		borrower: who.clone(),
 		borrower_address_id: address_id,
@@ -684,7 +685,6 @@ fn insert_fake_offer<T: Config>(
 		ask_id,
 		bid_id,
 		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
 		expiration_block,
 		lender: who.clone(),
 	};
@@ -701,7 +701,7 @@ fn fake_deal_id<T: Config>(
 
 fn fake_transfer_id<T: Config>(seed: u32) -> TransferId<T::Hash> {
 	let tx_id = format!("somefaketransfertxid{}", seed);
-	crate::TransferId::new::<T>(&Blockchain::Ethereum, tx_id.as_bytes())
+	crate::TransferId::new::<T>(&OldBlockchain::Ethereum, tx_id.as_bytes())
 }
 
 fn insert_fake_deal<T: Config>(
@@ -717,7 +717,6 @@ fn insert_fake_deal<T: Config>(
 	let deal_id = fake_deal_id::<T>(expiration_block, &offer_id);
 	let deal = crate::DealOrder::<_, _, _, T::Moment> {
 		block: None,
-		blockchain: Blockchain::Ethereum,
 		borrower: who.clone(),
 		borrower_address_id: address_id.clone(),
 		lender_address_id: address_id,
@@ -752,7 +751,7 @@ fn insert_fake_unverified_transfer<T: Config>(
 			account_id: who.clone(),
 			amount: ExternalAmount::from(1),
 			block: System::<T>::block_number(),
-			blockchain: Blockchain::Ethereum,
+			blockchain: OldBlockchain::Ethereum,
 			from: fake_address_id::<T>(seed - 1),
 			to: fake_address_id::<T>(seed),
 			is_processed: false,
