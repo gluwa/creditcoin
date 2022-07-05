@@ -72,7 +72,7 @@ pub mod pallet {
 		pallet_prelude::*,
 	};
 	use ocw::errors::VerificationFailureCause;
-	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
+	use sp_runtime::{traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify, SaturatedConversion}, offchain::storage_lock::{StorageLock, BlockAndTime}};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -561,78 +561,87 @@ pub mod pallet {
 		}
 
 		fn offchain_worker(_block_number: T::BlockNumber) {
-			if let Some(auth_id) = Self::authority_id() {
-				let auth_id = T::FromAccountId::from(auth_id);
-				for (deadline, transfer_id, pending) in UnverifiedTransfers::<T>::iter() {
-					let storage_key =
-						ocw::transfer_local_status_storage_key::<T>(deadline, &transfer_id);
-					let transfer_status = ocw::LocalVerificationStatus::new(&storage_key);
-					if transfer_status.is_complete() {
-						log::debug!("Already handled transfer ({:?}, {:?})", deadline, transfer_id);
-						continue;
-					}
-					log::debug!("verifying OCW task");
-					let verify_result = Self::verify_transfer_ocw(&pending);
-					log::debug!("verify_transfer result: {:?}", verify_result);
-					match verify_result {
-						Ok(timestamp) => {
-							match Self::offchain_signed_tx(auth_id.clone(), |_| {
-								Call::verify_transfer {
-									transfer: Transfer { timestamp, ..pending.transfer.clone() },
+			let auth_id = match Self::authority_id() {
+				None => {
+					log::trace!("Not authority, skipping off chain work");
+					return;
+				},
+				Some(auth) => T::FromAccountId::from(auth),
+			};
+
+			for (deadline, transfer_id, pending) in UnverifiedTransfers::<T>::iter() {
+				let storage_key = Self::storage_key(&transfer_id);
+				let offset =
+					T::UnverifiedTransferTimeout::get().saturated_into::<u32>().saturating_sub(2u32);
+
+				let mut lock = StorageLock::<BlockAndTime<frame_system::Pallet<T>>>::with_block_and_time_deadline(
+					&storage_key,
+					offset,
+					sp_core::offchain::Duration::from_millis(0),
+				);
+
+				let guard = match lock.try_lock() {
+					Ok(g) => g,
+					Err(_) => continue,
+				};
+
+				if Transfers::<T>::contains_key(&transfer_id) {
+					guard.forget();
+					continue;
+				}
+
+				let verify_result = Self::verify_transfer_ocw(&pending);
+
+				match verify_result {
+					Ok(timestamp) => {
+						match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
+							Call::verify_transfer {
+								transfer: Transfer { timestamp, ..pending.transfer.clone() },
+								deadline,
+							}
+						}) {
+							Ok(_) => guard.forget(),
+							Err(e) => {
+								log::error!(
+									"Failed to send persist dispatchable transaction: {:?}",
+									e
+								)
+							},
+						}
+					},
+					Err(OffchainError::InvalidTask(cause)) => {
+						log::warn!("failed to verify pending transfer {:?}: {:?}", pending, cause);
+						if cause.is_fatal() {
+							match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
+								Call::fail_transfer {
+									transfer_id: TransferId::new::<T>(
+										&pending.transfer.blockchain,
+										&pending.transfer.tx_id,
+									),
+									cause,
 									deadline,
 								}
 							}) {
-								Ok(()) => {
-									transfer_status.mark_complete();
+								Ok(_) => {
+									guard.forget();
 								},
 								Err(e) => {
 									log::error!(
-										"Failed to send verify_transfer transaction: {:?}",
+										"Failed to send fail_transfer transaction: {:?}",
 										e
 									);
 								},
 							}
-						},
-						Err(OffchainError::InvalidTask(cause)) => {
-							log::warn!(
-								"failed to verify pending transfer {:?}: {:?}",
-								pending,
-								cause
-							);
-							if cause.is_fatal() {
-								match Self::offchain_signed_tx(auth_id.clone(), |_| {
-									Call::fail_transfer {
-										transfer_id: TransferId::new::<T>(
-											&pending.transfer.blockchain,
-											&pending.transfer.tx_id,
-										),
-										cause,
-										deadline,
-									}
-								}) {
-									Ok(()) => {
-										transfer_status.mark_complete();
-									},
-									Err(e) => {
-										log::error!(
-											"Failed to send fail_transfer transaction: {:?}",
-											e
-										);
-									},
-								}
-							}
-						},
-						Err(error) => {
-							log::error!(
-								"transfer verification encountered an error {:?}: {:?}",
-								pending,
-								error
-							);
-						},
-					}
+						}
+					},
+					Err(error) => {
+						log::error!(
+							"transfer verification encountered an error {:?}: {:?}",
+							pending,
+							error
+						);
+					},
 				}
-			} else {
-				log::trace!("Not authority, skipping off chain work");
 			}
 		}
 

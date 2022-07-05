@@ -409,13 +409,13 @@ fn offchain_signed_tx_works() {
 type MockTransfer = crate::Transfer<
 	crate::mock::AccountId,
 	crate::mock::BlockNumber,
-	<TestRuntime as frame_system::Config>::Hash,
+	<Test as frame_system::Config>::Hash,
 	u64,
 >;
 type MockUnverifiedTransfer = crate::UnverifiedTransfer<
 	crate::mock::AccountId,
 	crate::mock::BlockNumber,
-	<TestRuntime as frame_system::Config>::Hash,
+	<Test as frame_system::Config>::Hash,
 	u64,
 >;
 
@@ -451,21 +451,21 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 		);
 		let unverified = make_unverified_transfer(transfer.clone());
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
 		transfer.kind = crate::TransferKind::Erc20(ExternalAddress::default());
 		let unverified = make_unverified_transfer(transfer.clone());
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
 		transfer.kind = crate::TransferKind::Other(ExternalAddress::default());
 		let unverified = make_unverified_transfer(transfer.clone());
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 	});
@@ -488,7 +488,7 @@ fn verify_transfer_ocw_returns_err() {
 		let unverified = make_unverified_transfer(transfer);
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::NoRpcUrl(_))
 		);
 	});
@@ -534,10 +534,8 @@ fn set_up_verify_transfer_env(
 	let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 	let deal_id_hash = H256::from_uint(&get_mock_nonce());
-	let deal_order_id = crate::DealOrderId::with_expiration_hash::<TestRuntime>(
-		deal_order_id.expiration(),
-		deal_id_hash,
-	);
+	let deal_order_id =
+		crate::DealOrderId::with_expiration_hash::<Test>(deal_order_id.expiration(), deal_id_hash);
 	let (transfer, _) = test_info.make_transfer(
 		&test_info.lender,
 		&test_info.borrower,
@@ -551,7 +549,7 @@ fn set_up_verify_transfer_env(
 	if register_transfer {
 		let contract = get_mock_contract().hex_to_address();
 
-		crate::DealOrders::<TestRuntime>::insert_id(deal_order_id.clone(), deal_order);
+		crate::DealOrders::<Test>::insert_id(deal_order_id.clone(), deal_order);
 
 		assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
 			crate::mock::Origin::signed(test_info.lender.account_id),
@@ -579,10 +577,7 @@ fn verify_transfer_ocw_works() {
 
 		requests.mock_all(&mut state.write());
 
-		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-			Ok(Some(_))
-		);
+		assert_matches!(crate::Pallet::<Test>::verify_transfer_ocw(&unverified), Ok(Some(_)));
 	});
 }
 
@@ -596,7 +591,7 @@ fn verify_transfer_get_transaction_error() {
 		requests.mock_get_transaction(&mut state.write());
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(TaskNonexistent))
 		);
 	});
@@ -622,7 +617,7 @@ fn verify_transfer_get_transaction_receipt_error() {
 
 		// should this be a VerificationResult::Failure ?
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::RpcError(RpcError::NoResult))
 		);
 	});
@@ -648,7 +643,7 @@ fn verify_transfer_get_block_number_error() {
 
 		// should this be a VerificationResult::Failure ?
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::RpcError(RpcError::NoResult))
 		);
 	});
@@ -672,7 +667,7 @@ fn verify_transfer_get_block_by_number_error() {
 
 		requests.mock_all(&mut state.write());
 
-		assert_matches!(crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified), Ok(None));
+		assert_matches!(crate::Pallet::<Test>::verify_transfer_ocw(&unverified), Ok(None));
 	});
 }
 
@@ -696,7 +691,7 @@ fn verify_transfer_get_block_invalid_address() {
 			MockUnverifiedTransfer { from_external: default(), ..unverified.clone() };
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_from_unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&bad_from_unverified),
 			Err(OffchainError::InvalidTask(InvalidAddress))
 		);
 
@@ -706,7 +701,7 @@ fn verify_transfer_get_block_invalid_address() {
 			MockUnverifiedTransfer { to_external: default(), ..unverified.clone() };
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_to_unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&bad_to_unverified),
 			Err(OffchainError::InvalidTask(InvalidAddress))
 		);
 
@@ -715,7 +710,7 @@ fn verify_transfer_get_block_invalid_address() {
 		unverified.transfer.kind = TransferKind::Ethless(default());
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(InvalidAddress))
 		);
 	});
