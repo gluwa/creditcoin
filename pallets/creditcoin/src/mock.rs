@@ -252,6 +252,28 @@ impl ExtBuilder {
 
 		storage.into()
 	}
+
+	pub fn build_with(
+		mut self,
+		offchain: TestOffchainExt,
+	) -> (sp_io::TestExternalities, Arc<RwLock<PoolState>>) {
+		if self.keystore.is_none() {
+			self.keystore = Some(KeyStore::new());
+		}
+		let keystore = core::mem::take(&mut self.keystore);
+		let mut ext = self.build();
+
+		ext.register_extension(OffchainDbExt::new(offchain.clone()));
+		ext.register_extension(OffchainWorkerExt::new(offchain));
+		let (pool, p) = TestTransactionPoolExt::new();
+		ext.register_extension(TransactionPoolExt::new(pool));
+
+		if let Some(keystore) = keystore {
+			ext.register_extension(KeystoreExt(Arc::new(keystore)));
+		}
+		(ext, p)
+	}
+
 	pub fn build_offchain(
 		mut self,
 	) -> (sp_io::TestExternalities, Arc<RwLock<OffchainState>>, Arc<RwLock<PoolState>>) {
