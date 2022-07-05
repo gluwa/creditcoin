@@ -716,7 +716,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::register_address())]
 		pub fn register_address(
 			origin: OriginFor<T>,
-			blockchain: Blockchain,
+			blockchain: OldBlockchain,
 			address: ExternalAddress,
 			ownership_proof: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
@@ -775,7 +775,6 @@ pub mod pallet {
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
 			let ask_order = AskOrder {
-				blockchain: address.blockchain,
 				lender_address_id: address_id,
 				terms: terms.try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -810,7 +809,6 @@ pub mod pallet {
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
 			let bid_order = BidOrder {
-				blockchain: address.blockchain,
 				borrower_address_id: address_id,
 				terms: terms.try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -849,8 +847,11 @@ pub mod pallet {
 
 			ensure!(bid_order.expiration_block >= head, Error::<T>::BidOrderExpired);
 
+			let lender_address = Self::get_address(&ask_order.lender_address_id)?;
+			let borrower_address = Self::get_address(&bid_order.borrower_address_id)?;
+
 			ensure!(
-				ask_order.blockchain == bid_order.blockchain,
+				lender_address.blockchain == borrower_address.blockchain,
 				Error::<T>::AddressPlatformMismatch
 			);
 
@@ -864,7 +865,6 @@ pub mod pallet {
 				ask_id: ask_order_id,
 				bid_id: bid_order_id,
 				block: Self::block_number(),
-				blockchain: ask_order.blockchain,
 				expiration_block,
 				lender: who,
 			};
@@ -904,7 +904,6 @@ pub mod pallet {
 				.ok_or(Error::<T>::AskBidMismatch)?;
 
 			let deal_order = DealOrder {
-				blockchain: offer.blockchain,
 				offer_id,
 				lender_address_id: ask_order.lender_address_id,
 				borrower_address_id: bid_order.borrower_address_id,
@@ -1056,7 +1055,6 @@ pub mod pallet {
 			let current_block = Self::block_number();
 
 			let ask_order = AskOrder {
-				blockchain: lender.blockchain.clone(),
 				lender_address_id: lender_address_id.clone(),
 				terms: terms.clone().try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -1065,7 +1063,6 @@ pub mod pallet {
 			};
 
 			let bid_order = BidOrder {
-				blockchain: lender.blockchain.clone(),
 				borrower_address_id: borrower_address_id.clone(),
 				terms: terms.clone().try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -1077,13 +1074,11 @@ pub mod pallet {
 				ask_id: ask_order_id.clone(),
 				bid_id: bid_order_id.clone(),
 				block: current_block,
-				blockchain: lender.blockchain.clone(),
 				expiration_block,
 				lender: lender_account,
 			};
 
 			let deal_order = DealOrder {
-				blockchain: lender.blockchain,
 				offer_id: offer_id.clone(),
 				lender_address_id,
 				borrower_address_id,
