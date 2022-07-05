@@ -1215,7 +1215,7 @@ pub mod pallet {
 
 			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
-			let (transfer_id, transfer) = Self::register_transfer_internal(
+			let (transfer_id, transfer) = Self::register_transfer_internal_legacy(
 				who,
 				order.lender_address_id,
 				order.borrower_address_id,
@@ -1242,7 +1242,7 @@ pub mod pallet {
 
 			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
-			let (transfer_id, transfer) = Self::register_transfer_internal(
+			let (transfer_id, transfer) = Self::register_transfer_internal_legacy(
 				who,
 				order.borrower_address_id,
 				order.lender_address_id,
