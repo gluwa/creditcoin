@@ -32,7 +32,7 @@ type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum Blockchain {
+pub enum OldBlockchain {
 	Ethereum,
 	Rinkeby,
 	Luniverse,
@@ -40,14 +40,14 @@ pub enum Blockchain {
 	Other(OtherChain),
 }
 
-impl Blockchain {
+impl OldBlockchain {
 	pub fn as_bytes(&self) -> &[u8] {
 		match self {
-			Blockchain::Ethereum => b"ethereum",
-			Blockchain::Rinkeby => b"rinkeby",
-			Blockchain::Luniverse => b"luniverse",
-			Blockchain::Bitcoin => b"bitcoin",
-			Blockchain::Other(chain) => chain.as_slice(),
+			OldBlockchain::Ethereum => b"ethereum",
+			OldBlockchain::Rinkeby => b"rinkeby",
+			OldBlockchain::Luniverse => b"luniverse",
+			OldBlockchain::Bitcoin => b"bitcoin",
+			OldBlockchain::Other(chain) => chain.as_slice(),
 		}
 	}
 }
@@ -62,7 +62,7 @@ pub enum LegacyTransferKind {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Address<AccountId> {
-	pub blockchain: Blockchain,
+	pub blockchain: OldBlockchain,
 	pub value: ExternalAddress,
 	pub owner: AccountId,
 }
@@ -82,7 +82,7 @@ pub struct CollectedCoins<Hash, Balance> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
+	pub blockchain: OldBlockchain,
 	pub kind: LegacyTransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
@@ -112,7 +112,6 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Offer<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
 	pub ask_id: AskOrderId<BlockNum, Hash>,
 	pub bid_id: BidOrderId<BlockNum, Hash>,
 	pub expiration_block: BlockNum,
@@ -122,7 +121,6 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AskOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
 	pub lender_address_id: AddressId<Hash>,
 	pub terms: AskTerms,
 	pub expiration_block: BlockNum,
@@ -132,7 +130,6 @@ pub struct AskOrder<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct BidOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
 	pub borrower_address_id: AddressId<Hash>,
 	pub terms: BidTerms,
 	pub expiration_block: BlockNum,
@@ -142,7 +139,6 @@ pub struct BidOrder<AccountId, BlockNum, Hash> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
 	pub offer_id: OfferId<BlockNum, Hash>,
 	pub lender_address_id: AddressId<Hash>,
 	pub borrower_address_id: AddressId<Hash>,
@@ -222,7 +218,7 @@ macro_rules! concatenate {
 pub(crate) use concatenate;
 
 impl<H> AddressId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, address: &[u8]) -> AddressId<H>
+	pub fn new<Config>(blockchain: &OldBlockchain, address: &[u8]) -> AddressId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
@@ -263,7 +259,7 @@ impl<B, H> RepaymentOrderId<B, H> {
 }
 
 impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
+	pub fn new<Config>(blockchain: &OldBlockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,

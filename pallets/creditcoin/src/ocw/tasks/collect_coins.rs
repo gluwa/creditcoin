@@ -6,7 +6,7 @@ use crate::ocw::{
 };
 use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
-	types::{Blockchain, UnverifiedCollectedCoins},
+	types::{OldBlockchain, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
 use codec::{Decode, Encode, MaxEncodedLen};
@@ -24,44 +24,28 @@ use sp_std::prelude::*;
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct GCreContract {
 	pub address: sp_core::H160,
-	pub chain: Blockchain,
+	pub chain: OldBlockchain,
 }
 
 impl GCreContract {
-	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
+	const DEFAULT_CHAIN: OldBlockchain = OldBlockchain::Ethereum;
 }
 
-impl Default for GCreContract {
-	fn default() -> Self {
-		let contract_chain: Blockchain = GCreContract::DEFAULT_CHAIN;
-		let contract_address: H160 =
-			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
-		Self { address: contract_address, chain: contract_chain }
+///exchange has been deprecated, use burn instead
+fn burn_vested_cc_abi() -> Function {
+	#[allow(deprecated)]
+	Function {
+		name: "burn".into(),
+		inputs: vec![Param {
+			name: "value".into(),
+			kind: ParamType::Uint(256),
+			internal_type: None,
+		}],
+		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
+		constant: false,
+		state_mutability: StateMutability::NonPayable,
 	}
 }
-
-impl GCreContract {
-	///exchange has been deprecated, use burn instead
-	fn burn_vested_cc_abi() -> Function {
-		#[allow(deprecated)]
-		Function {
-			name: "burn".into(),
-			inputs: vec![Param {
-				name: "value".into(),
-				kind: ParamType::Uint(256),
-				internal_type: None,
-			}],
-			outputs: vec![Param {
-				name: "success".into(),
-				kind: ParamType::Bool,
-				internal_type: None,
-			}],
-			constant: false,
-			state_mutability: StateMutability::NonPayable,
-		}
-	}
-}
-
 pub fn validate_collect_coins(
 	to: &ExternalAddress,
 	receipt: &EthTransactionReceipt,
