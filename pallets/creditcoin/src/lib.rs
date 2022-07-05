@@ -640,7 +640,7 @@ pub mod pallet {
 				match result {
 					Ok(task_data) => {
 						let output = task_data.into_output::<T>();
-						match Self::offchain_signed_tx(auth_id.clone(), |_| {
+						match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
 							Call::persist_task_output { deadline, task_output: output.clone() }
 						}) {
 							Ok(_) => guard.forget(),
@@ -655,10 +655,8 @@ pub mod pallet {
 					Err((task, ocw::OffchainError::InvalidTask(cause))) => {
 						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
 						if cause.is_fatal() {
-							match Self::offchain_signed_tx(auth_id.clone(), |_| Call::fail_task {
-								deadline,
-								task_id: id.clone(),
-								cause,
+							match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
+								Call::fail_task { deadline, task_id: id.clone(), cause }
 							}) {
 								Err(e) => log::error!(
 									"Failed to send fail dispatchable transaction: {:?}",

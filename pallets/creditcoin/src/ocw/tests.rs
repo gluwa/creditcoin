@@ -9,16 +9,26 @@ use super::errors::{
 use super::tasks::collect_coins::tests::{mock_rpc_for_collect_coins, RPC_RESPONSE_AMOUNT};
 use super::tasks::BlockAndTime;
 use super::tasks::Lockable;
+use super::{
+	errors::OffchainError,
+	parse_eth_address,
+	rpc::{Address, EthTransaction, EthTransactionReceipt},
+	tasks::verify_transfer::ethless_transfer_function_abi,
+	tasks::verify_transfer::validate_ethless_transfer,
+	ETH_CONFIRMATIONS,
+};
 use crate::ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN};
+use crate::tests::adjust_deal_order_to_nonce;
 use crate::tests::generate_address_with_proof;
 use crate::types::{AddressId, CollectedCoins, CollectedCoinsId, TaskId};
 use crate::Pallet as Creditcoin;
 use crate::{
 	mock::{
 		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
-		get_mock_nonce, get_mock_timestamp, get_mock_to_address, roll_to, roll_to_with_ocw,
-		set_rpc_uri, AccountId, Call, ExtBuilder, Extrinsic, MockedRpcRequests, Origin,
-		PendingRequestExt, RwLock, Test as TestRuntime, ETHLESS_RESPONSES,
+		get_mock_nonce, get_mock_timestamp, get_mock_to_address, get_mock_tx_block_num,
+		get_mock_tx_hash, roll_by_with_ocw, roll_to, roll_to_with_ocw, set_rpc_uri, AccountId,
+		Call, ExtBuilder, Extrinsic, MockedRpcRequests, Origin, PendingRequestExt, RwLock, Test,
+		ETHLESS_RESPONSES,
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
 	ocw::tasks::StorageLock,
@@ -35,6 +45,8 @@ use frame_support::{assert_ok, once_cell::sync::Lazy, BoundedVec};
 use frame_system::Pallet as System;
 use sp_core::H256;
 use sp_io::offchain;
+use sp_runtime::offchain::storage::MutateStorageError;
+use sp_runtime::offchain::testing::TestOffchainExt;
 use sp_runtime::traits::Dispatchable;
 use sp_runtime::{
 	offchain::{
@@ -43,15 +55,6 @@ use sp_runtime::{
 		Duration,
 	},
 	traits::IdentifyAccount,
-};
-
-use super::{
-	errors::OffchainError,
-	parse_eth_address,
-	rpc::{Address, EthTransaction, EthTransactionReceipt},
-	tasks::verify_transfer::ethless_transfer_function_abi,
-	tasks::verify_transfer::validate_ethless_transfer,
-	ETH_CONFIRMATIONS,
 };
 
 fn make_external_address(hex_str: &str) -> ExternalAddress {
@@ -411,13 +414,13 @@ fn offchain_signed_tx_works() {
 type MockTransfer = crate::Transfer<
 	crate::mock::AccountId,
 	crate::mock::BlockNumber,
-	<TestRuntime as frame_system::Config>::Hash,
+	<Test as frame_system::Config>::Hash,
 	u64,
 >;
 type MockUnverifiedTransfer = crate::UnverifiedTransfer<
 	crate::mock::AccountId,
 	crate::mock::BlockNumber,
-	<TestRuntime as frame_system::Config>::Hash,
+	<Test as frame_system::Config>::Hash,
 	u64,
 >;
 
@@ -453,21 +456,21 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 		);
 		let unverified = make_unverified_transfer(transfer.clone());
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
 		transfer.kind = crate::TransferKind::Erc20(ExternalAddress::default());
 		let unverified = make_unverified_transfer(transfer.clone());
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
 		transfer.kind = crate::TransferKind::Other(ExternalAddress::default());
 		let unverified = make_unverified_transfer(transfer);
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 	});
@@ -490,7 +493,7 @@ fn verify_transfer_ocw_returns_err() {
 		let unverified = make_unverified_transfer(transfer);
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::NoRpcUrl(_))
 		);
 	});
@@ -532,24 +535,21 @@ fn offchain_worker_should_log_and_forget_guard_when_task_is_already_handled() {
 		crate::mock::roll_to(1);
 
 		let (unverified, _) = set_up_verify_transfer_env(true);
-		let id = TransferId::new::<TestRuntime>(
-			&unverified.transfer.blockchain,
-			&unverified.transfer.tx_id,
-		);
+		let id =
+			TransferId::new::<Test>(&unverified.transfer.blockchain, &unverified.transfer.tx_id);
 		// simulate a transfer that has already been handled
-		Transfers::<TestRuntime>::insert(&id, &unverified.transfer);
+		Transfers::<Test>::insert(&id, &unverified.transfer);
 
 		crate::mock::roll_by_with_ocw(1);
 		assert!(logs_contain("Already handled Task"));
 
 		// check that guard for the same ID has been released
 		let storage_key = crate::ocw::tasks::storage_key(&TaskId::VerifyTransfer(id));
-		let mut lock =
-			StorageLock::<'_, BlockAndTime<System<TestRuntime>>>::with_block_and_time_deadline(
-				&storage_key,
-				1,
-				Duration::from_millis(0),
-			);
+		let mut lock = StorageLock::<'_, BlockAndTime<System<Test>>>::with_block_and_time_deadline(
+			&storage_key,
+			1,
+			Duration::from_millis(0),
+		);
 
 		let guard = lock.try_lock();
 		assert!(guard.is_err());
@@ -569,10 +569,8 @@ fn set_up_verify_transfer_env(
 	let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 	let deal_id_hash = H256::from_uint(&get_mock_nonce());
-	let deal_order_id = crate::DealOrderId::with_expiration_hash::<TestRuntime>(
-		deal_order_id.expiration(),
-		deal_id_hash,
-	);
+	let deal_order_id =
+		crate::DealOrderId::with_expiration_hash::<Test>(deal_order_id.expiration(), deal_id_hash);
 	let (transfer, _) = test_info.make_transfer(
 		&test_info.lender,
 		&test_info.borrower,
@@ -586,7 +584,7 @@ fn set_up_verify_transfer_env(
 	if register_transfer {
 		let contract = get_mock_contract().hex_to_address();
 
-		crate::DealOrders::<TestRuntime>::insert_id(deal_order_id.clone(), deal_order);
+		crate::DealOrders::<Test>::insert_id(deal_order_id.clone(), deal_order);
 
 		assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
 			crate::mock::Origin::signed(test_info.lender.account_id),
@@ -615,10 +613,7 @@ fn verify_transfer_ocw_works() {
 
 		requests.mock_all(&mut state.write());
 
-		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
-			Ok(Some(_))
-		);
+		assert_matches!(crate::Pallet::<Test>::verify_transfer_ocw(&unverified), Ok(Some(_)));
 	});
 }
 
@@ -632,7 +627,7 @@ fn verify_transfer_get_transaction_error() {
 		requests.mock_get_transaction(&mut state.write());
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(TaskNonexistent))
 		);
 	});
@@ -658,7 +653,7 @@ fn verify_transfer_get_transaction_receipt_error() {
 
 		// should this be a VerificationResult::Failure ?
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::RpcError(RpcError::NoResult))
 		);
 	});
@@ -684,7 +679,7 @@ fn verify_transfer_get_block_number_error() {
 
 		// should this be a VerificationResult::Failure ?
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::RpcError(RpcError::NoResult))
 		);
 	});
@@ -708,7 +703,7 @@ fn verify_transfer_get_block_by_number_error() {
 
 		requests.mock_all(&mut state.write());
 
-		assert_matches!(crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified), Ok(None));
+		assert_matches!(crate::Pallet::<Test>::verify_transfer_ocw(&unverified), Ok(None));
 	});
 }
 
@@ -733,7 +728,7 @@ fn verify_transfer_get_block_invalid_address() {
 			MockUnverifiedTransfer { from_external: default(), ..unverified.clone() };
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_from_unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&bad_from_unverified),
 			Err(OffchainError::InvalidTask(InvalidAddress))
 		);
 
@@ -743,7 +738,7 @@ fn verify_transfer_get_block_invalid_address() {
 			MockUnverifiedTransfer { to_external: default(), ..unverified.clone() };
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&bad_to_unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&bad_to_unverified),
 			Err(OffchainError::InvalidTask(InvalidAddress))
 		);
 
@@ -752,7 +747,7 @@ fn verify_transfer_get_block_invalid_address() {
 		unverified.transfer.kind = TransferKind::Ethless(default());
 
 		assert_matches!(
-			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
+			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(InvalidAddress))
 		);
 	});
@@ -768,7 +763,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 
 		let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
-		assert_ok!(Creditcoin::<TestRuntime>::register_address(
+		assert_ok!(Creditcoin::<Test>::register_address(
 			Origin::signed(acc.clone()),
 			CONTRACT_CHAIN,
 			addr.clone(),
@@ -776,16 +771,16 @@ fn completed_oversubscribed_tasks_are_skipped() {
 		));
 
 		roll_to(1);
-		let deadline = TestRuntime::unverified_transfer_deadline();
+		let deadline = Test::unverified_transfer_deadline();
 		//register twice (oversubscribe) under different expiration (aka deadline).
-		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
+		assert_ok!(Creditcoin::<Test>::request_collect_coins(
 			Origin::signed(acc.clone()),
 			addr.clone(),
 			TX_HASH.hex_to_address()
 		));
 		roll_to(2);
-		let deadline_2 = TestRuntime::unverified_transfer_deadline();
-		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
+		let deadline_2 = Test::unverified_transfer_deadline();
+		assert_ok!(Creditcoin::<Test>::request_collect_coins(
 			Origin::signed(acc),
 			addr.clone(),
 			TX_HASH.hex_to_address()
@@ -795,10 +790,9 @@ fn completed_oversubscribed_tasks_are_skipped() {
 
 		roll_to_with_ocw(3);
 
-		let collected_coins_id =
-			CollectedCoinsId::new::<TestRuntime>(TX_HASH.hex_to_address().as_slice());
+		let collected_coins_id = CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 		let collected_coins = CollectedCoins {
-			to: AddressId::new::<TestRuntime>(&CONTRACT_CHAIN, addr.as_ref()),
+			to: AddressId::new::<Test>(&CONTRACT_CHAIN, addr.as_ref()),
 			amount: RPC_RESPONSE_AMOUNT.as_u128(),
 			tx_id: TX_HASH.hex_to_address(),
 		};
@@ -823,7 +817,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 
 		let key = super::tasks::storage_key(&TaskId::from(collected_coins_id));
 
-		type Y = <BlockAndTime<System<TestRuntime>> as Lockable>::Deadline;
+		type Y = <BlockAndTime<System<Test>> as Lockable>::Deadline;
 		//lock set
 		assert!(StorageValueRef::persistent(key.as_ref()).get::<Y>().expect("decoded").is_some());
 	});
@@ -836,7 +830,7 @@ fn task_deadline_oversubscription() {
 	ext.build_offchain_and_execute_with_state(|_, _| {
 		let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
-		assert_ok!(Creditcoin::<TestRuntime>::register_address(
+		assert_ok!(Creditcoin::<Test>::register_address(
 			Origin::signed(acc.clone()),
 			CONTRACT_CHAIN,
 			addr.clone(),
@@ -844,39 +838,32 @@ fn task_deadline_oversubscription() {
 		));
 
 		roll_to(1);
-		let deadline_1 = TestRuntime::unverified_transfer_deadline();
+		let deadline_1 = Test::unverified_transfer_deadline();
 		//register twice under different (expiration aka deadline)
-		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
+		assert_ok!(Creditcoin::<Test>::request_collect_coins(
 			Origin::signed(acc.clone()),
 			addr.clone(),
 			TX_HASH.hex_to_address()
 		));
 		roll_to(2);
-		let deadline_2 = TestRuntime::unverified_transfer_deadline();
-		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
+		let deadline_2 = Test::unverified_transfer_deadline();
+		assert_ok!(Creditcoin::<Test>::request_collect_coins(
 			Origin::signed(acc),
 			addr,
 			TX_HASH.hex_to_address()
 		));
 
-		let collected_coins_id =
-			CollectedCoinsId::new::<TestRuntime>(TX_HASH.hex_to_address().as_slice());
+		let collected_coins_id = CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 
-		assert!(Creditcoin::<TestRuntime>::pending_tasks(
+		assert!(Creditcoin::<Test>::pending_tasks(
 			deadline_1,
 			TaskId::from(collected_coins_id.clone())
 		)
 		.is_some());
-		assert!(Creditcoin::<TestRuntime>::pending_tasks(
-			deadline_2,
-			TaskId::from(collected_coins_id)
-		)
-		.is_some());
+		assert!(Creditcoin::<Test>::pending_tasks(deadline_2, TaskId::from(collected_coins_id))
+			.is_some());
 	});
 }
-
-use crate::mock::{get_mock_tx_block_num, get_mock_tx_hash, roll_by_with_ocw};
-use crate::tests::adjust_deal_order_to_nonce;
 
 #[test]
 #[tracing_test::traced_test]
@@ -907,7 +894,7 @@ fn ocw_retries() {
 		let deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
 		let lender = test_info.lender.account_id;
-		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer(
+		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
 			Origin::signed(lender),
 			TransferKind::Ethless(contract),
 			deal_order_id,
@@ -987,17 +974,17 @@ fn duplicate_retry_fail_and_succeed() {
 		let lender = test_info.lender.account_id.clone();
 
 		// test that we get a "fail_transfer" tx when verification fails
-		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer(
+		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
 			Origin::signed(lender.clone()),
 			TransferKind::Ethless(contract.clone()),
 			deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
-		let deadline = TestRuntime::unverified_transfer_deadline();
+		let deadline = Test::unverified_transfer_deadline();
 
 		roll_to_with_ocw(1);
 
-		let transfer_id = TransferId::new::<TestRuntime>(&blockchain, &tx_hash.hex_to_address());
+		let transfer_id = TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
 		let tx = pool.write().transactions.pop().expect("fail transfer");
 		assert!(pool.read().transactions.is_empty());
 		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
@@ -1018,20 +1005,20 @@ fn duplicate_retry_fail_and_succeed() {
 		// verification logic is happy
 		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
-		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer(
+		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
 			Origin::signed(lender.clone()),
 			TransferKind::Ethless(contract.clone()),
 			fake_deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
 
-		let deadline_2 = TestRuntime::unverified_transfer_deadline();
+		let deadline_2 = Test::unverified_transfer_deadline();
 
 		let expected_transfer = crate::Transfer {
 			blockchain: test_info.blockchain.clone(),
 			kind: TransferKind::Ethless(contract),
 			amount: loan_amount,
-			block: System::<TestRuntime>::block_number(),
+			block: System::<Test>::block_number(),
 			from: test_info.lender.address_id.clone(),
 			to: test_info.borrower.address_id,
 			order_id: OrderId::Deal(fake_deal_order_id),
@@ -1069,7 +1056,7 @@ fn effective_guard_lifetime_until_task_expiration() {
 		mock_rpc_for_collect_coins(&state);
 
 		let (acc, addr, sign, _) = generate_address_with_proof("collector");
-		assert_ok!(Creditcoin::<TestRuntime>::register_address(
+		assert_ok!(Creditcoin::<Test>::register_address(
 			Origin::signed(acc.clone()),
 			CONTRACT_CHAIN,
 			addr.clone(),
@@ -1077,8 +1064,8 @@ fn effective_guard_lifetime_until_task_expiration() {
 		));
 
 		roll_to(1);
-		let deadline = TestRuntime::unverified_transfer_deadline();
-		assert_ok!(Creditcoin::<TestRuntime>::request_collect_coins(
+		let deadline = Test::unverified_transfer_deadline();
+		assert_ok!(Creditcoin::<Test>::request_collect_coins(
 			Origin::signed(acc),
 			addr.clone(),
 			TX_HASH.hex_to_address()
@@ -1089,10 +1076,9 @@ fn effective_guard_lifetime_until_task_expiration() {
 		assert!(pool.read().transactions.is_empty());
 		let tx = Extrinsic::decode(&mut &*tx).unwrap();
 
-		let collected_coins_id =
-			CollectedCoinsId::new::<TestRuntime>(TX_HASH.hex_to_address().as_slice());
+		let collected_coins_id = CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 		let collected_coins = CollectedCoins {
-			to: AddressId::new::<TestRuntime>(&CONTRACT_CHAIN, addr.as_ref()),
+			to: AddressId::new::<Test>(&CONTRACT_CHAIN, addr.as_ref()),
 			amount: RPC_RESPONSE_AMOUNT.as_u128(),
 			tx_id: TX_HASH.hex_to_address(),
 		};
@@ -1107,12 +1093,12 @@ fn effective_guard_lifetime_until_task_expiration() {
 
 		let key = {
 			let collected_coins_id =
-				CollectedCoinsId::new::<TestRuntime>(TX_HASH.hex_to_address().as_slice());
+				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 
 			super::tasks::storage_key(&TaskId::from(collected_coins_id))
 		};
 
-		type Y = <BlockAndTime<System<TestRuntime>> as Lockable>::Deadline;
+		type Y = <BlockAndTime<System<Test>> as Lockable>::Deadline;
 		//lock set
 		let Y { block_number, .. } = StorageValueRef::persistent(key.as_ref())
 			.get::<Y>()
@@ -1120,5 +1106,64 @@ fn effective_guard_lifetime_until_task_expiration() {
 			.expect("deadline");
 		println!("{block_number} {deadline}");
 		assert!(block_number >= deadline - 1);
+	});
+}
+
+#[test]
+fn parallel_worker_trivial() {
+	let (offchain, _) = TestOffchainExt::new();
+	const TRIES_PER_THREAD: u32 = 10_000;
+	const THREADS: u32 = 2;
+	const TOTAL: u32 = THREADS * TRIES_PER_THREAD;
+	const STORAGE_KEY: &[u8] = b"demo_status";
+
+	let handles: Vec<_> = (0..THREADS)
+		.into_iter()
+		.map(|_| {
+			let offchain = offchain.clone();
+
+			std::thread::spawn(move || {
+				let ext_builder = ExtBuilder::default();
+				let (mut ext, _) = ext_builder.build_with(offchain);
+				let execute = || {
+					let mut tries = 0;
+					let a = StorageValueRef::persistent(STORAGE_KEY);
+					while tries < TRIES_PER_THREAD {
+						tries += 1;
+						'spin: loop {
+							let res = a.mutate::<u32, (), _>(|a: Result<Option<u32>, _>| {
+								let v = if let Ok(a) = a { a } else { None };
+								match v {
+									Some(a) => Ok(a + 1),
+									None => Ok(1),
+								}
+							});
+							match res {
+								Ok(_) => break 'spin,
+								Err(MutateStorageError::ConcurrentModification(..)) => {
+									continue 'spin
+								},
+								Err(MutateStorageError::ValueFunctionFailed(..)) => {
+									unreachable!()
+								},
+							};
+						}
+					}
+				};
+
+				ext.execute_with(execute);
+			})
+		})
+		.collect();
+
+	for h in handles {
+		h.join().expect("testing context is shared");
+	}
+
+	let ext_builder = ExtBuilder::default();
+	let (mut ext, _) = ext_builder.build_with(offchain);
+	ext.execute_with(|| {
+		let val = StorageValueRef::persistent(STORAGE_KEY).get::<u32>().unwrap().unwrap();
+		assert_eq!(val, TOTAL);
 	});
 }
