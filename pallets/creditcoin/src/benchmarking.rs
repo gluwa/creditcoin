@@ -398,7 +398,7 @@ fn generate_transfer<T: Config>(
 	if swap_sender {
 		Creditcoin::<T>::register_repayment_transfer(
 			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			gain.into(),
 			deal_id,
 			tx,
@@ -407,7 +407,7 @@ fn generate_transfer<T: Config>(
 	} else {
 		Creditcoin::<T>::register_funding_transfer(
 			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_id,
 			tx,
 		)
@@ -756,15 +756,15 @@ fn insert_fake_unverified_transfer<T: Config>(
 			from: fake_address_id::<T>(seed - 1),
 			to: fake_address_id::<T>(seed),
 			is_processed: false,
-			kind: TransferKind::Native,
-			deal_order_id: OrderId::Deal(fake_deal_id::<T>(
+			kind: LegacyTransferKind::Native,
+			deal_order_id: fake_deal_id::<T>(
 				deadline,
 				&fake_offer_id::<T>(
 					deadline,
 					&fake_ask_id::<T>(seed, deadline),
 					&fake_bid_id::<T>(seed, deadline),
 				),
-			)),
+			),
 			tx_id: format!("{:03x}", seed).as_bytes().into_bounded(),
 			timestamp: None,
 		},
