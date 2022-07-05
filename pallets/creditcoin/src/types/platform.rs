@@ -77,7 +77,7 @@ pub enum Currency {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
-pub enum NewTransferKind {
+pub enum TransferKind {
 	Evm(EvmTransferKind),
 }
 
