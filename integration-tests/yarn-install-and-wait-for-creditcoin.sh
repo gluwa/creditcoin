@@ -2,6 +2,6 @@
 
 pushd ../creditcoin-js/ && yarn install && yarn pack && popd
 yarn --update-checksums
-yarn install
+yarn upgrade
 
 ./wait-for-creditcoin.sh $@

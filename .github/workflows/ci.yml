@@ -233,7 +233,7 @@ jobs:
           pushd ${{ matrix.directory }}
 
           yarn --update-checksums
-          yarn install
+          yarn upgrade
           yarn lint
           popd
 
@@ -259,7 +259,7 @@ jobs:
           pushd ${{ matrix.directory }}
 
           yarn --update-checksums
-          yarn install
+          yarn upgrade
           yarn typecheck
           popd
 
@@ -285,7 +285,7 @@ jobs:
           pushd ${{ matrix.directory }}
 
           yarn --update-checksums
-          yarn install
+          yarn upgrade
           if ! yarn check-format; then
               echo "FAIL: JavaScript is not formatted properly!"
               echo "HELP: Execute 'yarn format' and commit the changes to fix this"
