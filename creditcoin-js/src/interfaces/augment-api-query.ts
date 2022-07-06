@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from '@polkadot/api-base/types';
 import type { Bytes, Null, Option, U256, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
@@ -30,6 +30,9 @@ import type {
     SpRuntimeDigest,
 } from '@polkadot/types/lookup';
 import type { Observable } from '@polkadot/types/types';
+
+export type __AugmentedQuery<ApiType extends ApiTypes> = AugmentedQuery<ApiType, () => unknown>;
+export type __QueryableStorageEntry<ApiType extends ApiTypes> = QueryableStorageEntry<ApiType>;
 
 declare module '@polkadot/api-base/types/storage' {
     export interface AugmentedQueries<ApiType extends ApiTypes> {
