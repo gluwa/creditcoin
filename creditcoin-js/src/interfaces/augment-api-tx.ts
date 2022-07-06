@@ -1,7 +1,12 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+import type {
+    ApiTypes,
+    AugmentedSubmittable,
+    SubmittableExtrinsic,
+    SubmittableExtrinsicFunction,
+} from '@polkadot/api-base/types';
 import type { Bytes, Compact, U256, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from '@polkadot/types/interfaces/runtime';
@@ -22,6 +27,10 @@ import type {
     SpRuntimeMultiSignature,
     SpRuntimeMultiSigner,
 } from '@polkadot/types/lookup';
+
+export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
+export type __SubmittableExtrinsic<ApiType extends ApiTypes> = SubmittableExtrinsic<ApiType>;
+export type __SubmittableExtrinsicFunction<ApiType extends ApiTypes> = SubmittableExtrinsicFunction<ApiType>;
 
 declare module '@polkadot/api-base/types/submittable' {
     export interface AugmentedSubmittables<ApiType extends ApiTypes> {

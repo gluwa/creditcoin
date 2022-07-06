@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
 import type { Null, Option, Result, u128 } from '@polkadot/types-codec';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
 import type {
@@ -23,6 +23,8 @@ import type {
     PalletCreditcoinUnverifiedCollectedCoins,
     SpRuntimeDispatchError,
 } from '@polkadot/types/lookup';
+
+export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>;
 
 declare module '@polkadot/api-base/types/events' {
     export interface AugmentedEvents<ApiType extends ApiTypes> {
