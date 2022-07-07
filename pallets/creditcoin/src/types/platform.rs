@@ -4,12 +4,14 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::Hash as HashT;
 use strum::EnumCount;
 
-use crate::ExternalAddress;
+use crate::{ExternalAddress, LegacyTransferKind};
 
 // as of EIP-155 the max chain ID is 9,223,372,036,854,775,771 which fits well within a u64
 #[derive(
 	Copy, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 #[repr(transparent)]
 pub struct EvmChainId(#[codec(compact)] u64);
 
@@ -20,7 +22,7 @@ impl From<u64> for EvmChainId {
 }
 
 impl EvmChainId {
-	pub fn new(value: u64) -> Self {
+	pub const fn new(value: u64) -> Self {
 		EvmChainId(value)
 	}
 }
@@ -28,6 +30,8 @@ impl EvmChainId {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct EvmInfo {
 	pub chain_id: EvmChainId,
 }
@@ -35,8 +39,44 @@ pub struct EvmInfo {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
-pub enum NewBlockchain {
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub enum Blockchain {
 	Evm(EvmInfo),
+}
+
+impl Blockchain {
+	pub const fn evm(chain_id: EvmChainId) -> Blockchain {
+		Blockchain::Evm(EvmInfo { chain_id })
+	}
+	pub const ETHEREUM: Blockchain = Blockchain::evm(EvmChainId::new(1));
+	pub const RINKEBY: Blockchain = Blockchain::evm(EvmChainId::new(4));
+	pub const LUNIVERSE_TESTNET: Blockchain = Blockchain::evm(EvmChainId::new(1635501961136826136));
+	pub const LUNIVERSE: Blockchain = Blockchain::evm(EvmChainId::new(3158073271666164067));
+
+	pub fn as_bytes(&self) -> &[u8] {
+		match self {
+			&Blockchain::ETHEREUM => b"etheruem",
+			&Blockchain::RINKEBY => b"rinkeby",
+			&(Blockchain::LUNIVERSE_TESTNET | Blockchain::LUNIVERSE) => b"luniverse",
+			_ => todo!(),
+		}
+	}
+
+	pub fn supports(&self, kind: &LegacyTransferKind) -> bool {
+		match (self, kind) {
+			(
+				&Blockchain::ETHEREUM
+				| &Blockchain::RINKEBY
+				| &Blockchain::LUNIVERSE
+				| &Blockchain::LUNIVERSE_TESTNET,
+				LegacyTransferKind::Erc20(_)
+				| LegacyTransferKind::Ethless(_)
+				| LegacyTransferKind::Native,
+			) => true,
+			(_, _) => false,
+		}
+	}
 }
 
 #[derive(
