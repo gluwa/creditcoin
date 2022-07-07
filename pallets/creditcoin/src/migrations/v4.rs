@@ -19,22 +19,36 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 #[cfg(test)]
 mod tests {
+	use super::Blockchain;
 	use crate::{
+		concatenate,
 		mock::{AccountId, ExtBuilder, Test},
 		Address, AddressId,
 	};
 	use sp_core::H256;
+	use sp_runtime::traits::Hash as HashT;
 	use sp_std::convert::TryInto;
 
+	#[extend::ext]
+	impl<H> AddressId<H> {
+		fn new_old<T: frame_system::Config>(blockchain: &Blockchain, address: &[u8]) -> AddressId<H>
+		where
+			<T as frame_system::Config>::Hashing: HashT<Output = H>,
+		{
+			let key = concatenate!(blockchain.as_bytes(), address);
+			AddressId::make(T::Hashing::hash(&key))
+		}
+	}
+	#[allow(unreachable_code, unused)]
 	#[test]
 	fn migrate_works() {
 		ExtBuilder::default().build_and_execute(|| {
 			let mut ids = Vec::new();
 			for i in 0u8..10u8 {
 				let id =
-					AddressId::<H256>::new::<Test>(&crate::OldBlockchain::Ethereum, &i.to_be_bytes());
+					AddressId::<H256>::new_old::<Test>(&Blockchain::Ethereum, &i.to_be_bytes());
 				let address = Address {
-					blockchain: crate::OldBlockchain::Ethereum,
+					blockchain: todo!(),
 					value: i.to_be_bytes().to_vec().try_into().unwrap(),
 					owner: AccountId::new([i; 32]),
 				};
