@@ -1,8 +1,10 @@
-use crate::ocw::{
-	self,
-	errors::{VerificationFailureCause, VerificationResult},
-	rpc::{self, EthTransaction, EthTransactionReceipt},
-	OffchainResult, ETH_CONFIRMATIONS,
+use crate::{
+	ocw::{
+		errors::{VerificationFailureCause, VerificationResult},
+		rpc::{self, EthTransaction, EthTransactionReceipt},
+		OffchainResult, ETH_CONFIRMATIONS,
+	},
+	Blockchain,
 };
 use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{

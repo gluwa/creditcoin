@@ -35,7 +35,7 @@ use crate::{
 	ocw::tasks::StorageLock,
 	tests::TestInfo,
 	types::{DoubleMapExt, TransferId},
-	ExternalAddress, Id, LegacyTransferKind, LoanTerms, OldBlockchain, Transfers,
+	Blockchain, ExternalAddress, Id, LegacyTransferKind, LoanTerms, Transfers,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
@@ -323,16 +323,16 @@ fn ethless_transfer_pending() {
 #[test]
 fn blockchain_rpc_url_missing() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
-		assert_eq!(OldBlockchain::Ethereum.rpc_url(), Err(RpcUrlError::NoValue));
+		assert_eq!(Blockchain::ETHEREUM.rpc_url(), Err(RpcUrlError::NoValue));
 	})
 }
 
 #[test]
 fn blockchain_rpc_url_non_utf8() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
-		set_rpc_uri(&OldBlockchain::Ethereum, &[0x80]);
+		set_rpc_uri(&Blockchain::ETHEREUM, &[0x80]);
 
-		assert_matches!(OldBlockchain::Ethereum.rpc_url().unwrap_err(), RpcUrlError::InvalidUrl(_));
+		assert_matches!(Blockchain::ETHEREUM.rpc_url().unwrap_err(), RpcUrlError::InvalidUrl(_));
 	});
 }
 
@@ -343,7 +343,7 @@ fn blockchain_rpc_url_invalid_scale() {
 		rpc_url_storage.set(&[0x80]);
 
 		assert_matches!(
-			dbg!(OldBlockchain::Ethereum.rpc_url()).unwrap_err(),
+			dbg!(Blockchain::ETHEREUM.rpc_url()).unwrap_err(),
 			RpcUrlError::StorageFailure(StorageRetrievalError::Undecodable)
 		);
 	});
@@ -351,38 +351,22 @@ fn blockchain_rpc_url_invalid_scale() {
 
 #[test]
 fn blockchain_supports_etherlike() {
-	assert!(OldBlockchain::Ethereum.supports(&crate::LegacyTransferKind::Native));
-	assert!(OldBlockchain::Rinkeby.supports(&crate::LegacyTransferKind::Native));
-	assert!(OldBlockchain::Luniverse.supports(&crate::LegacyTransferKind::Native));
-	assert!(OldBlockchain::Ethereum.supports(&crate::LegacyTransferKind::Erc20(default())));
-	assert!(OldBlockchain::Rinkeby.supports(&crate::LegacyTransferKind::Erc20(default())));
-	assert!(OldBlockchain::Luniverse.supports(&crate::LegacyTransferKind::Erc20(default())));
-	assert!(OldBlockchain::Ethereum.supports(&crate::LegacyTransferKind::Ethless(default())));
-	assert!(OldBlockchain::Rinkeby.supports(&crate::LegacyTransferKind::Ethless(default())));
-	assert!(OldBlockchain::Luniverse.supports(&crate::LegacyTransferKind::Ethless(default())));
+	assert!(Blockchain::ETHEREUM.supports(&crate::LegacyTransferKind::Native));
+	assert!(Blockchain::RINKEBY.supports(&crate::LegacyTransferKind::Native));
+	assert!(Blockchain::LUNIVERSE.supports(&crate::LegacyTransferKind::Native));
+	assert!(Blockchain::ETHEREUM.supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(Blockchain::RINKEBY.supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(Blockchain::LUNIVERSE.supports(&crate::LegacyTransferKind::Erc20(default())));
+	assert!(Blockchain::ETHEREUM.supports(&crate::LegacyTransferKind::Ethless(default())));
+	assert!(Blockchain::RINKEBY.supports(&crate::LegacyTransferKind::Ethless(default())));
+	assert!(Blockchain::LUNIVERSE.supports(&crate::LegacyTransferKind::Ethless(default())));
 }
 
 #[test]
 fn blockchain_unsupported() {
-	assert!(!OldBlockchain::Other(default()).supports(&crate::LegacyTransferKind::Native));
-	assert!(!OldBlockchain::Other(default()).supports(&crate::LegacyTransferKind::Erc20(default())));
-	assert!(
-		!OldBlockchain::Other(default()).supports(&crate::LegacyTransferKind::Ethless(default()))
-	);
-	assert!(!OldBlockchain::Other(default()).supports(&crate::LegacyTransferKind::Other(default())));
-
-	assert!(!OldBlockchain::Ethereum.supports(&crate::LegacyTransferKind::Other(default())));
-	assert!(!OldBlockchain::Rinkeby.supports(&crate::LegacyTransferKind::Other(default())));
-	assert!(!OldBlockchain::Luniverse.supports(&crate::LegacyTransferKind::Other(default())));
-	assert!(!OldBlockchain::Bitcoin.supports(&crate::LegacyTransferKind::Other(default())));
-
-	assert!(!OldBlockchain::Bitcoin.supports(&crate::LegacyTransferKind::Erc20(default())));
-	assert!(!OldBlockchain::Bitcoin.supports(&crate::LegacyTransferKind::Ethless(default())));
-}
-
-#[test]
-fn blockchain_supports_bitcoin_native_transfer() {
-	assert!(OldBlockchain::Bitcoin.supports(&crate::LegacyTransferKind::Native));
+	assert!(!Blockchain::ETHEREUM.supports(&crate::LegacyTransferKind::Other(default())));
+	assert!(!Blockchain::RINKEBY.supports(&crate::LegacyTransferKind::Other(default())));
+	assert!(!Blockchain::LUNIVERSE.supports(&crate::LegacyTransferKind::Other(default())));
 }
 
 #[test]
@@ -390,7 +374,7 @@ fn offchain_signed_tx_works() {
 	let mut ext = ExtBuilder::default();
 	let acct_pubkey = ext.generate_authority();
 	let acct = AccountId::from(acct_pubkey.into_account().0);
-	let transfer_id = crate::TransferId::new::<crate::mock::Test>(&OldBlockchain::Ethereum, &[0]);
+	let transfer_id = crate::TransferId::new::<crate::mock::Test>(&Blockchain::ETHEREUM, &[0]);
 	ext.build_offchain_and_execute_with_state(|_state, pool| {
 		crate::mock::roll_to(1);
 		let call = crate::Call::<crate::mock::Test>::fail_task {
@@ -559,7 +543,7 @@ fn set_up_verify_transfer_env(
 	register_transfer: bool,
 ) -> (MockUnverifiedTransfer, MockedRpcRequests) {
 	let rpc_uri = "http://localhost:8545";
-	set_rpc_uri(&OldBlockchain::Rinkeby, rpc_uri);
+	set_rpc_uri(&Blockchain::RINKEBY, rpc_uri);
 
 	let test_info = TestInfo {
 		loan_terms: LoanTerms { amount: get_mock_amount(), ..Default::default() },
@@ -878,12 +862,12 @@ fn ocw_retries() {
 		let tx_hash = get_mock_tx_hash();
 		let contract = get_mock_contract().hex_to_address();
 		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		let tx_block_num_value =
 			u64::from_str_radix(tx_block_num.trim_start_matches("0x"), 16).unwrap();
 
-		set_rpc_uri(&OldBlockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -955,7 +939,7 @@ fn duplicate_retry_fail_and_succeed() {
 		let tx_hash = get_mock_tx_hash();
 		let contract = get_mock_contract().hex_to_address();
 		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		// mocks for when we expect failure
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
@@ -964,7 +948,7 @@ fn duplicate_retry_fail_and_succeed() {
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
-		set_rpc_uri(&OldBlockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
