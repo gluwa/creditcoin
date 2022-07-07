@@ -14,8 +14,8 @@ use crate::{
 		OffchainError, OffchainResult, VerificationFailureCause, VerificationResult,
 		ETH_CONFIRMATIONS,
 	},
-	Config, DealOrderId, ExternalAddress, ExternalAmount, ExternalTxId, Id, LegacyTransferKind,
-	OldBlockchain, Transfer, UnverifiedTransfer,
+	Blockchain, Config, DealOrderId, ExternalAddress, ExternalAmount, ExternalTxId, Id,
+	LegacyTransferKind, Transfer, UnverifiedTransfer,
 };
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
@@ -131,7 +131,7 @@ impl<T: Config> crate::Pallet<T> {
 	}
 
 	pub fn verify_ethless_transfer(
-		blockchain: &OldBlockchain,
+		blockchain: &Blockchain,
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,

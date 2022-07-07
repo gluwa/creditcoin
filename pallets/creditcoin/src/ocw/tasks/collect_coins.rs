@@ -1,14 +1,14 @@
-use crate::ocw::{
-	errors::{VerificationFailureCause, VerificationResult},
-	rpc::{self, EthTransaction, EthTransactionReceipt},
-	OffchainResult, ETH_CONFIRMATIONS,
+use crate::{
+	ocw::{
+		errors::{VerificationFailureCause, VerificationResult},
+		rpc::{self, EthTransaction, EthTransactionReceipt},
+		OffchainResult, ETH_CONFIRMATIONS,
+	},
+	Blockchain,
 };
 
 use crate::pallet::{Config, Pallet};
-use crate::{
-	types::{OldBlockchain, UnverifiedCollectedCoins},
-	ExternalAddress, ExternalAmount,
-};
+use crate::{types::UnverifiedCollectedCoins, ExternalAddress, ExternalAmount};
 use sp_runtime::SaturatedConversion;
 #[cfg_attr(feature = "std", allow(unused_imports))]
 use sp_std::prelude::*;
@@ -18,7 +18,7 @@ use ethereum_types::{H160, U64};
 use frame_support::ensure;
 use hex_literal::hex;
 
-pub(crate) const CONTRACT_CHAIN: OldBlockchain = OldBlockchain::Ethereum;
+pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::ETHEREUM;
 const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
 
 ///exchange has been deprecated, use burn instead
