@@ -1,4 +1,4 @@
-use crate::{ExternalAddress, OldBlockchain};
+use crate::{Blockchain, ExternalAddress};
 use base58::FromBase58;
 use core::convert::TryFrom;
 use frame_support::BoundedVec;
@@ -7,18 +7,14 @@ use sp_io::hashing::keccak_256;
 use sp_io::hashing::sha2_256;
 
 pub fn generate_external_address(
-	blockchain: &OldBlockchain,
+	blockchain: &Blockchain,
 	reference: &ExternalAddress,
 	public_key: Public,
 ) -> Option<ExternalAddress> {
 	match blockchain {
-		OldBlockchain::Luniverse | OldBlockchain::Ethereum | OldBlockchain::Rinkeby
-			if EVMAddress::try_extract_addresss_type(reference).is_some() =>
-		{
+		Blockchain::Evm(_) if EVMAddress::try_extract_addresss_type(reference).is_some() => {
 			Some(EVMAddress::from_public(&public_key))
 		},
-		OldBlockchain::Bitcoin => None,
-		OldBlockchain::Other(_) => None,
 		_ => None,
 	}
 }
@@ -51,20 +47,17 @@ impl PublicToAddress for EVMAddress {
 	}
 }
 
-pub fn address_is_well_formed(blockchain: &OldBlockchain, address: &ExternalAddress) -> bool {
+pub fn address_is_well_formed(blockchain: &Blockchain, address: &ExternalAddress) -> bool {
 	match blockchain {
-		OldBlockchain::Bitcoin => btc_address_is_well_formed(address),
-		OldBlockchain::Ethereum | OldBlockchain::Luniverse | OldBlockchain::Rinkeby => {
-			eth_address_is_well_formed(address)
-		},
-		OldBlockchain::Other(_) => false,
+		Blockchain::Evm(_) => eth_address_is_well_formed(address),
 	}
 }
 
 // bitcoin
-
+#[cfg_attr(not(test), allow(dead_code))]
 const BTC_MIN_LENGTH: usize = 25;
 
+#[cfg_attr(not(test), allow(dead_code))]
 fn btc_address_is_well_formed(address: &[u8]) -> bool {
 	let address_str = if let Ok(s) = core::str::from_utf8(address) {
 		s
@@ -108,7 +101,6 @@ fn eth_address_is_well_formed(address: &[u8]) -> bool {
 #[cfg(test)]
 mod tests {
 	use core::convert::{TryFrom, TryInto};
-	use frame_support::BoundedVec;
 	use sp_core::Pair;
 
 	use super::*;
@@ -171,24 +163,15 @@ mod tests {
 
 	#[test]
 	fn address_is_well_formed_works() {
-		let ethereum = OldBlockchain::Ethereum;
-		let bitcoin = OldBlockchain::Bitcoin;
-		let rinkeby = OldBlockchain::Rinkeby;
-		let luniverse = OldBlockchain::Luniverse;
-		let other = OldBlockchain::Other(BoundedVec::try_from(b"other".to_vec()).unwrap());
+		let ethereum = Blockchain::ETHEREUM;
 
 		let eth_addr = hex::decode("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
 			.unwrap()
 			.try_into()
 			.unwrap();
-		let btc_addr = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_vec().try_into().unwrap();
+		// let btc_addr = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_vec().try_into().unwrap();
 
 		assert!(address_is_well_formed(&ethereum, &eth_addr));
-		assert!(address_is_well_formed(&rinkeby, &eth_addr));
-		assert!(address_is_well_formed(&luniverse, &eth_addr));
-		assert!(address_is_well_formed(&bitcoin, &btc_addr));
-		assert!(!address_is_well_formed(&other, &eth_addr));
-		assert!(!address_is_well_formed(&other, &btc_addr));
 	}
 
 	#[test]

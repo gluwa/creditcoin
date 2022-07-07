@@ -8,7 +8,7 @@ use super::{
 	pallet::{Config, Error, Pallet},
 	ExternalAddress,
 };
-use crate::{Call, ExternalTxId, LegacyTransferKind, OldBlockchain};
+use crate::{Blockchain, Call, ExternalTxId};
 use alloc::string::String;
 pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use frame_support::traits::IsType;
@@ -23,29 +23,22 @@ use sp_std::prelude::*;
 
 pub(crate) type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
-impl OldBlockchain {
-	pub fn rpc_url(&self) -> OffchainResult<String, errors::RpcUrlError> {
-		let chain_prefix = self.as_bytes();
-		let mut buf = Vec::from(chain_prefix);
-		buf.extend("-rpc-uri".bytes());
-		let rpc_url_storage = StorageValueRef::persistent(&buf);
+impl Blockchain {
+	pub fn rpc_url(&self) -> OffchainResult<String, RpcUrlError> {
+		let key = self.rpc_key();
+		let rpc_url_storage = StorageValueRef::persistent(&key);
 		if let Some(url_bytes) = rpc_url_storage.get::<Vec<u8>>()? {
 			Ok(String::from_utf8(url_bytes)?)
 		} else {
 			Err(RpcUrlError::NoValue)
 		}
 	}
-	pub fn supports(&self, kind: &LegacyTransferKind) -> bool {
-		match (self, kind) {
-			(
-				OldBlockchain::Ethereum | OldBlockchain::Luniverse | OldBlockchain::Rinkeby,
-				LegacyTransferKind::Erc20(_)
-				| LegacyTransferKind::Ethless(_)
-				| LegacyTransferKind::Native,
-			) => true,
-			(OldBlockchain::Bitcoin, LegacyTransferKind::Native) => true,
-			(_, _) => false, // TODO: refine this later
-		}
+
+	pub fn rpc_key(&self) -> Vec<u8> {
+		let chain_prefix = self.as_bytes();
+		let mut buf = Vec::from(chain_prefix);
+		buf.extend("-rpc-uri".bytes());
+		buf
 	}
 }
 

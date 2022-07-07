@@ -1,7 +1,7 @@
 use crate::{
 	self as pallet_creditcoin,
 	ocw::rpc::{JsonRpcRequest, JsonRpcResponse},
-	LegacySighash, OldBlockchain,
+	Blockchain, LegacySighash,
 };
 use ethereum_types::U256;
 use frame_support::{
@@ -349,9 +349,8 @@ pub fn roll_by_with_ocw(n: BlockNumber) {
 }
 
 // must be called in an externalities-provided environment
-pub fn set_rpc_uri(blockchain: &OldBlockchain, value: impl AsRef<[u8]>) {
-	let mut key = Vec::from(blockchain.as_bytes());
-	key.extend(b"-rpc-uri");
+pub fn set_rpc_uri(blockchain: &Blockchain, value: impl AsRef<[u8]>) {
+	let key = blockchain.rpc_key();
 	let rpc_url_storage = StorageValueRef::persistent(&key);
 	rpc_url_storage.set(&value.as_ref());
 }

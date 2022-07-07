@@ -726,7 +726,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::register_address())]
 		pub fn register_address(
 			origin: OriginFor<T>,
-			blockchain: OldBlockchain,
+			blockchain: Blockchain,
 			address: ExternalAddress,
 			ownership_proof: sp_core::ecdsa::Signature,
 		) -> DispatchResult {

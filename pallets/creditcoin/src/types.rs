@@ -31,26 +31,8 @@ pub type OtherChain = BoundedVec<u8, OtherChainLen>;
 type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum OldBlockchain {
-	Ethereum,
-	Rinkeby,
-	Luniverse,
-	Bitcoin,
-	Other(OtherChain),
-}
-
-impl OldBlockchain {
-	pub fn as_bytes(&self) -> &[u8] {
-		match self {
-			OldBlockchain::Ethereum => b"ethereum",
-			OldBlockchain::Rinkeby => b"rinkeby",
-			OldBlockchain::Luniverse => b"luniverse",
-			OldBlockchain::Bitcoin => b"bitcoin",
-			OldBlockchain::Other(chain) => chain.as_slice(),
-		}
-	}
-}
+#[cfg(feature = "std")]
+mod bounded_serde;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum LegacyTransferKind {
@@ -62,7 +44,7 @@ pub enum LegacyTransferKind {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Address<AccountId> {
-	pub blockchain: OldBlockchain,
+	pub blockchain: Blockchain,
 	pub value: ExternalAddress,
 	pub owner: AccountId,
 }
@@ -82,7 +64,7 @@ pub struct CollectedCoins<Hash, Balance> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: OldBlockchain,
+	pub blockchain: Blockchain,
 	pub kind: LegacyTransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
@@ -218,7 +200,7 @@ macro_rules! concatenate {
 pub(crate) use concatenate;
 
 impl<H> AddressId<H> {
-	pub fn new<Config>(blockchain: &OldBlockchain, address: &[u8]) -> AddressId<H>
+	pub fn new<Config>(blockchain: &Blockchain, address: &[u8]) -> AddressId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
@@ -259,7 +241,7 @@ impl<B, H> RepaymentOrderId<B, H> {
 }
 
 impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &OldBlockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
+	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
