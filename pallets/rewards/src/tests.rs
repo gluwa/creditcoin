@@ -40,7 +40,7 @@ fn issue_reward_handling() {
 			.expect("Expected at least one EventRecord to be found")
 			.event;
 
-		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::RewardIssued(1, 55)),);
+		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::<Test>::RewardIssued(1, 55)),);
 	});
 }
 
