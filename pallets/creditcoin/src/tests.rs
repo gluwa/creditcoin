@@ -3,10 +3,10 @@ use crate::{
 	mock::*,
 	ocw::{rpc::JsonRpcResponse, VerificationFailureCause},
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Currency, CurrencyId,
-	DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind, ExternalAddress,
-	ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind, LoanTerms, Offer, OfferId,
-	OldBlockchain, Transfer, TransferId, Transfers,
+	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currency,
+	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind,
+	ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind, LoanTerms, Offer,
+	OfferId, Transfer, TransferId, Transfers,
 };
 
 use assert_matches::assert_matches;
@@ -54,7 +54,7 @@ pub struct RegisteredAddress {
 impl RegisteredAddress {
 	pub fn from_pubkey_distinct_owner(
 		owners_account_id: AccountId,
-		blockchain: OldBlockchain,
+		blockchain: Blockchain,
 		address_key: impl Into<MultiSigner>,
 		signature: sp_core::ecdsa::Signature,
 	) -> RegisteredAddress {
@@ -77,7 +77,7 @@ impl RegisteredAddress {
 	}
 	pub fn from_pubkey(
 		public_key: impl Into<MultiSigner>,
-		blockchain: OldBlockchain,
+		blockchain: Blockchain,
 		signature: sp_core::ecdsa::Signature,
 	) -> RegisteredAddress {
 		let signer = public_key.into();
@@ -97,7 +97,7 @@ impl RegisteredAddress {
 		));
 		RegisteredAddress { account_id, address_id }
 	}
-	pub fn new(seed: &str, blockchain: OldBlockchain) -> RegisteredAddress {
+	pub fn new(seed: &str, blockchain: Blockchain) -> RegisteredAddress {
 		let (who, address, ownership_proof, _) = generate_address_with_proof(seed);
 		let address_id = AddressId::new::<Test>(&blockchain, &address);
 		assert_ok!(Creditcoin::register_address(
@@ -138,7 +138,7 @@ type TestTransfer = (Transfer<AccountId, u64, H256, u64>, TestTransferId);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
-	pub(crate) blockchain: OldBlockchain,
+	pub(crate) blockchain: Blockchain,
 	pub(crate) loan_terms: LoanTerms,
 	pub(crate) lender: RegisteredAddress,
 	pub(crate) borrower: RegisteredAddress,
@@ -161,9 +161,9 @@ impl Default for Currency {
 
 impl Default for TestInfo {
 	fn default() -> Self {
-		let lender = RegisteredAddress::new("lender", OldBlockchain::Rinkeby);
-		let borrower = RegisteredAddress::new("borrower", OldBlockchain::Rinkeby);
-		let blockchain = OldBlockchain::Rinkeby;
+		let lender = RegisteredAddress::new("lender", Blockchain::RINKEBY);
+		let borrower = RegisteredAddress::new("borrower", Blockchain::RINKEBY);
+		let blockchain = Blockchain::RINKEBY;
 
 		let loan_terms =
 			LoanTerms { amount: ExternalAmount::from(10_000_000_u64), ..Default::default() };
@@ -291,7 +291,7 @@ impl TestInfo {
 		} else {
 			blockchain_tx_id.into_bounded()
 		};
-		let id = TransferId::new::<Test>(&OldBlockchain::Rinkeby, &tx);
+		let id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
 		(
 			Transfer {
 				blockchain: self.blockchain.clone(),
@@ -345,7 +345,7 @@ fn register_address_should_work() {
 		System::set_block_number(1);
 
 		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
 			blockchain.clone(),
@@ -372,7 +372,7 @@ fn register_address_should_work() {
 fn register_address_pre_existing() {
 	ExtBuilder::default().build_and_execute(|| {
 		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
 			blockchain.clone(),
@@ -391,7 +391,7 @@ fn register_address_pre_existing() {
 fn register_address_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let (_who, address, ownership_proof, _) = generate_address_with_proof("owner");
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		assert_noop!(
 			Creditcoin::register_address(Origin::none(), blockchain, address, ownership_proof),
@@ -406,7 +406,7 @@ fn register_address_should_error_when_using_wrong_ownership_proof() {
 		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
 		let (_who2, _address2, ownership_proof2, _) = generate_address_with_proof("bogus");
 
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 		assert_noop!(
 			Creditcoin::register_address(
 				Origin::signed(who),
@@ -424,7 +424,7 @@ fn register_address_should_error_when_address_too_long() {
 	ExtBuilder::default().build_and_execute(|| {
 		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 		assert_noop!(
 			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
 			crate::Error::<Test>::AddressFormatNotSupported
@@ -441,7 +441,7 @@ fn register_address_should_error_when_signature_is_invalid() {
 		// https://docs.rs/sp-core/2.0.0-rc4/sp_core/ecdsa/struct.Signature.html#method.from_raw
 		let ownership_proof = sp_core::ecdsa::Signature::from_raw([0; 65]);
 
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 		assert_noop!(
 			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
 			crate::Error::<Test>::InvalidSignature
@@ -472,7 +472,7 @@ fn verify_ethless_transfer() {
 		let tx_id = tx_hash.hex_to_address();
 
 		assert_ok!(Creditcoin::verify_ethless_transfer(
-			&OldBlockchain::Rinkeby,
+			&Blockchain::RINKEBY,
 			&contract,
 			&from,
 			&to,
@@ -492,7 +492,7 @@ fn register_transfer_ocw() {
 		let tx_hash = get_mock_tx_hash();
 		let contract = get_mock_contract().hex_to_address();
 		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		// mocks for when we expect failure
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
@@ -501,7 +501,7 @@ fn register_transfer_ocw() {
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
-		set_rpc_uri(&OldBlockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -589,7 +589,7 @@ fn register_transfer_ocw_fail_to_send() {
 		let tx_hash = get_mock_tx_hash();
 		let contract = get_mock_contract().hex_to_address();
 		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		// we're going to verify a transfer twice:
 		// First when we expect failure, which means we won't make all of the requests
@@ -599,7 +599,7 @@ fn register_transfer_ocw_fail_to_send() {
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
-		set_rpc_uri(&OldBlockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -665,12 +665,12 @@ fn ocw_retries() {
 		let tx_hash = get_mock_tx_hash();
 		let contract = get_mock_contract().hex_to_address();
 		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = OldBlockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		let tx_block_num_value =
 			u64::from_str_radix(tx_block_num.trim_start_matches("0x"), 16).unwrap();
 
-		set_rpc_uri(&OldBlockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -967,8 +967,7 @@ fn add_offer_basic() {
 		let test_info = TestInfo::new_defaults();
 
 		let (offer, _) = test_info.create_offer();
-		let Offer { expiration_block, block, ask_id, bid_id, lender, .. } =
-			offer.clone();
+		let Offer { expiration_block, block, ask_id, bid_id, lender, .. } = offer.clone();
 
 		let new_offer = Offer { expiration_block, block, ask_id, bid_id, lender };
 
@@ -1000,12 +999,9 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer;
 
 		// simulate deal transfer
-		crate::Addresses::<Test>::mutate(
-			&test_info.lender.address_id,
-			|address_storage| {
-				address_storage.as_mut().unwrap().blockchain = OldBlockchain::Bitcoin;
-			},
-		);
+		crate::Addresses::<Test>::mutate(&test_info.lender.address_id, |address_storage| {
+			address_storage.as_mut().unwrap().blockchain = Blockchain::LUNIVERSE;
+		});
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
@@ -1247,7 +1243,7 @@ fn fund_deal_order_should_error_when_address_not_registered() {
 			&deal_order_id.expiration(),
 			&deal_order_id.hash(),
 			|deal_order_storage| {
-				let blockchain = OldBlockchain::Rinkeby;
+				let blockchain = Blockchain::RINKEBY;
 
 				deal_order_storage.as_mut().unwrap().lender_address_id =
 					AddressId::new::<Test>(&blockchain, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
@@ -1376,9 +1372,9 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new("lender2", OldBlockchain::Rinkeby),
-			borrower: RegisteredAddress::new("borrower2", OldBlockchain::Rinkeby),
-			blockchain: OldBlockchain::Rinkeby,
+			lender: RegisteredAddress::new("lender2", Blockchain::RINKEBY),
+			borrower: RegisteredAddress::new("borrower2", Blockchain::RINKEBY),
+			blockchain: Blockchain::RINKEBY,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
@@ -1736,13 +1732,13 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
 				key_pair.public(),
-				OldBlockchain::Rinkeby,
+				Blockchain::RINKEBY,
 				ownership_proof,
 			),
 			..TestInfo::new_defaults()
 		};
 
-		let lender = RegisteredAddress::new("lender2", OldBlockchain::Rinkeby);
+		let lender = RegisteredAddress::new("lender2", Blockchain::RINKEBY);
 		let message = test_info.get_register_deal_msg();
 		let compliance_proof = key_pair.sign(&message);
 
@@ -1770,10 +1766,10 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			lender: RegisteredAddress::new("lender2", OldBlockchain::Ethereum),
+			lender: RegisteredAddress::new("lender2", Blockchain::ETHEREUM),
 			borrower: RegisteredAddress::from_pubkey(
 				pub_key.clone(),
-				OldBlockchain::Rinkeby,
+				Blockchain::RINKEBY,
 				ownership_proof,
 			),
 			..TestInfo::new_defaults()
@@ -1808,7 +1804,7 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
 				pub_key.clone(),
-				OldBlockchain::Rinkeby,
+				Blockchain::RINKEBY,
 				ownership_proof,
 			),
 			..TestInfo::new_defaults()
@@ -1843,11 +1839,7 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key,
-				OldBlockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1883,7 +1875,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
 				pub_key.clone(),
-				OldBlockchain::Rinkeby,
+				Blockchain::RINKEBY,
 				ownership_proof,
 			),
 			..TestInfo::new_defaults()
@@ -1936,7 +1928,7 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
 				pub_key.clone(),
-				OldBlockchain::Rinkeby,
+				Blockchain::RINKEBY,
 				ownership_proof,
 			),
 			..TestInfo::new_defaults()
@@ -1999,7 +1991,7 @@ fn register_deal_order_should_succeed() {
 		let test_info = TestInfo {
 			borrower: RegisteredAddress::from_pubkey(
 				pub_key.clone(),
-				OldBlockchain::Rinkeby,
+				Blockchain::RINKEBY,
 				ownership_proof,
 			),
 			..TestInfo::new_defaults()
@@ -2054,7 +2046,7 @@ fn register_deal_order_accepts_sr25519() {
 			TestInfo {
 				borrower: RegisteredAddress::from_pubkey_distinct_owner(
 					owners_account,
-					OldBlockchain::Rinkeby,
+					Blockchain::RINKEBY,
 					b_pubkey,
 					ownership_proof,
 				),
@@ -2097,7 +2089,7 @@ fn register_deal_order_accepts_ed25519() {
 			TestInfo {
 				borrower: RegisteredAddress::from_pubkey_distinct_owner(
 					owners_account,
-					OldBlockchain::Rinkeby,
+					Blockchain::RINKEBY,
 					b_pubkey,
 					ownership_proof,
 				),
@@ -2148,7 +2140,7 @@ fn close_deal_order_should_error_when_borrower_address_is_not_registered() {
 			&deal_order_id.expiration(),
 			&deal_order_id.hash(),
 			|deal_order_storage| {
-				let blockchain = OldBlockchain::Rinkeby;
+				let blockchain = Blockchain::RINKEBY;
 
 				deal_order_storage.as_mut().unwrap().borrower_address_id =
 					AddressId::new::<Test>(&blockchain, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
@@ -2284,9 +2276,9 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 		);
 		// this is a deal_order from another person
 		let second_test_info = TestInfo {
-			lender: RegisteredAddress::new("lender2", OldBlockchain::Rinkeby),
-			borrower: RegisteredAddress::new("borrower2", OldBlockchain::Rinkeby),
-			blockchain: OldBlockchain::Rinkeby,
+			lender: RegisteredAddress::new("lender2", Blockchain::RINKEBY),
+			borrower: RegisteredAddress::new("borrower2", Blockchain::RINKEBY),
+			blockchain: Blockchain::RINKEBY,
 			loan_terms: LoanTerms {
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
@@ -2656,7 +2648,7 @@ fn verify_transfer_should_work() {
 
 		// create a transfer but don't add it into storage
 		let tx = "0xafafaf".as_bytes().into_bounded();
-		let transfer_id = TransferId::new::<Test>(&OldBlockchain::Rinkeby, &tx);
+		let transfer_id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
 		let transfer = Transfer {
 			blockchain: test_info.blockchain.clone(),
 			kind: LegacyTransferKind::Native,
@@ -2709,7 +2701,7 @@ fn fail_transfer_should_work() {
 		let _ = test_info.create_deal_order();
 
 		let tx = "0xafafaf".hex_to_address();
-		let transfer_id = TransferId::new::<Test>(&OldBlockchain::Rinkeby, &tx);
+		let transfer_id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
 
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 		let deadline = Test::unverified_transfer_deadline();
@@ -2743,7 +2735,7 @@ fn fail_transfer_should_error_when_not_signed() {
 		let _ = test_info.create_deal_order();
 
 		let tx = "0xafafaf".hex_to_address();
-		let transfer_id = TransferId::new::<Test>(&OldBlockchain::Rinkeby, &tx);
+		let transfer_id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
 
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 		let deadline = Test::unverified_transfer_deadline();
@@ -2765,7 +2757,7 @@ fn fail_transfer_should_error_when_not_authority() {
 		let _ = test_info.create_deal_order();
 
 		let tx = "0xafafaf".hex_to_address();
-		let transfer_id = TransferId::new::<Test>(&OldBlockchain::Rinkeby, &tx);
+		let transfer_id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
 
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 		let deadline = Test::unverified_transfer_deadline();
@@ -2826,9 +2818,9 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 			let seed2 = format!("{:02}1", expiration_block.clone());
 
 			let test_info = TestInfo {
-				lender: RegisteredAddress::new(&seed1, OldBlockchain::Rinkeby),
-				borrower: RegisteredAddress::new(&seed2, OldBlockchain::Rinkeby),
-				blockchain: OldBlockchain::Rinkeby,
+				lender: RegisteredAddress::new(&seed1, Blockchain::RINKEBY),
+				borrower: RegisteredAddress::new(&seed2, Blockchain::RINKEBY),
+				blockchain: Blockchain::RINKEBY,
 				loan_terms: LoanTerms {
 					amount: 2_000_000u64.into(),
 					interest_rate: Default::default(),
@@ -2986,7 +2978,7 @@ fn register_transfer_internal_legacy_should_error_with_non_existent_lender_addre
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 		let tx = "0xabcabcabc";
 		let bogus_address =
-			AddressId::new::<Test>(&OldBlockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+			AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
 
 		let result = Creditcoin::register_transfer_internal_legacy(
 			test_info.lender.account_id,
@@ -3010,7 +3002,7 @@ fn register_transfer_internal_legacy_should_error_with_non_existent_borrower_add
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 		let tx = "0xabcabcabc";
 		let bogus_address =
-			AddressId::new::<Test>(&OldBlockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+			AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
 
 		let result = Creditcoin::register_transfer_internal_legacy(
 			test_info.lender.account_id,
@@ -3054,7 +3046,7 @@ fn register_transfer_internal_legacy_should_error_when_addresses_are_not_on_the_
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
-		let second_borrower = RegisteredAddress::new("borrower2", OldBlockchain::Luniverse);
+		let second_borrower = RegisteredAddress::new("borrower2", Blockchain::LUNIVERSE);
 		let tx = "0xabcabcabc";
 
 		let result = Creditcoin::register_transfer_internal_legacy(
@@ -3083,7 +3075,7 @@ fn register_transfer_internal_legacy_should_error_when_transfer_kind_is_not_supp
 			test_info.lender.account_id,
 			deal_order.lender_address_id,
 			deal_order.borrower_address_id,
-			// not supported on OldBlockchain::Rinkeby
+			// not supported on Blockchain::RINKEBY
 			LegacyTransferKind::Other(BoundedVec::try_from(b"other".to_vec()).unwrap()),
 			deal_order.terms.amount,
 			deal_order_id,
