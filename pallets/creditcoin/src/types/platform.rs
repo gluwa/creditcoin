@@ -56,7 +56,7 @@ impl Blockchain {
 
 	pub fn as_bytes(&self) -> &[u8] {
 		match self {
-			&Blockchain::ETHEREUM => b"etheruem",
+			&Blockchain::ETHEREUM => b"ethereum",
 			&Blockchain::RINKEBY => b"rinkeby",
 			&(Blockchain::LUNIVERSE_TESTNET | Blockchain::LUNIVERSE) => b"luniverse",
 			_ => todo!(),
@@ -138,5 +138,19 @@ impl<H> CurrencyId<H> {
 				CurrencyId(T::Hashing::hash(&encoded))
 			},
 		}
+	}
+}
+
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn blockchain_as_bytes_back_compat() {
+		assert_eq!(Blockchain::ETHEREUM.as_bytes(), b"ethereum");
+		assert_eq!(Blockchain::RINKEBY.as_bytes(), b"rinkeby");
+		assert_eq!(Blockchain::LUNIVERSE.as_bytes(), b"luniverse");
+		assert_eq!(Blockchain::LUNIVERSE_TESTNET.as_bytes(), b"luniverse");
 	}
 }

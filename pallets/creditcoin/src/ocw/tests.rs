@@ -337,13 +337,24 @@ fn blockchain_rpc_url_non_utf8() {
 }
 
 #[test]
+fn blockchain_rpc_url_works() {
+	ExtBuilder::default().build_offchain_and_execute(|| {
+		set_rpc_uri(&Blockchain::ETHEREUM, "rpcurl");
+
+		assert_eq!(Blockchain::ETHEREUM.rpc_url().unwrap(), "rpcurl");
+	})
+}
+
+#[test]
 fn blockchain_rpc_url_invalid_scale() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
-		let rpc_url_storage = StorageValueRef::persistent(b"ethereum-rpc-uri");
+		let eth = Blockchain::ETHEREUM;
+		let key = eth.rpc_key();
+		let rpc_url_storage = StorageValueRef::persistent(&key);
 		rpc_url_storage.set(&[0x80]);
 
 		assert_matches!(
-			dbg!(Blockchain::ETHEREUM.rpc_url()).unwrap_err(),
+			eth.rpc_url().unwrap_err(),
 			RpcUrlError::StorageFailure(StorageRetrievalError::Undecodable)
 		);
 	});
