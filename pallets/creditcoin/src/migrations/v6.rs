@@ -2,12 +2,12 @@ use core::convert::TryFrom;
 
 use super::v5;
 use crate::Config;
-use crate::ExternalAddress;
 use frame_support::generate_storage_alias;
 use frame_support::pallet_prelude::*;
 
 pub use v5::*;
 
+pub use v5::Address as OldAddress;
 pub use v5::AskOrder as OldAskOrder;
 pub use v5::AskTerms as OldAskTerms;
 pub use v5::BidOrder as OldBidOrder;
@@ -40,21 +40,20 @@ impl TryFrom<OldBlockchain> for Blockchain {
 }
 
 fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
-	match Blockchain::try_from(old) {
-		Ok(b) => Some(b),
-		Err(old) => {
-			log::warn!("unexpected blockchain found on storage item: {:?}", old);
+	match old {
+		OldBlockchain::Ethereum => Some(Blockchain::ETHEREUM),
+		OldBlockchain::Rinkeby => Some(Blockchain::RINKEBY),
+		// this assumes that Luniverse == mainnet luniverse, we may want to make the chain ID of the
+		// old "Luniverse" variant on-chain-storage to make testnet work
+		OldBlockchain::Luniverse => Some(Blockchain::LUNIVERSE),
+		other => {
+			log::warn!(
+				"unexpected blockchain found on storage item: {:?}",
+				core::str::from_utf8(other.as_bytes()).ok()
+			);
 			None
 		},
 	}
-}
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct OldAddress<AccountId> {
-	pub blockchain: OldBlockchain,
-	pub value: ExternalAddress,
-	pub owner: AccountId,
 }
 
 generate_storage_alias!(
