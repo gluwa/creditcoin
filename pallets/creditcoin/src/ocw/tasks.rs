@@ -6,10 +6,10 @@ use crate::types::{
 	CollectedCoins, Task, TaskOutput, Transfer, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
 use crate::{CollectedCoinsId, Config, TaskData, TransferId};
-use alloc::vec::Vec;
 use codec::Encode;
 pub use sp_runtime::offchain::storage_lock::{BlockAndTime, Lockable, StorageLock};
 use sp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
+use sp_std::vec::Vec;
 
 #[inline]
 pub(crate) fn storage_key<Id: Encode>(id: &Id) -> Vec<u8> {
