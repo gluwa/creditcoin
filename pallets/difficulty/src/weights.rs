@@ -34,8 +34,7 @@ pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Difficulty TargetBlockTime (r:0 w:1)
 	fn set_target_block_time() -> Weight {
-		(2_000_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		panic!("this is intentional")
 	}
 	// Storage: Difficulty DifficultyAdjustmentPeriod (r:0 w:1)
 	fn set_adjustment_period() -> Weight {
