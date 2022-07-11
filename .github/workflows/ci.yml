@@ -232,8 +232,7 @@ jobs:
           pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd ${{ matrix.directory }}
 
-          yarn --update-checksums
-          yarn upgrade
+          yarn upgrade 'creditcoin-js'
           yarn lint
           popd
 
@@ -258,8 +257,7 @@ jobs:
           pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd ${{ matrix.directory }}
 
-          yarn --update-checksums
-          yarn upgrade
+          yarn upgrade 'creditcoin-js'
           yarn typecheck
           popd
 
@@ -284,8 +282,7 @@ jobs:
           pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd ${{ matrix.directory }}
 
-          yarn --update-checksums
-          yarn upgrade
+          yarn upgrade 'creditcoin-js'
           if ! yarn check-format; then
               echo "FAIL: JavaScript is not formatted properly!"
               echo "HELP: Execute 'yarn format' and commit the changes to fix this"
