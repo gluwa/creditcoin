@@ -72,7 +72,7 @@ impl pallet_difficulty::Config for Test {
 
 impl pallet_timestamp::Config for Test {
 	type Moment = u64;
-	type OnTimestampSet = ();
+	type OnTimestampSet = Difficulty;
 	type MinimumPeriod = ConstU64<1>;
 	type WeightInfo = ();
 }
