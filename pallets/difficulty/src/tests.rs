@@ -138,3 +138,28 @@ fn exercise_on_timestamp_set_when_previous_is_too_short() {
 		<timestamp::Pallet<Test>>::set(Origin::none(), 123456).unwrap();
 	});
 }
+
+#[test]
+fn exercise_on_timestamp_set_when_previous_is_configured() {
+	new_test_ext().execute_with(|| {
+		let crate_under_test = crate::GenesisConfig::<Test>::default();
+
+		let mut previous = PreviousDifficultiesAndTimestamps::<Test>::get();
+		previous
+			.try_push(DifficultyAndTimestamp {
+				difficulty: crate_under_test.initial_difficulty,
+				timestamp: 5678,
+			})
+			.unwrap();
+
+		previous
+			.try_push(DifficultyAndTimestamp {
+				difficulty: crate_under_test.initial_difficulty,
+				timestamp: 1234,
+			})
+			.unwrap();
+		assert_eq!(previous.len(), 2);
+
+		<timestamp::Pallet<Test>>::set(Origin::none(), 98765).unwrap();
+	});
+}
