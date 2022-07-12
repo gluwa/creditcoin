@@ -319,7 +319,7 @@ benchmarks! {
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
-fn get_all_fit_terms<T: Config>() -> LoanTerms {
+fn get_all_fit_terms<T: Config>() -> LoanTerms<T::Hash> {
 	LoanTerms {
 		amount: 10u64.into(),
 		interest_rate: InterestRate {
@@ -329,6 +329,7 @@ fn get_all_fit_terms<T: Config>() -> LoanTerms {
 			interest_type: InterestType::Simple,
 		},
 		term_length: Duration::new(1u64, 0u32),
+		currency: CurrencyId::placeholder(),
 	}
 }
 
@@ -487,7 +488,7 @@ fn generate_deal<T: Config>(
 
 fn generate_offer<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms,
+	loan_terms: &LoanTerms<T::Hash>,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
@@ -538,7 +539,7 @@ fn register_eth_addr<T: Config>(who: &T::AccountId, seed: &str) -> AddressId<<T>
 
 fn generate_ask<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms,
+	loan_terms: &LoanTerms<T::Hash>,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
@@ -566,7 +567,7 @@ fn generate_ask<T: Config>(
 
 fn generate_bid<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms,
+	loan_terms: &LoanTerms<T::Hash>,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,

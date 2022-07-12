@@ -128,7 +128,7 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AskOrder<AccountId, BlockNum, Hash> {
 	pub lender_address_id: AddressId<Hash>,
-	pub terms: AskTerms,
+	pub terms: AskTerms<Hash>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub lender: AccountId,
@@ -139,7 +139,7 @@ pub struct AskOrder<AccountId, BlockNum, Hash> {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct BidOrder<AccountId, BlockNum, Hash> {
 	pub borrower_address_id: AddressId<Hash>,
-	pub terms: BidTerms,
+	pub terms: BidTerms<Hash>,
 	pub expiration_block: BlockNum,
 	pub block: BlockNum,
 	pub borrower: AccountId,
@@ -152,7 +152,7 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub offer_id: OfferId<BlockNum, Hash>,
 	pub lender_address_id: AddressId<Hash>,
 	pub borrower_address_id: AddressId<Hash>,
-	pub terms: LoanTerms,
+	pub terms: LoanTerms<Hash>,
 	pub expiration_block: BlockNum,
 	pub timestamp: Moment,
 	pub block: Option<BlockNum>,
@@ -174,12 +174,16 @@ impl<Hash> AddressId<Hash> {
 	}
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialOrd, Ord,
+)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AskOrderId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialOrd, Ord,
+)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct BidOrderId<BlockNum, Hash>(BlockNum, Hash);

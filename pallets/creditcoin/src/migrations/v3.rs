@@ -15,7 +15,7 @@ pub use v2::Blockchain;
 pub use v2::DealOrder as OldDealOrder;
 pub use v2::InterestRate as OldInterestRate;
 pub use v2::LoanTerms as OldLoanTerms;
-pub use v2::*;
+pub use v2::{OrderId, Transfer, TransferKind};
 
 use crate::InterestRate;
 
@@ -29,10 +29,10 @@ pub struct LoanTerms {
 
 #[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct AskTerms(LoanTerms);
+pub struct AskTerms(pub(super) LoanTerms);
 #[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct BidTerms(LoanTerms);
+pub struct BidTerms(pub(super) LoanTerms);
 
 #[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
