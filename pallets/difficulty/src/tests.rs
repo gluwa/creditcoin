@@ -1,6 +1,6 @@
 use crate::{
 	mock::*, next_difficulty, DifficultyAdjustmentPeriod, DifficultyAndTimestamp,
-	PreviousDifficultiesAndTimestamps, TargetBlockTime,
+	PreviousDifficultiesAndTimestamps, TargetBlockTime, WeightInfo,
 };
 use frame_support::{assert_noop, assert_ok};
 use pallet_timestamp::{self as timestamp};
@@ -162,4 +162,13 @@ fn exercise_on_timestamp_set_when_previous_is_configured() {
 
 		<timestamp::Pallet<Test>>::set(Origin::none(), 98765).unwrap();
 	});
+}
+
+#[test]
+fn exercise_weightinfo_functions() {
+	let result = super::weights::WeightInfo::<Test>::set_target_block_time();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::set_adjustment_period();
+	assert!(result > 0);
 }
