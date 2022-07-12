@@ -1,6 +1,6 @@
 FROM gluwa/ci-linux:production AS builder
 ENV DEBIAN_FRONTEND=noninteractive
-RUN source ~/.cargo/env && rustup default stable && rustup update nightly && rustup update stable && rustup target add wasm32-unknown-unknown --toolchain nightly
+RUN source ~/.cargo/env && rustup default nightly && rustup update nightly && rustup target add wasm32-unknown-unknown --toolchain nightly
 WORKDIR /creditcoin-node
 COPY Cargo.toml .
 COPY Cargo.lock .
