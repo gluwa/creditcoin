@@ -759,7 +759,7 @@ pub mod pallet {
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			terms: LoanTerms,
+			terms: LoanTerms<T::Hash>,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -793,7 +793,7 @@ pub mod pallet {
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			terms: LoanTerms,
+			terms: LoanTerms<T::Hash>,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -1009,7 +1009,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			lender_address_id: AddressId<T::Hash>,
 			borrower_address_id: AddressId<T::Hash>,
-			terms: LoanTerms,
+			terms: LoanTerms<T::Hash>,
 			expiration_block: BlockNumberFor<T>,
 			ask_guid: Guid,
 			bid_guid: Guid,
