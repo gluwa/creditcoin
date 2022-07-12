@@ -138,7 +138,7 @@ type TestTransfer = (Transfer<AccountId, u64, H256, u64>, TestTransferId);
 #[derive(Clone, Debug)]
 pub struct TestInfo {
 	pub(crate) blockchain: Blockchain,
-	pub(crate) loan_terms: LoanTerms,
+	pub(crate) loan_terms: LoanTerms<H256>,
 	pub(crate) lender: RegisteredAddress,
 	pub(crate) borrower: RegisteredAddress,
 	pub(crate) ask_guid: Guid,
@@ -671,6 +671,7 @@ fn add_add_ask_order_rejects_zero_term_length_ms() {
 				amount: 0u64.into(),
 				interest_rate: Default::default(),
 				term_length: Duration::from_millis(0),
+				currency: CurrencyId::placeholder(),
 			},
 			..TestInfo::new_defaults()
 		};
@@ -1214,6 +1215,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
 				term_length: Duration::from_millis(1_000_000),
+				currency: CurrencyId::placeholder(),
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -2118,6 +2120,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
 				term_length: Duration::from_millis(1_000_000),
+				currency: CurrencyId::placeholder(),
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -2660,6 +2663,7 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 					amount: 2_000_000u64.into(),
 					interest_rate: Default::default(),
 					term_length: Duration::from_millis(1_000_000),
+					currency: CurrencyId::placeholder(),
 				},
 				ask_guid: format!("{:?}-ask-guid", expiration_block.clone())
 					.as_bytes()
