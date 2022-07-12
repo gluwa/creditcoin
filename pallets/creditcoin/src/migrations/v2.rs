@@ -10,7 +10,7 @@ use frame_support::{generate_storage_alias, pallet_prelude::*, Identity, Twox64C
 pub use super::v1::Blockchain;
 pub use super::v1::DealOrder as OldDealOrder;
 pub use super::v1::LoanTerms;
-pub use super::v1::*;
+pub use super::v1::{AskOrder, AskTerms, BidOrder, BidTerms, InterestRate};
 
 type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
