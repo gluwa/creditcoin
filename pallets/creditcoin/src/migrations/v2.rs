@@ -5,7 +5,9 @@ use crate::{
 	AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, RepaymentOrderId,
 	TransferId,
 };
-use frame_support::{generate_storage_alias, pallet_prelude::*, Identity, Twox64Concat};
+use frame_support::{
+	generate_storage_alias, pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat,
+};
 
 pub use super::v1::Blockchain;
 pub use super::v1::DealOrder as OldDealOrder;
@@ -15,8 +17,8 @@ pub use super::v1::{AskOrder, AskTerms, BidOrder, BidTerms, InterestRate};
 type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[derive(Encode, Decode, RuntimeDebug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub enum TransferKind {
 	Erc20(ExternalAddress),
 	Ethless(ExternalAddress),
