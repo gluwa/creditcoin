@@ -6,7 +6,7 @@ use crate::{
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currency,
 	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind,
 	ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
-	Transfer, TransferId, TransferKind, Transfers,
+	Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
 
 use assert_matches::assert_matches;
@@ -3159,4 +3159,61 @@ fn register_currency_should_error_when_currency_already_registered() {
 			crate::Error::<Test>::CurrencyAlreadyRegistered
 		);
 	})
+}
+
+#[test]
+fn exercise_weightinfo_functions() {
+	let result = super::weights::WeightInfo::<Test>::register_address();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::claim_legacy_wallet();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::add_ask_order();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::add_bid_order();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::add_offer();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::add_deal_order();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::add_authority();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::persist_transfer();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::fail_transfer();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::fund_deal_order();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::lock_deal_order();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::register_transfer_ocw();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::close_deal_order();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::exempt();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::register_deal_order();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::request_collect_coins();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::fail_collect_coins();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
+	assert!(result > 0);
 }
