@@ -1,7 +1,14 @@
 use super::v5;
 use crate::Config;
+use crate::EvmCurrencyType;
+use crate::EvmInfo;
+use crate::EvmSupportedTransferKinds;
+use crate::EvmTransferKind;
+use crate::Id;
+use core::convert::TryFrom;
 use frame_support::generate_storage_alias;
 use frame_support::pallet_prelude::*;
+use sp_std::collections::btree_map::BTreeMap;
 
 pub use v5::*;
 
@@ -19,7 +26,17 @@ pub use v5::TransferKind as OldTransferKind;
 
 use crate::Address;
 use crate::AddressId;
+use crate::AskOrder;
+use crate::AskOrderId;
+use crate::AskTerms;
+use crate::BidOrder;
+use crate::BidOrderId;
+use crate::BidTerms;
 use crate::Blockchain;
+use crate::Currency;
+use crate::CurrencyId;
+use crate::DealOrder;
+use crate::LoanTerms;
 use crate::Transfer;
 use crate::TransferId;
 
@@ -40,20 +57,179 @@ fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
 	}
 }
 
+fn translate_loan_terms<T: Config>(
+	old: OldLoanTerms,
+	currency: CurrencyId<T::Hash>,
+) -> LoanTerms<T::Hash> {
+	LoanTerms {
+		amount: old.amount,
+		interest_rate: old.interest_rate,
+		term_length: old.term_length,
+		currency,
+	}
+}
+
+fn reconstruct_currency(blockchain: &OldBlockchain, kind: &OldTransferKind) -> Option<Currency> {
+	let info = match blockchain {
+		OldBlockchain::Ethereum => EvmInfo::ETHEREUM,
+		OldBlockchain::Rinkeby => EvmInfo::RINKEBY,
+		OldBlockchain::Luniverse => EvmInfo::LUNIVERSE,
+		other => {
+			log::warn!(
+				"unexpected blockchain found on storage item: {:?}",
+				core::str::from_utf8(other.as_bytes()).ok()
+			);
+			return None;
+		},
+	};
+	let currency_type = match kind {
+		OldTransferKind::Erc20(addr) => EvmCurrencyType::SmartContract(
+			addr.clone(),
+			EvmSupportedTransferKinds::try_from(vec![EvmTransferKind::Erc20])
+				.expect("1 is less than the bound (2); qed"),
+		),
+		OldTransferKind::Ethless(addr) => EvmCurrencyType::SmartContract(
+			addr.clone(),
+			EvmSupportedTransferKinds::try_from(vec![EvmTransferKind::Ethless])
+				.expect("1 is less than the bound (2); qed"),
+		),
+		other => {
+			log::warn!("unexpected transfer kind found in storage: {:?}", other);
+			return None;
+		},
+	};
+	Some(Currency::Evm(currency_type, info))
+}
+
+fn reconstruct_currency_from_deal<T: Config>(
+	deal_order: &OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+) -> Option<CurrencyId<T::Hash>> {
+	let transfer_id = deal_order.funding_transfer_id.as_ref()?;
+	let transfer = OldTransfers::<T>::get(transfer_id)?;
+	let currency = reconstruct_currency(&deal_order.blockchain, &transfer.kind)?;
+	Some(CurrencyId::new::<T>(&currency))
+}
+
 generate_storage_alias!(
 	Creditcoin,
 	Transfers<T: Config> => Map<(Identity, TransferId<T::Hash>), Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
 );
+
+struct OldTransfersInstance;
+impl frame_support::traits::StorageInstance for OldTransfersInstance {
+	fn pallet_prefix() -> &'static str {
+		"Creditcoin"
+	}
+	const STORAGE_PREFIX: &'static str = "Transfers";
+}
+#[allow(type_alias_bounds)]
+type OldTransfers<T: Config> = frame_support::storage::types::StorageMap<
+	OldTransfersInstance,
+	Identity,
+	TransferId<T::Hash>,
+	OldTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+>;
 
 generate_storage_alias!(
 	Creditcoin,
 	Addresses<T: Config> => Map<(Blake2_128Concat, AddressId<T::Hash>), Address<T::AccountId>>
 );
 
+generate_storage_alias!(
+	Creditcoin,
+	AskOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), AskOrder<T::AccountId, T::BlockNumber, T::Hash>>
+);
+
+generate_storage_alias!(
+	Creditcoin,
+	BidOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), BidOrder<T::AccountId, T::BlockNumber, T::Hash>>
+);
+
+generate_storage_alias!(
+	Creditcoin,
+	DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
+);
+
 #[allow(unreachable_code)]
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = 0;
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
+
+	let mut reconstructed_currency_ask = BTreeMap::new();
+	let mut reconstructed_currency_bid = BTreeMap::new();
+
+	DealOrders::<T>::translate::<OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
+		|_exp, _hash, deal_order| {
+			weight = weight.saturating_add(weight_each);
+
+			let currency = reconstruct_currency_from_deal::<T>(&deal_order)
+				.unwrap_or_else(CurrencyId::placeholder);
+
+			let offer = if let Some(offer) = crate::Offers::<T>::get(
+				deal_order.offer_id.expiration(),
+				deal_order.offer_id.hash(),
+			) {
+				offer
+			} else {
+				log::warn!("deal order has a non-existent offer: {:?}", deal_order.offer_id);
+				return None;
+			};
+
+			reconstructed_currency_ask.insert(offer.ask_id, currency.clone());
+			reconstructed_currency_bid.insert(offer.bid_id, currency.clone());
+
+			Some(DealOrder {
+				offer_id: deal_order.offer_id,
+				lender_address_id: deal_order.lender_address_id,
+				borrower_address_id: deal_order.borrower_address_id,
+				terms: translate_loan_terms::<T>(deal_order.terms, currency),
+				expiration_block: deal_order.expiration_block,
+				timestamp: deal_order.timestamp,
+				block: deal_order.block,
+				funding_transfer_id: deal_order.funding_transfer_id,
+				repayment_transfer_id: deal_order.repayment_transfer_id,
+				lock: deal_order.lock,
+				borrower: deal_order.borrower,
+			})
+		},
+	);
+
+	AskOrders::<T>::translate::<OldAskOrder<T::AccountId, T::BlockNumber, T::Hash>, _>(
+		|exp, hash, ask_order| {
+			weight = weight.saturating_add(weight_each);
+			let ask_id = AskOrderId::with_expiration_hash::<T>(exp, hash);
+			let currency = reconstructed_currency_ask
+				.remove(&ask_id)
+				.unwrap_or_else(CurrencyId::placeholder);
+			Some(AskOrder {
+				lender_address_id: ask_order.lender_address_id,
+				terms: AskTerms::try_from(translate_loan_terms::<T>(
+					ask_order.terms.0,
+					currency,
+				)).expect("terms are checked for validity on creation so they must be valid on an existing ask order; qed"),
+				expiration_block: ask_order.expiration_block,
+				block: ask_order.block,
+				lender: ask_order.lender,
+			})
+		},
+	);
+
+	BidOrders::<T>::translate::<OldBidOrder<T::AccountId, T::BlockNumber, T::Hash>, _>(
+		|exp, hash, bid_order| {
+			weight = weight.saturating_add(weight_each);
+			let bid_id = BidOrderId::with_expiration_hash::<T>(exp, hash);
+			let currency = reconstructed_currency_bid
+				.remove(&bid_id)
+				.unwrap_or_else(CurrencyId::placeholder);
+			Some(BidOrder {
+				borrower_address_id: bid_order.borrower_address_id,
+				terms: BidTerms::try_from(translate_loan_terms::<T>(bid_order.terms.0, currency)).expect("terms are checked on creation so they must be valid on existing bid order; qed"),
+				expiration_block: bid_order.expiration_block,
+				block: bid_order.block,
+				borrower: bid_order.borrower,
+			})
+		},
+	);
 
 	Transfers::<T>::translate::<OldTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
 		|_id, transfer| {

@@ -11,6 +11,7 @@ pub use v3::*;
 
 use crate::AddressId;
 use v3::Blockchain as OldBlockchain;
+
 #[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct Address<AccountId> {

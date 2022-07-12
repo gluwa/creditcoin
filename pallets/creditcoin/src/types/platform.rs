@@ -25,6 +25,11 @@ impl EvmChainId {
 	pub const fn new(value: u64) -> Self {
 		EvmChainId(value)
 	}
+
+	pub const ETHEREUM: EvmChainId = EvmChainId::new(1);
+	pub const RINKEBY: EvmChainId = EvmChainId::new(4);
+	pub const LUNIVERSE_TESTNET: EvmChainId = EvmChainId::new(1635501961136826136);
+	pub const LUNIVERSE: EvmChainId = EvmChainId::new(3158073271666164067);
 }
 
 #[derive(
@@ -34,6 +39,13 @@ impl EvmChainId {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct EvmInfo {
 	pub chain_id: EvmChainId,
+}
+
+impl EvmInfo {
+	pub const ETHEREUM: EvmInfo = EvmInfo { chain_id: EvmChainId::ETHEREUM };
+	pub const RINKEBY: EvmInfo = EvmInfo { chain_id: EvmChainId::RINKEBY };
+	pub const LUNIVERSE_TESTNET: EvmInfo = EvmInfo { chain_id: EvmChainId::LUNIVERSE_TESTNET };
+	pub const LUNIVERSE: EvmInfo = EvmInfo { chain_id: EvmChainId::LUNIVERSE };
 }
 
 #[derive(
@@ -50,10 +62,10 @@ impl Blockchain {
 		Blockchain::Evm(EvmInfo { chain_id })
 	}
 	// Chain IDs from chainlist.org and Gluwa's internal luniverse documentation
-	pub const ETHEREUM: Blockchain = Blockchain::evm(EvmChainId::new(1));
-	pub const RINKEBY: Blockchain = Blockchain::evm(EvmChainId::new(4));
-	pub const LUNIVERSE_TESTNET: Blockchain = Blockchain::evm(EvmChainId::new(1635501961136826136));
-	pub const LUNIVERSE: Blockchain = Blockchain::evm(EvmChainId::new(3158073271666164067));
+	pub const ETHEREUM: Blockchain = Blockchain::evm(EvmChainId::ETHEREUM);
+	pub const RINKEBY: Blockchain = Blockchain::evm(EvmChainId::RINKEBY);
+	pub const LUNIVERSE_TESTNET: Blockchain = Blockchain::evm(EvmChainId::LUNIVERSE_TESTNET);
+	pub const LUNIVERSE: Blockchain = Blockchain::evm(EvmChainId::LUNIVERSE);
 
 	pub fn as_bytes(&self) -> &[u8] {
 		match self {
@@ -125,6 +137,8 @@ pub enum TransferKind {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct CurrencyId<Hash>(Hash);
 
 impl<H> CurrencyId<H> {
@@ -139,6 +153,26 @@ impl<H> CurrencyId<H> {
 				CurrencyId(T::Hashing::hash(&encoded))
 			},
 		}
+	}
+}
+
+impl<H> CurrencyId<H>
+where
+	H: Default,
+{
+	pub fn placeholder() -> Self {
+		Self(H::default())
+	}
+}
+
+impl<H> CurrencyId<H>
+where
+	H: Default + PartialEq,
+{
+	pub fn is_placeholder(&self) -> bool {
+		let default = CurrencyId(H::default());
+
+		self == &default
 	}
 }
 
