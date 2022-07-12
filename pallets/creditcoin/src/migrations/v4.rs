@@ -56,7 +56,7 @@ mod tests {
 			AddressId::make(T::Hashing::hash(&key))
 		}
 	}
-	#[allow(unreachable_code, unused)]
+
 	#[test]
 	fn migrate_works() {
 		ExtBuilder::default().build_and_execute(|| {
