@@ -12,19 +12,16 @@ use sp_std::prelude::*;
 
 #[cfg(test)]
 mod mock;
-
-#[allow(clippy::unnecessary_cast)]
-pub mod weights;
-
-mod benchmarking;
 #[cfg(test)]
 mod tests;
-
 #[macro_use]
 mod helpers;
+mod benchmarking;
 mod migrations;
 mod ocw;
 mod types;
+#[allow(clippy::unnecessary_cast)]
+pub mod weights;
 
 pub use types::*;
 
@@ -62,10 +59,11 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{
 		dispatch::DispatchResult,
-		pallet_prelude::*,
+		pallet_prelude::{StorageDoubleMap, *},
 		traits::tokens::{currency::Currency as CurrencyT, ExistenceRequirement},
 		transactional,
 		weights::PostDispatchInfo,
+		Twox64Concat,
 	};
 	use frame_system::{
 		ensure_signed,
@@ -257,6 +255,10 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
+
+	#[pallet::storage]
+	pub type RetainedFees<T: Config> =
+		StorageDoubleMap<_, Twox64Concat, T::BlockNumber, Twox64Concat, T::AccountId, T::Balance>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
