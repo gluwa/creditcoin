@@ -6094,6 +6094,7 @@ dependencies = [
 name = "sha3pow"
 version = "2.0.0-beta.7"
 dependencies = [
+ "assert_matches",
  "parity-scale-codec",
  "primitives",
  "rand 0.8.5",
