@@ -25,11 +25,14 @@ impl EvmChainId {
 	pub const fn new(value: u64) -> Self {
 		EvmChainId(value)
 	}
+	pub fn as_u64(self) -> u64 {
+		self.0
+	}
 
 	pub const ETHEREUM: EvmChainId = EvmChainId::new(1);
 	pub const RINKEBY: EvmChainId = EvmChainId::new(4);
-	pub const LUNIVERSE_TESTNET: EvmChainId = EvmChainId::new(1635501961136826136);
-	pub const LUNIVERSE: EvmChainId = EvmChainId::new(3158073271666164067);
+	pub const LUNIVERSE_TESTNET: EvmChainId = EvmChainId::new(949790);
+	pub const LUNIVERSE: EvmChainId = EvmChainId::new(59496427);
 }
 
 #[derive(
