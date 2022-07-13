@@ -101,15 +101,18 @@ pub struct UnverifiedCollectedCoins {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 	pub transfer: Transfer<AccountId, BlockNum, Hash, Moment>,
-	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub from_external: ExternalAddress,
-	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub to_external: ExternalAddress,
 	pub deadline: BlockNum,
+	pub currency_to_check: CurrencyOrLegacyTransferKind,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum CurrencyOrLegacyTransferKind {
+	Currency(Currency),
+	TransferKind(LegacyTransferKind),
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
