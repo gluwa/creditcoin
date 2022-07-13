@@ -8,7 +8,7 @@ use crate::{
 	pallet::*,
 	types::{Address, AddressId},
 	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, LegacyTransferKind, Task, TaskId,
-	Transfer, TransferId, UnverifiedTransfer,
+	Transfer, TransferId, TransferKind, UnverifiedTransfer, CurrencyId,
 };
 use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
@@ -118,6 +118,65 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	pub fn register_transfer_internal(
+		who: T::AccountId,
+		from_id: AddressId<T::Hash>,
+		to_id: AddressId<T::Hash>,
+		transfer_kind: TransferKind,
+		amount: ExternalAmount,
+		deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+		blockchain_tx_id: ExternalTxId,
+		currency: &CurrencyId<T::Hash>,
+	) -> Result<
+		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>),
+		crate::Error<T>,
+	> {
+		let from = Self::get_address(&from_id)?;
+		let to = Self::get_address(&to_id)?;
+
+		ensure!(from.owner == who, Error::<T>::NotAddressOwner);
+
+		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
+
+		// ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
+
+		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
+		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
+
+		let currency = Currencies::<T>::get(&currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
+
+		let block = Self::block_number();
+
+		let transfer = Transfer {
+			blockchain: from.blockchain,
+			kind: LegacyTransferKind::Native,
+			amount,
+			block,
+			from: from_id,
+			to: to_id,
+			deal_order_id,
+			is_processed: false,
+			account_id: who,
+			tx_id: blockchain_tx_id,
+			timestamp: None,
+		};
+
+		let deadline = block.saturating_add(T::UnverifiedTaskTimeout::get());
+
+		let pending = UnverifiedTransfer {
+			from_external: from.value,
+			to_external: to.value,
+			transfer: transfer.clone(),
+			deadline,
+			currency_to_check: crate::CurrencyOrLegacyTransferKind::Currency(currency),
+		};
+		let task_id = TaskId::from(transfer_id.clone());
+		let pending = Task::from(pending);
+		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
+
+		Ok((transfer_id, transfer))
+	}
+
 	pub fn register_transfer_internal_legacy(
 		who: T::AccountId,
 		from_id: AddressId<T::Hash>,
@@ -146,7 +205,7 @@ impl<T: Config> Pallet<T> {
 
 		let transfer = Transfer {
 			blockchain: from.blockchain,
-			kind: transfer_kind,
+			kind: transfer_kind.clone(),
 			amount,
 			block,
 			from: from_id,
@@ -165,6 +224,7 @@ impl<T: Config> Pallet<T> {
 			to_external: to.value,
 			transfer: transfer.clone(),
 			deadline,
+			currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(transfer_kind),
 		};
 		let task_id = TaskId::from(transfer_id.clone());
 		let pending = Task::from(pending);

@@ -424,6 +424,9 @@ fn make_unverified_transfer(transfer: MockTransfer) -> MockUnverifiedTransfer {
 		to_external: ExternalAddress::try_from(ETHLESS_TO_ADDR.0.to_vec()).unwrap(),
 		from_external: ExternalAddress::try_from(ETHLESS_FROM_ADDR.0.to_vec()).unwrap(),
 		deadline: 10000,
+		currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
+			LegacyTransferKind::Native,
+		),
 	}
 }
 

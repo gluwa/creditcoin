@@ -90,6 +90,13 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 	pub from_external: ExternalAddress,
 	pub to_external: ExternalAddress,
 	pub deadline: BlockNum,
+	pub currency_to_check: CurrencyOrLegacyTransferKind,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum CurrencyOrLegacyTransferKind {
+	Currency(Currency),
+	TransferKind(LegacyTransferKind),
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]

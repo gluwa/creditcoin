@@ -529,6 +529,12 @@ pub mod pallet {
 
 		/// The currency has already been registered.
 		CurrencyAlreadyRegistered,
+
+		/// The legacy/deprecated version of an extrinsic was called, the new version should be used instead.
+		DeprecatedExtrinsic,
+
+		/// The currency with the given ID has not been registered.
+		CurrencyNotRegistered,
 	}
 
 	#[pallet::genesis_config]
@@ -1221,6 +1227,8 @@ pub mod pallet {
 
 			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
 
+			ensure!(order.terms.currency.is_placeholder(), Error::<T>::DeprecatedExtrinsic);
+
 			let (transfer_id, transfer) = Self::register_transfer_internal_legacy(
 				who,
 				order.lender_address_id,
@@ -1256,6 +1264,33 @@ pub mod pallet {
 				repayment_amount,
 				deal_order_id,
 				blockchain_tx_id,
+			)?;
+			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
+
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
+		pub fn register_funding_transfer_new(
+			origin: OriginFor<T>,
+			transfer_kind: TransferKind,
+			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+			blockchain_tx_id: ExternalTxId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
+
+			let (transfer_id, transfer) = Self::register_transfer_internal(
+				who,
+				order.lender_address_id,
+				order.borrower_address_id,
+				transfer_kind,
+				order.terms.amount,
+				deal_order_id,
+				blockchain_tx_id,
+				&order.terms.currency
 			)?;
 			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
 
