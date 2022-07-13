@@ -48,6 +48,10 @@ async function doRuntimeUpgrade(
         // make the keyring for the sudo account
         const keyring = new Keyring({ type: 'sr25519' }).createFromUri(sudoKeyUri);
 
+        const { specVersion } = api.runtimeVersion;
+
+        let needsUpgrade = true;
+
         if (hasSubwasm) {
             // subwasm needs to be installed with `cargo install --locked --git https://github.com/chevdor/subwasm --tag v0.17.1`
             const output = await exec(`subwasm info -j ${wasmBlobPath}`);
@@ -58,6 +62,18 @@ async function doRuntimeUpgrade(
             const info = JSON.parse(output.stdout) as WasmRuntimeInfo;
             // should probably do some checks here to see that the runtime is right
             // e.g. the core version is reasonable, it's compressed, etc.
+            const [version, _] = info.core_version.split(' ');
+            const [_wholeMatch, versionNumString] = version.match(/(?:\w+\-)+(\d+)/);
+            const versionNum = Number(versionNumString);
+
+            if (versionNum <= specVersion.toNumber()) {
+                needsUpgrade = false;
+            }
+        }
+
+        if (!needsUpgrade) {
+            console.log('Skipping upgrade because version has not increased');
+            return;
         }
 
         // read the wasm blob from the give path
@@ -90,7 +106,6 @@ if (process.argv.length < 5) {
     process.exit(1);
 }
 
-console.log(process.argv);
 const inputWsUrl = process.argv[2];
 const inputWasmBlobPath = process.argv[3];
 const inputSudoKeyUri = process.argv[4];
