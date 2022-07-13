@@ -475,6 +475,7 @@ fn verify_ethless_transfer() {
 			&deal_order_id,
 			&amount,
 			&tx_id,
+			None,
 		));
 	});
 }

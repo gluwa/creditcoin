@@ -39,6 +39,7 @@ use crate::Blockchain;
 use crate::Currency;
 use crate::CurrencyId;
 use crate::DealOrder;
+use crate::LegacyTransferKind;
 use crate::LoanTerms;
 use crate::Task;
 use crate::TaskId;
@@ -139,6 +140,15 @@ fn translate_transfer<T: Config>(
 		blockchain: translate_blockchain(transfer.blockchain)?,
 		kind: todo!(),
 	})
+}
+
+fn to_legacy_transfer_kind(transfer_kind: OldTransferKind) -> LegacyTransferKind {
+	match transfer_kind {
+		OldTransferKind::Erc20(addr) => LegacyTransferKind::Erc20(addr),
+		OldTransferKind::Ethless(addr) => LegacyTransferKind::Ethless(addr),
+		OldTransferKind::Native => LegacyTransferKind::Native,
+		OldTransferKind::Other(other) => LegacyTransferKind::Other(other),
+	}
 }
 
 generate_storage_alias!(
@@ -279,11 +289,15 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 			weight = weight.saturating_add(weight_each);
 			Some(match task {
 				OldTask::VerifyTransfer(unverified_transfer) => {
+					let kind = unverified_transfer.transfer.kind.clone();
 					Task::VerifyTransfer(UnverifiedTransfer {
 						transfer: translate_transfer::<T>(unverified_transfer.transfer)?,
 						from_external: unverified_transfer.from_external,
 						to_external: unverified_transfer.to_external,
 						deadline: unverified_transfer.deadline,
+						currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
+							to_legacy_transfer_kind(kind),
+						),
 					})
 				},
 				OldTask::CollectCoins(collect_coins) => Task::CollectCoins(collect_coins),

@@ -768,6 +768,9 @@ fn insert_fake_unverified_transfer<T: Config>(
 			tx_id: format!("{:03x}", seed).as_bytes().into_bounded(),
 			timestamp: None,
 		},
+		currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
+			LegacyTransferKind::Native,
+		),
 	};
 
 	let task_id = TaskId::VerifyTransfer(transfer_id);
