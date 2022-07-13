@@ -73,8 +73,11 @@ pub mod pallet {
 		pallet_prelude::*,
 	};
 	use ocw::errors::VerificationFailureCause;
+	use sp_runtime::offchain::storage_lock::{BlockAndTime, StorageLock};
+	use sp_runtime::offchain::Duration;
 	use sp_runtime::traits::{
-		IdentifyAccount, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto, Verify,
+		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
+		Verify,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -608,10 +611,27 @@ pub mod pallet {
 			};
 
 			for (deadline, id, task) in PendingTasks::<T>::iter() {
-				let storage_key = (deadline, &id).encode();
-				let status = ocw::LocalVerificationStatus::new(&storage_key);
-				if status.is_complete() {
+				let storage_key = crate::ocw::tasks::storage_key(&id);
+				let offset =
+					T::UnverifiedTaskTimeout::get().saturated_into::<u32>().saturating_sub(2u32);
+
+				let mut lock = StorageLock::<BlockAndTime<frame_system::Pallet<T>>>::with_block_and_time_deadline(
+					&storage_key,
+					offset,
+					Duration::from_millis(0),
+				);
+
+				let guard = match lock.try_lock() {
+					Ok(g) => g,
+					Err(_) => continue,
+				};
+
+				if match &id {
+					TaskId::VerifyTransfer(id) => Transfers::<T>::contains_key(id),
+					TaskId::CollectCoins(id) => CollectedCoins::<T>::contains_key(id),
+				} {
 					log::debug!("Already handled Task ({:?}, {:?})", deadline, id);
+					guard.forget();
 					continue;
 				}
 
@@ -623,13 +643,13 @@ pub mod pallet {
 						match Self::offchain_signed_tx(auth_id.clone(), |_| {
 							Call::persist_task_output { deadline, task_output: output.clone() }
 						}) {
+							Ok(_) => guard.forget(),
 							Err(e) => {
 								log::error!(
 									"Failed to send persist dispatchable transaction: {:?}",
 									e
 								)
 							},
-							Ok(_) => status.mark_complete(),
 						}
 					},
 					Err((task, ocw::OffchainError::InvalidTask(cause))) => {
@@ -644,7 +664,7 @@ pub mod pallet {
 									"Failed to send fail dispatchable transaction: {:?}",
 									e
 								),
-								Ok(_) => status.mark_complete(),
+								Ok(_) => guard.forget(),
 							}
 						}
 					},

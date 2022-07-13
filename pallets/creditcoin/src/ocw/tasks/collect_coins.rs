@@ -108,7 +108,7 @@ impl<T: Config> Pallet<T> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
 
 	use super::*;
 	use crate::TaskId;
@@ -156,13 +156,13 @@ mod tests {
 		input_bytes.into()
 	});
 
-	static TX_HASH: Lazy<String> = Lazy::new(|| {
+	pub(crate) static TX_HASH: Lazy<String> = Lazy::new(|| {
 		let responses = &*RESPONSES;
 		let val = responses["eth_getTransactionByHash"].result.clone().unwrap()["hash"].clone();
 		serde_json::from_value(val).unwrap()
 	});
 
-	static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
+	pub(crate) static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
 		let transfer_fn = burn_vested_cc_abi();
 
 		let inputs = transfer_fn.decode_input(&(INPUT.0)[4..]).unwrap();
@@ -177,6 +177,7 @@ mod tests {
 
 	use std::convert::TryFrom;
 
+	use alloc::sync::Arc;
 	use assert_matches::assert_matches;
 	use codec::Decode;
 	use ethereum_types::{H160, U64};
@@ -186,7 +187,8 @@ mod tests {
 
 	use crate::helpers::non_paying_error;
 	use crate::mock::{
-		roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, Origin, Test,
+		roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, OffchainState,
+		Origin, RwLock, Test,
 	};
 	use crate::ocw::{
 		errors::{OffchainError, VerificationFailureCause as Cause},
@@ -197,6 +199,16 @@ mod tests {
 	use crate::types::{AddressId, CollectedCoins, CollectedCoinsId};
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
+
+	/// call from externalities context
+	pub(crate) fn mock_rpc_for_collect_coins(state: &Arc<RwLock<OffchainState>>) {
+		let dummy_url = "dummy";
+		set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
+
+		let mut rpcs =
+			MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
+		rpcs.mock_get_block_number(&mut *state.write());
+	}
 
 	struct PassingCollectCoins {
 		to: ExternalAddress,
@@ -460,7 +472,6 @@ mod tests {
 	}
 
 	#[test]
-	// #[tracing_test::traced_test]
 	fn persist_collect_coins() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -511,7 +522,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn persist_unregistered_address() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -540,7 +550,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn persist_more_than_max_balance_should_error() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -580,7 +589,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn request_persisted_not_reentrant() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -622,7 +630,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn request_pending_not_reentrant() {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
@@ -749,12 +756,7 @@ mod tests {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
 		ext.build_offchain_and_execute_with_state(|state, pool| {
-			let dummy_url = "dummy";
-			set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
-
-			let mut rpcs =
-				MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
-			rpcs.mock_get_block_number(&mut state.write());
+			mock_rpc_for_collect_coins(&state);
 
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
@@ -836,17 +838,11 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn unverified_collect_coins_are_removed() {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
 		ext.build_offchain_and_execute_with_state(|state, _| {
-			let dummy_url = "dummy";
-			set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
-
-			let mut rpcs =
-				MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
-			rpcs.mock_get_block_number(&mut state.write());
+			mock_rpc_for_collect_coins(&state);
 
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
