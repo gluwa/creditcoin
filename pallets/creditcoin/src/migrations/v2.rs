@@ -17,7 +17,7 @@ pub use super::v1::{AskOrder, AskTerms, BidOrder, BidTerms, InterestRate};
 type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
-#[derive(Encode, Decode, RuntimeDebug)]
+#[derive(Encode, Decode, RuntimeDebug, Clone)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 pub enum TransferKind {
 	Erc20(ExternalAddress),
