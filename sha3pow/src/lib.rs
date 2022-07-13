@@ -175,10 +175,12 @@ mod test {
 	use sp_runtime::{testing::Block, OpaqueExtrinsic};
 	use std::sync::Arc;
 
-	use crate::GetDifficulty;
+	use crate::*;
+	use assert_matches::assert_matches;
 
 	type TestBlock = Block<OpaqueExtrinsic>;
 
+	#[derive(PartialEq, Debug, Clone)]
 	struct MockDifficulty {
 		value: Difficulty,
 	}
@@ -206,7 +208,7 @@ mod test {
 
 		let pre_digest = None;
 		let difficulty = 1.into();
-		super::mine::<TestBlock, MockDifficulty>(
+		let result = super::mine::<TestBlock, MockDifficulty>(
 			&Arc::new(mock),
 			&keystore,
 			&pre_hash,
@@ -214,5 +216,161 @@ mod test {
 			difficulty,
 		)
 		.unwrap();
+
+		assert!(result.is_some());
+	}
+
+	#[test]
+	fn mine_should_return_none_when_hash_doesnt_meet_difficulty() {
+		let mock = MockDifficulty::new(1);
+		let keystore = LocalKeystore::in_memory();
+		let pre_hash = H256::default();
+
+		let pre_digest = None;
+		let difficulty = Difficulty::MAX;
+		let result = super::mine::<TestBlock, MockDifficulty>(
+			&Arc::new(mock),
+			&keystore,
+			&pre_hash,
+			pre_digest,
+			difficulty,
+		)
+		.unwrap();
+
+		assert!(result.is_none());
+	}
+
+	#[test]
+	fn hash_meets_difficulty_should_return_false_when_product_overflows() {
+		let hash = H256::repeat_byte(u8::MAX);
+		let difficulty = Difficulty::MAX;
+
+		let result = hash_meets_difficulty(&hash, difficulty);
+		assert!(!result);
+	}
+
+	#[test]
+	fn hash_meets_difficulty_should_return_true_when_product_doesnt_overflow() {
+		let hash = H256::repeat_byte(1u8);
+		let difficulty = Difficulty::zero();
+
+		let result = hash_meets_difficulty(&hash, difficulty);
+		assert!(result);
+	}
+
+	#[test]
+	fn sha3algorithm_can_clone() {
+		let mock = MockDifficulty::new(1);
+		let algorithm = Sha3Algorithm::new(Arc::new(mock));
+
+		let cloning = algorithm.clone();
+		assert_eq!(cloning.client, algorithm.client);
+	}
+
+	#[test]
+	fn sha3algorithm_can_return_difficulty() {
+		let mock = MockDifficulty::new(2);
+		let algorithm = Sha3Algorithm::new(Arc::new(mock));
+
+		let difficulty = algorithm.difficulty(H256::default()).unwrap();
+		assert_eq!(difficulty, U256::from(2));
+	}
+
+	#[test]
+	fn sha3algorithm_verify_works() {
+		let mock = MockDifficulty::new(1);
+		let algorithm = Sha3Algorithm::new(Arc::new(mock.clone()));
+
+		let pre_hash = H256::default();
+		let nonce = H256::default();
+
+		let compute = Compute { difficulty: mock.value, pre_hash, nonce };
+		let seal = compute.compute();
+		let raw_seal = Seal::encode(&seal);
+
+		let result =
+			algorithm.verify(&BlockId::Number(1), &pre_hash, Some(&[]), &raw_seal, mock.value);
+		assert_matches!(result, Ok(true));
+	}
+
+	#[test]
+	fn compute_should_return_a_seal() {
+		let compute =
+			Compute { difficulty: 1.into(), pre_hash: H256::default(), nonce: H256::default() };
+
+		let result = compute.compute();
+		assert_matches!(result, Seal{ difficulty, work: _, nonce} => {
+			assert_eq!(difficulty, 1.into());
+			assert_eq!(nonce, H256::default());
+		});
+	}
+
+	#[test]
+	fn verify_should_return_false_when_rawseal_cant_be_decoded() {
+		let result = verify::<TestBlock>(
+			&BlockId::Number(1),
+			&H256::default(),
+			Some(&[]),
+			&vec![], // empty vector should not decode
+			Difficulty::zero(),
+		);
+
+		assert_matches!(result, Ok(false));
+	}
+
+	#[test]
+	fn verify_should_return_false_when_work_doesnt_meet_difficulty() {
+		let seal = Seal {
+			difficulty: 0.into(),
+			work: H256::repeat_byte(u8::MAX), // compared to difficulty
+			nonce: H256::zero(),
+		};
+		let raw_seal = Seal::encode(&seal);
+
+		let result = verify::<TestBlock>(
+			&BlockId::Number(1),
+			&H256::default(),
+			Some(&[]),
+			&raw_seal,
+			Difficulty::MAX, // compared to seal.work
+		);
+
+		assert_matches!(result, Ok(false));
+	}
+
+	#[test]
+	fn verify_should_return_false_when_computed_seal_doesnt_match_arguments() {
+		let seal = Seal {
+			difficulty: 0.into(),
+			work: H256::repeat_byte(1u8), // will not overflow * difficulty
+			nonce: H256::zero(),
+		};
+		let raw_seal = Seal::encode(&seal);
+
+		let result = verify::<TestBlock>(
+			&BlockId::Number(1),
+			&H256::default(), // will cause different computed seal
+			Some(&[]),
+			&raw_seal,
+			Difficulty::zero(), // will not overflow * seal.work
+		);
+
+		assert_matches!(result, Ok(false));
+	}
+
+	#[test]
+	fn verify_should_return_true_when_computed_seal_matches_arguments() {
+		let difficulty: Difficulty = 1.into();
+		let pre_hash = H256::default();
+		let nonce = H256::default();
+
+		let compute = Compute { difficulty, pre_hash, nonce };
+		let seal = compute.compute();
+		let raw_seal = Seal::encode(&seal);
+
+		let result =
+			verify::<TestBlock>(&BlockId::Number(1), &pre_hash, Some(&[]), &raw_seal, difficulty);
+
+		assert_matches!(result, Ok(true));
 	}
 }
