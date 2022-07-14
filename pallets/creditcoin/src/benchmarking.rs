@@ -230,7 +230,7 @@ benchmarks! {
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,true,0u8);
-	}: _(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
+	}: register_funding_transfer_new(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
 
 	register_repayment_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -238,7 +238,7 @@ benchmarks! {
 		let repayment_amount = ExternalAmount::from(1);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,true,0u8);
-	}: _(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
+	}: register_repayment_transfer_new(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
 
 	close_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -756,7 +756,7 @@ fn insert_fake_unverified_transfer<T: Config>(
 			from: fake_address_id::<T>(seed - 1),
 			to: fake_address_id::<T>(seed),
 			is_processed: false,
-			kind: LegacyTransferKind::Native,
+			kind: crate::TransferKind::Evm(crate::EvmTransferKind::Ethless),
 			deal_order_id: fake_deal_id::<T>(
 				deadline,
 				&fake_offer_id::<T>(

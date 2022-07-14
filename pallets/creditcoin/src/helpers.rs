@@ -7,8 +7,9 @@ pub use external_address::{EVMAddress, PublicToAddress};
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, LegacyTransferKind, Task, TaskId,
-	Transfer, TransferId, TransferKind, UnverifiedTransfer, CurrencyId,
+	Blockchain, Currency, CurrencyId, DealOrderId, Error, EvmCurrencyType,
+	EvmSupportedTransferKinds, EvmTransferKind, ExternalAmount, ExternalTxId, Guid, Id,
+	LegacyTransferKind, Task, TaskId, Transfer, TransferId, TransferKind, UnverifiedTransfer,
 };
 use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
@@ -138,18 +139,18 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
 
-		// ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
-
 		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
 		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
 
 		let currency = Currencies::<T>::get(&currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
 
+		ensure!(currency.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
+
 		let block = Self::block_number();
 
 		let transfer = Transfer {
 			blockchain: from.blockchain,
-			kind: LegacyTransferKind::Native,
+			kind: transfer_kind,
 			amount,
 			block,
 			from: from_id,
@@ -203,9 +204,44 @@ impl<T: Config> Pallet<T> {
 
 		let block = Self::block_number();
 
+		DealOrders::<T>::mutate(
+			deal_order_id.expiration(),
+			&deal_order_id.hash(),
+			|deal_order| -> Result<(), crate::Error<T>> {
+				let mut deal_order = deal_order.as_mut().ok_or(Error::<T>::NonExistentDealOrder)?;
+				let currency = match &from.blockchain {
+					Blockchain::Evm(info) => match transfer_kind.clone() {
+						LegacyTransferKind::Ethless(contract) => Currency::Evm(
+							EvmCurrencyType::SmartContract(
+								contract,
+								EvmSupportedTransferKinds::try_from(vec![EvmTransferKind::Ethless])
+									.expect("length 1 is less than the bound 2; qed"),
+							),
+							info.clone(),
+						),
+						LegacyTransferKind::Erc20(contract) => Currency::Evm(
+							EvmCurrencyType::SmartContract(
+								contract,
+								EvmSupportedTransferKinds::try_from(vec![EvmTransferKind::Erc20])
+									.expect("length 1 is less than the bound 2; qed"),
+							),
+							info.clone(),
+						),
+						_ => return Err(Error::<T>::UnsupportedTransferKind),
+					},
+				};
+				let currency_id = CurrencyId::new::<T>(&currency);
+				deal_order.terms.currency = currency_id;
+				Ok(())
+			},
+		)?;
+
 		let transfer = Transfer {
 			blockchain: from.blockchain,
-			kind: transfer_kind.clone(),
+			kind: transfer_kind
+				.clone()
+				.try_into()
+				.map_err(|()| Error::<T>::UnsupportedTransferKind)?,
 			amount,
 			block,
 			from: from_id,

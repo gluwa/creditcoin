@@ -65,7 +65,7 @@ pub struct CollectedCoins<Hash, Balance> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
-	pub kind: LegacyTransferKind,
+	pub kind: TransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
 	pub deal_order_id: DealOrderId<BlockNum, Hash>,
