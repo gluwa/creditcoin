@@ -9,6 +9,7 @@ use core::convert::TryFrom;
 use frame_support::generate_storage_alias;
 use frame_support::pallet_prelude::*;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::prelude::*;
 
 pub use v5::*;
@@ -122,11 +123,11 @@ fn reconstruct_currency(blockchain: &OldBlockchain, kind: &OldTransferKind) -> O
 
 fn reconstruct_currency_from_deal<T: Config>(
 	deal_order: &OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-) -> Option<CurrencyId<T::Hash>> {
+) -> Option<Currency> {
 	let transfer_id = deal_order.funding_transfer_id.as_ref()?;
 	let transfer = OldTransfers::<T>::get(transfer_id)?;
 	let currency = reconstruct_currency(&deal_order.blockchain, &transfer.kind)?;
-	Some(CurrencyId::new::<T>(&currency))
+	Some(currency)
 }
 
 fn translate_transfer<T: Config>(
@@ -210,17 +211,25 @@ generate_storage_alias!(
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = 0;
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
+	let write = T::DbWeight::get().writes(1);
+	let read = T::DbWeight::get().reads(1);
 
 	let mut reconstructed_currency_ask = BTreeMap::new();
 	let mut reconstructed_currency_bid = BTreeMap::new();
+	let mut currencies = BTreeSet::new();
 
 	DealOrders::<T>::translate::<OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
 		|_exp, _hash, deal_order| {
 			weight = weight.saturating_add(weight_each);
 
-			let currency = reconstruct_currency_from_deal::<T>(&deal_order)
-				.unwrap_or_else(CurrencyId::placeholder);
+			let currency = reconstruct_currency_from_deal::<T>(&deal_order);
+			let currency_id = if let Some(currency) = currency.as_ref() {
+				currency.to_id::<T>()
+			} else {
+				CurrencyId::placeholder()
+			};
 
+			weight = weight.saturating_add(read);
 			let offer = if let Some(offer) = crate::Offers::<T>::get(
 				deal_order.offer_id.expiration(),
 				deal_order.offer_id.hash(),
@@ -231,14 +240,17 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				return None;
 			};
 
-			reconstructed_currency_ask.insert(offer.ask_id, currency.clone());
-			reconstructed_currency_bid.insert(offer.bid_id, currency.clone());
+			if let Some(currency) = currency {
+				reconstructed_currency_ask.insert(offer.ask_id, currency_id.clone());
+				reconstructed_currency_bid.insert(offer.bid_id, currency_id.clone());
+				currencies.insert((currency_id.clone(), currency));
+			}
 
 			Some(DealOrder {
 				offer_id: deal_order.offer_id,
 				lender_address_id: deal_order.lender_address_id,
 				borrower_address_id: deal_order.borrower_address_id,
-				terms: translate_loan_terms::<T>(deal_order.terms, currency),
+				terms: translate_loan_terms::<T>(deal_order.terms, currency_id),
 				expiration_block: deal_order.expiration_block,
 				timestamp: deal_order.timestamp,
 				block: deal_order.block,
@@ -323,6 +335,11 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 			owner: address.owner,
 		})
 	});
+
+	for (currency_id, currency) in currencies {
+		weight = weight.saturating_add(write);
+		crate::Currencies::<T>::insert(currency_id, currency);
+	}
 
 	weight
 }
