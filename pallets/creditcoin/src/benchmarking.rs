@@ -197,7 +197,7 @@ benchmarks! {
 		let who = authority_account::<T>(false);
 	}: _(root, who)
 
-	verify_transfer {
+	persist_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
