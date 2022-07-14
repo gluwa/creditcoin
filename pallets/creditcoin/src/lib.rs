@@ -602,7 +602,7 @@ pub mod pallet {
 			RetainedFees::<T>::drain_prefix(block_number).map(|(account,sum)|{
 			let imbalance = <pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::deposit_into_existing(&account,sum).unwrap_or_else(|_| pallet_balances::PositiveImbalance::zero());
 			if !imbalance.peek().is_zero(){
-				Self::deposit_event(Event::<T>::FeeRedemption(block_number.clone(),account,imbalance.peek()));
+				Self::deposit_event(Event::<T>::FeeRedemption(block_number,account,imbalance.peek()));
 			}
 			imbalance
 			}).for_each(drop);

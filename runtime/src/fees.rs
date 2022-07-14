@@ -103,7 +103,8 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{Balances, Creditcoin, ExistentialDeposit, Runtime};
+	use crate::{Balances, Creditcoin, ExistentialDeposit, Runtime, System};
+	use assert_matches::assert_matches;
 	use frame_support::{
 		traits::Hooks,
 		weights::{DispatchInfo, PostDispatchInfo},
@@ -212,7 +213,7 @@ mod tests {
 	fn creditcoin_on_init_redeems() {
 		let test = || {
 			let acc = generate_account("Somebody");
-
+			System::set_block_number(1);
 			//offset fees by a block-year
 			let year_offset = CurrencyFeeRedemptionAdapter::<pallet_balances::Pallet<Runtime>,()>::bucketed_year_offset::<Runtime>(&0);
 
@@ -224,6 +225,17 @@ mod tests {
 			Creditcoin::on_initialize(year_offset);
 			let free = Balances::free_balance(&acc);
 			assert_eq!(free, existential_deposit() + 2u128);
+
+			let event = System::events().pop().expect("FeeRedemption").event;
+
+			assert_matches!(
+				event,
+				crate::Event::Creditcoin(pallet_creditcoin::Event::<Runtime>::FeeRedemption(bn, account,amount)) => {
+					assert_eq!(bn, year_offset);
+					assert_eq!(account, acc);
+					assert_eq!(amount, 1u128);
+				}
+			);
 		};
 		ExtBuilder::build().execute_with(test);
 	}
