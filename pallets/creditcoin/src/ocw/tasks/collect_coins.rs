@@ -511,7 +511,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn persist_unregistered_address() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -540,7 +539,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn persist_more_than_max_balance_should_error() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -580,7 +578,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn request_persisted_not_reentrant() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
@@ -622,7 +619,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn request_pending_not_reentrant() {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
@@ -836,7 +832,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn unverified_collect_coins_are_removed() {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
