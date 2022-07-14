@@ -194,7 +194,7 @@ mod test {
 			&self,
 			_parent: <TestBlock as sp_api::BlockT>::Hash,
 		) -> Result<Difficulty, sc_consensus_pow::Error<TestBlock>> {
-			Ok(self.value.clone())
+			Ok(self.value)
 		}
 	}
 
