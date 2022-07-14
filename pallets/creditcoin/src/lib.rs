@@ -1279,7 +1279,7 @@ pub mod pallet {
 				order.terms.amount,
 				deal_order_id,
 				blockchain_tx_id,
-				&order.terms.currency
+				&order.terms.currency,
 			)?;
 			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
 
@@ -1313,7 +1313,7 @@ pub mod pallet {
 						account_id: who,
 						amount: ExternalAmount::zero(),
 						is_processed: true,
-						kind: crate::LegacyTransferKind::Native,
+						kind: TransferKind::Evm(EvmTransferKind::Ethless),
 						tx_id: ExternalTxId::try_from(b"0".to_vec()).expect(
 							"0 is a length of one which will always be < size bound of ExternalTxId",
 						),

@@ -24,7 +24,8 @@ use crate::{
 	ocw::tasks::StorageLock,
 	tests::{RefstrExt, TestInfo},
 	types::{DoubleMapExt, TransferId},
-	Blockchain, ExternalAddress, Id, LegacyTransferKind, LoanTerms,
+	Blockchain, CurrencyOrLegacyTransferKind, ExternalAddress, Id, LegacyTransferKind, LoanTerms,
+	TransferKind,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
@@ -421,11 +422,13 @@ type MockUnverifiedTransfer = crate::UnverifiedTransfer<
 fn make_unverified_transfer(transfer: MockTransfer) -> MockUnverifiedTransfer {
 	MockUnverifiedTransfer {
 		transfer,
-		to_external: ExternalAddress::try_from((*ETHLESS_TO_ADDR).0.to_vec()).unwrap(),
-		from_external: ExternalAddress::try_from((*ETHLESS_FROM_ADDR).0.to_vec()).unwrap(),
+		to_external: ExternalAddress::try_from(ETHLESS_TO_ADDR.0.to_vec()).unwrap(),
+		from_external: ExternalAddress::try_from(ETHLESS_FROM_ADDR.0.to_vec()).unwrap(),
 		deadline: 10000,
 		currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
-			LegacyTransferKind::Native,
+			LegacyTransferKind::Ethless(
+				ExternalAddress::try_from(ETHLESS_CONTRACT_ADDR.0.to_vec()).unwrap(),
+			),
 		),
 	}
 }
@@ -443,29 +446,35 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 		crate::mock::roll_to(1);
 		let test_info = TestInfo::new_defaults();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
-		let (mut transfer, _transfer_id) = test_info.make_transfer(
+		let (transfer, _transfer_id) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
 			deal_order.terms.amount,
 			&deal_order_id,
 			"0xfafafa",
-			crate::LegacyTransferKind::Native,
+			None::<TransferKind>,
 		);
-		let unverified = make_unverified_transfer(transfer.clone());
+		let mut unverified = make_unverified_transfer(transfer.clone());
+		unverified.currency_to_check =
+			crate::CurrencyOrLegacyTransferKind::TransferKind(crate::LegacyTransferKind::Native);
 		assert_matches!(
 			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
-		transfer.kind = crate::LegacyTransferKind::Erc20(ExternalAddress::default());
-		let unverified = make_unverified_transfer(transfer.clone());
+		let mut unverified = make_unverified_transfer(transfer.clone());
+		unverified.currency_to_check = crate::CurrencyOrLegacyTransferKind::TransferKind(
+			LegacyTransferKind::Erc20(ExternalAddress::default()),
+		);
 		assert_matches!(
 			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
 		);
 
-		transfer.kind = crate::LegacyTransferKind::Other(ExternalAddress::default());
-		let unverified = make_unverified_transfer(transfer);
+		let mut unverified = make_unverified_transfer(transfer);
+		unverified.currency_to_check = crate::CurrencyOrLegacyTransferKind::TransferKind(
+			LegacyTransferKind::Other(ExternalAddress::default()),
+		);
 		assert_matches!(
 			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),
 			Err(OffchainError::InvalidTask(UnsupportedMethod))
@@ -485,7 +494,7 @@ fn verify_transfer_ocw_returns_err() {
 			deal_order.terms.amount,
 			&deal_order_id,
 			"0xfafafa",
-			crate::LegacyTransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
+			None::<TransferKind>,
 		);
 		let unverified = make_unverified_transfer(transfer);
 
@@ -579,7 +588,7 @@ fn set_up_verify_transfer_env(
 		deal_order.terms.amount,
 		&deal_order_id,
 		crate::mock::get_mock_tx_hash(),
-		crate::LegacyTransferKind::Ethless(ETHLESS_CONTRACT_ADDR.to_external_address()),
+		Some(crate::EvmTransferKind::Ethless),
 	);
 	let unverified = make_unverified_transfer(transfer.clone());
 
@@ -749,7 +758,8 @@ fn verify_transfer_get_block_invalid_address() {
 
 		mock_requests(&state);
 
-		unverified.transfer.kind = LegacyTransferKind::Ethless(default());
+		unverified.currency_to_check =
+			CurrencyOrLegacyTransferKind::TransferKind(LegacyTransferKind::Ethless(default()));
 
 		assert_matches!(
 			crate::Pallet::<TestRuntime>::verify_transfer_ocw(&unverified),

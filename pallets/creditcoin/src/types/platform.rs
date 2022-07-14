@@ -1,3 +1,5 @@
+use core::convert::TryFrom;
+
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{traits::ConstU32, BoundedVec, RuntimeDebug};
 use scale_info::TypeInfo;
@@ -108,6 +110,8 @@ impl Blockchain {
 	MaxEncodedLen,
 	EnumCount,
 )]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum EvmTransferKind {
 	Erc20,
 	Ethless,
@@ -130,11 +134,39 @@ pub enum Currency {
 	Evm(EvmCurrencyType, EvmInfo),
 }
 
+impl Currency {
+	pub fn supports(&self, kind: &TransferKind) -> bool {
+		match (self, kind) {
+			(Currency::Evm(currency, _), TransferKind::Evm(kind)) => match currency {
+				EvmCurrencyType::SmartContract(_, supported) => supported.contains(kind),
+			},
+		}
+	}
+}
+
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum TransferKind {
 	Evm(EvmTransferKind),
+}
+
+impl From<EvmTransferKind> for TransferKind {
+	fn from(kind: EvmTransferKind) -> Self {
+		Self::Evm(kind)
+	}
+}
+
+impl TryFrom<super::LegacyTransferKind> for TransferKind {
+	type Error = ();
+	fn try_from(legacy: super::LegacyTransferKind) -> Result<Self, Self::Error> {
+		match legacy {
+			LegacyTransferKind::Ethless(_) => Ok(TransferKind::Evm(EvmTransferKind::Ethless)),
+			_ => Err(()),
+		}
+	}
 }
 
 #[derive(
