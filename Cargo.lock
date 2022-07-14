@@ -6106,6 +6106,7 @@ dependencies = [
  "sp-application-crypto",
  "sp-consensus-pow",
  "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]

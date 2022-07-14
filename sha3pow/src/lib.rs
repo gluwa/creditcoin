@@ -1,7 +1,6 @@
 use parity_scale_codec::{Decode, Encode};
 use primitives::Difficulty;
 use rand::{prelude::SmallRng, SeedableRng};
-use sc_client_api::{AuxStore, HeaderBackend};
 use sc_consensus_pow::{Error, PowAlgorithm};
 use sc_keystore::LocalKeystore;
 use sha3::{Digest, Sha3_256};
@@ -67,22 +66,66 @@ impl<C> Clone for Sha3Algorithm<C> {
 	}
 }
 
-// Here we implement the general PowAlgorithm trait for our concrete Sha3Algorithm
-impl<B: BlockT<Hash = H256>, C> PowAlgorithm<B> for Sha3Algorithm<C>
+pub trait GetDifficulty<B>
 where
+	B: BlockT<Hash = H256>,
+{
+	fn difficulty(&self, parent: B::Hash) -> Result<Difficulty, Error<B>>;
+}
+
+impl<B, C> GetDifficulty<B> for C
+where
+	B: BlockT<Hash = H256>,
 	C: ProvideRuntimeApi<B>,
 	C::Api: DifficultyApi<B, Difficulty>,
 {
-	type Difficulty = Difficulty;
-
-	fn difficulty(&self, parent: B::Hash) -> Result<Self::Difficulty, Error<B>> {
+	fn difficulty(&self, parent: <B as BlockT>::Hash) -> Result<Difficulty, Error<B>> {
 		let parent_id = BlockId::<B>::hash(parent);
-		self.client.runtime_api().difficulty(&parent_id).map_err(|err| {
+		self.runtime_api().difficulty(&parent_id).map_err(|err| {
 			sc_consensus_pow::Error::Environment(format!(
 				"Fetching difficulty from runtime failed: {:?}",
 				err
 			))
 		})
+	}
+}
+
+fn verify<B: BlockT<Hash = H256>>(
+	_parent: &BlockId<B>,
+	pre_hash: &H256,
+	_pre_digest: Option<&[u8]>,
+	seal: &RawSeal,
+	difficulty: Difficulty,
+) -> Result<bool, Error<B>> {
+	// Try to construct a seal object by decoding the raw seal given
+	let seal = match Seal::decode(&mut &seal[..]) {
+		Ok(seal) => seal,
+		Err(_) => return Ok(false),
+	};
+
+	// See whether the hash meets the difficulty requirement. If not, fail fast.
+	if !hash_meets_difficulty(&seal.work, difficulty) {
+		return Ok(false);
+	}
+
+	// Make sure the provided work actually comes from the correct pre_hash
+	let compute = Compute { difficulty, pre_hash: *pre_hash, nonce: seal.nonce };
+
+	if compute.compute() != seal {
+		return Ok(false);
+	}
+
+	Ok(true)
+}
+// Here we implement the general PowAlgorithm trait for our concrete Sha3Algorithm
+impl<B: BlockT<Hash = H256>, C> PowAlgorithm<B> for Sha3Algorithm<C>
+where
+	C: GetDifficulty<B>,
+{
+	type Difficulty = Difficulty;
+
+	fn difficulty(&self, parent: B::Hash) -> Result<Self::Difficulty, Error<B>> {
+		self.client.difficulty(parent)
 	}
 
 	fn verify(
@@ -93,25 +136,7 @@ where
 		seal: &RawSeal,
 		difficulty: Self::Difficulty,
 	) -> Result<bool, Error<B>> {
-		// Try to construct a seal object by decoding the raw seal given
-		let seal = match Seal::decode(&mut &seal[..]) {
-			Ok(seal) => seal,
-			Err(_) => return Ok(false),
-		};
-
-		// See whether the hash meets the difficulty requirement. If not, fail fast.
-		if !hash_meets_difficulty(&seal.work, difficulty) {
-			return Ok(false);
-		}
-
-		// Make sure the provided work actually comes from the correct pre_hash
-		let compute = Compute { difficulty, pre_hash: *pre_hash, nonce: seal.nonce };
-
-		if compute.compute() != seal {
-			return Ok(false);
-		}
-
-		Ok(true)
+		verify(_parent, pre_hash, _pre_digest, seal, difficulty)
 	}
 }
 
@@ -121,10 +146,10 @@ pub fn mine<B, C>(
 	pre_hash: &H256,
 	_pre_digest: Option<&[u8]>,
 	difficulty: Difficulty,
-) -> Result<Option<RawSeal>, sc_consensus_pow::Error<B>>
+) -> Result<Option<RawSeal>, Error<B>>
 where
-	B: sp_api::BlockT<Hash = H256>,
-	C: HeaderBackend<B> + AuxStore + ProvideRuntimeApi<B>,
+	B: BlockT<Hash = H256>,
+	C: GetDifficulty<B>,
 {
 	let mut rng = SmallRng::from_rng(&mut rand::thread_rng()).map_err(|e| {
 		sc_consensus_pow::Error::Environment(format!("Initialize RNG failed for mining: {:?}", e))
@@ -139,5 +164,55 @@ where
 		Ok(Some(seal.encode()))
 	} else {
 		Ok(None)
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use primitives::Difficulty;
+	use sc_keystore::LocalKeystore;
+	use sp_core::H256;
+	use sp_runtime::{testing::Block, OpaqueExtrinsic};
+	use std::sync::Arc;
+
+	use crate::GetDifficulty;
+
+	type TestBlock = Block<OpaqueExtrinsic>;
+
+	struct MockDifficulty {
+		value: Difficulty,
+	}
+
+	impl MockDifficulty {
+		fn new(value: impl Into<Difficulty>) -> Self {
+			Self { value: value.into() }
+		}
+	}
+
+	impl GetDifficulty<TestBlock> for MockDifficulty {
+		fn difficulty(
+			&self,
+			_parent: <TestBlock as sp_api::BlockT>::Hash,
+		) -> Result<Difficulty, sc_consensus_pow::Error<TestBlock>> {
+			Ok(self.value.clone())
+		}
+	}
+
+	#[test]
+	fn mine_works() {
+		let mock = MockDifficulty::new(1);
+		let keystore = LocalKeystore::in_memory();
+		let pre_hash = H256::default();
+
+		let pre_digest = None;
+		let difficulty = 1.into();
+		super::mine::<TestBlock, MockDifficulty>(
+			&Arc::new(mock),
+			&keystore,
+			&pre_hash,
+			pre_digest,
+			difficulty,
+		)
+		.unwrap();
 	}
 }
