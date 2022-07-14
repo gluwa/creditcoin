@@ -45,6 +45,7 @@ use crate::Task;
 use crate::TaskId;
 use crate::Transfer;
 use crate::TransferId;
+use crate::TransferKind;
 use crate::UnverifiedTransfer;
 
 fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
@@ -74,6 +75,17 @@ fn translate_loan_terms<T: Config>(
 		term_length: old.term_length,
 		currency,
 	}
+}
+
+fn translate_transfer_kind(old: OldTransferKind) -> Option<TransferKind> {
+	Some(match old {
+		OldTransferKind::Ethless(_) => TransferKind::Evm(EvmTransferKind::Ethless),
+		OldTransferKind::Erc20(_) => TransferKind::Evm(EvmTransferKind::Erc20),
+		other => {
+			log::warn!("unexpected transfer kind found on storage item: {:?}", other);
+			return None;
+		},
+	})
 }
 
 fn reconstruct_currency(blockchain: &OldBlockchain, kind: &OldTransferKind) -> Option<Currency> {
@@ -120,7 +132,6 @@ fn reconstruct_currency_from_deal<T: Config>(
 fn translate_transfer<T: Config>(
 	transfer: OldTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 ) -> Option<Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>> {
-	#[allow(unreachable_code)]
 	Some(Transfer {
 		amount: transfer.amount,
 		from: transfer.from,
@@ -138,7 +149,7 @@ fn translate_transfer<T: Config>(
 			},
 		},
 		blockchain: translate_blockchain(transfer.blockchain)?,
-		kind: todo!(),
+		kind: translate_transfer_kind(transfer.kind)?,
 	})
 }
 
@@ -196,7 +207,6 @@ generate_storage_alias!(
 	PendingTasks<T: Config> => DoubleMap<(Identity, T::BlockNumber), (Identity, TaskId<T::Hash>), Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
 );
 
-#[allow(unreachable_code)]
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = 0;
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);

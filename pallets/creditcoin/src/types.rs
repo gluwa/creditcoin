@@ -77,7 +77,7 @@ pub struct CollectedCoins<Hash, Balance> {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
-	pub kind: LegacyTransferKind,
+	pub kind: TransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
 	pub deal_order_id: DealOrderId<BlockNum, Hash>,
