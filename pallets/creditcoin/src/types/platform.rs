@@ -6,11 +6,21 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::Hash as HashT;
 use strum::EnumCount;
 
-use crate::{ExternalAddress, LegacyTransferKind};
+use crate::{Config, ExternalAddress, LegacyTransferKind};
 
 // as of EIP-155 the max chain ID is 9,223,372,036,854,775,771 which fits well within a u64
 #[derive(
-	Copy, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+	Copy,
+	Clone,
+	RuntimeDebug,
+	PartialEq,
+	Eq,
+	PartialOrd,
+	Ord,
+	Encode,
+	Decode,
+	TypeInfo,
+	MaxEncodedLen,
 )]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
@@ -38,7 +48,7 @@ impl EvmChainId {
 }
 
 #[derive(
-	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
@@ -104,6 +114,7 @@ impl Blockchain {
 	PartialEq,
 	Eq,
 	PartialOrd,
+	Ord,
 	Encode,
 	Decode,
 	TypeInfo,
@@ -121,14 +132,14 @@ pub type EvmSupportedTransferKinds =
 	BoundedVec<EvmTransferKind, ConstU32<{ EvmTransferKind::COUNT as u32 }>>;
 
 #[derive(
-	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
 pub enum EvmCurrencyType {
 	SmartContract(ExternalAddress, EvmSupportedTransferKinds),
 }
 
 #[derive(
-	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
 pub enum Currency {
 	Evm(EvmCurrencyType, EvmInfo),
@@ -141,6 +152,10 @@ impl Currency {
 				EvmCurrencyType::SmartContract(_, supported) => supported.contains(kind),
 			},
 		}
+	}
+
+	pub fn to_id<T: Config>(&self) -> CurrencyId<T::Hash> {
+		CurrencyId::new::<T>(&self)
 	}
 }
 
@@ -170,7 +185,7 @@ impl TryFrom<super::LegacyTransferKind> for TransferKind {
 }
 
 #[derive(
-	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
+	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen, Ord,
 )]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
