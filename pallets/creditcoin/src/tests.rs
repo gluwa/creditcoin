@@ -5,7 +5,7 @@ use crate::{
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currencies,
 	Currency, CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
 	EvmTransferKind, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind,
-	LoanTerms, Offer, OfferId, Transfer, TransferId, TransferKind, Transfers,
+	LoanTerms, Offer, OfferId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
 
 use assert_matches::assert_matches;

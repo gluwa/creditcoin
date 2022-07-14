@@ -9,7 +9,6 @@ use super::errors::{
 use super::tasks::collect_coins::tests::{mock_rpc_for_collect_coins, RPC_RESPONSE_AMOUNT};
 use super::tasks::BlockAndTime;
 use super::tasks::Lockable;
-use crate::ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN};
 use crate::tests::generate_address_with_proof;
 use crate::types::{AddressId, CollectedCoins, CollectedCoinsId, TaskId};
 use crate::Pallet as Creditcoin;
@@ -26,6 +25,10 @@ use crate::{
 	types::{DoubleMapExt, TransferId},
 	Blockchain, CurrencyOrLegacyTransferKind, ExternalAddress, Id, LegacyTransferKind, LoanTerms,
 	TransferKind,
+};
+use crate::{
+	ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN},
+	EvmTransferKind,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
@@ -900,12 +903,12 @@ fn ocw_retries() {
 		let tx_hash = get_mock_tx_hash();
 		let contract = get_mock_contract().hex_to_address();
 		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = Blockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		let tx_block_num_value =
 			u64::from_str_radix(tx_block_num.trim_start_matches("0x"), 16).unwrap();
 
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -919,7 +922,7 @@ fn ocw_retries() {
 		let lender = test_info.lender.account_id;
 		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer(
 			Origin::signed(lender),
-			TransferKind::Ethless(contract),
+			LegacyTransferKind::Ethless(contract),
 			deal_order_id,
 			tx_hash.hex_to_address(),
 		));
@@ -977,7 +980,7 @@ fn duplicate_retry_fail_and_succeed() {
 		let tx_hash = get_mock_tx_hash();
 		let contract = get_mock_contract().hex_to_address();
 		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = Blockchain::Rinkeby;
+		let blockchain = Blockchain::RINKEBY;
 
 		// mocks for when we expect failure
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
@@ -986,7 +989,7 @@ fn duplicate_retry_fail_and_succeed() {
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -999,7 +1002,7 @@ fn duplicate_retry_fail_and_succeed() {
 		// test that we get a "fail_transfer" tx when verification fails
 		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
+			LegacyTransferKind::Ethless(contract.clone()),
 			deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
@@ -1030,7 +1033,7 @@ fn duplicate_retry_fail_and_succeed() {
 
 		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			TransferKind::Ethless(contract.clone()),
+			LegacyTransferKind::Ethless(contract.clone()),
 			fake_deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
@@ -1039,12 +1042,12 @@ fn duplicate_retry_fail_and_succeed() {
 
 		let expected_transfer = crate::Transfer {
 			blockchain: test_info.blockchain.clone(),
-			kind: TransferKind::Ethless(contract),
+			kind: TransferKind::Evm(EvmTransferKind::Ethless),
 			amount: loan_amount,
 			block: System::<TestRuntime>::block_number(),
 			from: test_info.lender.address_id.clone(),
 			to: test_info.borrower.address_id,
-			order_id: OrderId::Deal(fake_deal_order_id),
+			deal_order_id: fake_deal_order_id,
 			is_processed: false,
 			account_id: lender,
 			tx_id: tx_hash.hex_to_address(),
