@@ -103,8 +103,11 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{ExistentialDeposit, Runtime};
-	use frame_support::weights::{DispatchInfo, PostDispatchInfo};
+	use crate::{Balances, Creditcoin, ExistentialDeposit, Runtime};
+	use frame_support::{
+		traits::Hooks,
+		weights::{DispatchInfo, PostDispatchInfo},
+	};
 	use pallet_balances::NegativeImbalance;
 	use sp_core::Pair;
 	use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
@@ -116,6 +119,10 @@ mod tests {
 		let pkey = key_pair.public();
 		let signer: MultiSigner = pkey.into();
 		signer.into_account()
+	}
+
+	fn existential_deposit() -> u128 {
+		ExistentialDeposit::get()
 	}
 	struct ExtBuilder;
 
@@ -198,6 +205,26 @@ mod tests {
 			assert_eq!(fee, 2u128);
 		};
 
+		ExtBuilder::build().execute_with(test);
+	}
+
+	#[test]
+	fn creditcoin_on_init_redeems() {
+		let test = || {
+			let acc = generate_account("Somebody");
+
+			//offset fees by a block-year
+			let year_offset = CurrencyFeeRedemptionAdapter::<pallet_balances::Pallet<Runtime>,()>::bucketed_year_offset::<Runtime>(&0);
+
+			correct_and_deposit_fee_with_passing_defaults(&acc, 2, 1);
+
+			let free = Balances::free_balance(&acc);
+			assert_eq!(free, existential_deposit() + 1u128);
+			//Give back excess fees worth one.
+			Creditcoin::on_initialize(year_offset);
+			let free = Balances::free_balance(&acc);
+			assert_eq!(free, existential_deposit() + 2u128);
+		};
 		ExtBuilder::build().execute_with(test);
 	}
 }

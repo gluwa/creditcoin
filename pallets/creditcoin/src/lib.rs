@@ -75,7 +75,7 @@ pub mod pallet {
 	use sp_runtime::offchain::Duration;
 	use sp_runtime::traits::{
 		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
-		Verify,
+		Verify, Zero,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -350,11 +350,17 @@ pub mod pallet {
 		/// [legacy_wallet_claimer, legacy_wallet_sighash, legacy_wallet_balance]
 		LegacyWalletClaimed(T::AccountId, LegacySighash, T::Balance),
 
+		/// Unsuccessful cross-chain transfer verification.
+		/// [transfer_id, cause]
 		TransferFailedVerification(TransferId<T::Hash>, VerificationFailureCause),
 
 		/// exchanging vested ERC-20 CC for native CC failed.
 		/// [collected_coins_id, cause]
 		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
+
+		/// Account claimed back some fees.
+		/// [block_batch, account_id, sum]
+		FeeRedemption(T::BlockNumber, T::AccountId, T::Balance),
 	}
 
 	// Errors inform users that something went wrong.
@@ -591,6 +597,15 @@ pub mod pallet {
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
 			}
+
+			log::debug!("Redeem fees");
+			RetainedFees::<T>::drain_prefix(block_number).map(|(account,sum)|{
+			let imbalance = <pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::deposit_into_existing(&account,sum).unwrap_or_else(|_| pallet_balances::PositiveImbalance::zero());
+			if !imbalance.peek().is_zero(){
+				Self::deposit_event(Event::<T>::FeeRedemption(block_number.clone(),account,imbalance.peek()));
+			}
+			imbalance
+			}).for_each(drop);
 
 			<T as Config>::WeightInfo::on_initialize(
 				ask_count,
