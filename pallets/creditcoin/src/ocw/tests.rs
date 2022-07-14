@@ -21,9 +21,10 @@ use crate::{
 		PendingRequestExt, RwLock, Test as TestRuntime, ETHLESS_RESPONSES,
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
+	ocw::tasks::StorageLock,
 	tests::{RefstrExt, TestInfo},
 	types::{DoubleMapExt, TransferId},
-	Blockchain, ExternalAddress, Id, LoanTerms, OrderId, TransferKind,
+	Blockchain, ExternalAddress, Id, LoanTerms, OrderId, TransferKind, Transfers,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
@@ -519,6 +520,39 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 
 		crate::mock::roll_by_with_ocw(1);
 		assert!(logs_contain("Task verification encountered an error"));
+	});
+}
+
+#[test]
+#[tracing_test::traced_test]
+fn offchain_worker_should_log_and_forget_guard_when_task_is_already_handled() {
+	let mut ext = ExtBuilder::default();
+	ext.generate_authority();
+	ext.build_offchain_and_execute(|| {
+		crate::mock::roll_to(1);
+
+		let (unverified, _) = set_up_verify_transfer_env(true);
+		let id = TransferId::new::<TestRuntime>(
+			&unverified.transfer.blockchain,
+			&unverified.transfer.tx_id,
+		);
+		// simulate a transfer that has already been handled
+		Transfers::<TestRuntime>::insert(&id, &unverified.transfer);
+
+		crate::mock::roll_by_with_ocw(1);
+		assert!(logs_contain("Already handled Task"));
+
+		// check that guard for the same ID has been released
+		let storage_key = crate::ocw::tasks::storage_key(&TaskId::VerifyTransfer(id));
+		let mut lock =
+			StorageLock::<'_, BlockAndTime<System<TestRuntime>>>::with_block_and_time_deadline(
+				&storage_key,
+				1,
+				Duration::from_millis(0),
+			);
+
+		let guard = lock.try_lock();
+		assert!(guard.is_err());
 	});
 }
 
