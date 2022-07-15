@@ -1,6 +1,10 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/submittable';
+
 import type {
     ApiTypes,
     AugmentedSubmittable,
@@ -33,7 +37,7 @@ export type __SubmittableExtrinsic<ApiType extends ApiTypes> = SubmittableExtrin
 export type __SubmittableExtrinsicFunction<ApiType extends ApiTypes> = SubmittableExtrinsicFunction<ApiType>;
 
 declare module '@polkadot/api-base/types/submittable' {
-    export interface AugmentedSubmittables<ApiType extends ApiTypes> {
+    interface AugmentedSubmittables<ApiType extends ApiTypes> {
         balances: {
             /**
              * Exactly as `transfer`, except the origin must be root and the source account may be
