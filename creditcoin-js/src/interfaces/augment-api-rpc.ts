@@ -1,6 +1,10 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/rpc-core/types/jsonrpc';
+
 import type { AugmentedRpc } from '@polkadot/rpc-core/types';
 import type { Metadata, StorageKey } from '@polkadot/types';
 import type {
@@ -93,8 +97,10 @@ import type {
 } from '@polkadot/types/interfaces/system';
 import type { IExtrinsic, Observable } from '@polkadot/types/types';
 
+export type __AugmentedRpc = AugmentedRpc<() => unknown>;
+
 declare module '@polkadot/rpc-core/types/jsonrpc' {
-    export interface RpcInterface {
+    interface RpcInterface {
         author: {
             /**
              * Returns true if the keystore has private keys for the given public key and key type.
@@ -404,7 +410,7 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
                 (
                     blockCount: U256 | AnyNumber | Uint8Array,
                     newestBlock: BlockNumber | AnyNumber | Uint8Array,
-                    rewardPercentiles: Option<Vec<f64>> | null | object | string | Uint8Array,
+                    rewardPercentiles: Option<Vec<f64>> | null | Uint8Array | Vec<f64> | f64[],
                 ) => Observable<EthFeeHistory>
             >;
             /**
@@ -903,9 +909,9 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
             traceBlock: AugmentedRpc<
                 (
                     block: Hash | string | Uint8Array,
-                    targets: Option<Text> | null | object | string | Uint8Array,
-                    storageKeys: Option<Text> | null | object | string | Uint8Array,
-                    methods: Option<Text> | null | object | string | Uint8Array,
+                    targets: Option<Text> | null | Uint8Array | Text | string,
+                    storageKeys: Option<Text> | null | Uint8Array | Text | string,
+                    methods: Option<Text> | null | Uint8Array | Text | string,
                 ) => Observable<TraceBlockResponse>
             >;
             /**
