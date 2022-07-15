@@ -24,7 +24,7 @@ use crate::{
 	tests::{RefstrExt, TestInfo},
 	types::{DoubleMapExt, TransferId},
 	Blockchain, CurrencyOrLegacyTransferKind, ExternalAddress, Id, LegacyTransferKind, LoanTerms,
-	TransferKind,
+	TransferKind, Transfers,
 };
 use crate::{
 	ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN},

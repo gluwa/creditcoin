@@ -192,6 +192,12 @@ impl TestInfo {
 		TestInfo::default()
 	}
 
+	pub fn new_no_currency() -> TestInfo {
+		let mut new = TestInfo::default();
+		new.loan_terms.currency = CurrencyId::placeholder();
+		new
+	}
+
 	pub fn create_ask_order(&self) -> TestAskOrder {
 		let TestInfo { lender, loan_terms, expiration_block, ask_guid, .. } = self;
 		let RegisteredAddress { address_id, account_id } = lender;
@@ -273,6 +279,24 @@ impl TestInfo {
 	}
 
 	pub fn create_repayment_transfer(
+		&self,
+		deal_order_id: &TestDealOrderId,
+		amount: impl Into<ExternalAmount>,
+	) -> TestTransfer {
+		let tx = "0xafafaf";
+		let amount = amount.into();
+		assert_ok!(Creditcoin::register_repayment_transfer_new(
+			Origin::signed(self.borrower.account_id.clone()),
+			TransferKind::Evm(EvmTransferKind::Ethless),
+			amount,
+			deal_order_id.clone(),
+			tx.as_bytes().into_bounded()
+		));
+
+		self.mock_transfer(&self.borrower, &self.lender, amount, deal_order_id, tx)
+	}
+
+	pub fn create_legacy_repayment_transfer(
 		&self,
 		deal_order_id: &TestDealOrderId,
 		amount: impl Into<ExternalAmount>,
@@ -363,6 +387,10 @@ pub fn ethless_currency(contract: ExternalAddress) -> Currency {
 		EvmCurrencyType::SmartContract(contract, [EvmTransferKind::Ethless].into_bounded()),
 		EvmInfo::RINKEBY,
 	)
+}
+
+pub fn register_ethless_currency(contract: ExternalAddress) {
+	register_currency(&ethless_currency(contract));
 }
 
 pub fn register_currency(currency: &Currency) {
@@ -1280,10 +1308,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 #[test]
 fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo {
-			loan_terms: LoanTerms { currency: CurrencyId::placeholder(), ..Default::default() },
-			..Default::default()
-		};
+		let test_info = TestInfo::new_no_currency();
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
 
 		//  insert as exemption to bypass transfer verification
@@ -1326,10 +1351,7 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 #[test]
 fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo {
-			loan_terms: LoanTerms { currency: CurrencyId::placeholder(), ..Default::default() },
-			..Default::default()
-		};
+		let test_info = TestInfo::new_no_currency();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		//  insert as exemption to bypass transfer verification
@@ -1399,10 +1421,7 @@ fn fund_deal_order_works() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let test_info = TestInfo {
-			loan_terms: LoanTerms { currency: CurrencyId::placeholder(), ..Default::default() },
-			..Default::default()
-		};
+		let test_info = TestInfo::new_no_currency();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		//  insert as exemption to bypass transfer verification
@@ -1999,7 +2018,7 @@ fn register_deal_order_accepts_ed25519() {
 #[test]
 fn close_deal_order_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
+		let test_info = TestInfo::new_no_currency();
 		let (_, deal_order_id) = test_info.create_deal_order();
 		let transfer_id = TransferId::new::<Test>(&test_info.blockchain, b"12345678");
 
@@ -2013,7 +2032,7 @@ fn close_deal_order_should_error_when_not_signed() {
 #[test]
 fn close_deal_order_should_error_when_borrower_address_is_not_registered() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
+		let test_info = TestInfo::new_no_currency();
 		let (_, deal_order_id) = test_info.create_deal_order();
 		let transfer_id = TransferId::new::<Test>(&test_info.blockchain, b"12345678");
 
@@ -2176,7 +2195,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 		let (_bogus_deal_order, bogus_deal_order_id) = second_test_info.create_deal_order();
 
 		let (_, transfer_id) =
-			second_test_info.create_repayment_transfer(&bogus_deal_order_id, 33u64);
+			second_test_info.create_legacy_repayment_transfer(&bogus_deal_order_id, 33u64);
 
 		// Person1 tries closing the deal by using the transfer made by Person2
 		assert_noop!(
@@ -2193,7 +2212,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 #[test]
 fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_block() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
+		let test_info = TestInfo::new_no_currency();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2207,7 +2226,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 		);
 
 		let (_transfer, transfer_id) =
-			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
+			test_info.create_legacy_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -2231,7 +2250,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 #[test]
 fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
+		let test_info = TestInfo::new_no_currency();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2245,7 +2264,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 		);
 
 		let (_, transfer_id) =
-			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
+			test_info.create_legacy_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -2267,7 +2286,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 #[test]
 fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
+		let test_info = TestInfo::new_no_currency();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2281,7 +2300,7 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 		);
 
 		let (_, transfer_id) =
-			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
+			test_info.create_legacy_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -2306,7 +2325,7 @@ fn close_deal_order_should_succeed() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let test_info = TestInfo::new_defaults();
+		let test_info = TestInfo::new_no_currency();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2322,6 +2341,7 @@ fn close_deal_order_should_succeed() {
 		//  insert as exemption to bypass transfer verification
 		let tx_hash = "0".as_bytes().into_bounded();
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+		register_ethless_currency(contract.clone());
 
 		assert_ok!(Creditcoin::register_transfer_internal_legacy(
 			test_info.borrower.account_id.clone(),
