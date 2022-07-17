@@ -86,7 +86,7 @@ benchmarks! {
 			insert_fake_deal::<T>(&lender, expiration_block, DealKind::Unfunded, i);
 		}
 		//generate this many matching funded_deals with its deal,transfer,offer,ask and bid.
-		for i in 0..f{
+		for i in d..d + f{
 			insert_fake_deal::<T>(&lender, expiration_block, DealKind::Funded, i);
 		}
 
