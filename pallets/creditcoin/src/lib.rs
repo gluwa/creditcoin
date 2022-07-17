@@ -135,7 +135,7 @@ pub mod pallet {
 	}
 
 	pub trait WeightInfo {
-		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32) -> Weight;
+		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32, r: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
@@ -614,6 +614,7 @@ pub mod pallet {
 				deals_count,
 				funded_deals_count,
 				unverified_task_count,
+				0,
 				0,
 			)
 		}

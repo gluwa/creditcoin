@@ -60,6 +60,8 @@ benchmarks! {
 		let u in 0..255;
 		//insert c unverifiedcollectedcoins
 		let c in 0..255;
+		//accounts in fees
+		let r in 0..255;
 
 		<Timestamp<T>>::set_timestamp(1u32.into());
 
@@ -98,12 +100,12 @@ benchmarks! {
 
 		for i in 0..c {
 			let collector: T::AccountId = lender_account::<T>(true);
-			let evm_address = format!("{:03x}",i).as_bytes() .into_bounded();
+			let evm_address = format!("{:03x}",i).as_bytes().into_bounded();
 			let address_id = AddressId::new::<T>(&CONTRACT_CHAIN, &evm_address);
 			let entry = Address { blockchain: CONTRACT_CHAIN, value: evm_address.clone(), owner: collector.clone() };
 			<Addresses<T>>::insert(address_id, entry);
 
-			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
+			let tx_id = format!("{:03x}",i).as_bytes().into_bounded();
 			let collected_coins_id = CollectedCoinsId::new::<T>(&tx_id);
 
 			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() };
@@ -111,8 +113,17 @@ benchmarks! {
 			crate::PendingTasks::<T>::insert(deadline, crate::TaskId::from(collected_coins_id), crate::Task::from(pending));
 		}
 
+		for i in 0..r {
+			let acc: T::AccountId = {
+				let mut raw = [0u8;32];
+				raw[0]= i as u8;
+				let raw = sp_core::sr25519::Public(raw);
+				T::FromAccountId::from(raw).into()
+			};
+			RetainedFees::<T>::insert(deadline, acc, T::Balance::unique_saturated_from(u128::MAX));
+		}
+
 	}: { Creditcoin::<T>::on_initialize(deadline) }
-	verify {}
 
 	register_address {
 		let who: T::AccountId = lender_account::<T>(false);
