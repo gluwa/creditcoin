@@ -31,7 +31,7 @@ type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
 #[cfg(feature = "std")]
-mod bounded_serde;
+pub mod bounded_serde;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
