@@ -1206,7 +1206,7 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
-		pub fn register_funding_transfer(
+		pub fn register_funding_transfer_legacy(
 			origin: OriginFor<T>,
 			transfer_kind: LegacyTransferKind,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
@@ -1234,7 +1234,7 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
-		pub fn register_repayment_transfer(
+		pub fn register_repayment_transfer_legacy(
 			origin: OriginFor<T>,
 			transfer_kind: LegacyTransferKind,
 			repayment_amount: ExternalAmount,
@@ -1263,7 +1263,7 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
-		pub fn register_funding_transfer_new(
+		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
 			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
@@ -1290,7 +1290,7 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
-		pub fn register_repayment_transfer_new(
+		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
 			repayment_amount: ExternalAmount,
