@@ -12,7 +12,7 @@ pub fn generate_external_address(
 	public_key: Public,
 ) -> Option<ExternalAddress> {
 	match blockchain {
-		Blockchain::Evm(_) if EVMAddress::try_extract_addresss_type(reference).is_some() => {
+		Blockchain::Evm(_) if EVMAddress::try_extract_address_type(reference).is_some() => {
 			Some(EVMAddress::from_public(&public_key))
 		},
 		_ => None,
@@ -21,7 +21,7 @@ pub fn generate_external_address(
 
 pub trait PublicToAddress {
 	type AddressType;
-	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType>;
+	fn try_extract_address_type(addr: &ExternalAddress) -> Option<Self::AddressType>;
 	fn from_public(pkey: &Public) -> ExternalAddress;
 }
 
@@ -29,7 +29,7 @@ pub struct EVMAddress;
 
 impl PublicToAddress for EVMAddress {
 	type AddressType = ();
-	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType> {
+	fn try_extract_address_type(addr: &ExternalAddress) -> Option<Self::AddressType> {
 		if eth_address_is_well_formed(addr) {
 			Some(())
 		} else {
