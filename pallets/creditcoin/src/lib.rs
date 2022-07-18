@@ -780,6 +780,13 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
+			let currency =
+				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
+			ensure!(
+				address.blockchain == currency.blockchain(),
+				Error::<T>::AddressPlatformMismatch
+			);
+
 			let ask_order = AskOrder {
 				lender_address_id: address_id,
 				terms: terms.try_into().map_err(Error::<T>::from)?,
@@ -813,6 +820,13 @@ pub mod pallet {
 
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			let currency =
+				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
+			ensure!(
+				address.blockchain == currency.blockchain(),
+				Error::<T>::AddressPlatformMismatch
+			);
 
 			let bid_order = BidOrder {
 				borrower_address_id: address_id,
