@@ -154,7 +154,7 @@ impl Default for Currency {
 				"0x0000000000000000000000000000000000000000".hex_to_address(),
 				[EvmTransferKind::Ethless].into_bounded(),
 			),
-			EvmInfo { chain_id: 0.into() },
+			EvmInfo::RINKEBY,
 		)
 	}
 }
@@ -192,10 +192,17 @@ impl TestInfo {
 		TestInfo::default()
 	}
 
-	pub fn new_no_currency() -> TestInfo {
-		let mut new = TestInfo::default();
-		new.loan_terms.currency = CurrencyId::placeholder();
-		new
+	pub fn with_currency(currency: Currency) -> TestInfo {
+		let default = TestInfo::default();
+
+		TestInfo {
+			loan_terms: LoanTerms {
+				currency: CurrencyId::new::<Test>(&currency),
+				..default.loan_terms
+			},
+			currency,
+			..default
+		}
 	}
 
 	pub fn create_ask_order(&self) -> TestAskOrder {
@@ -220,6 +227,8 @@ impl TestInfo {
 	pub fn create_bid_order(&self) -> TestBidOrder {
 		let TestInfo { borrower, loan_terms, expiration_block, bid_guid, .. } = self;
 		let RegisteredAddress { address_id, account_id } = borrower;
+
+		Currencies::<Test>::insert(CurrencyId::new::<Test>(&self.currency), &self.currency);
 
 		assert_ok!(Creditcoin::add_bid_order(
 			Origin::signed(account_id.clone()),
@@ -288,24 +297,6 @@ impl TestInfo {
 		assert_ok!(Creditcoin::register_repayment_transfer(
 			Origin::signed(self.borrower.account_id.clone()),
 			TransferKind::Evm(EvmTransferKind::Ethless),
-			amount,
-			deal_order_id.clone(),
-			tx.as_bytes().into_bounded()
-		));
-
-		self.mock_transfer(&self.borrower, &self.lender, amount, deal_order_id, tx)
-	}
-
-	pub fn create_legacy_repayment_transfer(
-		&self,
-		deal_order_id: &TestDealOrderId,
-		amount: impl Into<ExternalAmount>,
-	) -> TestTransfer {
-		let tx = "0xafafaf";
-		let amount = amount.into();
-		assert_ok!(Creditcoin::register_repayment_transfer_legacy(
-			Origin::signed(self.borrower.account_id.clone()),
-			LegacyTransferKind::Ethless(ExternalAddress::default()),
 			amount,
 			deal_order_id.clone(),
 			tx.as_bytes().into_bounded()
@@ -387,15 +378,6 @@ pub fn ethless_currency(contract: ExternalAddress) -> Currency {
 		EvmCurrencyType::SmartContract(contract, [EvmTransferKind::Ethless].into_bounded()),
 		EvmInfo::RINKEBY,
 	)
-}
-
-pub fn register_ethless_currency(contract: ExternalAddress) {
-	register_currency(&ethless_currency(contract));
-}
-
-pub fn register_currency(currency: &Currency) {
-	let id = CurrencyId::new::<Test>(currency);
-	Currencies::<Test>::insert(id, currency);
 }
 
 pub fn get_register_address_message(who: AccountId) -> [u8; 32] {
@@ -561,8 +543,12 @@ fn register_transfer_ocw_fail_to_send() {
 
 		// we're going to verify a transfer twice:
 		// First when we expect failure, which means we won't make all of the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
-			.mock_get_block_number(&mut state.write());
+		{
+			let mut state = state.write();
+			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+				.mock_chain_id(&mut state)
+				.mock_get_block_number(&mut state);
+		}
 		// Second when we expect success, where we'll do all the requests
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
@@ -570,9 +556,13 @@ fn register_transfer_ocw_fail_to_send() {
 		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
-		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
-
-		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
+		let currency = ethless_currency(contract.clone());
+		let test_info = TestInfo::with_currency(currency);
+		let test_info = TestInfo {
+			blockchain,
+			loan_terms: LoanTerms { amount: loan_amount, ..test_info.loan_terms },
+			..test_info
+		};
 
 		let (_, deal_order_id) = test_info.create_deal_order();
 
@@ -580,9 +570,9 @@ fn register_transfer_ocw_fail_to_send() {
 
 		// exercise when we try to send a fail_transfer but tx send fails
 		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer_legacy(
+			assert_ok!(Creditcoin::register_funding_transfer(
 				Origin::signed(lender.clone()),
-				LegacyTransferKind::Ethless(contract.clone()),
+				EvmTransferKind::Ethless.into(),
 				deal_order_id.clone(),
 				tx_hash.hex_to_address(),
 			));
@@ -1269,7 +1259,9 @@ fn fund_deal_order_should_error_when_deal_has_expired() {
 fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_id() {
 	ExtBuilder::default().build_and_execute(|| {
 		// this is the primary deal_order
-		let test_info = TestInfo::new_defaults();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+		let currency = ethless_currency(contract.clone());
+		let test_info = TestInfo::with_currency(currency);
 		let (_, deal_order_id) = test_info.create_deal_order();
 
 		// this is a deal_order from another person
@@ -1281,7 +1273,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
 				term_length: Duration::from_millis(1_000_000),
-				currency: CurrencyId::placeholder(),
+				currency: CurrencyId::new::<Test>(&Default::default()),
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -1293,13 +1285,10 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 
 		//  insert as exemption to bypass transfer verification
 		let tx_hash = "0".as_bytes().into_bounded();
-		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
-		let currency = ethless_currency(contract.clone());
-		register_currency(&currency);
 
-		assert_ok!(Creditcoin::register_funding_transfer_legacy(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(second_test_info.lender.account_id.clone()),
-			LegacyTransferKind::Ethless(contract),
+			TransferKind::Evm(EvmTransferKind::Ethless),
 			bogus_deal_order_id.clone(),
 			tx_hash
 		));
@@ -1322,19 +1311,18 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 #[test]
 fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_no_currency();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+		let currency = ethless_currency(contract.clone());
+
+		let test_info = TestInfo::with_currency(currency);
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
 
 		//  insert as exemption to bypass transfer verification
 		let tx_hash = "0".as_bytes().into_bounded();
-		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		let currency = ethless_currency(contract.clone());
-		register_currency(&currency);
-
-		assert_ok!(Creditcoin::register_funding_transfer_legacy(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
-			LegacyTransferKind::Ethless(contract),
+			EvmTransferKind::Ethless.into(),
 			deal_order_id.clone(),
 			tx_hash
 		));
@@ -1365,19 +1353,19 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 #[test]
 fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_no_currency();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+		let currency = ethless_currency(contract.clone());
+
+		let test_info = TestInfo::with_currency(currency);
+
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		//  insert as exemption to bypass transfer verification
 		let tx_hash = "0".as_bytes().into_bounded();
-		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		let currency = ethless_currency(contract.clone());
-		register_currency(&currency);
-
-		assert_ok!(Creditcoin::register_funding_transfer_legacy(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
-			LegacyTransferKind::Ethless(contract),
+			EvmTransferKind::Ethless.into(),
 			deal_order_id.clone(),
 			tx_hash
 		));
@@ -1435,19 +1423,17 @@ fn fund_deal_order_works() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let test_info = TestInfo::new_no_currency();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+		let currency = ethless_currency(contract.clone());
+		let test_info = TestInfo::with_currency(currency);
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		//  insert as exemption to bypass transfer verification
 		let tx_hash = "0".as_bytes().into_bounded();
-		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-		let currency = ethless_currency(contract.clone());
-		register_currency(&currency);
-
-		assert_ok!(Creditcoin::register_funding_transfer_legacy(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(test_info.lender.account_id.clone()),
-			LegacyTransferKind::Ethless(contract),
+			EvmTransferKind::Ethless.into(),
 			deal_order_id.clone(),
 			tx_hash
 		));
@@ -2032,7 +2018,7 @@ fn register_deal_order_accepts_ed25519() {
 #[test]
 fn close_deal_order_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_no_currency();
+		let test_info = TestInfo::new_defaults();
 		let (_, deal_order_id) = test_info.create_deal_order();
 		let transfer_id = TransferId::new::<Test>(&test_info.blockchain, b"12345678");
 
@@ -2046,7 +2032,7 @@ fn close_deal_order_should_error_when_not_signed() {
 #[test]
 fn close_deal_order_should_error_when_borrower_address_is_not_registered() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_no_currency();
+		let test_info = TestInfo::new_defaults();
 		let (_, deal_order_id) = test_info.create_deal_order();
 		let transfer_id = TransferId::new::<Test>(&test_info.blockchain, b"12345678");
 
@@ -2198,7 +2184,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 				amount: 2_000_000u64.into(),
 				interest_rate: Default::default(),
 				term_length: Duration::from_millis(1_000_000),
-				currency: CurrencyId::placeholder(),
+				currency: CurrencyId::new::<Test>(&Currency::default()),
 			},
 			ask_guid: "second-ask-guid".as_bytes().into_bounded(),
 			bid_guid: "second-bid-guid".as_bytes().into_bounded(),
@@ -2209,7 +2195,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 		let (_bogus_deal_order, bogus_deal_order_id) = second_test_info.create_deal_order();
 
 		let (_, transfer_id) =
-			second_test_info.create_legacy_repayment_transfer(&bogus_deal_order_id, 33u64);
+			second_test_info.create_repayment_transfer(&bogus_deal_order_id, 33u64);
 
 		// Person1 tries closing the deal by using the transfer made by Person2
 		assert_noop!(
@@ -2226,7 +2212,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 #[test]
 fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_block() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_no_currency();
+		let test_info = TestInfo::new_defaults();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2240,7 +2226,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 		);
 
 		let (_transfer, transfer_id) =
-			test_info.create_legacy_repayment_transfer(&deal_order_id, deal_order.terms.amount);
+			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -2264,7 +2250,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 #[test]
 fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_no_currency();
+		let test_info = TestInfo::default();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2278,7 +2264,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 		);
 
 		let (_, transfer_id) =
-			test_info.create_legacy_repayment_transfer(&deal_order_id, deal_order.terms.amount);
+			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -2300,7 +2286,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 #[test]
 fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_no_currency();
+		let test_info = TestInfo::default();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2314,7 +2300,7 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 		);
 
 		let (_, transfer_id) =
-			test_info.create_legacy_repayment_transfer(&deal_order_id, deal_order.terms.amount);
+			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -2338,8 +2324,10 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 fn close_deal_order_should_succeed() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+		let currency = ethless_currency(contract.clone());
 
-		let test_info = TestInfo::new_no_currency();
+		let test_info = TestInfo::with_currency(currency);
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
 		// lock DealOrder
@@ -2354,17 +2342,16 @@ fn close_deal_order_should_succeed() {
 
 		//  insert as exemption to bypass transfer verification
 		let tx_hash = "0".as_bytes().into_bounded();
-		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
-		register_ethless_currency(contract.clone());
 
-		assert_ok!(Creditcoin::register_transfer_internal_legacy(
+		assert_ok!(Creditcoin::register_transfer_internal(
 			test_info.borrower.account_id.clone(),
 			test_info.borrower.address_id.clone(),
 			test_info.lender.address_id.clone(),
-			LegacyTransferKind::Ethless(contract),
+			EvmTransferKind::Ethless.into(),
 			33u64.into(),
 			deal_order_id.clone(),
-			tx_hash
+			tx_hash,
+			&test_info.loan_terms.currency
 		));
 
 		let (_, transfer_id) =
@@ -2743,7 +2730,7 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 					amount: 2_000_000u64.into(),
 					interest_rate: Default::default(),
 					term_length: Duration::from_millis(1_000_000),
-					currency: CurrencyId::placeholder(),
+					currency: CurrencyId::new::<Test>(&Currency::default()),
 				},
 				ask_guid: format!("{:?}-ask-guid", expiration_block.clone())
 					.as_bytes()
@@ -2768,9 +2755,9 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 			// fund only deal orders which expire at even blocks
 			if expiration_block % 2 == 0 {
 				let tx = format!("0xfafafa{:02}", expiration_block.clone());
-				assert_ok!(Creditcoin::register_funding_transfer_legacy(
+				assert_ok!(Creditcoin::register_funding_transfer(
 					Origin::signed(test_info.lender.account_id.clone()),
-					LegacyTransferKind::Ethless(ExternalAddress::default()),
+					EvmTransferKind::Ethless.into(),
 					deal_order_id.clone(),
 					tx.as_bytes().into_bounded()
 				));
