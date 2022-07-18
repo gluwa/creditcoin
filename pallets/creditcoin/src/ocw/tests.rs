@@ -1040,7 +1040,7 @@ fn duplicate_retry_fail_and_succeed() {
 
 		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer_legacy(
 			Origin::signed(lender.clone()),
-			LegacyTransferKind::Ethless(contract.clone()),
+			LegacyTransferKind::Ethless(contract),
 			fake_deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));

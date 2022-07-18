@@ -1246,7 +1246,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 	ExtBuilder::default().build_and_execute(|| {
 		// this is the primary deal_order
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
-		let currency = ethless_currency(contract.clone());
+		let currency = ethless_currency(contract);
 		let test_info = TestInfo::with_currency(currency);
 		let (_, deal_order_id) = test_info.create_deal_order();
 
@@ -1298,7 +1298,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 	ExtBuilder::default().build_and_execute(|| {
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
-		let currency = ethless_currency(contract.clone());
+		let currency = ethless_currency(contract);
 
 		let test_info = TestInfo::with_currency(currency);
 		let (_deal_order, deal_order_id) = test_info.create_deal_order();
@@ -1340,7 +1340,7 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 	ExtBuilder::default().build_and_execute(|| {
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
-		let currency = ethless_currency(contract.clone());
+		let currency = ethless_currency(contract);
 
 		let test_info = TestInfo::with_currency(currency);
 
@@ -1410,7 +1410,7 @@ fn fund_deal_order_works() {
 		System::set_block_number(1);
 
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
-		let currency = ethless_currency(contract.clone());
+		let currency = ethless_currency(contract);
 		let test_info = TestInfo::with_currency(currency);
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
 
@@ -2311,7 +2311,7 @@ fn close_deal_order_should_succeed() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
-		let currency = ethless_currency(contract.clone());
+		let currency = ethless_currency(contract);
 
 		let test_info = TestInfo::with_currency(currency);
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
