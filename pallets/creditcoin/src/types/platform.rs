@@ -83,10 +83,10 @@ impl Blockchain {
 	pub const LUNIVERSE: Blockchain = Blockchain::evm(EvmChainId::LUNIVERSE);
 
 	pub fn as_bytes(&self) -> &[u8] {
-		match self {
-			&Blockchain::ETHEREUM => b"ethereum",
-			&Blockchain::RINKEBY => b"rinkeby",
-			&(Blockchain::LUNIVERSE_TESTNET | Blockchain::LUNIVERSE) => b"luniverse",
+		match *self {
+			Blockchain::ETHEREUM => b"ethereum",
+			Blockchain::RINKEBY => b"rinkeby",
+			Blockchain::LUNIVERSE_TESTNET | Blockchain::LUNIVERSE => b"luniverse",
 			_ => todo!(),
 		}
 	}
@@ -160,7 +160,7 @@ impl Currency {
 	}
 
 	pub fn to_id<T: Config>(&self) -> CurrencyId<T::Hash> {
-		CurrencyId::new::<T>(&self)
+		CurrencyId::new::<T>(self)
 	}
 }
 
