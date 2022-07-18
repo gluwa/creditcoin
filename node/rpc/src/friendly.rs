@@ -79,6 +79,7 @@ impl Event {
 	pub fn from_runtime(event: creditcoin_node_runtime::Event) -> Option<Self> {
 		Some(match event {
 			creditcoin_node_runtime::Event::System(_) => None?,
+			creditcoin_node_runtime::Event::Scheduler(_) => None?,
 			creditcoin_node_runtime::Event::Balances(e) => match e {
 				pallet_balances::Event::Transfer { from, to, amount } => {
 					Event::CtcTransfer { from, to, amount: amount.to_string() }

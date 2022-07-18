@@ -5,6 +5,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
@@ -127,6 +128,24 @@ parameter_types! {
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
+
+	 pub MaximumSchedulerWeight: Weight = 10_000_000;
+	 pub const MaxScheduledPerBlock: u32 = 50;
+
+}
+
+impl pallet_scheduler::Config for Runtime {
+	type Event = Event;
+	type Origin = Origin;
+	type PalletsOrigin = OriginCaller;
+	type Call = Call;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = frame_system::EnsureRoot<AccountId>;
+	type MaxScheduledPerBlock = MaxScheduledPerBlock;
+	type WeightInfo = ();
+	type OriginPrivilegeCmp = EqualPrivilegeOnly;
+	type PreimageProvider = ();
+	type NoPreimagePostponement = ();
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -337,7 +356,8 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
-		Rewards: pallet_rewards::{Pallet, Storage, Event<T>}
+		Rewards: pallet_rewards::{Pallet, Storage, Event<T>},
+		Scheduler: pallet_scheduler,
 	}
 );
 
