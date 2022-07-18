@@ -1022,6 +1022,8 @@ fn duplicate_retry_fail_and_succeed() {
 		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
 		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer_legacy(
+			Origin::signed(lender.clone()),
+			LegacyTransferKind::Ethless(contract),
 			fake_deal_order_id.clone(),
 		));
 
