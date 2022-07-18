@@ -26,6 +26,7 @@ mod migrations;
 mod ocw;
 mod types;
 
+use crate::ocw::tasks::collect_coins::GCreContract;
 pub use types::*;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
@@ -257,6 +258,9 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
+
+	#[pallet::storage]
+	pub type CollectCoinsContract<T: Config> = StorageValue<_, GCreContract, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -1415,6 +1419,17 @@ pub mod pallet {
 
 			Currencies::<T>::insert(&id, &currency);
 
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::weight(T::DbWeight::get().reads_writes(1,1))]
+		pub fn set_collect_coins_contract(
+			origin: OriginFor<T>,
+			contract: GCreContract,
+		) -> DispatchResult {
+			ensure_root(origin)?;
+			CollectCoinsContract::<T>::put(contract);
 			Ok(())
 		}
 	}

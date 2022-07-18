@@ -3,23 +3,41 @@ use crate::ocw::{
 	rpc::{self, EthTransaction, EthTransactionReceipt},
 	OffchainResult, ETH_CONFIRMATIONS,
 };
-
 use crate::pallet::{Config, Pallet};
 use crate::{
-	types::{Blockchain, UnverifiedCollectedCoins},
+	types::{self, Blockchain, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
+use codec::{Decode, Encode, MaxEncodedLen};
+use core::default::Default;
+use ethabi::{Function, Param, ParamType, StateMutability, Token};
+use ethereum_types::{H160, U64};
+use frame_support::{ensure, RuntimeDebug};
+use hex_literal::hex;
+use scale_info::TypeInfo;
 use sp_runtime::SaturatedConversion;
 #[cfg_attr(feature = "std", allow(unused_imports))]
 use sp_std::prelude::*;
 
-use ethabi::{Function, Param, ParamType, StateMutability, Token};
-use ethereum_types::{H160, U64};
-use frame_support::ensure;
-use hex_literal::hex;
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct GCreContract {
+	#[cfg_attr(feature = "std", serde(with = "types::bounded_serde"))]
+	pub contract_address: sp_core::H160,
+	pub contract_chain: Blockchain,
+	pub burn_selector: [u8; 4],
+}
 
-pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
-const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
+impl Default for GCreContract {
+	fn default() -> Self {
+		let contract_chain: Blockchain = Blockchain::Ethereum;
+		let contract_address: H160 =
+			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
+		let burn_selector: [u8; 4] = hex!("42966c68");
+		Self { contract_address, contract_chain, burn_selector }
+	}
+}
 
 ///exchange has been deprecated, use burn instead
 fn burn_vested_cc_abi() -> Function {
@@ -41,6 +59,7 @@ pub fn validate_collect_coins(
 	receipt: &EthTransactionReceipt,
 	transaction: &EthTransaction,
 	eth_tip: U64,
+	contract_address: &ExternalAddress,
 ) -> OffchainResult<ExternalAmount> {
 	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
 
@@ -52,7 +71,7 @@ pub fn validate_collect_coins(
 	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
 	if let Some(to) = &transaction.to {
-		ensure!(to == &CONTRACT_ADDRESS, VerificationFailureCause::IncorrectContract);
+		ensure!(to == contract_address, VerificationFailureCause::IncorrectContract);
 	} else {
 		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
@@ -92,12 +111,14 @@ impl<T: Config> Pallet<T> {
 	) -> VerificationResult<T::Balance> {
 		log::debug!("verifying OCW Collect Coins");
 		let UnverifiedCollectedCoins { to, tx_id } = u_cc;
-		let rpc_url = &CONTRACT_CHAIN.rpc_url()?;
+		let GCreContract { contract_address, contract_chain, burn_selector } =
+			crate::CollectCoinsContract::<T>::get();
+		let rpc_url = &contract_chain.rpc_url()?;
 		let tx = rpc::eth_get_transaction(tx_id, rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
 
-		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip)?;
+		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip, &contract_address)?;
 
 		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
 
