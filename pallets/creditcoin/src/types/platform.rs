@@ -146,6 +146,11 @@ pub enum Currency {
 }
 
 impl Currency {
+	pub fn blockchain(&self) -> Blockchain {
+		match self {
+			Currency::Evm(_, info) => Blockchain::Evm(info.clone()),
+		}
+	}
 	pub fn supports(&self, kind: &TransferKind) -> bool {
 		match (self, kind) {
 			(Currency::Evm(currency, _), TransferKind::Evm(kind)) => match currency {

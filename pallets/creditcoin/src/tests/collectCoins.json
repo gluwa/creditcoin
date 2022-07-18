@@ -473,5 +473,10 @@
       "transactionsRoot": "0x4270c05aff0c30786ff65957ed7b2d6c964482b5acc9bfc18e12f1aa4736b453",
       "uncles": []
     }
+  },
+  "eth_chainId": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": "0x4"
   }
 }
