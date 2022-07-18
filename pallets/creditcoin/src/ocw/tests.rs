@@ -525,6 +525,8 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 			.unwrap(),
 		);
 
+		requests.mock_chain_id(&mut state.write());
+
 		requests.mock_get_transaction(&mut state.write());
 
 		crate::mock::roll_by_with_ocw(1);
@@ -588,13 +590,11 @@ fn set_up_verify_transfer_env(
 	let unverified = make_unverified_transfer(transfer.clone());
 
 	if register_transfer {
-		let contract = get_mock_contract().hex_to_address();
+		crate::DealOrders::<TestRuntime>::insert_id(deal_order_id.clone(), deal_order);
 
-		crate::DealOrders::<Test>::insert_id(deal_order_id.clone(), deal_order);
-
-		assert_ok!(crate::mock::Creditcoin::register_funding_transfer_legacy(
+		assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
 			crate::mock::Origin::signed(test_info.lender.account_id),
-			LegacyTransferKind::Ethless(contract),
+			crate::EvmTransferKind::Ethless.into(),
 			deal_order_id,
 			transfer.tx_id,
 		));
@@ -966,8 +966,12 @@ fn duplicate_retry_fail_and_succeed() {
 		let blockchain = Blockchain::RINKEBY;
 
 		// mocks for when we expect failure
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-			.mock_get_block_number(&mut state.write());
+		{
+			let mut state = state.write();
+			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+				.mock_chain_id(&mut state)
+				.mock_get_block_number(&mut state);
+		}
 		// mocks for when we expect success
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
@@ -975,17 +979,20 @@ fn duplicate_retry_fail_and_succeed() {
 		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
 
 		let loan_amount = get_mock_amount();
-		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
+		let currency = crate::tests::ethless_currency(contract.clone());
 
-		let test_info =
-			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
+		let test_info = TestInfo::with_currency(currency);
+		let test_info = TestInfo {
+			loan_terms: LoanTerms { amount: loan_amount, ..test_info.loan_terms },
+			..test_info
+		};
 		let (deal_order_id, _) = test_info.create_deal_order();
 		let lender = test_info.lender.account_id.clone();
 
 		// test that we get a "fail_transfer" tx when verification fails
-		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer_legacy(
+		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer(
 			Origin::signed(lender.clone()),
-			LegacyTransferKind::Ethless(contract.clone()),
+			crate::EvmTransferKind::Ethless.into(),
 			deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));

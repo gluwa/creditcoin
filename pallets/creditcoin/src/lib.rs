@@ -790,6 +790,13 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
+			let currency =
+				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
+			ensure!(
+				address.blockchain == currency.blockchain(),
+				Error::<T>::AddressPlatformMismatch
+			);
+
 			Self::use_guid(&guid)?;
 
 			let ask_order = AskOrder {
@@ -823,6 +830,13 @@ pub mod pallet {
 
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			let currency =
+				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
+			ensure!(
+				address.blockchain == currency.blockchain(),
+				Error::<T>::AddressPlatformMismatch
+			);
 
 			Self::use_guid(&guid)?;
 

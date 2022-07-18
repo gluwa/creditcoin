@@ -481,6 +481,7 @@ pub(crate) struct MockedRpcRequests {
 	pub(crate) get_transaction_receipt: Option<PendingRequest>,
 	pub(crate) get_block_number: Option<PendingRequest>,
 	pub(crate) get_block_by_number: Option<PendingRequest>,
+	pub(crate) chain_id: Option<PendingRequest>,
 }
 
 impl Default for MockedRpcRequests {
@@ -520,7 +521,20 @@ impl MockedRpcRequests {
 			uri,
 			responses,
 		));
-		Self { get_transaction, get_transaction_receipt, get_block_number, get_block_by_number }
+		let chain_id = Some(pending_rpc_request("eth_chainId", vec![], uri, responses));
+		Self {
+			get_transaction,
+			get_transaction_receipt,
+			get_block_number,
+			get_block_by_number,
+			chain_id,
+		}
+	}
+
+	pub(crate) fn mock_chain_id(&mut self, state: &mut OffchainState) -> &mut Self {
+		let chain_id = self.chain_id.take().unwrap();
+		state.expect_request(chain_id);
+		self
 	}
 
 	/// Mocks only the RPC response for get_transaction

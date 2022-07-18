@@ -139,16 +139,13 @@ impl<Hash> BidTerms<Hash> {
 }
 
 #[cfg(test)]
-impl<Hash> Default for LoanTerms<Hash>
-where
-	Hash: Default,
-{
+impl Default for LoanTerms<sp_core::H256> {
 	fn default() -> Self {
 		Self {
 			amount: Default::default(),
 			interest_rate: InterestRate::default(),
 			term_length: Duration::from_millis(100_000),
-			currency: CurrencyId::placeholder(),
+			currency: CurrencyId::new::<crate::mock::Test>(&crate::Currency::default()),
 		}
 	}
 }
