@@ -562,6 +562,7 @@ import type {
     MmrNodeIndex,
     MmrProof,
 } from '@polkadot/types/interfaces/mmr';
+import type { NpApiError } from '@polkadot/types/interfaces/nompools';
 import type { StorageKind } from '@polkadot/types/interfaces/offchain';
 import type {
     DeferredOffenceOf,
@@ -1001,6 +1002,7 @@ import type {
     DispatchErrorModuleU8,
     DispatchErrorModuleU8a,
     DispatchErrorPre6,
+    DispatchErrorPre6First,
     DispatchErrorTo198,
     DispatchInfo,
     DispatchInfoTo190,
@@ -1417,6 +1419,7 @@ declare module '@polkadot/types/types/registry' {
         DispatchErrorModuleU8: DispatchErrorModuleU8;
         DispatchErrorModuleU8a: DispatchErrorModuleU8a;
         DispatchErrorPre6: DispatchErrorPre6;
+        DispatchErrorPre6First: DispatchErrorPre6First;
         DispatchErrorTo198: DispatchErrorTo198;
         DispatchFeePayment: DispatchFeePayment;
         DispatchInfo: DispatchInfo;
@@ -1775,6 +1778,7 @@ declare module '@polkadot/types/types/registry' {
         NominatorIndex: NominatorIndex;
         NominatorIndexCompact: NominatorIndexCompact;
         NotConnectedPeer: NotConnectedPeer;
+        NpApiError: NpApiError;
         Null: Null;
         OccupiedCore: OccupiedCore;
         OccupiedCoreAssumption: OccupiedCoreAssumption;
