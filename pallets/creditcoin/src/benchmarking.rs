@@ -230,7 +230,7 @@ benchmarks! {
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,true,0u8);
-	}: register_funding_transfer_new(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
+	}: register_funding_transfer(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
 
 	register_repayment_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -400,7 +400,7 @@ fn generate_transfer<T: Config>(
 	let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
 	if swap_sender {
-		Creditcoin::<T>::register_repayment_transfer(
+		Creditcoin::<T>::register_repayment_transfer_legacy(
 			RawOrigin::Signed(who).into(),
 			LegacyTransferKind::Ethless(contract),
 			gain.into(),
@@ -409,7 +409,7 @@ fn generate_transfer<T: Config>(
 		)
 		.unwrap();
 	} else {
-		Creditcoin::<T>::register_funding_transfer(
+		Creditcoin::<T>::register_funding_transfer_legacy(
 			RawOrigin::Signed(who).into(),
 			LegacyTransferKind::Ethless(contract),
 			deal_id,

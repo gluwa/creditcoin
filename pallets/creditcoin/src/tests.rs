@@ -266,7 +266,7 @@ impl TestInfo {
 		let deal_order =
 			Creditcoin::deal_orders(deal_order_id.expiration(), deal_order_id.hash()).unwrap();
 		let tx = "0xfafafa";
-		assert_ok!(Creditcoin::register_funding_transfer_new(
+		assert_ok!(Creditcoin::register_funding_transfer(
 			Origin::signed(self.lender.account_id.clone()),
 			TransferKind::Evm(EvmTransferKind::Ethless),
 			deal_order_id.clone(),
@@ -282,7 +282,7 @@ impl TestInfo {
 	) -> TestTransfer {
 		let tx = "0xafafaf";
 		let amount = amount.into();
-		assert_ok!(Creditcoin::register_repayment_transfer_new(
+		assert_ok!(Creditcoin::register_repayment_transfer(
 			Origin::signed(self.borrower.account_id.clone()),
 			TransferKind::Evm(EvmTransferKind::Ethless),
 			amount,
@@ -300,7 +300,7 @@ impl TestInfo {
 	) -> TestTransfer {
 		let tx = "0xafafaf";
 		let amount = amount.into();
-		assert_ok!(Creditcoin::register_repayment_transfer(
+		assert_ok!(Creditcoin::register_repayment_transfer_legacy(
 			Origin::signed(self.borrower.account_id.clone()),
 			LegacyTransferKind::Ethless(ExternalAddress::default()),
 			amount,
@@ -577,7 +577,7 @@ fn register_transfer_ocw_fail_to_send() {
 
 		// exercise when we try to send a fail_transfer but tx send fails
 		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer(
+			assert_ok!(Creditcoin::register_funding_transfer_legacy(
 				Origin::signed(lender.clone()),
 				LegacyTransferKind::Ethless(contract.clone()),
 				deal_order_id.clone(),
@@ -595,7 +595,7 @@ fn register_transfer_ocw_fail_to_send() {
 
 		// exercise when we try to send a verify_transfer but tx send fails
 		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer(
+			assert_ok!(Creditcoin::register_funding_transfer_legacy(
 				Origin::signed(lender.clone()),
 				LegacyTransferKind::Ethless(contract.clone()),
 				fake_deal_order_id.clone(),
@@ -1286,7 +1286,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 		let currency = ethless_currency(contract.clone());
 		register_currency(&currency);
 
-		assert_ok!(Creditcoin::register_funding_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer_legacy(
 			Origin::signed(second_test_info.lender.account_id.clone()),
 			LegacyTransferKind::Ethless(contract),
 			bogus_deal_order_id.clone(),
@@ -1320,7 +1320,7 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 		let currency = ethless_currency(contract.clone());
 		register_currency(&currency);
 
-		assert_ok!(Creditcoin::register_funding_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer_legacy(
 			Origin::signed(test_info.lender.account_id.clone()),
 			LegacyTransferKind::Ethless(contract),
 			deal_order_id.clone(),
@@ -1363,7 +1363,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 		let currency = ethless_currency(contract.clone());
 		register_currency(&currency);
 
-		assert_ok!(Creditcoin::register_funding_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer_legacy(
 			Origin::signed(test_info.lender.account_id.clone()),
 			LegacyTransferKind::Ethless(contract),
 			deal_order_id.clone(),
@@ -1433,7 +1433,7 @@ fn fund_deal_order_works() {
 		let currency = ethless_currency(contract.clone());
 		register_currency(&currency);
 
-		assert_ok!(Creditcoin::register_funding_transfer(
+		assert_ok!(Creditcoin::register_funding_transfer_legacy(
 			Origin::signed(test_info.lender.account_id.clone()),
 			LegacyTransferKind::Ethless(contract),
 			deal_order_id.clone(),
@@ -2756,7 +2756,7 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 			// fund only deal orders which expire at even blocks
 			if expiration_block % 2 == 0 {
 				let tx = format!("0xfafafa{:02}", expiration_block.clone());
-				assert_ok!(Creditcoin::register_funding_transfer(
+				assert_ok!(Creditcoin::register_funding_transfer_legacy(
 					Origin::signed(test_info.lender.account_id.clone()),
 					LegacyTransferKind::Ethless(ExternalAddress::default()),
 					deal_order_id.clone(),
@@ -2801,7 +2801,7 @@ fn register_funding_transfer_should_error_when_not_signed() {
 		let tx = "0xabcabcabc";
 
 		assert_noop!(
-			Creditcoin::register_funding_transfer(
+			Creditcoin::register_funding_transfer_legacy(
 				Origin::none(),
 				LegacyTransferKind::Native,
 				deal_order_id,
@@ -2824,7 +2824,7 @@ fn register_funding_transfer_should_error_when_not_deal_order_not_found() {
 		let tx = "0xabcabcabc";
 
 		assert_noop!(
-			Creditcoin::register_funding_transfer(
+			Creditcoin::register_funding_transfer_legacy(
 				Origin::signed(test_info.lender.account_id),
 				LegacyTransferKind::Native,
 				deal_order_id,
@@ -2843,7 +2843,7 @@ fn register_repayment_transfer_should_error_when_not_signed() {
 		let tx = "0xabcabcabc";
 
 		assert_noop!(
-			Creditcoin::register_repayment_transfer(
+			Creditcoin::register_repayment_transfer_legacy(
 				Origin::none(),
 				LegacyTransferKind::Native,
 				21u64.into(),
@@ -2867,7 +2867,7 @@ fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
 		let tx = "0xabcabcabc";
 
 		assert_noop!(
-			Creditcoin::register_repayment_transfer(
+			Creditcoin::register_repayment_transfer_legacy(
 				Origin::signed(test_info.borrower.account_id),
 				LegacyTransferKind::Native,
 				21u64.into(),

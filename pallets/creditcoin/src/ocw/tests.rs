@@ -592,7 +592,7 @@ fn set_up_verify_transfer_env(
 
 		crate::DealOrders::<Test>::insert_id(deal_order_id.clone(), deal_order);
 
-		assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
+		assert_ok!(crate::mock::Creditcoin::register_funding_transfer_legacy(
 			crate::mock::Origin::signed(test_info.lender.account_id),
 			LegacyTransferKind::Ethless(contract),
 			deal_order_id,
@@ -903,7 +903,7 @@ fn ocw_retries() {
 		let deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
 		let lender = test_info.lender.account_id;
-		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
+		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer_legacy(
 			Origin::signed(lender),
 			LegacyTransferKind::Ethless(contract),
 			deal_order_id,
@@ -983,7 +983,7 @@ fn duplicate_retry_fail_and_succeed() {
 		let lender = test_info.lender.account_id.clone();
 
 		// test that we get a "fail_transfer" tx when verification fails
-		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
+		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer_legacy(
 			Origin::signed(lender.clone()),
 			LegacyTransferKind::Ethless(contract.clone()),
 			deal_order_id.clone(),
@@ -1014,11 +1014,8 @@ fn duplicate_retry_fail_and_succeed() {
 		// verification logic is happy
 		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
-		assert_ok!(Creditcoin::<Test>::register_funding_transfer(
-			Origin::signed(lender.clone()),
-			LegacyTransferKind::Ethless(contract.clone()),
+		assert_ok!(Creditcoin::<TestRuntime>::register_funding_transfer_legacy(
 			fake_deal_order_id.clone(),
-			tx_hash.hex_to_address(),
 		));
 
 		let deadline_2 = Test::unverified_transfer_deadline();
