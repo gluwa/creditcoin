@@ -1,10 +1,7 @@
 // `block` added to `DealOrder` and `timestamp` added to `Transfer`
 
 use crate::ExternalAddress;
-use crate::{
-	AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, RepaymentOrderId,
-	TransferId,
-};
+use crate::{AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, TransferId};
 use frame_support::{
 	generate_storage_alias, pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat,
 };
@@ -25,6 +22,10 @@ pub enum TransferKind {
 	Native,
 	Other(OtherTransferKind),
 }
+
+#[derive(Encode, Decode, RuntimeDebug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
+pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
