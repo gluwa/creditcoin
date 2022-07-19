@@ -206,11 +206,6 @@ impl<B: Default, H: Default> DealOrderId<B, H> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -272,16 +267,6 @@ impl<B, H> BidOrderId<B, H> {
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
 		BidOrderId(expiration_block, Config::Hashing::hash(guid))
-	}
-}
-
-impl<B, H> RepaymentOrderId<B, H> {
-	pub fn new<Config>(expiration_block: B, guid: &[u8]) -> RepaymentOrderId<B, H>
-	where
-		Config: frame_system::Config<BlockNumber = B>,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		RepaymentOrderId(expiration_block, Config::Hashing::hash(guid))
 	}
 }
 
@@ -386,7 +371,6 @@ impl_id!(DealOrderId);
 impl_id!(AskOrderId);
 impl_id!(BidOrderId);
 impl_id!(OfferId);
-impl_id!(RepaymentOrderId);
 
 #[ext(name = DoubleMapExt)]
 pub(crate) impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value, QueryKind, OnEmpty, MaxValues, IdTy>
