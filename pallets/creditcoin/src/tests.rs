@@ -5,7 +5,7 @@ use crate::{
 	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Currency, CurrencyId,
 	DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind, ExternalAddress,
 	ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind, LoanTerms, Offer, OfferId,
-	OldBlockchain, Transfer, TransferId, Transfers,
+	OldBlockchain, Transfer, TransferId, Transfers, WeightInfo,
 };
 
 use assert_matches::assert_matches;
@@ -788,8 +788,7 @@ fn add_offer_basic() {
 		let test_info = TestInfo::new_defaults();
 
 		let (offer, _) = test_info.create_offer();
-		let Offer { expiration_block, block, ask_id, bid_id, lender, .. } =
-			offer.clone();
+		let Offer { expiration_block, block, ask_id, bid_id, lender, .. } = offer.clone();
 
 		let new_offer = Offer { expiration_block, block, ask_id, bid_id, lender };
 
@@ -821,12 +820,9 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer;
 
 		// simulate deal transfer
-		crate::Addresses::<Test>::mutate(
-			&test_info.lender.address_id,
-			|address_storage| {
-				address_storage.as_mut().unwrap().blockchain = OldBlockchain::Bitcoin;
-			},
-		);
+		crate::Addresses::<Test>::mutate(&test_info.lender.address_id, |address_storage| {
+			address_storage.as_mut().unwrap().blockchain = OldBlockchain::Bitcoin;
+		});
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
