@@ -32,9 +32,9 @@ mod tests {
 			let mut ids = Vec::new();
 			for i in 0u8..10u8 {
 				let id =
-					AddressId::<H256>::new::<Test>(&crate::Blockchain::Ethereum, &i.to_be_bytes());
+					AddressId::<H256>::new::<Test>(&crate::OldBlockchain::Ethereum, &i.to_be_bytes());
 				let address = Address {
-					blockchain: crate::Blockchain::Ethereum,
+					blockchain: crate::OldBlockchain::Ethereum,
 					value: i.to_be_bytes().to_vec().try_into().unwrap(),
 					owner: AccountId::new([i; 32]),
 				};
