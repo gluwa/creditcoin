@@ -36,7 +36,7 @@ mod bounded_serde;
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum Blockchain {
+pub enum OldBlockchain {
 	Ethereum,
 	Rinkeby,
 	Luniverse,
@@ -45,14 +45,14 @@ pub enum Blockchain {
 	Other(OtherChain),
 }
 
-impl Blockchain {
+impl OldBlockchain {
 	pub fn as_bytes(&self) -> &[u8] {
 		match self {
-			Blockchain::Ethereum => b"ethereum",
-			Blockchain::Rinkeby => b"rinkeby",
-			Blockchain::Luniverse => b"luniverse",
-			Blockchain::Bitcoin => b"bitcoin",
-			Blockchain::Other(chain) => chain.as_slice(),
+			OldBlockchain::Ethereum => b"ethereum",
+			OldBlockchain::Rinkeby => b"rinkeby",
+			OldBlockchain::Luniverse => b"luniverse",
+			OldBlockchain::Bitcoin => b"bitcoin",
+			OldBlockchain::Other(chain) => chain.as_slice(),
 		}
 	}
 }
@@ -60,7 +60,7 @@ impl Blockchain {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum TransferKind {
+pub enum LegacyTransferKind {
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	Erc20(ExternalAddress),
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
@@ -74,7 +74,7 @@ pub enum TransferKind {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Address<AccountId> {
-	pub blockchain: Blockchain,
+	pub blockchain: OldBlockchain,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub value: ExternalAddress,
 	pub owner: AccountId,
@@ -100,11 +100,11 @@ pub struct CollectedCoins<Hash, Balance> {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
-	pub kind: TransferKind,
+	pub blockchain: OldBlockchain,
+	pub kind: LegacyTransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
-	pub order_id: OrderId<BlockNum, Hash>,
+	pub deal_order_id: DealOrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub tx_id: ExternalTxId,
@@ -140,7 +140,6 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Offer<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
 	pub ask_id: AskOrderId<BlockNum, Hash>,
 	pub bid_id: BidOrderId<BlockNum, Hash>,
 	pub expiration_block: BlockNum,
@@ -152,7 +151,6 @@ pub struct Offer<AccountId, BlockNum, Hash> {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AskOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
 	pub lender_address_id: AddressId<Hash>,
 	pub terms: AskTerms,
 	pub expiration_block: BlockNum,
@@ -164,7 +162,6 @@ pub struct AskOrder<AccountId, BlockNum, Hash> {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct BidOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
 	pub borrower_address_id: AddressId<Hash>,
 	pub terms: BidTerms,
 	pub expiration_block: BlockNum,
@@ -176,7 +173,6 @@ pub struct BidOrder<AccountId, BlockNum, Hash> {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
 	pub offer_id: OfferId<BlockNum, Hash>,
 	pub lender_address_id: AddressId<Hash>,
 	pub borrower_address_id: AddressId<Hash>,
@@ -194,6 +190,13 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AddressId<Hash>(Hash);
+
+#[cfg(test)]
+impl<Hash> AddressId<Hash> {
+	pub fn make(hash: Hash) -> Self {
+		Self(hash)
+	}
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
@@ -225,14 +228,6 @@ pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum OrderId<BlockNum, Hash> {
-	Deal(DealOrderId<BlockNum, Hash>),
-	Repayment(RepaymentOrderId<BlockNum, Hash>),
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -240,20 +235,17 @@ pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct TransferId<Hash>(Hash);
 
+#[cfg(test)]
+impl<Hash> TransferId<Hash> {
+	pub fn make(hash: Hash) -> Self {
+		Self(hash)
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct CollectedCoinsId<Hash>(Hash);
-
-fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
-	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
-	let mut hex = Vec::with_capacity(bytes.len() * 2);
-	for byte in bytes {
-		hex.push(HEX_CHARS_LOWER[(byte >> 4) as usize]);
-		hex.push(HEX_CHARS_LOWER[(byte & 0x0F) as usize]);
-	}
-	hex
-}
 
 macro_rules! concatenate {
 	(@strip_plus + $($rest: tt)*) => {
@@ -269,21 +261,8 @@ macro_rules! concatenate {
 }
 pub(crate) use concatenate;
 
-impl<B, H> OrderId<B, H>
-where
-	H: AsRef<[u8]>,
-{
-	pub fn to_hex(&self) -> Vec<u8> {
-		let bytes = match self {
-			OrderId::Deal(deal) => deal.1.as_ref(),
-			OrderId::Repayment(repay) => repay.1.as_ref(),
-		};
-		bytes_to_hex(bytes)
-	}
-}
-
 impl<H> AddressId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, address: &[u8]) -> AddressId<H>
+	pub fn new<Config>(blockchain: &OldBlockchain, address: &[u8]) -> AddressId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
@@ -324,7 +303,7 @@ impl<B, H> RepaymentOrderId<B, H> {
 }
 
 impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
+	pub fn new<Config>(blockchain: &OldBlockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
@@ -425,39 +404,6 @@ impl_id!(AskOrderId);
 impl_id!(BidOrderId);
 impl_id!(OfferId);
 impl_id!(RepaymentOrderId);
-
-impl<'a, B, H> Id<B, H> for &'a OrderId<B, H>
-where
-	B: Clone,
-	H: Clone,
-{
-	fn expiration(&self) -> B {
-		match self {
-			OrderId::Deal(deal) => deal.expiration(),
-			OrderId::Repayment(repay) => repay.expiration(),
-		}
-	}
-
-	fn hash(&self) -> H {
-		match self {
-			OrderId::Deal(deal) => deal.hash(),
-			OrderId::Repayment(repay) => repay.hash(),
-		}
-	}
-}
-impl<B, H> Id<B, H> for OrderId<B, H>
-where
-	B: Clone,
-	H: Clone,
-{
-	fn expiration(&self) -> B {
-		(&self).expiration()
-	}
-
-	fn hash(&self) -> H {
-		(&self).hash()
-	}
-}
 
 #[ext(name = DoubleMapExt)]
 pub(crate) impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value, QueryKind, OnEmpty, MaxValues, IdTy>

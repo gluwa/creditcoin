@@ -2,7 +2,7 @@ pub mod errors;
 pub mod rpc;
 pub mod tasks;
 
-use crate::{Blockchain, Call, TransferKind};
+use crate::{Call, LegacyTransferKind, OldBlockchain};
 pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 
 use self::errors::RpcUrlError;
@@ -18,7 +18,7 @@ use sp_std::prelude::*;
 
 pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
-impl Blockchain {
+impl OldBlockchain {
 	pub fn rpc_url(&self) -> OffchainResult<String, errors::RpcUrlError> {
 		let chain_prefix = self.as_bytes();
 		let mut buf = Vec::from(chain_prefix);
@@ -30,13 +30,15 @@ impl Blockchain {
 			Err(RpcUrlError::NoValue)
 		}
 	}
-	pub fn supports(&self, kind: &TransferKind) -> bool {
+	pub fn supports(&self, kind: &LegacyTransferKind) -> bool {
 		match (self, kind) {
 			(
-				Blockchain::Ethereum | Blockchain::Luniverse | Blockchain::Rinkeby,
-				TransferKind::Erc20(_) | TransferKind::Ethless(_) | TransferKind::Native,
+				OldBlockchain::Ethereum | OldBlockchain::Luniverse | OldBlockchain::Rinkeby,
+				LegacyTransferKind::Erc20(_)
+				| LegacyTransferKind::Ethless(_)
+				| LegacyTransferKind::Native,
 			) => true,
-			(Blockchain::Bitcoin, TransferKind::Native) => true,
+			(OldBlockchain::Bitcoin, LegacyTransferKind::Native) => true,
 			(_, _) => false, // TODO: refine this later
 		}
 	}

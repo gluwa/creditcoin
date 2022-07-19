@@ -14,8 +14,8 @@ use crate::{
 		OffchainError, OffchainResult, VerificationFailureCause, VerificationResult,
 		ETH_CONFIRMATIONS,
 	},
-	Blockchain, Config, ExternalAddress, ExternalAmount, ExternalTxId, Id, OrderId, Transfer,
-	TransferKind, UnverifiedTransfer,
+	Config, DealOrderId, ExternalAddress, ExternalAmount, ExternalTxId, Id, LegacyTransferKind,
+	OldBlockchain, Transfer, UnverifiedTransfer,
 };
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
@@ -108,28 +108,34 @@ impl<T: Config> crate::Pallet<T> {
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
 	) -> VerificationResult<Option<T::Moment>> {
 		let UnverifiedTransfer {
-			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
+			transfer: Transfer { blockchain, kind, deal_order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
 			..
 		} = transfer;
 		log::debug!("verifying OCW transfer");
 		match kind {
-			TransferKind::Ethless(contract) => {
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
-			},
-			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
-				Err(VerificationFailureCause::UnsupportedMethod.into())
-			},
+			LegacyTransferKind::Ethless(contract) => Self::verify_ethless_transfer(
+				blockchain,
+				contract,
+				from,
+				to,
+				deal_order_id,
+				amount,
+				tx,
+			),
+			LegacyTransferKind::Native
+			| LegacyTransferKind::Erc20(_)
+			| LegacyTransferKind::Other(_) => Err(VerificationFailureCause::UnsupportedMethod.into()),
 		}
 	}
 
 	pub fn verify_ethless_transfer(
-		blockchain: &Blockchain,
+		blockchain: &OldBlockchain,
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
-		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
+		deal_order_id: &DealOrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
 	) -> VerificationResult<Option<T::Moment>> {
@@ -159,7 +165,7 @@ impl<T: Config> crate::Pallet<T> {
 			&tx_receipt,
 			&tx,
 			eth_tip,
-			T::HashIntoNonce::from(order_id.hash()),
+			T::HashIntoNonce::from(deal_order_id.hash()),
 		)?;
 
 		let timestamp = if let Some(num) = tx_block_num {
