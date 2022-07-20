@@ -219,8 +219,16 @@ mod tests {
 
 			correct_and_deposit_fee_with_passing_defaults(&acc, 2, 1);
 
-			let free = Balances::free_balance(&acc);
-			assert_eq!(free, existential_deposit() + 1u128);
+			for block_num in 2..year_offset {
+				// simulate the runtime calling on_initialize() for each block
+				Creditcoin::on_initialize(block_num);
+
+				// ballance isn't expected to change b/c the fees haven't
+				// been released back yet
+				let free = Balances::free_balance(&acc);
+				assert_eq!(free, existential_deposit() + 1u128);
+			}
+
 			//Give back excess fees worth one.
 			Creditcoin::on_initialize(year_offset);
 			let free = Balances::free_balance(&acc);
@@ -236,6 +244,21 @@ mod tests {
 					assert_eq!(amount, 1u128);
 				}
 			);
+
+			let second_year_offset = CurrencyFeeRedemptionAdapter::<
+				pallet_balances::Pallet<Runtime>,
+				(),
+			>::bucketed_year_offset::<Runtime>(&10);
+			assert!(second_year_offset > year_offset);
+			for block_num in year_offset + 1..second_year_offset {
+				// simulate rolling to the next bucket (e.g. next year)
+				Creditcoin::on_initialize(block_num);
+
+				// ballance isn't expected to change b/c no more fees
+				// have been redeemed (b/c no other transactions)
+				let free = Balances::free_balance(&acc);
+				assert_eq!(free, existential_deposit() + 2u128);
+			}
 		};
 		ExtBuilder::build().execute_with(test);
 	}
