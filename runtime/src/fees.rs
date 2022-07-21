@@ -109,6 +109,7 @@ mod tests {
 		traits::Hooks,
 		weights::{DispatchInfo, PostDispatchInfo},
 	};
+	use frame_system::Call;
 	use pallet_balances::NegativeImbalance;
 	use sp_core::Pair;
 	use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
@@ -128,11 +129,14 @@ mod tests {
 	struct ExtBuilder;
 
 	impl ExtBuilder {
-		pub fn build() -> sp_io::TestExternalities {
+		pub fn build(extra_balance: u128) -> sp_io::TestExternalities {
 			let mut t = frame_system::GenesisConfig::default().build_storage::<Runtime>().unwrap();
 			// hacky, without enough balance to keep the account alive, deposit_into_existing will no-op.
 			pallet_balances::GenesisConfig::<Runtime> {
-				balances: vec![(generate_account("Somebody"), ExistentialDeposit::get())],
+				balances: vec![(
+					generate_account("Somebody"),
+					ExistentialDeposit::get() + extra_balance,
+				)],
 			}
 			.assimilate_storage(&mut t)
 			.unwrap();
@@ -175,7 +179,7 @@ mod tests {
 			assert_eq!(BLOCK_YEAR + 90, f(99));
 			assert_eq!(BLOCK_YEAR + 100, f(100));
 		};
-		ExtBuilder::build().execute_with(test);
+		ExtBuilder::build(0).execute_with(test);
 	}
 
 	#[test]
@@ -206,7 +210,7 @@ mod tests {
 			assert_eq!(fee, 2u128);
 		};
 
-		ExtBuilder::build().execute_with(test);
+		ExtBuilder::build(0).execute_with(test);
 	}
 
 	#[test]
@@ -260,6 +264,97 @@ mod tests {
 				assert_eq!(free, existential_deposit() + 2u128);
 			}
 		};
-		ExtBuilder::build().execute_with(test);
+		ExtBuilder::build(0).execute_with(test);
+	}
+
+	#[test]
+	fn withdraw_fee_should_return_none_when_fee_is_zero() {
+		let test = || {
+			let who = generate_account("Somebody");
+			let call = crate::Call::System(Call::remark { remark: b"Hello World".to_vec() });
+			let dispatch_info = DispatchInfo::default();
+			let tip = Default::default();
+
+			let result =
+				<<Runtime as TxPaymentConfig>::OnChargeTransaction as OnChargeTransaction<
+					Runtime,
+				>>::withdraw_fee(
+					&who,
+					&call,
+					&dispatch_info,
+					0, // fee
+					tip,
+				);
+			assert_eq!(result, Ok(None));
+		};
+		ExtBuilder::build(0).execute_with(test);
+	}
+
+	#[test]
+	fn withdraw_fee_should_return_ok_some_when_fee_is_not_zero() {
+		let test = || {
+			let who = generate_account("Somebody");
+			let call = crate::Call::System(Call::remark { remark: b"Hello World".to_vec() });
+			let dispatch_info = DispatchInfo::default();
+			let tip = Default::default();
+
+			let result =
+				<<Runtime as TxPaymentConfig>::OnChargeTransaction as OnChargeTransaction<
+					Runtime,
+				>>::withdraw_fee(
+					&who,
+					&call,
+					&dispatch_info,
+					1, // fee
+					tip,
+				);
+			assert_matches!(result, Ok(Some(_)));
+		};
+		ExtBuilder::build(1_000).execute_with(test);
+	}
+
+	#[test]
+	fn withdraw_fee_should_return_ok_some_when_fee_is_not_zero_and_tip_is_not_zero() {
+		let test = || {
+			let who = generate_account("Somebody");
+			let call = crate::Call::System(Call::remark { remark: b"Hello World".to_vec() });
+			let dispatch_info = DispatchInfo::default();
+
+			let result =
+				<<Runtime as TxPaymentConfig>::OnChargeTransaction as OnChargeTransaction<
+					Runtime,
+				>>::withdraw_fee(
+					&who,
+					&call,
+					&dispatch_info,
+					10, // fee
+					2,  // tip
+				);
+			assert_matches!(result, Ok(Some(_)));
+		};
+		ExtBuilder::build(1_000).execute_with(test);
+	}
+
+	#[test]
+	fn withdraw_fee_should_return_error_some_when_error_happens() {
+		let test = || {
+			let who = generate_account("Somebody");
+			let call = crate::Call::System(Call::remark { remark: b"Hello World".to_vec() });
+			let dispatch_info = DispatchInfo::default();
+			let tip = Default::default();
+
+			let result =
+				<<Runtime as TxPaymentConfig>::OnChargeTransaction as OnChargeTransaction<
+					Runtime,
+				>>::withdraw_fee(
+					&who,
+					&call,
+					&dispatch_info,
+					1_000_000_000, // fee
+					tip,
+				);
+			assert!(result.is_err());
+		};
+		ExtBuilder::build(1_000).execute_with(test);
 	}
 }
