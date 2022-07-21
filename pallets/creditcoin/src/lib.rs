@@ -599,11 +599,11 @@ pub mod pallet {
 			}
 
 			log::debug!("Redeem fees");
-			let n_accounts_reimbursed = RetainedFees::<T>::drain_prefix(block_number).map(|(account, sum)|{
-				let imbalance = <pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::deposit_into_existing(&account, sum)
+			let accounts_reimbursed_count = RetainedFees::<T>::drain_prefix(block_number).map(|(account_id, sum)|{
+				let imbalance = <pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::deposit_into_existing(&account_id, sum)
 					.unwrap_or_else(|_| pallet_balances::PositiveImbalance::zero());
 				if !imbalance.peek().is_zero(){
-					Self::deposit_event(Event::<T>::FeeRedemption(block_number,account,imbalance.peek()));
+					Self::deposit_event(Event::<T>::FeeRedemption(block_number,account_id,imbalance.peek()));
 				}
 				drop(imbalance)
 			}).count();
@@ -616,7 +616,7 @@ pub mod pallet {
 				funded_deals_count,
 				unverified_task_count,
 				0,
-				n_accounts_reimbursed.saturated_into(),
+				accounts_reimbursed_count.saturated_into(),
 			)
 		}
 
