@@ -152,5 +152,6 @@ fn testnet_genesis(
 			difficulty_adjustment_period: adjustment.unwrap_or(43),
 		},
 		creditcoin: CreditcoinConfig::default(),
+		scheduler: Default::default(),
 	}
 }

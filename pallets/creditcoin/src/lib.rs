@@ -10,8 +10,9 @@ use sp_io::KillStorageResult;
 use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
 
-#[cfg(test)]
-mod mock;
+#[cfg(any(test, feature = "mock"))]
+#[cfg_attr(feature = "mock", allow(dead_code))]
+pub mod mock;
 
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
@@ -24,7 +25,7 @@ mod tests;
 mod helpers;
 mod migrations;
 mod ocw;
-mod types;
+pub mod types;
 
 pub use types::*;
 

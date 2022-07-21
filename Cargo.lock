@@ -1034,6 +1034,7 @@ dependencies = [
 name = "creditcoin-node-runtime"
 version = "2.0.0-beta.7"
 dependencies = [
+ "assert_matches",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -1046,6 +1047,7 @@ dependencies = [
  "pallet-difficulty",
  "pallet-randomness-collective-flip",
  "pallet-rewards",
+ "pallet-scheduler",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -1059,6 +1061,7 @@ dependencies = [
  "sp-consensus-pow",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -4062,6 +4065,22 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-tracing",
+]
+
+[[package]]
+name = "pallet-scheduler"
+version = "4.0.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?rev=973dd744f5f7c6322799bbfa29366588e0267b0a#973dd744f5f7c6322799bbfa29366588e0267b0a"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
