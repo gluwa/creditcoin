@@ -12,19 +12,16 @@ use sp_std::prelude::*;
 
 #[cfg(test)]
 mod mock;
-
-#[allow(clippy::unnecessary_cast)]
-pub mod weights;
-
-mod benchmarking;
 #[cfg(test)]
 mod tests;
-
 #[macro_use]
 mod helpers;
+mod benchmarking;
 mod migrations;
 mod ocw;
 mod types;
+#[allow(clippy::unnecessary_cast)]
+pub mod weights;
 
 pub use types::*;
 
@@ -62,10 +59,11 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{
 		dispatch::DispatchResult,
-		pallet_prelude::*,
+		pallet_prelude::{StorageDoubleMap, *},
 		traits::tokens::{currency::Currency as CurrencyT, ExistenceRequirement},
 		transactional,
 		weights::PostDispatchInfo,
+		Twox64Concat,
 	};
 	use frame_system::{
 		ensure_signed,
@@ -77,7 +75,7 @@ pub mod pallet {
 	use sp_runtime::offchain::Duration;
 	use sp_runtime::traits::{
 		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
-		Verify,
+		Verify, Zero,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -137,7 +135,7 @@ pub mod pallet {
 	}
 
 	pub trait WeightInfo {
-		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32) -> Weight;
+		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32, r: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
@@ -258,6 +256,10 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
 
+	#[pallet::storage]
+	pub type RetainedFees<T: Config> =
+		StorageDoubleMap<_, Twox64Concat, T::BlockNumber, Twox64Concat, T::AccountId, T::Balance>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -348,11 +350,17 @@ pub mod pallet {
 		/// [legacy_wallet_claimer, legacy_wallet_sighash, legacy_wallet_balance]
 		LegacyWalletClaimed(T::AccountId, LegacySighash, T::Balance),
 
+		/// Unsuccessful cross-chain transfer verification.
+		/// [transfer_id, cause]
 		TransferFailedVerification(TransferId<T::Hash>, VerificationFailureCause),
 
 		/// exchanging vested ERC-20 CC for native CC failed.
 		/// [collected_coins_id, cause]
 		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
+
+		/// Account claimed back some fees.
+		/// [block_batch, account_id, sum]
+		FeeRedemption(T::BlockNumber, T::AccountId, T::Balance),
 	}
 
 	// Errors inform users that something went wrong.
@@ -590,6 +598,16 @@ pub mod pallet {
 				DealOrders::<T>::insert_id(key, deal);
 			}
 
+			log::debug!("Redeem fees");
+			let accounts_reimbursed_count = RetainedFees::<T>::drain_prefix(block_number).map(|(account_id, sum)|{
+				let imbalance = <pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::deposit_into_existing(&account_id, sum)
+					.unwrap_or_else(|_| pallet_balances::PositiveImbalance::zero());
+				if !imbalance.peek().is_zero(){
+					Self::deposit_event(Event::<T>::FeeRedemption(block_number,account_id,imbalance.peek()));
+				}
+				drop(imbalance)
+			}).count();
+
 			<T as Config>::WeightInfo::on_initialize(
 				ask_count,
 				bid_count,
@@ -598,6 +616,7 @@ pub mod pallet {
 				funded_deals_count,
 				unverified_task_count,
 				0,
+				accounts_reimbursed_count.saturated_into(),
 			)
 		}
 
