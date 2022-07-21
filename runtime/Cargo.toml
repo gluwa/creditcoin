@@ -200,6 +200,15 @@ git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
+[dev-dependencies]
+assert_matches = "1.5.0"
+
+[dev-dependencies.sp-io]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+version = '4.0.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
 [features]
 default = ['std']
 runtime-benchmarks = [
