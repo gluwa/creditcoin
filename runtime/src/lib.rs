@@ -29,6 +29,9 @@ use sp_version::RuntimeVersion;
 mod version;
 pub use version::VERSION;
 
+#[cfg(test)]
+mod tests;
+
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
