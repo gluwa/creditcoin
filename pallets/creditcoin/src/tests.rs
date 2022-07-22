@@ -2,10 +2,10 @@ use crate::{
 	helpers::{non_paying_error, EVMAddress, PublicToAddress},
 	mock::*,
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currency,
-	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind,
-	ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
-	Transfer, TransferId, TransferKind, Transfers, WeightInfo,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currency, CurrencyId,
+	DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind, ExternalAddress,
+	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
+	TransferId, TransferKind, Transfers, WeightInfo,
 };
 
 use assert_matches::assert_matches;
@@ -619,6 +619,7 @@ fn add_ask_order_used_guid() {
 		let RegisteredAddress { address_id, account_id } = lender;
 
 		let _ask_order = test_info.create_ask_order();
+		assert_eq!(crate::Pallet::<Test>::used_guids(ask_guid.clone()), Some(()));
 		let expiration_block = 1_500;
 
 		assert_noop!(
@@ -643,6 +644,11 @@ fn add_ask_order_pre_existing() {
 
 		let (ask_order, _) = test_info.create_ask_order();
 		let AskOrder { expiration_block, .. } = ask_order;
+		let existing_ask_order_id = AskOrderId::new::<Test>(expiration_block, &ask_guid);
+		assert_eq!(
+			crate::Pallet::<Test>::ask_orders(expiration_block, existing_ask_order_id.hash()),
+			Some(ask_order)
+		);
 
 		assert_noop!(
 			Creditcoin::add_ask_order(
@@ -734,6 +740,7 @@ fn add_bid_order_used_guid() {
 		let RegisteredAddress { address_id, account_id } = lender;
 
 		let _bid_order = test_info.create_bid_order();
+		assert_eq!(crate::Pallet::<Test>::used_guids(bid_guid.clone()), Some(()));
 		let expiration_block = 1_500;
 
 		assert_noop!(
@@ -758,6 +765,11 @@ fn add_bid_order_pre_existing() {
 
 		let (bid_order, _) = test_info.create_bid_order();
 		let BidOrder { expiration_block, .. } = bid_order;
+		let existing_bid_order_id = BidOrderId::new::<Test>(expiration_block, &bid_guid);
+		assert_eq!(
+			crate::Pallet::<Test>::bid_orders(expiration_block, existing_bid_order_id.hash()),
+			Some(bid_order)
+		);
 
 		assert_noop!(
 			Creditcoin::add_bid_order(
@@ -804,8 +816,9 @@ fn add_offer_existing() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 
-		let (offer, _) = test_info.create_offer();
-		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer;
+		let (offer, offer_id) = test_info.create_offer();
+		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer.clone();
+		assert_eq!(crate::Pallet::<Test>::offers(expiration_block, offer_id.hash()), Some(offer));
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
@@ -1042,7 +1055,8 @@ fn lock_deal_order_locks_by_borrower() {
 			deal_order_id.clone()
 		));
 		let locked_deal_order =
-			Creditcoin::deal_orders(deal_order.expiration_block, deal_order_id.hash()).unwrap();
+			crate::Pallet::<Test>::deal_orders(deal_order.expiration_block, deal_order_id.hash())
+				.unwrap();
 		assert_eq!(locked_deal_order.lock, Some(test_info.borrower.account_id));
 	});
 }
@@ -1471,7 +1485,7 @@ fn add_authority_works_for_root() {
 
 		assert_ok!(Creditcoin::add_authority(crate::mock::Origin::from(root), acct.clone(),));
 
-		let value = Authorities::<Test>::take(acct);
+		let value = crate::Pallet::<Test>::authorities(acct);
 		assert_eq!(value, Some(()))
 	});
 }
@@ -2301,7 +2315,7 @@ fn close_deal_order_should_succeed() {
 		let saved_deal_order = DealOrders::<Test>::try_get_id(&deal_order_id).unwrap();
 		assert_eq!(saved_deal_order.repayment_transfer_id, Some(transfer_id.clone()));
 
-		let saved_transfer = Transfers::<Test>::try_get(&transfer_id).unwrap();
+		let saved_transfer = crate::Pallet::<Test>::transfers(&transfer_id).unwrap();
 		assert!(saved_transfer.is_processed);
 
 		// assert events in reversed order
