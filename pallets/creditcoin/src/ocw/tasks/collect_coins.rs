@@ -20,7 +20,6 @@ use hex_literal::hex;
 
 pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
 const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
-const BURN_SELECTOR: [u8; 4] = hex!("42966c68");
 
 ///exchange has been deprecated, use burn instead
 fn burn_vested_cc_abi() -> Function {
@@ -65,12 +64,11 @@ pub fn validate_collect_coins(
 	}
 
 	let transfer_fn = burn_vested_cc_abi();
-	//is ignoring the selector a good idea? test? Same input, diff call (not exchange)?
 	ensure!(transaction.input.0.len() > 4, VerificationFailureCause::EmptyInput);
 
 	{
-		let selector = transfer_fn.short_signature();
-		if selector != BURN_SELECTOR {
+		let selector = &transaction.input.0[..4];
+		if selector != transfer_fn.short_signature() {
 			log::error!("function selector mismatch: {}", hex::encode(selector));
 			return Err(VerificationFailureCause::AbiMismatch.into());
 		}
@@ -908,7 +906,7 @@ pub(crate) mod tests {
 	}
 
 	#[test]
-	fn selector_mismatch(){
+	fn selector_mismatch() {
 		let ext = ExtBuilder::default();
 		ext.build_offchain_and_execute_with_state(|state, _| {
 			//System::<Test>::set_block_number(1);
