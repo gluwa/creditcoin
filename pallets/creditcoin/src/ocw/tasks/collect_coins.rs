@@ -20,7 +20,6 @@ use hex_literal::hex;
 
 pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
 const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
-const BURN_SELECTOR: [u8; 4] = hex!("42966c68");
 
 ///exchange has been deprecated, use burn instead
 fn burn_vested_cc_abi() -> Function {
@@ -65,12 +64,11 @@ pub fn validate_collect_coins(
 	}
 
 	let transfer_fn = burn_vested_cc_abi();
-	//is ignoring the selector a good idea? test? Same input, diff call (not exchange)?
 	ensure!(transaction.input.0.len() > 4, VerificationFailureCause::EmptyInput);
 
 	{
-		let selector = transfer_fn.short_signature();
-		if selector != BURN_SELECTOR {
+		let selector = &transaction.input.0[..4];
+		if selector != transfer_fn.short_signature() {
 			log::error!("function selector mismatch: {}", hex::encode(selector));
 			return Err(VerificationFailureCause::AbiMismatch.into());
 		}
@@ -205,9 +203,8 @@ pub(crate) mod tests {
 		let dummy_url = "dummy";
 		set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
 
-		let mut rpcs =
-			MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
-		rpcs.mock_get_block_number(&mut *state.write());
+		let mut rpcs = MockedRpcRequests::new(dummy_url, &TX_HASH, &BLOCK_NUMBER_STR, &RESPONSES);
+		rpcs.mock_get_block_number(&mut state.write());
 	}
 
 	struct PassingCollectCoins {
@@ -904,6 +901,27 @@ pub(crate) mod tests {
 				frame_system::pallet::Account::<Test>::get(&acc).data.free,
 				collected_coins.amount
 			);
+		});
+	}
+
+	#[test]
+	fn selector_mismatch() {
+		let ext = ExtBuilder::default();
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			//System::<Test>::set_block_number(1);
+			mock_rpc_for_collect_coins(&state);
+
+			let (_, to, ..) = generate_address_with_proof("collector");
+			let tx_id = &TX_HASH.hex_to_address();
+
+			let rpc_url = &CONTRACT_CHAIN.rpc_url().unwrap();
+			let mut tx = rpc::eth_get_transaction(tx_id, rpc_url).unwrap();
+			let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url).unwrap();
+			let eth_tip = rpc::eth_get_block_number(rpc_url).unwrap();
+			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect("valid");
+			// Forged selector
+			tx.input.0[0] = 1;
+			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect_err("invalid");
 		});
 	}
 }
