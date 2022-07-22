@@ -93,6 +93,9 @@ fn next_difficulty_should_return_initial_when_previous_is_too_short() {
 		let previous = PreviousDifficultiesAndTimestamps::<Test>::get();
 		assert!(previous.len() < 2);
 
+		let via_getter = crate::Pallet::<Test>::previous_difficulties_and_timestamps();
+		assert_eq!(via_getter, previous);
+
 		let result = next_difficulty(&previous, target_time, initial, adjustment_period);
 		assert_eq!(result, initial);
 	});
@@ -118,6 +121,10 @@ fn next_difficulty_should_return_next_when_previous_is_configured() {
 			})
 			.unwrap();
 		assert_eq!(previous.len(), 2);
+		PreviousDifficultiesAndTimestamps::<Test>::put(previous.clone());
+
+		let via_getter = crate::Pallet::<Test>::previous_difficulties_and_timestamps();
+		assert_eq!(via_getter, previous);
 
 		let result = next_difficulty(
 			&previous,
