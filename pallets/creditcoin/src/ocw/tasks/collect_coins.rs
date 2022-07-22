@@ -203,9 +203,8 @@ pub(crate) mod tests {
 		let dummy_url = "dummy";
 		set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
 
-		let mut rpcs =
-			MockedRpcRequests::new(dummy_url, &*TX_HASH, &*BLOCK_NUMBER_STR, &*RESPONSES);
-		rpcs.mock_get_block_number(&mut *state.write());
+		let mut rpcs = MockedRpcRequests::new(dummy_url, &TX_HASH, &BLOCK_NUMBER_STR, &RESPONSES);
+		rpcs.mock_get_block_number(&mut state.write());
 	}
 
 	struct PassingCollectCoins {
@@ -917,12 +916,12 @@ pub(crate) mod tests {
 
 			let rpc_url = &CONTRACT_CHAIN.rpc_url().unwrap();
 			let mut tx = rpc::eth_get_transaction(tx_id, rpc_url).unwrap();
-			// Forged selector
-			tx.input.0[0] = 1;
 			let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url).unwrap();
 			let eth_tip = rpc::eth_get_block_number(rpc_url).unwrap();
-
-			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect("valid")
+			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect("valid");
+			// Forged selector
+			tx.input.0[0] = 1;
+			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect_err("invalid");
 		});
 	}
 }
