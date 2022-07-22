@@ -159,7 +159,10 @@ fn exercise_on_timestamp_set_when_previous_is_configured() {
 			})
 			.unwrap();
 		assert_eq!(previous.len(), 2);
+		PreviousDifficultiesAndTimestamps::<Test>::put(previous);
 
+		TargetBlockTime::<Test>::put(60000); // ms
+		DifficultyAdjustmentPeriod::<Test>::put(100i64);
 		<timestamp::Pallet<Test>>::set(Origin::none(), 98765).unwrap();
 	});
 }
