@@ -906,4 +906,25 @@ pub(crate) mod tests {
 			);
 		});
 	}
+
+	#[test]
+	fn selector_mismatch(){
+		let ext = ExtBuilder::default();
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			//System::<Test>::set_block_number(1);
+			mock_rpc_for_collect_coins(&state);
+
+			let (_, to, ..) = generate_address_with_proof("collector");
+			let tx_id = &TX_HASH.hex_to_address();
+
+			let rpc_url = &CONTRACT_CHAIN.rpc_url().unwrap();
+			let mut tx = rpc::eth_get_transaction(tx_id, rpc_url).unwrap();
+			// Forged selector
+			tx.input.0[0] = 1;
+			let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url).unwrap();
+			let eth_tip = rpc::eth_get_block_number(rpc_url).unwrap();
+
+			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect("valid")
+		});
+	}
 }
