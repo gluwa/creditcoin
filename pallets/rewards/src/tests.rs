@@ -56,3 +56,14 @@ fn rewards_were_issued_after_mining_blocks() {
 		assert!(new_balance > initial_balance);
 	});
 }
+
+#[test]
+fn exercise_getter() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+		roll_to(10, 2);
+
+		let author = crate::Pallet::<Test>::block_author();
+		assert_eq!(author, Some(2));
+	});
+}
