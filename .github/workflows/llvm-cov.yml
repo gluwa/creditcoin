@@ -40,6 +40,8 @@ jobs:
             echo "**For full LLVM coverage report [click here](https://staticsitellvmhtml.z13.web.core.windows.net/$PR_NUMBER/html/)!**" > uncovered-lines.log
             echo >> uncovered-lines.log
 
+            export RUST_LOG=debug
+
             cargo llvm-cov \
                 --workspace --html --show-missing-lines --doctests --hide-instantiations \
                 --ignore-filename-regex "(tests.rs|mock.rs)" | tee -a uncovered-lines.log
