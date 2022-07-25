@@ -55,7 +55,7 @@
             # (optional) opt in to telemetry
             --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
             # node to connect to on boot, in order to join the network
-            --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWRubm6c4bViYyvTKnSjMicC35F1jZNrzt3MKC9Hev5vbG" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWSdzZaqoDAncrQmMUi34Nr29TayCr4xPvqcJQc5J434tZ" \
+            --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWSQye3uN3bZQRRC4oZbpiAZXkP2o5UZh6S8pqyh24bF3k" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWFrsEZ2aSfiigAxs6ir2kU6en4BewotyCXPhrJ7T1AzjN" \
             # REPLACE <yourhostname or ip> with the public IP address or host name that your node can be reached at
             --public-addr "/dns4/<yourhostname or ip>/tcp/30333" \
             # we want to connect to the mainnet
