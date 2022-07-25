@@ -363,6 +363,10 @@ pub mod pallet {
 		/// exchanging vested ERC-20 CC for native CC failed.
 		/// [collected_coins_id, cause]
 		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
+
+		/// A currency has been registered and can now be used in loan terms.
+		/// [currency_id, currency]
+		CurrencyRegistered(CurrencyId<T::Hash>, Currency),
 	}
 
 	// Errors inform users that something went wrong.
@@ -1505,6 +1509,7 @@ pub mod pallet {
 			ensure!(!Currencies::<T>::contains_key(&id), Error::<T>::CurrencyAlreadyRegistered);
 
 			Currencies::<T>::insert(&id, &currency);
+			Self::deposit_event(Event::<T>::CurrencyRegistered(id, currency));
 
 			Ok(())
 		}
