@@ -182,11 +182,12 @@ pub(crate) mod tests {
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
+	use sp_runtime::{ArithmeticError, TokenError};
 
 	use crate::helpers::non_paying_error;
 	use crate::mock::{
-		roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, OffchainState,
-		Origin, RwLock, Test,
+		roll_by_with_ocw, set_rpc_uri, AccountId, Balances, ExtBuilder, MockedRpcRequests,
+		OffchainState, Origin, RwLock, Test,
 	};
 	use crate::ocw::{
 		errors::{OffchainError, VerificationFailureCause as Cause},
@@ -479,7 +480,7 @@ pub(crate) mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
 			assert_ok!(Creditcoin::<Test>::register_address(
-				Origin::signed(acc),
+				Origin::signed(acc.clone()),
 				CONTRACT_CHAIN,
 				addr,
 				sign
@@ -497,8 +498,13 @@ pub(crate) mod tests {
 
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
 
+			let balance = <Balances as Currency<AccountId>>::total_balance;
+
+			let pre_authority_balance = balance(&auth);
+			let pre_collector_balance = balance(&acc);
+
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
-				Origin::signed(auth),
+				Origin::signed(auth.clone()),
 				deadline,
 				(collected_coins_id, collected_coins.clone()).into(),
 			));
@@ -515,6 +521,10 @@ pub(crate) mod tests {
 					assert_eq!(item, collected_coins);
 				}
 			);
+			//do not mint into authority
+			assert_eq!(pre_authority_balance, balance(&auth));
+			// assert on deposit
+			assert_eq!(pre_collector_balance.saturating_add(collected_coins.amount), balance(&acc));
 		});
 	}
 
@@ -580,7 +590,7 @@ pub(crate) mod tests {
 					Test::unverified_transfer_deadline(),
 					(collected_coins_id, collected_coins).into(),
 				),
-				crate::Error::<Test>::BalanceOverflow
+				ArithmeticError::Overflow
 			);
 		});
 	}
@@ -921,6 +931,40 @@ pub(crate) mod tests {
 			// Forged selector
 			tx.input.0[0] = 1;
 			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect_err("invalid");
+		});
+	}
+
+	fn persist_minimum_existencial_deposit_errors() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			let collected_coins = CollectedCoins {
+				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				amount: 1u128,
+				tx_id: TX_HASH.hex_to_address(),
+			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				Origin::signed(acc.clone()),
+				CONTRACT_CHAIN,
+				addr,
+				sign
+			));
+
+			assert_eq!(Balances::total_balance(&acc), 0);
+
+			assert_noop!(
+				Creditcoin::<Test>::persist_task_output(
+					Origin::signed(auth.clone()),
+					Test::unverified_transfer_deadline(),
+					(collected_coins_id, collected_coins).into(),
+				),
+				TokenError::BelowMinimum
+			);
 		});
 	}
 }
