@@ -209,7 +209,7 @@ impl<H> AddressId<H> {
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(blockchain.as_bytes(), address);
+		let key = concatenate!(&*blockchain.as_bytes(), address);
 		AddressId(Config::Hashing::hash(&key))
 	}
 }
@@ -240,7 +240,7 @@ impl<H> TransferId<H> {
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
+		let key = concatenate!(&*blockchain.as_bytes(), blockchain_tx_id);
 		TransferId(Config::Hashing::hash(&key))
 	}
 }
