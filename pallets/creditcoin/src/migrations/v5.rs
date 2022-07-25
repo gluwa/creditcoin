@@ -183,7 +183,7 @@ mod tests {
 				to_external: b"abab".to_vec().try_into().unwrap(),
 				deadline: 11,
 			};
-			let transfer_id = TransferId::new_old::<Test>(&eth, &tx_id);
+			let transfer_id = TransferId::from_old_blockchain::<Test>(&eth, &tx_id);
 
 			UnverifiedTransfers::<Test>::insert(deadline, &transfer_id, &transfer);
 			assert!(UnverifiedTransfers::<Test>::contains_key(deadline, &transfer_id));
