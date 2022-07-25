@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-use frame_support::traits::{Imbalance, StorageVersion};
+use frame_support::traits::StorageVersion;
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
@@ -63,7 +63,7 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::DispatchResult,
 		pallet_prelude::*,
-		traits::tokens::{currency::Currency as CurrencyT, ExistenceRequirement},
+		traits::tokens::{currency::Currency as CurrencyT, fungible::Mutate, ExistenceRequirement},
 		transactional,
 		weights::PostDispatchInfo,
 	};
@@ -281,7 +281,7 @@ pub mod pallet {
 		TransferVerified(TransferId<T::Hash>),
 
 		/// CollectCoins has been successfully verified and minted.
-		/// [collected_coins_id]
+		/// [collected_coins_id, collected_coins]
 		CollectedCoinsMinted(
 			types::CollectedCoinsId<T::Hash>,
 			types::CollectedCoins<T::Hash, T::Balance>,
@@ -385,9 +385,6 @@ pub mod pallet {
 
 		/// The coin collection has already been registered.
 		CollectCoinsAlreadyRegistered,
-
-		/// The balance would overflow.
-		BalanceOverflow,
 
 		/// The account that registered the transfer does
 		/// not match the account attempting to use the transfer.
@@ -1338,18 +1335,13 @@ pub mod pallet {
 						non_paying_error(Error::<T>::CollectCoinsAlreadyRegistered)
 					);
 
-					let amount = collected_coins.amount;
-					let imbalance =
-						<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::issue(amount);
-					ensure!(amount == imbalance.peek(), Error::<T>::BalanceOverflow);
-
 					let address = Self::addresses(&collected_coins.to)
 						.ok_or(Error::<T>::NonExistentAddress)?;
 
-					<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::resolve_creating(
+					<pallet_balances::Pallet<T> as Mutate<T::AccountId>>::mint_into(
 						&address.owner,
-						imbalance,
-					);
+						collected_coins.amount,
+					)?;
 
 					CollectedCoins::<T>::insert(key.clone(), collected_coins.clone());
 					(TaskId::from(id), Event::<T>::CollectedCoinsMinted(key, collected_coins))
