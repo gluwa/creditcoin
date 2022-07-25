@@ -7,6 +7,8 @@ use sp_runtime::traits::Hash as HashT;
 use strum::EnumCount;
 
 use crate::{Config, ExternalAddress, LegacyTransferKind};
+use alloc::string::ToString;
+use sp_std::borrow::Cow;
 
 // as of EIP-155 the max chain ID is 9,223,372,036,854,775,771 which fits well within a u64
 #[derive(
@@ -82,12 +84,17 @@ impl Blockchain {
 	pub const LUNIVERSE_TESTNET: Blockchain = Blockchain::evm(EvmChainId::LUNIVERSE_TESTNET);
 	pub const LUNIVERSE: Blockchain = Blockchain::evm(EvmChainId::LUNIVERSE);
 
-	pub fn as_bytes(&self) -> &[u8] {
+	pub fn as_bytes(&self) -> Cow<'_, [u8]> {
 		match *self {
-			Blockchain::ETHEREUM => b"ethereum",
-			Blockchain::RINKEBY => b"rinkeby",
-			Blockchain::LUNIVERSE_TESTNET | Blockchain::LUNIVERSE => b"luniverse",
-			_ => todo!(),
+			Blockchain::ETHEREUM => Cow::Borrowed(&*b"ethereum"),
+			Blockchain::RINKEBY => Cow::Borrowed(&*b"rinkeby"),
+			Blockchain::LUNIVERSE_TESTNET | Blockchain::LUNIVERSE => Cow::Borrowed(b"luniverse"),
+			Blockchain::Evm(EvmInfo { chain_id }) => {
+				let s = chain_id.as_u64().to_string();
+				let mut buf = b"evm-".to_vec();
+				buf.extend(s.as_bytes());
+				Cow::Owned(buf)
+			},
 		}
 	}
 
@@ -237,9 +244,17 @@ mod test {
 
 	#[test]
 	fn blockchain_as_bytes_back_compat() {
-		assert_eq!(Blockchain::ETHEREUM.as_bytes(), b"ethereum");
-		assert_eq!(Blockchain::RINKEBY.as_bytes(), b"rinkeby");
-		assert_eq!(Blockchain::LUNIVERSE.as_bytes(), b"luniverse");
-		assert_eq!(Blockchain::LUNIVERSE_TESTNET.as_bytes(), b"luniverse");
+		assert_eq!(Blockchain::ETHEREUM.as_bytes(), b"ethereum".as_slice());
+		assert_eq!(Blockchain::RINKEBY.as_bytes(), b"rinkeby".as_slice());
+		assert_eq!(Blockchain::LUNIVERSE.as_bytes(), b"luniverse".as_slice());
+		assert_eq!(Blockchain::LUNIVERSE_TESTNET.as_bytes(), b"luniverse".as_slice());
+	}
+
+	#[test]
+	fn blockchain_as_bytes_evm_chain() {
+		assert_eq!(
+			Blockchain::Evm(EvmInfo { chain_id: EvmChainId::new(31337) }).as_bytes(),
+			b"evm-31337".as_slice()
+		);
 	}
 }
