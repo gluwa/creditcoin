@@ -150,7 +150,7 @@ mod test {
 	use sp_runtime::traits::Hash;
 
 	impl<H> TransferId<H> {
-		pub fn new_old<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
+		pub fn from_old_blockchain<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
 		where
 			Config: frame_system::Config,
 			<Config as frame_system::Config>::Hashing: Hash<Output = H>,
@@ -235,7 +235,7 @@ mod test {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
 			let blockchain = Blockchain::Ethereum;
-			let transfer_id = TransferId::new_old::<Test>(&blockchain, &[0]);
+			let transfer_id = TransferId::from_old_blockchain::<Test>(&blockchain, &[0]);
 			let old_transfer = OldTransfer {
 				blockchain: Blockchain::Ethereum,
 				kind: TransferKind::Native,
