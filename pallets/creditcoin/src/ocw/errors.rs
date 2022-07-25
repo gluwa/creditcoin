@@ -60,15 +60,12 @@ pub enum RpcUrlError {
 }
 
 macro_rules! _impl_from_error {
-	($self_ty: ident, $err_ty: path, $variant: ident, $err: ident, $ret: expr) => {
+	($self_ty: ident, $err_ty: path, $variant: ident) => {
 		impl From<$err_ty> for $self_ty {
-			fn from($err: $err_ty) -> Self {
-				$ret
+			fn from(err: $err_ty) -> Self {
+				$self_ty::$variant(err)
 			}
 		}
-	};
-	($self_ty: ident, $err_ty: path, $variant: ident) => {
-		impl_from_error!($self_ty, $err_ty, $variant, err, $self_ty::$variant(err));
 	};
 	($self_ty: ident, $($err_ty: path => $variant: ident),+ $(,)?) => {
         $(
