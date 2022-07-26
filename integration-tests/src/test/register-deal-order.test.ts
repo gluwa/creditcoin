@@ -1,14 +1,14 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { Guid } from 'creditcoin-js';
+import { Guid, LoanTerms } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
 import { KeyringPair } from 'creditcoin-js';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, tryRegisterAddress } from './common';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 
 describe('RegisterDealOrder', (): void => {
@@ -18,13 +18,15 @@ describe('RegisterDealOrder', (): void => {
 
     let borrowerAddressId: string;
     let lenderAddressId: string;
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    let loanTerms: LoanTerms;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
-    });
+        loanTerms = await loanTermsWithCurrency(ccApi);
+    }, 60000);
 
     afterAll(async () => {
         await ccApi.api.disconnect();

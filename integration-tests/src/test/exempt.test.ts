@@ -6,7 +6,7 @@ import { POINT_01_CTC } from '../constants';
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, tryRegisterAddress } from './common';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 import { Wallet } from 'creditcoin-js';
 
@@ -18,7 +18,7 @@ describe('Exempt', (): void => {
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
 
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
@@ -58,6 +58,7 @@ describe('Exempt', (): void => {
         ]);
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
+        const loanTerms = await loanTermsWithCurrency(ccApi);
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
         dealOrder = await registerDealOrder(

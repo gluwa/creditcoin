@@ -1,9 +1,9 @@
 import { KeyringPair } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
-import { OfferId } from 'creditcoin-js/lib/model';
+import { LoanTerms, OfferId } from 'creditcoin-js/lib/model';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, testData } from './common';
+import { addAskAndBidOrder, loanTermsWithCurrency, testData } from './common';
 import { extractFee } from '../utils';
 
 describe('AddDealOrder', (): void => {
@@ -11,6 +11,7 @@ describe('AddDealOrder', (): void => {
     let borrower: KeyringPair;
     let lender: KeyringPair;
     let offerId: OfferId;
+    let loanTerms: LoanTerms;
 
     const { expirationBlock, keyring } = testData;
 
@@ -25,7 +26,8 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
+        loanTerms = await loanTermsWithCurrency(ccApi);
+        const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms);
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;
     }, 210000);

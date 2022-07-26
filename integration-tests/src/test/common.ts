@@ -1,21 +1,57 @@
 import { providers } from 'ethers';
 import { Wallet, Guid, BN } from 'creditcoin-js';
 import { Keyring, KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
-import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/lib/model';
+import { Blockchain, LoanTerms, DealOrderId, Currency } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { createAddress } from 'creditcoin-js/lib/transforms';
-import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
+import { ethConnection, EthConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
+import { createCurrencyId, registerCurrencyAsync } from 'creditcoin-js/lib/extrinsics/register-currency';
 
-type TestData = {
-    loanTerms: LoanTerms;
+export type TestData = {
     blockchain: Blockchain;
     expirationBlock: number;
     keyring: Keyring;
     createWallet: (who: string) => Wallet;
 };
 export const testData: TestData = {
-    loanTerms: {
+    blockchain: (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+    expirationBlock: 10_000_000,
+    createWallet: (global as any).CREDITCOIN_CREATE_WALLET
+        ? (global as any).CREDITCOIN_CREATE_WALLET
+        : Wallet.createRandom, // eslint-disable-line
+    keyring: new Keyring({ type: 'sr25519' }),
+};
+
+const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey?: KeyringPair) => {
+    const id = createCurrencyId(ccApi.api, currency);
+    const onChainCurrency = await ccApi.api.query.creditcoin.currencies(id);
+    if (onChainCurrency.isEmpty) {
+        if (sudoKey === undefined) {
+            const keyring = new Keyring({ type: 'sr25519' });
+            sudoKey = keyring.addFromUri('//Alice');
+        }
+        const { itemId } = await registerCurrencyAsync(ccApi.api, currency, sudoKey);
+        if (itemId !== id) {
+            throw new Error(`Unequal: ${itemId} !== ${id}`);
+        }
+    }
+};
+
+export const loanTermsWithCurrency = async (ccApi: CreditcoinApi, currency?: Currency): Promise<LoanTerms> => {
+    const currencyFallback = async (c?: Currency): Promise<Currency> => {
+        if (c === undefined) {
+            const { testTokenAddress } = await setupEth();
+            return testCurrency(testTokenAddress);
+        } else {
+            return c;
+        }
+    };
+    currency = await currencyFallback(currency);
+    const currencyId = createCurrencyId(ccApi.api, currency);
+    await ensureCurrencyRegistered(ccApi, currency);
+
+    return {
         amount: new BN(1_000),
         interestRate: {
             ratePerPeriod: 100,
@@ -30,22 +66,22 @@ export const testData: TestData = {
             secs: 60 * 60 * 24 * 30,
             nanos: 0,
         },
-    } as LoanTerms,
-    blockchain: (global as any).CREDITCOIN_ETHEREUM_NAME as Blockchain,
-    expirationBlock: 10_000_000,
-    createWallet: (global as any).CREDITCOIN_CREATE_WALLET
-        ? (global as any).CREDITCOIN_CREATE_WALLET
-        : Wallet.createRandom, // eslint-disable-line
-    keyring: new Keyring({ type: 'sr25519' }),
+        currency: currencyId,
+    };
 };
 
-export const addAskAndBidOrder = async (ccApi: CreditcoinApi, lender: KeyringPair, borrower: KeyringPair) => {
+export const addAskAndBidOrder = async (
+    ccApi: CreditcoinApi,
+    lender: KeyringPair,
+    borrower: KeyringPair,
+    loanTerms: LoanTerms,
+) => {
     const {
         extrinsics: { addAskOrder, addBidOrder, registerAddress },
         utils: { signAccountId },
     } = ccApi;
 
-    const { blockchain, expirationBlock, loanTerms } = testData;
+    const { blockchain, expirationBlock } = testData;
     const lenderWallet = Wallet.createRandom();
     const borrowerWallet = Wallet.createRandom();
 
@@ -64,20 +100,25 @@ export const addAskAndBidOrder = async (ccApi: CreditcoinApi, lender: KeyringPai
     return [askOrderAdded.itemId, bidOrderAdded.itemId];
 };
 
+export const setupEth = async (lenderWallet?: Wallet): Promise<EthConnection> => {
+    return ethConnection(
+        (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+        (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+        (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+    );
+};
+
 export const lendOnEth = async (
     lenderWallet: Wallet,
     borrowerWallet: Wallet,
     dealOrderId: DealOrderId,
     loanTerms: LoanTerms,
+    connection?: EthConnection,
 ) => {
-    const { lend, waitUntilTip } = await ethConnection(
-        (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-        (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-        (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
-    );
+    const { lend, waitUntilTip } = connection ? connection : await setupEth(lenderWallet);
 
     // Lender lends to borrower on ethereum
-    const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
+    const [, lendTxHash, lendBlockNumber] = await lend(
         lenderWallet,
         borrowerWallet.address,
         dealOrderId[1],
@@ -87,7 +128,7 @@ export const lendOnEth = async (
     // wait 15 blocks on Ethereum
     await waitUntilTip(lendBlockNumber + 15);
 
-    return [tokenAddress, lendTxHash];
+    return lendTxHash;
 };
 
 export const tryRegisterAddress = async (
