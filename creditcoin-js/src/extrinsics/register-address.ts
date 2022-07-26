@@ -3,7 +3,7 @@ import { Address, AddressId, Blockchain, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, processEvents } from './common';
 import { TxCallback, TxFailureCallback } from '../types';
-import { createAddress } from '../transforms';
+import { createAddress, createCreditcoinBlockchain } from '../transforms';
 import { u8aConcat, u8aToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 
@@ -25,7 +25,7 @@ export const registerAddress = async (
     onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
-        .registerAddress(blockchain, externalAddress, ownershipProof)
+        .registerAddress(createCreditcoinBlockchain(api, blockchain), externalAddress, ownershipProof)
         .signAndSend(signer, { nonce: -1 }, (result) => handleTransaction(api, unsubscribe, result, onSuccess, onFail));
 };
 
