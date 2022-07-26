@@ -1,6 +1,7 @@
 import { ApiPromise, Keyring, WsProvider } from 'creditcoin-js';
 import { KeyringPair } from 'creditcoin-js';
 import { Wallet } from 'creditcoin-js';
+import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 import { signAccountId } from 'creditcoin-js/lib/utils';
 import { POINT_01_CTC } from '../constants';
 import { extractFee } from '../utils';
@@ -23,7 +24,7 @@ describe('RegisterAddress', () => {
             const wallet = Wallet.createRandom();
             const unsubscribe = api.tx.creditcoin
                 .registerAddress(
-                    (global as any).CREDITCOIN_ETHEREUM_NAME,
+                    createCreditcoinBlockchain(api, (global as any).CREDITCOIN_ETHEREUM_CHAIN).toJSON(),
                     wallet.address,
                     signAccountId(api, wallet, alice.address),
                 )

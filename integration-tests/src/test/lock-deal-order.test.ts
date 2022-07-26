@@ -1,4 +1,4 @@
-import { KeyringPair } from 'creditcoin-js';
+import { KeyringPair, LoanTerms, TransferKind } from 'creditcoin-js';
 
 import { Guid } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
@@ -6,9 +6,15 @@ import { POINT_01_CTC } from '../constants';
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, lendOnEth, tryRegisterAddress } from './common';
+import { testData, lendOnEth, tryRegisterAddress, setupEth, loanTermsWithCurrency } from './common';
 import { extractFee } from '../utils';
 import { Wallet } from 'creditcoin-js';
+import { testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+
+const ethless: TransferKind = {
+    platform: 'Evm',
+    kind: 'Ethless',
+};
 
 describe('LockDealOrder', (): void => {
     let ccApi: CreditcoinApi;
@@ -17,8 +23,9 @@ describe('LockDealOrder', (): void => {
     let dealOrder: DealOrderRegistered;
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
+    let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
@@ -56,6 +63,9 @@ describe('LockDealOrder', (): void => {
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
+        const eth = await setupEth(lenderWallet);
+        const currency = testCurrency(eth.testTokenAddress);
+        loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
@@ -72,18 +82,8 @@ describe('LockDealOrder', (): void => {
             lender,
         );
 
-        const [fundingTokenAddress, fundingTxHash] = await lendOnEth(
-            lenderWallet,
-            borrowerWallet,
-            dealOrder.dealOrder.itemId,
-            loanTerms,
-        );
-        const fundingEvent = await registerFundingTransfer(
-            { kind: 'Ethless', contractAddress: fundingTokenAddress },
-            dealOrder.dealOrder.itemId,
-            fundingTxHash,
-            lender,
-        );
+        const fundingTxHash = await lendOnEth(lenderWallet, borrowerWallet, dealOrder.dealOrder.itemId, loanTerms, eth);
+        const fundingEvent = await registerFundingTransfer(ethless, dealOrder.dealOrder.itemId, fundingTxHash, lender);
         const fundingTransferVerified = await fundingEvent.waitForVerification().catch();
         expect(fundingTransferVerified).toBeTruthy();
 

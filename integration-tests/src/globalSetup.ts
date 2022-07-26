@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider, Keyring } from 'creditcoin-js';
+import { ApiPromise, WsProvider, Keyring, CHAINS } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { main as deployCtcContract } from './ctc-deploy';
 
@@ -18,8 +18,8 @@ const setup = async () => {
         (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL = true;
     }
 
-    if ((global as any).CREDITCOIN_ETHEREUM_NAME === undefined) {
-        (global as any).CREDITCOIN_ETHEREUM_NAME = 'Ethereum';
+    if ((global as any).CREDITCOIN_ETHEREUM_CHAIN === undefined) {
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN = CHAINS.hardhat;
     }
 
     if ((global as any).CREDITCOIN_ETHEREUM_NODE_URL === undefined) {
