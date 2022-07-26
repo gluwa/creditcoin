@@ -1065,6 +1065,9 @@ pub mod pallet {
 				Error::<T>::InvalidSignature
 			);
 
+			let currency =
+				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
+
 			let borrower = Self::get_address(&borrower_address_id)?;
 			ensure!(borrower.owner == borrower_account, Error::<T>::NotAddressOwner);
 
@@ -1072,6 +1075,11 @@ pub mod pallet {
 			ensure!(lender.owner == lender_account, Error::<T>::NotAddressOwner);
 
 			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressPlatformMismatch);
+
+			ensure!(
+				lender.blockchain == currency.blockchain(),
+				Error::<T>::AddressPlatformMismatch
+			);
 
 			let ask_order_id = AskOrderId::new::<T>(expiration_block, &ask_guid);
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
