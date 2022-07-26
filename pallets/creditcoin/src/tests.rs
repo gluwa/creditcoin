@@ -162,7 +162,7 @@ impl Default for TestInfo {
 		let ask_guid = "ask_guid".as_bytes().into_bounded();
 		let bid_guid = "bid_guid".as_bytes().into_bounded();
 		let expiration_block = 1_000;
-		TestInfo {
+		let info = TestInfo {
 			blockchain,
 			lender,
 			borrower,
@@ -171,7 +171,9 @@ impl Default for TestInfo {
 			bid_guid,
 			expiration_block,
 			currency: Currency::default(),
-		}
+		};
+		info.register_currency();
+		info
 	}
 }
 
@@ -193,12 +195,15 @@ impl TestInfo {
 		}
 	}
 
+	pub fn register_currency(&self) {
+		Currencies::<Test>::insert(CurrencyId::new::<Test>(&self.currency), &self.currency);
+	}
+
 	pub fn create_ask_order(&self) -> TestAskOrder {
 		let TestInfo { lender, loan_terms, expiration_block, ask_guid, .. } = self;
 		let RegisteredAddress { address_id, account_id } = lender;
 
-		Currencies::<Test>::insert(CurrencyId::new::<Test>(&self.currency), &self.currency);
-
+		self.register_currency();
 		assert_ok!(Creditcoin::add_ask_order(
 			Origin::signed(account_id.clone()),
 			address_id.clone(),
@@ -219,8 +224,7 @@ impl TestInfo {
 		let TestInfo { borrower, loan_terms, expiration_block, bid_guid, .. } = self;
 		let RegisteredAddress { address_id, account_id } = borrower;
 
-		Currencies::<Test>::insert(CurrencyId::new::<Test>(&self.currency), &self.currency);
-
+		self.register_currency();
 		assert_ok!(Creditcoin::add_bid_order(
 			Origin::signed(account_id.clone()),
 			address_id.clone(),
