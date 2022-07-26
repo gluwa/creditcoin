@@ -63,3 +63,60 @@ pub mod metrics {
 		}
 	}
 }
+
+#[cfg(test)]
+mod test {
+	use super::metrics::*;
+	use substrate_prometheus_endpoint::Registry;
+
+	#[test]
+	fn metrics_works_when_starting_without_registry() {
+		let metrics = MiningMetrics::new(None).unwrap();
+		let initial_count = metrics.count();
+		assert_eq!(initial_count, 0);
+
+		// increase
+		metrics.inc();
+		assert_eq!(metrics.count(), initial_count + 1);
+
+		// add
+		metrics.add(4);
+		assert_eq!(metrics.count(), initial_count + 5);
+
+		// elapsed time
+		assert!(metrics.elapsed().as_nanos() > 0);
+	}
+
+	#[test]
+	fn metrics_works_when_starting_with_registry() {
+		let registry = Registry::new();
+		let metrics = MiningMetrics::new(Some(&registry)).unwrap();
+		let initial_count = metrics.count();
+		assert_eq!(initial_count, 0);
+
+		// increase
+		metrics.inc();
+		assert_eq!(metrics.count(), initial_count + 1);
+
+		// add
+		metrics.add(4);
+		assert_eq!(metrics.count(), initial_count + 5);
+
+		// elapsed time
+		assert!(metrics.elapsed().as_nanos() > 0);
+
+		// there's only 1 metric counter registered in MiningMetricsInner::register()
+		let results = registry.gather();
+		assert_eq!(results.len(), 1);
+	}
+
+	#[test]
+	fn metrics_clone_trait_works() {
+		let metrics = MiningMetrics::new(None).unwrap();
+		metrics.inc();
+
+		let new_metrics = metrics.clone();
+		drop(metrics);
+		assert_eq!(new_metrics.count(), 1);
+	}
+}

@@ -4574,6 +4574,7 @@ name = "primitives"
 version = "2.0.0-beta.7"
 dependencies = [
  "sp-core",
+ "sp-tracing",
  "substrate-prometheus-endpoint",
 ]
 
