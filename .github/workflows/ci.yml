@@ -325,7 +325,15 @@ jobs:
           command: build
           args: --release --features runtime-benchmarks
 
-      - name: Run benchmarks
+      - name: Run benchmarks to generate dummy weights
         run: |
-          ./target/release/creditcoin-node benchmark --pallet "*" --extrinsic "*"
+          ./scripts/bench.sh -p difficulty -b -r 1 -s 1
+          ./scripts/bench.sh -p creditcoin -b -r 1 -s 1
+          ./scripts/bench.sh -p rewards    -b -r 1 -s 1
 
+      # check if automatically generated wights compile
+      - name: Rebuild SUT with newly generated weights
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
