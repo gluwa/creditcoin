@@ -1,5 +1,6 @@
 mod external_address;
 
+use codec::Encode;
 pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub use external_address::{EVMAddress, PublicToAddress};
@@ -46,6 +47,11 @@ type TransferFor<T> = crate::Transfer<
 >;
 
 impl<T: Config> Pallet<T> {
+	#[inline]
+	pub(crate) fn storage_key<Id: Encode>(id: &Id) -> Vec<u8> {
+		const TASK_GUARD: &[u8] = b"creditcoin/task/guard/";
+		id.using_encoded(|encoded_id| TASK_GUARD.iter().chain(encoded_id).copied().collect())
+	}
 	pub fn block_number() -> BlockNumberFor<T> {
 		<frame_system::Pallet<T>>::block_number()
 	}

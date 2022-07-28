@@ -1,0 +1,14 @@
+[workspace]
+
+[package]
+name = "rust-integration-tests"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+parity-scale-codec = "3.1.5"
+sp-keyring = "6.0.0"
+subxt = "0.22.0"
+tokio = { version = "1.20.1", features = ["full"] }
