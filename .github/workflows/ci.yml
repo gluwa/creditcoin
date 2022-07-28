@@ -331,7 +331,7 @@ jobs:
           ./scripts/bench.sh -p creditcoin -b -r 1 -s 1
           ./scripts/bench.sh -p rewards    -b -r 1 -s 1
 
-      # check if automatically generated wights compile
+      # check if automatically generated weights compile
       - name: Rebuild SUT with newly generated weights
         uses: actions-rs/cargo@v1
         with:
