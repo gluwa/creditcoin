@@ -4,6 +4,7 @@ pub mod platform;
 pub use loan_terms::*;
 pub use platform::*;
 
+use crate::ocw::tasks::collect_coins::GCreContract;
 use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use extend::ext;
 use frame_support::{
@@ -122,6 +123,7 @@ pub struct UnverifiedCollectedCoins {
 	pub to: ExternalAddress,
 	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
 	pub tx_id: ExternalTxId,
+	pub contract: GCreContract,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -334,14 +336,13 @@ impl<H> TransferId<H> {
 	}
 }
 
-use crate::ocw::tasks::collect_coins::CONTRACT_CHAIN;
 impl<H> CollectedCoinsId<H> {
-	pub fn new<Config>(blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
+	pub fn new<Config>(contract_chain: &Blockchain, blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
 	where
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(CONTRACT_CHAIN.as_bytes(), blockchain_tx_id);
+		let key = concatenate!(contract_chain.as_bytes(), blockchain_tx_id);
 		CollectedCoinsId(Config::Hashing::hash(&key))
 	}
 }

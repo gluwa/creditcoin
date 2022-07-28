@@ -260,6 +260,7 @@ pub mod pallet {
 	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn collect_coins_contract)]
 	pub type CollectCoinsContract<T: Config> = StorageValue<_, GCreContract, ValueQuery>;
 
 	#[pallet::event]
@@ -1171,7 +1172,10 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let collect_coins_id = CollectedCoinsId::new::<T>(&tx_id);
+			let contract = Self::collect_coins_contract();
+			let contract_chain = &contract.chain;
+
+			let collect_coins_id = CollectedCoinsId::new::<T>(contract_chain, &tx_id);
 			ensure!(
 				!CollectedCoins::<T>::contains_key(&collect_coins_id),
 				Error::<T>::CollectCoinsAlreadyRegistered
@@ -1184,12 +1188,11 @@ pub mod pallet {
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
-			let address_id =
-				AddressId::new::<T>(&ocw::tasks::collect_coins::CONTRACT_CHAIN, &evm_address);
+			let address_id = AddressId::new::<T>(contract_chain, &evm_address);
 			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
-			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id };
+			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id, contract };
 
 			PendingTasks::<T>::insert(
 				deadline,
@@ -1320,22 +1323,20 @@ pub mod pallet {
 
 			let (task_id, event) = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
-					let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 					ensure!(
-						!Transfers::<T>::contains_key(&key),
+						!Transfers::<T>::contains_key(&id),
 						non_paying_error(Error::<T>::TransferAlreadyRegistered)
 					);
 
 					let mut transfer = transfer;
 					transfer.block = frame_system::Pallet::<T>::block_number();
 
-					Transfers::<T>::insert(&key, transfer);
-					(TaskId::from(id), Event::<T>::TransferVerified(key))
+					Transfers::<T>::insert(&id, transfer);
+					(TaskId::from(id.clone()), Event::<T>::TransferVerified(id))
 				},
 				TaskOutput::CollectCoins(id, collected_coins) => {
-					let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
 					ensure!(
-						!CollectedCoins::<T>::contains_key(&key),
+						!CollectedCoins::<T>::contains_key(&id),
 						non_paying_error(Error::<T>::CollectCoinsAlreadyRegistered)
 					);
 
@@ -1347,8 +1348,11 @@ pub mod pallet {
 						collected_coins.amount,
 					)?;
 
-					CollectedCoins::<T>::insert(key.clone(), collected_coins.clone());
-					(TaskId::from(id), Event::<T>::CollectedCoinsMinted(key, collected_coins))
+					CollectedCoins::<T>::insert(&id, collected_coins.clone());
+					(
+						TaskId::from(id.clone()),
+						Event::<T>::CollectedCoinsMinted(id, collected_coins),
+					)
 				},
 			};
 
