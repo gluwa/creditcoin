@@ -32,7 +32,7 @@ mod tests {
 	use crate::mock::{roll_to, roll_to_with_ocw, ExtBuilder, Origin, Test};
 	use crate::ocw::errors::VerificationFailureCause as Cause;
 	use crate::ocw::tasks::collect_coins::tests::mock_rpc_for_collect_coins;
-	use crate::ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN};
+	use crate::ocw::tasks::collect_coins::{testing_constants::CHAIN, tests::TX_HASH};
 	use crate::tests::{generate_address_with_proof, RefstrExt};
 	use crate::types::{Address, AddressId};
 	use crate::Pallet as Creditcoin;
@@ -59,7 +59,7 @@ mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -92,16 +92,15 @@ mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
 
 			let mut fake = addr;
 			fake[0] = 0xff;
-			let address_id = AddressId::new::<Test>(&CONTRACT_CHAIN, &fake);
-			let entry =
-				Address { blockchain: CONTRACT_CHAIN, value: fake.clone(), owner: acc.clone() };
+			let address_id = AddressId::new::<Test>(&CHAIN, &fake);
+			let entry = Address { blockchain: CHAIN, value: fake.clone(), owner: acc.clone() };
 			crate::Addresses::<Test>::insert(address_id, entry);
 
 			roll_to(1);
@@ -121,8 +120,10 @@ mod tests {
 			let nonce = System::<Test>::account(acct).nonce;
 			assert_eq!(nonce, 1u64);
 
-			let expected_collected_coins_id =
-				crate::CollectedCoinsId::new::<crate::mock::Test>(&TX_HASH.hex_to_address());
+			let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(
+				&CHAIN,
+				&TX_HASH.hex_to_address(),
+			);
 
 			let call = crate::Call::<crate::mock::Test>::fail_task {
 				task_id: expected_collected_coins_id.into(),
@@ -159,7 +160,7 @@ mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -197,7 +198,8 @@ mod tests {
 				let mut ext_builder = ExtBuilder::default();
 				let acct_pubkey = ext_builder.generate_authority();
 				let acct = <Test as SystemConfig>::AccountId::from(acct_pubkey.into_account().0);
-				let expected_collected_coins_id = crate::CollectedCoinsId::new::<Test>(&[0]);
+				let expected_collected_coins_id =
+					crate::CollectedCoinsId::new::<Test>(&CHAIN, &[0]);
 				let (mut ext, pool) = ext_builder.build_with(offchain);
 				let execute = || {
 					crate::mock::roll_to(1);

@@ -63,7 +63,7 @@ pub(in crate::ocw) fn validate_ethless_transfer(
 		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
 
-	let inputs = transfer_fn.decode_input(&transaction.input.0[4..]).map_err(|e| {
+	let inputs = transfer_fn.decode_input(transaction.input()).map_err(|e| {
 		log::error!("failed to decode inputs: {:?}", e);
 		VerificationFailureCause::AbiMismatch
 	})?;

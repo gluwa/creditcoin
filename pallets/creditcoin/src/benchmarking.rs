@@ -4,7 +4,7 @@ use super::*;
 use crate::benchmarking::alloc::format;
 use crate::helpers::{EVMAddress, PublicToAddress};
 use crate::ocw::errors::VerificationFailureCause as Cause;
-use crate::ocw::tasks::collect_coins::CONTRACT_CHAIN;
+use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
@@ -99,14 +99,14 @@ benchmarks! {
 		for i in 0..c {
 			let collector: T::AccountId = lender_account::<T>(true);
 			let evm_address = format!("{:03x}",i).as_bytes() .into_bounded();
-			let address_id = AddressId::new::<T>(&CONTRACT_CHAIN, &evm_address);
-			let entry = Address { blockchain: CONTRACT_CHAIN, value: evm_address.clone(), owner: collector.clone() };
+			let address_id = AddressId::new::<T>(&CHAIN, &evm_address);
+			let entry = Address { blockchain: CHAIN, value: evm_address.clone(), owner: collector.clone() };
 			<Addresses<T>>::insert(address_id, entry);
 
 			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
-			let collected_coins_id = CollectedCoinsId::new::<T>(&tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 
-			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() };
+			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() , contract: Default::default()};
 
 			crate::PendingTasks::<T>::insert(deadline, crate::TaskId::from(collected_coins_id), crate::Task::from(pending));
 		}
@@ -296,7 +296,7 @@ benchmarks! {
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab".as_bytes();
-		let collected_coins_id = crate::CollectedCoinsId::new::<T>(tx_id);
+		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, tx_id);
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_id = crate::TaskId::from(collected_coins_id);
 	}: fail_task(RawOrigin::Signed(authority), deadline, task_id, Cause::AbiMismatch)
@@ -310,7 +310,7 @@ benchmarks! {
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
 			.as_bytes()
 			.into_bounded();
-		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&tx_id);
+		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 		let amount = T::Balance::unique_saturated_from(Balances::<T>::minimum_balance());
 		let collected_coins =
 			crate::types::CollectedCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };

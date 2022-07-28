@@ -488,7 +488,7 @@ impl Default for MockedRpcRequests {
 		let tx_hash = get_mock_tx_hash();
 		let tx_block_number = get_mock_tx_block_num();
 
-		Self::new(rpc_uri, &tx_hash, &tx_block_number, &*ETHLESS_RESPONSES)
+		Self::new(rpc_uri, &tx_hash, &tx_block_number, &ETHLESS_RESPONSES)
 	}
 }
 
