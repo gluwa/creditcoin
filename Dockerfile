@@ -16,6 +16,9 @@ FROM ubuntu:20.04
 EXPOSE 30333/tcp
 EXPOSE 30333/udp
 EXPOSE 9944 9933 9615
+ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-c"]
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
 COPY chainspecs .
 ENTRYPOINT [ "/bin/creditcoin-node" ]
