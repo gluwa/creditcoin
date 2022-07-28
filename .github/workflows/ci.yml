@@ -141,8 +141,13 @@ jobs:
 
   integration-test:
     runs-on: ubuntu-20.04
+    permissions: write-all
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 10
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set-Up
         run: |
