@@ -115,8 +115,10 @@ mod tests {
 			let collect_coins = crate::types::UnverifiedCollectedCoins {
 				to: b"baba".to_vec().try_into().unwrap(),
 				tx_id: tx_id.clone(),
+				contract: Default::default(),
 			};
-			let collect_coins_id = crate::CollectedCoinsId::new::<Test>(&tx_id);
+			let collect_coins_id =
+				crate::CollectedCoinsId::new::<Test>(&collect_coins.contract.chain, &tx_id);
 
 			UnverifiedCollectedCoins::<Test>::insert(deadline, &collect_coins_id, &collect_coins);
 			assert!(UnverifiedCollectedCoins::<Test>::contains_key(deadline, &collect_coins_id));
