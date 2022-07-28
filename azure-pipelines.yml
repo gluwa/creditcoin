@@ -76,6 +76,6 @@ stages:
   jobs:
   - template: ./ci/templates/release.yml
     parameters:
-      job_condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/CSUB-175-automate-github-release'))
+      job_condition: succeeded()
       gitHubConnection: 'CreditcoinRelease'
       artifactName: target
