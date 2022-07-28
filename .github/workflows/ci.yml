@@ -186,12 +186,42 @@ jobs:
           node-version: 16
       - run: npm install -g yarn
 
-      - name: Run integration test
+      - name: Prepare for integration tests
         run: |
           pushd integration-tests/
 
           # wait for creditcoin-node to initialize
           ./yarn-install-and-wait-for-creditcoin.sh
+
+          popd
+
+      - name: Auto-update typedefs
+        id: update_typedefs
+        run: |
+          pushd creditcoin-js/
+
+          yarn build:types
+          yarn format
+
+          if [ -n "$(git status --short)" ]; then
+              git diff
+              echo "::set-output name=git_diff::true"
+          fi
+
+          popd
+
+      - name: Commit changes for typedefs
+        if: ${{ steps.update_typedefs.outputs.git_diff == 'true' }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: gluwa-bot
+          author_email: creditcoin@gluwa.com
+          message: 'Auto-update creditcoin-js type definitions'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Execute integration tests
+        run: |
+          pushd integration-tests/
 
           yarn test
 
