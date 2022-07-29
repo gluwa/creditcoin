@@ -206,8 +206,10 @@ impl<T: Config> Pallet<T> {
 		let synced_nonce_storage = StorageValueRef::persistent(key);
 		let synced_nonce = synced_nonce_storage.get::<T::Index>().ok().flatten();
 		if let Some(nonce) = synced_nonce {
-			account_data.nonce = nonce;
-			frame_system::Account::<T>::insert(acc_id, account_data.clone());
+			if nonce > account_data.nonce {
+				account_data.nonce = nonce;
+				frame_system::Account::<T>::insert(acc_id, account_data.clone());
+			}
 		}
 
 		Pallet::<T>::offchain_signed_tx(auth_id, call)
