@@ -216,15 +216,6 @@ jobs:
 
           popd
 
-      - name: Commit changes for typedefs
-        if: ${{ steps.update_typedefs.outputs.git_diff == 'true' }}
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: gluwa-bot
-          author_email: creditcoin@gluwa.com
-          message: 'Auto-update creditcoin-js type definitions'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Execute integration tests
         run: |
           pushd integration-tests/
@@ -232,6 +223,15 @@ jobs:
           yarn test
 
           popd
+
+      - name: Commit changes for typedefs
+        if: ${{ success() && steps.update_typedefs.outputs.git_diff == 'true' }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: gluwa-bot
+          author_email: creditcoin@gluwa.com
+          message: 'Auto-update creditcoin-js type definitions'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
