@@ -224,6 +224,11 @@ jobs:
 
           popd
 
+      - name: Git diff in case of failure
+        if: failure()
+        run: |
+          git diff
+
       - name: Commit changes for typedefs
         if: ${{ success() && steps.update_typedefs.outputs.git_diff == 'true' }}
         uses: EndBug/add-and-commit@v9
