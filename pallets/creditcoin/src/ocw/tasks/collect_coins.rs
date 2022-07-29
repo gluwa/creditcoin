@@ -934,7 +934,8 @@ pub(crate) mod tests {
 		});
 	}
 
-	fn persist_minimum_existencial_deposit_errors() {
+	#[test]
+	fn persist_minimum_existential_deposit_errors() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
 		let auth = AccountId::from(acct_pubkey.into_account().0);
