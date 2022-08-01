@@ -1464,7 +1464,7 @@ checksum = "a4c98847055d934070b90e806e12d3936b787d0a115068981c1d8dfd5dfef5a5"
 dependencies = [
  "ethereum-types",
  "hex",
- "sha3",
+ "sha3 0.9.1",
 ]
 
 [[package]]
@@ -3110,7 +3110,7 @@ dependencies = [
  "pin-project 1.0.10",
  "rand 0.7.3",
  "salsa20",
- "sha3",
+ "sha3 0.9.1",
 ]
 
 [[package]]
@@ -3680,7 +3680,7 @@ dependencies = [
  "generic-array 0.14.5",
  "multihash-derive",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
  "unsigned-varint 0.5.1",
 ]
 
@@ -6112,6 +6112,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a31480366ec990f395a61b7c08122d99bd40544fdb5abcfc1b06bb29994312c"
+dependencies = [
+ "digest 0.10.3",
+ "keccak",
+]
+
+[[package]]
 name = "sha3pow"
 version = "2.0.0-beta.7"
 dependencies = [
@@ -6123,7 +6133,7 @@ dependencies = [
  "sc-consensus-pow",
  "sc-keystore",
  "scale-info",
- "sha3",
+ "sha3 0.10.2",
  "sp-api",
  "sp-application-crypto",
  "sp-consensus-pow",
