@@ -2,8 +2,8 @@ use crate::{
 	helpers::{non_paying_error, EVMAddress, PublicToAddress, RefstrExt},
 	mock::*,
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, Authorities, BidOrder, BidOrderId, Blockchain, Currencies,
-	Currency, CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
+	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
 	EvmTransferKind, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind,
 	LoanTerms, Offer, OfferId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
