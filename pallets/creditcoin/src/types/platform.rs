@@ -49,6 +49,7 @@ impl Blockchain {
 	pub const fn evm(chain_id: EvmChainId) -> Blockchain {
 		Blockchain::Evm(EvmInfo { chain_id })
 	}
+	// Chain IDs from chainlist.org and Gluwa's internal luniverse documentation
 	pub const ETHEREUM: Blockchain = Blockchain::evm(EvmChainId::new(1));
 	pub const RINKEBY: Blockchain = Blockchain::evm(EvmChainId::new(4));
 	pub const LUNIVERSE_TESTNET: Blockchain = Blockchain::evm(EvmChainId::new(1635501961136826136));
@@ -140,7 +141,6 @@ impl<H> CurrencyId<H> {
 		}
 	}
 }
-
 
 #[cfg(test)]
 mod test {

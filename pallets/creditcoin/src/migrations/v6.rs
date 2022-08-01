@@ -1,5 +1,3 @@
-use core::convert::TryFrom;
-
 use super::v5;
 use crate::Config;
 use frame_support::generate_storage_alias;
@@ -24,20 +22,6 @@ use crate::AddressId;
 use crate::Blockchain;
 use crate::Transfer;
 use crate::TransferId;
-
-impl TryFrom<OldBlockchain> for Blockchain {
-	type Error = OldBlockchain;
-	fn try_from(old: OldBlockchain) -> Result<Blockchain, OldBlockchain> {
-		match old {
-			OldBlockchain::Ethereum => Ok(Blockchain::ETHEREUM),
-			OldBlockchain::Rinkeby => Ok(Blockchain::RINKEBY),
-			// this assumes that Luniverse == mainnet luniverse, we may want to make the chain ID of the
-			// old "Luniverse" variant on-chain-storage to make testnet work
-			OldBlockchain::Luniverse => Ok(Blockchain::LUNIVERSE),
-			other => Err(other),
-		}
-	}
-}
 
 fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
 	match old {
