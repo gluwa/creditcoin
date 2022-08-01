@@ -25,12 +25,15 @@ import type {
     PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
+    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOffer,
     PalletCreditcoinPlatformCurrency,
     PalletCreditcoinTask,
     PalletCreditcoinTaskId,
     PalletCreditcoinTransfer,
     PalletDifficultyDifficultyAndTimestamp,
+    PalletSchedulerReleases,
+    PalletSchedulerScheduledV3,
     PalletTransactionPaymentReleases,
     SpRuntimeDigest,
 } from '@polkadot/types/lookup';
@@ -119,6 +122,12 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            collectCoinsContract: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletCreditcoinOcwTasksCollectCoinsGCreContract>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             collectedCoins: AugmentedQuery<
                 ApiType,
                 (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectedCoins>>,
@@ -206,6 +215,37 @@ declare module '@polkadot/api-base/types/storage' {
         };
         rewards: {
             blockAuthor: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        scheduler: {
+            /**
+             * Items to be executed, indexed by the block number that they should be executed on.
+             **/
+            agenda: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Option<PalletSchedulerScheduledV3>>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Lookup from identity to the block number and index of the task.
+             **/
+            lookup: AugmentedQuery<
+                ApiType,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<ITuple<[u32, u32]>>>,
+                [Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [Bytes]>;
+            /**
+             * Storage version of the pallet.
+             *
+             * New networks start with last version.
+             **/
+            storageVersion: AugmentedQuery<ApiType, () => Observable<PalletSchedulerReleases>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
