@@ -22,8 +22,8 @@ use sp_runtime::{
 use std::convert::{TryFrom, TryInto};
 
 //Duplicated code; pallet_creditcoin::benchmarking.rs
-#[extend::ext]
-impl<'a, S, T> &'a [T]
+#[extend::ext(name = IntoBounded)]
+pub impl<'a, S, T> &'a [T]
 where
 	S: Get<u32>,
 	T: Clone,
@@ -2867,144 +2867,6 @@ fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
 			),
 			crate::Error::<Test>::NonExistentDealOrder
 		);
-	})
-}
-
-#[test]
-fn register_transfer_internal_legacy_should_error_with_non_existent_lender_address() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-		let bogus_address =
-			AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
-
-		let result = Creditcoin::register_transfer_internal_legacy(
-			test_info.lender.account_id,
-			bogus_address,
-			deal_order.borrower_address_id,
-			LegacyTransferKind::Native,
-			deal_order.terms.amount,
-			deal_order_id,
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
-	})
-}
-
-#[test]
-fn register_transfer_internal_legacy_should_error_with_non_existent_borrower_address() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-		let bogus_address =
-			AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
-
-		let result = Creditcoin::register_transfer_internal_legacy(
-			test_info.lender.account_id,
-			deal_order.lender_address_id,
-			bogus_address,
-			LegacyTransferKind::Native,
-			deal_order.terms.amount,
-			deal_order_id,
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
-	})
-}
-
-#[test]
-fn register_transfer_internal_legacy_should_error_when_signer_doesnt_own_from_address() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-
-		let result = Creditcoin::register_transfer_internal_legacy(
-			test_info.lender.account_id,
-			deal_order.borrower_address_id, // should match 1st argument
-			deal_order.lender_address_id,
-			LegacyTransferKind::Native,
-			deal_order.terms.amount,
-			deal_order_id,
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::NotAddressOwner);
-	})
-}
-
-#[test]
-fn register_transfer_internal_legacy_should_error_when_addresses_are_not_on_the_same_blockchain() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let second_borrower = RegisteredAddress::new("borrower2", Blockchain::LUNIVERSE);
-		let tx = "0xabcabcabc";
-
-		let result = Creditcoin::register_transfer_internal_legacy(
-			test_info.lender.account_id,
-			deal_order.lender_address_id,
-			second_borrower.address_id,
-			LegacyTransferKind::Native,
-			deal_order.terms.amount,
-			deal_order_id,
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::AddressPlatformMismatch);
-	})
-}
-
-#[test]
-fn register_transfer_internal_legacy_should_error_when_transfer_kind_is_not_supported() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-
-		let result = Creditcoin::register_transfer_internal_legacy(
-			test_info.lender.account_id,
-			deal_order.lender_address_id,
-			deal_order.borrower_address_id,
-			// not supported on Blockchain::RINKEBY
-			LegacyTransferKind::Other(BoundedVec::try_from(b"other".to_vec()).unwrap()),
-			deal_order.terms.amount,
-			deal_order_id,
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::UnsupportedTransferKind);
-	})
-}
-
-#[test]
-fn register_transfer_internal_legacy_should_error_when_transfer_is_already_registered() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let (_, transfer) = test_info.create_funding_transfer(&deal_order_id);
-
-		let result = Creditcoin::register_transfer_internal_legacy(
-			test_info.lender.account_id,
-			deal_order.lender_address_id,
-			deal_order.borrower_address_id,
-			LegacyTransferKind::Native,
-			deal_order.terms.amount,
-			deal_order_id,
-			transfer.tx_id,
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::TransferAlreadyRegistered);
 	})
 }
 
