@@ -2784,27 +2784,51 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 	});
 }
 
-#[test]
-fn register_funding_transfer_should_error_when_not_signed() {
+enum TransferVersion {
+	Legacy,
+	New,
+}
+
+fn register_funding_transfer_should_error_when_not_signed(version: TransferVersion) {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, _) = test_info.create_deal_order();
 		let tx = "0xabcabcabc";
 
+		let tx = tx.as_bytes().into_bounded();
+		let origin = Origin::none();
+
 		assert_noop!(
-			Creditcoin::register_funding_transfer_legacy(
-				Origin::none(),
-				LegacyTransferKind::Native,
-				deal_order_id,
-				tx.as_bytes().into_bounded()
-			),
+			match version {
+				TransferVersion::New => Creditcoin::register_funding_transfer(
+					origin,
+					EvmTransferKind::Ethless.into(),
+					deal_order_id,
+					tx,
+				),
+				TransferVersion::Legacy => Creditcoin::register_funding_transfer_legacy(
+					origin,
+					LegacyTransferKind::Native,
+					deal_order_id,
+					tx,
+				),
+			},
 			BadOrigin
 		);
-	})
+	});
 }
 
 #[test]
-fn register_funding_transfer_should_error_when_not_deal_order_not_found() {
+fn register_funding_transfer_new_should_error_when_not_signed() {
+	register_funding_transfer_should_error_when_not_signed(TransferVersion::New);
+}
+
+#[test]
+fn register_funding_transfer_legacy_should_error_when_not_signed() {
+	register_funding_transfer_should_error_when_not_signed(TransferVersion::Legacy);
+}
+
+fn register_funding_transfer_should_error_when_not_deal_order_not_found(version: TransferVersion) {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (_, deal_order) = test_info.create_deal_order();
@@ -2812,42 +2836,82 @@ fn register_funding_transfer_should_error_when_not_deal_order_not_found() {
 		// expiration_block set to 0
 		let deal_order_id = DealOrderId::new::<Test>(0, &offer_id);
 
-		let tx = "0xabcabcabc";
+		let tx = "0xabcabcabc".as_bytes().into_bounded();
+		let origin = Origin::signed(test_info.lender.account_id);
 
 		assert_noop!(
-			Creditcoin::register_funding_transfer_legacy(
-				Origin::signed(test_info.lender.account_id),
-				LegacyTransferKind::Native,
-				deal_order_id,
-				tx.as_bytes().into_bounded()
-			),
+			match version {
+				TransferVersion::Legacy => Creditcoin::register_funding_transfer_legacy(
+					origin,
+					LegacyTransferKind::Native,
+					deal_order_id,
+					tx
+				),
+				TransferVersion::New => Creditcoin::register_funding_transfer(
+					origin,
+					EvmTransferKind::Ethless.into(),
+					deal_order_id,
+					tx
+				),
+			},
 			crate::Error::<Test>::NonExistentDealOrder
 		);
 	})
 }
 
 #[test]
-fn register_repayment_transfer_should_error_when_not_signed() {
+fn register_funding_transfer_legacy_should_error_when_not_deal_order_not_found() {
+	register_funding_transfer_should_error_when_not_deal_order_not_found(TransferVersion::Legacy);
+}
+
+#[test]
+fn register_funding_transfer_new_should_error_when_not_deal_order_not_found() {
+	register_funding_transfer_should_error_when_not_deal_order_not_found(TransferVersion::New);
+}
+
+fn register_repayment_transfer_should_error_when_not_signed(version: TransferVersion) {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, _) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
+		let tx = "0xabcabcabc".as_bytes().into_bounded();
+		let origin = Origin::none();
+		let amount = 21u64.into();
 
 		assert_noop!(
-			Creditcoin::register_repayment_transfer_legacy(
-				Origin::none(),
-				LegacyTransferKind::Native,
-				21u64.into(),
-				deal_order_id,
-				tx.as_bytes().into_bounded()
-			),
+			match version {
+				TransferVersion::Legacy => Creditcoin::register_repayment_transfer_legacy(
+					origin,
+					LegacyTransferKind::Native,
+					amount,
+					deal_order_id,
+					tx,
+				),
+				TransferVersion::New => Creditcoin::register_repayment_transfer(
+					origin,
+					EvmTransferKind::Ethless.into(),
+					amount,
+					deal_order_id,
+					tx,
+				),
+			},
 			BadOrigin
 		);
 	})
 }
 
 #[test]
-fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
+fn register_repayment_transfer_legacy_should_error_when_not_signed() {
+	register_repayment_transfer_should_error_when_not_signed(TransferVersion::Legacy);
+}
+
+#[test]
+fn register_repayment_transfer_new_should_error_when_not_signed() {
+	register_repayment_transfer_should_error_when_not_signed(TransferVersion::New);
+}
+
+fn register_repayment_transfer_should_error_when_not_deal_order_not_found(
+	version: TransferVersion,
+) {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (_, deal_order) = test_info.create_deal_order();
@@ -2855,19 +2919,40 @@ fn register_repayment_transfer_should_error_when_not_deal_order_not_found() {
 		// expiration_block set to 0
 		let deal_order_id = DealOrderId::new::<Test>(0, &offer_id);
 
-		let tx = "0xabcabcabc";
+		let amount = 21u64.into();
+		let origin = Origin::signed(test_info.borrower.account_id);
+		let tx = "0xabcabcabc".as_bytes().into_bounded();
 
 		assert_noop!(
-			Creditcoin::register_repayment_transfer_legacy(
-				Origin::signed(test_info.borrower.account_id),
-				LegacyTransferKind::Native,
-				21u64.into(),
-				deal_order_id,
-				tx.as_bytes().into_bounded()
-			),
+			match version {
+				TransferVersion::Legacy => Creditcoin::register_repayment_transfer_legacy(
+					origin,
+					LegacyTransferKind::Native,
+					amount,
+					deal_order_id,
+					tx,
+				),
+				TransferVersion::New => Creditcoin::register_repayment_transfer(
+					origin,
+					EvmTransferKind::Ethless.into(),
+					amount,
+					deal_order_id,
+					tx,
+				),
+			},
 			crate::Error::<Test>::NonExistentDealOrder
 		);
 	})
+}
+
+#[test]
+fn register_repayment_transfer_legacy_should_error_when_not_deal_order_not_found() {
+	register_repayment_transfer_should_error_when_not_deal_order_not_found(TransferVersion::Legacy);
+}
+
+#[test]
+fn register_repayment_transfer_new_should_error_when_not_deal_order_not_found() {
+	register_repayment_transfer_should_error_when_not_deal_order_not_found(TransferVersion::New);
 }
 
 #[test]
