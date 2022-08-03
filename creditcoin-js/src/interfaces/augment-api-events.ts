@@ -24,6 +24,7 @@ import type {
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
+    PalletCreditcoinPlatformCurrency,
     PalletCreditcoinTransfer,
     PalletCreditcoinUnverifiedCollectedCoins,
     SpRuntimeDispatchError,
@@ -147,6 +148,11 @@ declare module '@polkadot/api-base/types/events' {
              * [collected_coins_id]
              **/
             CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectedCoins]>;
+            /**
+             * A currency has been registered and can now be used in loan terms.
+             * [currency_id, currency]
+             **/
+            CurrencyRegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinPlatformCurrency]>;
             /**
              * A deal order has been added by a borrower. This indicates that the borrower
              * has accepted a lender's offer and intends to enter the loan.
