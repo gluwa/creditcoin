@@ -1030,15 +1030,15 @@ pub(crate) mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: 1u128,
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr,
 				sign
 			));
