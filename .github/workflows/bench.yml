@@ -42,7 +42,7 @@ jobs:
 
       - name: Difficulty
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
         env:
           PALLET: difficulty
         run: |
@@ -50,7 +50,7 @@ jobs:
 
       - name: Rewards
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
         env:
           PALLET: rewards
         run: |
@@ -59,7 +59,7 @@ jobs:
       # Run creditcoin pallet with lesser steps
       - name: Creditcoin
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
         env:
           STEPS: 8
           REPEAT: 8
