@@ -153,7 +153,10 @@ mod test {
 	use sp_runtime::traits::Hash;
 
 	impl<H> TransferId<H> {
-		pub fn from_old_blockchain<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
+		pub fn from_old_blockchain<Config>(
+			blockchain: &Blockchain,
+			blockchain_tx_id: &[u8],
+		) -> TransferId<H>
 		where
 			Config: frame_system::Config,
 			<Config as frame_system::Config>::Hashing: Hash<Output = H>,
