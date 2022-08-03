@@ -976,9 +976,11 @@ pub(crate) mod tests {
 			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip, &contract_address)
 				.expect("valid");
 			// Forged selector
-			tx.set_input(b"");
-			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip, &contract_address)
-				.expect_err("invalid");
+			tx.set_input(b"ffffffff");
+			assert_matches!(
+				validate_collect_coins(&to, &tx_receipt, &tx, eth_tip, &contract_address),
+				Err(OffchainError::InvalidTask(VerificationFailureCause::AbiMismatch))
+			);
 		});
 	}
 
