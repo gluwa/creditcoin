@@ -185,18 +185,22 @@ impl TestInfo {
 	pub fn with_currency(currency: Currency) -> TestInfo {
 		let default = TestInfo::default();
 
-		TestInfo {
+		let info = TestInfo {
 			loan_terms: LoanTerms {
 				currency: CurrencyId::new::<Test>(&currency),
 				..default.loan_terms
 			},
 			currency,
 			..default
-		}
+		};
+		info.register_currency();
+		info
 	}
 
 	pub fn register_currency(&self) {
-		Currencies::<Test>::insert(CurrencyId::new::<Test>(&self.currency), &self.currency);
+		if !Currencies::<Test>::contains_key(&self.currency.to_id::<Test>()) {
+			assert_ok!(Creditcoin::register_currency(Origin::root(), self.currency.clone()));
+		}
 	}
 
 	pub fn create_ask_order(&self) -> TestAskOrder {
