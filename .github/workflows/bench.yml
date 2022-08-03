@@ -37,8 +37,9 @@ jobs:
           profile: minimal
           override: true
 
-      - uses: Swatinem/rust-cache@v1
-        continue-on-error: true
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "cache-for-${{ github.sha }}"
 
       - name: Difficulty
         shell: bash
