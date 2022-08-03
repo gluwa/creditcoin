@@ -988,11 +988,17 @@ pub(crate) mod tests {
 		let acct_pubkey = ext.generate_authority();
 		let _auth = AccountId::from(acct_pubkey.into_account().0);
 		ext.build_and_execute(|| {
-			let contract = GCreContract::default();
+			let contract = GCreContract {
+				address: sp_core::H160(hex!("aaaaabbbbbcccccdddddeeeeefffff08F3820419")),
+				chain: Blockchain::Rinkeby,
+			};
 			assert_ok!(Creditcoin::<Test>::set_collect_coins_contract(
 				RawOrigin::Root.into(),
 				contract.clone()
 			));
+			let from_storage = Creditcoin::<Test>::collect_coins_contract();
+			assert_eq!(contract, from_storage);
+			assert_ne!(from_storage, GCreContract::default());
 
 			let (acc, ..) = generate_address_with_proof("somebody");
 
