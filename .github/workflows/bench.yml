@@ -6,9 +6,50 @@ on:
     branches: testnet
 
 jobs:
+  build-benchmarks:
+      runs-on: ubuntu-20.04
+      steps:
+      - uses: actions/checkout@v3
+
+      - name: Inspect benchmark CI config
+        run: |
+          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
+          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              exit 1
+          fi
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-03-21
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build benchmarks
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features runtime-benchmarks
+
+      - name: Upload benchmark binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release/creditcoin-node
+
   hardware-benchmarks:
     runs-on: self-hosted
     permissions: write-all
+    needs: build-benchmarks
     steps:
       - uses: actions/checkout@v3
         with:
@@ -20,25 +61,11 @@ jobs:
         run: |
           echo "HOME=/home/actions" >> $GITHUB_ENV
 
-      - name: Inspect benchmark CI config
-        run: |
-          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
-          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
-          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
-              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
-              exit 1
-          fi
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Download benchmark binary
+        uses: actions/download-artifact@v3
         with:
-          toolchain: nightly-2022-03-21
-          target: wasm32-unknown-unknown
-          profile: minimal
-          override: true
-
-      - uses: Swatinem/rust-cache@v1
-        continue-on-error: true
+          name: creditcoin-node
+          path: target/release/creditcoin-node
 
       - name: Difficulty
         shell: bash
@@ -46,7 +73,7 @@ jobs:
         env:
           PALLET: difficulty
         run: |
-          ./scripts/bench.sh -p $PALLET -cb
+          ./scripts/bench.sh -p $PALLET -b
 
       - name: Rewards
         shell: bash
