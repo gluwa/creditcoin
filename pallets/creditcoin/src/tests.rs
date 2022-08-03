@@ -2975,14 +2975,25 @@ fn register_currency_should_error_when_not_sudo() {
 }
 
 #[test]
-fn register_currency_works() {
+fn register_currency_should_work() {
 	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
 		let currency = Currency::default();
 
 		assert_ok!(Creditcoin::register_currency(Origin::root(), currency.clone()));
 
 		let id = CurrencyId::new::<Test>(&currency);
-		assert_eq!(crate::Currencies::<Test>::get(&id), Some(currency));
+		assert_eq!(crate::Currencies::<Test>::get(&id).as_ref(), Some(&currency));
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+
+		assert_matches!(
+			event,
+			crate::mock::Event::Creditcoin(crate::Event::<Test>::CurrencyRegistered(registered_id, registered_currency)) => {
+				assert_eq!(registered_id, id);
+				assert_eq!(registered_currency, currency);
+			}
+		);
 	})
 }
 
