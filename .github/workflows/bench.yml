@@ -98,10 +98,32 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
-      - name: Commit changes
+      - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
         with:
           author_name: hardwareBenchmark
           author_email: creditcoin@gluwa.com
           message: 'Auto-update pallet weights'
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare commit for PR against dev
+        run: |
+          LAST_COMMIT=$(git rev-parse HEAD)
+          BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
+
+          git checkout -b $BRANCH_NAME origin/dev
+          git cherry-pick $LAST_COMMIT
+          git push origin $BRANCH_NAME
+
+      - name: Open PR against dev
+        id: open_pr
+        uses: rematocorp/open-pull-request-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          from-branch: auto-update-weights-for-dev-${{ github.sha }}
+          to-branch: dev
+          repository-owner: gluwa
+          repository: creditcoin
+
+      - name: PR number against dev
+        run: echo ${{ steps.open_pr.outputs.pull_number }}
