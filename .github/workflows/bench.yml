@@ -65,7 +65,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
-          path: target/release/creditcoin-node
+          path: target/release
 
       - name: Difficulty
         shell: bash
