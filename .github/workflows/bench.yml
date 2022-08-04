@@ -67,6 +67,10 @@ jobs:
           name: creditcoin-node
           path: target/release
 
+      - name: Restore executable permissions
+        run: |
+          chmod a+x ./target/release/creditcoin-node
+
       - name: Difficulty
         shell: bash
         continue-on-error: false
