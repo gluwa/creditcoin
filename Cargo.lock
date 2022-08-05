@@ -989,7 +989,6 @@ dependencies = [
  "sp-consensus-pow",
  "sp-core",
  "sp-inherents",
- "sp-keystore",
  "sp-runtime",
  "sp-timestamp",
  "structopt",
@@ -1002,32 +1001,14 @@ dependencies = [
 name = "creditcoin-node-rpc"
 version = "2.0.0-beta.7"
 dependencies = [
- "creditcoin-node-runtime",
- "frame-support",
- "frame-system",
- "futures 0.3.21",
- "hex",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "jsonrpc-pubsub",
- "log",
- "pallet-balances",
- "pallet-creditcoin",
- "pallet-rewards",
- "pallet-timestamp",
- "parity-scale-codec",
  "primitives",
- "sc-client-api",
  "sc-rpc",
  "serde",
  "serde_json",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-rpc",
- "sp-runtime",
- "sp-state-machine",
 ]
 
 [[package]]
