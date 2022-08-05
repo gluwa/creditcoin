@@ -154,7 +154,7 @@ pub fn decode_mining_key(
 			let key_bytes = hex::decode(&key_without_prefix)
 				.map_err(|e| format!("Invalid mining key, expected hex: {}", e))?;
 			Ok(creditcoin_node_runtime::Signer::from(
-				sp_core::ecdsa::Public::from_full(&*key_bytes)
+				sp_core::ecdsa::Public::from_full(&key_bytes)
 					.map_err(|_| String::from("Invalid mining key, expected 33 bytes"))?,
 			)
 			.into_account())

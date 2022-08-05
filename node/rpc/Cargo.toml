@@ -6,31 +6,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "2.3.1" }
-hex = "0.4.3"
 jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
-log = "0.4.17"
-pallet-creditcoin = { path = "../../pallets/creditcoin" }
-pallet-rewards = { path = "../../pallets/rewards" }
 primitives = { path = "../../primitives", features = ["std", "prometheus"] }
 serde = { version = "1.0.140", features = ["derive"] }
 serde_json = "1.0.82"
-
-
-sp-api = { version = "4.0.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-blockchain = { version = "4.0.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-core = { version = "4.1.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-rpc = { version = "4.0.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-runtime = { version = "4.1.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-state-machine = { version = "0.10.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
 sc-rpc = { version = "4.0.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sc-client-api = { version = "4.0.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-frame-system = { git = "https://github.com/gluwa/substrate.git", version = '4.0.0-dev', rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-frame-support = { git = "https://github.com/gluwa/substrate.git", version = '4.0.0-dev', rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-pallet-balances = { git = "https://github.com/gluwa/substrate.git", version = '4.0.0-dev', rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-pallet-timestamp = { git = "https://github.com/gluwa/substrate.git", version = '4.0.0-dev', rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-creditcoin-node-runtime = { version = "2.0.0-beta.7", path = "../../runtime" }
 jsonrpc-pubsub = "18.0.0"
-futures = "0.3.21"
