@@ -251,17 +251,12 @@ pub fn new_full(
 	let rpc_extensions_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
-		let backend = backend.clone();
-		let task_executor =
-			Arc::new(sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle()));
 
 		let mining_metrics = mining_metrics.clone();
 		Box::new(move |deny_unsafe, _| {
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
-				backend: backend.clone(),
-				executor: task_executor.clone(),
 				deny_unsafe,
 				mining_metrics: mining_metrics.clone(),
 			};
