@@ -21,8 +21,6 @@ use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct GCreContract {
 	pub address: sp_core::H160,
 	pub chain: Blockchain,
