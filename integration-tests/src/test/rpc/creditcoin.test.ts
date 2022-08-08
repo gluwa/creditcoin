@@ -1,7 +1,6 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { WebSocket } from 'ws';
 import { ApiPromise, WsProvider } from 'creditcoin-js';
 
 describe('Creditcoin RPC', (): void => {
