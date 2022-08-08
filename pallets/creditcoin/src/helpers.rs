@@ -10,11 +10,11 @@ use crate::{
 	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, TaskId, Transfer,
 	TransferId, TransferKind, UnverifiedTransfer,
 };
-
 use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
 use sp_runtime::{traits::Saturating, RuntimeAppPublic};
 use sp_std::prelude::*;
+use sp_tracing as log;
 
 #[allow(unused_macros)]
 macro_rules! try_get {
@@ -62,7 +62,7 @@ impl<T: Config> Pallet<T> {
 			.map(|p| sp_core::sr25519::Public::from(p).into())
 			.collect::<Vec<T::FromAccountId>>();
 
-		log::trace!("{:?}", local_keys);
+		log::trace!(target: "OCW", "local keys {:?}", local_keys);
 
 		Authorities::<T>::iter_keys().find_map(|auth| {
 			let acct = auth.clone().into();

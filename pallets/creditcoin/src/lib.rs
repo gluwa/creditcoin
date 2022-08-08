@@ -74,12 +74,16 @@ pub mod pallet {
 		pallet_prelude::*,
 	};
 	use ocw::errors::VerificationFailureCause;
+	use sp_io::offchain::sleep_until;
+	use sp_io::offchain::timestamp;
+	use sp_runtime::offchain::storage::StorageValueRef;
 	use sp_runtime::offchain::storage_lock::{BlockAndTime, StorageLock};
 	use sp_runtime::offchain::Duration;
 	use sp_runtime::traits::{
 		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
 		Verify,
 	};
+	use sp_tracing as log;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -603,14 +607,33 @@ pub mod pallet {
 			)
 		}
 
-		fn offchain_worker(_block_number: T::BlockNumber) {
+		fn offchain_worker(block_number: T::BlockNumber) {
 			let auth_id = match Self::authority_id() {
 				None => {
-					log::trace!("Not authority, skipping off chain work");
+					log::debug!(target: "OCW", "Not authority, skipping off chain work");
 					return;
 				},
 				Some(auth) => T::FromAccountId::from(auth),
 			};
+
+			// Instrumentation
+			{
+				let storage_flag = StorageValueRef::persistent(b"FakeTask");
+				if let Ok(Some(args)) = storage_flag.get::<(u64, u32)>() {
+					log::debug!(target: "OCW", "@ {block_number:?} Faking Tasks {:?}", args);
+					let (sleep, n) = args;
+					for _ in 0..n {
+						//Fake verification
+						sleep_until(timestamp().add(Duration::from_millis(sleep)));
+
+						if let Err(e) =
+							Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| Call::noop {})
+						{
+							log::error!("Failed to send persist dispatchable transaction: {:?}", e)
+						}
+					}
+				}
+			}
 
 			for (deadline, id, task) in PendingTasks::<T>::iter() {
 				let storage_key = crate::ocw::tasks::storage_key(&id);
@@ -639,6 +662,10 @@ pub mod pallet {
 
 				let result = task.verify_ocw::<T>();
 
+				// Instrumentation
+				{
+					log::trace!(target: "OCW", "@ {block_number:?} Task {:8?}", id);
+				}
 				match result {
 					Ok(task_data) => {
 						let output = task_data.into_output::<T>();
@@ -1434,6 +1461,12 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			CollectCoinsContract::<T>::put(contract);
+			Ok(())
+		}
+
+		#[pallet::weight((1000, Pays::No))]
+		pub fn noop(origin: OriginFor<T>) -> DispatchResult {
+			ensure_signed(origin)?;
 			Ok(())
 		}
 	}
