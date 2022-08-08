@@ -1,7 +1,11 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/storage';
+
+import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from '@polkadot/api-base/types';
 import type { Bytes, Null, Option, U256, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
@@ -18,19 +22,25 @@ import type {
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinBidOrder,
+    PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
     PalletCreditcoinOffer,
+    PalletCreditcoinPlatformCurrency,
+    PalletCreditcoinTask,
+    PalletCreditcoinTaskId,
     PalletCreditcoinTransfer,
-    PalletCreditcoinUnverifiedTransfer,
     PalletDifficultyDifficultyAndTimestamp,
     PalletTransactionPaymentReleases,
     SpRuntimeDigest,
 } from '@polkadot/types/lookup';
 import type { Observable } from '@polkadot/types/types';
 
+export type __AugmentedQuery<ApiType extends ApiTypes> = AugmentedQuery<ApiType, () => unknown>;
+export type __QueryableStorageEntry<ApiType extends ApiTypes> = QueryableStorageEntry<ApiType>;
+
 declare module '@polkadot/api-base/types/storage' {
-    export interface AugmentedQueries<ApiType extends ApiTypes> {
+    interface AugmentedQueries<ApiType extends ApiTypes> {
         balances: {
             /**
              * The balance of an account.
@@ -109,6 +119,18 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            collectedCoins: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectedCoins>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
+            currencies: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinPlatformCurrency>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
             dealOrders: AugmentedQuery<
                 ApiType,
                 (
@@ -135,21 +157,26 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            pendingTasks: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u32 | AnyNumber | Uint8Array,
+                    arg2:
+                        | PalletCreditcoinTaskId
+                        | { VerifyTransfer: any }
+                        | { CollectCoins: any }
+                        | string
+                        | Uint8Array,
+                ) => Observable<Option<PalletCreditcoinTask>>,
+                [u32, PalletCreditcoinTaskId]
+            > &
+                QueryableStorageEntry<ApiType, [u32, PalletCreditcoinTaskId]>;
             transfers: AugmentedQuery<
                 ApiType,
                 (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinTransfer>>,
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
-            unverifiedTransfers: AugmentedQuery<
-                ApiType,
-                (
-                    arg1: u32 | AnyNumber | Uint8Array,
-                    arg2: H256 | string | Uint8Array,
-                ) => Observable<Option<PalletCreditcoinUnverifiedTransfer>>,
-                [u32, H256]
-            > &
-                QueryableStorageEntry<ApiType, [u32, H256]>;
             usedGuids: AugmentedQuery<
                 ApiType,
                 (arg: Bytes | string | Uint8Array) => Observable<Option<Null>>,

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Example: Compile and benchmark the difficulty pallet.
 # ./scripts/bench.sh -p difficulty -cb
 

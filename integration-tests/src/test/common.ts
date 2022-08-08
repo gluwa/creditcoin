@@ -1,18 +1,17 @@
-import { Wallet } from 'ethers';
-import { Guid } from 'js-guid';
-import { BN } from '@polkadot/util';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/model';
-import { CreditcoinApi } from 'creditcoin-js/types';
-import { ethConnection } from 'creditcoin-js/examples/ethereum';
-import { Keyring } from '@polkadot/api';
+import { Wallet, Guid, BN } from 'creditcoin-js';
+import { Keyring, KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
+import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/lib/model';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { createAddress } from 'creditcoin-js/lib/transforms';
+import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
+import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 
 type TestData = {
     loanTerms: LoanTerms;
     blockchain: Blockchain;
     expirationBlock: number;
     keyring: Keyring;
-    createWallet: () => Wallet;
+    createWallet: (who: string) => Wallet;
 };
 export const testData: TestData = {
     loanTerms: {
@@ -31,9 +30,11 @@ export const testData: TestData = {
             nanos: 0,
         },
     } as LoanTerms,
-    blockchain: 'Ethereum' as Blockchain,
-    expirationBlock: 10_000,
-    createWallet: Wallet.createRandom, // eslint-disable-line
+    blockchain: (global as any).CREDITCOIN_ETHEREUM_NAME as Blockchain,
+    expirationBlock: 10_000_000,
+    createWallet: (global as any).CREDITCOIN_CREATE_WALLET
+        ? (global as any).CREDITCOIN_CREATE_WALLET
+        : Wallet.createRandom, // eslint-disable-line
     keyring: new Keyring({ type: 'sr25519' }),
 };
 
@@ -68,7 +69,11 @@ export const lendOnEth = async (
     dealOrderId: DealOrderId,
     loanTerms: LoanTerms,
 ) => {
-    const { lend, waitUntilTip } = await ethConnection();
+    const { lend, waitUntilTip } = await ethConnection(
+        (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+        (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+        (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+    );
 
     // Lender lends to borrower on ethereum
     const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
@@ -82,4 +87,32 @@ export const lendOnEth = async (
     await waitUntilTip(lendBlockNumber + 15);
 
     return [tokenAddress, lendTxHash];
+};
+
+export const tryRegisterAddress = async (
+    ccApi: CreditcoinApi,
+    externalAddress: string,
+    blockchain: Blockchain,
+    ownershipProof: string,
+    signer: KeyringPair,
+    checkForExisting = false,
+): Promise<AddressRegistered> => {
+    const {
+        api,
+        extrinsics: { registerAddress },
+    } = ccApi;
+
+    if (checkForExisting) {
+        const existingAddressId = createAddressId(blockchain, externalAddress);
+        const result = await api.query.creditcoin.addresses<Option<PalletCreditcoinAddress>>(existingAddressId);
+
+        if (result.isSome) {
+            return {
+                itemId: existingAddressId,
+                item: createAddress(result.unwrap()),
+            } as AddressRegistered;
+        }
+    }
+
+    return registerAddress(externalAddress, blockchain, ownershipProof, signer);
 };

@@ -1,10 +1,16 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/errors';
+
+import type { ApiTypes, AugmentedError } from '@polkadot/api-base/types';
+
+export type __AugmentedError<ApiType extends ApiTypes> = AugmentedError<ApiType>;
 
 declare module '@polkadot/api-base/types/errors' {
-    export interface AugmentedErrors<ApiType extends ApiTypes> {
+    interface AugmentedErrors<ApiType extends ApiTypes> {
         balances: {
             /**
              * Beneficiary account must pre-exist
@@ -69,9 +75,21 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AskOrderExpired: AugmentedError<ApiType>;
             /**
+             * The balance would overflow.
+             **/
+            BalanceOverflow: AugmentedError<ApiType>;
+            /**
              * The bid order has expired and is no longer valid.
              **/
             BidOrderExpired: AugmentedError<ApiType>;
+            /**
+             * The coin collection has already been registered.
+             **/
+            CollectCoinsAlreadyRegistered: AugmentedError<ApiType>;
+            /**
+             * The currency has already been registered.
+             **/
+            CurrencyAlreadyRegistered: AugmentedError<ApiType>;
             /**
              * The deal cannot be locked because it is not funded yet.
              **/

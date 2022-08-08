@@ -40,7 +40,7 @@ fn issue_reward_handling() {
 			.expect("Expected at least one EventRecord to be found")
 			.event;
 
-		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::RewardIssued(1, 55)),);
+		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::<Test>::RewardIssued(1, 55)),);
 	});
 }
 
@@ -54,5 +54,16 @@ fn rewards_were_issued_after_mining_blocks() {
 
 		let new_balance = Balances::free_balance(1);
 		assert!(new_balance > initial_balance);
+	});
+}
+
+#[test]
+fn exercise_getter() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+		roll_to(10, 2);
+
+		let author = crate::Pallet::<Test>::block_author();
+		assert_eq!(author, Some(2));
 	});
 }

@@ -1,6 +1,8 @@
 pub mod loan_terms;
+pub mod platform;
 
 pub use loan_terms::*;
+pub use platform::*;
 
 use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use extend::ext;
@@ -46,10 +48,10 @@ pub enum Blockchain {
 impl Blockchain {
 	pub fn as_bytes(&self) -> &[u8] {
 		match self {
-			Blockchain::Ethereum => &*b"ethereum",
-			Blockchain::Rinkeby => &*b"rinkeby",
-			Blockchain::Luniverse => &*b"luniverse",
-			Blockchain::Bitcoin => &*b"bitcoin",
+			Blockchain::Ethereum => b"ethereum",
+			Blockchain::Rinkeby => b"rinkeby",
+			Blockchain::Luniverse => b"luniverse",
+			Blockchain::Bitcoin => b"bitcoin",
 			Blockchain::Other(chain) => chain.as_slice(),
 		}
 	}
@@ -87,6 +89,16 @@ impl<AccountId> Address<AccountId> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct CollectedCoins<Hash, Balance> {
+	pub to: AddressId<Hash>,
+	pub amount: Balance,
+	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
+	pub tx_id: ExternalTxId,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub kind: TransferKind,
@@ -100,6 +112,16 @@ pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub is_processed: bool,
 	pub account_id: AccountId,
 	pub timestamp: Option<Moment>,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct UnverifiedCollectedCoins {
+	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
+	pub to: ExternalAddress,
+	#[cfg_attr(feature = "std", serde(with = "bounded_serde"))]
+	pub tx_id: ExternalTxId,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -218,6 +240,11 @@ pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct TransferId<Hash>(Hash);
 
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct CollectedCoinsId<Hash>(Hash);
+
 fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
 	let mut hex = Vec::with_capacity(bytes.len() * 2);
@@ -228,33 +255,19 @@ fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 	hex
 }
 
-macro_rules! strip_plus {
-    (+ $($rest: tt)*) => {
-        $($rest)*
-    }
-}
-
 macro_rules! concatenate {
+	(@strip_plus + $($rest: tt)*) => {
+		$($rest)*
+	};
 	($($bytes: expr),+) => {
 		{
-			let mut buf = Vec::with_capacity(strip_plus!($(+ $bytes.len())+));
+			let mut buf = Vec::with_capacity($crate::types::concatenate!(@strip_plus $(+ $bytes.len())+));
 			$(buf.extend($bytes);)+
 			buf
 		}
 	};
-
-	($($bytes: expr),+; $last_bytes: expr; sep = $sep: literal) => {
-		{
-			let mut buf = Vec::with_capacity(strip_plus!($(+ $bytes.len())+) + count_tts!($($bytes)+) );
-			$(
-				buf.extend($bytes);
-				buf.push($sep);
-			)+
-			buf.extend($last_bytes);
-			buf
-		}
-	}
 }
+pub(crate) use concatenate;
 
 impl<B, H> OrderId<B, H>
 where
@@ -318,6 +331,18 @@ impl<H> TransferId<H> {
 	{
 		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
 		TransferId(Config::Hashing::hash(&key))
+	}
+}
+
+use crate::ocw::tasks::collect_coins::CONTRACT_CHAIN;
+impl<H> CollectedCoinsId<H> {
+	pub fn new<Config>(blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
+	where
+		Config: frame_system::Config,
+		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+	{
+		let key = concatenate!(CONTRACT_CHAIN.as_bytes(), blockchain_tx_id);
+		CollectedCoinsId(Config::Hashing::hash(&key))
 	}
 }
 
@@ -535,4 +560,82 @@ impl<'de> serde::Deserialize<'de> for LegacySighash {
 		Self::try_from(&*String::deserialize(deserializer)?)
 			.map_err(|()| serde::de::Error::custom("expected 60 bytes"))
 	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum Task<AccountId, BlockNum, Hash, Moment> {
+	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(UnverifiedCollectedCoins),
+}
+
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+		Task::VerifyTransfer(transfer)
+	}
+}
+
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCollectedCoins>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(coins: UnverifiedCollectedCoins) -> Self {
+		Task::CollectCoins(coins)
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskId<Hash> {
+	VerifyTransfer(TransferId<Hash>),
+	CollectCoins(CollectedCoinsId<Hash>),
+}
+
+impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
+	fn from(id: TransferId<Hash>) -> Self {
+		TaskId::VerifyTransfer(id)
+	}
+}
+
+impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
+	fn from(id: CollectedCoinsId<Hash>) -> Self {
+		TaskId::CollectCoins(id)
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
+	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>),
+}
+
+impl<AccountId, Balance, BlockNum, Hash, Moment>
+	From<(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>)>
+	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+{
+	fn from(
+		(id, transfer): (TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
+	) -> Self {
+		Self::VerifyTransfer(id, transfer)
+	}
+}
+
+impl<AccountId, Balance, BlockNum, Hash, Moment>
+	From<(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)>
+	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+{
+	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)) -> Self {
+		Self::CollectCoins(id, coins)
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
+	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>, Option<Moment>),
+	CollectCoins(UnverifiedCollectedCoins, Balance),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TaskOracleData<Balance, Moment> {
+	VerifyTransfer(Option<Moment>),
+	CollectCoins(Balance),
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script:
-# - Checks for changes in transaction version in runtime/src/lib.rs
+# - Checks for changes in transaction version in runtime/src/version.rs
 # - Downloads latest release binary from gluwa/creditcoin (RELEASE_BIN)
 # - Compiles and build a binary from the current branch (HEAD_BIN)
 # - Runs the two nodes
@@ -38,7 +38,7 @@ for RUNTIME in "${runtimes[@]}"; do
   )
 
   current_transaction_version=$(
-    grep 'transaction_version' "./runtime/src/lib.rs"
+    grep 'transaction_version' "./runtime/src/version.rs"
   )
 
   echo "[+] Release: ${release_transaction_version}"

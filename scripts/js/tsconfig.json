@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "target": "es2016" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
+        "module": "commonjs" /* Specify what module code is generated. */,
+        "resolveJsonModule": true /* Enable importing .json files */,
+        "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables `allowSyntheticDefaultImports` for type compatibility. */,
+        "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
+        "strict": false /* Enable all strict type-checking options. */,
+        "skipLibCheck": true /* Skip type checking all .d.ts files. */,
+        "baseUrl": ".",
+        "paths": {
+            "@polkadot/api/augment": ["../../creditcoin-js/src/interfaces/augment-api.ts"],
+            "@polkadot/types/augment": ["../../creditcoin-js/src/interfaces/augment-types.ts"],
+            "@polkadot/types/lookup": ["../../creditcoin-js/src/interfaces/types-lookup.ts"]
+        },
+    }
+}

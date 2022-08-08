@@ -1,7 +1,11 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/consts';
+
+import type { ApiTypes, AugmentedConst } from '@polkadot/api-base/types';
 import type { Vec, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { Codec } from '@polkadot/types-codec/types';
 import type {
@@ -12,8 +16,10 @@ import type {
     SpVersionRuntimeVersion,
 } from '@polkadot/types/lookup';
 
+export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
+
 declare module '@polkadot/api-base/types/consts' {
-    export interface AugmentedConsts<ApiType extends ApiTypes> {
+    interface AugmentedConsts<ApiType extends ApiTypes> {
         balances: {
             /**
              * The minimum amount required to keep an account open.

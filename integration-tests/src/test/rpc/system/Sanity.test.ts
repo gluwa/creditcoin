@@ -1,15 +1,13 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, WsProvider } from 'creditcoin-js';
 
 describe('System RPC sanity test', (): void => {
     let api: ApiPromise;
 
     beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
-
-        const provider = new WsProvider('ws://127.0.0.1:9944');
+        const provider = new WsProvider((global as any).CREDITCOIN_API_URL);
 
         api = await ApiPromise.create({ provider });
     });
@@ -20,7 +18,7 @@ describe('System RPC sanity test', (): void => {
 
     it('rpc.system.chain() works', async (): Promise<void> => {
         const result = await api.rpc.system.chain();
-        expect(result.toString()).toBe('Development');
+        expect(result.toString()).toBe((global as any).CREDITCOIN_NETWORK_LONG_NAME);
     });
 
     it('rpc.system.name() works', async (): Promise<void> => {

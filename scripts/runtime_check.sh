@@ -13,7 +13,6 @@ set -e
 
 SUBSTRATE_REPO="https://github.com/gluwa/substrate"
 SUBSTRATE_REPO_CARGO="git+${SUBSTRATE_REPO}"
-SUBSTRATE_VERSIONS_FILE="bin/node/runtime/src/lib.rs"
 MAIN_BRANCH=dev
 RELEASE_BRANCH=main
 RUNTIME="creditcoin-node-runtime"
@@ -128,7 +127,7 @@ EOT
 fi
 
 
-# Check if there were changes in lib.rs
+# Check if there were changes in runtime.
 # If not, we can skip to the next runtime
 
 if ! git diff --name-only "origin/${MAIN_BRANCH}...${GITHUB_SHA}" \
@@ -140,14 +139,14 @@ fi
 # rebuilt.
 
 boldcat <<EOT
-Checking for version changes in add_spec_version in lib.rs
+Checking for version changes in add_spec_version in version.rs
 EOT
 add_spec_version="$(
-    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/lib.rs" \
+    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
     | sed -n -r "s/^\+[[:space:]]+spec_version: +([0-9]+),$/\1/p"
 )"
 sub_spec_version="$(
-    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/lib.rs" \
+    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
     | sed -n -r "s/^\-[[:space:]]+spec_version: +([0-9]+),$/\1/p"
 )"
 
@@ -169,15 +168,15 @@ else
     # there is no consensus-critical logic that has changed.
 
     boldcat <<EOT
-Checking for version changes in add_impl_version in lib.rs
+Checking for version changes in add_impl_version in version.rs
 EOT
 
     add_impl_version="$(
-    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/lib.rs" \
+    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
     | sed -n -r 's/^\+[[:space:]]+impl_version: +([0-9]+),$/\1/p'
     )"
     sub_impl_version="$(
-    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/lib.rs" \
+    git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
     | sed -n -r 's/^\-[[:space:]]+impl_version: +([0-9]+),$/\1/p'
     )"
 

@@ -5,6 +5,7 @@ mod v1;
 mod v2;
 mod v3;
 mod v4;
+mod v5;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
@@ -28,6 +29,11 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	if version < 4 {
 		weight = weight.saturating_add(v4::migrate::<T>());
 		StorageVersion::new(4).put::<Pallet<T>>();
+	}
+
+	if version < 5 {
+		weight = weight.saturating_add(v5::migrate::<T>());
+		StorageVersion::new(5).put::<Pallet<T>>();
 	}
 
 	weight

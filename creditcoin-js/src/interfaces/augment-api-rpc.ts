@@ -1,9 +1,27 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/rpc-core/types/jsonrpc';
+
 import type { AugmentedRpc } from '@polkadot/rpc-core/types';
 import type { Metadata, StorageKey } from '@polkadot/types';
-import type { Bytes, HashMap, Json, Null, Option, Text, U256, U64, Vec, bool, u32, u64 } from '@polkadot/types-codec';
+import type {
+    Bytes,
+    HashMap,
+    Json,
+    Null,
+    Option,
+    Text,
+    U256,
+    U64,
+    Vec,
+    bool,
+    f64,
+    u32,
+    u64,
+} from '@polkadot/types-codec';
 import type { AnyNumber, Codec } from '@polkadot/types-codec/types';
 import type { ExtrinsicOrHash, ExtrinsicStatus } from '@polkadot/types/interfaces/author';
 import type { EpochAuthorship } from '@polkadot/types/interfaces/babe';
@@ -24,6 +42,7 @@ import type { CreatedBlock } from '@polkadot/types/interfaces/engine';
 import type {
     EthAccount,
     EthCallRequest,
+    EthFeeHistory,
     EthFilter,
     EthFilterChanges,
     EthLog,
@@ -42,7 +61,7 @@ import type {
     JustificationNotification,
     ReportedRoundStates,
 } from '@polkadot/types/interfaces/grandpa';
-import type { MmrLeafProof } from '@polkadot/types/interfaces/mmr';
+import type { MmrLeafBatchProof, MmrLeafProof } from '@polkadot/types/interfaces/mmr';
 import type { StorageKind } from '@polkadot/types/interfaces/offchain';
 import type { FeeDetails, RuntimeDispatchInfo } from '@polkadot/types/interfaces/payment';
 import type { RpcMethods } from '@polkadot/types/interfaces/rpc';
@@ -78,8 +97,10 @@ import type {
 } from '@polkadot/types/interfaces/system';
 import type { IExtrinsic, Observable } from '@polkadot/types/types';
 
+export type __AugmentedRpc = AugmentedRpc<() => unknown>;
+
 declare module '@polkadot/rpc-core/types/jsonrpc' {
-    export interface RpcInterface {
+    interface RpcInterface {
         author: {
             /**
              * Returns true if the keystore has private keys for the given public key and key type.
@@ -120,11 +141,15 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
             /**
              * Submit and subscribe to watch an extrinsic until unsubscribed
              **/
-            submitAndWatchExtrinsic: AugmentedRpc<(extrinsic: IExtrinsic) => Observable<ExtrinsicStatus>>;
+            submitAndWatchExtrinsic: AugmentedRpc<
+                (extrinsic: Extrinsic | IExtrinsic | string | Uint8Array) => Observable<ExtrinsicStatus>
+            >;
             /**
              * Submit a fully formatted extrinsic for block inclusion
              **/
-            submitExtrinsic: AugmentedRpc<(extrinsic: IExtrinsic) => Observable<Hash>>;
+            submitExtrinsic: AugmentedRpc<
+                (extrinsic: Extrinsic | IExtrinsic | string | Uint8Array) => Observable<Hash>
+            >;
         };
         babe: {
             /**
@@ -379,6 +404,16 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
                 ) => Observable<U256>
             >;
             /**
+             * Returns fee history for given block count & reward percentiles
+             **/
+            feeHistory: AugmentedRpc<
+                (
+                    blockCount: U256 | AnyNumber | Uint8Array,
+                    newestBlock: BlockNumber | AnyNumber | Uint8Array,
+                    rewardPercentiles: Option<Vec<f64>> | null | Uint8Array | Vec<f64> | f64[],
+                ) => Observable<EthFeeHistory>
+            >;
+            /**
              * Returns current gas price.
              **/
             gasPrice: AugmentedRpc<() => Observable<U256>>;
@@ -528,6 +563,10 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
              **/
             hashrate: AugmentedRpc<() => Observable<U256>>;
             /**
+             * Returns max priority fee per gas
+             **/
+            maxPriorityFeePerGas: AugmentedRpc<() => Observable<U256>>;
+            /**
              * Returns true if client is actively mining new blocks.
              **/
             mining: AugmentedRpc<() => Observable<bool>>;
@@ -623,13 +662,22 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
         };
         mmr: {
             /**
+             * Generate MMR proof for the given leaf indices.
+             **/
+            generateBatchProof: AugmentedRpc<
+                (
+                    leafIndices: Vec<u64> | (u64 | AnyNumber | Uint8Array)[],
+                    at?: BlockHash | string | Uint8Array,
+                ) => Observable<MmrLeafProof>
+            >;
+            /**
              * Generate MMR proof for given leaf index.
              **/
             generateProof: AugmentedRpc<
                 (
                     leafIndex: u64 | AnyNumber | Uint8Array,
                     at?: BlockHash | string | Uint8Array,
-                ) => Observable<MmrLeafProof>
+                ) => Observable<MmrLeafBatchProof>
             >;
         };
         net: {
@@ -861,9 +909,9 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
             traceBlock: AugmentedRpc<
                 (
                     block: Hash | string | Uint8Array,
-                    targets: Option<Text> | null | object | string | Uint8Array,
-                    storageKeys: Option<Text> | null | object | string | Uint8Array,
-                    methods: Option<Text> | null | object | string | Uint8Array,
+                    targets: Option<Text> | null | Uint8Array | Text | string,
+                    storageKeys: Option<Text> | null | Uint8Array | Text | string,
+                    methods: Option<Text> | null | Uint8Array | Text | string,
                 ) => Observable<TraceBlockResponse>
             >;
             /**

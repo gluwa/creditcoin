@@ -1,6 +1,10 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/types/types/registry';
+
 import type {
     CreditcoinNodeRuntimeRuntime,
     FrameSupportTokensMiscBalanceStatus,
@@ -42,6 +46,7 @@ import type {
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
     PalletCreditcoinCall,
+    PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinError,
@@ -57,9 +62,18 @@ import type {
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinOrderId,
+    PalletCreditcoinPlatformCurrency,
+    PalletCreditcoinPlatformEvmChainId,
+    PalletCreditcoinPlatformEvmCurrencyType,
+    PalletCreditcoinPlatformEvmInfo,
+    PalletCreditcoinPlatformEvmTransferKind,
     PalletCreditcoinRepaymentOrderId,
+    PalletCreditcoinTask,
+    PalletCreditcoinTaskId,
+    PalletCreditcoinTaskOutput,
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
+    PalletCreditcoinUnverifiedCollectedCoins,
     PalletCreditcoinUnverifiedTransfer,
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
@@ -88,7 +102,7 @@ import type {
 } from '@polkadot/types/lookup';
 
 declare module '@polkadot/types/types/registry' {
-    export interface InterfaceTypes {
+    interface InterfaceTypes {
         CreditcoinNodeRuntimeRuntime: CreditcoinNodeRuntimeRuntime;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSupportWeightsDispatchClass: FrameSupportWeightsDispatchClass;
@@ -129,6 +143,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinBidOrderId: PalletCreditcoinBidOrderId;
         PalletCreditcoinBlockchain: PalletCreditcoinBlockchain;
         PalletCreditcoinCall: PalletCreditcoinCall;
+        PalletCreditcoinCollectedCoins: PalletCreditcoinCollectedCoins;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
         PalletCreditcoinDealOrderId: PalletCreditcoinDealOrderId;
         PalletCreditcoinError: PalletCreditcoinError;
@@ -144,9 +159,18 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;
         PalletCreditcoinOrderId: PalletCreditcoinOrderId;
+        PalletCreditcoinPlatformCurrency: PalletCreditcoinPlatformCurrency;
+        PalletCreditcoinPlatformEvmChainId: PalletCreditcoinPlatformEvmChainId;
+        PalletCreditcoinPlatformEvmCurrencyType: PalletCreditcoinPlatformEvmCurrencyType;
+        PalletCreditcoinPlatformEvmInfo: PalletCreditcoinPlatformEvmInfo;
+        PalletCreditcoinPlatformEvmTransferKind: PalletCreditcoinPlatformEvmTransferKind;
         PalletCreditcoinRepaymentOrderId: PalletCreditcoinRepaymentOrderId;
+        PalletCreditcoinTask: PalletCreditcoinTask;
+        PalletCreditcoinTaskId: PalletCreditcoinTaskId;
+        PalletCreditcoinTaskOutput: PalletCreditcoinTaskOutput;
         PalletCreditcoinTransfer: PalletCreditcoinTransfer;
         PalletCreditcoinTransferKind: PalletCreditcoinTransferKind;
+        PalletCreditcoinUnverifiedCollectedCoins: PalletCreditcoinUnverifiedCollectedCoins;
         PalletCreditcoinUnverifiedTransfer: PalletCreditcoinUnverifiedTransfer;
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;

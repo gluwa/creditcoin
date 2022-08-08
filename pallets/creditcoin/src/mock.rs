@@ -10,22 +10,23 @@ use frame_support::{
 	traits::{ConstU32, ConstU64, GenesisBuild, Get, Hooks},
 };
 use frame_system as system;
-use parking_lot::RwLock;
+pub(crate) use parking_lot::RwLock;
+use serde_json::Value;
 use sp_core::H256;
 use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
+pub(crate) use sp_runtime::offchain::testing::OffchainState;
 use sp_runtime::{
 	offchain::{
 		storage::StorageValueRef,
-		testing::{
-			OffchainState, PendingRequest, PoolState, TestOffchainExt, TestTransactionPoolExt,
-		},
+		testing::{PendingRequest, PoolState, TestOffchainExt, TestTransactionPoolExt},
 		OffchainDbExt, OffchainWorkerExt, TransactionPoolExt,
 	},
 	testing::{Header, TestXt},
 	traits::{BlakeTwo256, Extrinsic as ExtrinsicT, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, RuntimeAppPublic,
 };
-use std::{cell::Cell, collections::HashMap, sync::Arc};
+pub(crate) use std::sync::Arc;
+use std::{cell::Cell, collections::HashMap};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -113,14 +114,14 @@ impl pallet_creditcoin::Config for Test {
 
 	type HashIntoNonce = H256;
 
-	type UnverifiedTransferTimeout = ConstU64<5>;
+	type UnverifiedTaskTimeout = ConstU64<5>;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
 }
 
 impl Test {
 	pub(crate) fn unverified_transfer_timeout() -> u64 {
-		<<Test as crate::Config>::UnverifiedTransferTimeout as Get<u64>>::get()
+		<<Test as crate::Config>::UnverifiedTaskTimeout as Get<u64>>::get()
 	}
 
 	pub(crate) fn unverified_transfer_deadline() -> u64 {
@@ -210,7 +211,7 @@ impl ExtBuilder {
 	pub fn generate_authority(&mut self) -> sp_core::sr25519::Public {
 		const PHRASE: &str =
 			"news slush supreme milk chapter athlete soap sausage put clutch what kitten";
-		if let None = self.keystore {
+		if self.keystore.is_none() {
 			self.keystore = Some(KeyStore::new());
 		}
 		let pubkey = self
@@ -222,7 +223,7 @@ impl ExtBuilder {
 				Some(&format!("{}/auth{}", PHRASE, self.authorities.len() + 1)),
 			)
 			.unwrap();
-		self.authorities.push(AccountId::new(pubkey.clone().into_account().0));
+		self.authorities.push(AccountId::new(pubkey.into_account().0));
 		pubkey
 	}
 	pub fn legacy_wallets(
@@ -251,10 +252,32 @@ impl ExtBuilder {
 
 		storage.into()
 	}
+
+	pub fn build_with(
+		mut self,
+		offchain: TestOffchainExt,
+	) -> (sp_io::TestExternalities, Arc<RwLock<PoolState>>) {
+		if self.keystore.is_none() {
+			self.keystore = Some(KeyStore::new());
+		}
+		let keystore = core::mem::take(&mut self.keystore);
+		let mut ext = self.build();
+
+		ext.register_extension(OffchainDbExt::new(offchain.clone()));
+		ext.register_extension(OffchainWorkerExt::new(offchain));
+		let (pool, p) = TestTransactionPoolExt::new();
+		ext.register_extension(TransactionPoolExt::new(pool));
+
+		if let Some(keystore) = keystore {
+			ext.register_extension(KeystoreExt(Arc::new(keystore)));
+		}
+		(ext, p)
+	}
+
 	pub fn build_offchain(
 		mut self,
 	) -> (sp_io::TestExternalities, Arc<RwLock<OffchainState>>, Arc<RwLock<PoolState>>) {
-		if let None = self.keystore {
+		if self.keystore.is_none() {
 			self.keystore = Some(KeyStore::new());
 		}
 		let keystore = core::mem::take(&mut self.keystore);
@@ -337,7 +360,8 @@ pub fn pending_rpc_request(
 	uri: &str,
 	responses: &HashMap<String, JsonRpcResponse<serde_json::Value>>,
 ) -> PendingRequest {
-	let rpc = JsonRpcRequest::new(method, params).to_bytes();
+	let x = JsonRpcRequest::new(method, params);
+	let rpc = x.to_bytes();
 	let response = &responses[method];
 	let response_body = serde_json::to_vec(response).unwrap();
 	PendingRequest {
@@ -391,7 +415,7 @@ pub(crate) fn get_mock_from_address() -> String {
 fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) -> Option<T>) -> T {
 	let responses = &*ETHLESS_RESPONSES;
 
-	let abi = crate::ocw::ethless_transfer_function_abi();
+	let abi = crate::ocw::tasks::verify_transfer::ethless_transfer_function_abi();
 	let input = responses["eth_getTransactionByHash"].result.clone().unwrap()["input"]
 		.clone()
 		.as_str()
@@ -432,7 +456,7 @@ pub(crate) fn get_mock_timestamp() -> u64 {
 		.as_str()
 		.unwrap()
 		.to_string();
-	u64::from_str_radix(&timestamp_hex.trim_start_matches("0x"), 16).unwrap()
+	u64::from_str_radix(timestamp_hex.trim_start_matches("0x"), 16).unwrap()
 }
 
 #[extend::ext(name = PendingRequestExt)]
@@ -464,7 +488,7 @@ impl Default for MockedRpcRequests {
 		let tx_hash = get_mock_tx_hash();
 		let tx_block_number = get_mock_tx_block_num();
 
-		Self::new(rpc_uri, &tx_hash, &tx_block_number)
+		Self::new(rpc_uri, &tx_hash, &tx_block_number, &*ETHLESS_RESPONSES)
 	}
 }
 
@@ -473,8 +497,8 @@ impl MockedRpcRequests {
 		rpc_uri: impl Into<Option<&'a str>>,
 		tx_hash: &str,
 		tx_block_number: &str,
+		responses: &HashMap<String, JsonRpcResponse<Value>>,
 	) -> Self {
-		let responses = &*ETHLESS_RESPONSES;
 		let uri = rpc_uri.into().unwrap_or("dummy");
 		let get_transaction = Some(pending_rpc_request(
 			"eth_getTransactionByHash",
@@ -486,14 +510,14 @@ impl MockedRpcRequests {
 			"eth_getTransactionReceipt",
 			vec![tx_hash.into()],
 			uri,
-			&responses,
+			responses,
 		));
-		let get_block_number = Some(pending_rpc_request("eth_blockNumber", None, uri, &responses));
+		let get_block_number = Some(pending_rpc_request("eth_blockNumber", None, uri, responses));
 		let get_block_by_number = Some(pending_rpc_request(
 			"eth_getBlockByNumber",
 			vec![tx_block_number.into(), false.into()],
 			uri,
-			&responses,
+			responses,
 		));
 		Self { get_transaction, get_transaction_receipt, get_block_number, get_block_by_number }
 	}
@@ -519,14 +543,14 @@ impl MockedRpcRequests {
 	}
 
 	/// Mocks the RPC responses up to (inclusive) get_block_by_number
-	pub(crate) fn mock_get_block_by_number(mut self, state: &mut OffchainState) {
+	pub(crate) fn mock_get_block_by_number(&mut self, state: &mut OffchainState) {
 		self.mock_get_block_number(state);
 		let get_block_by_number = self.get_block_by_number.take().unwrap();
 		state.expect_request(get_block_by_number);
 	}
 
 	/// Mocks all of the RPC responses
-	pub(crate) fn mock_all(self, state: &mut OffchainState) {
+	pub(crate) fn mock_all(mut self, state: &mut OffchainState) {
 		self.mock_get_block_by_number(state);
 	}
 }

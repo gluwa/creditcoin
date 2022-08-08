@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
-
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
@@ -15,7 +15,7 @@ use pallet_creditcoin::WeightInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
 use sp_runtime::{
-	create_runtime_str, generic,
+	generic,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
@@ -25,6 +25,12 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+
+mod version;
+pub use version::VERSION;
+
+#[cfg(test)]
+mod tests;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -81,25 +87,6 @@ pub mod opaque {
 	pub type BlockId = generic::BlockId<Block>;
 }
 
-// To learn more about runtime versioning and what each of the following value means:
-//   https://substrate.dev/docs/en/knowledgebase/runtime/upgrades#runtime-versioning
-#[sp_version::runtime_version]
-pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("creditcoin-node"),
-	impl_name: create_runtime_str!("creditcoin-node"),
-	authoring_version: 1,
-	// The version of the runtime specification. A full node will not attempt to use its native
-	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
-	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
-	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
-	//   the compatible custom types.
-	spec_version: 203,
-	impl_version: 2,
-	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 5,
-	state_version: 1,
-};
-
 /// This determines the average expected block time that we are targeting.
 /// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
 /// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
@@ -144,6 +131,24 @@ parameter_types! {
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
+
+	 pub MaximumSchedulerWeight: Weight = 10_000_000;
+	 pub const MaxScheduledPerBlock: u32 = 50;
+
+}
+
+impl pallet_scheduler::Config for Runtime {
+	type Event = Event;
+	type Origin = Origin;
+	type PalletsOrigin = OriginCaller;
+	type Call = Call;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = frame_system::EnsureRoot<AccountId>;
+	type MaxScheduledPerBlock = MaxScheduledPerBlock;
+	type WeightInfo = ();
+	type OriginPrivilegeCmp = EqualPrivilegeOnly;
+	type PreimageProvider = ();
+	type NoPreimagePostponement = ();
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -284,7 +289,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type PublicSigning = <Signature as Verify>::Signer;
 	type InternalPublic = sp_core::sr25519::Public;
 	type HashIntoNonce = Hash;
-	type UnverifiedTransferTimeout = ConstU32<60>;
+	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
 }
 
@@ -354,7 +359,8 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
-		Rewards: pallet_rewards::{Pallet, Storage, Event<T>}
+		Rewards: pallet_rewards::{Pallet, Storage, Event<T>},
+		Scheduler: pallet_scheduler,
 	}
 );
 
@@ -509,7 +515,7 @@ impl_runtime_apis! {
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
-			return (list, storage_info)
+			(list, storage_info)
 		}
 
 		fn dispatch_benchmark(

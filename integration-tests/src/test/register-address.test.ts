@@ -1,7 +1,7 @@
-import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { Wallet } from 'ethers';
-import { signAccountId } from 'creditcoin-js/utils';
+import { ApiPromise, Keyring, WsProvider } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js';
+import { Wallet } from 'creditcoin-js';
+import { signAccountId } from 'creditcoin-js/lib/utils';
 import { POINT_01_CTC } from '../constants';
 import { extractFee } from '../utils';
 
@@ -10,10 +10,8 @@ describe('RegisterAddress', () => {
     let alice: KeyringPair;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
-
         api = await ApiPromise.create({
-            provider: new WsProvider('ws://127.0.0.1:9944'),
+            provider: new WsProvider((global as any).CREDITCOIN_API_URL),
         });
         alice = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
     });
@@ -24,7 +22,11 @@ describe('RegisterAddress', () => {
         return new Promise((resolve, reject) => {
             const wallet = Wallet.createRandom();
             const unsubscribe = api.tx.creditcoin
-                .registerAddress('Ethereum', wallet.address, signAccountId(api, wallet, alice.address))
+                .registerAddress(
+                    (global as any).CREDITCOIN_ETHEREUM_NAME,
+                    wallet.address,
+                    signAccountId(api, wallet, alice.address),
+                )
                 .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
