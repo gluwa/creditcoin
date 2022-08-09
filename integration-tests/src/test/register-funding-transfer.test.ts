@@ -144,5 +144,5 @@ describe('RegisterFundingTransfer', (): void => {
                 })
                 .catch(reject);
         });
-    }, 12000000);
+    }, 1200000);
 });
