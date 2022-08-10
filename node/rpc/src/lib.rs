@@ -50,3 +50,35 @@ pub struct MiningStats {
 	elapsed: std::time::Duration,
 	rate: f64,
 }
+
+#[cfg(test)]
+mod test {
+	use crate::*;
+	use assert_matches::assert_matches;
+	use std::time::Duration;
+
+	#[test]
+	#[allow(clippy::redundant_clone)]
+	fn metrics_work() {
+		let metrics = MiningMetrics::new(None).unwrap();
+		let rpc = CreditcoinRpc::new(metrics);
+
+		let result = rpc.mining_stats();
+		assert_matches!(result.clone(), Ok(stats) => {
+			assert_eq!(stats.hash_count, 0);
+			assert!(stats.elapsed > Duration::from_secs(0));
+			assert_eq!(stats.rate, 0.0);
+		});
+
+		// exercise Clone trait
+		let stats = result.unwrap();
+		let _ = stats.clone();
+	}
+
+	#[test]
+	fn can_create_integer_from_error() {
+		assert_eq!(i64::from(Error::StorageError), 1);
+		assert_eq!(i64::from(Error::DecodeError), 2);
+		assert_eq!(i64::from(Error::SubscriptionError), 3);
+	}
+}

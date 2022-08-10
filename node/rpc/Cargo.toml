@@ -14,3 +14,6 @@ serde = { version = "1.0.143", features = ["derive"] }
 serde_json = "1.0.83"
 sc-rpc = { version = "4.0.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
 jsonrpc-pubsub = "18.0.0"
+
+[dev-dependencies.assert_matches]
+version = "1.5.0"
