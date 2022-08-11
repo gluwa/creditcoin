@@ -24,7 +24,7 @@ const setup = async () => {
     (global as any).CREDITCOIN_CREATE_WALLET = createWallet;
 
     (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL = false;
-    (global as any).CREDITCOIN_ETHEREUM_CHAIN = CHAINS.hardhat;
+    (global as any).CREDITCOIN_ETHEREUM_CHAIN = CHAINS.rinkeby;
     const ethereumNodeUrl = process.env.ETHEREUM_NODE_URL;
     if (ethereumNodeUrl === undefined) {
         throw new Error('ETHEREUM_NODE_URL environment variable is required');
