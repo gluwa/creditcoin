@@ -9,7 +9,7 @@ export type ExternalAddress = string;
 export const CHAINS: Record<string, Blockchain> = {
     ethereum: {
         platform: 'Evm',
-        chainId: new BN(0),
+        chainId: new BN(1),
     },
     rinkeby: {
         platform: 'Evm',
@@ -29,11 +29,8 @@ export const CHAINS: Record<string, Blockchain> = {
     },
 };
 
-type Platform<E> = Evm<E>;
-
-type Evm<E> = {
-    platform: 'Evm';
-} & E;
+// Will eventually be something like Platform<Evm, Other> = ({ platform: 'Evm' } & Evm) | ({ platform: 'Other' } & Other);
+type Platform<Evm> = { platform: 'Evm' } & Evm;
 
 export type EvmChainId = BN;
 
@@ -48,18 +45,15 @@ export type EvmTransferKind = 'Ethless' | 'Erc20';
 export type TransferKind = Platform<{ kind: EvmTransferKind }>;
 
 export type EvmSmartContractCurrency = {
+    type: 'SmartContract';
     contract: ExternalAddress;
     supportedTransferKinds: Set<EvmTransferKind>;
 };
 
-export type EvmCurrencyTypeName = 'SmartContract';
-export type EvmCurrencyType<T, D> = {
-    type: T;
-} & D;
+// Eventually will be EvmSmartContractCurrency | EvmOtherTypeOfCurrency
+export type EvmCurrency = EvmSmartContractCurrency;
 
-export type EvmCurrency = EvmCurrencyType<'SmartContract', EvmSmartContractCurrency> & EvmInfo;
-
-export type Currency = Platform<EvmCurrency>;
+export type Currency = EvmCurrency & Blockchain;
 export type CurrencyId = string;
 
 export type Address = {
