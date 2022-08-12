@@ -8,24 +8,22 @@ import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
+import { loanTermsWithCurrency, testData, testDataWithTerms, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 
-describe('RegisterDealOrder', (): void => {
+describe('RegisterDealOrder', async () => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
 
     let borrowerAddressId: string;
     let lenderAddressId: string;
-    let loanTerms: LoanTerms;
-    const { blockchain, expirationBlock, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = await testDataWithTerms();
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
-        loanTerms = await loanTermsWithCurrency(ccApi);
     }, 60000);
 
     afterAll(async () => {

@@ -1,5 +1,5 @@
 import { providers } from 'ethers';
-import { Wallet, Guid, BN } from 'creditcoin-js';
+import { Wallet, Guid, BN, creditcoinApi } from 'creditcoin-js';
 import { Keyring, KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
 import { Blockchain, LoanTerms, DealOrderId, Currency } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
@@ -14,6 +14,13 @@ export type TestData = {
     keyring: Keyring;
     createWallet: (who: string) => Wallet;
 };
+
+const makeLoanTerms = async () => {
+    const ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
+    const eth = await setupEth();
+    const currency = testCurrency(eth.testTokenAddress);
+    return await loanTermsWithCurrency(ccApi, currency);
+};
 export const testData: TestData = {
     blockchain: (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
     expirationBlock: 10_000_000,
@@ -21,6 +28,13 @@ export const testData: TestData = {
         ? (global as any).CREDITCOIN_CREATE_WALLET
         : Wallet.createRandom, // eslint-disable-line
     keyring: new Keyring({ type: 'sr25519' }),
+};
+
+export const testDataWithTerms = async () => {
+    return {
+        loanTerms: await makeLoanTerms(),
+        ...testData,
+    };
 };
 
 const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey?: KeyringPair) => {
