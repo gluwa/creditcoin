@@ -86,8 +86,8 @@ impl Blockchain {
 
 	pub fn as_bytes(&self) -> Cow<'_, [u8]> {
 		match *self {
-			Blockchain::ETHEREUM => Cow::Borrowed(&*b"ethereum"),
-			Blockchain::RINKEBY => Cow::Borrowed(&*b"rinkeby"),
+			Blockchain::ETHEREUM => Cow::Borrowed(b"ethereum"),
+			Blockchain::RINKEBY => Cow::Borrowed(b"rinkeby"),
 			Blockchain::LUNIVERSE_TESTNET | Blockchain::LUNIVERSE => Cow::Borrowed(b"luniverse"),
 			Blockchain::Evm(EvmInfo { chain_id }) => {
 				let s = chain_id.as_u64().to_string();
