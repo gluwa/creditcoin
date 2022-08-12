@@ -169,7 +169,6 @@ mod tests {
 			.unwrap()
 			.try_into()
 			.unwrap();
-		// let btc_addr = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_vec().try_into().unwrap();
 
 		assert!(address_is_well_formed(&ethereum, &eth_addr));
 	}
