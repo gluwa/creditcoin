@@ -15,12 +15,6 @@ export type TestData = {
     createWallet: (who: string) => Wallet;
 };
 
-const makeLoanTerms = async () => {
-    const ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-    const eth = await setupEth();
-    const currency = testCurrency(eth.testTokenAddress);
-    return await loanTermsWithCurrency(ccApi, currency);
-};
 export const testData: TestData = {
     blockchain: (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
     expirationBlock: 10_000_000,
@@ -28,13 +22,6 @@ export const testData: TestData = {
         ? (global as any).CREDITCOIN_CREATE_WALLET
         : Wallet.createRandom, // eslint-disable-line
     keyring: new Keyring({ type: 'sr25519' }),
-};
-
-export const testDataWithTerms = async () => {
-    return {
-        loanTerms: await makeLoanTerms(),
-        ...testData,
-    };
 };
 
 const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey?: KeyringPair) => {

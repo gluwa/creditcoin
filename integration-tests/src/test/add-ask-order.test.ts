@@ -1,4 +1,4 @@
-import { Guid } from 'creditcoin-js';
+import { Guid, LoanTerms } from 'creditcoin-js';
 import { KeyringPair } from 'creditcoin-js';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
@@ -6,20 +6,22 @@ import { POINT_01_CTC } from '../constants';
 import { signAccountId } from 'creditcoin-js/lib/utils';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testDataWithTerms, tryRegisterAddress } from './common';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 
-describe('AddAskOrder', async () => {
+describe('AddAskOrder', () => {
     let ccApi: CreditcoinApi;
     let lender: KeyringPair;
     let lenderRegAddr: AddressRegistered;
     let askGuid: Guid;
+    let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = await testDataWithTerms();
+    const { blockchain, expirationBlock, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
+        loanTerms = await loanTermsWithCurrency(ccApi);
     });
 
     afterAll(async () => {
