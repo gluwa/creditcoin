@@ -11,19 +11,21 @@ import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { loanTermsWithCurrency, testData, testDataWithTerms, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 
-describe('RegisterDealOrder', async () => {
+describe('RegisterDealOrder', () => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
 
     let borrowerAddressId: string;
     let lenderAddressId: string;
-    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = await testDataWithTerms();
+    let loanTerms: LoanTerms;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
+        loanTerms = await loanTermsWithCurrency(ccApi);
     }, 60000);
 
     afterAll(async () => {
