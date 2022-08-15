@@ -12,6 +12,7 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
         return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
     };
     const rpcUri = u8aToHex(api.createType('String', 'http://localhost:8545').toU8a());
+    // platform + chain id + '-rpc-uri' suffix, to match `Blockchain::rpc_key` in the rust code
     await api.rpc.offchain.localStorageSet('PERSISTENT', 'evm-31337-rpc-uri', rpcUri);
     if ((await api.query.difficulty.targetBlockTime<u64>()).toNumber() > 4000) {
         console.log('setting target block time to 4000');
