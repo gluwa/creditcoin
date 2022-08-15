@@ -3,22 +3,24 @@ import { POINT_01_CTC } from '../constants';
 import { AskOrderId, BidOrderId, LoanTerms } from 'creditcoin-js/lib/model';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, loanTermsWithCurrency, testData, testDataWithTerms } from './common';
+import { addAskAndBidOrder, loanTermsWithCurrency, testData } from './common';
 import { extractFee } from '../utils';
 
-describe('AddOffer', async () => {
+describe('AddOffer', () => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
     let askOrderId: AskOrderId;
     let bidOrderId: BidOrderId;
+    let loanTerms: LoanTerms;
 
-    const { expirationBlock, keyring, loanTerms } = await testDataWithTerms();
+    const { expirationBlock, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+        loanTerms = await loanTermsWithCurrency(ccApi);
     }, 60000);
 
     afterAll(async () => {
