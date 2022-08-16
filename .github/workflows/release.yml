@@ -150,12 +150,12 @@ jobs:
 
       - name: Build docker image
         run: |
-          docker build -t gluwa/creditcoin-substrate:${{ env.TAG_NAME }} .
-          docker tag gluwa/creditcoin-substrate:${{ env.TAG_NAME }} gluwa/creditcoin-substrate:latest
+          docker build -t gluwa/creditcoin:${{ env.TAG_NAME }} .
+          docker tag gluwa/creditcoin:${{ env.TAG_NAME }} gluwa/creditcoin-substrate:latest
 
           echo "${{ secrets.DOCKER_PUSH_PASSWORD }}" | docker login -u="${{ secrets.DOCKER_PUSH_USERNAME }}" --password-stdin
-          docker push gluwa/creditcoin-substrate:${{ env.TAG_NAME }}
-          docker push gluwa/creditcoin-substrate:latest
+          docker push gluwa/creditcoin:${{ env.TAG_NAME }}
+          docker push gluwa/creditcoin:latest
           docker logout
 
   create-release:

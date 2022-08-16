@@ -20,7 +20,7 @@ jobs:
 
       - name: Build docker image
         run: |
-          docker build -t gluwa/creditcoin-substrate .
+          docker build -t gluwa/creditcoin .
 
   fmt:
     name: Rustfmt
