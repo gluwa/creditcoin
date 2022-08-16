@@ -187,5 +187,4 @@ jobs:
         with:
           files: 'artifact/creditcoin-${{ env.TAG_NAME }}-*'
           fail_on_unmatched_files: true
-          draft: true
-          name: 'Testing release for ${{ env.TAG_NAME }}'
+          name: ${{ env.TAG_NAME }}
