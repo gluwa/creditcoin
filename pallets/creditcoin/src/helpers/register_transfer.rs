@@ -28,7 +28,7 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(from.owner == who, Error::<T>::NotAddressOwner);
 
-		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
+		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressBlockchainMismatch);
 
 		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
 		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
@@ -86,7 +86,7 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(from.owner == who, Error::<T>::NotAddressOwner);
 
-		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
+		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressBlockchainMismatch);
 
 		ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
 
@@ -259,7 +259,7 @@ mod tests {
 			)
 			.unwrap_err();
 
-			assert_eq!(result, crate::Error::<Test>::AddressPlatformMismatch);
+			assert_eq!(result, crate::Error::<Test>::AddressBlockchainMismatch);
 		})
 	}
 
@@ -401,7 +401,7 @@ mod tests {
 			)
 			.unwrap_err();
 
-			assert_eq!(result, crate::Error::<Test>::AddressPlatformMismatch);
+			assert_eq!(result, crate::Error::<Test>::AddressBlockchainMismatch);
 		})
 	}
 

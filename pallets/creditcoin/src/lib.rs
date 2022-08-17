@@ -444,7 +444,7 @@ pub mod pallet {
 		RepaymentOrderNonZeroGain,
 
 		/// The addresses specified are not on compatible external chains.
-		AddressPlatformMismatch,
+		AddressBlockchainMismatch,
 
 		/// The account is already an authority.
 		AlreadyAuthority,
@@ -798,7 +798,7 @@ pub mod pallet {
 				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
 			ensure!(
 				address.blockchain == currency.blockchain(),
-				Error::<T>::AddressPlatformMismatch
+				Error::<T>::AddressBlockchainMismatch
 			);
 
 			Self::use_guid(&guid)?;
@@ -839,7 +839,7 @@ pub mod pallet {
 				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
 			ensure!(
 				address.blockchain == currency.blockchain(),
-				Error::<T>::AddressPlatformMismatch
+				Error::<T>::AddressBlockchainMismatch
 			);
 
 			Self::use_guid(&guid)?;
@@ -885,7 +885,7 @@ pub mod pallet {
 
 			ensure!(
 				lender_address.blockchain == borrower_address.blockchain,
-				Error::<T>::AddressPlatformMismatch
+				Error::<T>::AddressBlockchainMismatch
 			);
 
 			ensure!(ask_order.terms.match_with(&bid_order.terms), Error::<T>::AskBidMismatch);
@@ -1074,11 +1074,11 @@ pub mod pallet {
 			let lender = Self::get_address(&lender_address_id)?;
 			ensure!(lender.owner == lender_account, Error::<T>::NotAddressOwner);
 
-			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressPlatformMismatch);
+			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressBlockchainMismatch);
 
 			ensure!(
 				lender.blockchain == currency.blockchain(),
-				Error::<T>::AddressPlatformMismatch
+				Error::<T>::AddressBlockchainMismatch
 			);
 
 			let ask_order_id = AskOrderId::new::<T>(expiration_block, &ask_guid);

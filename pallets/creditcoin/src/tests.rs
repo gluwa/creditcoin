@@ -906,7 +906,7 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
-			crate::Error::<Test>::AddressPlatformMismatch
+			crate::Error::<Test>::AddressBlockchainMismatch
 		);
 	})
 }
@@ -1700,7 +1700,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 				pub_key.into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::AddressPlatformMismatch
+			crate::Error::<Test>::AddressBlockchainMismatch
 		);
 	});
 }
