@@ -6,27 +6,16 @@ export type AccountId = string;
 
 export type ExternalAddress = string;
 
+export const evmChain = (chainId: number): Blockchain => {
+    return { platform: 'Evm', chainId: new BN(chainId) };
+};
+
 export const CHAINS: Record<string, Blockchain> = {
-    ethereum: {
-        platform: 'Evm',
-        chainId: new BN(1),
-    },
-    rinkeby: {
-        platform: 'Evm',
-        chainId: new BN(4),
-    },
-    luniverse: {
-        platform: 'Evm',
-        chainId: new BN(59496427),
-    },
-    luniverseTestnet: {
-        platform: 'Evm',
-        chainId: new BN(949790),
-    },
-    hardhat: {
-        platform: 'Evm',
-        chainId: new BN(31337),
-    },
+    ethereum: evmChain(1),
+    rinkeby: evmChain(4),
+    luniverse: evmChain(59496427),
+    luniverseTestnet: evmChain(949790),
+    hardhat: evmChain(31337),
 };
 
 // Will eventually be something like Platform<Evm, Other> = ({ platform: 'Evm' } & Evm) | ({ platform: 'Other' } & Other);
