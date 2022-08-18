@@ -751,6 +751,53 @@ fn add_add_ask_order_rejects_zero_term_length_ms() {
 }
 
 #[test]
+fn add_ask_order_fails_if_currency_unregistered() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::default();
+		let TestInfo { lender, loan_terms, expiration_block, ask_guid, .. } = test_info;
+		let RegisteredAddress { address_id, account_id } = lender;
+		let loan_terms = LoanTerms {
+			currency: CurrencyId::new::<Test>(&ethless_currency("0xaaaa".hex_to_address())),
+			..loan_terms
+		};
+
+		assert_noop!(
+			Creditcoin::add_ask_order(
+				Origin::signed(account_id),
+				address_id,
+				loan_terms,
+				expiration_block,
+				ask_guid
+			),
+			TestError::CurrencyNotRegistered
+		);
+	});
+}
+
+#[test]
+fn add_ask_order_fails_if_blockchain_mismatch() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info =
+			TestInfo::with_currency(match ethless_currency("0xaaaa".hex_to_address()) {
+				Currency::Evm(typ, _) => Currency::Evm(typ, EvmInfo::ETHEREUM),
+			});
+		let TestInfo { lender, loan_terms, expiration_block, ask_guid, .. } = test_info;
+		let RegisteredAddress { address_id, account_id } = lender;
+
+		assert_noop!(
+			Creditcoin::add_ask_order(
+				Origin::signed(account_id),
+				address_id,
+				loan_terms,
+				expiration_block,
+				ask_guid
+			),
+			TestError::AddressBlockchainMismatch
+		);
+	});
+}
+
+#[test]
 fn add_bid_order_basic() {
 	let (mut ext, _, _) = ExtBuilder::default().build_offchain();
 
@@ -859,6 +906,55 @@ fn add_bid_ask_order_rejects_zero_term_length_ms() {
 			..TestInfo::new_defaults()
 		};
 		let _ = test_info.create_bid_order();
+	});
+}
+
+#[test]
+fn add_bid_order_fails_if_currency_unregistered() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::default();
+		// let ask
+		let TestInfo { borrower, loan_terms, expiration_block, bid_guid, .. } = test_info;
+		let RegisteredAddress { address_id, account_id } = borrower;
+
+		let loan_terms = LoanTerms {
+			currency: CurrencyId::new::<Test>(&ethless_currency("0xaaaa".hex_to_address())),
+			..loan_terms
+		};
+
+		assert_noop!(
+			Creditcoin::add_bid_order(
+				Origin::signed(account_id),
+				address_id,
+				loan_terms,
+				expiration_block,
+				bid_guid
+			),
+			TestError::CurrencyNotRegistered
+		);
+	});
+}
+
+#[test]
+fn add_bid_order_fails_if_blockchain_mismatch() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info =
+			TestInfo::with_currency(match ethless_currency("0xaaaa".hex_to_address()) {
+				Currency::Evm(typ, _) => Currency::Evm(typ, EvmInfo::ETHEREUM),
+			});
+		let TestInfo { borrower, loan_terms, expiration_block, bid_guid, .. } = test_info;
+		let RegisteredAddress { address_id, account_id } = borrower;
+
+		assert_noop!(
+			Creditcoin::add_bid_order(
+				Origin::signed(account_id),
+				address_id,
+				loan_terms,
+				expiration_block,
+				bid_guid
+			),
+			TestError::AddressBlockchainMismatch
+		);
 	});
 }
 
@@ -2026,6 +2122,83 @@ fn register_deal_order_accepts_ed25519() {
 }
 
 #[test]
+fn register_deal_order_should_error_when_currency_unregistered() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
+		let mut test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::RINKEBY,
+				ownership_proof,
+			),
+			..TestInfo::new_defaults()
+		};
+		test_info.loan_terms.currency = ethless_currency("0xabab".hex_to_address()).to_id::<Test>();
+
+		let message = test_info.get_register_deal_msg();
+		let compliance_proof = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				pub_key.into(),
+				compliance_proof.into(),
+			),
+			TestError::CurrencyNotRegistered
+		);
+	});
+}
+
+#[test]
+fn register_deal_order_should_error_when_currency_blockchain_mismatch() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (_, _, ownership_proof, key_pair) = generate_address_with_proof("borrower2");
+		let pub_key = key_pair.public();
+
+		let test_info = TestInfo {
+			borrower: RegisteredAddress::from_pubkey(
+				pub_key.clone(),
+				Blockchain::RINKEBY,
+				ownership_proof,
+			),
+			..TestInfo::with_currency(match ethless_currency("0xaaaa".hex_to_address()) {
+				Currency::Evm(typ, _) => Currency::Evm(typ, EvmInfo::ETHEREUM),
+			})
+		};
+
+		let message = test_info.get_register_deal_msg();
+		let compliance_proof = key_pair.sign(&message);
+
+		assert_noop!(
+			Creditcoin::register_deal_order(
+				Origin::signed(test_info.lender.account_id),
+				test_info.lender.address_id,
+				test_info.borrower.address_id,
+				test_info.loan_terms,
+				test_info.expiration_block,
+				test_info.ask_guid,
+				test_info.bid_guid,
+				pub_key.into(),
+				compliance_proof.into(),
+			),
+			TestError::AddressBlockchainMismatch
+		);
+	});
+}
+
+#[test]
 fn close_deal_order_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -2887,6 +3060,25 @@ fn register_funding_transfer_new_should_error_when_not_deal_order_not_found() {
 	register_funding_transfer_should_error_when_not_deal_order_not_found(TransferVersion::New);
 }
 
+#[test]
+fn register_funding_transfer_legacy_should_error_when_currency_present() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::with_currency(ethless_currency("0xaaaa".hex_to_address()));
+		let (_, deal_order_id) = test_info.create_deal_order();
+		let tx = "0xdeadbeef".hex_to_address();
+		let origin = Origin::signed(test_info.lender.account_id);
+		assert_noop!(
+			Creditcoin::register_funding_transfer_legacy(
+				origin,
+				LegacyTransferKind::Native,
+				deal_order_id,
+				tx
+			),
+			TestError::DeprecatedExtrinsic
+		);
+	});
+}
+
 fn register_repayment_transfer_should_error_when_not_signed(version: TransferVersion) {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -2971,6 +3163,28 @@ fn register_repayment_transfer_legacy_should_error_when_not_deal_order_not_found
 #[test]
 fn register_repayment_transfer_new_should_error_when_not_deal_order_not_found() {
 	register_repayment_transfer_should_error_when_not_deal_order_not_found(TransferVersion::New);
+}
+
+#[test]
+fn register_repayment_transfer_legacy_should_error_when_currency_present() {
+	ExtBuilder::default().build_and_execute(|| {
+		let test_info = TestInfo::with_currency(ethless_currency("0xaaaa".hex_to_address()));
+		let (_, deal_order_id) = test_info.create_deal_order();
+		let amount = 21u64.into();
+		let origin = Origin::signed(test_info.borrower.account_id);
+		let tx = "0xabcabcabca".hex_to_address();
+
+		assert_noop!(
+			Creditcoin::register_repayment_transfer_legacy(
+				origin,
+				LegacyTransferKind::Native,
+				amount,
+				deal_order_id,
+				tx,
+			),
+			TestError::DeprecatedExtrinsic
+		);
+	});
 }
 
 #[test]
