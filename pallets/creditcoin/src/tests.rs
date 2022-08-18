@@ -135,6 +135,7 @@ type TestDealOrderId = DealOrderId<BlockNumber, Hash>;
 type TestDealOrder =
 	(DealOrderId<BlockNumber, Hash>, DealOrder<AccountId, BlockNumber, Hash, Moment>);
 pub(crate) type TestTransfer = (TransferId<Hash>, Transfer<AccountId, BlockNumber, Hash, Moment>);
+type TestError = crate::Error<Test>;
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
@@ -445,7 +446,7 @@ fn register_address_pre_existing() {
 
 		assert_noop!(
 			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
-			crate::Error::<Test>::AddressAlreadyRegistered
+			TestError::AddressAlreadyRegistered
 		);
 	})
 }
@@ -477,7 +478,7 @@ fn register_address_should_error_when_using_wrong_ownership_proof() {
 				address,
 				ownership_proof2
 			),
-			crate::Error::<Test>::OwnershipNotSatisfied
+			TestError::OwnershipNotSatisfied
 		);
 	})
 }
@@ -490,7 +491,7 @@ fn register_address_should_error_when_address_too_long() {
 		let blockchain = Blockchain::RINKEBY;
 		assert_noop!(
 			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
-			crate::Error::<Test>::AddressFormatNotSupported
+			TestError::AddressFormatNotSupported
 		);
 	})
 }
@@ -507,7 +508,7 @@ fn register_address_should_error_when_signature_is_invalid() {
 		let blockchain = Blockchain::RINKEBY;
 		assert_noop!(
 			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
-			crate::Error::<Test>::InvalidSignature
+			TestError::InvalidSignature
 		);
 	})
 }
@@ -675,7 +676,7 @@ fn add_ask_order_expired() {
 				expiration_block,
 				ask_guid
 			),
-			crate::Error::<Test>::AskOrderExpired
+			TestError::AskOrderExpired
 		);
 	});
 }
@@ -699,7 +700,7 @@ fn add_ask_order_used_guid() {
 				expiration_block,
 				ask_guid
 			),
-			crate::Error::<Test>::GuidAlreadyUsed
+			TestError::GuidAlreadyUsed
 		);
 	});
 }
@@ -727,7 +728,7 @@ fn add_ask_order_pre_existing() {
 				expiration_block,
 				ask_guid
 			),
-			crate::Error::<Test>::DuplicateId
+			TestError::DuplicateId
 		);
 	});
 }
@@ -792,7 +793,7 @@ fn add_bid_order_expired() {
 				expiration_block,
 				bid_guid
 			),
-			crate::Error::<Test>::BidOrderExpired
+			TestError::BidOrderExpired
 		);
 	});
 }
@@ -816,7 +817,7 @@ fn add_bid_order_used_guid() {
 				expiration_block,
 				bid_guid
 			),
-			crate::Error::<Test>::GuidAlreadyUsed
+			TestError::GuidAlreadyUsed
 		);
 	});
 }
@@ -844,7 +845,7 @@ fn add_bid_order_pre_existing() {
 				expiration_block,
 				bid_guid
 			),
-			crate::Error::<Test>::DuplicateId
+			TestError::DuplicateId
 		);
 	});
 }
@@ -886,7 +887,7 @@ fn add_offer_existing() {
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
-			crate::Error::<Test>::DuplicateOffer
+			TestError::DuplicateOffer
 		);
 	})
 }
@@ -906,7 +907,7 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
-			crate::Error::<Test>::AddressBlockchainMismatch
+			TestError::AddressBlockchainMismatch
 		);
 	})
 }
@@ -956,7 +957,7 @@ fn add_deal_order_existing() {
 
 		assert_noop!(
 			Creditcoin::add_deal_order(Origin::signed(borrower), offer_id, expiration_block),
-			crate::Error::<Test>::DuplicateDealOrder
+			TestError::DuplicateDealOrder
 		);
 	});
 }
@@ -1013,7 +1014,7 @@ fn lock_deal_order_should_error_for_non_existent_deal_order() {
 
 		assert_noop!(
 			Creditcoin::lock_deal_order(Origin::signed(borrower), deal_order_id),
-			crate::Error::<Test>::NonExistentDealOrder
+			TestError::NonExistentDealOrder
 		);
 	});
 }
@@ -1030,7 +1031,7 @@ fn lock_deal_order_should_error_when_not_funded() {
 				Origin::signed(test_info.borrower.account_id),
 				deal_order_id
 			),
-			crate::Error::<Test>::DealNotFunded
+			TestError::DealNotFunded
 		);
 	});
 }
@@ -1054,7 +1055,7 @@ fn lock_deal_order_should_fail_for_non_borrower() {
 
 		assert_noop!(
 			Creditcoin::lock_deal_order(Origin::signed(test_info.lender.account_id), deal_order_id),
-			crate::Error::<Test>::NotBorrower
+			TestError::NotBorrower
 		);
 	});
 }
@@ -1086,7 +1087,7 @@ fn lock_deal_order_should_fail_if_already_locked() {
 				Origin::signed(test_info.borrower.account_id),
 				deal_order_id
 			),
-			crate::Error::<Test>::DealOrderAlreadyLocked
+			TestError::DealOrderAlreadyLocked
 		);
 	});
 }
@@ -1158,7 +1159,7 @@ fn fund_deal_order_should_error_when_address_not_registered() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::NonExistentAddress
+			TestError::NonExistentAddress
 		);
 	});
 }
@@ -1176,7 +1177,7 @@ fn fund_deal_order_should_error_for_non_lender() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::NotLender
+			TestError::NotLender
 		);
 	});
 }
@@ -1203,7 +1204,7 @@ fn fund_deal_order_should_error_when_timestamp_is_in_the_future() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::MalformedDealOrder
+			TestError::MalformedDealOrder
 		);
 	});
 }
@@ -1231,7 +1232,7 @@ fn fund_deal_order_should_error_when_deal_is_funded() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::DealOrderAlreadyFunded
+			TestError::DealOrderAlreadyFunded
 		);
 	});
 }
@@ -1260,7 +1261,7 @@ fn fund_deal_order_should_error_when_deal_has_expired() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::DealOrderExpired
+			TestError::DealOrderExpired
 		);
 	});
 }
@@ -1312,7 +1313,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::TransferDealOrderMismatch
+			TestError::TransferDealOrderMismatch
 		);
 	});
 }
@@ -1354,7 +1355,7 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::TransferAmountMismatch
+			TestError::TransferAmountMismatch
 		);
 	});
 }
@@ -1395,7 +1396,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::TransferAccountMismatch
+			TestError::TransferAccountMismatch
 		);
 	});
 }
@@ -1422,7 +1423,7 @@ fn fund_deal_order_should_error_when_transfer_has_been_processed() {
 				deal_order_id,
 				transfer_id
 			),
-			crate::Error::<Test>::TransferAlreadyProcessed
+			TestError::TransferAlreadyProcessed
 		);
 	});
 }
@@ -1538,7 +1539,7 @@ fn add_authority_should_fail_when_authority_already_exists() {
 		// try again
 		assert_noop!(
 			Creditcoin::add_authority(crate::mock::Origin::from(root), acct,),
-			crate::Error::<Test>::AlreadyAuthority,
+			TestError::AlreadyAuthority,
 		);
 	});
 }
@@ -1604,7 +1605,7 @@ fn register_deal_order_should_error_when_signature_is_invalid() {
 				wrong_key.public().into(),
 				signature.into(),
 			),
-			crate::Error::<Test>::InvalidSignature
+			TestError::InvalidSignature
 		);
 	});
 }
@@ -1630,7 +1631,7 @@ fn register_deal_order_should_error_when_borrower_address_doesnt_match_signature
 				key_pair.public().into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::NotAddressOwner
+			TestError::NotAddressOwner
 		);
 	});
 }
@@ -1664,7 +1665,7 @@ fn register_deal_order_should_error_when_lender_address_doesnt_match_sender() {
 				key_pair.public().into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::NotAddressOwner
+			TestError::NotAddressOwner
 		);
 	});
 }
@@ -1700,7 +1701,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 				pub_key.into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::AddressBlockchainMismatch
+			TestError::AddressBlockchainMismatch
 		);
 	});
 }
@@ -1737,7 +1738,7 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 				pub_key.into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::DuplicateId
+			TestError::DuplicateId
 		);
 	});
 }
@@ -1771,7 +1772,7 @@ fn register_deal_order_should_error_when_bid_order_id_exists() {
 				key_pair.public().into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::DuplicateId
+			TestError::DuplicateId
 		);
 	});
 }
@@ -1824,7 +1825,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 				pub_key.into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::DuplicateOffer
+			TestError::DuplicateOffer
 		);
 	});
 }
@@ -1885,7 +1886,7 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 				pub_key.into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::DuplicateDealOrder
+			TestError::DuplicateDealOrder
 		);
 	});
 }
@@ -2063,7 +2064,7 @@ fn close_deal_order_should_error_when_borrower_address_is_not_registered() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::NonExistentAddress
+			TestError::NonExistentAddress
 		);
 	});
 }
@@ -2082,7 +2083,7 @@ fn close_deal_order_should_error_when_not_signed_by_borrower() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::NotBorrower
+			TestError::NotBorrower
 		);
 	});
 }
@@ -2109,7 +2110,7 @@ fn close_deal_order_should_error_when_deal_timestamp_is_in_the_future() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::MalformedDealOrder
+			TestError::MalformedDealOrder
 		);
 	});
 }
@@ -2137,7 +2138,7 @@ fn close_deal_order_should_error_when_deal_order_has_already_been_repaid() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::DealOrderAlreadyClosed
+			TestError::DealOrderAlreadyClosed
 		);
 	});
 }
@@ -2164,7 +2165,7 @@ fn close_deal_order_should_error_when_deal_isnt_locked() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::DealOrderMustBeLocked
+			TestError::DealOrderMustBeLocked
 		);
 	});
 }
@@ -2213,7 +2214,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::TransferDealOrderMismatch
+			TestError::TransferDealOrderMismatch
 		);
 	});
 }
@@ -2251,7 +2252,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::MalformedTransfer
+			TestError::MalformedTransfer
 		);
 	});
 }
@@ -2287,7 +2288,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::TransferAccountMismatch
+			TestError::TransferAccountMismatch
 		);
 	});
 }
@@ -2324,7 +2325,7 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 				deal_order_id,
 				transfer_id,
 			),
-			crate::Error::<Test>::TransferAlreadyProcessed
+			TestError::TransferAlreadyProcessed
 		);
 	});
 }
@@ -2434,7 +2435,7 @@ fn exempt_should_error_when_deal_order_has_already_been_repaid() {
 
 		assert_noop!(
 			Creditcoin::exempt(Origin::signed(test_info.lender.account_id), deal_order_id),
-			crate::Error::<Test>::DealOrderAlreadyClosed
+			TestError::DealOrderAlreadyClosed
 		);
 	});
 }
@@ -2447,7 +2448,7 @@ fn exempt_should_error_for_non_lender() {
 
 		assert_noop!(
 			Creditcoin::exempt(Origin::signed(test_info.borrower.account_id), deal_order_id),
-			crate::Error::<Test>::NotLender
+			TestError::NotLender
 		);
 	});
 }
@@ -2512,7 +2513,7 @@ fn verify_transfer_should_error_when_signer_not_authorized() {
 				deadline,
 				(transfer_id, transfer).into(),
 			),
-			crate::Error::<Test>::InsufficientAuthority,
+			TestError::InsufficientAuthority,
 		);
 	});
 }
@@ -2539,7 +2540,7 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 				deadline,
 				(transfer_id, transfer).into(),
 			),
-			non_paying_error(crate::Error::<Test>::TransferAlreadyRegistered),
+			non_paying_error(TestError::TransferAlreadyRegistered),
 		);
 	});
 }
@@ -2683,7 +2684,7 @@ fn fail_transfer_should_error_when_not_authority() {
 				transfer_id.into(),
 				failure_cause
 			),
-			crate::Error::<Test>::InsufficientAuthority
+			TestError::InsufficientAuthority
 		);
 	})
 }
@@ -2715,7 +2716,7 @@ fn fail_transfer_should_error_when_transfer_registered() {
 				transfer_id.into(),
 				failure_cause
 			),
-			crate::Error::<Test>::TransferAlreadyRegistered
+			TestError::TransferAlreadyRegistered
 		);
 	})
 }
@@ -2871,7 +2872,7 @@ fn register_funding_transfer_should_error_when_not_deal_order_not_found(version:
 					tx
 				),
 			},
-			crate::Error::<Test>::NonExistentDealOrder
+			TestError::NonExistentDealOrder
 		);
 	})
 }
@@ -2957,7 +2958,7 @@ fn register_repayment_transfer_should_error_when_not_deal_order_not_found(
 					tx,
 				),
 			},
-			crate::Error::<Test>::NonExistentDealOrder
+			TestError::NonExistentDealOrder
 		);
 	})
 }
@@ -3019,7 +3020,7 @@ fn register_currency_should_error_when_currency_already_registered() {
 
 		assert_noop!(
 			Creditcoin::register_currency(Origin::root(), currency),
-			crate::Error::<Test>::CurrencyAlreadyRegistered
+			TestError::CurrencyAlreadyRegistered
 		);
 	})
 }
