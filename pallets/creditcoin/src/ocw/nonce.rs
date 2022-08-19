@@ -12,7 +12,7 @@ pub(super) fn lock_key<Id: Encode>(id: &Id) -> Vec<u8> {
 	id.using_encoded(|encoded_id| SYNCED_NONCE_LOCK.iter().chain(encoded_id).copied().collect())
 }
 
-pub(super) fn nonce_key<Id: Encode>(id: &Id) -> Vec<u8> {
+pub fn nonce_key<Id: Encode>(id: &Id) -> Vec<u8> {
 	id.using_encoded(|encoded_id| SYNCED_NONCE.iter().chain(encoded_id).copied().collect())
 }
 

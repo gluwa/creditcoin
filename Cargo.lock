@@ -957,6 +957,7 @@ version = "2.0.0-beta.7"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
+ "creditcoin-runtime-api",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures-lite",
@@ -1002,6 +1003,9 @@ name = "creditcoin-node-rpc"
 version = "2.0.0-beta.7"
 dependencies = [
  "assert_matches",
+ "creditcoin-node-runtime",
+ "creditcoin-runtime-api",
+ "frame-system",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
@@ -1009,7 +1013,9 @@ dependencies = [
  "primitives",
  "sc-rpc",
  "serde",
- "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -1017,6 +1023,7 @@ name = "creditcoin-node-runtime"
 version = "2.0.0-beta.7"
 dependencies = [
  "assert_matches",
+ "creditcoin-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -1051,6 +1058,14 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "creditcoin-runtime-api"
+version = "2.0.0-beta.8"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
 ]
 
 [[package]]

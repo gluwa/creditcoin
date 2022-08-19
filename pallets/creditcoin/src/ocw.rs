@@ -1,7 +1,7 @@
-pub mod errors;
-pub mod nonce;
-pub mod rpc;
-pub mod tasks;
+pub(crate) mod errors;
+mod nonce;
+pub(crate) mod rpc;
+pub(crate) mod tasks;
 
 use self::errors::RpcUrlError;
 use super::{
@@ -10,17 +10,18 @@ use super::{
 };
 use crate::{Blockchain, Call, TransferKind};
 use alloc::string::String;
-pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
+pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use frame_support::traits::IsType;
 use frame_system::offchain::{Account, SendSignedTransaction, Signer};
 use frame_system::Config as SystemConfig;
 use frame_system::Pallet as System;
-use nonce::{lock_key, nonce_key};
+use nonce::lock_key;
+pub use nonce::nonce_key;
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::traits::{One, Saturating};
 use sp_std::prelude::*;
 
-pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
+pub(crate) type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
 impl Blockchain {
 	pub fn rpc_url(&self) -> OffchainResult<String, errors::RpcUrlError> {

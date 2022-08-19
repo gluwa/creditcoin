@@ -25,6 +25,7 @@ pub enum Error {
 	StorageError = 1,
 	DecodeError,
 	SubscriptionError,
+	RuntimeError,
 }
 
 impl From<Error> for i64 {
@@ -50,6 +51,9 @@ pub struct MiningStats {
 	elapsed: std::time::Duration,
 	rate: f64,
 }
+
+mod task;
+pub use task::{Task, TaskRpc};
 
 #[cfg(test)]
 mod test {
