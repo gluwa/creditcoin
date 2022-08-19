@@ -23,10 +23,10 @@ mod tests;
 #[macro_use]
 mod helpers;
 mod migrations;
-mod ocw;
+pub mod ocw;
 mod types;
 
-use crate::ocw::tasks::collect_coins::GCreContract;
+use ocw::tasks::collect_coins::GCreContract;
 pub use types::*;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
