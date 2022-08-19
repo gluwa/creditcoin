@@ -580,9 +580,3 @@ pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>, Option<Moment>),
 	CollectCoins(UnverifiedCollectedCoins, Balance),
 }
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum TaskOracleData<Balance, Moment> {
-	VerifyTransfer(Option<Moment>),
-	CollectCoins(Balance),
-}
