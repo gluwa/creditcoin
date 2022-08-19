@@ -13,6 +13,7 @@ targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
 smallvec = "1.8.1"
+creditcoin-runtime-api = { path = "../pallets/creditcoin/runtime-api", default-features = false }
 
 [dependencies.primitives]
 default-features = false
@@ -252,4 +253,5 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
+    'creditcoin-runtime-api/std',
 ]

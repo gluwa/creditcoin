@@ -35,9 +35,10 @@ where
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
+	C::Api: creditcoin_runtime_api::TaskApi<Block, AccountId>,
 	P: TransactionPool + 'static,
 {
-	use creditcoin_node_rpc::{CreditcoinApi, CreditcoinRpc};
+	use creditcoin_node_rpc::{CreditcoinApi, CreditcoinRpc, Task, TaskRpc};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 
@@ -46,9 +47,11 @@ where
 
 	io.extend_with(SystemApi::to_delegate(FullSystem::new(client.clone(), pool, deny_unsafe)));
 
-	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client)));
+	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client.clone())));
 
 	io.extend_with(CreditcoinApi::to_delegate(CreditcoinRpc::new(mining_metrics)));
+
+	io.extend_with(TaskRpc::to_delegate(Task::new(client, deny_unsafe)));
 
 	io
 }
