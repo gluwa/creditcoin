@@ -80,6 +80,7 @@ pub mod pallet {
 		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
 		Verify,
 	};
+	use sp_tracing as log;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -603,10 +604,10 @@ pub mod pallet {
 			)
 		}
 
-		fn offchain_worker(_block_number: T::BlockNumber) {
+		fn offchain_worker(block_number: T::BlockNumber) {
 			let auth_id = match Self::authority_id() {
 				None => {
-					log::trace!("Not authority, skipping off chain work");
+					log::debug!(target: "OCW", "Not authority, skipping off chain work");
 					return;
 				},
 				Some(auth) => T::FromAccountId::from(auth),
@@ -638,6 +639,8 @@ pub mod pallet {
 				}
 
 				let result = task.verify_ocw::<T>();
+
+				log::trace!(target: "OCW", "@{block_number:?} Task {:8?}", id);
 
 				match result {
 					Ok(task_data) => {
