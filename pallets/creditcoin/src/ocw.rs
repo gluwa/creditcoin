@@ -19,6 +19,7 @@ use nonce::{lock_key, nonce_key};
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::traits::{One, Saturating};
 use sp_std::prelude::*;
+use sp_tracing as tracing;
 
 pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
@@ -94,6 +95,10 @@ impl<T: Config> Pallet<T> {
 		let key = &nonce_key(auth_id.into_ref());
 		let synced_nonce_storage = StorageValueRef::persistent(key);
 		let synced_nonce = synced_nonce_storage.get::<T::Index>().ok().flatten();
+
+		let n = Self::block_number();
+		tracing::trace!(target: "OCW", "@{n:?} Offnonce {synced_nonce:?} Onnonce {:?}", account_data.nonce);
+
 		if let Some(nonce) = synced_nonce {
 			if nonce > account_data.nonce {
 				account_data.nonce = nonce;
