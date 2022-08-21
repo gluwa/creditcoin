@@ -14,7 +14,6 @@ use codec::Encode;
 use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
-
 use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
@@ -3053,9 +3052,52 @@ fn exercise_weightinfo_functions() {
 	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
 	assert!(result > 0);
 
+	let result = super::weights::WeightInfo::<Test>::remove_authority();
+	assert!(result > 0);
+
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
 	assert!(result > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_currency();
 	assert!(result > 0);
+}
+
+#[test]
+fn remove_authority_errors_for_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		assert_noop!(Creditcoin::remove_authority(Origin::signed(acct.clone()), acct), BadOrigin);
+	});
+}
+
+#[test]
+fn remove_authority_should_fail_when_authority_does_not_exist() {
+	ExtBuilder::default().build_and_execute(|| {
+		let root = RawOrigin::Root;
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		assert_noop!(
+			Creditcoin::remove_authority(crate::mock::Origin::from(root), acct),
+			crate::Error::<Test>::NotAnAuthority,
+		);
+	});
+}
+
+#[test]
+fn remove_authority_works_for_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let root = RawOrigin::Root;
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		crate::Authorities::<Test>::insert(acct.clone(), ());
+
+		let value = crate::Pallet::<Test>::authorities(&acct);
+		assert_eq!(value, Some(()));
+
+		assert_ok!(Creditcoin::remove_authority(crate::mock::Origin::from(root), acct.clone()));
+
+		let value = crate::Pallet::<Test>::authorities(acct);
+		assert_eq!(value, None)
+	});
 }
