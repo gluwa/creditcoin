@@ -5,7 +5,6 @@ use crate::benchmarking::alloc::format;
 use crate::helpers::{EVMAddress, PublicToAddress, RefSliceOfTExt, RefstrExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
-#[allow(unused)]
 use crate::Pallet as Creditcoin;
 use crate::{
 	types::{Blockchain, Currency::Evm as CurrencyEvm},
@@ -314,6 +313,12 @@ benchmarks! {
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
+
+	remove_authority {
+		let root = RawOrigin::Root;
+		let who = authority_account::<T>(false);
+		<Creditcoin<T>>::add_authority(root.clone().into(), who.clone()).unwrap();
+	}: _(root, who)
 
 	register_currency {
 		let root = RawOrigin::Root;
