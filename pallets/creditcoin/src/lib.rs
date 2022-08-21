@@ -158,6 +158,7 @@ pub mod pallet {
 		fn request_collect_coins() -> Weight;
 		fn persist_collect_coins() -> Weight;
 		fn fail_collect_coins() -> Weight;
+		fn del_authority() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -440,6 +441,9 @@ pub mod pallet {
 
 		/// The account is already an authority.
 		AlreadyAuthority,
+
+		/// The account you are trying to remove is not  an authority.
+		NotAnAuthority,
 
 		/// The offer has already been made.
 		DuplicateOffer,
@@ -1438,6 +1442,21 @@ pub mod pallet {
 			ensure_root(origin)?;
 			CollectCoinsContract::<T>::put(contract);
 			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::weight(<T as Config>::WeightInfo::del_authority())]
+		pub fn del_authority(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::NotAnAuthority);
+
+			Authorities::<T>::remove(&who);
+
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 	}
 }

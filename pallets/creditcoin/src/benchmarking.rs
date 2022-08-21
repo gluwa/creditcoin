@@ -7,7 +7,6 @@ use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::types::Blockchain;
 use crate::Duration;
-#[allow(unused)]
 use crate::Pallet as Creditcoin;
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
@@ -318,6 +317,11 @@ benchmarks! {
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
+	del_authority{
+		let root = RawOrigin::Root;
+		let who = authority_account::<T>(false);
+		<Creditcoin<T>>::add_authority(root.clone().into(), who.clone());
+	}: _(root, who)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
