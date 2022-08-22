@@ -24,18 +24,18 @@ pub enum TransferKind {
 }
 
 #[derive(Encode, Decode, RuntimeDebug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[cfg_attr(test, derive(PartialEq, Eq, Clone))]
 pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
 pub enum OrderId<BlockNum, Hash> {
 	Deal(DealOrderId<BlockNum, Hash>),
 	Repayment(RepaymentOrderId<BlockNum, Hash>),
 }
 
 #[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub blockchain: Blockchain,
 	pub kind: TransferKind,
