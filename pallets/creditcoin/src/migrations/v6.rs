@@ -343,3 +343,438 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 	weight
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::{
+		concatenate,
+		mock::{ExtBuilder, Test},
+		tests::{HexToAddress, IntoBounded, TestInfo},
+		Duration, InterestRate,
+	};
+	use frame_support::Blake2_128Concat;
+	use sp_runtime::traits::Hash as _;
+
+	generate_storage_alias!(
+		Creditcoin,
+		Addresses<T: Config> => Map<(Blake2_128Concat, AddressId<T::Hash>), super::OldAddress<T::AccountId>>
+	);
+
+	type OldAddresses = Addresses<Test>;
+
+	generate_storage_alias!(
+		Creditcoin,
+		DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), super::OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
+	);
+
+	type OldDealOrders = DealOrders<Test>;
+
+	generate_storage_alias!(
+		Creditcoin,
+		AskOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), super::OldAskOrder<T::AccountId, T::BlockNumber, T::Hash>>
+	);
+
+	type OldAskOrders = AskOrders<Test>;
+
+	generate_storage_alias!(
+		Creditcoin,
+		BidOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), super::OldBidOrder<T::AccountId, T::BlockNumber, T::Hash>>
+	);
+
+	type OldBidOrders = BidOrders<Test>;
+
+	type OldTransfers = super::OldTransfers<Test>;
+
+	fn hash(val: &[u8]) -> <Test as frame_system::Config>::Hash {
+		<Test as frame_system::Config>::Hashing::hash(val)
+	}
+
+	type AccountId = <Test as frame_system::Config>::AccountId;
+	type BlockNumber = <Test as frame_system::Config>::BlockNumber;
+	type Hash = <Test as frame_system::Config>::Hash;
+	type Moment = <Test as pallet_timestamp::Config>::Moment;
+
+	type DealOrderId = crate::DealOrderId<BlockNumber, Hash>;
+	type AskOrderId = crate::AskOrderId<BlockNumber, Hash>;
+	type BidOrderId = crate::BidOrderId<BlockNumber, Hash>;
+	type OfferId = crate::OfferId<BlockNumber, Hash>;
+
+	type OldDealOrder = super::OldDealOrder<AccountId, BlockNumber, Hash, Moment>;
+	type OldAskOrder = super::OldAskOrder<AccountId, BlockNumber, Hash>;
+	type OldBidOrder = super::OldBidOrder<AccountId, BlockNumber, Hash>;
+	type OldTransfer = super::OldTransfer<AccountId, BlockNumber, Hash, Moment>;
+	type Offer = crate::Offer<AccountId, BlockNumber, Hash>;
+
+	fn old_transfer(
+		test_info: &TestInfo,
+		deal_id: DealOrderId,
+		kind: OldTransferKind,
+	) -> (TransferId<Hash>, OldTransfer) {
+		let blockchain = OldBlockchain::Rinkeby;
+		let transfer = OldTransfer {
+			blockchain: blockchain.clone(),
+			kind,
+			from: test_info.lender.address_id.clone(),
+			to: test_info.borrower.address_id.clone(),
+			order_id: OldOrderId::Deal(deal_id.clone()),
+			amount: 1.into(),
+			tx_id: "0xdeadbeef".hex_to_address(),
+			block: 50,
+			is_processed: false,
+			account_id: test_info.lender.account_id.clone(),
+			timestamp: Some(10000),
+		};
+
+		let transfer_id = crate::TransferId::make({
+			let key = concatenate!(&*blockchain.as_bytes(), &*transfer.tx_id);
+			hash(&key)
+		});
+
+		(transfer_id, transfer)
+	}
+
+	fn attach_transfer(transfer_id: TransferId<Hash>, deal: &mut OldDealOrder) {
+		deal.funding_transfer_id = Some(transfer_id);
+	}
+
+	fn old_ask_bid_offer(
+		test_info: &TestInfo,
+	) -> ((AskOrderId, OldAskOrder), (BidOrderId, OldBidOrder), (OfferId, Offer)) {
+		let expiration = 10000;
+		let ask = OldAskOrder {
+			blockchain: OldBlockchain::Rinkeby,
+			lender_address_id: test_info.lender.address_id.clone(),
+			terms: OldAskTerms(old_loan_terms()),
+			expiration_block: expiration,
+			block: 10,
+			lender: test_info.lender.account_id.clone(),
+		};
+
+		let bid = OldBidOrder {
+			blockchain: OldBlockchain::Rinkeby,
+			borrower_address_id: test_info.borrower.address_id.clone(),
+			terms: OldBidTerms(old_loan_terms()),
+			expiration_block: expiration,
+			block: 11,
+			borrower: test_info.borrower.account_id.clone(),
+		};
+
+		let ask_id = AskOrderId::new::<Test>(expiration, &[1, 1, 1, 1]);
+		let bid_id = BidOrderId::new::<Test>(expiration, &[2, 2, 2, 2]);
+
+		let offer = Offer {
+			ask_id: ask_id.clone(),
+			bid_id: bid_id.clone(),
+			expiration_block: expiration,
+			block: 12,
+			lender: test_info.lender.account_id.clone(),
+		};
+		let offer_id = OfferId::new::<Test>(expiration, &ask_id, &bid_id);
+
+		((ask_id, ask), (bid_id, bid), (offer_id, offer))
+	}
+
+	fn old_loan_terms() -> OldLoanTerms {
+		OldLoanTerms {
+			amount: 100u64.into(),
+			interest_rate: InterestRate {
+				rate_per_period: 100,
+				decimals: 4,
+				period: Duration::from_millis(2000),
+				interest_type: crate::InterestType::Simple,
+			},
+			term_length: Duration::from_millis(10000),
+		}
+	}
+
+	fn old_deal_order(
+		test_info: &TestInfo,
+		offer: Option<(Offer, OfferId)>,
+	) -> (DealOrderId, OldDealOrder) {
+		let (_offer, offer_id) = match offer {
+			Some(o) => o,
+			None => test_info.create_offer(),
+		};
+		let expiration_block = 10000;
+
+		let deal_id = DealOrderId::with_expiration_hash::<Test>(
+			expiration_block,
+			hash(offer_id.hash().as_ref()),
+		);
+		let blockchain = OldBlockchain::Rinkeby;
+
+		(
+			deal_id,
+			OldDealOrder {
+				blockchain: blockchain.clone(),
+				offer_id: offer_id.clone(),
+				lender_address_id: test_info.lender.address_id.clone(),
+				borrower_address_id: test_info.borrower.address_id.clone(),
+				terms: old_loan_terms(),
+				expiration_block,
+				timestamp: 100000,
+				block: Some(100),
+				funding_transfer_id: None,
+				repayment_transfer_id: None,
+				lock: None,
+				borrower: test_info.borrower.account_id.clone(),
+			},
+		)
+	}
+
+	fn old_to_new_terms(terms: OldLoanTerms, currency: Option<Currency>) -> super::LoanTerms<Hash> {
+		super::LoanTerms {
+			amount: terms.amount,
+			interest_rate: terms.interest_rate,
+			term_length: terms.term_length,
+			currency: currency.map_or_else(|| CurrencyId::placeholder(), |c| c.to_id::<Test>()),
+		}
+	}
+
+	fn old_to_new_deal(
+		deal: OldDealOrder,
+		currency: Option<Currency>,
+	) -> super::DealOrder<AccountId, BlockNumber, Hash, Moment> {
+		super::DealOrder {
+			offer_id: deal.offer_id,
+			lender_address_id: deal.lender_address_id,
+			borrower_address_id: deal.borrower_address_id,
+			terms: old_to_new_terms(deal.terms, currency),
+			expiration_block: deal.expiration_block,
+			timestamp: deal.timestamp,
+			block: deal.block,
+			funding_transfer_id: deal.funding_transfer_id,
+			repayment_transfer_id: deal.repayment_transfer_id,
+			lock: deal.lock,
+			borrower: deal.borrower,
+		}
+	}
+
+	fn old_to_new_ask(
+		ask: OldAskOrder,
+		currency: Option<Currency>,
+	) -> super::AskOrder<AccountId, BlockNumber, Hash> {
+		super::AskOrder {
+			lender_address_id: ask.lender_address_id,
+			terms: crate::AskTerms::try_from(old_to_new_terms(ask.terms.0, currency)).unwrap(),
+			expiration_block: ask.expiration_block,
+			block: ask.block,
+			lender: ask.lender,
+		}
+	}
+
+	fn old_to_new_bid(
+		bid: OldBidOrder,
+		currency: Option<Currency>,
+	) -> super::BidOrder<AccountId, BlockNumber, Hash> {
+		super::BidOrder {
+			borrower_address_id: bid.borrower_address_id,
+			terms: crate::BidTerms::try_from(old_to_new_terms(bid.terms.0, currency)).unwrap(),
+			expiration_block: bid.expiration_block,
+			block: bid.block,
+			borrower: bid.borrower,
+		}
+	}
+
+	fn ethless_currency(contract: &str) -> Currency {
+		Currency::Evm(
+			EvmCurrencyType::SmartContract(
+				contract.hex_to_address(),
+				vec![EvmTransferKind::Ethless].into_bounded(),
+			),
+			EvmInfo::RINKEBY,
+		)
+	}
+
+	fn insert_deal(id: &DealOrderId, deal: &OldDealOrder) {
+		OldDealOrders::insert(id.expiration(), id.hash(), deal);
+	}
+
+	fn insert_transfer(id: &TransferId<Hash>, transfer: &OldTransfer) {
+		OldTransfers::insert(id, transfer);
+	}
+
+	const CONTRACT: &str = "0xaaaa";
+
+	#[test]
+	fn deal_order_with_transfer_migrates() {
+		ExtBuilder::default().build_and_execute(|| {
+			let test_info = TestInfo::new_defaults();
+
+			let (deal_id, mut deal) = old_deal_order(&test_info, None);
+
+			let (transfer_id, transfer) = old_transfer(
+				&test_info,
+				deal_id.clone(),
+				OldTransferKind::Ethless(CONTRACT.hex_to_address()),
+			);
+			insert_transfer(&transfer_id, &transfer);
+
+			attach_transfer(transfer_id, &mut deal);
+			insert_deal(&deal_id, &deal);
+
+			migrate::<Test>();
+
+			let migrated_deal =
+				super::DealOrders::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
+
+			assert_eq!(migrated_deal, old_to_new_deal(deal, Some(ethless_currency(CONTRACT))));
+		});
+	}
+
+	#[test]
+	fn deal_order_without_transfer_migrates() {
+		ExtBuilder::default().build_and_execute(|| {
+			let test_info = TestInfo::default();
+
+			let (deal_id, deal) = old_deal_order(&test_info, None);
+			insert_deal(&deal_id, &deal);
+
+			migrate::<Test>();
+
+			let migrated_deal =
+				super::DealOrders::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
+
+			assert_eq!(migrated_deal, old_to_new_deal(deal, None));
+		});
+	}
+
+	#[test]
+	fn transfer_migrates() {
+		ExtBuilder::default().build_and_execute(|| {
+			let test_info = TestInfo::default();
+
+			let (deal_id, _) = old_deal_order(&test_info, None);
+			let (transfer_id, transfer) = old_transfer(
+				&test_info,
+				deal_id.clone(),
+				OldTransferKind::Ethless(CONTRACT.hex_to_address()),
+			);
+
+			insert_transfer(&transfer_id, &transfer);
+
+			migrate::<Test>();
+
+			let migrated_transfer = super::Transfers::<Test>::get(&transfer_id).unwrap();
+
+			assert_eq!(
+				migrated_transfer,
+				super::Transfer {
+					blockchain: super::Blockchain::RINKEBY,
+					kind: super::TransferKind::Evm(EvmTransferKind::Ethless),
+					from: test_info.lender.address_id,
+					to: test_info.borrower.address_id,
+					deal_order_id: deal_id,
+					amount: transfer.amount,
+					tx_id: transfer.tx_id,
+					block: transfer.block,
+					is_processed: transfer.is_processed,
+					account_id: transfer.account_id,
+					timestamp: transfer.timestamp
+				}
+			)
+		})
+	}
+
+	#[test]
+	fn address_migrates() {
+		ExtBuilder::default().build_and_execute(|| {
+			let test_info = TestInfo::default();
+
+			let old_address = OldAddress {
+				blockchain: OldBlockchain::Rinkeby,
+				owner: test_info.lender.account_id.clone(),
+				value: "0xaaaabbbbccccdddd".hex_to_address(),
+			};
+			let address_id = super::AddressId::make(hash(&concatenate!(
+				old_address.blockchain.as_bytes(),
+				&*old_address.value
+			)));
+
+			OldAddresses::insert(&address_id, &old_address);
+
+			migrate::<Test>();
+
+			let migrated_address = super::Addresses::<Test>::get(&address_id).unwrap();
+
+			assert_eq!(
+				migrated_address,
+				super::Address {
+					blockchain: super::Blockchain::RINKEBY,
+					value: old_address.value,
+					owner: old_address.owner
+				}
+			);
+		});
+	}
+
+	#[test]
+	fn ask_bid_orders_with_transfer_migrate() {
+		ExtBuilder::default().build_and_execute(|| {
+			let test_info = TestInfo::default();
+
+			let ((ask_id, ask), (bid_id, bid), (offer_id, offer)) = old_ask_bid_offer(&test_info);
+
+			OldAskOrders::insert(ask_id.expiration(), ask_id.hash(), &ask);
+			OldBidOrders::insert(bid_id.expiration(), bid_id.hash(), &bid);
+			crate::Offers::<Test>::insert(offer_id.expiration(), offer_id.hash(), &offer);
+
+			let (deal_id, mut deal) = old_deal_order(&test_info, Some((offer, offer_id)));
+
+			let (transfer_id, transfer) = old_transfer(
+				&test_info,
+				deal_id.clone(),
+				OldTransferKind::Ethless(CONTRACT.hex_to_address()),
+			);
+
+			insert_transfer(&transfer_id, &transfer);
+			attach_transfer(transfer_id, &mut deal);
+
+			insert_deal(&deal_id, &deal);
+
+			migrate::<Test>();
+
+			let migrated_ask =
+				super::AskOrders::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
+
+			let migrated_bid =
+				super::BidOrders::<Test>::get(bid_id.expiration(), bid_id.hash()).unwrap();
+
+			let currency = ethless_currency(CONTRACT);
+
+			assert_eq!(migrated_ask, old_to_new_ask(ask, Some(currency.clone())));
+
+			assert_eq!(migrated_bid, old_to_new_bid(bid, Some(currency)));
+		});
+	}
+
+	#[test]
+	fn ask_bid_orders_without_transfer_migrate() {
+		ExtBuilder::default().build_and_execute(|| {
+			let test_info = TestInfo::default();
+
+			let ((ask_id, ask), (bid_id, bid), (offer_id, offer)) = old_ask_bid_offer(&test_info);
+
+			OldAskOrders::insert(ask_id.expiration(), ask_id.hash(), &ask);
+			OldBidOrders::insert(bid_id.expiration(), bid_id.hash(), &bid);
+			crate::Offers::<Test>::insert(offer_id.expiration(), offer_id.hash(), &offer);
+
+			let (deal_id, deal) = old_deal_order(&test_info, Some((offer, offer_id)));
+
+			insert_deal(&deal_id, &deal);
+
+			migrate::<Test>();
+
+			let migrated_ask =
+				super::AskOrders::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
+
+			let migrated_bid =
+				super::BidOrders::<Test>::get(bid_id.expiration(), bid_id.hash()).unwrap();
+
+			assert_eq!(migrated_ask, old_to_new_ask(ask, None));
+
+			assert_eq!(migrated_bid, old_to_new_bid(bid, None));
+		});
+	}
+}
