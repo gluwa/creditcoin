@@ -36,7 +36,7 @@ where
 	}
 }
 
-#[extend::ext]
+#[extend::ext(name = HexToAddress)]
 pub(crate) impl<'a> &'a str {
 	fn hex_to_address(self) -> ExternalAddress {
 		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()

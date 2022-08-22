@@ -33,7 +33,7 @@ use crate::{
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
 	ocw::tasks::StorageLock,
-	tests::TestInfo,
+	tests::{HexToAddress, TestInfo},
 	types::{DoubleMapExt, TransferId},
 	Blockchain, CurrencyOrLegacyTransferKind, ExternalAddress, Id, LegacyTransferKind, LoanTerms,
 	TransferKind, Transfers,
