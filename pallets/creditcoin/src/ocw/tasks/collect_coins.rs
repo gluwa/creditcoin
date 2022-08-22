@@ -193,7 +193,7 @@ pub(crate) mod tests {
 		rpc::{EthTransaction, EthTransactionReceipt},
 		ETH_CONFIRMATIONS,
 	};
-	use crate::tests::{generate_address_with_proof, RefstrExt};
+	use crate::tests::{generate_address_with_proof, HexToAddress};
 	use crate::types::{AddressId, CollectedCoins, CollectedCoinsId};
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};

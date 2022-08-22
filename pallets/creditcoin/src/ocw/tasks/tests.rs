@@ -9,7 +9,7 @@ use crate::{
 		EncodeLike, ETH_CONFIRMATIONS,
 	},
 	pallet::{Config, Store},
-	tests::{generate_address_with_proof, RefstrExt},
+	tests::{generate_address_with_proof, HexToAddress},
 	types::CollectedCoinsId,
 	ExternalAddress, Pallet as Creditcoin,
 };

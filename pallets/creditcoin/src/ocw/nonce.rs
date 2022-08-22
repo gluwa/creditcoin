@@ -33,7 +33,7 @@ mod tests {
 	use crate::ocw::errors::VerificationFailureCause as Cause;
 	use crate::ocw::tasks::collect_coins::tests::mock_rpc_for_collect_coins;
 	use crate::ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN};
-	use crate::tests::{generate_address_with_proof, RefstrExt};
+	use crate::tests::{generate_address_with_proof, HexToAddress};
 	use crate::types::{Address, AddressId};
 	use crate::Pallet as Creditcoin;
 	use assert_matches::assert_matches;
