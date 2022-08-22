@@ -580,3 +580,311 @@ pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>, Option<Moment>),
 	CollectCoins(UnverifiedCollectedCoins, Balance),
 }
+
+#[cfg(test)]
+mod test {
+	use crate::{
+		mock,
+		ocw::tasks::collect_coins::tests::TX_HASH,
+		tests::{RefstrExt, TestInfo},
+		*,
+	};
+	use codec::{Decode, Encode};
+	use frame_support::BoundedVec;
+	use sp_runtime::testing::H256;
+
+	type AccountId = mock::AccountId;
+	type Balance = mock::Balance;
+	type BlockNum = mock::BlockNumber;
+	type Hash = H256;
+	type Moment = u64;
+
+	macro_rules! implements {(
+		$T:ty : $($bounds:tt)*
+	) => ({
+		use ::core::marker::PhantomData;
+
+		trait DefaultValue {
+			fn value (self: &'_ Self) -> bool { false }
+		}
+		impl<T : ?Sized> DefaultValue for &'_ PhantomData<T> {}
+		trait SpecializedValue {
+			fn value (self: &'_ Self) -> bool { true }
+		}
+		impl<T : ?Sized> SpecializedValue for PhantomData<T>
+		where
+			T : $($bounds)*
+		{}
+		(&PhantomData::<$T>).value()
+	})}
+
+	macro_rules! trait_tests {
+	($($name:ident: $type:ty: $default_value:expr,)*) => {
+	$(
+		mod $name {
+			use codec::MaxEncodedLen;
+			use super::*;
+			use scale_info::TypeInfo;
+
+			#[test]
+			fn test_typeinfo() {
+				<$type>::type_info();
+			}
+
+			#[test]
+			fn test_maxencodedlen() {
+				if (implements!($type : MaxEncodedLen)) {
+					let result = <$type>::max_encoded_len();
+					assert!(result > 0);
+				}
+			}
+
+			#[test]
+			fn test_encode_decode() {
+				if (implements!($type : Encode)) {
+					mock::ExtBuilder::default().build_and_execute(|| {
+						// assign $default_value to a local variable to prevent double
+						// evaluation which leads to AddressAlreadyRegistered error
+						let value = $default_value;
+
+						let as_scale = value.encode();
+						assert!(as_scale.len() > 0);
+
+						let decoded = <$type>::decode(&mut &as_scale[..]).unwrap();
+						assert_eq!(decoded, value);
+					})
+				}
+			}
+
+			#[test]
+			fn test_runtimedebug() {
+				mock::ExtBuilder::default().build_and_execute(|| {
+					let value = $default_value;
+					format!("{:?}", value);
+				})
+			}
+
+			#[test]
+			fn test_clone_and_partialeq() {
+				mock::ExtBuilder::default().build_and_execute(|| {
+					let a = $default_value;
+					let b = a.clone();
+					let c = b.clone();
+
+					// exercise equality comparisons, see
+					// https://doc.rust-lang.org/std/cmp/trait.PartialEq.html
+					// https://users.rust-lang.org/t/what-is-the-difference-between-eq-and-partialeq/15751/2
+
+					// symmetric
+					assert!(a == b);
+					assert!(b == a);
+
+					// transitive
+					assert!(a == b);
+					assert!(b == c);
+					assert!(a == c);
+				})
+			}
+
+		}
+	)*}}
+
+	fn create_funding_transfer() -> tests::TestTransfer {
+		let test_info = TestInfo::new_defaults();
+		let (_deal, deal_order_id) = test_info.create_deal_order();
+		test_info.create_funding_transfer(&deal_order_id)
+	}
+
+	fn reversed_funding_transfer() -> (TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>)
+	{
+		let (transfer, transfer_id) = create_funding_transfer();
+		(transfer_id, transfer)
+	}
+
+	fn create_collected_coins() -> CollectedCoins<Hash, Balance> {
+		CollectedCoins {
+			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
+			amount: 1000,
+			tx_id: TX_HASH.hex_to_address(),
+		}
+	}
+
+	fn create_unverified_collected_coins() -> UnverifiedCollectedCoins {
+		UnverifiedCollectedCoins {
+			to: b"baba".to_vec().try_into().unwrap(),
+			tx_id: TX_HASH.hex_to_address(),
+			contract: Default::default(),
+		}
+	}
+
+	fn create_unverified_transfer() -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
+		let (transfer, _) = create_funding_transfer();
+		UnverifiedTransfer {
+			transfer,
+			from_external: b"lender".to_vec().try_into().unwrap(),
+			to_external: b"borrower".to_vec().try_into().unwrap(),
+			deadline: 1_000_000,
+		}
+	}
+
+	fn create_address() -> Address<AccountId> {
+		Address {
+			blockchain: Blockchain::Rinkeby,
+			value: ExternalAddress::try_from(
+				hex::decode("09231da7b19A016f9e576d23B16277062F4d46A8").unwrap(),
+			)
+			.unwrap(),
+			owner: AccountId::new([77; 32]),
+		}
+	}
+
+	trait_tests! {
+	blockchain: Blockchain : Blockchain::Bitcoin,
+	transfer_kind: TransferKind : TransferKind::Native,
+	address: Address<AccountId> : create_address(),
+	collected_coins: CollectedCoins<Hash, Balance> : create_collected_coins(),
+	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().0,
+	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
+	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
+	offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
+	ask_order: AskOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().0,
+	bid_order: BidOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().0,
+	deal_order: DealOrder<AccountId, BlockNum, Hash, Moment> : TestInfo::new_defaults().create_deal_order().0,
+	address_id: AddressId<Hash> : AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
+	ask_order_id: AskOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().1,
+	bid_order_id: BidOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().1,
+	deal_order_id: DealOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_deal_order().1,
+	order_id: OrderId<BlockNum, Hash> : OrderId::Deal(TestInfo::new_defaults().create_deal_order().1),
+	offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().1,
+	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
+	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
+	legacy_sighash: LegacySighash : LegacySighash::default(),
+	task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
+	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().1),
+	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
+		reversed_funding_transfer()
+	),
+	task_data: TaskData<AccountId, Balance, BlockNum, Hash, Moment> : TaskData::<AccountId, Balance, BlockNum, Hash, Moment>::CollectCoins(
+		create_unverified_collected_coins(), 2000
+	),
+
+	// from types/loan_terms.rs
+	duration: Duration : Duration::from_millis(100),
+	interest_type: InterestType : InterestType::Simple,
+	interest_rate: InterestRate : InterestRate::default(),
+	loan_terms: LoanTerms : TestInfo::new_defaults().loan_terms,
+	ask_terms: AskTerms : AskTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
+	bid_terms: BidTerms : BidTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
+
+	// from types/platform.rs
+	evm_chain_id: EvmChainId : EvmChainId::from(44),
+	evm_info: EvmInfo : EvmInfo { chain_id: 0.into() },
+	new_blockchain: NewBlockchain : NewBlockchain::Evm(EvmInfo { chain_id: 0.into() }),
+	evm_transfer_kind: EvmTransferKind : EvmTransferKind::Erc20,
+	evm_currency_type: EvmCurrencyType : match Currency::default() {
+		Currency::Evm(currency_type, _) => currency_type,
+	},
+	currency: Currency : Currency::default(),
+	new_transfer_kind: NewTransferKind : NewTransferKind::Evm(EvmTransferKind::Erc20),
+	currency_id: CurrencyId<Hash> : CurrencyId::new::<mock::Test>(&Currency::default()),
+	}
+
+	#[test]
+	fn test_blockchain_as_bytes() {
+		let bitcoin = Blockchain::Bitcoin;
+		assert_eq!(bitcoin.as_bytes(), b"bitcoin");
+
+		let other = Blockchain::Other(BoundedVec::try_from(b"my-awesome-chain".to_vec()).unwrap());
+		assert_eq!(other.as_bytes(), b"my-awesome-chain");
+	}
+
+	#[test]
+	fn test_orderid_to_hex() {
+		mock::ExtBuilder::default().build_and_execute(|| {
+			let order_id = OrderId::Deal(TestInfo::new_defaults().create_deal_order().1);
+			let expected = [
+				49, 102, 48, 53, 53, 56, 100, 48, 99, 99, 50, 54, 97, 99, 99, 57, 51, 52, 102, 101,
+				100, 99, 99, 57, 54, 57, 99, 102, 51, 56, 54, 101, 52, 56, 100, 57, 49, 99, 102,
+				50, 50, 55, 56, 51, 98, 55, 54, 97, 49, 57, 56, 98, 100, 101, 55, 52, 97, 97, 48,
+				48, 52, 101, 102, 56,
+			];
+			assert_eq!(order_id.to_hex(), expected);
+		})
+	}
+
+	#[test]
+	fn test_orderid_expiration() {
+		mock::ExtBuilder::default().build_and_execute(|| {
+			let (_, deal_order_id) = TestInfo::new_defaults().create_deal_order();
+			let order_id = OrderId::Deal(deal_order_id.clone());
+			assert_eq!(order_id.expiration(), deal_order_id.expiration());
+		})
+	}
+
+	#[test]
+	fn test_legacysighash_try_from_when_string_is_shorter_than_60_chars() {
+		let result = LegacySighash::try_from("too-short");
+		assert!(result.is_err());
+	}
+
+	#[test]
+	fn test_legacysighash_try_from_when_string_is_longer_than_60_chars() {
+		let result = LegacySighash::try_from(
+			"this-dummy-string-is-very-very-very-long-and-cannot-be-a-legacy-sighash",
+		);
+		assert!(result.is_err());
+	}
+
+	#[test]
+	fn test_legacysighash_serialize_deserialize() {
+		let value = LegacySighash::default();
+
+		let json_string = serde_json::to_string(&value).unwrap();
+		let deserialized_value = serde_json::from_str(&json_string).unwrap();
+		assert_eq!(value, deserialized_value);
+	}
+
+	#[test]
+	fn test_duration_new() {
+		let result = Duration::new(5u64, 4000000u32);
+		assert_eq!(result, Duration::from_millis(5004));
+	}
+
+	#[test]
+	fn test_bidterms_match_with() {
+		mock::ExtBuilder::default().build_and_execute(|| {
+			let loan_terms = TestInfo::new_defaults().loan_terms;
+			let ask_terms = AskTerms::try_from(loan_terms.clone()).unwrap();
+			let bid_terms = BidTerms::try_from(loan_terms).unwrap();
+
+			assert!(bid_terms.match_with(&ask_terms));
+		})
+	}
+
+	#[test]
+	fn test_bidterms_agreed_terms() {
+		mock::ExtBuilder::default().build_and_execute(|| {
+			let loan_terms = TestInfo::new_defaults().loan_terms;
+			let ask_terms = AskTerms::try_from(loan_terms.clone()).unwrap();
+			let bid_terms = BidTerms::try_from(loan_terms).unwrap();
+
+			assert_eq!(
+				ask_terms.agreed_terms(bid_terms.clone()),
+				bid_terms.agreed_terms(&ask_terms),
+			);
+		})
+	}
+
+	#[test]
+	fn test_evmchainid_new() {
+		assert_eq!(EvmChainId::new(46), EvmChainId::from(46),);
+	}
+
+	#[test]
+	#[allow(clippy::clone_on_copy)]
+	fn test_invalid_term_length_error_clone_and_runtime_debug() {
+		let value = InvalidTermLengthError;
+		let new_value = value.clone();
+		format!("{:?}", new_value);
+	}
+}

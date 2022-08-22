@@ -133,7 +133,7 @@ type TestAskOrder = (AskOrder<AccountId, u64, H256>, TestAskOrderId);
 type TestBidOrder = (BidOrder<AccountId, u64, H256>, TestBidOrderId);
 type TestOffer = (Offer<AccountId, u64, H256>, TestOfferId);
 type TestDealOrder = (DealOrder<AccountId, u64, H256, u64>, TestDealOrderId);
-type TestTransfer = (Transfer<AccountId, u64, H256, u64>, TestTransferId);
+pub(crate) type TestTransfer = (Transfer<AccountId, u64, H256, u64>, TestTransferId);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
