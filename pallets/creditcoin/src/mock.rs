@@ -30,7 +30,7 @@ use std::{cell::Cell, collections::HashMap};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-type Balance = u128;
+pub(crate) type Balance = u128;
 pub type Signature = MultiSignature;
 pub type Extrinsic = TestXt<Call, ()>;
 
