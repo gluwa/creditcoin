@@ -125,7 +125,7 @@ pub(crate) fn generate_address_with_proof(
 	(who, address, ownership_proof, key_pair)
 }
 
-type TestAskOrder = (AskOrder<AccountId, u64, H256>, AskOrderId<u64, H256>);
+type TestAskOrder = (AskOrderId<u64, H256>, AskOrder<AccountId, u64, H256>);
 type TestBidOrder = (BidOrderId<u64, H256>, BidOrder<AccountId, u64, H256>);
 type TestOffer = (OfferId<u64, H256>, Offer<AccountId, u64, H256>);
 type TestDealOrderId = DealOrderId<u64, H256>;
@@ -190,7 +190,10 @@ impl TestInfo {
 
 		let ask_order_id = AskOrderId::new::<Test>(*expiration_block, ask_guid);
 
-		(Creditcoin::ask_orders(expiration_block, ask_order_id.hash()).unwrap(), ask_order_id)
+		(
+			ask_order_id.clone(),
+			Creditcoin::ask_orders(expiration_block, ask_order_id.hash()).unwrap(),
+		)
 	}
 
 	pub fn create_bid_order(&self) -> TestBidOrder {
@@ -215,7 +218,7 @@ impl TestInfo {
 	pub fn create_offer(&self) -> TestOffer {
 		let RegisteredAddress { account_id, .. } = &self.lender;
 
-		let (_, ask_order_id) = self.create_ask_order();
+		let (ask_order_id, _) = self.create_ask_order();
 		let (bid_order_id, _) = self.create_bid_order();
 		let expiration_block = 1_000;
 		assert_ok!(Creditcoin::add_offer(
@@ -570,7 +573,7 @@ fn add_ask_order_basic() {
 		let test_info = TestInfo::new_defaults();
 		let TestInfo { lender, loan_terms, blockchain, ask_guid, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = lender;
-		let (ask_order, _) = test_info.create_ask_order();
+		let (_, ask_order) = test_info.create_ask_order();
 		let AskOrder { block, expiration_block, .. } = ask_order;
 
 		let new_ask_order = crate::AskOrder {
@@ -645,7 +648,7 @@ fn add_ask_order_pre_existing() {
 		let TestInfo { lender, loan_terms, ask_guid, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = lender;
 
-		let (ask_order, _) = test_info.create_ask_order();
+		let (_, ask_order) = test_info.create_ask_order();
 		let AskOrder { expiration_block, .. } = ask_order;
 		let existing_ask_order_id = AskOrderId::new::<Test>(expiration_block, &ask_guid);
 		assert_eq!(
