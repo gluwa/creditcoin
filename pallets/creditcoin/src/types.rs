@@ -712,7 +712,7 @@ mod test {
 	}
 
 	fn create_unverified_transfer() -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
-		let ( _, transfer) = create_funding_transfer();
+		let (_, transfer) = create_funding_transfer();
 		UnverifiedTransfer {
 			transfer,
 			from_external: b"lender".to_vec().try_into().unwrap(),
@@ -740,7 +740,7 @@ mod test {
 	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
 	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
 	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
-	offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
+	offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().1,
 	ask_order: AskOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().0,
 	bid_order: BidOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().0,
 	deal_order: DealOrder<AccountId, BlockNum, Hash, Moment> : TestInfo::new_defaults().create_deal_order().1,
@@ -749,7 +749,7 @@ mod test {
 	bid_order_id: BidOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().1,
 	deal_order_id: DealOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_deal_order().0,
 	order_id: OrderId<BlockNum, Hash> : OrderId::Deal(TestInfo::new_defaults().create_deal_order().0),
-	offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().1,
+	offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
 	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
 	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
 	legacy_sighash: LegacySighash : LegacySighash::default(),

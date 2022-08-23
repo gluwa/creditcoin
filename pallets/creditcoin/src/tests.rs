@@ -127,7 +127,7 @@ pub(crate) fn generate_address_with_proof(
 
 type TestAskOrder = (AskOrder<AccountId, u64, H256>, AskOrderId<u64, H256>);
 type TestBidOrder = (BidOrder<AccountId, u64, H256>, BidOrderId<u64, H256>);
-type TestOffer = (Offer<AccountId, u64, H256>, OfferId<u64, H256>);
+type TestOffer = (OfferId<u64, H256>, Offer<AccountId, u64, H256>);
 type TestDealOrderId = DealOrderId<u64, H256>;
 type TestDealOrder = (DealOrderId<u64, H256>, DealOrder<AccountId, u64, H256, u64>);
 pub(crate) type TestTransfer = (TransferId<H256>, Transfer<AccountId, u64, H256, u64>);
@@ -222,12 +222,12 @@ impl TestInfo {
 			expiration_block,
 		));
 		let offer_id = OfferId::new::<Test>(expiration_block, &ask_order_id, &bid_order_id);
-		(Creditcoin::offers(expiration_block, offer_id.hash()).unwrap(), offer_id)
+		(offer_id.clone(), Creditcoin::offers(expiration_block, offer_id.hash()).unwrap())
 	}
 
 	pub fn create_deal_order(&self) -> TestDealOrder {
 		let RegisteredAddress { account_id, .. } = &self.borrower;
-		let (_, offer_id) = self.create_offer();
+		let (offer_id, _) = self.create_offer();
 		let expiration_block = 1_000;
 
 		assert_ok!(Creditcoin::add_deal_order(
@@ -238,7 +238,10 @@ impl TestInfo {
 
 		let deal_order_id = DealOrderId::new::<Test>(expiration_block, &offer_id);
 
-		(deal_order_id.clone(), Creditcoin::deal_orders(expiration_block, deal_order_id.hash()).unwrap())
+		(
+			deal_order_id.clone(),
+			Creditcoin::deal_orders(expiration_block, deal_order_id.hash()).unwrap(),
+		)
 	}
 
 	pub fn create_funding_transfer(&self, deal_order_id: &TestDealOrderId) -> TestTransfer {
@@ -798,7 +801,7 @@ fn add_offer_basic() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 
-		let (offer, _) = test_info.create_offer();
+		let (_, offer) = test_info.create_offer();
 		let Offer { blockchain, expiration_block, block, ask_id, bid_id, lender, .. } =
 			offer.clone();
 
@@ -813,7 +816,7 @@ fn add_offer_existing() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 
-		let (offer, offer_id) = test_info.create_offer();
+		let (offer_id, offer) = test_info.create_offer();
 		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer.clone();
 		assert_eq!(crate::Pallet::<Test>::offers(expiration_block, offer_id.hash()), Some(offer));
 
@@ -829,7 +832,7 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 
-		let (offer, _) = test_info.create_offer();
+		let (_, offer) = test_info.create_offer();
 		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer;
 
 		// simulate deal transfer
@@ -1238,8 +1241,7 @@ fn fund_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_i
 			bogus_deal_order_id.clone(),
 			tx_hash
 		));
-		let (transfer_id, _) =
-			second_test_info.create_funding_transfer(&bogus_deal_order_id);
+		let (transfer_id, _) = second_test_info.create_funding_transfer(&bogus_deal_order_id);
 
 		// try funding DealOrder from Person1 with the transfer from Person2,
 		// which points to a different order_id
@@ -1311,7 +1313,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 			tx_hash
 		));
 
-		let ( transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -1338,7 +1340,7 @@ fn fund_deal_order_should_error_when_transfer_has_been_processed() {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, deal_order) = test_info.create_deal_order();
 
-		let ( transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
 
 		// modify transfer in order to cause an error
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -1378,7 +1380,7 @@ fn fund_deal_order_works() {
 			tx_hash
 		));
 
-		let ( transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
 
 		// modify transfer b/c amount above is 0
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
@@ -2134,7 +2136,7 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 
 		let (bogus_deal_order_id, _) = second_test_info.create_deal_order();
 
-		let ( transfer_id, _) =
+		let (transfer_id, _) =
 			second_test_info.create_repayment_transfer(&bogus_deal_order_id, 33u64);
 
 		// Person1 tries closing the deal by using the transfer made by Person2
@@ -2165,7 +2167,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 			},
 		);
 
-		let ( transfer_id, _) =
+		let (transfer_id, _) =
 			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
@@ -2203,7 +2205,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 			},
 		);
 
-		let ( transfer_id, _) =
+		let (transfer_id, _) =
 			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
@@ -2239,7 +2241,7 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 			},
 		);
 
-		let ( transfer_id, _) =
+		let (transfer_id, _) =
 			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount);
 
 		// modify transfer in order to cause transfer mismatch
@@ -2292,7 +2294,7 @@ fn close_deal_order_should_succeed() {
 			tx_hash
 		));
 
-		let ( transfer_id, _) =
+		let (transfer_id, _) =
 			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount + 1u64);
 
 		// modify transfer to make sure we have transfered enough funds
@@ -2415,7 +2417,7 @@ fn verify_transfer_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, _) = test_info.create_deal_order();
-		let ( transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
 		let deadline = Test::unverified_transfer_deadline();
 		assert_noop!(
 			Creditcoin::persist_task_output(
@@ -2433,7 +2435,7 @@ fn verify_transfer_should_error_when_signer_not_authorized() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, _) = test_info.create_deal_order();
-		let ( transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
 		let deadline = Test::unverified_transfer_deadline();
 		assert_noop!(
 			Creditcoin::persist_task_output(
@@ -2459,7 +2461,7 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 		));
 
 		let (deal_order_id, _) = test_info.create_deal_order();
-		let ( transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
@@ -2626,7 +2628,7 @@ fn fail_transfer_should_error_when_transfer_registered() {
 
 		let (deal_order_id, _) = test_info.create_deal_order();
 
-		let ( transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
+		let (transfer_id, _) = test_info.create_funding_transfer(&deal_order_id);
 
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
@@ -2678,7 +2680,7 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 				expiration_block,
 			};
 
-			let (_, offer_id) = test_info.create_offer();
+			let (offer_id, _) = test_info.create_offer();
 			assert_ok!(Creditcoin::add_deal_order(
 				Origin::signed(test_info.borrower.account_id.clone()),
 				offer_id.clone(),
@@ -2697,7 +2699,7 @@ fn on_initialize_removes_expired_deals_without_transfers() {
 					deal_order_id.clone(),
 					tx.as_bytes().into_bounded()
 				));
-				let ( transfer_id, _) = test_info.mock_transfer(
+				let (transfer_id, _) = test_info.mock_transfer(
 					&test_info.lender,
 					&test_info.borrower,
 					deal_order.terms.amount,
@@ -2935,7 +2937,7 @@ fn register_transfer_internal_should_error_when_transfer_is_already_registered()
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let ( _, transfer) = test_info.create_funding_transfer(&deal_order_id);
+		let (_, transfer) = test_info.create_funding_transfer(&deal_order_id);
 
 		let result = Creditcoin::register_transfer_internal(
 			test_info.lender.account_id,
