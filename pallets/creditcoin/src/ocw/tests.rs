@@ -442,7 +442,7 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 		crate::mock::roll_to(1);
 		let test_info = TestInfo::new_defaults();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
-		let (mut transfer, _transfer_id) = test_info.make_transfer(
+		let ( _, mut transfer) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
 			deal_order.terms.amount,
@@ -478,7 +478,7 @@ fn verify_transfer_ocw_returns_err() {
 		crate::mock::roll_to(1);
 		let test_info = TestInfo::new_defaults();
 		let (deal_order, deal_order_id) = test_info.create_deal_order();
-		let (transfer, _) = test_info.make_transfer(
+		let ( _, transfer) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
 			deal_order.terms.amount,
@@ -567,7 +567,7 @@ fn set_up_verify_transfer_env(
 	let deal_id_hash = H256::from_uint(&get_mock_nonce());
 	let deal_order_id =
 		crate::DealOrderId::with_expiration_hash::<Test>(deal_order_id.expiration(), deal_id_hash);
-	let (transfer, _) = test_info.make_transfer(
+	let ( _, transfer) = test_info.make_transfer(
 		&test_info.lender,
 		&test_info.borrower,
 		deal_order.terms.amount,

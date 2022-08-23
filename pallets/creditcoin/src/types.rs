@@ -695,12 +695,6 @@ mod test {
 		test_info.create_funding_transfer(&deal_order_id)
 	}
 
-	fn reversed_funding_transfer() -> (TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>)
-	{
-		let (transfer, transfer_id) = create_funding_transfer();
-		(transfer_id, transfer)
-	}
-
 	fn create_collected_coins() -> CollectedCoins<Hash, Balance> {
 		CollectedCoins {
 			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
@@ -718,7 +712,7 @@ mod test {
 	}
 
 	fn create_unverified_transfer() -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
-		let (transfer, _) = create_funding_transfer();
+		let ( _, transfer) = create_funding_transfer();
 		UnverifiedTransfer {
 			transfer,
 			from_external: b"lender".to_vec().try_into().unwrap(),
@@ -743,7 +737,7 @@ mod test {
 	transfer_kind: TransferKind : TransferKind::Native,
 	address: Address<AccountId> : create_address(),
 	collected_coins: CollectedCoins<Hash, Balance> : create_collected_coins(),
-	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().0,
+	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
 	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
 	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
 	offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
@@ -760,9 +754,9 @@ mod test {
 	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
 	legacy_sighash: LegacySighash : LegacySighash::default(),
 	task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
-	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().1),
+	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().0),
 	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
-		reversed_funding_transfer()
+		create_funding_transfer()
 	),
 	task_data: TaskData<AccountId, Balance, BlockNum, Hash, Moment> : TaskData::<AccountId, Balance, BlockNum, Hash, Moment>::CollectCoins(
 		create_unverified_collected_coins(), 2000
