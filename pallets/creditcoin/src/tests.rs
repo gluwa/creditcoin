@@ -1,7 +1,12 @@
 use crate::{
 	helpers::{non_paying_error, EVMAddress, PublicToAddress},
 	//get rid of glob imports
-	mock::*,
+	mock::{
+		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_nonce,
+		get_mock_to_address, get_mock_tx_block_num, get_mock_tx_hash, roll_by_with_ocw, roll_to,
+		set_rpc_uri, with_failing_create_transaction, AccountId, BlockNumber, Creditcoin,
+		ExtBuilder, Hash, MockedRpcRequests, Moment, Origin, System, Test, ETHLESS_RESPONSES,
+	},
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currency, CurrencyId,
 	DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind, ExternalAddress,
@@ -125,12 +130,13 @@ pub(crate) fn generate_address_with_proof(
 	(who, address, ownership_proof, key_pair)
 }
 
-type TestAskOrder = (AskOrderId<u64, H256>, AskOrder<AccountId, u64, H256>);
-type TestBidOrder = (BidOrderId<u64, H256>, BidOrder<AccountId, u64, H256>);
-type TestOffer = (OfferId<u64, H256>, Offer<AccountId, u64, H256>);
-type TestDealOrderId = DealOrderId<u64, H256>;
-type TestDealOrder = (DealOrderId<u64, H256>, DealOrder<AccountId, u64, H256, u64>);
-pub(crate) type TestTransfer = (TransferId<H256>, Transfer<AccountId, u64, H256, u64>);
+type TestAskOrder = (AskOrderId<BlockNumber, Hash>, AskOrder<AccountId, BlockNumber, Hash>);
+type TestBidOrder = (BidOrderId<BlockNumber, Hash>, BidOrder<AccountId, BlockNumber, Hash>);
+type TestOffer = (OfferId<BlockNumber, Hash>, Offer<AccountId, BlockNumber, Hash>);
+type TestDealOrderId = DealOrderId<BlockNumber, Hash>;
+type TestDealOrder =
+	(DealOrderId<BlockNumber, Hash>, DealOrder<AccountId, BlockNumber, Hash, Moment>);
+pub(crate) type TestTransfer = (TransferId<Hash>, Transfer<AccountId, BlockNumber, Hash, Moment>);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
