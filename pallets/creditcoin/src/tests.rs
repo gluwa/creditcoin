@@ -126,7 +126,7 @@ pub(crate) fn generate_address_with_proof(
 }
 
 type TestAskOrder = (AskOrder<AccountId, u64, H256>, AskOrderId<u64, H256>);
-type TestBidOrder = (BidOrder<AccountId, u64, H256>, BidOrderId<u64, H256>);
+type TestBidOrder = (BidOrderId<u64, H256>, BidOrder<AccountId, u64, H256>);
 type TestOffer = (OfferId<u64, H256>, Offer<AccountId, u64, H256>);
 type TestDealOrderId = DealOrderId<u64, H256>;
 type TestDealOrder = (DealOrderId<u64, H256>, DealOrder<AccountId, u64, H256, u64>);
@@ -206,14 +206,17 @@ impl TestInfo {
 		));
 
 		let bid_order_id = BidOrderId::new::<Test>(*expiration_block, bid_guid);
-		(Creditcoin::bid_orders(*expiration_block, bid_order_id.hash()).unwrap(), bid_order_id)
+		(
+			bid_order_id.clone(),
+			Creditcoin::bid_orders(*expiration_block, bid_order_id.hash()).unwrap(),
+		)
 	}
 
 	pub fn create_offer(&self) -> TestOffer {
 		let RegisteredAddress { account_id, .. } = &self.lender;
 
 		let (_, ask_order_id) = self.create_ask_order();
-		let (_, bid_order_id) = self.create_bid_order();
+		let (bid_order_id, _) = self.create_bid_order();
 		let expiration_block = 1_000;
 		assert_ok!(Creditcoin::add_offer(
 			Origin::signed(account_id.clone()),
@@ -688,7 +691,7 @@ fn add_bid_order_basic() {
 		let TestInfo { borrower, loan_terms, blockchain, bid_guid, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 
-		let (bid_order, _) = test_info.create_bid_order();
+		let (_, bid_order) = test_info.create_bid_order();
 		let BidOrder { expiration_block, block, .. } = bid_order;
 
 		let new_bid_order = crate::BidOrder {
@@ -763,7 +766,7 @@ fn add_bid_order_pre_existing() {
 		let TestInfo { borrower, loan_terms, bid_guid, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 
-		let (bid_order, _) = test_info.create_bid_order();
+		let (_, bid_order) = test_info.create_bid_order();
 		let BidOrder { expiration_block, .. } = bid_order;
 		let existing_bid_order_id = BidOrderId::new::<Test>(expiration_block, &bid_guid);
 		assert_eq!(
