@@ -38,6 +38,8 @@ pub type Extrinsic = TestXt<Call, ()>;
 /// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type BlockNumber = u64;
+pub type Hash = H256;
+pub type Moment = u64;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -69,7 +71,7 @@ impl system::Config for Test {
 	type Call = Call;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
-	type Hash = H256;
+	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
@@ -88,7 +90,7 @@ impl system::Config for Test {
 }
 
 impl pallet_timestamp::Config for Test {
-	type Moment = u64;
+	type Moment = Moment;
 
 	type OnTimestampSet = ();
 
