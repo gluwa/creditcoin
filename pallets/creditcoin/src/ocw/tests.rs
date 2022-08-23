@@ -441,7 +441,7 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		crate::mock::roll_to(1);
 		let test_info = TestInfo::new_defaults();
-		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, deal_order) = test_info.create_deal_order();
 		let ( _, mut transfer) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
@@ -477,7 +477,7 @@ fn verify_transfer_ocw_returns_err() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		crate::mock::roll_to(1);
 		let test_info = TestInfo::new_defaults();
-		let (deal_order, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, deal_order) = test_info.create_deal_order();
 		let ( _, transfer) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
@@ -562,7 +562,7 @@ fn set_up_verify_transfer_env(
 		loan_terms: LoanTerms { amount: get_mock_amount(), ..Default::default() },
 		..TestInfo::new_defaults()
 	};
-	let (deal_order, deal_order_id) = test_info.create_deal_order();
+	let (deal_order_id, deal_order) = test_info.create_deal_order();
 
 	let deal_id_hash = H256::from_uint(&get_mock_nonce());
 	let deal_order_id =
@@ -887,7 +887,7 @@ fn ocw_retries() {
 
 		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
 
-		let (_, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, _) = test_info.create_deal_order();
 
 		let deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
@@ -968,7 +968,7 @@ fn duplicate_retry_fail_and_succeed() {
 
 		let test_info =
 			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
-		let (_, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, _) = test_info.create_deal_order();
 		let lender = test_info.lender.account_id.clone();
 
 		// test that we get a "fail_transfer" tx when verification fails
