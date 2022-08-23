@@ -620,11 +620,11 @@ mod test {
 
 	macro_rules! trait_tests {
 	($($name:ident: $type:ty: $default_value:expr,)*) => {
+		use codec::MaxEncodedLen;
+		use scale_info::TypeInfo;
 	$(
 		mod $name {
-			use codec::MaxEncodedLen;
 			use super::*;
-			use scale_info::TypeInfo;
 
 			#[test]
 			fn test_typeinfo() {
