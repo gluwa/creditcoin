@@ -1,5 +1,6 @@
 use crate::{
 	helpers::{non_paying_error, EVMAddress, PublicToAddress},
+	//get rid of glob imports
 	mock::*,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currency, CurrencyId,
@@ -124,16 +125,12 @@ pub(crate) fn generate_address_with_proof(
 	(who, address, ownership_proof, key_pair)
 }
 
-type TestAskOrderId = AskOrderId<u64, H256>;
-type TestBidOrderId = BidOrderId<u64, H256>;
-type TestOfferId = OfferId<u64, H256>;
+type TestAskOrder = (AskOrder<AccountId, u64, H256>, AskOrderId<u64, H256>);
+type TestBidOrder = (BidOrder<AccountId, u64, H256>, BidOrderId<u64, H256>);
+type TestOffer = (Offer<AccountId, u64, H256>, OfferId<u64, H256>);
 type TestDealOrderId = DealOrderId<u64, H256>;
-type TestTransferId = TransferId<H256>;
-type TestAskOrder = (AskOrder<AccountId, u64, H256>, TestAskOrderId);
-type TestBidOrder = (BidOrder<AccountId, u64, H256>, TestBidOrderId);
-type TestOffer = (Offer<AccountId, u64, H256>, TestOfferId);
-type TestDealOrder = (DealOrder<AccountId, u64, H256, u64>, TestDealOrderId);
-pub(crate) type TestTransfer = (TestTransferId, Transfer<AccountId, u64, H256, u64>);
+type TestDealOrder = (DealOrder<AccountId, u64, H256, u64>, DealOrderId<u64, H256>);
+pub(crate) type TestTransfer = (TransferId<H256>, Transfer<AccountId, u64, H256, u64>);
 
 #[derive(Clone, Debug)]
 pub struct TestInfo {
