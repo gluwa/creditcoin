@@ -26,7 +26,7 @@ describe('Creditcoin RPC', (): void => {
                     getOffchainNonceKey: {
                         params: [
                             {
-                                name: 'acc',
+                                name: 'account_id',
                                 type: 'String',
                             },
                         ],
