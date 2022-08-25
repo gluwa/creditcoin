@@ -244,7 +244,7 @@ benchmarks! {
 	register_repayment_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let borrower: T::AccountId = borrower_account::<T>(true);
-                let repayment_amount = ExternalAmount::from(1);
+		let repayment_amount = ExternalAmount::from(1);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,true,0u8);
 	}: _(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
