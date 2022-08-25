@@ -10,13 +10,13 @@ use frame_system::RawOrigin;
 use sp_arithmetic::traits::UniqueSaturatedFrom;
 
 benchmarks! {
-	set_target_block_time{
+	set_target_block_time {
 	}: _(RawOrigin::Root, <T as Config>::Moment::unique_saturated_from(100u64))
 	verify {
 		assert_eq!(TargetBlockTime::<T>::get(), <T as Config>::Moment::unique_saturated_from(100u64));
 	}
 
-	set_adjustment_period{
+	set_adjustment_period {
 		let caller: T::AccountId = whitelisted_caller();
 	}:_(RawOrigin::Root,100i64)
 	verify{
