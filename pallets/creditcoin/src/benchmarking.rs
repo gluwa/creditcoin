@@ -326,6 +326,11 @@ benchmarks! {
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
+	set_collect_coins_contract {
+		let root = RawOrigin::Root;
+		let contract = GCreContract::default();
+	}: _(root, contract)
+
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
