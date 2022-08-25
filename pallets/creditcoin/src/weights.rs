@@ -221,4 +221,10 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
+	// Storage: Creditcoin CollectCoinsContract (r:1 w:1)
+	fn set_collect_coins_contract() -> Weight {
+		(7_200_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+	}
 }
