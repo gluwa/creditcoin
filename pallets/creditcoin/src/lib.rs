@@ -159,6 +159,7 @@ pub mod pallet {
 		fn request_collect_coins() -> Weight;
 		fn persist_collect_coins() -> Weight;
 		fn fail_collect_coins() -> Weight;
+		fn set_collect_coins_contract() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -1431,7 +1432,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(<T as Config>::WeightInfo::set_collect_coins_contract())]
 		pub fn set_collect_coins_contract(
 			origin: OriginFor<T>,
 			contract: GCreContract,

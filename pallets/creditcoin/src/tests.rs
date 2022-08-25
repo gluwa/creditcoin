@@ -3089,4 +3089,7 @@ fn exercise_weightinfo_functions() {
 
 	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
 	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
+	assert!(result > 0);
 }
