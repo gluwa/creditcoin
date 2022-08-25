@@ -281,7 +281,7 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(lender),lender_addr_id,borrower_addr_id,terms,expiry,ask_guid.into_bounded(),bid_guid.into_bounded(),pkey.into(),signature.into())
 
-	request_collect_coins{
+	request_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let collector: T::AccountId = lender_account::<T>(true);
 		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
@@ -291,7 +291,7 @@ benchmarks! {
 			.into_bounded();
 	}: _( RawOrigin::Signed(collector), address.value, tx_id)
 
-	fail_collect_coins{
+	fail_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
@@ -301,7 +301,7 @@ benchmarks! {
 		let task_id = crate::TaskId::from(collected_coins_id);
 	}: fail_task(RawOrigin::Signed(authority), deadline, task_id, Cause::AbiMismatch)
 
-	persist_collect_coins{
+	persist_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
