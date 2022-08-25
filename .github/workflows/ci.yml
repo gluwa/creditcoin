@@ -22,6 +22,15 @@ jobs:
         run: |
           docker build -t gluwa/creditcoin .
 
+  sanity-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for parity between extrinsics, benchmarks and weights
+        run: |
+          ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
