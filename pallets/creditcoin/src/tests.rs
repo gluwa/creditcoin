@@ -3057,4 +3057,7 @@ fn exercise_weightinfo_functions() {
 
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
 	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::register_currency();
+	assert!(result > 0);
 }

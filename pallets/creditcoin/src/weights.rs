@@ -227,4 +227,10 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
+	// Storage: Creditcoin Currencies (r:1 w:1)
+	fn register_currency() -> Weight {
+		(7_200_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+	}
 }
