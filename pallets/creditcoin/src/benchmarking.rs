@@ -5,10 +5,12 @@ use crate::benchmarking::alloc::format;
 use crate::helpers::{EVMAddress, PublicToAddress};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
-use crate::types::Blockchain;
-use crate::Duration;
 #[allow(unused)]
 use crate::Pallet as Creditcoin;
+use crate::{
+	types::{Blockchain, Currency::Evm as CurrencyEvm},
+	Duration, EvmTransferKind,
+};
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
@@ -26,15 +28,23 @@ use sp_runtime::traits::One;
 use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom};
 
 #[extend::ext]
-impl<'a, S> &'a [u8]
+impl<'a, S, T> &'a [T]
 where
 	S: Get<u32>,
+	T: Clone,
 {
-	fn try_into_bounded(self) -> Result<BoundedVec<u8, S>, ()> {
+	fn try_into_bounded(self) -> Result<BoundedVec<T, S>, ()> {
 		core::convert::TryFrom::try_from(self.to_vec())
 	}
-	fn into_bounded(self) -> BoundedVec<u8, S> {
+	fn into_bounded(self) -> BoundedVec<T, S> {
 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
+	}
+}
+
+#[extend::ext]
+pub(crate) impl<'a> &'a str {
+	fn hex_to_address(self) -> ExternalAddress {
+		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
 	}
 }
 
@@ -326,11 +336,21 @@ benchmarks! {
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
+	register_currency {
+		let root = RawOrigin::Root;
+		let currency = CurrencyEvm(
+			crate::EvmCurrencyType::SmartContract(
+				"0x0000000000000000000000000000000000000000".hex_to_address(),
+				[EvmTransferKind::Ethless].into_bounded(),
+			),
+			EvmInfo { chain_id: 0.into() },
+		);
+	}: _(root, currency)
+
 	set_collect_coins_contract {
 		let root = RawOrigin::Root;
 		let contract = GCreContract::default();
 	}: _(root, contract)
-
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);

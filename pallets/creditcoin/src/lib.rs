@@ -160,6 +160,7 @@ pub mod pallet {
 		fn persist_collect_coins() -> Weight;
 		fn fail_collect_coins() -> Weight;
 		fn set_collect_coins_contract() -> Weight;
+		fn register_currency() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -1418,7 +1419,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_currency())]
 		pub fn register_currency(origin: OriginFor<T>, currency: Currency) -> DispatchResult {
 			ensure_root(origin)?;
 
