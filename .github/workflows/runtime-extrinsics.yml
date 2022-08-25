@@ -45,10 +45,10 @@ jobs:
       - name: Run Extrinsics Ordering
         shell: bash
         run: |
-          ./scripts/extrinsic_check.sh
+          ./scripts/check-extrinsics.sh
 
       #Upload logs if nodes are not connecting.
-      #head-node.log and release-node.log are created in ./scripts/extrinsic_check.sh
+      #head-node.log and release-node.log are created in ./scripts/check-extrinsics.sh
       - name: Upload error logs
         uses: actions/upload-artifact@v3
         if: always()
@@ -76,4 +76,4 @@ jobs:
       - name: Runtime Check
         shell: bash
         run: |
-          ./scripts/runtime_check.sh
+          ./scripts/check-runtime.sh
