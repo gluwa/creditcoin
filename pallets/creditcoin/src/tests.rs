@@ -3066,7 +3066,10 @@ fn exercise_weightinfo_functions() {
 	let result = super::weights::WeightInfo::<Test>::lock_deal_order();
 	assert!(result > 0);
 
-	let result = super::weights::WeightInfo::<Test>::register_transfer_ocw();
+	let result = super::weights::WeightInfo::<Test>::register_funding_transfer();
+	assert!(result > 0);
+
+	let result = super::weights::WeightInfo::<Test>::register_repayment_transfer();
 	assert!(result > 0);
 
 	let result = super::weights::WeightInfo::<Test>::close_deal_order();
