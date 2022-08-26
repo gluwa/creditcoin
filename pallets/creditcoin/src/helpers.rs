@@ -10,7 +10,7 @@ use crate::{
 	types::{Address, AddressId},
 	DealOrderId, Error, Guid, Id, TransferId,
 };
-use frame_support::{ensure, traits::Get};
+use frame_support::ensure;
 use frame_system::pallet_prelude::*;
 use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;

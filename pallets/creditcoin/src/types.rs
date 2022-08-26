@@ -251,7 +251,7 @@ impl<H> CollectedCoinsId<H> {
 		Config: frame_system::Config,
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
-		let key = concatenate!(contract_chain.as_bytes(), blockchain_tx_id);
+		let key = concatenate!(contract_chain.as_bytes().into_iter(), blockchain_tx_id);
 		CollectedCoinsId(Config::Hashing::hash(&key))
 	}
 }
