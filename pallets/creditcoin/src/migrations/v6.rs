@@ -432,7 +432,7 @@ mod tests {
 			kind,
 			from: test_info.lender.address_id.clone(),
 			to: test_info.borrower.address_id.clone(),
-			order_id: OldOrderId::Deal(deal_id.clone()),
+			order_id: OldOrderId::Deal(deal_id),
 			amount: 1.into(),
 			tx_id: "0xdeadbeef".hex_to_address(),
 			block: 50,
@@ -442,7 +442,7 @@ mod tests {
 		};
 
 		let transfer_id = crate::TransferId::make({
-			let key = concatenate!(&*blockchain.as_bytes(), &*transfer.tx_id);
+			let key = concatenate!(blockchain.as_bytes(), &*transfer.tx_id);
 			hash(&key)
 		});
 
@@ -522,8 +522,8 @@ mod tests {
 		(
 			deal_id,
 			OldDealOrder {
-				blockchain: blockchain.clone(),
-				offer_id: offer_id.clone(),
+				blockchain,
+				offer_id,
 				lender_address_id: test_info.lender.address_id.clone(),
 				borrower_address_id: test_info.borrower.address_id.clone(),
 				terms: old_loan_terms(),
@@ -543,7 +543,7 @@ mod tests {
 			amount: terms.amount,
 			interest_rate: terms.interest_rate,
 			term_length: terms.term_length,
-			currency: currency.map_or_else(|| CurrencyId::placeholder(), |c| c.to_id::<Test>()),
+			currency: currency.map_or_else(CurrencyId::placeholder, |c| c.to_id::<Test>()),
 		}
 	}
 
@@ -699,7 +699,7 @@ mod tests {
 
 			let old_address = OldAddress {
 				blockchain: OldBlockchain::Rinkeby,
-				owner: test_info.lender.account_id.clone(),
+				owner: test_info.lender.account_id,
 				value: "0xaaaabbbbccccdddd".hex_to_address(),
 			};
 			let address_id = super::AddressId::make(hash(&concatenate!(
@@ -809,7 +809,7 @@ mod tests {
 
 			let new_collect_coins = UnverifiedCollectedCoins {
 				to: b"baba".to_vec().try_into().unwrap(),
-				tx_id: tx_id.clone(),
+				tx_id,
 				contract: Default::default(),
 			};
 

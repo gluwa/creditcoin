@@ -8,7 +8,7 @@ import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, testDataWithTerms, tryRegisterAddress } from './common';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 
 describe('RegisterDealOrder', () => {

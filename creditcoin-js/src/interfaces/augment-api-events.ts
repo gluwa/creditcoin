@@ -10,6 +10,7 @@ import type { Bytes, Null, Option, Result, u128, u32 } from '@polkadot/types-cod
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
 import type {
+    FrameSupportScheduleLookupError,
     FrameSupportTokensMiscBalanceStatus,
     FrameSupportWeightsDispatchInfo,
     PalletCreditcoinAddress,
@@ -145,7 +146,7 @@ declare module '@polkadot/api-base/types/events' {
             CollectCoinsRegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinUnverifiedCollectedCoins]>;
             /**
              * CollectCoins has been successfully verified and minted.
-             * [collected_coins_id]
+             * [collected_coins_id, collected_coins]
              **/
             CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectedCoins]>;
             /**
@@ -227,6 +228,36 @@ declare module '@polkadot/api-base/types/events' {
              * Reward was issued. [block_author, amount]
              **/
             RewardIssued: AugmentedEvent<ApiType, [AccountId32, u128]>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        scheduler: {
+            /**
+             * The call for the provided hash was not found so the task has been aborted.
+             **/
+            CallLookupFailed: AugmentedEvent<
+                ApiType,
+                [task: ITuple<[u32, u32]>, id: Option<Bytes>, error: FrameSupportScheduleLookupError],
+                { task: ITuple<[u32, u32]>; id: Option<Bytes>; error: FrameSupportScheduleLookupError }
+            >;
+            /**
+             * Canceled some task.
+             **/
+            Canceled: AugmentedEvent<ApiType, [when: u32, index: u32], { when: u32; index: u32 }>;
+            /**
+             * Dispatched some task.
+             **/
+            Dispatched: AugmentedEvent<
+                ApiType,
+                [task: ITuple<[u32, u32]>, id: Option<Bytes>, result: Result<Null, SpRuntimeDispatchError>],
+                { task: ITuple<[u32, u32]>; id: Option<Bytes>; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * Scheduled some task.
+             **/
+            Scheduled: AugmentedEvent<ApiType, [when: u32, index: u32], { when: u32; index: u32 }>;
             /**
              * Generic event
              **/

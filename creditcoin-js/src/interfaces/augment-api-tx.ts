@@ -11,16 +11,18 @@ import type {
     SubmittableExtrinsic,
     SubmittableExtrinsicFunction,
 } from '@polkadot/api-base/types';
-import type { Bytes, Compact, U256, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
+import type { Bytes, Compact, Option, U256, Vec, bool, i64, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from '@polkadot/types/interfaces/runtime';
 import type {
+    FrameSupportScheduleMaybeHashed,
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLegacyTransferKind,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
+    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOfferId,
     PalletCreditcoinPlatformBlockchain,
     PalletCreditcoinPlatformCurrency,
@@ -453,6 +455,16 @@ declare module '@polkadot/api-base/types/submittable' {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Bytes, Bytes]
             >;
+            setCollectCoinsContract: AugmentedSubmittable<
+                (
+                    contract:
+                        | PalletCreditcoinOcwTasksCollectCoinsGCreContract
+                        | { address?: any; chain?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinOcwTasksCollectCoinsGCreContract]
+            >;
             /**
              * Generic tx
              **/
@@ -466,6 +478,107 @@ declare module '@polkadot/api-base/types/submittable' {
             setTargetBlockTime: AugmentedSubmittable<
                 (targetTime: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u64]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        scheduler: {
+            /**
+             * Cancel an anonymously scheduled task.
+             **/
+            cancel: AugmentedSubmittable<
+                (
+                    when: u32 | AnyNumber | Uint8Array,
+                    index: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32]
+            >;
+            /**
+             * Cancel a named scheduled task.
+             **/
+            cancelNamed: AugmentedSubmittable<
+                (id: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
+            /**
+             * Anonymously schedule a task.
+             **/
+            schedule: AugmentedSubmittable<
+                (
+                    when: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+            >;
+            /**
+             * Anonymously schedule a task after a delay.
+             *
+             * # <weight>
+             * Same as [`schedule`].
+             * # </weight>
+             **/
+            scheduleAfter: AugmentedSubmittable<
+                (
+                    after: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+            >;
+            /**
+             * Schedule a named task.
+             **/
+            scheduleNamed: AugmentedSubmittable<
+                (
+                    id: Bytes | string | Uint8Array,
+                    when: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [Bytes, u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+            >;
+            /**
+             * Schedule a named task after a delay.
+             *
+             * # <weight>
+             * Same as [`schedule_named`](Self::schedule_named).
+             * # </weight>
+             **/
+            scheduleNamedAfter: AugmentedSubmittable<
+                (
+                    id: Bytes | string | Uint8Array,
+                    after: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [Bytes, u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
             >;
             /**
              * Generic tx
