@@ -189,6 +189,13 @@ impl<Hash> TransferId<Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct CollectedCoinsId<Hash>(Hash);
 
+#[cfg(test)]
+impl<Hash> CollectedCoinsId<Hash> {
+	pub fn make(hash: Hash) -> Self {
+		Self(hash)
+	}
+}
+
 macro_rules! concatenate {
 	(@strip_plus + $($rest: tt)*) => {
 		$($rest)*

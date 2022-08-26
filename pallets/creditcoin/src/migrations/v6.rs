@@ -26,6 +26,7 @@ pub use v5::OrderId as OldOrderId;
 pub use v5::Task as OldTask;
 pub use v5::Transfer as OldTransfer;
 pub use v5::TransferKind as OldTransferKind;
+pub use v5::UnverifiedCollectedCoinsStruct as OldUnverifiedCollectedCoins;
 pub use v5::UnverifiedTransfer as OldUnverifiedTransfer;
 
 use crate::Address;
@@ -47,6 +48,7 @@ use crate::TaskId;
 use crate::Transfer;
 use crate::TransferId;
 use crate::TransferKind;
+use crate::UnverifiedCollectedCoins;
 use crate::UnverifiedTransfer;
 
 fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
@@ -322,7 +324,13 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 						),
 					})
 				},
-				OldTask::CollectCoins(collect_coins) => Task::CollectCoins(collect_coins),
+				OldTask::CollectCoins(collect_coins) => {
+					Task::CollectCoins(UnverifiedCollectedCoins {
+						to: collect_coins.to,
+						tx_id: collect_coins.tx_id,
+						contract: Default::default(),
+					})
+				},
 			})
 		},
 	);
@@ -383,6 +391,13 @@ mod tests {
 	);
 
 	type OldBidOrders = BidOrders<Test>;
+
+	generate_storage_alias!(
+		Creditcoin,
+		PendingTasks<T: Config> => DoubleMap<(Identity, T::BlockNumber), (Identity, TaskId<T::Hash>), super::OldTask<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
+	);
+
+	type OldPendingTasks = PendingTasks<Test>;
 
 	type OldTransfers = super::OldTransfers<Test>;
 
@@ -775,6 +790,37 @@ mod tests {
 			assert_eq!(migrated_ask, old_to_new_ask(ask, None));
 
 			assert_eq!(migrated_bid, old_to_new_bid(bid, None));
+		});
+	}
+
+	#[test]
+	fn unverified_collected_coins_migrates() {
+		ExtBuilder::default().build_and_execute(|| {
+			let tx_id = "0xfafafafafafafa".hex_to_address();
+
+			let old_collect_coins = OldUnverifiedCollectedCoins {
+				to: b"baba".to_vec().try_into().unwrap(),
+				tx_id: tx_id.clone(),
+			};
+
+			let deadline = 100;
+
+			let id = TaskId::from(crate::CollectedCoinsId::make(hash(&tx_id)));
+
+			let new_collect_coins = UnverifiedCollectedCoins {
+				to: b"baba".to_vec().try_into().unwrap(),
+				tx_id: tx_id.clone(),
+				contract: Default::default(),
+			};
+
+			OldPendingTasks::insert(deadline, &id, OldTask::from(old_collect_coins));
+
+			migrate::<Test>();
+
+			assert_eq!(
+				super::PendingTasks::<Test>::get(deadline, &id).unwrap(),
+				Task::CollectCoins(new_collect_coins)
+			);
 		});
 	}
 }
