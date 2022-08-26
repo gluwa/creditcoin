@@ -57,7 +57,7 @@ pub use task::{Task, TaskRpc};
 
 #[cfg(test)]
 mod test {
-	use crate::*;
+	use super::*;
 	use assert_matches::assert_matches;
 	use std::time::Duration;
 

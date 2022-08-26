@@ -20,5 +20,11 @@ frame-system = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744
 creditcoin-runtime-api = { path = "../../pallets/creditcoin/runtime-api" }
 creditcoin-node-runtime = { path = "../../runtime" }
 
+[dev-dependencies]
+test-client = { path = "../../test/client" }
+
 [dev-dependencies.assert_matches]
 version = "1.5.0"
+
+[features]
+runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']

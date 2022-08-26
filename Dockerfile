@@ -17,6 +17,7 @@ ADD primitives /creditcoin-node/primitives
 ADD runtime /creditcoin-node/runtime
 ADD sha3pow /creditcoin-node/sha3pow
 ADD chainspecs /creditcoin-node/chainspecs
+ADD test /creditcoin-node/test
 RUN source ~/.cargo/env && cargo build --release
 
 FROM ubuntu:20.04
