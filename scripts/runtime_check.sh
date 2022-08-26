@@ -193,8 +193,8 @@ changes to the ${RUNTIME} runtime sources and changes in the impl version.
 impl_version: ${sub_impl_version} -> ${add_impl_version}
 
 EOT
-    continue
-
+        echo "INFO: which change is fine, exiting ..."
+        exit 0
     fi
 
     boldcat <<EOT
