@@ -1,3 +1,4 @@
+use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
 	ocw::{
 		errors::{VerificationFailureCause, VerificationResult},
@@ -6,11 +7,7 @@ use crate::{
 	},
 	Blockchain,
 };
-use crate::pallet::{Config as CreditcoinConfig, Pallet};
-use crate::{
-	types::{OldBlockchain, UnverifiedCollectedCoins},
-	ExternalAddress, ExternalAmount,
-};
+use crate::{types::UnverifiedCollectedCoins, ExternalAddress, ExternalAmount};
 use codec::{Decode, Encode, MaxEncodedLen};
 use core::default::Default;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
@@ -26,28 +23,44 @@ use sp_std::prelude::*;
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct GCreContract {
 	pub address: sp_core::H160,
-	pub chain: OldBlockchain,
+	pub chain: Blockchain,
 }
 
 impl GCreContract {
-	const DEFAULT_CHAIN: OldBlockchain = OldBlockchain::Ethereum;
+	const DEFAULT_CHAIN: Blockchain = Blockchain::ETHEREUM;
 }
 
-///exchange has been deprecated, use burn instead
-fn burn_vested_cc_abi() -> Function {
-	#[allow(deprecated)]
-	Function {
-		name: "burn".into(),
-		inputs: vec![Param {
-			name: "value".into(),
-			kind: ParamType::Uint(256),
-			internal_type: None,
-		}],
-		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
-		constant: false,
-		state_mutability: StateMutability::NonPayable,
+impl Default for GCreContract {
+	fn default() -> Self {
+		let contract_chain: Blockchain = GCreContract::DEFAULT_CHAIN;
+		let contract_address: H160 =
+			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
+		Self { address: contract_address, chain: contract_chain }
 	}
 }
+
+impl GCreContract {
+	///exchange has been deprecated, use burn instead
+	fn burn_vested_cc_abi() -> Function {
+		#[allow(deprecated)]
+		Function {
+			name: "burn".into(),
+			inputs: vec![Param {
+				name: "value".into(),
+				kind: ParamType::Uint(256),
+				internal_type: None,
+			}],
+			outputs: vec![Param {
+				name: "success".into(),
+				kind: ParamType::Bool,
+				internal_type: None,
+			}],
+			constant: false,
+			state_mutability: StateMutability::NonPayable,
+		}
+	}
+}
+
 pub fn validate_collect_coins(
 	to: &ExternalAddress,
 	receipt: &EthTransactionReceipt,
@@ -983,7 +996,7 @@ pub(crate) mod tests {
 		ext.build_and_execute(|| {
 			let contract = GCreContract {
 				address: sp_core::H160(hex!("aaaaabbbbbcccccdddddeeeeefffff08F3820419")),
-				chain: Blockchain::Rinkeby,
+				chain: Blockchain::RINKEBY,
 			};
 			assert_ok!(Creditcoin::<Test>::set_collect_coins_contract(
 				RawOrigin::Root.into(),
