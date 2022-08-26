@@ -4,8 +4,8 @@ use super::*;
 use crate::benchmarking::alloc::format;
 use crate::helpers::{EVMAddress, PublicToAddress, RefSliceOfTExt, RefstrExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
-use crate::ocw::tasks::collect_coins::CONTRACT_CHAIN;
-use crate::types::OldBlockchain;
+use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
+use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
 use crate::Pallet as Creditcoin;

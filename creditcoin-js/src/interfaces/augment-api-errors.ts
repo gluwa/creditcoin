@@ -55,13 +55,13 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AddressAlreadyRegistered: AugmentedError<ApiType>;
             /**
+             * The addresses specified are not on compatible external chains.
+             **/
+            AddressBlockchainMismatch: AugmentedError<ApiType>;
+            /**
              * The address format was not recognized for the given blockchain and external address.
              **/
             AddressFormatNotSupported: AugmentedError<ApiType>;
-            /**
-             * The addresses specified are not on compatible external chains.
-             **/
-            AddressPlatformMismatch: AugmentedError<ApiType>;
             /**
              * The account is already an authority.
              **/
@@ -74,10 +74,6 @@ declare module '@polkadot/api-base/types/errors' {
              * The ask order has expired and is no longer valid.
              **/
             AskOrderExpired: AugmentedError<ApiType>;
-            /**
-             * The balance would overflow.
-             **/
-            BalanceOverflow: AugmentedError<ApiType>;
             /**
              * The bid order has expired and is no longer valid.
              **/
@@ -279,6 +275,28 @@ declare module '@polkadot/api-base/types/errors' {
             NegativeAdjustmentPeriod: AugmentedError<ApiType>;
             ZeroAdjustmentPeriod: AugmentedError<ApiType>;
             ZeroTargetTime: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        scheduler: {
+            /**
+             * Failed to schedule a call
+             **/
+            FailedToSchedule: AugmentedError<ApiType>;
+            /**
+             * Cannot find the scheduled call.
+             **/
+            NotFound: AugmentedError<ApiType>;
+            /**
+             * Reschedule failed because it does not change scheduled time.
+             **/
+            RescheduleNoChange: AugmentedError<ApiType>;
+            /**
+             * Given target block number is in the past.
+             **/
+            TargetBlockNumberInPast: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

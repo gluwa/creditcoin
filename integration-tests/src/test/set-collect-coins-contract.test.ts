@@ -4,6 +4,7 @@ import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData } from './common';
 import { extractFee, testIf } from '../utils';
+import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 
 describe('SetCollectCoinsContract', (): void => {
     let ccApi: CreditcoinApi;
@@ -28,7 +29,7 @@ describe('SetCollectCoinsContract', (): void => {
         /* eslint-disable @typescript-eslint/naming-convention */
         const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
             address: '0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419',
-            chain: testData.blockchain,
+            chain: createCreditcoinBlockchain(api, testData.blockchain),
         });
 
         return new Promise((resolve, reject): void => {
