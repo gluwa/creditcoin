@@ -834,6 +834,9 @@ export default {
             set_collect_coins_contract: {
                 contract: 'PalletCreditcoinOcwTasksCollectCoinsGCreContract',
             },
+            remove_authority: {
+                who: 'AccountId32',
+            },
         },
     },
     /**
@@ -1030,7 +1033,6 @@ export default {
             'NonExistentTransfer',
             'TransferAlreadyRegistered',
             'CollectCoinsAlreadyRegistered',
-            'BalanceOverflow',
             'TransferAccountMismatch',
             'TransferDealOrderMismatch',
             'TransferAmountMismatch',
@@ -1046,6 +1048,7 @@ export default {
             'RepaymentOrderNonZeroGain',
             'AddressPlatformMismatch',
             'AlreadyAuthority',
+            'NotAnAuthority',
             'DuplicateOffer',
             'DealNotFunded',
             'DealOrderAlreadyFunded',

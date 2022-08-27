@@ -438,6 +438,10 @@ declare module '@polkadot/api-base/types/submittable' {
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
             >;
+            removeAuthority: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
             requestCollectCoins: AugmentedSubmittable<
                 (
                     evmAddress: Bytes | string | Uint8Array,
