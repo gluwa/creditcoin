@@ -283,6 +283,10 @@ declare module '@polkadot/api-base/types/submittable' {
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinDealOrderId, H256]
             >;
+            delAuthority: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
             exempt: AugmentedSubmittable<
                 (dealOrderId: PalletCreditcoinDealOrderId) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinDealOrderId]
