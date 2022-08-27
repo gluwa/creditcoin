@@ -975,6 +975,10 @@ declare module '@polkadot/types/lookup' {
         readonly asSetCollectCoinsContract: {
             readonly contract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
         } & Struct;
+        readonly isRemoveAuthority: boolean;
+        readonly asRemoveAuthority: {
+            readonly who: AccountId32;
+        } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
             | 'RegisterAddress'
@@ -994,7 +998,8 @@ declare module '@polkadot/types/lookup' {
             | 'FailTask'
             | 'AddAuthority'
             | 'RegisterCurrency'
-            | 'SetCollectCoinsContract';
+            | 'SetCollectCoinsContract'
+            | 'RemoveAuthority';
     }
 
     /** @name SpCoreEcdsaPublic (121) */
@@ -1184,7 +1189,6 @@ declare module '@polkadot/types/lookup' {
         readonly isNonExistentTransfer: boolean;
         readonly isTransferAlreadyRegistered: boolean;
         readonly isCollectCoinsAlreadyRegistered: boolean;
-        readonly isBalanceOverflow: boolean;
         readonly isTransferAccountMismatch: boolean;
         readonly isTransferDealOrderMismatch: boolean;
         readonly isTransferAmountMismatch: boolean;
@@ -1200,6 +1204,7 @@ declare module '@polkadot/types/lookup' {
         readonly isRepaymentOrderNonZeroGain: boolean;
         readonly isAddressPlatformMismatch: boolean;
         readonly isAlreadyAuthority: boolean;
+        readonly isNotAnAuthority: boolean;
         readonly isDuplicateOffer: boolean;
         readonly isDealNotFunded: boolean;
         readonly isDealOrderAlreadyFunded: boolean;
@@ -1237,7 +1242,6 @@ declare module '@polkadot/types/lookup' {
             | 'NonExistentTransfer'
             | 'TransferAlreadyRegistered'
             | 'CollectCoinsAlreadyRegistered'
-            | 'BalanceOverflow'
             | 'TransferAccountMismatch'
             | 'TransferDealOrderMismatch'
             | 'TransferAmountMismatch'
@@ -1253,6 +1257,7 @@ declare module '@polkadot/types/lookup' {
             | 'RepaymentOrderNonZeroGain'
             | 'AddressPlatformMismatch'
             | 'AlreadyAuthority'
+            | 'NotAnAuthority'
             | 'DuplicateOffer'
             | 'DealNotFunded'
             | 'DealOrderAlreadyFunded'

@@ -75,10 +75,6 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AskOrderExpired: AugmentedError<ApiType>;
             /**
-             * The balance would overflow.
-             **/
-            BalanceOverflow: AugmentedError<ApiType>;
-            /**
              * The bid order has expired and is no longer valid.
              **/
             BidOrderExpired: AugmentedError<ApiType>;
@@ -198,6 +194,10 @@ declare module '@polkadot/api-base/types/errors' {
              * The address cannot be used because the user does not own it.
              **/
             NotAddressOwner: AugmentedError<ApiType>;
+            /**
+             * The account you are trying to remove is not  an authority.
+             **/
+            NotAnAuthority: AugmentedError<ApiType>;
             /**
              * Only the borrower can perform the action.
              **/
