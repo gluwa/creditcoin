@@ -2,7 +2,7 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, PublicToAddress};
+use crate::helpers::{EVMAddress, PublicToAddress, RefstrExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 #[allow(unused)]
@@ -38,13 +38,6 @@ where
 	}
 	fn into_bounded(self) -> BoundedVec<T, S> {
 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
-
-#[extend::ext]
-pub(crate) impl<'a> &'a str {
-	fn hex_to_address(self) -> ExternalAddress {
-		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
 	}
 }
 

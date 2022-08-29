@@ -1,5 +1,5 @@
 use crate::{
-	helpers::{non_paying_error, EVMAddress, PublicToAddress},
+	helpers::{non_paying_error, EVMAddress, PublicToAddress, RefstrExt},
 	mock::*,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currency, CurrencyId,
@@ -35,13 +35,6 @@ where
 	}
 	fn into_bounded(self) -> BoundedVec<T, S> {
 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
-
-#[extend::ext]
-pub(crate) impl<'a> &'a str {
-	fn hex_to_address(self) -> ExternalAddress {
-		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
 	}
 }
 
