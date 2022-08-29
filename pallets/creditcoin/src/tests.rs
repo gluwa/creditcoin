@@ -1,12 +1,6 @@
 use crate::{
-	helpers::{non_paying_error, EVMAddress, PublicToAddress},
-	//get rid of glob imports
-	mock::{
-		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_nonce,
-		get_mock_to_address, get_mock_tx_block_num, get_mock_tx_hash, roll_by_with_ocw, roll_to,
-		set_rpc_uri, with_failing_create_transaction, AccountId, BlockNumber, Creditcoin,
-		ExtBuilder, Hash, MockedRpcRequests, Moment, Origin, System, Test, ETHLESS_RESPONSES,
-	},
+	helpers::{non_paying_error, EVMAddress, PublicToAddress, RefstrExt},
+	mock::*,
 	types::DoubleMapExt,
 	AddressId,
 	AskOrder,
@@ -65,13 +59,6 @@ where
 	}
 	fn into_bounded(self) -> BoundedVec<T, S> {
 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
-
-#[extend::ext]
-pub(crate) impl<'a> &'a str {
-	fn hex_to_address(self) -> ExternalAddress {
-		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
 	}
 }
 

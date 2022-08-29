@@ -212,6 +212,7 @@ pub(crate) mod tests {
 	});
 
 	use crate::helpers::non_paying_error;
+	use crate::helpers::RefstrExt;
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, Balances, ExtBuilder, MockedRpcRequests,
 		OffchainState, Origin, RwLock, Test,
@@ -221,7 +222,7 @@ pub(crate) mod tests {
 		rpc::{EthTransaction, EthTransactionReceipt},
 		ETH_CONFIRMATIONS,
 	};
-	use crate::tests::{generate_address_with_proof, RefstrExt};
+	use crate::tests::generate_address_with_proof;
 	use crate::types::{AddressId, CollectedCoins, CollectedCoinsId};
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};

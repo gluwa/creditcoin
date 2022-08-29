@@ -185,3 +185,11 @@ pub fn non_paying_error<T: Config>(
 		},
 	}
 }
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[extend::ext]
+pub(crate) impl<'a> &'a str {
+	fn hex_to_address(self) -> crate::ExternalAddress {
+		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+	}
+}
