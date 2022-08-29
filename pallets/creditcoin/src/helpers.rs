@@ -193,3 +193,18 @@ pub(crate) impl<'a> &'a str {
 		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
 	}
 }
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[extend::ext]
+pub(crate) impl<'a, S, T> &'a [T]
+where
+	S: Get<u32>,
+	T: Clone,
+{
+	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, ()> {
+		core::convert::TryFrom::try_from(self.to_vec())
+	}
+	fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
+		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
+	}
+}
