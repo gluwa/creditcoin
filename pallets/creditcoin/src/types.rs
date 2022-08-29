@@ -882,7 +882,7 @@ mod test {
 
 	#[test]
 	#[allow(clippy::clone_on_copy)]
-	fn test_invalid_term_length_error_clone_and_runtime_debug() {
+	fn exercise_invalid_term_length_error_clone_and_runtime_debug() {
 		let value = InvalidTermLengthError;
 		let new_value = value.clone();
 		format!("{:?}", new_value);
