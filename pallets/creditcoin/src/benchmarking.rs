@@ -2,7 +2,7 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, PublicToAddress, RefstrExt};
+use crate::helpers::{EVMAddress, PublicToAddress, RefstrExt, RefSliceOfTExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 #[allow(unused)]
@@ -26,20 +26,6 @@ use sp_core::ecdsa;
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign};
 use sp_runtime::traits::One;
 use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom};
-
-#[extend::ext]
-impl<'a, S, T> &'a [T]
-where
-	S: Get<u32>,
-	T: Clone,
-{
-	fn try_into_bounded(self) -> Result<BoundedVec<T, S>, ()> {
-		core::convert::TryFrom::try_from(self.to_vec())
-	}
-	fn into_bounded(self) -> BoundedVec<T, S> {
-		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum DealKind {
