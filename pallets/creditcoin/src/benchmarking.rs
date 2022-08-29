@@ -2,7 +2,7 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, PublicToAddress, RefstrExt, RefSliceOfTExt};
+use crate::helpers::{EVMAddress, PublicToAddress, RefSliceOfTExt, RefstrExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 #[allow(unused)]

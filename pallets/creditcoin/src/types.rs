@@ -584,10 +584,7 @@ pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
 #[cfg(test)]
 mod test {
 	use crate::{
-		mock,
-		ocw::tasks::collect_coins::tests::TX_HASH,
-		tests::{RefstrExt, TestInfo},
-		*,
+		helpers::RefstrExt, mock, ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
 	};
 	use codec::{Decode, Encode};
 	use frame_support::BoundedVec;
