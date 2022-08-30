@@ -9,11 +9,11 @@ sudo npm install -g yarn
 
 ## Getting Started
 
-0. Build the software under test, see **Single-Node Development Chain** in `../README.md`
-   and execute it locally:
+0. Start the software under test, see **Single-Node Development Chain** in `../README.md`
+   for more information:
 
 ```bash
-./target/release/creditcoin-node --dev --mining-key XYZ
+cargo run -- --dev --mining-key XYZ
 ```
 
 1. Execute a local Ethereum node:
