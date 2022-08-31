@@ -17,6 +17,7 @@
         "@types/ws": "^8.5.3",
         "axios": "^0.27.2",
         "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.3.0.tgz",
+        "ethers": "^5.7.0",
         "ws": "^8.5.0"
     },
     "devDependencies": {
