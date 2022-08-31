@@ -13,7 +13,7 @@ sudo npm install -g yarn
    for more information:
 
 ```bash
-cargo run -- --dev --mining-key XYZ
+cargo run --release -- --dev --mining-key XYZ
 ```
 
 1. Execute a local Ethereum node:
