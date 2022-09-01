@@ -784,6 +784,8 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
+			Self::use_guid(&guid)?;
+
 			let ask_order = AskOrder {
 				blockchain: address.blockchain,
 				lender_address_id: address_id,
@@ -793,8 +795,6 @@ pub mod pallet {
 				lender: who,
 			};
 
-			Self::use_guid(&guid)?;
-			sp_io::offchain_index::set(&guid, &ask_order.encode());
 			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id.clone(), ask_order.clone()));
 			AskOrders::<T>::insert_id(ask_order_id, ask_order);
 			Ok(())
@@ -819,6 +819,8 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
+			Self::use_guid(&guid)?;
+
 			let bid_order = BidOrder {
 				blockchain: address.blockchain,
 				borrower_address_id: address_id,
@@ -827,9 +829,6 @@ pub mod pallet {
 				block: <frame_system::Pallet<T>>::block_number(),
 				borrower: who,
 			};
-
-			Self::use_guid(&guid)?;
-			sp_io::offchain_index::set(&guid, &bid_order.encode());
 
 			Self::deposit_event(Event::<T>::BidOrderAdded(bid_order_id.clone(), bid_order.clone()));
 			BidOrders::<T>::insert_id(bid_order_id, bid_order);
