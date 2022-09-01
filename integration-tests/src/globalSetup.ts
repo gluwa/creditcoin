@@ -1,8 +1,23 @@
 import { ApiPromise, WsProvider, Keyring } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
+import { main as deployCtcContract, DEPLOYER_PRIVATE_KEY } from './ctc-deploy';
 
 const setup = async () => {
     process.env.NODE_ENV = 'test';
+
+    if ((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS === undefined) {
+        await deployCtcContract();
+        (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS;
+    }
+
+    if ((global as any).CREDITCOIN_CTC_BURN_TX_HASH === undefined) {
+        // burn is called inside deployCtcContract()
+        (global as any).CREDITCOIN_CTC_BURN_TX_HASH = process.env.CREDITCOIN_CTC_BURN_TX_HASH;
+    }
+
+    if ((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY === undefined) {
+        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY = DEPLOYER_PRIVATE_KEY;
+    }
 
     // WARNING: when setting global variables `undefined' means no value has been assigned
     // to this variable up to now so we fall-back to the defaults.

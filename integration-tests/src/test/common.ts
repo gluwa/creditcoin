@@ -1,3 +1,4 @@
+import { providers } from 'ethers';
 import { Wallet, Guid, BN } from 'creditcoin-js';
 import { Keyring, KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
 import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/lib/model';
@@ -115,4 +116,28 @@ export const tryRegisterAddress = async (
     }
 
     return registerAddress(externalAddress, blockchain, ownershipProof, signer);
+};
+
+export const registerCtcDeployerAddress = async (
+    ccApi: CreditcoinApi,
+    privateKey: string,
+): Promise<AddressRegistered> => {
+    const { keyring, blockchain } = testData;
+    const {
+        utils: { signAccountId },
+    } = ccApi;
+
+    const deployer = keyring.addFromUri('//Alice');
+
+    const provider = new providers.JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+    const deployerWallet = new Wallet(privateKey, provider);
+
+    return tryRegisterAddress(
+        ccApi,
+        deployerWallet.address,
+        blockchain,
+        signAccountId(deployerWallet, deployer.address),
+        deployer,
+        (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+    );
 };
