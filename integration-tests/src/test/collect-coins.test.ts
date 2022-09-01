@@ -5,7 +5,7 @@ import { createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 import { POINT_01_CTC } from '../constants';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData } from './common';
+import { testData, registerCtcDeployerAddress } from './common';
 import { testIf } from '../utils';
 
 describe('CollectCoins', (): void => {
@@ -37,6 +37,45 @@ describe('CollectCoins', (): void => {
                 .paymentInfo(authority, { nonce: -1 });
             expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
+
+        testIf(
+            (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY,
+            'end-to-end',
+            async (): Promise<void> => {
+                const {
+                    api,
+                    extrinsics: { requestCollectCoins },
+                } = ccApi;
+
+                /* eslint-disable @typescript-eslint/naming-convention */
+                const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
+                    address: (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
+                    chain: blockchain,
+                });
+
+                const collector = keyring.addFromUri('//Alice');
+
+                // todo: don't do this for testnet, no?
+                // contract should have been deployed and address/tx_hash should be hard-coded, no?
+                await api.tx.sudo
+                    .sudo(api.tx.creditcoin.setCollectCoinsContract(contract))
+                    .signAndSend(collector, { nonce: -1 });
+
+                const deployerRegAddr = await registerCtcDeployerAddress(
+                    ccApi,
+                    (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
+                );
+
+                const collectCoinsEvent = await requestCollectCoins(
+                    deployerRegAddr.item.externalAddress,
+                    collector,
+                    (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
+                );
+                const collectCoinsVerified = await collectCoinsEvent.waitForVerification().catch();
+                expect(collectCoinsVerified).toBeTruthy();
+            },
+            900000,
+        );
     });
 
     describe('fail', (): void => {

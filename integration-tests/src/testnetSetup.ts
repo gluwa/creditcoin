@@ -37,6 +37,10 @@ const setup = async () => {
     (global as any).CREDITCOIN_METRICS_BASE = 'http://test-rpc-creditcoin-rpc-2.eastus.cloudapp.azure.com:9615';
     (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = true;
 
+    (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = '0xzzz';
+    (global as any).CREDITCOIN_CTC_BURN_TX_HASH = '0xzzz';
+    (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY = '0xzzzzz';
+
     await globalSetup();
 };
 
