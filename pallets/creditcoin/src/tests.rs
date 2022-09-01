@@ -561,9 +561,9 @@ pub(crate) fn adjust_deal_order_to_nonce(
 fn add_ask_order_basic() {
 	let (mut ext, _, _) = ExtBuilder::default().build_offchain();
 
-	let (ask_order, ask_guid) = ext.execute_with(|| {
+	ext.execute_with(|| {
 		let test_info = TestInfo::new_defaults();
-		let TestInfo { lender, loan_terms, blockchain, ask_guid, .. } = test_info.clone();
+		let TestInfo { lender, loan_terms, blockchain, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = lender;
 		let (_, ask_order) = test_info.create_ask_order();
 		let AskOrder { block, expiration_block, .. } = ask_order;
@@ -578,11 +578,7 @@ fn add_ask_order_basic() {
 		};
 
 		assert_eq!(ask_order, new_ask_order);
-		(ask_order, ask_guid)
 	});
-
-	ext.persist_offchain_overlay();
-	assert_eq!(ext.offchain_db().get(&ask_guid).unwrap(), ask_order.encode());
 }
 
 #[test]
@@ -681,9 +677,9 @@ fn add_add_ask_order_rejects_zero_term_length_ms() {
 fn add_bid_order_basic() {
 	let (mut ext, _, _) = ExtBuilder::default().build_offchain();
 
-	let (bid_order, bid_guid) = ext.execute_with(|| {
+	ext.execute_with(|| {
 		let test_info = TestInfo::new_defaults();
-		let TestInfo { borrower, loan_terms, blockchain, bid_guid, .. } = test_info.clone();
+		let TestInfo { borrower, loan_terms, blockchain, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 
 		let (_, bid_order) = test_info.create_bid_order();
@@ -699,11 +695,7 @@ fn add_bid_order_basic() {
 		};
 
 		assert_eq!(new_bid_order, bid_order);
-		(bid_order, bid_guid)
 	});
-
-	ext.persist_offchain_overlay();
-	assert_eq!(ext.offchain_db().get(&bid_guid).unwrap(), bid_order.encode());
 }
 
 #[test]
