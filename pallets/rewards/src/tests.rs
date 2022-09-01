@@ -1,28 +1,39 @@
-use crate::{mock::*, REWARD_HALF_LIFE};
+use crate::{mock::*, BASE_REWARD_IN_CTC, CREDO_PER_CTC, REWARD_HALF_LIFE, SAWTOOTH_PORT_HEIGHT};
 
 #[test]
 fn reward_amount_genesis() {
+	//! 0 After Sawtooth
 	assert_eq!(Rewards::reward_amount(0), 28_000_000_000_000_000_000);
 }
 
 #[test]
 fn reward_amount_block_one() {
+	//! 1 After Sawtooth
 	assert_eq!(Rewards::reward_amount(1), 28_000_000_000_000_000_000);
 }
 
 #[test]
 fn reward_amount_just_before_reaching_first_halflife() {
-	assert_eq!(Rewards::reward_amount(REWARD_HALF_LIFE - 1), 28_000_000_000_000_000_000);
+	assert_eq!(
+		Rewards::reward_amount(REWARD_HALF_LIFE - SAWTOOTH_PORT_HEIGHT - 1),
+		CREDO_PER_CTC as u128 * BASE_REWARD_IN_CTC as u128
+	);
 }
 
 #[test]
 fn reward_amount_after_one_halflife() {
-	assert_eq!(Rewards::reward_amount(REWARD_HALF_LIFE + 1), 950_000_000_000_000_000 * 28);
+	assert_eq!(
+		Rewards::reward_amount(REWARD_HALF_LIFE - SAWTOOTH_PORT_HEIGHT + 1),
+		950_000_000_000_000_000 * BASE_REWARD_IN_CTC as u128
+	);
 }
 
 #[test]
 fn reward_amount_after_two_halflives() {
-	assert_eq!(Rewards::reward_amount(2 * REWARD_HALF_LIFE + 1), 902_500_000_000_000_000 * 28);
+	assert_eq!(
+		Rewards::reward_amount(2 * REWARD_HALF_LIFE - SAWTOOTH_PORT_HEIGHT + 1),
+		902_500_000_000_000_000 * BASE_REWARD_IN_CTC as u128
+	);
 }
 
 #[test]
