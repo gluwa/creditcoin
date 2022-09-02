@@ -19,7 +19,7 @@
             Public key (hex):  0x02abf7befd96f80ce3a27772e7903f45a930c54ede2f0b9e052bfb21e90e0a4b40
             Account ID:        0xe37a568057962e95990cbba46c68f8d5b0d0d614abc8bc9f4e46af3e7aa8880c
             Public key (SS58): KW6p8XTkd6pLhTnwfSfr3hUcVSKTQhJHZxTVD8RrpfUhUTrvn
-            SS58 Address:      5HCy4x9b5mW28EYheGn14bWidQkhab5VMiNakia7i4VfxTKs 
+            SS58 Address:      5HCy4x9b5mW28EYheGn14bWidQkhab5VMiNakia7i4VfxTKs
             ```
 
         - Copy the `SS58 Address` for later use
@@ -44,7 +44,7 @@
     - Run (remove comment lines first)
 
         ```bash
-        
+
         docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-beta-7 \
             # running a mining node
             --validator \
