@@ -23,7 +23,7 @@ path = "../../primitives"
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.codec]
 default-features = false
@@ -36,25 +36,25 @@ default-features = false
 git = "https://github.com/gluwa/substrate.git"
 optional = true
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.frame-system]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.scale-info]
 default-features = false
@@ -65,19 +65,19 @@ version = '1.0'
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dev-dependencies.sp-io]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dev-dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dev-dependencies.sp-tracing]
 default-features = false

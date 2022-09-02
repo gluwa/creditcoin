@@ -111,7 +111,7 @@ EOT
   # NOTE: The gluwa/substrate repository is cloned using git checkouts. To run it local, uncomment:
   #   git clone --depth="${GIT_DEPTH:-100}" -n --no-tags \
   #     "${SUBSTRATE_REPO}" || exit 1 #"${SUBSTRATE_CLONE_DIR}" || exit 1
-  
+
 
   echo "Checking for spec/impl_version changes in substrate repo."
   git --no-pager -C "./substrate" diff "${SUBSTRATE_PREV_REF}..${SUBSTRATE_NEW_REF}" \

@@ -37,7 +37,7 @@ In your `src` folder, create an `interfaces` folder and place an empty `definiti
 In your `packages.json` add the following to the `scripts` section:
 
 ``` json
-"scripts": {    
+"scripts": {
     "build:types": "yarn generate:defs && yarn generate:meta",
     "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package <your project name>/interfaces --input ./src/interfaces --endpoint ./creditcoin.json",
     "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --package <your project name>/interfaces  --endpoint ./creditcoin.json --output ./src/interfaces"
