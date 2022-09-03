@@ -12,3 +12,4 @@ export { KeyringPair } from '@polkadot/keyring/types';
 export type { Balance, DispatchError, DispatchResult } from '@polkadot/types/interfaces';
 export { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 export type { EventRecord } from '@polkadot/types/interfaces/system';
+export * as common from './extrinsics/common';

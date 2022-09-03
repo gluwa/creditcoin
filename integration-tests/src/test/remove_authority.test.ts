@@ -1,8 +1,10 @@
 import { ApiPromise, Balance, KeyringPair } from 'creditcoin-js';
 import { creditcoinApi } from 'creditcoin-js';
 import { testData } from './common';
-import { testIf, expectNoDispatchError, expectNoEventError } from '../utils';
+import { testIf } from '../utils';
 import { addAuthorityAsync } from 'creditcoin-js/lib/extrinsics/add-authority';
+import { common } from 'creditcoin-js';
+const { expectNoEventError, expectNoDispatchError } = common;
 
 const globals = global as any;
 

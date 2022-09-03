@@ -5,7 +5,7 @@ import { u8aConcat, u8aToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { createCreditcoinTransferKind, createTransfer } from '../transforms';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
+import { handleTransaction, processEvents } from './common';
 import { TxCallback } from '..';
 import { PalletCreditcoinTransfer } from '@polkadot/types/lookup';
 import { Option } from '@polkadot/types';
@@ -100,10 +100,9 @@ export const registerFundingTransferAsync = async (
     signer: KeyringPair,
 ) => {
     return new Promise<TransferEvent>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) =>
             resolve(processTransferEvent(api, result, 'TransferRegistered'));
-        registerFundingTransfer(api, transferKind, dealOrderId, txHash, signer, onSuccess, onFail).catch((reason) =>
+        registerFundingTransfer(api, transferKind, dealOrderId, txHash, signer, onSuccess, reject).catch((reason) =>
             reject(reason),
         );
     });
@@ -118,7 +117,6 @@ export const registerRepaymentTransferAsync = async (
     signer: KeyringPair,
 ) => {
     return new Promise<TransferEvent>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) =>
             resolve(processTransferEvent(api, result, 'TransferRegistered'));
         registerRepaymentTransfer(
@@ -129,7 +127,7 @@ export const registerRepaymentTransferAsync = async (
             txHash,
             signer,
             onSuccess,
-            onFail,
+            reject,
         ).catch((reason) => reject(reason));
     });
 };

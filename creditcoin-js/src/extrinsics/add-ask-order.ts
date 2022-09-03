@@ -1,7 +1,7 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { AddressId, AskOrder, AskOrderId, LoanTerms, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
+import { handleTransaction, processEvents } from './common';
 import { TxCallback } from '../types';
 import { createAskOrder, createCreditcoinLoanTerms } from '../transforms';
 import { Guid } from 'js-guid';
@@ -40,9 +40,8 @@ export const addAskOrderAsync = async (
     signer: KeyringPair,
 ) => {
     return new Promise<AskOrderAdded>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processAskOrderAdded(api, result));
-        addAskOrder(api, lenderAddressId, loanTerms, expirationBlock, guid, signer, onSuccess, onFail).catch((reason) =>
+        addAskOrder(api, lenderAddressId, loanTerms, expirationBlock, guid, signer, onSuccess, reject).catch((reason) =>
             reject(reason),
         );
     });

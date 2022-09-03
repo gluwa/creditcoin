@@ -3,7 +3,7 @@ import { u8aConcat } from '@polkadot/util';
 import { AddressId, DealOrderAdded, LoanTerms } from '../model';
 import { createCreditcoinLoanTerms } from '../transforms';
 import { TxCallback } from '../types';
-import { handleTransaction, handleTransactionFailed } from './common';
+import { handleTransaction } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { AskOrderAdded, processAskOrderAdded } from './add-ask-order';
 import { BidOrderAdded, processBidOrderAdded } from './add-bid-order';
@@ -87,7 +87,6 @@ export const registerDealOrderAsync = async (
     lender: KeyringPair,
 ) =>
     new Promise<DealOrderRegistered>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processRegisterDealOrder(api, result));
 
         registerDealOrder(
@@ -102,6 +101,6 @@ export const registerDealOrderAsync = async (
             signedParams,
             lender,
             onSuccess,
-            onFail,
+            reject,
         ).catch((reason) => reject(reason));
     });
