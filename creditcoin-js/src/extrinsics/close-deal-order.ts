@@ -2,7 +2,7 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { DealOrderId, TransferId } from '../model';
 import { createDealOrder, createTransfer } from '../transforms';
 import { TxCallback } from '../types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
+import { handleTransaction, processEvents } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { DealOrderClosed, TransferProcessed } from '../model';
 
@@ -50,8 +50,7 @@ export const closeDealOrderAsync = (
     lender: KeyringPair,
 ) => {
     return new Promise<[DealOrderClosed, TransferProcessed]>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processDealOrderClosed(api, result));
-        closeDealOrder(api, dealOrderId, transferId, lender, onSuccess, onFail).catch((reason) => reject(reason));
+        closeDealOrder(api, dealOrderId, transferId, lender, onSuccess, reject).catch((reason) => reject(reason));
     });
 };

@@ -1,7 +1,7 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { AskOrderId, BidOrderId, Offer, OfferId, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
+import { handleTransaction, processEvents } from './common';
 import { TxCallback } from '../types';
 import { createOffer } from '../transforms';
 import { blake2AsHex } from '@polkadot/util-crypto';
@@ -42,9 +42,8 @@ export const addOfferAsync = async (
     signer: KeyringPair,
 ) => {
     return new Promise<OfferAdded>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processOfferAdded(api, result));
-        addOffer(api, askOrderId, bidOrderId, expirationBlock, signer, onSuccess, onFail).catch((reason) =>
+        addOffer(api, askOrderId, bidOrderId, expirationBlock, signer, onSuccess, reject).catch((reason) =>
             reject(reason),
         );
     });

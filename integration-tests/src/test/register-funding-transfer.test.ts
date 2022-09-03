@@ -1,9 +1,7 @@
 import { KeyringPair } from 'creditcoin-js';
-
 import { Guid } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
-import { BN } from '@polkadot/util';
-
+import { BN } from 'creditcoin-js';
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { createFundingTransferId } from 'creditcoin-js/lib/extrinsics/register-transfers';
 import { creditcoinApi } from 'creditcoin-js';

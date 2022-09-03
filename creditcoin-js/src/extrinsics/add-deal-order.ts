@@ -3,7 +3,7 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 import { DealOrderAdded, DealOrderId, OfferId } from '../model';
 import { createDealOrder } from '../transforms';
 import { TxCallback } from '../types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
+import { handleTransaction, processEvents } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 export const createDealOrderId = (expirationBlock: number, offerId: OfferId): DealOrderId => [
@@ -33,8 +33,7 @@ export const processDealOrderAdded = (api: ApiPromise, result: SubmittableResult
 
 export const addDealOrderAsync = (api: ApiPromise, offerId: OfferId, expirationBlock: number, signer: KeyringPair) => {
     return new Promise<DealOrderAdded>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processDealOrderAdded(api, result));
-        addDealOrder(api, offerId, expirationBlock, signer, onSuccess, onFail).catch((reason) => reject(reason));
+        addDealOrder(api, offerId, expirationBlock, signer, onSuccess, reject).catch((reason) => reject(reason));
     });
 };

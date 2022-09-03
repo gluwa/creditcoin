@@ -1,38 +1,11 @@
 /* eslint-disable */
 import { ApiPromise } from 'creditcoin-js';
-import type { EventRecord, Balance, DispatchError, DispatchResult } from 'creditcoin-js';
+import type { EventRecord, Balance, DispatchError } from 'creditcoin-js';
+import { common } from 'creditcoin-js';
+const { expectNoDispatchError } = common;
 
 export const testIf = (condition: boolean, name: string, fn: any, timeout = 30000) =>
     condition ? test(name, fn, timeout) : test.skip(name, fn, timeout);
-
-export const expectNoDispatchError = (api: ApiPromise, dispatchError?: DispatchError): void => {
-    if (dispatchError) {
-        if (dispatchError.isModule) {
-            const decoded = api.registry.findMetaError(dispatchError.asModule);
-            const { docs, name, section } = decoded;
-
-            expect(`${section}.${name}: ${docs.join(' ')}`).toBe('');
-        } else {
-            expect(dispatchError.toString()).toBe('');
-        }
-    }
-};
-
-const isDispatchError = (instance: any): instance is DispatchResult => {
-    return (instance as DispatchResult) != undefined;
-};
-
-export const expectNoEventError = (api: ApiPromise, eventRecord: EventRecord) => {
-    const {
-        event: { data },
-    } = eventRecord;
-    if (data[0] && isDispatchError(data[0])) {
-        const dispatchResult = data[0] as DispatchResult;
-        if (dispatchResult.isErr) {
-            expectNoDispatchError(api, dispatchResult.asErr);
-        }
-    }
-};
 
 export const extractFee = async (
     resolve: any,
