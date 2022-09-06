@@ -66,7 +66,7 @@ impl<T: Config> Pallet<T> {
 
 		Authorities::<T>::iter_keys().find_map(|auth| {
 			let acct = auth.clone().into();
-			local_keys.contains(&acct).then(|| auth)
+			local_keys.contains(&acct).then_some(auth)
 		})
 	}
 
