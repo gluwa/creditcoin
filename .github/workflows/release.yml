@@ -23,10 +23,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -35,7 +40,7 @@ jobs:
         if: matrix.operating-system == 'macos-11'
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: aarch64-apple-darwin
           profile: minimal
           override: true

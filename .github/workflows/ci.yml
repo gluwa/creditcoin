@@ -36,10 +36,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
           override: true
           components: rustfmt
@@ -55,10 +61,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -85,10 +97,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -112,10 +129,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -163,10 +185,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -360,10 +387,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-09-01
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true

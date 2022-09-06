@@ -1,8 +1,14 @@
 FROM gluwa/ci-linux:production AS builder
 ENV DEBIAN_FRONTEND=noninteractive
-ENV RUSTC_VERSION=nightly-2022-09-01
-RUN source ~/.cargo/env && rustup default $RUSTC_VERSION && rustup update $RUSTC_VERSION && rustup target add wasm32-unknown-unknown --toolchain $RUSTC_VERSION
+
 WORKDIR /creditcoin-node
+COPY ci/env .
+RUN source ~/.cargo/env && \
+    source ./env && \
+    rustup default $RUSTC_VERSION && \
+    rustup update $RUSTC_VERSION && \
+    rustup target add wasm32-unknown-unknown --toolchain $RUSTC_VERSION
+
 COPY Cargo.toml .
 COPY Cargo.lock .
 ADD node /creditcoin-node/node
