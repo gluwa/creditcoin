@@ -158,7 +158,6 @@ jobs:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
-          SKIP_WASM_BUILD: 1
       - id: coverage
         uses: actions-rs/grcov@v0.1
         with:
@@ -271,7 +270,7 @@ jobs:
         with:
           author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
-          message: 'Auto-update creditcoin-js type definitions'
+          message: "Auto-update creditcoin-js type definitions"
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload logs
