@@ -93,7 +93,7 @@ impl AskTerms {
 	}
 
 	pub fn agreed_terms(&self, bid_terms: BidTerms) -> Option<LoanTerms> {
-		self.match_with(&bid_terms).then(|| bid_terms.0)
+		self.match_with(&bid_terms).then_some(bid_terms.0)
 	}
 }
 
