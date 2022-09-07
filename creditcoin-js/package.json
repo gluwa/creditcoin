@@ -22,7 +22,7 @@
     },
     "devDependencies": {
         "@polkadot/typegen": "8.14.1",
-        "@typescript-eslint/eslint-plugin": "^5.35.1",
+        "@typescript-eslint/eslint-plugin": "^5.36.2",
         "@typescript-eslint/parser": "^5.36.2",
         "eslint": "^8.22.0",
         "eslint-config-prettier": "^8.5.0",
