@@ -3,7 +3,7 @@
 set -e
 WHITELIST="fail_task persist_task_output"
 PALLETS=$(grep "pallet::call" pallets/*/src/lib.rs -R | cut -f2 -d/ | xargs | tr ' ' '|')
-EXTRINSICS=$(grep "pub fn" pallets/*/src/lib.rs | egrep "$PALLETS" | cut -f2 -d":" | cut -f1 -d"(" | sed 's/pub fn //' | tr -d [' \t'] | sort)
+EXTRINSICS=$(grep "pub fn" pallets/*/src/lib.rs | grep -E "$PALLETS" | cut -f2 -d":" | cut -f1 -d"(" | sed 's/pub fn //' | tr -d ' \t' | sort)
 
 echo "----- Detected extrinsics are -----"
 echo "$EXTRINSICS"
