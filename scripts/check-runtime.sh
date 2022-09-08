@@ -26,7 +26,11 @@ function error {
 latest_release() {
   curl -s "https://api.github.com/repos/$1/releases/latest" | jq -r '.tag_name'
 }
-boldcat () { printf "|\n"; while read -r l; do printf "| \033[1m%s\033[0m\n" "${l}"; done; printf "|\n" ; }
+
+# Colorful output.
+function greenprint {
+    echo -e "\033[1;32m[$(date -Isecond)] ${1}\033[0m"
+}
 
 has_runtime_changes() {
   from=$1
@@ -65,9 +69,7 @@ echo "check if the wasm sources changed since last commit to ${MAIN_BRANCH}"
 if ! has_runtime_changes "origin/${MAIN_BRANCH}" "${GITHUB_SHA}"; then
     echo "No changes to any runtime source code detected"
 
-    boldcat <<EOT
-Checking Cargo.lock for changes in REFs for $SUBSTRATE_REPO
-EOT
+    greenprint "Checking Cargo.lock for changes in REFs for $SUBSTRATE_REPO"
 
       SUBSTRATE_REFS_CHANGED="$(
     git diff "origin/$MAIN_BRANCH...${GITHUB_SHA}" Cargo.lock \
@@ -107,10 +109,8 @@ EOT
       exit 1
   fi
 
-  boldcat <<EOT
-previous substrate commit id ${SUBSTRATE_PREV_REF}
-new substrate commit id      ${SUBSTRATE_NEW_REF}
-EOT
+  greenprint "pevious substrate commit id ${SUBSTRATE_PREV_REF}"
+  greenprint "new substrate commit id      ${SUBSTRATE_NEW_REF}"
 
   # NOTE: The gluwa/substrate repository is cloned using git checkouts. To run it local, uncomment:
   #   git clone --depth="${GIT_DEPTH:-100}" -n --no-tags \
@@ -122,10 +122,8 @@ EOT
     | grep -E '^[\+\-][[:space:]]+(spec|impl)_version: +([0-9]+),$' || exit 0
 
 
-  boldcat <<EOT
-spec_version or or impl_version have changed in substrate after updating Cargo.lock
-please make sure versions are bumped up accordingly
-EOT
+  greenprint "spec_version or or impl_version have changed in substrate after updating Cargo.lock"
+  greenprint "please make sure versions are bumped up accordingly"
   exit 1
 
 fi
@@ -142,9 +140,7 @@ fi
 # consensus-critical logic that has changed. the runtime wasm blobs must be
 # rebuilt.
 
-boldcat <<EOT
-Checking for version changes in add_spec_version in version.rs
-EOT
+greenprint "Checking for version changes in add_spec_version in version.rs"
 add_spec_version="$(
     git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
     | sed -n -r "s/^\+[[:space:]]+spec_version: +([0-9]+),$/\1/p"
@@ -159,21 +155,14 @@ sub_spec_version="$(
 if [ "${add_spec_version}" != "${sub_spec_version}" ]
 then
 
-    boldcat <<EOT
-## RUNTIME: ${RUNTIME} ##
-
-changes to the ${RUNTIME} sources and changes in the spec version.
-
-spec_version: ${sub_spec_version} -> ${add_spec_version}
-
-EOT
+    greenprint "## RUNTIME: ${RUNTIME} ##"
+    greenprint "changes to the ${RUNTIME} sources and changes in the spec version."
+    greenprint "spec_version: ${sub_spec_version} -> ${add_spec_version}"
 else
     # check for impl_version updates: if only the impl versions changed, we assume
     # there is no consensus-critical logic that has changed.
 
-    boldcat <<EOT
-Checking for version changes in add_impl_version in version.rs
-EOT
+    greenprint "Checking for version changes in add_impl_version in version.rs"
 
     add_impl_version="$(
     git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
@@ -188,29 +177,20 @@ EOT
     # see if the impl version changed
     if [ "${add_impl_version}" != "${sub_impl_version}" ]
     then
-    boldcat <<EOT
+    greenprint "## RUNTIME: ${RUNTIME} ##"
+    greenprint "changes to the ${RUNTIME} runtime sources and changes in the impl version."
+    greenprint "impl_version: ${sub_impl_version} -> ${add_impl_version}"
 
-## RUNTIME: ${RUNTIME} ##
-
-changes to the ${RUNTIME} runtime sources and changes in the impl version.
-
-impl_version: ${sub_impl_version} -> ${add_impl_version}
-
-EOT
         echo "INFO: which change is fine, exiting ..."
         exit 0
     fi
 
-    boldcat <<EOT
-wasm source files changed or the spec version in the substrate reference in
-the Cargo.lock but not the spec/impl version. If changes made do not alter
-logic, just bump 'impl_version'. If they do change logic, bump
-'spec_version'.
+    greenprint "wasm source files changed or the spec version in the substrate reference in the Cargo.lock"
+    greenprint "but not the spec/impl version. If changes made do not alter logic, just bump 'impl_version'."
+    greenprint "If they do change logic, bump 'spec_version'."
+    greenprint "source file directories:"
+    greenprint " - runtime"
+    greenprint "version files: ${failed_runtime_checks[@]}"
 
-source file directories:
-- runtime
-
-version files: ${failed_runtime_checks[@]}
-EOT
     exit 1
 fi
