@@ -74,6 +74,10 @@ EOT
     | grep -e "$SUBSTRATE_REPO_CARGO" | awk -F '#' '{print $2}' | sort -u | wc -l
   )"
 
+  echo "INFO: SUBSTRATE_REFS_CHANGES"
+  git diff "origin/$MAIN_BRANCH...${GITHUB_SHA}" Cargo.lock | grep -e "$SUBSTRATE_REPO_CARGO" | awk -F '#' '{print $2}' | sort -u
+  echo "----- END -----"
+
   # check Cargo.lock for substrate ref change
   case "$((SUBSTRATE_REFS_CHANGED))" in
     (0)
