@@ -167,9 +167,6 @@ else
     greenprint "wasm source files changed or the spec version in the substrate reference in the Cargo.lock"
     greenprint "but not the spec/impl version. If changes made do not alter logic, just bump 'impl_version'."
     greenprint "If they do change logic, bump 'spec_version'."
-    greenprint "source file directories:"
-    greenprint " - runtime"
-    greenprint "version files: ${failed_runtime_checks[@]}"
 
     exit 1
 fi
