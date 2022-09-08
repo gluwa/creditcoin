@@ -9,7 +9,7 @@
 # have been changed since the last release.
 
 
-set -e
+set -ex
 
 SUBSTRATE_REPO="https://github.com/gluwa/substrate"
 SUBSTRATE_REPO_CARGO="git+${SUBSTRATE_REPO}"
