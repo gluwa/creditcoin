@@ -20,7 +20,7 @@ RUNTIME="creditcoin-node-runtime"
 
 # Reusable functions
 function error {
-    echo "Error; $1"
+    echo "ERROR: $1"
 }
 
 latest_release() {
@@ -44,24 +44,23 @@ has_runtime_changes() {
 }
 
 # figure out the latest release tag
-echo "Fetching git commit history for tags, $RELEASE_BRANCH and $MAIN_BRANCH"
+echo "INFO: Fetching git commit history for tags, $RELEASE_BRANCH and $MAIN_BRANCH"
 git fetch --depth="${GIT_DEPTH:-100}" origin $RELEASE_BRANCH || exit 1
 git fetch --depth="${GIT_DEPTH:-100}" origin 'refs/tags/*:refs/tags/*' || exit 1
-LATEST_TAG=$(latest_release 'gluwa/creditcoin')
-echo "latest release tag ${LATEST_TAG}"
 
-echo "latest 10 commits of ${GITHUB_REF}"
+LATEST_TAG=$(latest_release 'gluwa/creditcoin')
+echo "INFO: latest release tag ${LATEST_TAG}"
+
+echo "INFO: latest 10 commits of ${GITHUB_REF}"
 git --no-pager log --graph --oneline --decorate=short -n 10
 
-echo "make sure the MAIN branch is available in shallow clones"
+echo "DEBUG: make sure the MAIN branch is available in shallow clones"
 git fetch --depth="${GIT_DEPTH:-100}" origin $MAIN_BRANCH || exit 1
 
 
-echo "check if the wasm sources changed since last commit to ${MAIN_BRANCH}"
-
-
+echo "INFO: check if the wasm sources changed since last commit to ${MAIN_BRANCH}"
 if ! has_runtime_changes "origin/${MAIN_BRANCH}" "${GITHUB_SHA}"; then
-    echo "No changes to any runtime source code detected"
+    echo "INFO: No changes to any runtime source code detected"
 
     greenprint "Checking Cargo.lock for changes in REFs for $SUBSTRATE_REPO"
 
@@ -69,16 +68,16 @@ if ! has_runtime_changes "origin/${MAIN_BRANCH}" "${GITHUB_SHA}"; then
 
     echo "INFO: SUBSTRATE_REFS_CHANGES"
     git --no-pager diff "origin/$MAIN_BRANCH...${GITHUB_SHA}" Cargo.lock | grep -e "$SUBSTRATE_REPO_CARGO" | awk -F '#' '{print $2}' | sort -u
-    echo "----- END -----"
+    echo "---------------"
 
     # check Cargo.lock for substrate ref change
     case "$((SUBSTRATE_REFS_CHANGED))" in
         (0)
-            echo "substrate refs not changed in Cargo.lock"
+            echo "INFO: substrate refs not changed in Cargo.lock"
             exit 0
             ;;
         (2)
-            echo "substrate refs updated since last commit to ${MAIN_BRANCH}"
+            echo "INFO: substrate refs updated since last commit to ${MAIN_BRANCH}"
             ;;
         (*)
             error "check unsupported: The commit REF targets are more than 2 in ${SUBSTRATE_REPO_CARGO}. Please fix it"
@@ -104,7 +103,7 @@ if ! has_runtime_changes "origin/${MAIN_BRANCH}" "${GITHUB_SHA}"; then
     #   "${SUBSTRATE_REPO}" || exit 1 #"${SUBSTRATE_CLONE_DIR}" || exit 1
 
 
-    echo "Checking for spec/impl_version changes in substrate repo."
+    echo "INFO: Checking for spec/impl_version changes in substrate repo."
     git --no-pager -C "./substrate" diff "${SUBSTRATE_PREV_REF}..${SUBSTRATE_NEW_REF}" | grep -E '^[\+\-][[:space:]]+(spec|impl)_version: +([0-9]+),$' || exit 0
 
     greenprint "spec_version or or impl_version have changed in substrate after updating Cargo.lock"
