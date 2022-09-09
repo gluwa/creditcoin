@@ -112,12 +112,6 @@ if ! has_runtime_changes "origin/${MAIN_BRANCH}" "${GITHUB_SHA}"; then
 fi
 
 
-# Check if there were changes in runtime.
-# If not, we can skip to the next runtime
-
-if ! git diff --name-only "origin/${MAIN_BRANCH}...${GITHUB_SHA}" | grep -E -q -e "runtime"; then
-    echo "No changes in runtime"
-fi
 # check for spec_version updates: if the spec versions changed, then there is
 # consensus-critical logic that has changed. the runtime wasm blobs must be
 # rebuilt.
