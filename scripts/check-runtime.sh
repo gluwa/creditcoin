@@ -106,7 +106,7 @@ if ! has_runtime_changes "origin/${MAIN_BRANCH}" "${GITHUB_SHA}"; then
     echo "INFO: Checking for spec/impl_version changes in substrate repo."
     git --no-pager -C "./substrate" diff "${SUBSTRATE_PREV_REF}..${SUBSTRATE_NEW_REF}" | grep -E '^[\+\-][[:space:]]+(spec|impl)_version: +([0-9]+),$' || exit 0
 
-    greenprint "spec_version or or impl_version have changed in substrate after updating Cargo.lock"
+    greenprint "spec_version or impl_version have changed in substrate after updating Cargo.lock"
     greenprint "please make sure versions are bumped up accordingly"
     exit 1
 fi
@@ -116,7 +116,7 @@ fi
 # consensus-critical logic that has changed. the runtime wasm blobs must be
 # rebuilt.
 
-greenprint "Checking for version changes in add_spec_version in version.rs"
+greenprint "Checking for version changes in spec_version in version.rs"
 add_spec_version="$(
     git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
     | sed -n -r "s/^\+[[:space:]]+spec_version: +([0-9]+),$/\1/p"
@@ -136,7 +136,7 @@ else
     # check for impl_version updates: if only the impl versions changed, we assume
     # there is no consensus-critical logic that has changed.
 
-    greenprint "Checking for version changes in add_impl_version in version.rs"
+    greenprint "Checking for version changes in impl_version in version.rs"
 
     add_impl_version="$(
         git diff "origin/${MAIN_BRANCH}...${GITHUB_SHA}" "runtime/src/version.rs" \
