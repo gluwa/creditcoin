@@ -590,6 +590,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11aee792a41973cf54c837d6f344e35a03076328831b01ef30a14d965d47bfbc"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "build-helper"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2058,7 +2067,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10463d9ff00a2a068db14231982f5132edebad0d7660cd956a1c30292dbcbfbd"
 dependencies = [
  "aho-corasick",
- "bstr",
+ "bstr 0.2.17",
  "fnv",
  "log",
  "regex",
@@ -3980,7 +3989,7 @@ dependencies = [
  "assert_matches",
  "base58",
  "bitcoin-bech32",
- "bstr",
+ "bstr 1.0.0",
  "ethabi",
  "ethereum-types",
  "extend",
