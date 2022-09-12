@@ -15,7 +15,7 @@ jobs:
     name: Extrinsics
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install Node Dependencies
         uses: actions/setup-node@v3
         with:
@@ -67,12 +67,12 @@ jobs:
     name: Runtime
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 100
 
       - name: Clone Substrate Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 100
           repository: gluwa/substrate
