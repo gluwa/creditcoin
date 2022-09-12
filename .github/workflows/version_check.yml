@@ -2,19 +2,16 @@ name: Version
 
 on:
   pull_request:
-    branches:
-      - testnet
+    branches: [dev, testnet, main]
 
 jobs:
-  check-RuntimeVersion:
+  check-version:
     runs-on: ubuntu-latest
     steps:
-    - name: Check if version.rs was modified
-      run: |
-        if curl -o- -L "${{ github.event.pull_request.diff_url }}" 2>/dev/null | grep "^diff --git" | grep "runtime/src/version.rs"; then
-            echo "PASS: version.rs is modified!"
-            exit 0
-        else
-            echo "FAIL: version.rs was not modified!"
-            exit 1
-        fi
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check if version.rs was modified
+        run: |
+          ./scripts/check-version.sh remotes/origin/$GITHUB_BASE_REF $GITHUB_SHA

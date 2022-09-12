@@ -62,23 +62,3 @@ jobs:
           path: |
             head-node.log
             release-node.log
-
-  check_runtime:
-    name: Runtime
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 100
-
-      - name: Clone Substrate Repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 100
-          repository: gluwa/substrate
-          path: substrate
-
-      - name: Runtime Check
-        shell: bash
-        run: |
-          ./scripts/check-runtime.sh
