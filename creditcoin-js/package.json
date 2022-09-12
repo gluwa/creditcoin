@@ -24,7 +24,7 @@
         "@polkadot/typegen": "8.14.1",
         "@typescript-eslint/eslint-plugin": "^5.36.2",
         "@typescript-eslint/parser": "^5.36.2",
-        "eslint": "^8.23.0",
+        "eslint": "^8.23.1",
         "eslint-config-prettier": "^8.5.0",
         "prettier": "^2.7.1",
         "ts-node": "^10.9.1",
