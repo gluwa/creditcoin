@@ -1,9 +1,19 @@
 import { ApiPromise, WsProvider, Keyring } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
-import { main as deployCtcContract, DEPLOYER_PRIVATE_KEY } from './ctc-deploy';
+import { main as deployCtcContract } from './ctc-deploy';
 
 const setup = async () => {
     process.env.NODE_ENV = 'test';
+
+    // WARNING: when setting global variables `undefined' means no value has been assigned
+    // to this variable up to now so we fall-back to the defaults.
+    // WARNING: don't change the comparison expression here b/c some variables are actually
+    // configured to have a true or false value in different environments!
+
+    if ((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY === undefined) {
+        // Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
+        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
+    }
 
     if ((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS === undefined) {
         await deployCtcContract();
@@ -14,15 +24,6 @@ const setup = async () => {
         // burn is called inside deployCtcContract()
         (global as any).CREDITCOIN_CTC_BURN_TX_HASH = process.env.CREDITCOIN_CTC_BURN_TX_HASH;
     }
-
-    if ((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY === undefined) {
-        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY = DEPLOYER_PRIVATE_KEY;
-    }
-
-    // WARNING: when setting global variables `undefined' means no value has been assigned
-    // to this variable up to now so we fall-back to the defaults.
-    // WARNING: don't change the comparison expression here b/c some variables are actually
-    // configured to have a true or false value in different environments!
 
     if ((global as any).CREDITCOIN_API_URL === undefined) {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
