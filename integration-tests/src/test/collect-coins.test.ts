@@ -66,9 +66,9 @@ describe('CollectCoins', (): void => {
                 collector,
                 (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
             );
-            const collectCoinsVerified = await collectCoinsEvent.waitForVerification().catch();
+            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(600_000).catch();
             expect(collectCoinsVerified).toBeTruthy();
-        }, 900000);
+        }, 900_000);
     });
 
     describe('fail', (): void => {

@@ -12,7 +12,8 @@ const setup = async () => {
 
     if ((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY === undefined) {
         // Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
-        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
+        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY =
+            '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
     }
 
     if ((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS === undefined) {
