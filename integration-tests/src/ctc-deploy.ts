@@ -3,9 +3,6 @@ import { GluwaCreditVestingToken } from './ethereum/ctc/typechain';
 import CtcArtifact from './ethereum/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
-// Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
-export const DEPLOYER_PRIVATE_KEY = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
-
 const deployCtcToken = async (deployer: Signer) => {
     const factory = new ContractFactory(CtcArtifact.abi, CtcArtifact.bytecode, deployer);
     const deployerAddress = await deployer.getAddress();
@@ -14,8 +11,8 @@ const deployCtcToken = async (deployer: Signer) => {
 };
 
 export const main = async () => {
-    const provider = new JsonRpcProvider('http://localhost:8545');
-    const deployer = new Wallet(DEPLOYER_PRIVATE_KEY, provider);
+    const provider = new JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+    const deployer = new Wallet((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY, provider);
     const ctcToken = await deployCtcToken(deployer);
 
     const tx = await ctcToken.burn(500);
