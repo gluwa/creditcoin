@@ -2,7 +2,7 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { AskOrderId, BidOrderId, Offer, OfferId, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, processEvents } from './common';
-import { TxCallback } from '../types';
+import { TxCallback, TxFailureCallback } from '../types';
 import { createOffer } from '../transforms';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { u8aConcat } from '@polkadot/util';
@@ -21,7 +21,7 @@ export const addOffer = async (
     expirationBlock: number,
     signer: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const ccAskOrderId = api.createType('PalletCreditcoinAskOrderId', askOrderId);
     const ccBidOrderId = api.createType('PalletCreditcoinBidOrderId', bidOrderId);

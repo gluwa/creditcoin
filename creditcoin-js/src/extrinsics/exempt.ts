@@ -1,6 +1,6 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { DealOrderId } from '../model';
-import { TxCallback } from '../types';
+import { TxCallback, TxFailureCallback } from '../types';
 import { handleTransaction } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 
@@ -11,7 +11,7 @@ export const exemptLoan = async (
     dealOrderId: DealOrderId,
     lender: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
         .exempt(api.createType('PalletCreditcoinDealOrderId', dealOrderId))

@@ -2,7 +2,7 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { u8aConcat } from '@polkadot/util';
 import { AddressId, DealOrderAdded, LoanTerms } from '../model';
 import { createCreditcoinLoanTerms } from '../transforms';
-import { TxCallback } from '../types';
+import { TxCallback, TxFailureCallback } from '../types';
 import { handleTransaction } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { AskOrderAdded, processAskOrderAdded } from './add-ask-order';
@@ -49,7 +49,7 @@ export const registerDealOrder = async (
     signedParams: Uint8Array,
     lender: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const ccLoanTerms = createCreditcoinLoanTerms(api, loanTerms);
     const unsubscribe: () => void = await api.tx.creditcoin

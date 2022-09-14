@@ -2,14 +2,14 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { AccountId } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction } from './common';
-import { TxCallback } from '../types';
+import { TxCallback, TxFailureCallback } from '../types';
 
 export const removeAuthority = async (
     api: ApiPromise,
     authorityAccount: AccountId,
     sudoSigner: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.sudo
         .sudo(api.tx.creditcoin.removeAuthority(authorityAccount))
