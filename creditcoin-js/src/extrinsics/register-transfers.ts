@@ -6,7 +6,7 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 import { createCreditcoinTransferKind, createTransfer } from '../transforms';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, processEvents } from './common';
-import { TxCallback } from '..';
+import { TxCallback, TxFailureCallback } from '..';
 import { PalletCreditcoinTransfer } from '@polkadot/types/lookup';
 import { Option } from '@polkadot/types';
 
@@ -31,7 +31,7 @@ export const registerFundingTransfer = async (
     txHash: string,
     lender: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const ccTransferKind = createCreditcoinTransferKind(api, transferKind);
     const ccDealOrderId = api.createType('PalletCreditcoinDealOrderId', dealOrderId);
@@ -48,7 +48,7 @@ export const registerRepaymentTransfer = async (
     txHash: string,
     borrower: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
         .registerRepaymentTransfer(

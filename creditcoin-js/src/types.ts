@@ -29,6 +29,7 @@ import { LoanExempted } from './extrinsics/exempt';
 import { Wallet } from 'ethers';
 
 export type TxCallback = (result: SubmittableResult) => void;
+export type TxFailureCallback = (error?: Error) => void;
 export type ExtrinsicFailed = string;
 
 export interface Extrinsics {

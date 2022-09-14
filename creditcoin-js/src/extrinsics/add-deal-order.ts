@@ -2,7 +2,7 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { DealOrderAdded, DealOrderId, OfferId } from '../model';
 import { createDealOrder } from '../transforms';
-import { TxCallback } from '../types';
+import { TxCallback, TxFailureCallback } from '../types';
 import { handleTransaction, processEvents } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 
@@ -17,7 +17,7 @@ export const addDealOrder = async (
     expirationBlock: number,
     borrower: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const ccOfferId = api.createType('PalletCreditcoinOfferId', offerId);
     const unsubscribe: () => void = await api.tx.creditcoin

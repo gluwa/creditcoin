@@ -11,7 +11,7 @@ import { u8aConcat, u8aToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, processEvents } from './common';
-import { TxCallback } from '..';
+import { TxCallback, TxFailureCallback } from '..';
 import { createCollectedCoins, createUnverifiedCollectedCoins } from '../transforms';
 import { PalletCreditcoinCollectedCoins } from '@polkadot/types/lookup';
 
@@ -37,7 +37,7 @@ export const requestCollectCoins = async (
     collector: KeyringPair,
     txHash: string,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
         .requestCollectCoins(evmAddress, txHash)
@@ -95,6 +95,8 @@ export const requestCollectCoinsAsync = async (
     return new Promise<CollectCoinsEvent>((resolve, reject) => {
         const onSuccess = (result: SubmittableResult) =>
             resolve(createCollectCoinsRegisteredEvent(api, result, 'CollectCoinsRegistered'));
-        requestCollectCoins(api, evmAddress, collector, txHash, onSuccess, reject).catch((reason) => reject(reason));
+        requestCollectCoins(api, evmAddress, collector, txHash, onSuccess, reject).catch((reason) => {
+            reject(reason);
+        });
     });
 };

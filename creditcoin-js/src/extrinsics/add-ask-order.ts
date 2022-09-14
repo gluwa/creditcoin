@@ -2,7 +2,7 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { AddressId, AskOrder, AskOrderId, LoanTerms, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, processEvents } from './common';
-import { TxCallback } from '../types';
+import { TxCallback, TxFailureCallback } from '../types';
 import { createAskOrder, createCreditcoinLoanTerms } from '../transforms';
 import { Guid } from 'js-guid';
 import { blake2AsHex } from '@polkadot/util-crypto';
@@ -20,7 +20,7 @@ export const addAskOrder = async (
     guid: Guid,
     signer: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
         .addAskOrder(lenderAddressId, createCreditcoinLoanTerms(api, loanTerms), expirationBlock, guid.toString())

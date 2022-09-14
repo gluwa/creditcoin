@@ -1,7 +1,7 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { DealOrderFunded, DealOrderId, TransferId, TransferProcessed } from '../model';
 import { createDealOrder, createTransfer } from '../transforms';
-import { TxCallback } from '../types';
+import { TxCallback, TxFailureCallback } from '../types';
 import { handleTransaction, processEvents } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 
@@ -11,7 +11,7 @@ export const fundDealOrder = async (
     transferId: TransferId,
     lender: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const ccDealOrderId = api.createType('PalletCreditcoinDealOrderId', dealOrderId);
     const unsubscribe: () => void = await api.tx.creditcoin

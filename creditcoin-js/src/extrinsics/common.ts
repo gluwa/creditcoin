@@ -2,13 +2,14 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { Codec } from '@polkadot/types-codec/types';
 import { EventReturnType } from '../model';
 import { DispatchError, DispatchResult, EventRecord } from '@polkadot/types/interfaces';
+import { TxCallback, TxFailureCallback } from 'src';
 
 export const handleTransaction = (
     api: ApiPromise,
     unsubscribe: () => void,
     result: SubmittableResult,
-    onSuccess: (r: SubmittableResult) => void,
-    onFail: (r: SubmittableResult, e?: Error) => void,
+    onSuccess: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const { status, events, dispatchError } = result;
     console.log(`current status is ${status.toString()}`);
