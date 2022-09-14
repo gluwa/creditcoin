@@ -19,7 +19,9 @@ export const handleTransaction = (
         if (events) events.forEach((event) => expectNoEventError(api, event));
     } catch (error) {
         unsubscribe();
-        onFail(result, error as Error);
+        onFail(error as Error);
+        // we need to return here, otherwise we'll run the onSuccess handler below
+        return;
     }
 
     if (status.isInBlock) {
