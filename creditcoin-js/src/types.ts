@@ -27,6 +27,7 @@ import { DealOrderRegistered } from './extrinsics/register-deal-order';
 import { TransferEvent } from './extrinsics/register-transfers';
 import { LoanExempted } from './extrinsics/exempt';
 import { Wallet } from 'ethers';
+import { CollectCoinsEvent } from './extrinsics/request-collect-coins';
 
 export type TxCallback = (result: SubmittableResult) => void;
 export type TxFailureCallback = (error?: Error) => void;
@@ -96,6 +97,7 @@ export interface Extrinsics {
         borrower: KeyringPair,
     ) => Promise<[DealOrderClosed, TransferProcessed]>;
     exemptLoan: (dealOrderId: DealOrderId, lender: KeyringPair) => Promise<LoanExempted>;
+    requestCollectCoins: (evmAddress: string, collector: KeyringPair, txHash: string) => Promise<CollectCoinsEvent>;
 }
 
 export interface CreditcoinApi {
