@@ -68,6 +68,17 @@ describe('CollectCoins', (): void => {
             );
             const collectCoinsVerified = await collectCoinsEvent.waitForVerification(600_000).catch();
             expect(collectCoinsVerified).toBeTruthy();
+
+            // try again - should fail
+            await expect(
+                requestCollectCoins(
+                    deployerRegAddr.item.externalAddress,
+                    collector,
+                    (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
+                ),
+            ).rejects.toThrow(
+                'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
+            );
         }, 900_000);
     });
 
