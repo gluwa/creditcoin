@@ -19,6 +19,7 @@ import {
     TransferKind,
     DealOrderId,
     TransferId,
+    ExternalAddress,
 } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { lockDealOrderAsync } from './lock-deal-order';
@@ -106,7 +107,7 @@ export const extrinsics = (api: ApiPromise) => {
 
     const exemptLoan = (dealOrderId: DealOrderId, lender: KeyringPair) => exemptLoanAsync(api, dealOrderId, lender);
 
-    const requestCollectCoins = (evmAddress: string, collector: KeyringPair, txHash: string) =>
+    const requestCollectCoins = (evmAddress: ExternalAddress, collector: KeyringPair, txHash: string) =>
         requestCollectCoinsAsync(api, evmAddress, collector, txHash);
 
     return {
