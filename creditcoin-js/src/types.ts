@@ -13,6 +13,7 @@ import {
     DealOrderFunded,
     DealOrderId,
     DealOrderLocked,
+    ExternalAddress,
     LoanTerms,
     OfferId,
     TransferId,
@@ -97,7 +98,11 @@ export interface Extrinsics {
         borrower: KeyringPair,
     ) => Promise<[DealOrderClosed, TransferProcessed]>;
     exemptLoan: (dealOrderId: DealOrderId, lender: KeyringPair) => Promise<LoanExempted>;
-    requestCollectCoins: (evmAddress: string, collector: KeyringPair, txHash: string) => Promise<CollectCoinsEvent>;
+    requestCollectCoins: (
+        evmAddress: ExternalAddress,
+        collector: KeyringPair,
+        txHash: string,
+    ) => Promise<CollectCoinsEvent>;
 }
 
 export interface CreditcoinApi {
