@@ -625,7 +625,7 @@ fn verify_transfer_get_transaction_error() {
 
 		assert_matches!(
 			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
-			Err(OffchainError::InvalidTask(TaskNonexistent))
+			Err(OffchainError::InvalidTask(TransactionNotFound))
 		);
 	});
 }

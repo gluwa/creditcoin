@@ -9,10 +9,9 @@ use sp_std::prelude::*;
 
 use crate::{
 	ocw::{
-		parse_eth_address,
-		rpc::{self, errors::RpcError, Address, EthBlock, EthTransaction, EthTransactionReceipt},
-		OffchainError, OffchainResult, VerificationFailureCause, VerificationResult,
-		ETH_CONFIRMATIONS,
+		self, parse_eth_address,
+		rpc::{self, Address, EthBlock, EthTransaction, EthTransactionReceipt},
+		OffchainResult, VerificationFailureCause, VerificationResult, ETH_CONFIRMATIONS,
 	},
 	Blockchain, Config, ExternalAddress, ExternalAmount, ExternalTxId, Id, OrderId, Transfer,
 	TransferKind, UnverifiedTransfer,
@@ -134,13 +133,7 @@ impl<T: Config> crate::Pallet<T> {
 		tx_id: &ExternalTxId,
 	) -> VerificationResult<Option<T::Moment>> {
 		let rpc_url = blockchain.rpc_url()?;
-		let tx = rpc::eth_get_transaction(tx_id, &rpc_url).map_err(|e| {
-			if let RpcError::NoResult = e {
-				OffchainError::InvalidTask(VerificationFailureCause::TaskNonexistent)
-			} else {
-				e.into()
-			}
-		})?;
+		let tx = ocw::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
 
