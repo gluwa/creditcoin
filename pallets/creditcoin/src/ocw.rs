@@ -3,12 +3,12 @@ mod nonce;
 pub(crate) mod rpc;
 pub(crate) mod tasks;
 
-use self::errors::RpcUrlError;
+use self::{errors::RpcUrlError, rpc::errors::RpcError};
 use super::{
 	pallet::{Config, Error, Pallet},
 	ExternalAddress,
 };
-use crate::{Blockchain, Call, TransferKind};
+use crate::{Blockchain, Call, ExternalTxId, TransferKind};
 use alloc::string::String;
 pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use frame_support::traits::IsType;
@@ -55,6 +55,16 @@ fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> 
 		.map_err(|_| VerificationFailureCause::InvalidAddress)?;
 	let address = rpc::Address::from(address_bytes);
 	Ok(address)
+}
+
+fn eth_get_transaction(tx_id: &ExternalTxId, rpc_url: &str) -> OffchainResult<rpc::EthTransaction> {
+	rpc::eth_get_transaction(tx_id, rpc_url).map_err(|e| {
+		if let RpcError::NoResult = e {
+			OffchainError::InvalidTask(VerificationFailureCause::TransactionNotFound)
+		} else {
+			e.into()
+		}
+	})
 }
 
 impl<T: Config> Pallet<T> {

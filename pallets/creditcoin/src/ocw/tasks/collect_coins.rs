@@ -1,4 +1,5 @@
 use crate::ocw::{
+	self,
 	errors::{VerificationFailureCause, VerificationResult},
 	rpc::{self, EthTransaction, EthTransactionReceipt},
 	OffchainResult, ETH_CONFIRMATIONS,
@@ -124,7 +125,7 @@ impl<T: CreditcoinConfig> Pallet<T> {
 		let UnverifiedCollectedCoins { to, tx_id, contract: GCreContract { address, chain } } =
 			u_cc;
 		let rpc_url = &chain.rpc_url()?;
-		let tx = rpc::eth_get_transaction(tx_id, rpc_url)?;
+		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
 
@@ -147,6 +148,7 @@ pub(crate) mod testing_constants {
 pub(crate) mod tests {
 
 	use super::*;
+	use crate::mock::PendingRequestExt;
 	use crate::TaskId;
 	use std::collections::HashMap;
 
@@ -239,13 +241,17 @@ pub(crate) mod tests {
 
 	use super::testing_constants::CHAIN;
 
-	/// call from externalities context
-	pub(crate) fn mock_rpc_for_collect_coins(state: &Arc<RwLock<OffchainState>>) {
+	fn prepare_rpc_mocks() -> MockedRpcRequests {
 		let dummy_url = "dummy";
 		let contract_chain = Creditcoin::<Test>::collect_coins_contract();
 		set_rpc_uri(&contract_chain.chain, &dummy_url);
 
-		let mut rpcs = MockedRpcRequests::new(dummy_url, &TX_HASH, &BLOCK_NUMBER_STR, &RESPONSES);
+		MockedRpcRequests::new(dummy_url, &TX_HASH, &BLOCK_NUMBER_STR, &RESPONSES)
+	}
+
+	/// call from externalities context
+	pub(crate) fn mock_rpc_for_collect_coins(state: &Arc<RwLock<OffchainState>>) {
+		let mut rpcs = prepare_rpc_mocks();
 		rpcs.mock_get_block_number(&mut state.write());
 	}
 
@@ -1059,6 +1065,26 @@ pub(crate) mod tests {
 					(collected_coins_id, collected_coins).into(),
 				),
 				TokenError::BelowMinimum
+			);
+		});
+	}
+
+	#[test]
+	fn transaction_not_found() {
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _| {
+			let mut rpcs = prepare_rpc_mocks();
+			rpcs.get_transaction.set_empty_response();
+			rpcs.mock_get_transaction(&mut state.write());
+
+			let (_, addr, _, _) = generate_address_with_proof("collector");
+			let cc = UnverifiedCollectedCoins {
+				to: addr,
+				tx_id: TX_HASH.hex_to_address(),
+				contract: GCreContract::default(),
+			};
+			assert_matches!(
+				Creditcoin::<Test>::verify_collect_coins_ocw(&cc),
+				Err(OffchainError::InvalidTask(VerificationFailureCause::TransactionNotFound))
 			);
 		});
 	}
