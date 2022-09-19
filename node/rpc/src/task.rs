@@ -78,4 +78,17 @@ pub mod test {
 		)
 		.unwrap();
 	}
+
+	#[test]
+	fn offchain_nonce_key_should_error_when_input_is_not_a_valid_hex_string() {
+		let client = Arc::new(test_client::new());
+		let t = Task::<_, Block>::new(client, DenyUnsafe::No);
+
+		match t.offchain_nonce_key("0xThisIsNotValid".into()) {
+			Err(e) => {
+				assert_eq!(e.to_string(), "Invalid params: Not a valid hex-string or SS58 address");
+			},
+			Ok(_) => panic!("This is not expected"),
+		}
+	}
 }
