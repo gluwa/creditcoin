@@ -10,22 +10,6 @@ const setup = async () => {
     // WARNING: don't change the comparison expression here b/c some variables are actually
     // configured to have a true or false value in different environments!
 
-    if ((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY === undefined) {
-        // Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
-        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY =
-            '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
-    }
-
-    if ((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS === undefined) {
-        await deployCtcContract();
-        (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS;
-    }
-
-    if ((global as any).CREDITCOIN_CTC_BURN_TX_HASH === undefined) {
-        // burn is called inside deployCtcContract()
-        (global as any).CREDITCOIN_CTC_BURN_TX_HASH = process.env.CREDITCOIN_CTC_BURN_TX_HASH;
-    }
-
     if ((global as any).CREDITCOIN_API_URL === undefined) {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
     }
@@ -64,6 +48,21 @@ const setup = async () => {
 
     if ((global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES === undefined) {
         (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = false;
+    }
+
+    if ((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY === undefined) {
+        // Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
+        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY =
+            '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
+    }
+
+    // Note: in case address is defined will attach to already deployed contract
+    await deployCtcContract((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS);
+    (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS;
+
+    if ((global as any).CREDITCOIN_CTC_BURN_TX_HASH === undefined) {
+        // Note: burn is always called inside deployCtcContract() !!!
+        (global as any).CREDITCOIN_CTC_BURN_TX_HASH = process.env.CREDITCOIN_CTC_BURN_TX_HASH;
     }
 
     const api = await ApiPromise.create({
