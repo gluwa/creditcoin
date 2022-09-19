@@ -38,7 +38,9 @@ const setup = async () => {
     (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = true;
 
     (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = '0x80C9A853B906fc4a30A5F9E4982F1F5AC1798cd0';
-    (global as any).CREDITCOIN_CTC_BURN_TX_HASH = '0x02f8e6df77926ba2af4677fc7142b548b6391affd48b6347af7d832c2f7e85b4';
+    // we need a new tx hash every time so we call .burn() in globalSetup()! See ctc-deploy.ts
+    (global as any).CREDITCOIN_CTC_BURN_TX_HASH = undefined;
+
     if (process.env.LENDER_PRIVATE_KEY === undefined) {
         throw new Error('LENDER_PRIVATE_KEY environment variable is required');
     }
