@@ -1,5 +1,4 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
-import { Option } from '@polkadot/types';
 import {
     CollectedCoins,
     UnverifiedCollectedCoins,
@@ -10,10 +9,9 @@ import {
 import { u8aConcat, u8aToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, processEvents } from './common';
-import { TxCallback, TxFailureCallback } from '..';
+import { handleTransaction, processEvents, listenForVerificationOutcome } from './common';
+import { TxCallback, TxFailureCallback, VerificationError } from '..';
 import { createCollectedCoins, createUnverifiedCollectedCoins } from '../transforms';
-import { PalletCreditcoinCollectedCoins } from '@polkadot/types/lookup';
 
 export type CollectCoinsEventKind = 'CollectCoinsRegistered' | 'CollectedCoinsMinted' | 'CollectCoinsFailed';
 
@@ -49,18 +47,20 @@ export const requestCollectCoins = async (
 type CollectCoinsRegisteredEvent = EventReturnJoinType<CollectedCoinsId, UnverifiedCollectedCoins>;
 
 const persistedCollectCoins = (api: ApiPromise, collectedCoinsId: CollectedCoinsId, timeout = 20_000) => {
-    return new Promise<CollectedCoins>((resolve, reject) => {
-        let timer: NodeJS.Timeout | undefined;
-        api.query.creditcoin
-            .collectedCoins(collectedCoinsId, (result: Option<PalletCreditcoinCollectedCoins>) => {
-                if (!timer) timer = setTimeout(() => reject(new Error('CollectCoins verification timed out')), timeout);
-                if (result.isSome) {
-                    clearTimeout(timer);
-                    const object = createCollectedCoins(result.unwrap());
-                    resolve(object);
-                }
-            })
-            .catch((reason) => reject(reason));
+    return listenForVerificationOutcome(api, {
+        successEvent: api.events.creditcoin.CollectedCoinsMinted,
+        failEvent: api.events.creditcoin.CollectCoinsFailedVerification,
+        processSuccessEvent: async ([id]) => {
+            if (id.toString() === collectedCoinsId) {
+                const result = await api.query.creditcoin.collectedCoins(collectedCoinsId);
+                return createCollectedCoins(result.unwrap());
+            }
+        },
+        processFailEvent: async ([id, cause]) => {
+            if (id.toString() === collectedCoinsId) {
+                return new VerificationError(`CollectCoins ${collectedCoinsId} failed: ${cause}`, cause);
+            }
+        },
     });
 };
 

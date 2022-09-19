@@ -3,6 +3,8 @@ import { Codec } from '@polkadot/types-codec/types';
 import { EventReturnType } from '../model';
 import { DispatchError, DispatchResult, EventRecord } from '@polkadot/types/interfaces';
 import { TxCallback, TxFailureCallback } from 'src';
+import { AugmentedEvent } from '@polkadot/api/types';
+import { AnyTuple } from '@polkadot/types/types';
 
 export const handleTransaction = (
     api: ApiPromise,
@@ -91,4 +93,46 @@ export const expectNoDispatchError = (api: ApiPromise, dispatchError?: DispatchE
         const errString = dispatchError.isModule ? parseModuleError(api, dispatchError) : dispatchError.toString();
         throw new Error(errString);
     }
+};
+
+export const listenForVerificationOutcome = <T extends AnyTuple, U extends AnyTuple, O>(
+    api: ApiPromise,
+    options: {
+        successEvent: AugmentedEvent<'promise', T, unknown>;
+        failEvent: AugmentedEvent<'promise', U, unknown>;
+        processSuccessEvent: (data: T) => Promise<O | undefined>;
+        processFailEvent: (data: U) => Promise<any | undefined>;
+    },
+    timeout = 60_000,
+) => {
+    const { failEvent, processFailEvent, processSuccessEvent, successEvent } = options;
+    return new Promise<O>((resolve, reject) => {
+        const timer: NodeJS.Timeout = setTimeout(() => reject(new Error('Verification timed out')), timeout);
+        const clearAndCall = <S, Out>(fun: (arg: S) => Out) => {
+            return (value: S) => {
+                clearTimeout(timer);
+                return fun(value);
+            };
+        };
+        const ifDefined = <V, Out>(fun: (arg: V) => Out) => {
+            return (value: V | undefined) => {
+                if (value !== undefined) {
+                    return fun(value);
+                }
+            };
+        };
+        api.query.system.events((events) => {
+            events.forEach(({ event }) => {
+                if (successEvent.is(event)) {
+                    processSuccessEvent(event.data)
+                        .then(ifDefined(clearAndCall(resolve)))
+                        .catch(clearAndCall(reject));
+                } else if (failEvent.is(event)) {
+                    processFailEvent(event.data)
+                        .then(ifDefined(clearAndCall(reject)))
+                        .catch(clearAndCall(reject));
+                }
+            });
+        });
+    });
 };
