@@ -61,21 +61,25 @@ export const registerRepaymentTransfer = async (
 };
 
 export const verifiedTransfer = async (api: ApiPromise, transferId: TransferId, timeout = 20_000) => {
-    return listenForVerificationOutcome(api, {
-        successEvent: api.events.creditcoin.TransferVerified,
-        failEvent: api.events.creditcoin.TransferFailedVerification,
-        processSuccessEvent: async ([id]) => {
-            if (id.toString() === transferId) {
-                const result = await api.query.creditcoin.transfers(transferId);
-                return createTransfer(result.unwrap());
-            }
+    return listenForVerificationOutcome(
+        api,
+        {
+            successEvent: api.events.creditcoin.TransferVerified,
+            failEvent: api.events.creditcoin.TransferFailedVerification,
+            processSuccessEvent: async ([id]) => {
+                if (id.toString() === transferId) {
+                    const result = await api.query.creditcoin.transfers(transferId);
+                    return createTransfer(result.unwrap());
+                }
+            },
+            processFailEvent: async ([id, cause]) => {
+                if (id.toString() === transferId) {
+                    return new VerificationError(`RegisterTransfer ${transferId} failed: ${cause}`, cause);
+                }
+            },
         },
-        processFailEvent: async ([id, cause]) => {
-            if (id.toString() === transferId) {
-                return new VerificationError(`RegisterTransfer ${transferId} failed: ${cause}`, cause);
-            }
-        },
-    });
+        timeout,
+    );
 };
 
 const processTransferEvent = (api: ApiPromise, result: SubmittableResult, kind: TransferEventKind): TransferEvent => {
