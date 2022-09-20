@@ -451,6 +451,7 @@ export default {
             'IncorrectSender',
             'InvalidAddress',
             'UnsupportedMethod',
+            'TransactionNotFound',
         ],
     },
     /**

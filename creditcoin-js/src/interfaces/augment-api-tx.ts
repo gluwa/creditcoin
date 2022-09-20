@@ -316,6 +316,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'IncorrectSender'
                         | 'InvalidAddress'
                         | 'UnsupportedMethod'
+                        | 'TransactionNotFound'
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,

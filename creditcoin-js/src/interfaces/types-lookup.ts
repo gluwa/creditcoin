@@ -532,6 +532,7 @@ declare module '@polkadot/types/lookup' {
         readonly isIncorrectSender: boolean;
         readonly isInvalidAddress: boolean;
         readonly isUnsupportedMethod: boolean;
+        readonly isTransactionNotFound: boolean;
         readonly type:
             | 'TaskNonexistent'
             | 'TaskFailed'
@@ -550,7 +551,8 @@ declare module '@polkadot/types/lookup' {
             | 'IncorrectReceiver'
             | 'IncorrectSender'
             | 'InvalidAddress'
-            | 'UnsupportedMethod';
+            | 'UnsupportedMethod'
+            | 'TransactionNotFound';
     }
 
     /** @name PalletRewardsEvent (70) */

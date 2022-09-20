@@ -2037,10 +2037,10 @@ create-require@^1.1.0:
 
 "creditcoin-js@file:../creditcoin-js/creditcoin-js-v0.6.0.tgz":
   version "0.6.0"
-  resolved "file:../creditcoin-js/creditcoin-js-v0.6.0.tgz#24e95fabc209c5fc061b3a1d4dbcad6ab91068d2"
+  resolved "file:../creditcoin-js/creditcoin-js-v0.6.0.tgz#b0f01297815b209cabd3bc588324b56e4eca98ba"
   dependencies:
     "@polkadot/api" "8.14.1"
-    ethers "^5.7.0"
+    ethers "^5.7.1"
     js-guid "^1.0.0"
 
 cross-spawn@^7.0.2, cross-spawn@^7.0.3:
@@ -2342,7 +2342,7 @@ esutils@^2.0.2:
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.3.tgz#74d2eb4de0b8da1293711910d50775b9b710ef64"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
 
-ethers@^5.7.0:
+ethers@^5.7.1:
   version "5.7.1"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.1.tgz#48c83a44900b5f006eb2f65d3ba6277047fd4f33"
   integrity sha512-5krze4dRLITX7FpU8J4WscXqADiKmyeNlylmmDLbS95DaZpBhDe2YSwRQwKXWNyXcox7a3gBgm/MkGXV1O1S/Q==
