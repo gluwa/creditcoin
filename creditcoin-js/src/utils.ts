@@ -3,7 +3,6 @@ import { joinSignature } from '@ethersproject/bytes';
 import { sha256AsU8a, blake2AsU8a } from '@polkadot/util-crypto';
 import { AccountId } from './model';
 import { ApiPromise } from '@polkadot/api';
-import { DispatchError, DispatchResult, EventRecord } from '@polkadot/types/interfaces';
 
 export const signAccountId = (api: ApiPromise, signer: Wallet, accountId: AccountId) => {
     const accountIdBytes = api.createType('AccountId', accountId).toU8a();

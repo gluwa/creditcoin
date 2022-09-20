@@ -3,7 +3,7 @@ import { Codec } from '@polkadot/types-codec/types';
 import { EventReturnType } from '../model';
 import { DispatchError, DispatchResult, EventRecord } from '@polkadot/types/interfaces';
 import { TxCallback, TxFailureCallback } from 'src';
-import { AugmentedEvent } from '@polkadot/api/types';
+import { AugmentedEvent, VoidFn } from '@polkadot/api/types';
 import { AnyTuple } from '@polkadot/types/types';
 
 export const handleTransaction = (
@@ -101,15 +101,15 @@ export const listenForVerificationOutcome = <T extends AnyTuple, U extends AnyTu
         successEvent: AugmentedEvent<'promise', T, unknown>;
         failEvent: AugmentedEvent<'promise', U, unknown>;
         processSuccessEvent: (data: T) => Promise<O | undefined>;
-        processFailEvent: (data: U) => Promise<any | undefined>;
+        processFailEvent: (data: U) => any | undefined;
     },
     timeout = 60_000,
 ) => {
     const { failEvent, processFailEvent, processSuccessEvent, successEvent } = options;
     return new Promise<O>((resolve, reject) => {
         const timer: NodeJS.Timeout = setTimeout(() => reject(new Error('Verification timed out')), timeout);
-        const clearAndCall = <S, Out>(fun: (arg: S) => Out) => {
-            return (value: S) => {
+        const clearAndCall = <V, Out>(fun: (arg: V) => Out) => {
+            return (value: V) => {
                 clearTimeout(timer);
                 return fun(value);
             };
@@ -121,18 +121,37 @@ export const listenForVerificationOutcome = <T extends AnyTuple, U extends AnyTu
                 }
             };
         };
-        api.query.system.events((events) => {
-            events.forEach(({ event }) => {
-                if (successEvent.is(event)) {
-                    processSuccessEvent(event.data)
-                        .then(ifDefined(clearAndCall(resolve)))
-                        .catch(clearAndCall(reject));
-                } else if (failEvent.is(event)) {
-                    processFailEvent(event.data)
-                        .then(ifDefined(clearAndCall(reject)))
-                        .catch(clearAndCall(reject));
+        let unsub: VoidFn | undefined;
+        const unsubAnd = <V, Out>(fun: (arg: V) => Out) => {
+            return (value: V) => {
+                if (unsub) {
+                    unsub();
                 }
-            });
-        });
+                return fun(value);
+            };
+        };
+        const unsubAndResolve = unsubAnd(resolve);
+        const unsubAndReject = unsubAnd(reject);
+
+        api.query.system
+            .events((events) => {
+                events.forEach(({ event }) => {
+                    if (successEvent.is(event)) {
+                        processSuccessEvent(event.data)
+                            .then(ifDefined(clearAndCall(unsubAndResolve)))
+                            .catch(clearAndCall(unsubAndReject));
+                    } else if (failEvent.is(event)) {
+                        try {
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                            const result = processFailEvent(event.data);
+                            ifDefined(clearAndCall(unsubAndReject))(result);
+                        } catch (e) {
+                            clearAndCall(unsubAndReject)(e);
+                        }
+                    }
+                });
+            })
+            .then((us) => (unsub = us))
+            .catch(reject);
     });
 };

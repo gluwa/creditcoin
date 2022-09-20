@@ -58,9 +58,9 @@ const persistedCollectCoins = (api: ApiPromise, collectedCoinsId: CollectedCoins
                     return createCollectedCoins(result.unwrap());
                 }
             },
-            processFailEvent: async ([id, cause]) => {
+            processFailEvent: ([id, cause]) => {
                 if (id.toString() === collectedCoinsId) {
-                    return new VerificationError(`CollectCoins ${collectedCoinsId} failed: ${cause}`, cause);
+                    return new VerificationError(`CollectCoins ${collectedCoinsId} failed: ${cause.toString()}`, cause);
                 }
             },
         },
