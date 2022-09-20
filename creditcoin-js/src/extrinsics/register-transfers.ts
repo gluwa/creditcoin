@@ -72,9 +72,9 @@ export const verifiedTransfer = async (api: ApiPromise, transferId: TransferId, 
                     return createTransfer(result.unwrap());
                 }
             },
-            processFailEvent: async ([id, cause]) => {
+            processFailEvent: ([id, cause]) => {
                 if (id.toString() === transferId) {
-                    return new VerificationError(`RegisterTransfer ${transferId} failed: ${cause}`, cause);
+                    return new VerificationError(`RegisterTransfer ${transferId} failed: ${cause.toString()}`, cause);
                 }
             },
         },
