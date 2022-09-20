@@ -47,21 +47,25 @@ export const requestCollectCoins = async (
 type CollectCoinsRegisteredEvent = EventReturnJoinType<CollectedCoinsId, UnverifiedCollectedCoins>;
 
 const persistedCollectCoins = (api: ApiPromise, collectedCoinsId: CollectedCoinsId, timeout = 20_000) => {
-    return listenForVerificationOutcome(api, {
-        successEvent: api.events.creditcoin.CollectedCoinsMinted,
-        failEvent: api.events.creditcoin.CollectCoinsFailedVerification,
-        processSuccessEvent: async ([id]) => {
-            if (id.toString() === collectedCoinsId) {
-                const result = await api.query.creditcoin.collectedCoins(collectedCoinsId);
-                return createCollectedCoins(result.unwrap());
-            }
+    return listenForVerificationOutcome(
+        api,
+        {
+            successEvent: api.events.creditcoin.CollectedCoinsMinted,
+            failEvent: api.events.creditcoin.CollectCoinsFailedVerification,
+            processSuccessEvent: async ([id]) => {
+                if (id.toString() === collectedCoinsId) {
+                    const result = await api.query.creditcoin.collectedCoins(collectedCoinsId);
+                    return createCollectedCoins(result.unwrap());
+                }
+            },
+            processFailEvent: async ([id, cause]) => {
+                if (id.toString() === collectedCoinsId) {
+                    return new VerificationError(`CollectCoins ${collectedCoinsId} failed: ${cause}`, cause);
+                }
+            },
         },
-        processFailEvent: async ([id, cause]) => {
-            if (id.toString() === collectedCoinsId) {
-                return new VerificationError(`CollectCoins ${collectedCoinsId} failed: ${cause}`, cause);
-            }
-        },
-    });
+        timeout,
+    );
 };
 
 const createCollectCoinsRegisteredEvent = (
