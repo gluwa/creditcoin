@@ -20,10 +20,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           components: llvm-tools-preview
           target: wasm32-unknown-unknown
           profile: minimal
@@ -38,13 +43,10 @@ jobs:
         run: |
             export PR_NUMBER=$(echo $GITHUB_REF | sed "s|refs/pull/||" | sed "s|/merge||")
             echo "**For full LLVM coverage report [click here](https://staticsitellvmhtml.z13.web.core.windows.net/$PR_NUMBER/html/)!**" > uncovered-lines.log
-            echo >> uncovered-lines.log
-
-            export RUST_LOG=debug
 
             cargo llvm-cov \
                 --workspace --html --show-missing-lines --doctests --hide-instantiations \
-                --ignore-filename-regex "(tests.rs|mock.rs)" | tee -a uncovered-lines.log
+                --ignore-filename-regex "(tests.rs|mock.rs)"
 
             UNCOVERED_LINES=$(cat uncovered-lines.log | sed "s|$(pwd)|.|")
             # workaround the fact that GitHub Actions doesn't support multi-line output

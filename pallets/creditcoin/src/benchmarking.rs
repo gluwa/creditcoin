@@ -2,13 +2,14 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, PublicToAddress};
+use crate::helpers::{EVMAddress, PublicToAddress, RefSliceOfTExt, RefstrExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
-use crate::ocw::tasks::collect_coins::CONTRACT_CHAIN;
-use crate::types::Blockchain;
-use crate::Duration;
-#[allow(unused)]
+use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::Pallet as Creditcoin;
+use crate::{
+	types::{Blockchain, Currency::Evm as CurrencyEvm},
+	Duration, EvmTransferKind,
+};
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
@@ -24,19 +25,6 @@ use sp_core::ecdsa;
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign};
 use sp_runtime::traits::One;
 use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom};
-
-#[extend::ext]
-impl<'a, S> &'a [u8]
-where
-	S: Get<u32>,
-{
-	fn try_into_bounded(self) -> Result<BoundedVec<u8, S>, ()> {
-		core::convert::TryFrom::try_from(self.to_vec())
-	}
-	fn into_bounded(self) -> BoundedVec<u8, S> {
-		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum DealKind {
@@ -99,14 +87,14 @@ benchmarks! {
 		for i in 0..c {
 			let collector: T::AccountId = lender_account::<T>(true);
 			let evm_address = format!("{:03x}",i).as_bytes() .into_bounded();
-			let address_id = AddressId::new::<T>(&CONTRACT_CHAIN, &evm_address);
-			let entry = Address { blockchain: CONTRACT_CHAIN, value: evm_address.clone(), owner: collector.clone() };
+			let address_id = AddressId::new::<T>(&CHAIN, &evm_address);
+			let entry = Address { blockchain: CHAIN, value: evm_address.clone(), owner: collector.clone() };
 			<Addresses<T>>::insert(address_id, entry);
 
 			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
-			let collected_coins_id = CollectedCoinsId::new::<T>(&tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 
-			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() };
+			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() , contract: Default::default()};
 
 			crate::PendingTasks::<T>::insert(deadline, crate::TaskId::from(collected_coins_id), crate::Task::from(pending));
 		}
@@ -234,12 +222,20 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(borrower), deal_id)
 
-	register_transfer_ocw {
+	register_funding_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,true,0u8);
-	}: register_funding_transfer(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
+	}: _(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
+
+	register_repayment_transfer {
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let borrower: T::AccountId = borrower_account::<T>(true);
+		let repayment_amount = ExternalAmount::from(1);
+		let deal_id = generate_deal::<T>(true,0u8).unwrap();
+		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,true,0u8);
+	}: _(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
 
 	close_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -281,7 +277,7 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(lender),lender_addr_id,borrower_addr_id,terms,expiry,ask_guid.into_bounded(),bid_guid.into_bounded(),pkey.into(),signature.into())
 
-	request_collect_coins{
+	request_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let collector: T::AccountId = lender_account::<T>(true);
 		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
@@ -291,17 +287,17 @@ benchmarks! {
 			.into_bounded();
 	}: _( RawOrigin::Signed(collector), address.value, tx_id)
 
-	fail_collect_coins{
+	fail_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab".as_bytes();
-		let collected_coins_id = crate::CollectedCoinsId::new::<T>(tx_id);
+		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, tx_id);
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_id = crate::TaskId::from(collected_coins_id);
 	}: fail_task(RawOrigin::Signed(authority), deadline, task_id, Cause::AbiMismatch)
 
-	persist_collect_coins{
+	persist_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
@@ -310,7 +306,7 @@ benchmarks! {
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
 			.as_bytes()
 			.into_bounded();
-		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&tx_id);
+		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 		let amount = T::Balance::unique_saturated_from(Balances::<T>::minimum_balance());
 		let collected_coins =
 			crate::types::CollectedCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };
@@ -318,6 +314,27 @@ benchmarks! {
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
+	remove_authority {
+		let root = RawOrigin::Root;
+		let who = authority_account::<T>(false);
+		<Creditcoin<T>>::add_authority(root.clone().into(), who.clone()).unwrap();
+	}: _(root, who)
+
+	register_currency {
+		let root = RawOrigin::Root;
+		let currency = CurrencyEvm(
+			crate::EvmCurrencyType::SmartContract(
+				"0x0000000000000000000000000000000000000000".hex_to_address(),
+				[EvmTransferKind::Ethless].into_bounded(),
+			),
+			EvmInfo { chain_id: 0.into() },
+		);
+	}: _(root, currency)
+
+	set_collect_coins_contract {
+		let root = RawOrigin::Root;
+		let contract = GCreContract::default();
+	}: _(root, contract)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);

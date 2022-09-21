@@ -1,11 +1,11 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
 import { createCollectedCoinsId } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
-import { createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
+import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 import { POINT_01_CTC } from '../constants';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData } from './common';
+import { testData, registerCtcDeployerAddress } from './common';
 import { testIf } from '../utils';
 
 describe('CollectCoins', (): void => {
@@ -29,6 +29,30 @@ describe('CollectCoins', (): void => {
     });
 
     describe('request', (): void => {
+        let collector: KeyringPair;
+        let deployerRegAddr: AddressRegistered;
+
+        beforeAll(async () => {
+            const { api } = ccApi;
+
+            collector = keyring.addFromUri('//Alice');
+
+            /* eslint-disable @typescript-eslint/naming-convention */
+            const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
+                address: (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
+                chain: blockchain,
+            });
+
+            await api.tx.sudo
+                .sudo(api.tx.creditcoin.setCollectCoinsContract(contract))
+                .signAndSend(collector, { nonce: -1 });
+
+            deployerRegAddr = await registerCtcDeployerAddress(
+                ccApi,
+                (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
+            );
+        }, 300_000);
+
         testIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'fee is min 0.01 CTC', async (): Promise<void> => {
             const { api } = ccApi;
 
@@ -37,6 +61,44 @@ describe('CollectCoins', (): void => {
                 .paymentInfo(authority, { nonce: -1 });
             expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
+
+        it('end-to-end', async (): Promise<void> => {
+            const {
+                extrinsics: { requestCollectCoins },
+            } = ccApi;
+
+            const collectCoinsEvent = await requestCollectCoins(
+                deployerRegAddr.item.externalAddress,
+                collector,
+                (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
+            );
+            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(600_000).catch();
+            expect(collectCoinsVerified).toBeTruthy();
+
+            // try again - should fail
+            await expect(
+                requestCollectCoins(
+                    deployerRegAddr.item.externalAddress,
+                    collector,
+                    (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
+                ),
+            ).rejects.toThrow(
+                'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
+            );
+        }, 900_000);
+
+        it('should throw TransactionNotFound when txHash not found', async (): Promise<void> => {
+            const {
+                extrinsics: { requestCollectCoins },
+            } = ccApi;
+
+            const collectCoinsEvent = await requestCollectCoins(
+                deployerRegAddr.item.externalAddress,
+                collector,
+                '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            );
+            await expect(collectCoinsEvent.waitForVerification()).rejects.toThrow(/TransactionNotFound/);
+        }, 900_000);
     });
 
     describe('fail', (): void => {

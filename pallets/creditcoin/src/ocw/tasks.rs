@@ -7,6 +7,7 @@ use crate::types::{
 };
 use crate::{CollectedCoinsId, Config, TaskData, TransferId};
 use codec::Encode;
+use collect_coins::GCreContract;
 pub use sp_runtime::offchain::storage_lock::{BlockAndTime, Lockable, StorageLock};
 use sp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
 use sp_std::vec::Vec;
@@ -59,8 +60,8 @@ impl UnverifiedCollectedCoins {
 	where
 		T: Config,
 	{
-		let Self { to, tx_id } = self;
-		let to = crate::AddressId::new::<T>(&collect_coins::CONTRACT_CHAIN, to.as_slice());
+		let Self { to, tx_id, contract: GCreContract { chain, .. } } = self;
+		let to = crate::AddressId::new::<T>(&chain, to.as_slice());
 		CollectedCoins { amount, to, tx_id }
 	}
 
@@ -68,7 +69,7 @@ impl UnverifiedCollectedCoins {
 	where
 		T: Config,
 	{
-		CollectedCoinsId::new::<T>(&self.tx_id)
+		CollectedCoinsId::new::<T>(&self.contract.chain, &self.tx_id)
 	}
 }
 
@@ -126,3 +127,5 @@ where
 		}
 	}
 }
+
+mod tests;

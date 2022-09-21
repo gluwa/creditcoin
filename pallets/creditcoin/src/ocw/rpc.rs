@@ -246,7 +246,28 @@ pub struct EthTransaction {
 	/// Transfered value
 	pub value: U256,
 	/// Input data
-	pub input: Bytes,
+	input: Bytes,
+}
+
+impl EthTransaction {
+	pub fn selector(&self) -> &[u8] {
+		&self.input.0[..4]
+	}
+
+	pub fn is_input_empty(&self) -> bool {
+		self.input.0.len() <= 4
+	}
+
+	pub fn input(&self) -> &[u8] {
+		&self.input.0[4..]
+	}
+}
+
+#[cfg(test)]
+impl EthTransaction {
+	pub fn set_input(&mut self, input: &[u8]) {
+		self.input.0 = input.to_vec();
+	}
 }
 
 #[derive(serde::Deserialize, Clone, Debug, Default)]

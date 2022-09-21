@@ -5,9 +5,9 @@ CURL_PARAMS="-H 'Content-Type: application/json' -d '{\"id\":\"1\", \"jsonrpc\":
 
 COUNTER=0
 # make sure there is a node running at TARGET_URL
-while [[ "$(eval curl -s -o /dev/null -w '%{http_code}' $CURL_PARAMS)" != "200" && $COUNTER -lt 20 ]]; do
+while [[ "$(eval curl -s -o /dev/null -w '%{http_code}' "$CURL_PARAMS")" != "200" && $COUNTER -lt 20 ]]; do
     echo "INFO: $COUNTER - Not ready yet ....."
-    let COUNTER=COUNTER+1
+    (( COUNTER=COUNTER+1 ))
     sleep 20
 done
 
@@ -15,4 +15,4 @@ done
 set -e
 
 # Note: using eval b/c params are specified as string above
-$(eval curl $CURL_PARAMS > /dev/null)
+eval curl "$CURL_PARAMS" > /dev/null

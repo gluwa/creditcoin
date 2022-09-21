@@ -1,39 +1,11 @@
 #![cfg(test)]
 
-use super::{StorageLock, Task};
-use crate::{
-	mock::{roll_by_with_ocw, set_rpc_uri, AccountId, ExtBuilder, MockedRpcRequests, Origin, Test},
-	ocw::{
-		errors::{OffchainError, VerificationFailureCause as Cause},
-		rpc::{EthTransaction, EthTransactionReceipt, JsonRpcResponse},
-		EncodeLike, ETH_CONFIRMATIONS,
-	},
-	pallet::{Config, Store},
-	tests::{generate_address_with_proof, RefstrExt},
-	types::CollectedCoinsId,
-	ExternalAddress, Pallet as Creditcoin,
-};
-use assert_matches::assert_matches;
-use codec::Decode;
-use ethereum_types::{H160, U64};
-use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy};
+use super::StorageLock;
+use crate::mock::{ExtBuilder, Test};
 use frame_system::Pallet as System;
-use pallet_timestamp::Pallet as Timestamp;
 use sp_core::offchain::Duration;
 use sp_io::offchain;
-use sp_runtime::{
-	offchain::{
-		storage::StorageValueRef,
-		storage_lock::{BlockAndTime, Lockable, Time},
-	},
-	traits::{BlockNumberProvider, IdentifyAccount},
-};
-use std::convert::{TryFrom, TryInto};
-use std::sync::{
-	atomic::{AtomicU8, Ordering},
-	Arc,
-};
-use std::thread;
+use sp_runtime::offchain::storage_lock::{BlockAndTime, Time};
 
 #[test]
 fn lock_released_when_guard_is_dropped() {

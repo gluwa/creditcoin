@@ -30,7 +30,7 @@ use std::{cell::Cell, collections::HashMap};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-type Balance = u128;
+pub(crate) type Balance = u128;
 pub type Signature = MultiSignature;
 pub type Extrinsic = TestXt<Call, ()>;
 
@@ -38,6 +38,8 @@ pub type Extrinsic = TestXt<Call, ()>;
 /// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type BlockNumber = u64;
+pub type Hash = H256;
+pub type Moment = u64;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -69,7 +71,7 @@ impl system::Config for Test {
 	type Call = Call;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
-	type Hash = H256;
+	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
@@ -88,7 +90,7 @@ impl system::Config for Test {
 }
 
 impl pallet_timestamp::Config for Test {
-	type Moment = u64;
+	type Moment = Moment;
 
 	type OnTimestampSet = ();
 
@@ -488,7 +490,7 @@ impl Default for MockedRpcRequests {
 		let tx_hash = get_mock_tx_hash();
 		let tx_block_number = get_mock_tx_block_num();
 
-		Self::new(rpc_uri, &tx_hash, &tx_block_number, &*ETHLESS_RESPONSES)
+		Self::new(rpc_uri, &tx_hash, &tx_block_number, &ETHLESS_RESPONSES)
 	}
 }
 

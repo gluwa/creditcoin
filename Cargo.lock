@@ -590,6 +590,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fca0852af221f458706eb0725c03e4ed6c46af9ac98e6a689d5e634215d594dd"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "build-helper"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -953,10 +962,11 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
+ "creditcoin-runtime-api",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures-lite",
@@ -989,7 +999,6 @@ dependencies = [
  "sp-consensus-pow",
  "sp-core",
  "sp-inherents",
- "sp-keystore",
  "sp-runtime",
  "sp-timestamp",
  "structopt",
@@ -1000,41 +1009,31 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
+ "assert_matches",
  "creditcoin-node-runtime",
- "frame-support",
+ "creditcoin-runtime-api",
  "frame-system",
- "futures 0.3.21",
- "hex",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "jsonrpc-pubsub",
- "log",
- "pallet-balances",
- "pallet-creditcoin",
- "pallet-rewards",
- "pallet-timestamp",
- "parity-scale-codec",
  "primitives",
- "sc-client-api",
  "sc-rpc",
  "serde",
- "serde_json",
  "sp-api",
  "sp-blockchain",
- "sp-core",
- "sp-rpc",
  "sp-runtime",
- "sp-state-machine",
+ "test-client",
 ]
 
 [[package]]
 name = "creditcoin-node-runtime"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "assert_matches",
+ "creditcoin-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -1069,6 +1068,14 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "creditcoin-runtime-api"
+version = "2.0.0-beta.8"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
 ]
 
 [[package]]
@@ -1276,9 +1283,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.10.3"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2fb860ca6fafa5552fb6d0e816a69c8e49f0908bf524e30a90d97c85892d506"
+checksum = "adfbc57365a37acbd2ebf2b64d7e69bb766e2fea813521ed536f5d0520dcf86c"
 dependencies = [
  "block-buffer 0.10.2",
  "crypto-common",
@@ -2061,7 +2068,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10463d9ff00a2a068db14231982f5132edebad0d7660cd956a1c30292dbcbfbd"
 dependencies = [
  "aho-corasick",
- "bstr",
+ "bstr 0.2.17",
  "fnv",
  "log",
  "regex",
@@ -2213,7 +2220,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
- "digest 0.10.3",
+ "digest 0.10.5",
 ]
 
 [[package]]
@@ -3978,12 +3985,12 @@ dependencies = [
 
 [[package]]
 name = "pallet-creditcoin"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "assert_matches",
  "base58",
  "bitcoin-bech32",
- "bstr",
+ "bstr 1.0.1",
  "ethabi",
  "ethereum-types",
  "extend",
@@ -4003,7 +4010,7 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
- "sha2 0.10.2",
+ "sha2 0.10.6",
  "sp-core",
  "sp-io",
  "sp-keystore",
@@ -4017,7 +4024,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4051,7 +4058,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4370,7 +4377,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83a0692ec44e4cf1ef28ca317f14f8f07da2d95ec3fa01f86e4467b725e60917"
 dependencies = [
- "digest 0.10.3",
+ "digest 0.10.5",
 ]
 
 [[package]]
@@ -4572,7 +4579,7 @@ dependencies = [
 
 [[package]]
 name = "primitives"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "sp-core",
  "sp-tracing",
@@ -6009,18 +6016,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.140"
+version = "1.0.144"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
+checksum = "0f747710de3dcd43b88c9168773254e809d8ddbdf9653b84e2554ab219f17860"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.140"
+version = "1.0.144"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f2122636b9fe3b81f1cb25099fcf2d3f542cdb1d45940d56c713158884a05da"
+checksum = "94ed3a816fb1d101812f83e789f888322c34e291f894f19590dc310963e87a00"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6029,9 +6036,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.82"
+version = "1.0.85"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82c2c1fdcd807d1098552c5b9a36e425e42e9fbd7c6a37a8425f390f781f7fa7"
+checksum = "e55a28e3aaef9d5ce0506d0a14dbba8054ddc7e499ef522dd8b26859ec9d4a44"
 dependencies = [
  "itoa 1.0.2",
  "ryu",
@@ -6090,13 +6097,13 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.2"
+version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55deaec60f81eefe3cce0dc50bda92d6d8e88f2a27df7c5033b42afeb1ed2676"
+checksum = "82e6b795fe2e3b1e845bafcb27aa35405c4d47cdfc92af5fc8d3002f76cebdc0"
 dependencies = [
  "cfg-if 1.0.0",
  "cpufeatures 0.2.2",
- "digest 0.10.3",
+ "digest 0.10.5",
 ]
 
 [[package]]
@@ -6113,17 +6120,17 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.10.2"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a31480366ec990f395a61b7c08122d99bd40544fdb5abcfc1b06bb29994312c"
+checksum = "e2904bea16a1ae962b483322a1c7b81d976029203aea1f461e51cd7705db7ba9"
 dependencies = [
- "digest 0.10.3",
+ "digest 0.10.5",
  "keccak",
 ]
 
 [[package]]
 name = "sha3pow"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "assert_matches",
  "parity-scale-codec",
@@ -6133,7 +6140,7 @@ dependencies = [
  "sc-consensus-pow",
  "sc-keystore",
  "scale-info",
- "sha3 0.10.2",
+ "sha3 0.10.5",
  "sp-api",
  "sp-application-crypto",
  "sp-consensus-pow",
@@ -6415,7 +6422,7 @@ dependencies = [
  "schnorrkel",
  "secrecy",
  "serde",
- "sha2 0.10.2",
+ "sha2 0.10.6",
  "sp-core-hashing",
  "sp-debug-derive",
  "sp-externalities",
@@ -6439,7 +6446,7 @@ source = "git+https://github.com/gluwa/substrate.git?rev=973dd744f5f7c6322799bbf
 dependencies = [
  "blake2-rfc",
  "byteorder",
- "sha2 0.10.2",
+ "sha2 0.10.6",
  "sp-std",
  "tiny-keccak",
  "twox-hash",
@@ -7033,6 +7040,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-test-client"
+version = "2.0.1"
+source = "git+https://github.com/gluwa/substrate.git?rev=973dd744f5f7c6322799bbfa29366588e0267b0a#973dd744f5f7c6322799bbfa29366588e0267b0a"
+dependencies = [
+ "async-trait",
+ "futures 0.3.21",
+ "hex",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-client-db",
+ "sc-consensus",
+ "sc-executor",
+ "sc-offchain",
+ "sc-service",
+ "serde",
+ "serde_json",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-keyring",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-state-machine",
+]
+
+[[package]]
 name = "substrate-wasm-builder"
 version = "5.0.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?rev=973dd744f5f7c6322799bbfa29366588e0267b0a#973dd744f5f7c6322799bbfa29366588e0267b0a"
@@ -7109,6 +7142,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-client"
+version = "0.1.0"
+dependencies = [
+ "creditcoin-node-runtime",
+ "sc-client-db",
+ "sc-executor",
+ "sc-service",
+ "sp-core",
+ "sp-runtime",
+ "substrate-test-client",
 ]
 
 [[package]]
@@ -7200,7 +7246,7 @@ dependencies = [
  "pbkdf2 0.11.0",
  "rand 0.8.5",
  "rustc-hash",
- "sha2 0.10.2",
+ "sha2 0.10.6",
  "thiserror",
  "unicode-normalization",
  "wasm-bindgen",

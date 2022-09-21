@@ -1,46 +1,73 @@
 use crate::ocw::{
+	self,
 	errors::{VerificationFailureCause, VerificationResult},
 	rpc::{self, EthTransaction, EthTransactionReceipt},
 	OffchainResult, ETH_CONFIRMATIONS,
 };
-
-use crate::pallet::{Config, Pallet};
+use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
 	types::{Blockchain, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
+use codec::{Decode, Encode, MaxEncodedLen};
+use core::default::Default;
+use ethabi::{Function, Param, ParamType, StateMutability, Token};
+use ethereum_types::U64;
+use frame_support::{ensure, RuntimeDebug};
+use hex_literal::hex;
+use scale_info::TypeInfo;
+use sp_core::H160;
 use sp_runtime::SaturatedConversion;
 #[cfg_attr(feature = "std", allow(unused_imports))]
 use sp_std::prelude::*;
 
-use ethabi::{Function, Param, ParamType, StateMutability, Token};
-use ethereum_types::{H160, U64};
-use frame_support::ensure;
-use hex_literal::hex;
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct GCreContract {
+	pub address: sp_core::H160,
+	pub chain: Blockchain,
+}
 
-pub(crate) const CONTRACT_CHAIN: Blockchain = Blockchain::Ethereum;
-const CONTRACT_ADDRESS: H160 = sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
+impl GCreContract {
+	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
+}
 
-///exchange has been deprecated, use burn instead
-fn burn_vested_cc_abi() -> Function {
-	#[allow(deprecated)]
-	Function {
-		name: "burn".into(),
-		inputs: vec![Param {
-			name: "value".into(),
-			kind: ParamType::Uint(256),
-			internal_type: None,
-		}],
-		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
-		constant: false,
-		state_mutability: StateMutability::NonPayable,
+impl Default for GCreContract {
+	fn default() -> Self {
+		let contract_chain: Blockchain = GCreContract::DEFAULT_CHAIN;
+		let contract_address: H160 =
+			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
+		Self { address: contract_address, chain: contract_chain }
 	}
 }
+
+impl GCreContract {
+	///exchange has been deprecated, use burn instead
+	fn burn_vested_cc_abi() -> Function {
+		#[allow(deprecated)]
+		Function {
+			name: "burn".into(),
+			inputs: vec![Param {
+				name: "value".into(),
+				kind: ParamType::Uint(256),
+				internal_type: None,
+			}],
+			outputs: vec![Param {
+				name: "success".into(),
+				kind: ParamType::Bool,
+				internal_type: None,
+			}],
+			constant: false,
+			state_mutability: StateMutability::NonPayable,
+		}
+	}
+}
+
 pub fn validate_collect_coins(
 	to: &ExternalAddress,
 	receipt: &EthTransactionReceipt,
 	transaction: &EthTransaction,
 	eth_tip: U64,
+	contract_address: &H160,
 ) -> OffchainResult<ExternalAmount> {
 	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
 
@@ -52,7 +79,7 @@ pub fn validate_collect_coins(
 	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
 	if let Some(to) = &transaction.to {
-		ensure!(to == &CONTRACT_ADDRESS, VerificationFailureCause::IncorrectContract);
+		ensure!(to == contract_address, VerificationFailureCause::IncorrectContract);
 	} else {
 		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
@@ -63,18 +90,22 @@ pub fn validate_collect_coins(
 		return Err(VerificationFailureCause::MissingSender.into());
 	}
 
-	let transfer_fn = burn_vested_cc_abi();
-	ensure!(transaction.input.0.len() > 4, VerificationFailureCause::EmptyInput);
+	let transfer_fn = GCreContract::burn_vested_cc_abi();
+	ensure!(!transaction.is_input_empty(), VerificationFailureCause::EmptyInput);
 
 	{
-		let selector = &transaction.input.0[..4];
+		let selector = transaction.selector();
 		if selector != transfer_fn.short_signature() {
-			log::error!("function selector mismatch: {}", hex::encode(selector));
+			log::error!(
+				"function selector mismatch, expected: {}, got: {}",
+				hex::encode(&transfer_fn.short_signature()),
+				hex::encode(selector)
+			);
 			return Err(VerificationFailureCause::AbiMismatch.into());
 		}
 	}
 
-	let inputs = transfer_fn.decode_input(&transaction.input.0[4..]).map_err(|e| {
+	let inputs = transfer_fn.decode_input(transaction.input()).map_err(|e| {
 		log::error!("failed to decode inputs: {:?}", e);
 		VerificationFailureCause::AbiMismatch
 	})?;
@@ -85,19 +116,20 @@ pub fn validate_collect_coins(
 	}
 }
 
-impl<T: Config> Pallet<T> {
+impl<T: CreditcoinConfig> Pallet<T> {
 	///Amount is saturated to u128, don't exchange more than u128::MAX at once.
 	pub fn verify_collect_coins_ocw(
 		u_cc: &UnverifiedCollectedCoins,
 	) -> VerificationResult<T::Balance> {
 		log::debug!("verifying OCW Collect Coins");
-		let UnverifiedCollectedCoins { to, tx_id } = u_cc;
-		let rpc_url = &CONTRACT_CHAIN.rpc_url()?;
-		let tx = rpc::eth_get_transaction(tx_id, rpc_url)?;
+		let UnverifiedCollectedCoins { to, tx_id, contract: GCreContract { address, chain } } =
+			u_cc;
+		let rpc_url = &chain.rpc_url()?;
+		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
 
-		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip)?;
+		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip, address)?;
 
 		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
 
@@ -105,10 +137,18 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+pub(crate) mod testing_constants {
+	use super::{Blockchain, GCreContract};
+
+	pub const CHAIN: Blockchain = GCreContract::DEFAULT_CHAIN;
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
 
 	use super::*;
+	use crate::mock::PendingRequestExt;
 	use crate::TaskId;
 	use std::collections::HashMap;
 
@@ -161,7 +201,7 @@ pub(crate) mod tests {
 	});
 
 	pub(crate) static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
-		let transfer_fn = burn_vested_cc_abi();
+		let transfer_fn = GCreContract::burn_vested_cc_abi();
 
 		let inputs = transfer_fn.decode_input(&(INPUT.0)[4..]).unwrap();
 
@@ -173,18 +213,8 @@ pub(crate) mod tests {
 		}
 	});
 
-	use std::convert::TryFrom;
-
-	use alloc::sync::Arc;
-	use assert_matches::assert_matches;
-	use codec::Decode;
-	use ethereum_types::{H160, U64};
-	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
-	use frame_system::Pallet as System;
-	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
-	use sp_runtime::{ArithmeticError, TokenError};
-
 	use crate::helpers::non_paying_error;
+	use crate::helpers::RefstrExt;
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, Balances, ExtBuilder, MockedRpcRequests,
 		OffchainState, Origin, RwLock, Test,
@@ -194,17 +224,34 @@ pub(crate) mod tests {
 		rpc::{EthTransaction, EthTransactionReceipt},
 		ETH_CONFIRMATIONS,
 	};
-	use crate::tests::{generate_address_with_proof, RefstrExt};
+	use crate::tests::generate_address_with_proof;
 	use crate::types::{AddressId, CollectedCoins, CollectedCoinsId};
 	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
+	use alloc::sync::Arc;
+	use assert_matches::assert_matches;
+	use codec::Decode;
+	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
+	use frame_system::Pallet as System;
+	use frame_system::RawOrigin;
+	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
+	use sp_runtime::{ArithmeticError, TokenError};
+
+	use std::convert::TryFrom;
+
+	use super::testing_constants::CHAIN;
+
+	fn prepare_rpc_mocks() -> MockedRpcRequests {
+		let dummy_url = "dummy";
+		let contract_chain = Creditcoin::<Test>::collect_coins_contract();
+		set_rpc_uri(&contract_chain.chain, &dummy_url);
+
+		MockedRpcRequests::new(dummy_url, &TX_HASH, &BLOCK_NUMBER_STR, &RESPONSES)
+	}
 
 	/// call from externalities context
 	pub(crate) fn mock_rpc_for_collect_coins(state: &Arc<RwLock<OffchainState>>) {
-		let dummy_url = "dummy";
-		set_rpc_uri(&CONTRACT_CHAIN, &dummy_url);
-
-		let mut rpcs = MockedRpcRequests::new(dummy_url, &TX_HASH, &BLOCK_NUMBER_STR, &RESPONSES);
+		let mut rpcs = prepare_rpc_mocks();
 		rpcs.mock_get_block_number(&mut state.write());
 	}
 
@@ -213,6 +260,7 @@ pub(crate) mod tests {
 		receipt: EthTransactionReceipt,
 		transaction: EthTransaction,
 		eth_tip: U64,
+		contract_address: H160,
 	}
 
 	impl Default for PassingCollectCoins {
@@ -222,25 +270,26 @@ pub(crate) mod tests {
 			let to = FROM.hex_to_address();
 			let tx_from = H160::from(<[u8; 20]>::try_from(to.as_slice()).unwrap());
 
+			let mut transaction = EthTransaction::default();
+			transaction.block_number = Some(base_height);
+			transaction.from = Some(tx_from);
+			transaction.to = Some(vesting_contract);
+			transaction.set_input(&INPUT.0);
+
 			Self {
 				to,
 				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
-				transaction: EthTransaction {
-					block_number: Some(base_height),
-					from: Some(tx_from),
-					to: Some(vesting_contract),
-					input: INPUT.clone(),
-					..Default::default()
-				},
+				transaction,
 				eth_tip: (base_height + ETH_CONFIRMATIONS),
+				contract_address: GCreContract::default().address,
 			}
 		}
 	}
 
 	impl PassingCollectCoins {
 		fn validate(self) -> OffchainResult<ExternalAmount> {
-			let PassingCollectCoins { to, receipt, transaction, eth_tip } = self;
-			super::validate_collect_coins(&to, &receipt, &transaction, eth_tip)
+			let PassingCollectCoins { to, receipt, transaction, eth_tip, contract_address } = self;
+			super::validate_collect_coins(&to, &receipt, &transaction, eth_tip, &contract_address)
 		}
 	}
 
@@ -262,10 +311,9 @@ pub(crate) mod tests {
 
 	#[test]
 	fn pending() {
-		let pcc = PassingCollectCoins {
-			transaction: EthTransaction { block_number: None, ..Default::default() },
-			..Default::default()
-		};
+		let mut transaction = EthTransaction::default();
+		transaction.block_number = None;
+		let pcc = PassingCollectCoins { transaction, ..Default::default() };
 		assert_invalid(pcc.validate(), Cause::TaskPending);
 	}
 
@@ -317,15 +365,16 @@ pub(crate) mod tests {
 	#[test]
 	fn empty_input() {
 		let mut pcc = PassingCollectCoins::default();
-		pcc.transaction.input.0 = b"".to_vec();
+		pcc.transaction.set_input(b"");
 		assert_invalid(pcc.validate(), Cause::EmptyInput);
 	}
 
 	#[test]
 	fn amount_set() -> OffchainResult<()> {
 		let pcc = PassingCollectCoins::default();
-		let PassingCollectCoins { to, receipt, transaction, eth_tip } = pcc;
-		let amount = super::validate_collect_coins(&to, &receipt, &transaction, eth_tip)?;
+		let PassingCollectCoins { to, receipt, transaction, eth_tip, contract_address } = pcc;
+		let amount =
+			super::validate_collect_coins(&to, &receipt, &transaction, eth_tip, &contract_address)?;
 		assert_eq!(amount, *RPC_RESPONSE_AMOUNT);
 		Ok(())
 	}
@@ -333,7 +382,8 @@ pub(crate) mod tests {
 	#[test]
 	fn fail_collect_coins_should_error_when_not_signed() {
 		let ext = ExtBuilder::default();
-		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+		let expected_collected_coins_id =
+			crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &[0]);
 
 		ext.build_offchain_and_execute_with_state(|_state, _pool| {
 			assert_noop!(
@@ -352,7 +402,8 @@ pub(crate) mod tests {
 	fn fail_collect_coins_should_error_when_no_authority() {
 		let ext = ExtBuilder::default();
 		let (molly, _, _, _) = generate_address_with_proof("malicious");
-		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+		let expected_collected_coins_id =
+			crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &[0]);
 
 		ext.build_offchain_and_execute_with_state(|_state, _pool| {
 			assert_noop!(
@@ -380,7 +431,7 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr,
 				sign
 			));
@@ -390,12 +441,12 @@ pub(crate) mod tests {
 			let pcc = PassingCollectCoins::default();
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
 			let collected_coins_id =
-				crate::CollectedCoinsId::new::<crate::mock::Test>(&collected_coins.tx_id);
+				crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &collected_coins.tx_id);
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
@@ -420,7 +471,8 @@ pub(crate) mod tests {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
 		let auth = AccountId::from(acct_pubkey.into_account().0);
-		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+		let expected_collected_coins_id =
+			crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &[0]);
 
 		ext.build_offchain_and_execute_with_state(|_state, _pool| {
 			System::<Test>::set_block_number(1);
@@ -448,7 +500,8 @@ pub(crate) mod tests {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
 		let acct = AccountId::from(acct_pubkey.into_account().0);
-		let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(&[0]);
+		let expected_collected_coins_id =
+			crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &[0]);
 		ext.build_offchain_and_execute_with_state(|_state, pool| {
 			crate::mock::roll_to(1);
 			let call = crate::Call::<crate::mock::Test>::fail_task {
@@ -481,7 +534,7 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr,
 				sign
 			));
@@ -491,12 +544,12 @@ pub(crate) mod tests {
 			let pcc = PassingCollectCoins::default();
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
 
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			let balance = <Balances as Currency<AccountId>>::total_balance;
 
@@ -506,13 +559,10 @@ pub(crate) mod tests {
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
 				deadline,
-				(collected_coins_id, collected_coins.clone()).into(),
+				(collected_coins_id.clone(), collected_coins.clone()).into(),
 			));
 
 			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
-
-			let collected_coins_id =
-				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
 
 			assert_matches!(
 				event,
@@ -537,11 +587,11 @@ pub(crate) mod tests {
 			let pcc = PassingCollectCoins::default();
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			let deadline = Test::unverified_transfer_deadline();
 
@@ -565,7 +615,7 @@ pub(crate) mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr,
 				sign
 			));
@@ -577,9 +627,9 @@ pub(crate) mod tests {
 			<crate::mock::Balances as Currency<AccountId>>::make_free_balance_be(&auth, cash);
 
 			let collected_coins_id =
-				crate::CollectedCoinsId::new::<Test>(&TX_HASH.hex_to_address());
+				crate::CollectedCoinsId::new::<Test>(&CHAIN, &TX_HASH.hex_to_address());
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &pcc.to[..]),
+				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: u128::MAX,
 				tx_id: TX_HASH.hex_to_address(),
 			};
@@ -605,17 +655,17 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth),
@@ -647,7 +697,7 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -659,7 +709,7 @@ pub(crate) mod tests {
 			));
 
 			let collected_coins_id =
-				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+				CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
 
 			let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
 			assert_matches!(
@@ -667,7 +717,7 @@ pub(crate) mod tests {
 				crate::mock::Event::Creditcoin(crate::Event::<Test>::CollectCoinsRegistered(collect_coins_id, pending)) => {
 					assert_eq!(collect_coins_id, collected_coins_id);
 
-					let UnverifiedCollectedCoins { to, tx_id } = pending;
+					let UnverifiedCollectedCoins { to, tx_id, .. } = pending;
 					assert_eq!(to, addr);
 					assert_eq!(tx_id, TX_HASH.hex_to_address());
 				}
@@ -718,7 +768,7 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -741,11 +791,11 @@ pub(crate) mod tests {
 			let (molly, addr, _, _) = generate_address_with_proof("malicious");
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			assert_noop!(
 				Creditcoin::<Test>::persist_task_output(
@@ -769,7 +819,7 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -787,11 +837,11 @@ pub(crate) mod tests {
 			assert!(!pool.read().transactions.is_empty());
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			let call = crate::Call::<crate::mock::Test>::persist_task_output {
 				task_output: (collected_coins_id, collected_coins).into(),
@@ -815,17 +865,17 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				Origin::signed(auth.clone()),
@@ -855,7 +905,7 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -870,7 +920,7 @@ pub(crate) mod tests {
 			roll_by_with_ocw(deadline);
 
 			let collected_coins_id =
-				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+				CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
 
 			roll_by_with_ocw(1);
 
@@ -888,15 +938,15 @@ pub(crate) mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr,
 				sign
 			));
@@ -923,14 +973,64 @@ pub(crate) mod tests {
 			let (_, to, ..) = generate_address_with_proof("collector");
 			let tx_id = &TX_HASH.hex_to_address();
 
-			let rpc_url = &CONTRACT_CHAIN.rpc_url().unwrap();
+			let rpc_url = &CHAIN.rpc_url().unwrap();
 			let mut tx = rpc::eth_get_transaction(tx_id, rpc_url).unwrap();
 			let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url).unwrap();
 			let eth_tip = rpc::eth_get_block_number(rpc_url).unwrap();
-			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect("valid");
+			let PassingCollectCoins { contract_address, .. } = Default::default();
+			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip, &contract_address)
+				.expect("valid");
 			// Forged selector
-			tx.input.0[0] = 1;
-			validate_collect_coins(&to, &tx_receipt, &tx, eth_tip).expect_err("invalid");
+			tx.set_input(b"ffffffff");
+			assert_matches!(
+				validate_collect_coins(&to, &tx_receipt, &tx, eth_tip, &contract_address),
+				Err(OffchainError::InvalidTask(VerificationFailureCause::AbiMismatch))
+			);
+		});
+	}
+
+	#[test]
+	fn set_collect_coins_only_as_root() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let _auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_and_execute(|| {
+			let contract = GCreContract {
+				address: sp_core::H160(hex!("aaaaabbbbbcccccdddddeeeeefffff08F3820419")),
+				chain: Blockchain::Rinkeby,
+			};
+			assert_ok!(Creditcoin::<Test>::set_collect_coins_contract(
+				RawOrigin::Root.into(),
+				contract.clone()
+			));
+			let from_storage = Creditcoin::<Test>::collect_coins_contract();
+			assert_eq!(contract, from_storage);
+			assert_ne!(from_storage, GCreContract::default());
+
+			let (acc, ..) = generate_address_with_proof("somebody");
+
+			assert_noop!(
+				Creditcoin::<Test>::set_collect_coins_contract(
+					RawOrigin::Signed(acc).into(),
+					contract.clone()
+				),
+				BadOrigin
+			);
+
+			assert_noop!(
+				Creditcoin::<Test>::set_collect_coins_contract(RawOrigin::None.into(), contract),
+				BadOrigin
+			);
+		});
+	}
+
+	#[test]
+	fn gcrecontract_value_query_is_default() {
+		let contract = GCreContract::default();
+		let ext = ExtBuilder::default();
+		ext.build_and_execute(|| {
+			let value_query = Creditcoin::<Test>::collect_coins_contract();
+			assert_eq!(contract, value_query);
 		});
 	}
 
@@ -943,15 +1043,15 @@ pub(crate) mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
 			let collected_coins = CollectedCoins {
-				to: AddressId::new::<Test>(&CONTRACT_CHAIN, &addr[..]),
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: 1u128,
 				tx_id: TX_HASH.hex_to_address(),
 			};
-			let collected_coins_id = CollectedCoinsId::new::<Test>(&collected_coins.tx_id);
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr,
 				sign
 			));
@@ -965,6 +1065,26 @@ pub(crate) mod tests {
 					(collected_coins_id, collected_coins).into(),
 				),
 				TokenError::BelowMinimum
+			);
+		});
+	}
+
+	#[test]
+	fn transaction_not_found() {
+		ExtBuilder::default().build_offchain_and_execute_with_state(|state, _| {
+			let mut rpcs = prepare_rpc_mocks();
+			rpcs.get_transaction.set_empty_response();
+			rpcs.mock_get_transaction(&mut state.write());
+
+			let (_, addr, _, _) = generate_address_with_proof("collector");
+			let cc = UnverifiedCollectedCoins {
+				to: addr,
+				tx_id: TX_HASH.hex_to_address(),
+				contract: GCreContract::default(),
+			};
+			assert_matches!(
+				Creditcoin::<Test>::verify_collect_coins_ocw(&cc),
+				Err(OffchainError::InvalidTask(VerificationFailureCause::TransactionNotFound))
 			);
 		});
 	}

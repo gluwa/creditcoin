@@ -24,6 +24,7 @@ pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub const REWARD_HALF_LIFE: u64 = 2_500_000;
 pub const BASE_REWARD_IN_CTC: u64 = 28;
 pub const CREDO_PER_CTC: u64 = 1_000_000_000_000_000_000;
+pub const SAWTOOTH_PORT_HEIGHT: u64 = 1_123_966;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -95,7 +96,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		pub fn reward_amount(block_number: BlockNumberFor<T>) -> BalanceOf<T> {
-			let block_number: u64 = block_number.unique_saturated_into();
+			let block_number: u64 = Self::sawtooth_adjusted_height(block_number);
 			let period = usize::try_from(block_number / REWARD_HALF_LIFE).expect("assuming a 32-bit usize, we would need to be on block number 2^32 * REWARD_HALF_LIFE for this conversion to fail.\
 	given a 1s block time it would take >340 million years to reach this point; qed");
 			let decay_rate_inv = FixedU128::saturating_from_rational(19, 20);
@@ -108,6 +109,11 @@ pub mod pallet {
 		pub fn issue_reward(recipient: AccountIdOf<T>, amount: BalanceOf<T>) {
 			drop(T::Currency::deposit_creating(&recipient, amount));
 			Self::deposit_event(Event::<T>::RewardIssued(recipient, amount));
+		}
+
+		pub fn sawtooth_adjusted_height(block_number: BlockNumberFor<T>) -> u64 {
+			let block_number: u64 = block_number.unique_saturated_into();
+			block_number.saturating_add(SAWTOOTH_PORT_HEIGHT)
 		}
 	}
 }

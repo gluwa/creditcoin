@@ -19,11 +19,13 @@ import {
     TransferKind,
     DealOrderId,
     TransferId,
+    ExternalAddress,
 } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { lockDealOrderAsync } from './lock-deal-order';
 import { closeDealOrderAsync } from './close-deal-order';
 import { exemptLoanAsync } from './exempt';
+import { requestCollectCoinsAsync } from './request-collect-coins';
 
 export const extrinsics = (api: ApiPromise) => {
     const registerAddress = (
@@ -105,6 +107,9 @@ export const extrinsics = (api: ApiPromise) => {
 
     const exemptLoan = (dealOrderId: DealOrderId, lender: KeyringPair) => exemptLoanAsync(api, dealOrderId, lender);
 
+    const requestCollectCoins = (evmAddress: ExternalAddress, collector: KeyringPair, txHash: string) =>
+        requestCollectCoinsAsync(api, evmAddress, collector, txHash);
+
     return {
         registerAddress,
         addAskOrder,
@@ -118,5 +123,6 @@ export const extrinsics = (api: ApiPromise) => {
         registerRepaymentTransfer,
         closeDealOrder,
         exemptLoan,
+        requestCollectCoins,
     };
 };

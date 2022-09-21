@@ -17,12 +17,13 @@ use super::{
 	tasks::verify_transfer::validate_ethless_transfer,
 	ETH_CONFIRMATIONS,
 };
-use crate::ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN};
+use crate::ocw::tasks::collect_coins::{testing_constants::CHAIN, tests::TX_HASH};
 use crate::tests::adjust_deal_order_to_nonce;
 use crate::tests::generate_address_with_proof;
 use crate::types::{AddressId, CollectedCoins, CollectedCoinsId, TaskId};
 use crate::Pallet as Creditcoin;
 use crate::{
+	helpers::RefstrExt,
 	mock::{
 		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
 		get_mock_nonce, get_mock_timestamp, get_mock_to_address, get_mock_tx_block_num,
@@ -32,7 +33,7 @@ use crate::{
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
 	ocw::tasks::StorageLock,
-	tests::{RefstrExt, TestInfo},
+	tests::TestInfo,
 	types::{DoubleMapExt, TransferId},
 	Blockchain, ExternalAddress, Id, LoanTerms, OrderId, TransferKind, Transfers,
 };
@@ -140,12 +141,13 @@ static ETHLESS_CONTRACT_ADDR: Lazy<Address> =
 static ETHLESS_TO_ADDR: Lazy<Address> =
 	Lazy::new(|| Address::from_str(&get_mock_to_address()).unwrap());
 
-static ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| EthTransaction {
-	block_number: Some(5u64.into()),
-	from: Some(*ETHLESS_FROM_ADDR),
-	to: Some(*ETHLESS_CONTRACT_ADDR),
-	input: hex::decode(&*ETHLESS_INPUT).unwrap().into(),
-	..Default::default()
+static ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| {
+	let mut transaction = EthTransaction::default();
+	transaction.block_number = Some(5u64.into());
+	transaction.from = Some(*ETHLESS_FROM_ADDR);
+	transaction.to = Some(*ETHLESS_CONTRACT_ADDR);
+	transaction.set_input(&hex::decode(&*ETHLESS_INPUT).unwrap());
+	transaction
 });
 
 struct EthlessTestArgs {
@@ -222,11 +224,10 @@ fn ethless_transfer_tx_unconfirmed() {
 
 #[test]
 fn ethless_transfer_tx_missing_to() {
+	let mut transaction = ETH_TRANSACTION.clone();
+	transaction.to = None;
 	assert_invalid_task(
-		test_validate_ethless_transfer(EthlessTestArgs {
-			transaction: EthTransaction { to: None, ..ETH_TRANSACTION.clone() },
-			..Default::default()
-		}),
+		test_validate_ethless_transfer(EthlessTestArgs { transaction, ..Default::default() }),
 		MissingReceiver,
 	);
 }
@@ -277,14 +278,10 @@ fn ethless_transfer_to_mismatch() {
 
 #[test]
 fn ethless_transfer_invalid_input_data() {
+	let mut transaction = ETH_TRANSACTION.clone();
+	transaction.set_input("badbad".as_bytes());
 	assert_invalid_task(
-		test_validate_ethless_transfer(EthlessTestArgs {
-			transaction: EthTransaction {
-				input: Vec::from("badbad".as_bytes()).into(),
-				..ETH_TRANSACTION.clone()
-			},
-			..Default::default()
-		}),
+		test_validate_ethless_transfer(EthlessTestArgs { transaction, ..Default::default() }),
 		AbiMismatch,
 	);
 }
@@ -304,8 +301,9 @@ fn ethless_transfer_amount_mismatch() {
 fn ethless_transfer_nonce_mismatch() {
 	let transfer = ethless_transfer_function_abi();
 	let input_args = TransferContractInput { nonce: 1.into(), ..Default::default() };
-	let input = transfer.encode_input(&input_args.into_tokens()).unwrap().into();
-	let transaction = EthTransaction { input, ..ETH_TRANSACTION.clone() };
+	let input = transfer.encode_input(&input_args.into_tokens()).unwrap();
+	let mut transaction = ETH_TRANSACTION.clone();
+	transaction.set_input(&input);
 	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs { transaction, ..Default::default() }),
 		IncorrectNonce,
@@ -314,11 +312,10 @@ fn ethless_transfer_nonce_mismatch() {
 
 #[test]
 fn ethless_transfer_pending() {
+	let mut transaction = ETH_TRANSACTION.clone();
+	transaction.block_number = None;
 	assert_invalid_task(
-		test_validate_ethless_transfer(EthlessTestArgs {
-			transaction: EthTransaction { block_number: None, ..ETH_TRANSACTION.clone() },
-			..Default::default()
-		}),
+		test_validate_ethless_transfer(EthlessTestArgs { transaction, ..Default::default() }),
 		TaskPending,
 	)
 }
@@ -427,8 +424,8 @@ type MockUnverifiedTransfer = crate::UnverifiedTransfer<
 fn make_unverified_transfer(transfer: MockTransfer) -> MockUnverifiedTransfer {
 	MockUnverifiedTransfer {
 		transfer,
-		to_external: ExternalAddress::try_from((*ETHLESS_TO_ADDR).0.to_vec()).unwrap(),
-		from_external: ExternalAddress::try_from((*ETHLESS_FROM_ADDR).0.to_vec()).unwrap(),
+		to_external: ExternalAddress::try_from(ETHLESS_TO_ADDR.0.to_vec()).unwrap(),
+		from_external: ExternalAddress::try_from(ETHLESS_FROM_ADDR.0.to_vec()).unwrap(),
 		deadline: 10000,
 	}
 }
@@ -445,8 +442,8 @@ fn verify_transfer_ocw_fails_on_unsupported_method() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		crate::mock::roll_to(1);
 		let test_info = TestInfo::new_defaults();
-		let (deal_order, deal_order_id) = test_info.create_deal_order();
-		let (mut transfer, _transfer_id) = test_info.make_transfer(
+		let (deal_order_id, deal_order) = test_info.create_deal_order();
+		let (_, mut transfer) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
 			deal_order.terms.amount,
@@ -481,8 +478,8 @@ fn verify_transfer_ocw_returns_err() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		crate::mock::roll_to(1);
 		let test_info = TestInfo::new_defaults();
-		let (deal_order, deal_order_id) = test_info.create_deal_order();
-		let (transfer, _) = test_info.make_transfer(
+		let (deal_order_id, deal_order) = test_info.create_deal_order();
+		let (_, transfer) = test_info.make_transfer(
 			&test_info.lender,
 			&test_info.borrower,
 			deal_order.terms.amount,
@@ -566,12 +563,12 @@ fn set_up_verify_transfer_env(
 		loan_terms: LoanTerms { amount: get_mock_amount(), ..Default::default() },
 		..TestInfo::new_defaults()
 	};
-	let (deal_order, deal_order_id) = test_info.create_deal_order();
+	let (deal_order_id, deal_order) = test_info.create_deal_order();
 
 	let deal_id_hash = H256::from_uint(&get_mock_nonce());
 	let deal_order_id =
 		crate::DealOrderId::with_expiration_hash::<Test>(deal_order_id.expiration(), deal_id_hash);
-	let (transfer, _) = test_info.make_transfer(
+	let (_, transfer) = test_info.make_transfer(
 		&test_info.lender,
 		&test_info.borrower,
 		deal_order.terms.amount,
@@ -600,7 +597,7 @@ fn set_up_verify_transfer_env(
 			Some(rpc_uri),
 			&crate::mock::get_mock_tx_hash(),
 			&crate::mock::get_mock_tx_block_num(),
-			&*ETHLESS_RESPONSES,
+			&ETHLESS_RESPONSES,
 		),
 	)
 }
@@ -628,7 +625,7 @@ fn verify_transfer_get_transaction_error() {
 
 		assert_matches!(
 			crate::Pallet::<Test>::verify_transfer_ocw(&unverified),
-			Err(OffchainError::InvalidTask(TaskNonexistent))
+			Err(OffchainError::InvalidTask(TransactionNotFound))
 		);
 	});
 }
@@ -714,7 +711,7 @@ fn verify_transfer_get_block_invalid_address() {
 			Some("http://localhost:8545"),
 			&crate::mock::get_mock_tx_hash(),
 			&crate::mock::get_mock_tx_block_num(),
-			&*ETHLESS_RESPONSES,
+			&ETHLESS_RESPONSES,
 		)
 		.mock_get_block_number(&mut state.write());
 	}
@@ -765,7 +762,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 
 		assert_ok!(Creditcoin::<Test>::register_address(
 			Origin::signed(acc.clone()),
-			CONTRACT_CHAIN,
+			CHAIN,
 			addr.clone(),
 			sign
 		));
@@ -790,9 +787,10 @@ fn completed_oversubscribed_tasks_are_skipped() {
 
 		roll_to_with_ocw(3);
 
-		let collected_coins_id = CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+		let collected_coins_id =
+			CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
 		let collected_coins = CollectedCoins {
-			to: AddressId::new::<Test>(&CONTRACT_CHAIN, addr.as_ref()),
+			to: AddressId::new::<Test>(&CHAIN, addr.as_ref()),
 			amount: RPC_RESPONSE_AMOUNT.as_u128(),
 			tx_id: TX_HASH.hex_to_address(),
 		};
@@ -832,7 +830,7 @@ fn task_deadline_oversubscription() {
 
 		assert_ok!(Creditcoin::<Test>::register_address(
 			Origin::signed(acc.clone()),
-			CONTRACT_CHAIN,
+			CHAIN,
 			addr.clone(),
 			sign
 		));
@@ -853,7 +851,8 @@ fn task_deadline_oversubscription() {
 			TX_HASH.hex_to_address()
 		));
 
-		let collected_coins_id = CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+		let collected_coins_id =
+			CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
 
 		assert!(Creditcoin::<Test>::pending_tasks(
 			deadline_1,
@@ -889,7 +888,7 @@ fn ocw_retries() {
 
 		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
 
-		let (_, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, _) = test_info.create_deal_order();
 
 		let deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
@@ -903,7 +902,7 @@ fn ocw_retries() {
 
 		let mock_unconfirmed_tx = || {
 			let mut requests =
-				MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES);
+				MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES);
 			requests.get_block_number.set_response(JsonRpcResponse {
 				jsonrpc: "2.0".into(),
 				id: 1,
@@ -929,7 +928,7 @@ fn ocw_retries() {
 
 		// now mock requests so the tx is confirmed
 
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
 		roll_by_with_ocw(1);
@@ -957,10 +956,10 @@ fn duplicate_retry_fail_and_succeed() {
 		let blockchain = Blockchain::Rinkeby;
 
 		// mocks for when we expect failure
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_get_block_number(&mut state.write());
 		// mocks for when we expect success
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
 		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
@@ -970,7 +969,7 @@ fn duplicate_retry_fail_and_succeed() {
 
 		let test_info =
 			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
-		let (_, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, _) = test_info.create_deal_order();
 		let lender = test_info.lender.account_id.clone();
 
 		// test that we get a "fail_transfer" tx when verification fails
@@ -1058,7 +1057,7 @@ fn effective_guard_lifetime_until_task_expiration() {
 		let (acc, addr, sign, _) = generate_address_with_proof("collector");
 		assert_ok!(Creditcoin::<Test>::register_address(
 			Origin::signed(acc.clone()),
-			CONTRACT_CHAIN,
+			CHAIN,
 			addr.clone(),
 			sign
 		));
@@ -1076,9 +1075,10 @@ fn effective_guard_lifetime_until_task_expiration() {
 		assert!(pool.read().transactions.is_empty());
 		let tx = Extrinsic::decode(&mut &*tx).unwrap();
 
-		let collected_coins_id = CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+		let collected_coins_id =
+			CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
 		let collected_coins = CollectedCoins {
-			to: AddressId::new::<Test>(&CONTRACT_CHAIN, addr.as_ref()),
+			to: AddressId::new::<Test>(&CHAIN, addr.as_ref()),
 			amount: RPC_RESPONSE_AMOUNT.as_u128(),
 			tx_id: TX_HASH.hex_to_address(),
 		};
@@ -1093,7 +1093,7 @@ fn effective_guard_lifetime_until_task_expiration() {
 
 		let key = {
 			let collected_coins_id =
-				CollectedCoinsId::new::<Test>(TX_HASH.hex_to_address().as_slice());
+				CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
 
 			super::tasks::storage_key(&TaskId::from(collected_coins_id))
 		};

@@ -1,26 +1,28 @@
-pub mod errors;
-pub mod nonce;
-pub mod rpc;
-pub mod tasks;
+pub(crate) mod errors;
+mod nonce;
+pub(crate) mod rpc;
+pub(crate) mod tasks;
 
-use self::errors::RpcUrlError;
+use self::{errors::RpcUrlError, rpc::errors::RpcError};
 use super::{
 	pallet::{Config, Error, Pallet},
 	ExternalAddress,
 };
-use crate::{Blockchain, Call, TransferKind};
+use crate::{Blockchain, Call, ExternalTxId, TransferKind};
 use alloc::string::String;
-pub use errors::{OffchainError, VerificationFailureCause, VerificationResult};
+pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use frame_support::traits::IsType;
 use frame_system::offchain::{Account, SendSignedTransaction, Signer};
 use frame_system::Config as SystemConfig;
 use frame_system::Pallet as System;
-use nonce::{lock_key, nonce_key};
+use nonce::lock_key;
+pub use nonce::nonce_key;
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::traits::{One, Saturating};
 use sp_std::prelude::*;
+use sp_tracing as tracing;
 
-pub type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
+pub(crate) type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
 impl Blockchain {
 	pub fn rpc_url(&self) -> OffchainResult<String, errors::RpcUrlError> {
@@ -53,6 +55,16 @@ fn parse_eth_address(address: &ExternalAddress) -> OffchainResult<rpc::Address> 
 		.map_err(|_| VerificationFailureCause::InvalidAddress)?;
 	let address = rpc::Address::from(address_bytes);
 	Ok(address)
+}
+
+fn eth_get_transaction(tx_id: &ExternalTxId, rpc_url: &str) -> OffchainResult<rpc::EthTransaction> {
+	rpc::eth_get_transaction(tx_id, rpc_url).map_err(|e| {
+		if let RpcError::NoResult = e {
+			OffchainError::InvalidTask(VerificationFailureCause::TransactionNotFound)
+		} else {
+			e.into()
+		}
+	})
 }
 
 impl<T: Config> Pallet<T> {
@@ -94,6 +106,10 @@ impl<T: Config> Pallet<T> {
 		let key = &nonce_key(auth_id.into_ref());
 		let synced_nonce_storage = StorageValueRef::persistent(key);
 		let synced_nonce = synced_nonce_storage.get::<T::Index>().ok().flatten();
+
+		let n = Self::block_number();
+		tracing::trace!(target: "OCW", "@{n:?} Offnonce {synced_nonce:?} Onnonce {:?}", account_data.nonce);
+
 		if let Some(nonce) = synced_nonce {
 			if nonce > account_data.nonce {
 				account_data.nonce = nonce;

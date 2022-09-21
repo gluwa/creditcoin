@@ -23,9 +23,10 @@ mod tests;
 #[macro_use]
 mod helpers;
 mod migrations;
-mod ocw;
+pub mod ocw;
 mod types;
 
+use ocw::tasks::collect_coins::GCreContract;
 pub use types::*;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
@@ -79,6 +80,7 @@ pub mod pallet {
 		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
 		Verify,
 	};
+	use sp_tracing as log;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -149,13 +151,17 @@ pub mod pallet {
 		fn fail_transfer() -> Weight;
 		fn fund_deal_order() -> Weight;
 		fn lock_deal_order() -> Weight;
-		fn register_transfer_ocw() -> Weight;
+		fn register_funding_transfer() -> Weight;
+		fn register_repayment_transfer() -> Weight;
 		fn close_deal_order() -> Weight;
 		fn exempt() -> Weight;
 		fn register_deal_order() -> Weight;
 		fn request_collect_coins() -> Weight;
 		fn persist_collect_coins() -> Weight;
 		fn fail_collect_coins() -> Weight;
+		fn remove_authority() -> Weight;
+		fn set_collect_coins_contract() -> Weight;
+		fn register_currency() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -257,6 +263,10 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn collect_coins_contract)]
+	pub type CollectCoinsContract<T: Config> = StorageValue<_, GCreContract, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -435,6 +445,9 @@ pub mod pallet {
 		/// The account is already an authority.
 		AlreadyAuthority,
 
+		/// The account you are trying to remove is not  an authority.
+		NotAnAuthority,
+
 		/// The offer has already been made.
 		DuplicateOffer,
 
@@ -598,10 +611,10 @@ pub mod pallet {
 			)
 		}
 
-		fn offchain_worker(_block_number: T::BlockNumber) {
+		fn offchain_worker(block_number: T::BlockNumber) {
 			let auth_id = match Self::authority_id() {
 				None => {
-					log::trace!("Not authority, skipping off chain work");
+					log::debug!(target: "OCW", "Not authority, skipping off chain work");
 					return;
 				},
 				Some(auth) => T::FromAccountId::from(auth),
@@ -633,6 +646,8 @@ pub mod pallet {
 				}
 
 				let result = task.verify_ocw::<T>();
+
+				log::trace!(target: "OCW", "@{block_number:?} Task {:8?}", id);
 
 				match result {
 					Ok(task_data) => {
@@ -769,6 +784,8 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
+			Self::use_guid(&guid)?;
+
 			let ask_order = AskOrder {
 				blockchain: address.blockchain,
 				lender_address_id: address_id,
@@ -778,8 +795,6 @@ pub mod pallet {
 				lender: who,
 			};
 
-			Self::use_guid(&guid)?;
-			sp_io::offchain_index::set(&guid, &ask_order.encode());
 			Self::deposit_event(Event::<T>::AskOrderAdded(ask_order_id.clone(), ask_order.clone()));
 			AskOrders::<T>::insert_id(ask_order_id, ask_order);
 			Ok(())
@@ -804,6 +819,8 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
+			Self::use_guid(&guid)?;
+
 			let bid_order = BidOrder {
 				blockchain: address.blockchain,
 				borrower_address_id: address_id,
@@ -812,9 +829,6 @@ pub mod pallet {
 				block: <frame_system::Pallet<T>>::block_number(),
 				borrower: who,
 			};
-
-			Self::use_guid(&guid)?;
-			sp_io::offchain_index::set(&guid, &bid_order.encode());
 
 			Self::deposit_event(Event::<T>::BidOrderAdded(bid_order_id.clone(), bid_order.clone()));
 			BidOrders::<T>::insert_id(bid_order_id, bid_order);
@@ -1167,7 +1181,10 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let collect_coins_id = CollectedCoinsId::new::<T>(&tx_id);
+			let contract = Self::collect_coins_contract();
+			let contract_chain = &contract.chain;
+
+			let collect_coins_id = CollectedCoinsId::new::<T>(contract_chain, &tx_id);
 			ensure!(
 				!CollectedCoins::<T>::contains_key(&collect_coins_id),
 				Error::<T>::CollectCoinsAlreadyRegistered
@@ -1180,12 +1197,11 @@ pub mod pallet {
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
-			let address_id =
-				AddressId::new::<T>(&ocw::tasks::collect_coins::CONTRACT_CHAIN, &evm_address);
+			let address_id = AddressId::new::<T>(contract_chain, &evm_address);
 			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
-			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id };
+			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id, contract };
 
 			PendingTasks::<T>::insert(
 				deadline,
@@ -1199,7 +1215,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
+		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
@@ -1225,7 +1241,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
+		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer())]
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
@@ -1316,22 +1332,20 @@ pub mod pallet {
 
 			let (task_id, event) = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
-					let key = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
 					ensure!(
-						!Transfers::<T>::contains_key(&key),
+						!Transfers::<T>::contains_key(&id),
 						non_paying_error(Error::<T>::TransferAlreadyRegistered)
 					);
 
 					let mut transfer = transfer;
 					transfer.block = frame_system::Pallet::<T>::block_number();
 
-					Transfers::<T>::insert(&key, transfer);
-					(TaskId::from(id), Event::<T>::TransferVerified(key))
+					Transfers::<T>::insert(&id, transfer);
+					(TaskId::from(id.clone()), Event::<T>::TransferVerified(id))
 				},
 				TaskOutput::CollectCoins(id, collected_coins) => {
-					let key = CollectedCoinsId::new::<T>(&collected_coins.tx_id);
 					ensure!(
-						!CollectedCoins::<T>::contains_key(&key),
+						!CollectedCoins::<T>::contains_key(&id),
 						non_paying_error(Error::<T>::CollectCoinsAlreadyRegistered)
 					);
 
@@ -1343,8 +1357,11 @@ pub mod pallet {
 						collected_coins.amount,
 					)?;
 
-					CollectedCoins::<T>::insert(key.clone(), collected_coins.clone());
-					(TaskId::from(id), Event::<T>::CollectedCoinsMinted(key, collected_coins))
+					CollectedCoins::<T>::insert(&id, collected_coins.clone());
+					(
+						TaskId::from(id.clone()),
+						Event::<T>::CollectedCoinsMinted(id, collected_coins),
+					)
 				},
 			};
 
@@ -1405,7 +1422,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(<T as Config>::WeightInfo::register_currency())]
 		pub fn register_currency(origin: OriginFor<T>, currency: Currency) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -1416,6 +1433,32 @@ pub mod pallet {
 			Currencies::<T>::insert(&id, &currency);
 
 			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::weight(<T as Config>::WeightInfo::set_collect_coins_contract())]
+		pub fn set_collect_coins_contract(
+			origin: OriginFor<T>,
+			contract: GCreContract,
+		) -> DispatchResult {
+			ensure_root(origin)?;
+			CollectCoinsContract::<T>::put(contract);
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::weight(<T as Config>::WeightInfo::remove_authority())]
+		pub fn remove_authority(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::NotAnAuthority);
+
+			Authorities::<T>::remove(&who);
+
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 	}
 }

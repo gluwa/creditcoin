@@ -1,39 +1,36 @@
 use crate::{Config, Pallet};
 use alloc::vec::Vec;
 use codec::Encode;
-use frame_system::Pallet as System;
-use sp_runtime::offchain::storage_lock::{BlockAndTime, StorageLock};
+use sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use sp_runtime::offchain::Duration;
 
 const SYNCED_NONCE: &[u8] = b"creditcoin/OCW/nonce/nonce/";
 const SYNCED_NONCE_LOCK: &[u8] = b"creditcoin/OCW/nonce/lock/";
+const LOCK_DEADLINE: u64 = 50_000;
 
 pub(super) fn lock_key<Id: Encode>(id: &Id) -> Vec<u8> {
 	id.using_encoded(|encoded_id| SYNCED_NONCE_LOCK.iter().chain(encoded_id).copied().collect())
 }
 
-pub(super) fn nonce_key<Id: Encode>(id: &Id) -> Vec<u8> {
+pub fn nonce_key<Id: Encode>(id: &Id) -> Vec<u8> {
 	id.using_encoded(|encoded_id| SYNCED_NONCE.iter().chain(encoded_id).copied().collect())
 }
 
 impl<T: Config> Pallet<T> {
-	pub(super) fn nonce_lock_new(key: &[u8]) -> StorageLock<'_, BlockAndTime<System<T>>> {
-		StorageLock::<BlockAndTime<System<T>>>::with_block_and_time_deadline(
-			key,
-			1,
-			Duration::from_millis(0),
-		)
+	pub(super) fn nonce_lock_new(key: &[u8]) -> StorageLock<'_, Time> {
+		StorageLock::<Time>::with_deadline(key, Duration::from_millis(LOCK_DEADLINE))
 	}
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::helpers::RefstrExt;
 	use crate::mock::{roll_to, roll_to_with_ocw, ExtBuilder, Origin, Test};
 	use crate::ocw::errors::VerificationFailureCause as Cause;
 	use crate::ocw::tasks::collect_coins::tests::mock_rpc_for_collect_coins;
-	use crate::ocw::tasks::collect_coins::{tests::TX_HASH, CONTRACT_CHAIN};
-	use crate::tests::{generate_address_with_proof, RefstrExt};
+	use crate::ocw::tasks::collect_coins::{testing_constants::CHAIN, tests::TX_HASH};
+	use crate::tests::generate_address_with_proof;
 	use crate::types::{Address, AddressId};
 	use crate::Pallet as Creditcoin;
 	use assert_matches::assert_matches;
@@ -59,7 +56,7 @@ mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -92,16 +89,15 @@ mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
 
 			let mut fake = addr;
 			fake[0] = 0xff;
-			let address_id = AddressId::new::<Test>(&CONTRACT_CHAIN, &fake);
-			let entry =
-				Address { blockchain: CONTRACT_CHAIN, value: fake.clone(), owner: acc.clone() };
+			let address_id = AddressId::new::<Test>(&CHAIN, &fake);
+			let entry = Address { blockchain: CHAIN, value: fake.clone(), owner: acc.clone() };
 			crate::Addresses::<Test>::insert(address_id, entry);
 
 			roll_to(1);
@@ -121,8 +117,10 @@ mod tests {
 			let nonce = System::<Test>::account(acct).nonce;
 			assert_eq!(nonce, 1u64);
 
-			let expected_collected_coins_id =
-				crate::CollectedCoinsId::new::<crate::mock::Test>(&TX_HASH.hex_to_address());
+			let expected_collected_coins_id = crate::CollectedCoinsId::new::<crate::mock::Test>(
+				&CHAIN,
+				&TX_HASH.hex_to_address(),
+			);
 
 			let call = crate::Call::<crate::mock::Test>::fail_task {
 				task_id: expected_collected_coins_id.into(),
@@ -159,7 +157,7 @@ mod tests {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
 				Origin::signed(acc.clone()),
-				CONTRACT_CHAIN,
+				CHAIN,
 				addr.clone(),
 				sign
 			));
@@ -197,7 +195,8 @@ mod tests {
 				let mut ext_builder = ExtBuilder::default();
 				let acct_pubkey = ext_builder.generate_authority();
 				let acct = <Test as SystemConfig>::AccountId::from(acct_pubkey.into_account().0);
-				let expected_collected_coins_id = crate::CollectedCoinsId::new::<Test>(&[0]);
+				let expected_collected_coins_id =
+					crate::CollectedCoinsId::new::<Test>(&CHAIN, &[0]);
 				let (mut ext, pool) = ext_builder.build_with(offchain);
 				let execute = || {
 					crate::mock::roll_to(1);
@@ -260,8 +259,7 @@ mod tests {
 					let guard = lock.try_lock();
 					guard.map(|g| g.forget()).or_else(|deadline| {
 						// failed to acq guard; move to active guard's deadline boundaries
-						sp_io::offchain::sleep_until(deadline.timestamp);
-						roll_to(deadline.block_number);
+						sp_io::offchain::sleep_until(deadline);
 						//deadline still effective
 						lock.try_lock().map(|_| ())
 					})
@@ -274,5 +272,24 @@ mod tests {
 		if !handles.into_iter().any(|h| h.join().expect("thread joins").is_err()) {
 			panic!("lock should block")
 		}
+	}
+
+	#[test]
+	fn nonce_lock_expires() {
+		let ext = ExtBuilder::default();
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			System::<Test>::set_block_number(1);
+
+			let key = &b"lock_key"[..];
+			let mut lock = Pallet::<Test>::nonce_lock_new(key);
+			let guard = lock.try_lock().expect("ok");
+			guard.forget();
+			let guard = lock.try_lock();
+			let deadline = guard.map(|_| ()).expect_err("deadline");
+			// failed to acq guard; move past active guard's deadline boundary
+			sp_io::offchain::sleep_until(deadline.add(Duration::from_millis(LOCK_DEADLINE + 1)));
+			let g = lock.try_lock();
+			assert!(g.is_ok());
+		});
 	}
 }

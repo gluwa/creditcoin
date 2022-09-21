@@ -10,11 +10,11 @@ use crate::{
 	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, TaskId, Transfer,
 	TransferId, TransferKind, UnverifiedTransfer,
 };
-
 use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
 use sp_runtime::{traits::Saturating, RuntimeAppPublic};
 use sp_std::prelude::*;
+use sp_tracing as log;
 
 #[allow(unused_macros)]
 macro_rules! try_get {
@@ -62,11 +62,11 @@ impl<T: Config> Pallet<T> {
 			.map(|p| sp_core::sr25519::Public::from(p).into())
 			.collect::<Vec<T::FromAccountId>>();
 
-		log::trace!("{:?}", local_keys);
+		log::trace!(target: "OCW", "local keys {local_keys:?}");
 
 		Authorities::<T>::iter_keys().find_map(|auth| {
 			let acct = auth.clone().into();
-			local_keys.contains(&acct).then(|| auth)
+			local_keys.contains(&acct).then_some(auth)
 		})
 	}
 
@@ -183,5 +183,28 @@ pub fn non_paying_error<T: Config>(
 			actual_weight: None,
 			pays_fee: frame_support::weights::Pays::No,
 		},
+	}
+}
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[extend::ext]
+pub(crate) impl<'a> &'a str {
+	fn hex_to_address(self) -> crate::ExternalAddress {
+		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+	}
+}
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[extend::ext]
+pub(crate) impl<'a, S, T> &'a [T]
+where
+	S: Get<u32>,
+	T: Clone,
+{
+	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, ()> {
+		core::convert::TryFrom::try_from(self.to_vec())
+	}
+	fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
+		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
 	}
 }

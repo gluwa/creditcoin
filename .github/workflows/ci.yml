@@ -20,17 +20,32 @@ jobs:
 
       - name: Build docker image
         run: |
-          docker build -t gluwa/creditcoin-substrate .
+          docker build -t gluwa/creditcoin .
+
+  sanity-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for parity between extrinsics, benchmarks and weights
+        run: |
+          ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh
 
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
           override: true
           components: rustfmt
@@ -46,10 +61,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -76,10 +97,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -103,10 +129,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -127,7 +158,6 @@ jobs:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
-          SKIP_WASM_BUILD: 1
       - id: coverage
         uses: actions-rs/grcov@v0.1
         with:
@@ -154,10 +184,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -179,7 +214,7 @@ jobs:
           fi
 
           echo "INFO: MINING_KEY=$MINING_KEY"
-          ./target/release/creditcoin-node --dev --mining-key $MINING_KEY >~/creditcoin-node.log 2>&1 &
+          cargo run --release -- --dev --mining-key $MINING_KEY >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
@@ -235,7 +270,7 @@ jobs:
         with:
           author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
-          message: 'Auto-update creditcoin-js type definitions'
+          message: "Auto-update creditcoin-js type definitions"
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload logs
@@ -351,10 +386,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -378,3 +418,13 @@ jobs:
         with:
           command: build
           args: --release
+
+  shellcheck:
+    name: "🐚 Shellcheck"
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run ShellCheck
+      uses: ludeeus/action-shellcheck@1.1.0
+      env:
+        SHELLCHECK_OPTS: -e SC2002 # allow useless cat commands

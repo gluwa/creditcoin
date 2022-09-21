@@ -553,6 +553,12 @@ impl_runtime_apis! {
 			Ok(batches)
 		}
 	}
+
+	impl creditcoin_runtime_api::TaskApi<Block, AccountId> for Runtime{
+		fn offchain_nonce_key(acc: &AccountId) -> Vec<u8>{
+			pallet_creditcoin::ocw::nonce_key(acc)
+		}
+	}
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {

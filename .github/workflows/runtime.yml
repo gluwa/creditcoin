@@ -9,7 +9,7 @@ jobs:
   srtool:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Srtool build
         id: srtool_build
         uses: chevdor/srtool-actions@v0.5.0
@@ -24,7 +24,7 @@ jobs:
           cat creditcoin-srtool-digest.json
           echo "Runtime location: ${{ steps.srtool_build.outputs.wasm }}"
       - name: Archive Runtime
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: creditcoin-runtime-${{ github.sha }}
           path: |
@@ -36,7 +36,7 @@ jobs:
     needs: srtool
     if: github.ref == 'refs/heads/dev'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
           name: creditcoin-runtime-${{ github.sha }}

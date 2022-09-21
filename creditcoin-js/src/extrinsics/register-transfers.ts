@@ -5,10 +5,8 @@ import { u8aConcat, u8aToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { createCreditcoinTransferKind, createTransfer } from '../transforms';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
-import { TxCallback } from '..';
-import { PalletCreditcoinTransfer } from '@polkadot/types/lookup';
-import { Option } from '@polkadot/types';
+import { handleTransaction, listenForVerificationOutcome, processEvents } from './common';
+import { TxCallback, TxFailureCallback, VerificationError } from '..';
 
 export type TransferEventKind = 'TransferRegistered' | 'TransferVerified' | 'TransferProcessed';
 export type TransferEvent = {
@@ -31,7 +29,7 @@ export const registerFundingTransfer = async (
     txHash: string,
     lender: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const ccTransferKind = createCreditcoinTransferKind(api, transferKind);
     const ccDealOrderId = api.createType('PalletCreditcoinDealOrderId', dealOrderId);
@@ -48,7 +46,7 @@ export const registerRepaymentTransfer = async (
     txHash: string,
     borrower: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
         .registerRepaymentTransfer(
@@ -63,19 +61,25 @@ export const registerRepaymentTransfer = async (
 };
 
 export const verifiedTransfer = async (api: ApiPromise, transferId: TransferId, timeout = 20_000) => {
-    return new Promise<Transfer>((resolve, reject) => {
-        let timer: NodeJS.Timeout | undefined;
-        api.query.creditcoin
-            .transfers(transferId, (result: Option<PalletCreditcoinTransfer>) => {
-                if (!timer) timer = setTimeout(() => reject(new Error('Transfer verification timed out')), timeout);
-                if (result.isSome) {
-                    clearTimeout(timer);
-                    const transfer = createTransfer(result.unwrap());
-                    resolve(transfer);
+    return listenForVerificationOutcome(
+        api,
+        {
+            successEvent: api.events.creditcoin.TransferVerified,
+            failEvent: api.events.creditcoin.TransferFailedVerification,
+            processSuccessEvent: async ([id]) => {
+                if (id.toString() === transferId) {
+                    const result = await api.query.creditcoin.transfers(transferId);
+                    return createTransfer(result.unwrap());
                 }
-            })
-            .catch((reason) => reject(reason));
-    });
+            },
+            processFailEvent: ([id, cause]) => {
+                if (id.toString() === transferId) {
+                    return new VerificationError(`RegisterTransfer ${transferId} failed: ${cause.toString()}`, cause);
+                }
+            },
+        },
+        timeout,
+    );
 };
 
 const processTransferEvent = (api: ApiPromise, result: SubmittableResult, kind: TransferEventKind): TransferEvent => {
@@ -100,10 +104,9 @@ export const registerFundingTransferAsync = async (
     signer: KeyringPair,
 ) => {
     return new Promise<TransferEvent>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) =>
             resolve(processTransferEvent(api, result, 'TransferRegistered'));
-        registerFundingTransfer(api, transferKind, dealOrderId, txHash, signer, onSuccess, onFail).catch((reason) =>
+        registerFundingTransfer(api, transferKind, dealOrderId, txHash, signer, onSuccess, reject).catch((reason) =>
             reject(reason),
         );
     });
@@ -118,7 +121,6 @@ export const registerRepaymentTransferAsync = async (
     signer: KeyringPair,
 ) => {
     return new Promise<TransferEvent>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) =>
             resolve(processTransferEvent(api, result, 'TransferRegistered'));
         registerRepaymentTransfer(
@@ -129,7 +131,7 @@ export const registerRepaymentTransferAsync = async (
             txHash,
             signer,
             onSuccess,
-            onFail,
+            reject,
         ).catch((reason) => reject(reason));
     });
 };

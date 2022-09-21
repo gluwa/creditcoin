@@ -84,5 +84,5 @@ describe('RegisterDealOrder', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 60000);
+    }, 120000);
 });

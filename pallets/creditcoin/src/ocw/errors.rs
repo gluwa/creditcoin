@@ -36,6 +36,7 @@ pub enum VerificationFailureCause {
 	IncorrectSender,
 	InvalidAddress,
 	UnsupportedMethod,
+	TransactionNotFound,
 }
 
 impl VerificationFailureCause {
@@ -45,7 +46,7 @@ impl VerificationFailureCause {
 			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
 			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
 			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender | EmptyInput
-			| IncorrectReceiver | TaskNonexistent => true,
+			| IncorrectReceiver | TaskNonexistent | TransactionNotFound => true,
 			TaskPending | TaskUnconfirmed => false,
 		}
 	}

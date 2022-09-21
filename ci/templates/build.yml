@@ -23,7 +23,7 @@ jobs:
       parameters:
         rust: ${{ parameters['rust'] }}
         job_name: ${{ build.name }}
-        job_displayName: "target ${{ build.target }}" 
+        job_displayName: "target ${{ build.target }}"
         job_pool:
           vmImage: ubuntu-latest
         release: ${{ parameters['release'] }}
@@ -51,7 +51,7 @@ jobs:
         job_displayName: "target ${{ build.target }}"
         job_pool:
           vmImage: macOS-11
-        release: ${{ parameters['release'] }} 
+        release: ${{ parameters['release'] }}
         target: "${{ build.target }}"
         job_pre-steps: ${{ build['pre-steps'] }}
         job_post-steps:
