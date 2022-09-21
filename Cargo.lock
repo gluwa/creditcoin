@@ -962,7 +962,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
@@ -1009,7 +1009,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "assert_matches",
  "creditcoin-node-runtime",
@@ -6130,7 +6130,7 @@ dependencies = [
 
 [[package]]
 name = "sha3pow"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 dependencies = [
  "assert_matches",
  "parity-scale-codec",
