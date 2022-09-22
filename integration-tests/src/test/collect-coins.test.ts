@@ -72,7 +72,7 @@ describe('CollectCoins', (): void => {
                 collector,
                 (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
             );
-            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(600_000).catch();
+            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(800_000).catch();
             expect(collectCoinsVerified).toBeTruthy();
 
             // try again - should fail
@@ -97,7 +97,7 @@ describe('CollectCoins', (): void => {
                 collector,
                 '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             );
-            await expect(collectCoinsEvent.waitForVerification()).rejects.toThrow(/TransactionNotFound/);
+            await expect(collectCoinsEvent.waitForVerification(800_000)).rejects.toThrow(/TransactionNotFound/);
         }, 900_000);
     });
 
