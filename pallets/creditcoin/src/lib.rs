@@ -58,9 +58,8 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(6);
 #[frame_support::pallet]
 pub mod pallet {
 
-	use crate::helpers::non_paying_error;
-
 	use super::*;
+	use crate::helpers::non_paying_error;
 	use frame_support::{
 		dispatch::DispatchResult,
 		pallet_prelude::*,
@@ -74,11 +73,12 @@ pub mod pallet {
 		pallet_prelude::*,
 	};
 	use ocw::errors::VerificationFailureCause;
+	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
+	use pallet_offchain_task_scheduler::tasks::TaskV2;
 	use sp_runtime::offchain::storage_lock::{BlockAndTime, StorageLock};
 	use sp_runtime::offchain::Duration;
 	use sp_runtime::traits::{
-		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
-		Verify,
+		IdentifyAccount, SaturatedConversion, UniqueSaturatedFrom, UniqueSaturatedInto, Verify,
 	};
 	use tracing as log;
 
@@ -136,6 +136,12 @@ pub mod pallet {
 		type UnverifiedTaskTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
+
+		type TaskScheduler: TaskScheduler<
+			Self::BlockNumber,
+			Self::Hash,
+			Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
+		>;
 	}
 
 	pub trait WeightInfo {
@@ -625,11 +631,11 @@ pub mod pallet {
 
 		fn offchain_worker(block_number: T::BlockNumber) {
 			let auth_id = match Self::authority_id() {
+				Some(id) => id,
 				None => {
 					log::debug!(target: "OCW", "Not authority, skipping off chain work");
 					return;
 				},
-				Some(auth) => T::FromAccountId::from(auth),
 			};
 
 			for (deadline, id, task) in PendingTasks::<T>::iter() {
@@ -1211,34 +1217,33 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let contract = Self::collect_coins_contract();
-			let contract_chain = &contract.chain;
-
-			let collect_coins_id = CollectedCoinsId::new::<T>(contract_chain, &tx_id);
-			ensure!(
-				!CollectedCoins::<T>::contains_key(&collect_coins_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let deadline = Self::block_number().saturating_add(T::UnverifiedTaskTimeout::get());
-
-			ensure!(
-				!PendingTasks::<T>::contains_key(deadline, &TaskId::from(collect_coins_id.clone())),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let address_id = AddressId::new::<T>(contract_chain, &evm_address);
-			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
-			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
 			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id, contract };
 
-			PendingTasks::<T>::insert(
-				deadline,
-				TaskId::from(collect_coins_id.clone()),
-				Task::from(pending.clone()),
+			let collect_coins_id = TaskV2::<T>::to_id(&pending);
+
+			ensure!(
+				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
-			Self::deposit_event(Event::<T>::CollectCoinsRegistered(collect_coins_id, pending));
+			let deadline = T::TaskScheduler::deadline();
+
+			ensure!(
+				!T::TaskScheduler::is_scheduled(&deadline, &collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
+			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			T::TaskScheduler::insert(&deadline, &collect_coins_id, Task::from(pending.clone()));
+
+			Self::deposit_event(Event::<T>::CollectCoinsRegistered(
+				collect_coins_id.into(),
+				pending,
+			));
 
 			Ok(())
 		}

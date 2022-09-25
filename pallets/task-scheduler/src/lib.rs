@@ -43,7 +43,7 @@ pub mod crypto {
 pub mod pallet {
 	use super::{
 		log,
-		tasks::{self, VerifiableTask},
+		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
 	use codec::FullCodec;
@@ -57,7 +57,11 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + CreateSignedTransaction<Self::TaskCall> {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type Task: TypeInfo + FullCodec + MaxEncodedLen + VerifiableTask<Self> + Debug;
+		type Task: TypeInfo
+			+ FullCodec
+			+ MaxEncodedLen
+			+ ForwardTask<Self, Call = Self::TaskCall>
+			+ Debug;
 		type UnverifiedTaskTimeout: Get<<Self as SystemConfig>::BlockNumber>;
 		type WeightInfo: WeightInfo;
 		type AuthorityId: AppCrypto<
@@ -187,7 +191,7 @@ impl<Runtime: Config>
 	fn deadline() -> BlockNumberFor<Runtime> {
 		let offset = Runtime::UnverifiedTaskTimeout::get();
 		let block = frame_system::Pallet::<Runtime>::current_block_number();
-		offset.saturating_add(block).into()
+		offset.saturating_add(block)
 	}
 	fn is_scheduled(deadline: &BlockNumberFor<Runtime>, id: &HashFor<Runtime>) -> bool {
 		crate::pallet::PendingTasks::<Runtime>::contains_key(deadline, id)

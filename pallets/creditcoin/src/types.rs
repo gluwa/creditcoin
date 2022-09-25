@@ -249,6 +249,12 @@ impl<H> TransferId<H> {
 	}
 }
 
+impl<H> From<H> for TransferId<H> {
+	fn from(hash: H) -> Self {
+		Self(hash)
+	}
+}
+
 impl<H> CollectedCoinsId<H> {
 	pub fn new<Config>(contract_chain: &Blockchain, blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
 	where
@@ -257,6 +263,12 @@ impl<H> CollectedCoinsId<H> {
 	{
 		let key = concatenate!(contract_chain.as_bytes().iter(), blockchain_tx_id);
 		CollectedCoinsId(Config::Hashing::hash(&key))
+	}
+}
+
+impl<H> From<H> for CollectedCoinsId<H> {
+	fn from(hash: H) -> Self {
+		Self(hash)
 	}
 }
 
@@ -517,7 +529,8 @@ pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
 #[cfg(test)]
 mod test {
 	use crate::{
-		helpers::HexToAddress, mock, ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
+		helpers::extensions::HexToAddress, mock, ocw::tasks::collect_coins::tests::TX_HASH,
+		tests::TestInfo, *,
 	};
 	use codec::{Decode, Encode};
 	use sp_runtime::testing::H256;

@@ -25,6 +25,11 @@ default-features = false
 path = '../pallets/rewards'
 version = '2.211.1'
 
+[dependencies.pallet-offchain-task-scheduler]
+default-features = false
+path = '../pallets/task-scheduler'
+version = '0.1.0'
+
 [dependencies.pallet-difficulty]
 default-features = false
 path = '../pallets/difficulty'
@@ -242,6 +247,7 @@ std = [
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
+    'pallet-offchain-task-scheduler/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-core/std',

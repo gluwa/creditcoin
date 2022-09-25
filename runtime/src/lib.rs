@@ -21,6 +21,8 @@ use sp_runtime::{
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
 	SaturatedConversion,
 };
+use pallet_offchain_task_scheduler::crypto::AuthorityId;
+
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -56,6 +58,8 @@ pub type BlockNumber = u32;
 pub type Signature = MultiSignature;
 
 pub type Signer = <Signature as Verify>::Signer;
+
+pub type Moment = u64;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
@@ -137,6 +141,18 @@ parameter_types! {
 
 }
 
+impl pallet_offchain_task_scheduler::Config for Runtime {
+	type Event = Event;
+	type UnverifiedTaskTimeout = ConstU32<60>;
+	type AuthorityId = AuthorityId;
+	type AccountIdFrom = AccountId;
+	type InternalPublic = sp_core::sr25519::Public;
+	type PublicSigning = <Signature as Verify>::Signer;
+	type TaskCall = Call;
+	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
+	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
+}
+
 impl pallet_scheduler::Config for Runtime {
 	type Event = Event;
 	type Origin = Origin;
@@ -212,7 +228,7 @@ parameter_types! {
 
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
-	type Moment = u64;
+	type Moment = Moment;
 	type OnTimestampSet = Difficulty;
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
@@ -291,10 +307,11 @@ impl pallet_creditcoin::Config for Runtime {
 	type HashIntoNonce = Hash;
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
+	type TaskScheduler = Self;
 }
 
 impl pallet_difficulty::Config for Runtime {
-	type Moment = u64;
+	type Moment = Moment;
 	type WeightInfo = pallet_difficulty::weights::WeightInfo<Runtime>;
 }
 
@@ -361,6 +378,7 @@ construct_runtime!(
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
 		Rewards: pallet_rewards::{Pallet, Storage, Event<T>},
 		Scheduler: pallet_scheduler,
+		TaskScheduler: pallet_offchain_task_scheduler::{Pallet, Storage, Event<T>},
 	}
 );
 
