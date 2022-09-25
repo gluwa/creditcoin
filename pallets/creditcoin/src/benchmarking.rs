@@ -2,7 +2,10 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, HexToAddress, PublicToAddress, RefSliceOfTExt};
+use crate::helpers::{
+	extensions::{HexToAddress, RefSliceOfTExt},
+	EVMAddress, PublicToAddress,
+};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::types::Blockchain;

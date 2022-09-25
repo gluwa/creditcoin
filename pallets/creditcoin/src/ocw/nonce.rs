@@ -25,7 +25,7 @@ impl<T: Config> Pallet<T> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::helpers::HexToAddress;
+	use crate::helpers::extensions::HexToAddress;
 	use crate::mock::{roll_to, roll_to_with_ocw, ExtBuilder, Origin, Test};
 	use crate::ocw::errors::VerificationFailureCause as Cause;
 	use crate::ocw::tasks::collect_coins::tests::mock_rpc_for_collect_coins;

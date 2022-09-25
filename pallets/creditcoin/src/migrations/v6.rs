@@ -357,7 +357,7 @@ mod tests {
 	use super::*;
 	use crate::{
 		concatenate,
-		helpers::HexToAddress,
+		helpers::extensions::HexToAddress,
 		mock::{ExtBuilder, Test},
 		tests::{IntoBounded, TestInfo},
 		Duration, InterestRate,
