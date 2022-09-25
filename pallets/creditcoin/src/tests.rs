@@ -1,5 +1,5 @@
 use crate::{
-	helpers::{non_paying_error, EVMAddress, HexToAddress, PublicToAddress},
+	helpers::{extensions::HexToAddress, non_paying_error, EVMAddress, PublicToAddress},
 	mock::*,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
