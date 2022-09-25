@@ -3,9 +3,10 @@ use crate::{
 	EvmCurrencyType, EvmSupportedTransferKinds, EvmTransferKind, ExternalAmount, ExternalTxId, Id,
 	LegacyTransferKind, Task, TaskId, Transfer, TransferId, TransferKind, UnverifiedTransfer,
 };
-
 use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
+use pallet_offchain_task_scheduler::tasks::TaskScheduler;
+use pallet_offchain_task_scheduler::tasks::TaskV2;
 use sp_runtime::traits::Saturating;
 use sp_std::prelude::*;
 
@@ -30,9 +31,6 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressBlockchainMismatch);
 
-		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
-		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
-
 		let currency = Currencies::<T>::get(&currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
 
 		ensure!(currency.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
@@ -53,7 +51,7 @@ impl<T: Config> Pallet<T> {
 			timestamp: None,
 		};
 
-		let deadline = block.saturating_add(T::UnverifiedTaskTimeout::get());
+		let deadline = T::TaskScheduler::deadline();
 
 		let pending = UnverifiedTransfer {
 			from_external: from.value,
@@ -62,11 +60,19 @@ impl<T: Config> Pallet<T> {
 			deadline,
 			currency_to_check: crate::CurrencyOrLegacyTransferKind::Currency(currency),
 		};
-		let task_id = TaskId::from(transfer_id.clone());
+		let transfer_id = TaskV2::<T>::to_id(&pending);
+		ensure!(
+			!<UnverifiedTransfer<_, _, _, _> as TaskV2::<T>>::is_persisted(&transfer_id),
+			Error::<T>::TransferAlreadyRegistered
+		);
+		ensure!(
+			!T::TaskScheduler::is_scheduled(&deadline, &transfer_id),
+			Error::<T>::TransferAlreadyRegistered
+		);
 		let pending = Task::from(pending);
-		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
+		T::TaskScheduler::insert(&deadline, &transfer_id, pending);
 
-		Ok((transfer_id, transfer))
+		Ok((transfer_id.into(), transfer))
 	}
 
 	pub fn register_transfer_internal_legacy(

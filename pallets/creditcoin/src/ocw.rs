@@ -1,4 +1,4 @@
-pub(crate) mod errors;
+pub mod errors;
 mod nonce;
 pub(crate) mod rpc;
 pub(crate) mod tasks;
@@ -8,6 +8,7 @@ use super::{
 	pallet::{Config, Error, Pallet},
 	ExternalAddress,
 };
+use crate::Authorities;
 use crate::{Blockchain, Call, ExternalTxId};
 use alloc::string::String;
 pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
@@ -19,7 +20,9 @@ use nonce::lock_key;
 pub use nonce::nonce_key;
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::traits::{One, Saturating};
+use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
+use tracing as log;
 
 pub(crate) type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
@@ -102,7 +105,7 @@ impl<T: Config> Pallet<T> {
 		let synced_nonce = synced_nonce_storage.get::<T::Index>().ok().flatten();
 
 		let n = Self::block_number();
-		tracing::trace!(target: "OCW", "@{n:?} Offnonce {synced_nonce:?} Onnonce {:?}", account_data.nonce);
+		log::trace!(target: "OCW", "@{n:?} Offnonce {synced_nonce:?} Onnonce {:?}", account_data.nonce);
 
 		if let Some(nonce) = synced_nonce {
 			if nonce > account_data.nonce {
@@ -113,6 +116,20 @@ impl<T: Config> Pallet<T> {
 
 		Pallet::<T>::offchain_signed_tx(auth_id, call)
 			.map(|_| synced_nonce_storage.set(&account_data.nonce.saturating_add(One::one())))
+	}
+
+	pub fn authority_id() -> Option<T::FromAccountId> {
+		let local_keys = crate::crypto::Public::all()
+			.into_iter()
+			.map(|p| sp_core::sr25519::Public::from(p).into())
+			.collect::<Vec<T::FromAccountId>>();
+
+		log::trace!(target: "OCW", "local keys {local_keys:?}");
+
+		Authorities::<T>::iter_keys().find_map(|auth| {
+			let acct = auth.clone().into();
+			local_keys.contains(&acct).then(|| T::FromAccountId::from(auth))
+		})
 	}
 }
 
