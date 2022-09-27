@@ -357,8 +357,9 @@ mod tests {
 	use super::*;
 	use crate::{
 		concatenate,
+		helpers::HexToAddress,
 		mock::{ExtBuilder, Test},
-		tests::{HexToAddress, IntoBounded, TestInfo},
+		tests::{IntoBounded, TestInfo},
 		Duration, InterestRate,
 	};
 	use frame_support::Blake2_128Concat;
@@ -507,8 +508,8 @@ mod tests {
 		test_info: &TestInfo,
 		offer: Option<(Offer, OfferId)>,
 	) -> (DealOrderId, OldDealOrder) {
-		let (_offer, offer_id) = match offer {
-			Some(o) => o,
+		let (offer_id, _offer) = match offer {
+			Some((off, id)) => (id, off),
 			None => test_info.create_offer(),
 		};
 		let expiration_block = 10000;

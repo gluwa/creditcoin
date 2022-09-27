@@ -1,5 +1,5 @@
 use crate::{
-	helpers::{non_paying_error, EVMAddress, PublicToAddress, RefstrExt},
+	helpers::{non_paying_error, EVMAddress, HexToAddress, PublicToAddress},
 	mock::*,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
@@ -33,19 +33,6 @@ where
 	}
 	fn into_bounded(self) -> BoundedVec<T, S> {
 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
-
-#[extend::ext(name = HexToAddress)]
-pub(crate) impl<'a> &'a str {
-	fn hex_to_address(self) -> ExternalAddress {
-		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
-	}
-	fn into_bounded<S>(self) -> BoundedVec<u8, S>
-	where
-		S: Get<u32>,
-	{
-		self.as_bytes().into_bounded()
 	}
 }
 
@@ -640,7 +627,7 @@ fn add_ask_order_basic() {
 
 	ext.execute_with(|| {
 		let test_info = TestInfo::new_defaults();
-		let TestInfo { lender, loan_terms, ask_guid, .. } = test_info.clone();
+		let TestInfo { lender, loan_terms, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = lender;
 		let (_, ask_order) = test_info.create_ask_order();
 		let AskOrder { block, expiration_block, .. } = ask_order;
@@ -803,7 +790,7 @@ fn add_bid_order_basic() {
 
 	ext.execute_with(|| {
 		let test_info = TestInfo::new_defaults();
-		let TestInfo { borrower, loan_terms, bid_guid, .. } = test_info.clone();
+		let TestInfo { borrower, loan_terms, .. } = test_info.clone();
 		let RegisteredAddress { address_id, account_id } = borrower;
 
 		let (_, bid_order) = test_info.create_bid_order();
@@ -1220,8 +1207,8 @@ fn lock_deal_order_locks_by_borrower() {
 fn fund_deal_order_should_error_when_not_signed() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, _) = test_info.create_deal_order();
-		let transfer_id = TransferId::new::<Test>(&deal_order.blockchain, b"12345678");
+		let (deal_order_id, _deal_order) = test_info.create_deal_order();
+		let transfer_id = TransferId::new::<Test>(&test_info.blockchain, b"12345678");
 
 		assert_noop!(
 			Creditcoin::fund_deal_order(Origin::none(), deal_order_id, transfer_id),
@@ -3064,7 +3051,7 @@ fn register_funding_transfer_new_should_error_when_not_deal_order_not_found() {
 fn register_funding_transfer_legacy_should_error_when_currency_present() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::with_currency(ethless_currency("0xaaaa".hex_to_address()));
-		let (_, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, _) = test_info.create_deal_order();
 		let tx = "0xdeadbeef".hex_to_address();
 		let origin = Origin::signed(test_info.lender.account_id);
 		assert_noop!(
@@ -3169,7 +3156,7 @@ fn register_repayment_transfer_new_should_error_when_not_deal_order_not_found() 
 fn register_repayment_transfer_legacy_should_error_when_currency_present() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::with_currency(ethless_currency("0xaaaa".hex_to_address()));
-		let (_, deal_order_id) = test_info.create_deal_order();
+		let (deal_order_id, _) = test_info.create_deal_order();
 		let amount = 21u64.into();
 		let origin = Origin::signed(test_info.borrower.account_id);
 		let tx = "0xabcabcabca".hex_to_address();

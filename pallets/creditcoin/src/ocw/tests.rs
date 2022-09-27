@@ -23,7 +23,7 @@ use crate::tests::generate_address_with_proof;
 use crate::types::{AddressId, CollectedCoins, CollectedCoinsId, TaskId};
 use crate::Pallet as Creditcoin;
 use crate::{
-	helpers::RefstrExt,
+	helpers::HexToAddress,
 	mock::{
 		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
 		get_mock_nonce, get_mock_timestamp, get_mock_to_address, get_mock_tx_block_num,
@@ -33,7 +33,7 @@ use crate::{
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
 	ocw::tasks::StorageLock,
-	tests::{HexToAddress, TestInfo},
+	tests::TestInfo,
 	types::{DoubleMapExt, TransferId},
 	Blockchain, CurrencyOrLegacyTransferKind, ExternalAddress, Id, LegacyTransferKind, LoanTerms,
 	TransferKind, Transfers,

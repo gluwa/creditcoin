@@ -11,7 +11,8 @@ use crate::{
 	ocw::{
 		self, parse_eth_address,
 		rpc::{self, Address, EthBlock, EthTransaction, EthTransactionReceipt},
-		OffchainResult, VerificationFailureCause, VerificationResult, ETH_CONFIRMATIONS,
+		OffchainError, OffchainResult, VerificationFailureCause, VerificationResult,
+		ETH_CONFIRMATIONS,
 	},
 	Blockchain, Config, Currency, DealOrderId, EvmChainId, EvmInfo, ExternalAddress,
 	ExternalAmount, ExternalTxId, Id, LegacyTransferKind, Transfer, UnverifiedTransfer,

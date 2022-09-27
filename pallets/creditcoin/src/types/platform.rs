@@ -24,8 +24,6 @@ use sp_std::borrow::Cow;
 	TypeInfo,
 	MaxEncodedLen,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 #[repr(transparent)]
 pub struct EvmChainId(#[codec(compact)] u64);
 
@@ -52,8 +50,6 @@ impl EvmChainId {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct EvmInfo {
 	pub chain_id: EvmChainId,
 }
@@ -68,8 +64,6 @@ impl EvmInfo {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Blockchain {
 	Evm(EvmInfo),
 }
@@ -128,8 +122,6 @@ impl Blockchain {
 	MaxEncodedLen,
 	EnumCount,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum EvmTransferKind {
 	Erc20,
 	Ethless,
@@ -174,8 +166,6 @@ impl Currency {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum TransferKind {
 	Evm(EvmTransferKind),
 }
@@ -199,8 +189,6 @@ impl TryFrom<super::LegacyTransferKind> for TransferKind {
 #[derive(
 	Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Encode, Decode, TypeInfo, MaxEncodedLen, Ord,
 )]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct CurrencyId<Hash>(Hash);
 
 impl<H> CurrencyId<H> {

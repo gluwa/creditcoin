@@ -1299,7 +1299,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
+		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
@@ -1326,7 +1326,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(<T as Config>::WeightInfo::register_transfer_ocw())]
+		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer())]
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
 			transfer_kind: TransferKind,
