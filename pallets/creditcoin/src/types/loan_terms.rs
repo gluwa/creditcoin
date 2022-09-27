@@ -50,8 +50,6 @@ pub struct InterestRate {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct LoanTerms<Hash> {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
@@ -60,8 +58,6 @@ pub struct LoanTerms<Hash> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AskTerms<Hash>(LoanTerms<Hash>);
 
 impl<Hash> Deref for AskTerms<Hash> {
@@ -105,8 +101,6 @@ impl<Hash> AskTerms<Hash> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct BidTerms<Hash>(LoanTerms<Hash>);
 
 impl<Hash> Deref for BidTerms<Hash> {

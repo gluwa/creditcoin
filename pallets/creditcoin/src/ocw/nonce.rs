@@ -25,12 +25,12 @@ impl<T: Config> Pallet<T> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::helpers::RefstrExt;
+	use crate::helpers::HexToAddress;
 	use crate::mock::{roll_to, roll_to_with_ocw, ExtBuilder, Origin, Test};
 	use crate::ocw::errors::VerificationFailureCause as Cause;
 	use crate::ocw::tasks::collect_coins::tests::mock_rpc_for_collect_coins;
 	use crate::ocw::tasks::collect_coins::{testing_constants::CHAIN, tests::TX_HASH};
-	use crate::tests::{generate_address_with_proof, HexToAddress};
+	use crate::tests::generate_address_with_proof;
 	use crate::types::{Address, AddressId};
 	use crate::Pallet as Creditcoin;
 	use assert_matches::assert_matches;

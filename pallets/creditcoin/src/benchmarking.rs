@@ -2,17 +2,14 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, PublicToAddress, RefSliceOfTExt, RefstrExt};
+use crate::helpers::{EVMAddress, HexToAddress, PublicToAddress, RefSliceOfTExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::types::Blockchain;
 use crate::Duration;
 #[allow(unused)]
 use crate::Pallet as Creditcoin;
-use crate::{
-	types::{Blockchain, Currency::Evm as CurrencyEvm},
-	Duration, EvmTransferKind,
-};
+use crate::{types::Currency::Evm as CurrencyEvm, EvmTransferKind};
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
@@ -238,7 +235,7 @@ benchmarks! {
 		let repayment_amount = ExternalAmount::from(1);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,true,0u8);
-	}: register_repayment_transfer_new(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
+	}: register_repayment_transfer(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
 
 	close_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());

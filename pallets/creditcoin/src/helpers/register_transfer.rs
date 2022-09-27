@@ -173,7 +173,7 @@ mod tests {
 	fn register_transfer_internal_legacy_should_error_with_non_existent_lender_address() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 			let bogus_address =
 				AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
@@ -197,7 +197,7 @@ mod tests {
 	fn register_transfer_internal_legacy_should_error_with_non_existent_borrower_address() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 			let bogus_address =
 				AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
@@ -221,7 +221,7 @@ mod tests {
 	fn register_transfer_internal_legacy_should_error_when_signer_doesnt_own_from_address() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 
 			let result = Creditcoin::register_transfer_internal_legacy(
@@ -244,7 +244,7 @@ mod tests {
 	) {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let second_borrower = RegisteredAddress::new("borrower2", Blockchain::LUNIVERSE);
 			let tx = "0xabcabcabc";
 
@@ -267,7 +267,7 @@ mod tests {
 	fn register_transfer_internal_legacy_should_error_when_transfer_kind_is_not_supported() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 
 			let result = Creditcoin::register_transfer_internal_legacy(
@@ -290,8 +290,8 @@ mod tests {
 	fn register_transfer_internal_legacy_should_error_when_transfer_is_already_registered() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
-			let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
+			let (_transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
 
 			let result = Creditcoin::register_transfer_internal_legacy(
 				test_info.lender.account_id,
@@ -312,7 +312,7 @@ mod tests {
 	fn register_transfer_internal_should_error_with_non_existent_lender_address() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 			let bogus_address =
 				AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
@@ -337,7 +337,7 @@ mod tests {
 	fn register_transfer_internal_should_error_with_non_existent_borrower_address() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 			let bogus_address =
 				AddressId::new::<Test>(&Blockchain::RINKEBY, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
@@ -362,7 +362,7 @@ mod tests {
 	fn register_transfer_internal_should_error_when_signer_doesnt_own_from_address() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 
 			let result = Creditcoin::register_transfer_internal(
@@ -385,7 +385,7 @@ mod tests {
 	fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_blockchain() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let second_borrower = RegisteredAddress::new("borrower2", Blockchain::LUNIVERSE);
 			let tx = "0xabcabcabc";
 
@@ -409,7 +409,7 @@ mod tests {
 	fn register_transfer_internal_should_error_when_transfer_kind_is_not_supported() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
 			let tx = "0xabcabcabc";
 
 			let result = Creditcoin::register_transfer_internal(
@@ -433,8 +433,8 @@ mod tests {
 	fn register_transfer_internal_should_error_when_transfer_is_already_registered() {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
-			let (deal_order, deal_order_id) = test_info.create_deal_order();
-			let (transfer, _transfer_id) = test_info.create_funding_transfer(&deal_order_id);
+			let (deal_order_id, deal_order) = test_info.create_deal_order();
+			let (_transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
 
 			let result = Creditcoin::register_transfer_internal(
 				test_info.lender.account_id,

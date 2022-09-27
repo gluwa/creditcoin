@@ -517,10 +517,9 @@ pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
 #[cfg(test)]
 mod test {
 	use crate::{
-		helpers::RefstrExt, mock, ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
+		helpers::HexToAddress, mock, ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
 	};
 	use codec::{Decode, Encode};
-	use frame_support::BoundedVec;
 	use sp_runtime::testing::H256;
 
 	type AccountId = mock::AccountId;
@@ -627,7 +626,7 @@ mod test {
 
 	fn create_collected_coins() -> CollectedCoins<Hash, Balance> {
 		CollectedCoins {
-			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
+			to: AddressId::new::<mock::Test>(&Blockchain::RINKEBY, b"tester"),
 			amount: 1000,
 			tx_id: TX_HASH.hex_to_address(),
 		}
@@ -642,8 +641,11 @@ mod test {
 	}
 
 	fn create_unverified_transfer() -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
-		let (_, transfer) = create_funding_transfer();
+		let test_info = TestInfo::new_defaults();
+		let (deal_order_id, _) = test_info.create_deal_order();
+		let (_, transfer) = test_info.create_funding_transfer(&deal_order_id);
 		UnverifiedTransfer {
+			currency_to_check: CurrencyOrLegacyTransferKind::Currency(test_info.currency),
 			transfer,
 			from_external: b"lender".to_vec().try_into().unwrap(),
 			to_external: b"borrower".to_vec().try_into().unwrap(),
@@ -653,7 +655,7 @@ mod test {
 
 	fn create_address() -> Address<AccountId> {
 		Address {
-			blockchain: Blockchain::Rinkeby,
+			blockchain: Blockchain::RINKEBY,
 			value: ExternalAddress::try_from(
 				hex::decode("09231da7b19A016f9e576d23B16277062F4d46A8").unwrap(),
 			)
@@ -663,8 +665,6 @@ mod test {
 	}
 
 	trait_tests! {
-	blockchain: Blockchain : Blockchain::Bitcoin,
-	transfer_kind: TransferKind : TransferKind::Native,
 	address: Address<AccountId> : create_address(),
 	collected_coins: CollectedCoins<Hash, Balance> : create_collected_coins(),
 	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
@@ -674,14 +674,13 @@ mod test {
 	ask_order: AskOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().1,
 	bid_order: BidOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().1,
 	deal_order: DealOrder<AccountId, BlockNum, Hash, Moment> : TestInfo::new_defaults().create_deal_order().1,
-	address_id: AddressId<Hash> : AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
+	address_id: AddressId<Hash> : AddressId::new::<mock::Test>(&Blockchain::RINKEBY, b"0"),
 	ask_order_id: AskOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().0,
 	bid_order_id: BidOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().0,
 	deal_order_id: DealOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_deal_order().0,
-	order_id: OrderId<BlockNum, Hash> : OrderId::Deal(TestInfo::new_defaults().create_deal_order().0),
 	offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
-	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
-	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
+	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::RINKEBY, b"0"),
+	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::RINKEBY, &[0]),
 	legacy_sighash: LegacySighash : LegacySighash::default(),
 	task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
 	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().0),
@@ -696,53 +695,27 @@ mod test {
 	duration: Duration : Duration::from_millis(100),
 	interest_type: InterestType : InterestType::Simple,
 	interest_rate: InterestRate : InterestRate::default(),
-	loan_terms: LoanTerms : TestInfo::new_defaults().loan_terms,
-	ask_terms: AskTerms : AskTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
-	bid_terms: BidTerms : BidTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
+	loan_terms: LoanTerms<Hash> : TestInfo::new_defaults().loan_terms,
+	ask_terms: AskTerms<Hash> : AskTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
+	bid_terms: BidTerms<Hash> : BidTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
 
 	// from types/platform.rs
 	evm_chain_id: EvmChainId : EvmChainId::from(44),
 	evm_info: EvmInfo : EvmInfo { chain_id: 0.into() },
-	new_blockchain: NewBlockchain : NewBlockchain::Evm(EvmInfo { chain_id: 0.into() }),
+	blockchain: Blockchain : Blockchain::Evm(EvmInfo { chain_id: 0.into() }),
 	evm_transfer_kind: EvmTransferKind : EvmTransferKind::Erc20,
 	evm_currency_type: EvmCurrencyType : match Currency::default() {
 		Currency::Evm(currency_type, _) => currency_type,
 	},
 	currency: Currency : Currency::default(),
-	new_transfer_kind: NewTransferKind : NewTransferKind::Evm(EvmTransferKind::Erc20),
+	transfer_kind: TransferKind : TransferKind::Evm(EvmTransferKind::Erc20),
 	currency_id: CurrencyId<Hash> : CurrencyId::new::<mock::Test>(&Currency::default()),
 	}
 
 	#[test]
 	fn test_blockchain_as_bytes() {
-		let bitcoin = Blockchain::Bitcoin;
-		assert_eq!(bitcoin.as_bytes(), b"bitcoin");
-
-		let other = Blockchain::Other(BoundedVec::try_from(b"my-awesome-chain".to_vec()).unwrap());
-		assert_eq!(other.as_bytes(), b"my-awesome-chain");
-	}
-
-	#[test]
-	fn test_orderid_to_hex() {
-		mock::ExtBuilder::default().build_and_execute(|| {
-			let order_id = OrderId::Deal(TestInfo::new_defaults().create_deal_order().0);
-			let expected = [
-				49, 102, 48, 53, 53, 56, 100, 48, 99, 99, 50, 54, 97, 99, 99, 57, 51, 52, 102, 101,
-				100, 99, 99, 57, 54, 57, 99, 102, 51, 56, 54, 101, 52, 56, 100, 57, 49, 99, 102,
-				50, 50, 55, 56, 51, 98, 55, 54, 97, 49, 57, 56, 98, 100, 101, 55, 52, 97, 97, 48,
-				48, 52, 101, 102, 56,
-			];
-			assert_eq!(order_id.to_hex(), expected);
-		})
-	}
-
-	#[test]
-	fn test_orderid_expiration() {
-		mock::ExtBuilder::default().build_and_execute(|| {
-			let (deal_order_id, _) = TestInfo::new_defaults().create_deal_order();
-			let order_id = OrderId::Deal(deal_order_id.clone());
-			assert_eq!(order_id.expiration(), deal_order_id.expiration());
-		})
+		let other = Blockchain::Evm(EvmInfo { chain_id: EvmChainId::new(10) });
+		assert_eq!(&*other.as_bytes(), b"evm-10");
 	}
 
 	#[test]

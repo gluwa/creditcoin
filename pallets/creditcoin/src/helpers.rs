@@ -1,16 +1,17 @@
 mod external_address;
 mod register_transfer;
 
-pub use external_address::{address_is_well_formed, generate_external_address};
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-pub use external_address::{EVMAddress, PublicToAddress};
-
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
 	DealOrderId, Error, Guid, Id, TransferId,
 };
+pub use external_address::{address_is_well_formed, generate_external_address};
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+pub use external_address::{EVMAddress, PublicToAddress};
 use frame_support::ensure;
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+use frame_support::traits::Get;
 use frame_system::pallet_prelude::*;
 use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
@@ -132,10 +133,16 @@ pub fn non_paying_error<T: Config>(
 }
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
-#[extend::ext]
+#[extend::ext(name = HexToAddress)]
 pub(crate) impl<'a> &'a str {
 	fn hex_to_address(self) -> crate::ExternalAddress {
 		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+	}
+	fn into_bounded<S>(self) -> frame_support::BoundedVec<u8, S>
+	where
+		S: Get<u32>,
+	{
+		self.as_bytes().into_bounded()
 	}
 }
 
