@@ -203,6 +203,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             NotAddressOwner: AugmentedError<ApiType>;
             /**
+             * The account you are trying to remove is not  an authority.
+             **/
+            NotAnAuthority: AugmentedError<ApiType>;
+            /**
              * Only the borrower can perform the action.
              **/
             NotBorrower: AugmentedError<ApiType>;

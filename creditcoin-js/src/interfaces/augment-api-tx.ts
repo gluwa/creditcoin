@@ -317,6 +317,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'IncorrectSender'
                         | 'InvalidAddress'
                         | 'UnsupportedMethod'
+                        | 'TransactionNotFound'
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
@@ -447,6 +448,10 @@ declare module '@polkadot/api-base/types/submittable' {
                     blockchainTxId: Bytes | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinLegacyTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
+            >;
+            removeAuthority: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
             >;
             requestCollectCoins: AugmentedSubmittable<
                 (

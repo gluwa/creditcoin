@@ -7,6 +7,7 @@ import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData, registerCtcDeployerAddress } from './common';
 import { testIf } from '../utils';
+import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 
 describe('CollectCoins', (): void => {
     let ccApi: CreditcoinApi;
@@ -40,7 +41,7 @@ describe('CollectCoins', (): void => {
             /* eslint-disable @typescript-eslint/naming-convention */
             const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
                 address: (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
-                chain: blockchain,
+                chain: createCreditcoinBlockchain(api, blockchain),
             });
 
             await api.tx.sudo
