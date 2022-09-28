@@ -1,8 +1,8 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { Currency, CurrencyId, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
-import { TxCallback } from '../types';
+import { handleTransaction, processEvents } from './common';
+import { TxCallback, TxFailureCallback } from '../types';
 import { createCreditcoinCurrency, createCurrency } from '../transforms';
 import { PalletCreditcoinPlatformCurrency } from '@polkadot/types/lookup';
 import { blake2AsHex } from '@polkadot/util-crypto';
@@ -27,7 +27,7 @@ export const registerCurrency = async (
     currency: Currency,
     sudoSigner: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.sudo
         .sudo(api.tx.creditcoin.registerCurrency(createCreditcoinCurrency(api, currency)))
@@ -42,9 +42,8 @@ export const registerCurrencyAsync = async (
     sudoSigner: KeyringPair,
 ): Promise<CurrencyRegistered> => {
     return new Promise<CurrencyRegistered>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processCurrencyRegistered(api, result)); // eslint-disable-line @typescript-eslint/no-unused-vars
-        registerCurrency(api, currency, sudoSigner, onSuccess, onFail).catch(reject);
+        registerCurrency(api, currency, sudoSigner, onSuccess, reject).catch(reject);
     });
 };
 

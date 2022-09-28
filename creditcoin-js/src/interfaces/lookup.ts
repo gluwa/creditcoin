@@ -445,6 +445,7 @@ export default {
             'IncorrectSender',
             'InvalidAddress',
             'UnsupportedMethod',
+            'TransactionNotFound',
         ],
     },
     /**
@@ -855,6 +856,9 @@ export default {
             set_collect_coins_contract: {
                 contract: 'PalletCreditcoinOcwTasksCollectCoinsGCreContract',
             },
+            remove_authority: {
+                who: 'AccountId32',
+            },
         },
     },
     /**
@@ -1055,6 +1059,7 @@ export default {
             'RepaymentOrderNonZeroGain',
             'AddressBlockchainMismatch',
             'AlreadyAuthority',
+            'NotAnAuthority',
             'DuplicateOffer',
             'DealNotFunded',
             'DealOrderAlreadyFunded',
