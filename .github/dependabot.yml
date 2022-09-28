@@ -69,13 +69,19 @@ updates:
     directory: "/integration-tests"
     schedule:
       interval: "monthly"
+    ignore:
+      - update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
     directory: "/creditcoin-js"
     schedule:
       interval: "montly"
+    ignore:
+      - update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
     directory: "/scripts/js"
     schedule:
       interval: "monthly"
+    ignore:
+      - update-types: ["version-update:semver-patch"]
