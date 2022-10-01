@@ -153,6 +153,8 @@ pub mod pallet {
 		fn lock_deal_order() -> Weight;
 		fn register_funding_transfer() -> Weight;
 		fn register_repayment_transfer() -> Weight;
+		fn register_funding_transfer_legacy() -> Weight;
+		fn register_repayment_transfer_legacy() -> Weight;
 		fn close_deal_order() -> Weight;
 		fn exempt() -> Weight;
 		fn register_deal_order() -> Weight;
@@ -1242,7 +1244,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer())]
+		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer_legacy())]
 		pub fn register_funding_transfer_legacy(
 			origin: OriginFor<T>,
 			transfer_kind: LegacyTransferKind,
@@ -1270,7 +1272,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer())]
+		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer_legacy())]
 		pub fn register_repayment_transfer_legacy(
 			origin: OriginFor<T>,
 			transfer_kind: LegacyTransferKind,
