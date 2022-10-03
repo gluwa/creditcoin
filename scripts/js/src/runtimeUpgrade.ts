@@ -84,18 +84,31 @@ async function doRuntimeUpgrade(
             return byteArray.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
         };
 
-        // submit the upgrade transaction
-        const unsub = await api.tx.sudo
-            .sudoUncheckedWeight(api.tx.system.setCode(u8aToHex(wasmBlob)), 1)
-            .signAndSend(keyring, { nonce: -1 }, (result) => {
-                if (result.isInBlock && !result.isError) {
-                    console.log('Runtime upgrade successful');
-                    unsub();
-                } else if (result.isError) {
-                    console.error(`Runtime upgrade failed: ${result.toString()}`);
-                    unsub();
-                }
-            });
+        const scheduleDelay = 50;
+
+        const hexBlob = u8aToHex(wasmBlob);
+        // schedule the upgrade
+        await new Promise<void>((resolve, reject) => {
+            const unsubscribe = api.tx.sudo
+                .sudo(api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, { Value: api.tx.system.setCode(hexBlob) }))
+                .signAndSend(keyring, { nonce: -1 }, (result) => {
+                    const finish = () => {
+                        unsubscribe
+                            .then((unsub) => {
+                                unsub();
+                                resolve();
+                            })
+                            .catch(reject);
+                    };
+                    if (result.isInBlock && !result.isError) {
+                        console.log('Runtime upgrade successfully scheduled');
+                        finish();
+                    } else if (result.isError) {
+                        console.error(`Failed to schedule runtime upgrade: ${result.toString()}`);
+                        finish();
+                    }
+                });
+        });
     } finally {
         await api.disconnect();
     }
