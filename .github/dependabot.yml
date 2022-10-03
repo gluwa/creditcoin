@@ -75,7 +75,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/creditcoin-js"
     schedule:
-      interval: "montly"
+      interval: "monthly"
     ignore:
       - update-types: ["version-update:semver-patch"]
 
