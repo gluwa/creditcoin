@@ -968,7 +968,7 @@ fn duplicate_retry_fail_and_succeed() {
 		// mocks for when we expect failure
 		{
 			let mut state = state.write();
-			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 				.mock_chain_id(&mut state)
 				.mock_get_block_number(&mut state);
 		}
