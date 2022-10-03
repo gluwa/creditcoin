@@ -551,12 +551,12 @@ fn register_transfer_ocw_fail_to_send() {
 		// First when we expect failure, which means we won't make all of the requests
 		{
 			let mut state = state.write();
-			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 				.mock_chain_id(&mut state)
 				.mock_get_block_number(&mut state);
 		}
 		// Second when we expect success, where we'll do all the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &*ETHLESS_RESPONSES)
+		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
 		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
