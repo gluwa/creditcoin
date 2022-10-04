@@ -58,12 +58,11 @@ async function doRuntimeUpgrade(
             if (output.stderr.length > 0) {
                 throw new Error(`subwasm info failed: ${output.stderr}`);
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const info = JSON.parse(output.stdout) as WasmRuntimeInfo;
             // should probably do some checks here to see that the runtime is right
             // e.g. the core version is reasonable, it's compressed, etc.
-            const [version, _] = info.core_version.split(' ');
-            const [_wholeMatch, versionNumString] = version.match(/(?:\w+\-)+(\d+)/);
+            const [version] = info.core_version.split(' ');
+            const [, versionNumString] = version.match(/(?:\w+\-)+(\d+)/);
             const versionNum = Number(versionNumString);
 
             if (versionNum <= specVersion.toNumber()) {
@@ -90,6 +89,7 @@ async function doRuntimeUpgrade(
         // schedule the upgrade
         await new Promise<void>((resolve, reject) => {
             const unsubscribe = api.tx.sudo
+                // eslint-disable-next-line @typescript-eslint/naming-convention
                 .sudo(api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, { Value: api.tx.system.setCode(hexBlob) }))
                 .signAndSend(keyring, { nonce: -1 }, (result) => {
                     const finish = () => {
