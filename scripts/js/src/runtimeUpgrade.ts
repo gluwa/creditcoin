@@ -92,20 +92,20 @@ async function doRuntimeUpgrade(
                 // eslint-disable-next-line @typescript-eslint/naming-convention
                 .sudo(api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, { Value: api.tx.system.setCode(hexBlob) }))
                 .signAndSend(keyring, { nonce: -1 }, (result) => {
-                    const finish = () => {
+                    const finish = (fn: () => void) => {
                         unsubscribe
                             .then((unsub) => {
                                 unsub();
-                                resolve();
+                                fn();
                             })
                             .catch(reject);
                     };
                     if (result.isInBlock && !result.isError) {
                         console.log('Runtime upgrade successfully scheduled');
-                        finish();
+                        finish(resolve);
                     } else if (result.isError) {
-                        console.error(`Failed to schedule runtime upgrade: ${result.toString()}`);
-                        finish();
+                        const error = new Error(`Failed to schedule runtime upgrade: ${result.toString()}`);
+                        finish(() => reject(error));
                     }
                 });
         });
@@ -123,4 +123,7 @@ const inputWsUrl = process.argv[2];
 const inputWasmBlobPath = process.argv[3];
 const inputSudoKeyUri = process.argv[4];
 
-doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true).catch(console.error);
+doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true).catch((reason) => {
+    console.error(reason);
+    process.exit(1);
+});
