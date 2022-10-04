@@ -1,6 +1,6 @@
 [package]
 name = "pallet-creditcoin"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,6 +15,8 @@ publish = false
 targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
+itertools = { version = "~0.10", default-features = false }
+hex-literal = "*"
 log = "0.4.17"
 extend = "1.1.2"
 ethabi = { version = "16.0.0", features = ["rlp"], default-features = false }
@@ -22,21 +24,28 @@ ethereum-types = { version = "0.12.1", features = [
     "rlp",
     "serialize",
 ], default-features = false }
-serde = { version = "1.0.137", features = ["derive"], default-features = false }
-serde_json = { version = "1.0.81", features = [
+serde = { version = "1.0.144", features = ["derive"], default-features = false }
+serde_json = { version = "1.0.85", features = [
     "alloc",
 ], default-features = false }
 hex = { version = "0.4.3", features = ["alloc"], default-features = false }
 lexical = { version = "6.1.1", features = [
     "write-integers",
 ], default-features = false }
-sha2 = { version = "0.10.2", default-features = false }
+sha2 = { version = "0.10.6", default-features = false }
 libsecp256k1 = { version = "0.7", default-features = false, features = [
     "hmac",
     "static-context",
 ] }
 base58 = "0.2.0"
 bitcoin-bech32 = { version = "0.12.1", git = "https://github.com/nathanwhit/rust-bech32-bitcoin", default-features = false, branch = "no-std" }
+strum = { version = "0.24.1", features = ["derive"], default-features = false }
+
+[dependencies.sp-tracing]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+version = '4.0.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.codec]
 default-features = false
@@ -105,10 +114,10 @@ features = ['derive']
 version = '1.0'
 
 [dev-dependencies]
-bstr = { version = "0.2.17", default-features = false }
+bstr = { version = "1.0.1", default-features = false }
 parking_lot = "0.11.0"
 tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
-tracing = "0.1.33"
+tracing = "0.1.36"
 assert_matches = "1.5.0"
 
 [dev-dependencies.sp-keystore]

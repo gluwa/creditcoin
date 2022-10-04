@@ -1,12 +1,12 @@
-import { Guid } from 'js-guid';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { createCreditcoinLoanTerms } from 'creditcoin-js/transforms';
-import { AddressRegistered } from 'creditcoin-js/extrinsics/register-address';
+import { Guid } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js';
+import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
+import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
 import { POINT_01_CTC } from '../constants';
-import { signAccountId } from 'creditcoin-js/utils';
+import { signAccountId } from 'creditcoin-js/lib/utils';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
-import { testData } from './common';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { testData, tryRegisterAddress } from './common';
 
 import { extractFee } from '../utils';
 
@@ -19,8 +19,7 @@ describe('AddBidOrder', (): void => {
     const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
-        ccApi = await creditcoinApi('ws://127.0.0.1:9944');
+        ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         borrower = keyring.addFromUri('//Bob');
     });
 
@@ -29,13 +28,15 @@ describe('AddBidOrder', (): void => {
     });
 
     beforeEach(async () => {
-        const borrowerWallet = createWallet();
+        const borrowerWallet = createWallet('borrower');
 
-        borrowerRegAddr = await ccApi.extrinsics.registerAddress(
+        borrowerRegAddr = await tryRegisterAddress(
+            ccApi,
             borrowerWallet.address,
             blockchain,
             signAccountId(ccApi.api, borrowerWallet, borrower.address),
             borrower,
+            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
         );
         bidGuid = Guid.newGuid();
     }, 60000);

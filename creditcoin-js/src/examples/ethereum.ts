@@ -4,6 +4,7 @@ import TestTokenArtifact from './ethless/contracts/TestToken.sol/TestToken.json'
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { BN } from '@polkadot/util';
 
+// Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
 const MINTER = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
 
 const signTransfer = async (
@@ -64,11 +65,18 @@ const ethlessTransfer = async (
     return receipt;
 };
 
-export const ethConnection = async (providerRpcUrl = 'http://localhost:8545') => {
+export const ethConnection = async (
+    providerRpcUrl = 'http://localhost:8545',
+    decreaseMiningInterval = true,
+    minterWallet?: Wallet,
+) => {
     const provider = new JsonRpcProvider(providerRpcUrl);
-    const minter = new Wallet(MINTER, provider);
+    const minter = minterWallet || new Wallet(MINTER, provider);
     const testToken = await deployTestToken(minter);
-    await provider.send('evm_setIntervalMining', [500]);
+
+    if (decreaseMiningInterval) {
+        await provider.send('evm_setIntervalMining', [500]);
+    }
 
     const sleep = (delay: number) => new Promise((resolve) => setTimeout(resolve, delay));
 

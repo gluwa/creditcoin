@@ -1,6 +1,6 @@
 [package]
 name = "sha3pow"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 parity-scale-codec = "2.3.1"
 rand = { version = "0.8.4", features = ["small_rng"] }
-sha3 = "0.9.1"
+sha3 = "0.10.4"
 scale-info = "1.0.0"
 primitives = { path = "../primitives" }
 
@@ -46,3 +46,11 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dev-dependencies.sp-runtime]
+git = "https://github.com/gluwa/substrate.git"
+version = '4.1.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dev-dependencies.assert_matches]
+version = "1.5.0"

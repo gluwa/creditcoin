@@ -20,17 +20,32 @@ jobs:
 
       - name: Build docker image
         run: |
-          docker build -t gluwa/creditcoin-substrate .
+          docker build -t gluwa/creditcoin .
+
+  sanity-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for parity between extrinsics, benchmarks and weights
+        run: |
+          ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh
 
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
           override: true
           components: rustfmt
@@ -46,10 +61,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -60,7 +81,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings -A clippy::too_many_arguments -A clippy::type_complexity
+          args: --all-targets --all-features -- -D warnings -A clippy::too_many_arguments -A clippy::type_complexity
 
   check:
     # The type of runner that the job will run on
@@ -76,10 +97,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -103,10 +129,15 @@ jobs:
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -127,7 +158,6 @@ jobs:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
-          SKIP_WASM_BUILD: 1
       - id: coverage
         uses: actions-rs/grcov@v0.1
         with:
@@ -141,18 +171,28 @@ jobs:
 
   integration-test:
     runs-on: ubuntu-20.04
+    permissions: write-all
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 10
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set-Up
         run: |
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -174,7 +214,7 @@ jobs:
           fi
 
           echo "INFO: MINING_KEY=$MINING_KEY"
-          ./target/release/creditcoin-node --dev --mining-key $MINING_KEY >creditcoin-node.log 2>&1 &
+          cargo run --release -- --dev --mining-key $MINING_KEY >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
@@ -186,23 +226,59 @@ jobs:
           node-version: 16
       - run: npm install -g yarn
 
-      - name: Run integration test
+      - name: Prepare for integration tests
         run: |
           pushd integration-tests/
 
           # wait for creditcoin-node to initialize
           ./yarn-install-and-wait-for-creditcoin.sh
+          git checkout yarn.lock
+
+          popd
+
+      - name: Auto-update typedefs
+        id: update_typedefs
+        run: |
+          pushd creditcoin-js/
+
+          yarn build:types
+          yarn format
+
+          if [ -n "$(git status --short)" ]; then
+              git diff
+              echo "::set-output name=git_diff::true"
+          fi
+
+          popd
+
+      - name: Execute integration tests
+        run: |
+          pushd integration-tests/
 
           yarn test
 
           popd
+
+      - name: Git diff in case of failure
+        if: failure()
+        run: |
+          git diff
+
+      - name: Commit changes for typedefs
+        if: ${{ success() && steps.update_typedefs.outputs.git_diff == 'true' }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: gluwa-bot
+          author_email: creditcoin@gluwa.com
+          message: "Auto-update creditcoin-js type definitions"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: logs
-          path: creditcoin-node.log
+          path: ~/creditcoin-node.log
 
       - name: Kill SUT
         run: |
@@ -216,7 +292,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests]
+        directory: [creditcoin-js, integration-tests, scripts/js]
 
     steps:
       - uses: actions/checkout@v3
@@ -229,10 +305,10 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd creditcoin-js/ && yarn install && popd
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd ${{ matrix.directory }}
 
-          yarn install
+          yarn upgrade 'creditcoin-js'
           yarn lint
           popd
 
@@ -241,7 +317,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests]
+        directory: [creditcoin-js, integration-tests, scripts/js]
 
     steps:
       - uses: actions/checkout@v3
@@ -254,10 +330,10 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd creditcoin-js/ && yarn install && popd
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd ${{ matrix.directory }}
 
-          yarn install
+          yarn upgrade 'creditcoin-js'
           yarn typecheck
           popd
 
@@ -266,7 +342,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests]
+        directory: [creditcoin-js, integration-tests, scripts/js]
 
     steps:
       - uses: actions/checkout@v3
@@ -279,15 +355,11 @@ jobs:
 
       - name: Run tools
         run: |
-          pushd creditcoin-js/ && yarn install && popd
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd ${{ matrix.directory }}
 
-          yarn install
-          yarn format
-
-          git status
-          if [ -n "$(git status --short)" ]; then
-              git diff
+          yarn upgrade 'creditcoin-js'
+          if ! yarn check-format; then
               echo "FAIL: JavaScript is not formatted properly!"
               echo "HELP: Execute 'yarn format' and commit the changes to fix this"
               exit 1
@@ -300,15 +372,29 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Inspect benchmark CI config
+        run: |
+          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
+          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              exit 1
+          fi
+
       - name: Set-Up
         run: |
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-03-21
+          toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
@@ -320,15 +406,25 @@ jobs:
           command: build
           args: --release --features runtime-benchmarks
 
-      - name: Run benchmarks
+      - name: Run benchmarks to generate dummy weights
         run: |
-          ./target/release/creditcoin-node benchmark --pallet "*" --extrinsic "*"
+          ./scripts/bench.sh -p difficulty -b -r 1 -s 1
+          ./scripts/bench.sh -p creditcoin -b -r 1 -s 1
+          ./scripts/bench.sh -p rewards    -b -r 1 -s 1
 
-      - name: Inspect benchmark CI config
-        run: |
-          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
-          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
-          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
-              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
-              exit 1
-          fi
+      # check if automatically generated weights compile
+      - name: Rebuild SUT with newly generated weights
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+  shellcheck:
+    name: "🐚 Shellcheck"
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run ShellCheck
+      uses: ludeeus/action-shellcheck@1.1.0
+      env:
+        SHELLCHECK_OPTS: -e SC2002 # allow useless cat commands

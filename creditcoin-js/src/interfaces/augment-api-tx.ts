@@ -1,19 +1,32 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
-import type { Bytes, Compact, U256, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
-import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/submittable';
+
+import type {
+    ApiTypes,
+    AugmentedSubmittable,
+    SubmittableExtrinsic,
+    SubmittableExtrinsicFunction,
+} from '@polkadot/api-base/types';
+import type { Bytes, Compact, Option, U256, Vec, bool, i64, u128, u32, u64, u8 } from '@polkadot/types-codec';
+import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from '@polkadot/types/interfaces/runtime';
 import type {
+    FrameSupportScheduleMaybeHashed,
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
+    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOfferId,
-    PalletCreditcoinTransfer,
+    PalletCreditcoinPlatformCurrency,
+    PalletCreditcoinTaskId,
+    PalletCreditcoinTaskOutput,
     PalletCreditcoinTransferKind,
     SpCoreEcdsaPublic,
     SpCoreEcdsaSignature,
@@ -21,8 +34,12 @@ import type {
     SpRuntimeMultiSigner,
 } from '@polkadot/types/lookup';
 
+export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
+export type __SubmittableExtrinsic<ApiType extends ApiTypes> = SubmittableExtrinsic<ApiType>;
+export type __SubmittableExtrinsicFunction<ApiType extends ApiTypes> = SubmittableExtrinsicFunction<ApiType>;
+
 declare module '@polkadot/api-base/types/submittable' {
-    export interface AugmentedSubmittables<ApiType extends ApiTypes> {
+    interface AugmentedSubmittables<ApiType extends ApiTypes> {
         balances: {
             /**
              * Exactly as `transfer`, except the origin must be root and the source account may be
@@ -270,10 +287,15 @@ declare module '@polkadot/api-base/types/submittable' {
                 (dealOrderId: PalletCreditcoinDealOrderId) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinDealOrderId]
             >;
-            failTransfer: AugmentedSubmittable<
+            failTask: AugmentedSubmittable<
                 (
                     deadline: u32 | AnyNumber | Uint8Array,
-                    transferId: H256 | string | Uint8Array,
+                    taskId:
+                        | PalletCreditcoinTaskId
+                        | { VerifyTransfer: any }
+                        | { CollectCoins: any }
+                        | string
+                        | Uint8Array,
                     cause:
                         | PalletCreditcoinOcwErrorsVerificationFailureCause
                         | 'TaskNonexistent'
@@ -286,6 +308,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'MissingSender'
                         | 'AbiMismatch'
                         | 'IncorrectInputLength'
+                        | 'EmptyInput'
                         | 'IncorrectInputType'
                         | 'IncorrectAmount'
                         | 'IncorrectNonce'
@@ -293,10 +316,11 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'IncorrectSender'
                         | 'InvalidAddress'
                         | 'UnsupportedMethod'
+                        | 'TransactionNotFound'
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
+                [u32, PalletCreditcoinTaskId, PalletCreditcoinOcwErrorsVerificationFailureCause]
             >;
             fundDealOrder: AugmentedSubmittable<
                 (
@@ -308,6 +332,18 @@ declare module '@polkadot/api-base/types/submittable' {
             lockDealOrder: AugmentedSubmittable<
                 (dealOrderId: PalletCreditcoinDealOrderId) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinDealOrderId]
+            >;
+            persistTaskOutput: AugmentedSubmittable<
+                (
+                    deadline: u32 | AnyNumber | Uint8Array,
+                    taskOutput:
+                        | PalletCreditcoinTaskOutput
+                        | { VerifyTransfer: any }
+                        | { CollectCoins: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, PalletCreditcoinTaskOutput]
             >;
             /**
              * Registers an external address on `blockchain` and `network` with value `address`
@@ -327,6 +363,12 @@ declare module '@polkadot/api-base/types/submittable' {
                     ownershipProof: SpCoreEcdsaSignature | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinBlockchain, Bytes, SpCoreEcdsaSignature]
+            >;
+            registerCurrency: AugmentedSubmittable<
+                (
+                    currency: PalletCreditcoinPlatformCurrency | { Evm: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinPlatformCurrency]
             >;
             registerDealOrder: AugmentedSubmittable<
                 (
@@ -397,28 +439,26 @@ declare module '@polkadot/api-base/types/submittable' {
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
             >;
-            verifyTransfer: AugmentedSubmittable<
+            removeAuthority: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            requestCollectCoins: AugmentedSubmittable<
                 (
-                    deadline: u32 | AnyNumber | Uint8Array,
-                    transfer:
-                        | PalletCreditcoinTransfer
-                        | {
-                              blockchain?: any;
-                              kind?: any;
-                              from?: any;
-                              to?: any;
-                              orderId?: any;
-                              amount?: any;
-                              txId?: any;
-                              block?: any;
-                              isProcessed?: any;
-                              accountId?: any;
-                              timestamp?: any;
-                          }
+                    evmAddress: Bytes | string | Uint8Array,
+                    txId: Bytes | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [Bytes, Bytes]
+            >;
+            setCollectCoinsContract: AugmentedSubmittable<
+                (
+                    contract:
+                        | PalletCreditcoinOcwTasksCollectCoinsGCreContract
+                        | { address?: any; chain?: any }
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, PalletCreditcoinTransfer]
+                [PalletCreditcoinOcwTasksCollectCoinsGCreContract]
             >;
             /**
              * Generic tx
@@ -433,6 +473,107 @@ declare module '@polkadot/api-base/types/submittable' {
             setTargetBlockTime: AugmentedSubmittable<
                 (targetTime: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u64]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        scheduler: {
+            /**
+             * Cancel an anonymously scheduled task.
+             **/
+            cancel: AugmentedSubmittable<
+                (
+                    when: u32 | AnyNumber | Uint8Array,
+                    index: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32]
+            >;
+            /**
+             * Cancel a named scheduled task.
+             **/
+            cancelNamed: AugmentedSubmittable<
+                (id: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
+            /**
+             * Anonymously schedule a task.
+             **/
+            schedule: AugmentedSubmittable<
+                (
+                    when: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+            >;
+            /**
+             * Anonymously schedule a task after a delay.
+             *
+             * # <weight>
+             * Same as [`schedule`].
+             * # </weight>
+             **/
+            scheduleAfter: AugmentedSubmittable<
+                (
+                    after: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+            >;
+            /**
+             * Schedule a named task.
+             **/
+            scheduleNamed: AugmentedSubmittable<
+                (
+                    id: Bytes | string | Uint8Array,
+                    when: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [Bytes, u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+            >;
+            /**
+             * Schedule a named task after a delay.
+             *
+             * # <weight>
+             * Same as [`schedule_named`](Self::schedule_named).
+             * # </weight>
+             **/
+            scheduleNamedAfter: AugmentedSubmittable<
+                (
+                    id: Bytes | string | Uint8Array,
+                    after: u32 | AnyNumber | Uint8Array,
+                    maybePeriodic:
+                        | Option<ITuple<[u32, u32]>>
+                        | null
+                        | Uint8Array
+                        | ITuple<[u32, u32]>
+                        | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
+                    priority: u8 | AnyNumber | Uint8Array,
+                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [Bytes, u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
             >;
             /**
              * Generic tx
@@ -479,7 +620,7 @@ declare module '@polkadot/api-base/types/submittable' {
              * # </weight>
              **/
             sudo: AugmentedSubmittable<
-                (call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                (call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Call]
             >;
             /**
@@ -506,7 +647,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | { Address20: any }
                         | string
                         | Uint8Array,
-                    call: Call | { callIndex?: any; args?: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [MultiAddress, Call]
             >;
@@ -524,7 +665,7 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             sudoUncheckedWeight: AugmentedSubmittable<
                 (
-                    call: Call | { callIndex?: any; args?: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                     weight: u64 | AnyNumber | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [Call, u64]

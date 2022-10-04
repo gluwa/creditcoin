@@ -1,20 +1,11 @@
 /* eslint-disable */
-import { ApiPromise } from '@polkadot/api';
-import type { EventRecord } from '@polkadot/types/interfaces/system';
-import type { Balance, DispatchError } from '@polkadot/types/interfaces';
+import { ApiPromise } from 'creditcoin-js';
+import type { EventRecord, Balance, DispatchError } from 'creditcoin-js';
+import { common } from 'creditcoin-js';
+const { expectNoDispatchError } = common;
 
-const expectNoDispatchError = (api: ApiPromise, dispatchError?: DispatchError): void => {
-    if (dispatchError) {
-        if (dispatchError.isModule) {
-            const decoded = api.registry.findMetaError(dispatchError.asModule);
-            const { docs, name, section } = decoded;
-
-            expect(`${section}.${name}: ${docs.join(' ')}`).toBe('');
-        } else {
-            expect(dispatchError.toString()).toBe('');
-        }
-    }
-};
+export const testIf = (condition: boolean, name: string, fn: any, timeout = 30000) =>
+    condition ? test(name, fn, timeout) : test.skip(name, fn, timeout);
 
 export const extractFee = async (
     resolve: any,

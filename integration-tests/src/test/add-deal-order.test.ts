@@ -1,8 +1,8 @@
-import { KeyringPair } from '@polkadot/keyring/types';
+import { KeyringPair } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
-import { OfferId } from 'creditcoin-js/model';
+import { OfferId } from 'creditcoin-js/lib/model';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { addAskAndBidOrder, testData } from './common';
 import { extractFee } from '../utils';
 
@@ -15,8 +15,7 @@ describe('AddDealOrder', (): void => {
     const { expirationBlock, keyring } = testData;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
-        ccApi = await creditcoinApi('ws://127.0.0.1:9944');
+        ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
     });
@@ -26,7 +25,6 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
         const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;
@@ -48,5 +46,5 @@ describe('AddDealOrder', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 30000);
+    }, 240000);
 });

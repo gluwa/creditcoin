@@ -1,6 +1,6 @@
 [package]
 name = "primitives"
-version = "2.0.0-beta.7"
+version = "2.0.0-beta.8"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,13 +11,19 @@ edition = "2021"
 git = "https://github.com/gluwa/substrate.git"
 version = "0.10.0-dev"
 optional = true
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.sp-core]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" 
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dev-dependencies.sp-tracing]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+version = '4.0.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [features]
 default = ["std", "prometheus"]

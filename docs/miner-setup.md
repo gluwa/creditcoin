@@ -19,7 +19,7 @@
             Public key (hex):  0x02abf7befd96f80ce3a27772e7903f45a930c54ede2f0b9e052bfb21e90e0a4b40
             Account ID:        0xe37a568057962e95990cbba46c68f8d5b0d0d614abc8bc9f4e46af3e7aa8880c
             Public key (SS58): KW6p8XTkd6pLhTnwfSfr3hUcVSKTQhJHZxTVD8RrpfUhUTrvn
-            SS58 Address:      5HCy4x9b5mW28EYheGn14bWidQkhab5VMiNakia7i4VfxTKs 
+            SS58 Address:      5HCy4x9b5mW28EYheGn14bWidQkhab5VMiNakia7i4VfxTKs
             ```
 
         - Copy the `SS58 Address` for later use
@@ -44,8 +44,8 @@
     - Run (remove comment lines first)
 
         ```bash
-        
-        docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-beta-6 \
+
+        docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-beta-7 \
             # running a mining node
             --validator \
             # (optional) REPLACE <nodename> with a name for your node, to make it easier to identify
@@ -53,9 +53,9 @@
             # allow prometheus metrics to be scraped
             --prometheus-external \
             # (optional) opt in to telemetry
-            --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+            --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" "wss://telemetry.creditcoin.network/submit/ 0" \
             # node to connect to on boot, in order to join the network
-            --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWRubm6c4bViYyvTKnSjMicC35F1jZNrzt3MKC9Hev5vbG" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWSdzZaqoDAncrQmMUi34Nr29TayCr4xPvqcJQc5J434tZ" \
+            --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWSQye3uN3bZQRRC4oZbpiAZXkP2o5UZh6S8pqyh24bF3k" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWFrsEZ2aSfiigAxs6ir2kU6en4BewotyCXPhrJ7T1AzjN" \
             # REPLACE <yourhostname or ip> with the public IP address or host name that your node can be reached at
             --public-addr "/dns4/<yourhostname or ip>/tcp/30333" \
             # we want to connect to the mainnet

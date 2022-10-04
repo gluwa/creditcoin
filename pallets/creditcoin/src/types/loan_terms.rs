@@ -9,8 +9,6 @@ use sp_std::convert::TryFrom;
 pub type RatePerPeriod = u64;
 pub type Decimals = u64;
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Duration {
 	secs: u64,
 	nanos: u32,
@@ -36,16 +34,12 @@ impl Duration {
 }
 
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum InterestType {
 	Simple,
 	Compound,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct InterestRate {
 	pub rate_per_period: RatePerPeriod,
 	pub decimals: Decimals,
@@ -54,8 +48,6 @@ pub struct InterestRate {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct LoanTerms {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
@@ -63,8 +55,6 @@ pub struct LoanTerms {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AskTerms(LoanTerms);
 
 impl Deref for AskTerms {
@@ -103,13 +93,11 @@ impl AskTerms {
 	}
 
 	pub fn agreed_terms(&self, bid_terms: BidTerms) -> Option<LoanTerms> {
-		self.match_with(&bid_terms).then(|| bid_terms.0)
+		self.match_with(&bid_terms).then_some(bid_terms.0)
 	}
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct BidTerms(LoanTerms);
 
 impl Deref for BidTerms {

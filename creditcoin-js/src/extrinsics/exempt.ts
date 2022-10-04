@@ -1,7 +1,7 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { DealOrderId } from '../model';
-import { TxCallback } from '../types';
-import { handleTransaction, handleTransactionFailed } from './common';
+import { TxCallback, TxFailureCallback } from '../types';
+import { handleTransaction } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 export type LoanExempted = { dealOrderId: DealOrderId };
@@ -11,7 +11,7 @@ export const exemptLoan = async (
     dealOrderId: DealOrderId,
     lender: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const unsubscribe: () => void = await api.tx.creditcoin
         .exempt(api.createType('PalletCreditcoinDealOrderId', dealOrderId))
@@ -26,8 +26,7 @@ export const processLoanExempted = ({ events }: SubmittableResult): LoanExempted
 
 export const exemptLoanAsync = (api: ApiPromise, dealOrderId: DealOrderId, lender: KeyringPair) => {
     return new Promise<LoanExempted>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processLoanExempted(result));
-        exemptLoan(api, dealOrderId, lender, onSuccess, onFail).catch((reason) => reject(reason));
+        exemptLoan(api, dealOrderId, lender, onSuccess, reject).catch((reason) => reject(reason));
     });
 };

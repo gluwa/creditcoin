@@ -1,28 +1,39 @@
-use crate::{mock::*, REWARD_HALF_LIFE};
+use crate::{mock::*, BASE_REWARD_IN_CTC, CREDO_PER_CTC, REWARD_HALF_LIFE, SAWTOOTH_PORT_HEIGHT};
 
 #[test]
 fn reward_amount_genesis() {
+	//! 0 After Sawtooth
 	assert_eq!(Rewards::reward_amount(0), 28_000_000_000_000_000_000);
 }
 
 #[test]
 fn reward_amount_block_one() {
+	//! 1 After Sawtooth
 	assert_eq!(Rewards::reward_amount(1), 28_000_000_000_000_000_000);
 }
 
 #[test]
 fn reward_amount_just_before_reaching_first_halflife() {
-	assert_eq!(Rewards::reward_amount(REWARD_HALF_LIFE - 1), 28_000_000_000_000_000_000);
+	assert_eq!(
+		Rewards::reward_amount(REWARD_HALF_LIFE - SAWTOOTH_PORT_HEIGHT - 1),
+		CREDO_PER_CTC as u128 * BASE_REWARD_IN_CTC as u128
+	);
 }
 
 #[test]
 fn reward_amount_after_one_halflife() {
-	assert_eq!(Rewards::reward_amount(REWARD_HALF_LIFE + 1), 950_000_000_000_000_000 * 28);
+	assert_eq!(
+		Rewards::reward_amount(REWARD_HALF_LIFE - SAWTOOTH_PORT_HEIGHT + 1),
+		950_000_000_000_000_000 * BASE_REWARD_IN_CTC as u128
+	);
 }
 
 #[test]
 fn reward_amount_after_two_halflives() {
-	assert_eq!(Rewards::reward_amount(2 * REWARD_HALF_LIFE + 1), 902_500_000_000_000_000 * 28);
+	assert_eq!(
+		Rewards::reward_amount(2 * REWARD_HALF_LIFE - SAWTOOTH_PORT_HEIGHT + 1),
+		902_500_000_000_000_000 * BASE_REWARD_IN_CTC as u128
+	);
 }
 
 #[test]
@@ -40,7 +51,7 @@ fn issue_reward_handling() {
 			.expect("Expected at least one EventRecord to be found")
 			.event;
 
-		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::RewardIssued(1, 55)),);
+		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::<Test>::RewardIssued(1, 55)),);
 	});
 }
 
@@ -54,5 +65,16 @@ fn rewards_were_issued_after_mining_blocks() {
 
 		let new_balance = Balances::free_balance(1);
 		assert!(new_balance > initial_balance);
+	});
+}
+
+#[test]
+fn exercise_getter() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+		roll_to(10, 2);
+
+		let author = crate::Pallet::<Test>::block_author();
+		assert_eq!(author, Some(2));
 	});
 }

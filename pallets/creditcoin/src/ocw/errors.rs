@@ -11,9 +11,10 @@ pub enum OffchainError {
 	InvalidTask(VerificationFailureCause),
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
+	InvalidData,
 }
 
-pub type VerificationResult<Moment> = Result<Option<Moment>, OffchainError>;
+pub type VerificationResult<T> = Result<T, OffchainError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum VerificationFailureCause {
@@ -27,6 +28,7 @@ pub enum VerificationFailureCause {
 	MissingSender,
 	AbiMismatch,
 	IncorrectInputLength,
+	EmptyInput,
 	IncorrectInputType,
 	IncorrectAmount,
 	IncorrectNonce,
@@ -34,6 +36,7 @@ pub enum VerificationFailureCause {
 	IncorrectSender,
 	InvalidAddress,
 	UnsupportedMethod,
+	TransactionNotFound,
 }
 
 impl VerificationFailureCause {
@@ -42,14 +45,14 @@ impl VerificationFailureCause {
 		match self {
 			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
 			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
-			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender
-			| IncorrectReceiver | TaskNonexistent => true,
+			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender | EmptyInput
+			| IncorrectReceiver | TaskNonexistent | TransactionNotFound => true,
 			TaskPending | TaskUnconfirmed => false,
 		}
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RpcUrlError {
 	StorageFailure(StorageRetrievalError),
 	InvalidUrl(FromUtf8Error),
@@ -58,15 +61,12 @@ pub enum RpcUrlError {
 }
 
 macro_rules! _impl_from_error {
-	($self_ty: ident, $err_ty: path, $variant: ident, $err: ident, $ret: expr) => {
+	($self_ty: ident, $err_ty: path, $variant: ident) => {
 		impl From<$err_ty> for $self_ty {
-			fn from($err: $err_ty) -> Self {
-				$ret
+			fn from(err: $err_ty) -> Self {
+				$self_ty::$variant(err)
 			}
 		}
-	};
-	($self_ty: ident, $err_ty: path, $variant: ident) => {
-		impl_from_error!($self_ty, $err_ty, $variant, err, $self_ty::$variant(err));
 	};
 	($self_ty: ident, $($err_ty: path => $variant: ident),+ $(,)?) => {
         $(

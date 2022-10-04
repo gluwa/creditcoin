@@ -6,9 +6,55 @@ on:
     branches: testnet
 
 jobs:
+  build-benchmarks:
+      runs-on: ubuntu-20.04
+      steps:
+      - uses: actions/checkout@v3
+
+      - name: Inspect benchmark CI config
+        run: |
+          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
+          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              exit 1
+          fi
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Build benchmarks
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features runtime-benchmarks
+
+      - name: Upload benchmark binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release/creditcoin-node
+
   hardware-benchmarks:
     runs-on: self-hosted
     permissions: write-all
+    needs: build-benchmarks
     steps:
       - uses: actions/checkout@v3
         with:
@@ -20,37 +66,27 @@ jobs:
         run: |
           echo "HOME=/home/actions" >> $GITHUB_ENV
 
-      - name: Inspect benchmark CI config
-        run: |
-          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
-          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
-          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
-              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
-              exit 1
-          fi
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Download benchmark binary
+        uses: actions/download-artifact@v3
         with:
-          toolchain: nightly-2022-03-21
-          target: wasm32-unknown-unknown
-          profile: minimal
-          override: true
+          name: creditcoin-node
+          path: target/release
 
-      - uses: Swatinem/rust-cache@v1
-        continue-on-error: true
+      - name: Restore executable permissions
+        run: |
+          chmod a+x ./target/release/creditcoin-node
 
       - name: Difficulty
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
         env:
           PALLET: difficulty
         run: |
-          ./scripts/bench.sh -p $PALLET -cb
+          ./scripts/bench.sh -p $PALLET -b
 
       - name: Rewards
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
         env:
           PALLET: rewards
         run: |
@@ -59,7 +95,7 @@ jobs:
       # Run creditcoin pallet with lesser steps
       - name: Creditcoin
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
         env:
           STEPS: 8
           REPEAT: 8
@@ -67,10 +103,32 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
-      - name: Commit changes
+      - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
         with:
           author_name: hardwareBenchmark
           author_email: creditcoin@gluwa.com
           message: 'Auto-update pallet weights'
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare commit for PR against dev
+        run: |
+          LAST_COMMIT=$(git rev-parse HEAD)
+          BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
+
+          git checkout -b $BRANCH_NAME origin/dev
+          git cherry-pick $LAST_COMMIT
+          git push origin $BRANCH_NAME
+
+      - name: Open PR against dev
+        id: open_pr
+        uses: rematocorp/open-pull-request-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          from-branch: auto-update-weights-for-dev-${{ github.sha }}
+          to-branch: dev
+          repository-owner: gluwa
+          repository: creditcoin
+
+      - name: PR number against dev
+        run: echo ${{ steps.open_pr.outputs.pull_number }}

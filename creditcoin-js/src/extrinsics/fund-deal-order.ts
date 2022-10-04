@@ -1,8 +1,8 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { DealOrderFunded, DealOrderId, TransferId, TransferProcessed } from '../model';
 import { createDealOrder, createTransfer } from '../transforms';
-import { TxCallback } from '../types';
-import { handleTransaction, handleTransactionFailed, processEvents } from './common';
+import { TxCallback, TxFailureCallback } from '../types';
+import { handleTransaction, processEvents } from './common';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 export const fundDealOrder = async (
@@ -11,7 +11,7 @@ export const fundDealOrder = async (
     transferId: TransferId,
     lender: KeyringPair,
     onSuccess: TxCallback,
-    onFail: TxCallback,
+    onFail: TxFailureCallback,
 ) => {
     const ccDealOrderId = api.createType('PalletCreditcoinDealOrderId', dealOrderId);
     const unsubscribe: () => void = await api.tx.creditcoin
@@ -47,8 +47,7 @@ export const fundDealOrderAsync = (
     lender: KeyringPair,
 ) => {
     return new Promise<[DealOrderFunded, TransferProcessed]>((resolve, reject) => {
-        const onFail = (result: SubmittableResult) => reject(handleTransactionFailed(api, result));
         const onSuccess = (result: SubmittableResult) => resolve(processDealOrderFunded(api, result));
-        fundDealOrder(api, dealOrderId, transferId, lender, onSuccess, onFail).catch((reason) => reject(reason));
+        fundDealOrder(api, dealOrderId, transferId, lender, onSuccess, reject).catch((reason) => reject(reason));
     });
 };

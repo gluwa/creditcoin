@@ -13,6 +13,7 @@ import {
     DealOrderFunded,
     DealOrderId,
     DealOrderLocked,
+    ExternalAddress,
     LoanTerms,
     OfferId,
     TransferId,
@@ -27,9 +28,24 @@ import { DealOrderRegistered } from './extrinsics/register-deal-order';
 import { TransferEvent } from './extrinsics/register-transfers';
 import { LoanExempted } from './extrinsics/exempt';
 import { Wallet } from 'ethers';
+import { CollectCoinsEvent } from './extrinsics/request-collect-coins';
+import { PalletCreditcoinOcwErrorsVerificationFailureCause } from '@polkadot/types/lookup';
 
 export type TxCallback = (result: SubmittableResult) => void;
+export type TxFailureCallback = (error?: Error) => void;
 export type ExtrinsicFailed = string;
+
+export class VerificationError extends Error {
+    cause?: PalletCreditcoinOcwErrorsVerificationFailureCause;
+
+    constructor(message: string, cause?: PalletCreditcoinOcwErrorsVerificationFailureCause) {
+        super(message);
+
+        this.cause = cause;
+
+        Object.setPrototypeOf(this, VerificationError.prototype);
+    }
+}
 
 export interface Extrinsics {
     registerAddress: (
@@ -95,6 +111,11 @@ export interface Extrinsics {
         borrower: KeyringPair,
     ) => Promise<[DealOrderClosed, TransferProcessed]>;
     exemptLoan: (dealOrderId: DealOrderId, lender: KeyringPair) => Promise<LoanExempted>;
+    requestCollectCoins: (
+        evmAddress: ExternalAddress,
+        collector: KeyringPair,
+        txHash: string,
+    ) => Promise<CollectCoinsEvent>;
 }
 
 export interface CreditcoinApi {

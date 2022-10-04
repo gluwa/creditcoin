@@ -1,14 +1,14 @@
-import { KeyringPair } from '@polkadot/keyring/types';
+import { KeyringPair } from 'creditcoin-js';
 
-import { Guid } from 'js-guid';
+import { Guid } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
 
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
+import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
-import { testData } from './common';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
-import { Wallet } from 'ethers';
+import { Wallet } from 'creditcoin-js';
 
 describe('Exempt', (): void => {
     let ccApi: CreditcoinApi;
@@ -21,8 +21,7 @@ describe('Exempt', (): void => {
     const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
-        ccApi = await creditcoinApi('ws://127.0.0.1:9944');
+        ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
     });
@@ -32,21 +31,29 @@ describe('Exempt', (): void => {
     });
 
     beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
         const {
             api,
-            extrinsics: { registerAddress, registerDealOrder },
+            extrinsics: { registerDealOrder },
             utils: { signAccountId },
         } = ccApi;
-        lenderWallet = createWallet();
-        borrowerWallet = createWallet();
+        lenderWallet = createWallet('lender');
+        borrowerWallet = createWallet('borrower');
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-            registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
-            registerAddress(
+            tryRegisterAddress(
+                ccApi,
+                lenderWallet.address,
+                blockchain,
+                signAccountId(lenderWallet, lender.address),
+                lender,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            ),
+            tryRegisterAddress(
+                ccApi,
                 borrowerWallet.address,
                 blockchain,
                 signAccountId(borrowerWallet, borrower.address),
                 borrower,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
         const askGuid = Guid.newGuid();

@@ -1,10 +1,16 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/errors';
+
+import type { ApiTypes, AugmentedError } from '@polkadot/api-base/types';
+
+export type __AugmentedError<ApiType extends ApiTypes> = AugmentedError<ApiType>;
 
 declare module '@polkadot/api-base/types/errors' {
-    export interface AugmentedErrors<ApiType extends ApiTypes> {
+    interface AugmentedErrors<ApiType extends ApiTypes> {
         balances: {
             /**
              * Beneficiary account must pre-exist
@@ -72,6 +78,14 @@ declare module '@polkadot/api-base/types/errors' {
              * The bid order has expired and is no longer valid.
              **/
             BidOrderExpired: AugmentedError<ApiType>;
+            /**
+             * The coin collection has already been registered.
+             **/
+            CollectCoinsAlreadyRegistered: AugmentedError<ApiType>;
+            /**
+             * The currency has already been registered.
+             **/
+            CurrencyAlreadyRegistered: AugmentedError<ApiType>;
             /**
              * The deal cannot be locked because it is not funded yet.
              **/
@@ -181,6 +195,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             NotAddressOwner: AugmentedError<ApiType>;
             /**
+             * The account you are trying to remove is not  an authority.
+             **/
+            NotAnAuthority: AugmentedError<ApiType>;
+            /**
              * Only the borrower can perform the action.
              **/
             NotBorrower: AugmentedError<ApiType>;
@@ -253,6 +271,28 @@ declare module '@polkadot/api-base/types/errors' {
             NegativeAdjustmentPeriod: AugmentedError<ApiType>;
             ZeroAdjustmentPeriod: AugmentedError<ApiType>;
             ZeroTargetTime: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        scheduler: {
+            /**
+             * Failed to schedule a call
+             **/
+            FailedToSchedule: AugmentedError<ApiType>;
+            /**
+             * Cannot find the scheduled call.
+             **/
+            NotFound: AugmentedError<ApiType>;
+            /**
+             * Reschedule failed because it does not change scheduled time.
+             **/
+            RescheduleNoChange: AugmentedError<ApiType>;
+            /**
+             * Given target block number is in the past.
+             **/
+            TargetBlockNumberInPast: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

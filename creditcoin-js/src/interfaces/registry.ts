@@ -1,8 +1,15 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/types/types/registry';
+
 import type {
+    CreditcoinNodeRuntimeOriginCaller,
     CreditcoinNodeRuntimeRuntime,
+    FrameSupportScheduleLookupError,
+    FrameSupportScheduleMaybeHashed,
     FrameSupportTokensMiscBalanceStatus,
     FrameSupportWeightsDispatchClass,
     FrameSupportWeightsDispatchInfo,
@@ -27,6 +34,7 @@ import type {
     FrameSystemLimitsBlockWeights,
     FrameSystemLimitsWeightsPerClass,
     FrameSystemPhase,
+    FrameSystemRawOrigin,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesCall,
@@ -42,6 +50,7 @@ import type {
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
     PalletCreditcoinCall,
+    PalletCreditcoinCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinError,
@@ -54,17 +63,32 @@ import type {
     PalletCreditcoinLoanTermsInterestRate,
     PalletCreditcoinLoanTermsInterestType,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
+    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinOrderId,
+    PalletCreditcoinPlatformCurrency,
+    PalletCreditcoinPlatformEvmChainId,
+    PalletCreditcoinPlatformEvmCurrencyType,
+    PalletCreditcoinPlatformEvmInfo,
+    PalletCreditcoinPlatformEvmTransferKind,
     PalletCreditcoinRepaymentOrderId,
+    PalletCreditcoinTask,
+    PalletCreditcoinTaskId,
+    PalletCreditcoinTaskOutput,
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
+    PalletCreditcoinUnverifiedCollectedCoins,
     PalletCreditcoinUnverifiedTransfer,
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
     PalletDifficultyError,
     PalletRewardsEvent,
+    PalletSchedulerCall,
+    PalletSchedulerError,
+    PalletSchedulerEvent,
+    PalletSchedulerReleases,
+    PalletSchedulerScheduledV3,
     PalletSudoCall,
     PalletSudoError,
     PalletSudoEvent,
@@ -77,6 +101,7 @@ import type {
     SpCoreEd25519Signature,
     SpCoreSr25519Public,
     SpCoreSr25519Signature,
+    SpCoreVoid,
     SpRuntimeArithmeticError,
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
@@ -88,8 +113,11 @@ import type {
 } from '@polkadot/types/lookup';
 
 declare module '@polkadot/types/types/registry' {
-    export interface InterfaceTypes {
+    interface InterfaceTypes {
+        CreditcoinNodeRuntimeOriginCaller: CreditcoinNodeRuntimeOriginCaller;
         CreditcoinNodeRuntimeRuntime: CreditcoinNodeRuntimeRuntime;
+        FrameSupportScheduleLookupError: FrameSupportScheduleLookupError;
+        FrameSupportScheduleMaybeHashed: FrameSupportScheduleMaybeHashed;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSupportWeightsDispatchClass: FrameSupportWeightsDispatchClass;
         FrameSupportWeightsDispatchInfo: FrameSupportWeightsDispatchInfo;
@@ -114,6 +142,7 @@ declare module '@polkadot/types/types/registry' {
         FrameSystemLimitsBlockWeights: FrameSystemLimitsBlockWeights;
         FrameSystemLimitsWeightsPerClass: FrameSystemLimitsWeightsPerClass;
         FrameSystemPhase: FrameSystemPhase;
+        FrameSystemRawOrigin: FrameSystemRawOrigin;
         PalletBalancesAccountData: PalletBalancesAccountData;
         PalletBalancesBalanceLock: PalletBalancesBalanceLock;
         PalletBalancesCall: PalletBalancesCall;
@@ -129,6 +158,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinBidOrderId: PalletCreditcoinBidOrderId;
         PalletCreditcoinBlockchain: PalletCreditcoinBlockchain;
         PalletCreditcoinCall: PalletCreditcoinCall;
+        PalletCreditcoinCollectedCoins: PalletCreditcoinCollectedCoins;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
         PalletCreditcoinDealOrderId: PalletCreditcoinDealOrderId;
         PalletCreditcoinError: PalletCreditcoinError;
@@ -141,17 +171,32 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinLoanTermsInterestRate: PalletCreditcoinLoanTermsInterestRate;
         PalletCreditcoinLoanTermsInterestType: PalletCreditcoinLoanTermsInterestType;
         PalletCreditcoinOcwErrorsVerificationFailureCause: PalletCreditcoinOcwErrorsVerificationFailureCause;
+        PalletCreditcoinOcwTasksCollectCoinsGCreContract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;
         PalletCreditcoinOrderId: PalletCreditcoinOrderId;
+        PalletCreditcoinPlatformCurrency: PalletCreditcoinPlatformCurrency;
+        PalletCreditcoinPlatformEvmChainId: PalletCreditcoinPlatformEvmChainId;
+        PalletCreditcoinPlatformEvmCurrencyType: PalletCreditcoinPlatformEvmCurrencyType;
+        PalletCreditcoinPlatformEvmInfo: PalletCreditcoinPlatformEvmInfo;
+        PalletCreditcoinPlatformEvmTransferKind: PalletCreditcoinPlatformEvmTransferKind;
         PalletCreditcoinRepaymentOrderId: PalletCreditcoinRepaymentOrderId;
+        PalletCreditcoinTask: PalletCreditcoinTask;
+        PalletCreditcoinTaskId: PalletCreditcoinTaskId;
+        PalletCreditcoinTaskOutput: PalletCreditcoinTaskOutput;
         PalletCreditcoinTransfer: PalletCreditcoinTransfer;
         PalletCreditcoinTransferKind: PalletCreditcoinTransferKind;
+        PalletCreditcoinUnverifiedCollectedCoins: PalletCreditcoinUnverifiedCollectedCoins;
         PalletCreditcoinUnverifiedTransfer: PalletCreditcoinUnverifiedTransfer;
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;
         PalletDifficultyError: PalletDifficultyError;
         PalletRewardsEvent: PalletRewardsEvent;
+        PalletSchedulerCall: PalletSchedulerCall;
+        PalletSchedulerError: PalletSchedulerError;
+        PalletSchedulerEvent: PalletSchedulerEvent;
+        PalletSchedulerReleases: PalletSchedulerReleases;
+        PalletSchedulerScheduledV3: PalletSchedulerScheduledV3;
         PalletSudoCall: PalletSudoCall;
         PalletSudoError: PalletSudoError;
         PalletSudoEvent: PalletSudoEvent;
@@ -164,6 +209,7 @@ declare module '@polkadot/types/types/registry' {
         SpCoreEd25519Signature: SpCoreEd25519Signature;
         SpCoreSr25519Public: SpCoreSr25519Public;
         SpCoreSr25519Signature: SpCoreSr25519Signature;
+        SpCoreVoid: SpCoreVoid;
         SpRuntimeArithmeticError: SpRuntimeArithmeticError;
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;

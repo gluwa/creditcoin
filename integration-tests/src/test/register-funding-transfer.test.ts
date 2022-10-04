@@ -1,17 +1,14 @@
-import { KeyringPair } from '@polkadot/keyring/types';
-
-import { Guid } from 'js-guid';
+import { KeyringPair } from 'creditcoin-js';
+import { Guid } from 'creditcoin-js';
 import { POINT_01_CTC } from '../constants';
-import { BN } from '@polkadot/util';
-
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/extrinsics/register-deal-order';
+import { BN } from 'creditcoin-js';
+import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
-import { CreditcoinApi } from 'creditcoin-js/types';
-import { createCreditcoinTransferKind } from 'creditcoin-js/transforms';
-import { testData, lendOnEth } from './common';
+import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
+import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
+import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
-import { Wallet } from 'ethers';
-import { createFundingTransferId } from 'creditcoin-js/extrinsics/register-transfers';
+import { Wallet } from 'creditcoin-js';
 
 describe('RegisterFundingTransfer', (): void => {
     let ccApi: CreditcoinApi;
@@ -26,8 +23,7 @@ describe('RegisterFundingTransfer', (): void => {
     const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
-        process.env.NODE_ENV = 'test';
-        ccApi = await creditcoinApi('ws://127.0.0.1:9944');
+        ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
     });
@@ -37,21 +33,29 @@ describe('RegisterFundingTransfer', (): void => {
     });
 
     beforeEach(async () => {
-        process.env.NODE_ENV = 'test';
         const {
             api,
-            extrinsics: { registerAddress, registerDealOrder },
+            extrinsics: { registerDealOrder },
             utils: { signAccountId },
         } = ccApi;
-        lenderWallet = createWallet();
-        borrowerWallet = createWallet();
+        lenderWallet = createWallet('lender');
+        borrowerWallet = createWallet('borrower');
         const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-            registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
-            registerAddress(
+            tryRegisterAddress(
+                ccApi,
+                lenderWallet.address,
+                blockchain,
+                signAccountId(lenderWallet, lender.address),
+                lender,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            ),
+            tryRegisterAddress(
+                ccApi,
                 borrowerWallet.address,
                 blockchain,
                 signAccountId(borrowerWallet, borrower.address),
                 borrower,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
         const askGuid = Guid.newGuid();
@@ -76,7 +80,7 @@ describe('RegisterFundingTransfer', (): void => {
             dealOrder.dealOrder.itemId,
             loanTerms,
         );
-    }, 90000);
+    }, 900000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
@@ -95,13 +99,12 @@ describe('RegisterFundingTransfer', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
         });
-    }, 30000);
+    }, 300000);
 
-    it('failure event is emitted if transfer is invalid', async (): Promise<void> => {
+    it('emits a failure event if transfer is invalid', async (): Promise<void> => {
         // wrong amount
         const badLoanTerms = { ...loanTerms, amount: new BN(1) };
         const dealOrderId = dealOrder.dealOrder.itemId;
-        const { api } = ccApi;
 
         const [failureTokenAddress, failureTxHash] = await lendOnEth(
             lenderWallet,
@@ -110,32 +113,27 @@ describe('RegisterFundingTransfer', (): void => {
             badLoanTerms,
         );
 
-        const transferId = createFundingTransferId(blockchain, failureTxHash);
-        await ccApi.extrinsics.registerFundingTransfer(
+        const { waitForVerification } = await ccApi.extrinsics.registerFundingTransfer(
             { kind: 'Ethless', contractAddress: failureTokenAddress },
             dealOrderId,
             failureTxHash,
             lender,
         );
 
-        return new Promise((resolve, reject): void => {
-            api.query.system
-                .events((events: any) => {
-                    // Loop through the Vec<EventRecord>
-                    events.forEach((record: any) => {
-                        // Extract the phase, event and the event types
-                        const { event } = record;
-                        if (api.events.creditcoin.TransferFailedVerification.is(event)) {
-                            const failedTransferId = event.data[0].toString();
-                            if (failedTransferId === transferId) {
-                                const failureCause = event.data[1] as any;
-                                expect(failureCause.isIncorrectAmount).toBeTruthy();
-                                resolve();
-                            }
-                        }
-                    });
-                })
-                .catch(reject);
-        });
-    }, 60000);
+        console.log('waiting for verification');
+        try {
+            await waitForVerification(120000);
+        } catch (error) {
+            expect(error).toBeInstanceOf(VerificationError);
+            if (error instanceof VerificationError) {
+                expect(error.cause).toBeDefined();
+                if (error.cause) {
+                    expect(error.cause.isIncorrectAmount).toBeTruthy();
+                    return;
+                }
+            }
+        }
+
+        throw new Error('verification did not fail as expected');
+    }, 1200000);
 });
