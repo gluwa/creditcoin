@@ -70,6 +70,7 @@ updates:
     schedule:
       interval: "monthly"
     ignore:
+      - dependency-name: "*"
       - update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
@@ -77,6 +78,7 @@ updates:
     schedule:
       interval: "monthly"
     ignore:
+      - dependency-name: "*"
       - update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
@@ -84,4 +86,5 @@ updates:
     schedule:
       interval: "monthly"
     ignore:
+      - dependency-name: "*"
       - update-types: ["version-update:semver-patch"]
