@@ -143,9 +143,9 @@ mod tests {
 
 			std::thread::spawn(move || {
 				let mut ext_builder = ExtBuilder::default().with_keystore();
+				let acct_sr25519_pubkey = ext_builder.generate_authority();
 				let acct = {
-					let acct_pubkey = ext_builder.generate_authority();
-					<Runtime as SystemConfig>::AccountId::from(acct_pubkey.into_account().0)
+					<Runtime as SystemConfig>::AccountId::from(acct_sr25519_pubkey.into_account().0)
 				};
 				ext_builder.offchain = Some(offchain);
 				ext_builder.with_pool();
@@ -158,7 +158,7 @@ mod tests {
 
 					for _ in 0..LOOP {
 						assert_ok!(crate::Pallet::<Runtime>::submit_txn_with_synced_nonce(
-							acct.clone(),
+							acct_sr25519_pubkey.into(),
 							|_| call.clone(),
 						));
 
