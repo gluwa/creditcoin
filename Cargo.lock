@@ -966,7 +966,6 @@ version = "2.211.1"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
- "creditcoin-runtime-api",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures-lite",
@@ -1007,6 +1006,7 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+ "task-scheduler-runtime-api",
  "thiserror",
  "tiny-bip39 1.0.0",
  "tokio",
@@ -1018,7 +1018,6 @@ version = "2.211.1"
 dependencies = [
  "assert_matches",
  "creditcoin-node-runtime",
- "creditcoin-runtime-api",
  "frame-system",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -1030,6 +1029,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-runtime",
+ "task-scheduler-runtime-api",
  "test-client",
 ]
 
@@ -1038,7 +1038,6 @@ name = "creditcoin-node-runtime"
 version = "2.211.1"
 dependencies = [
  "assert_matches",
- "creditcoin-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -1049,6 +1048,7 @@ dependencies = [
  "pallet-balances",
  "pallet-creditcoin",
  "pallet-difficulty",
+ "pallet-offchain-task-scheduler",
  "pallet-randomness-collective-flip",
  "pallet-rewards",
  "pallet-scheduler",
@@ -1073,14 +1073,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
-]
-
-[[package]]
-name = "creditcoin-runtime-api"
-version = "2.211.1"
-dependencies = [
- "parity-scale-codec",
- "sp-api",
+ "task-scheduler-runtime-api",
 ]
 
 [[package]]
@@ -4009,6 +4002,7 @@ dependencies = [
  "libsecp256k1",
  "log",
  "pallet-balances",
+ "pallet-offchain-task-scheduler",
  "pallet-timestamp",
  "parity-scale-codec",
  "parking_lot 0.11.2",
@@ -4050,16 +4044,24 @@ dependencies = [
 name = "pallet-offchain-task-scheduler"
 version = "0.1.0"
 dependencies = [
+ "assert_matches",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-balances",
+ "pallet-timestamp",
  "parity-scale-codec",
+ "parking_lot 0.11.2",
  "scale-info",
  "serde",
  "serde_json",
  "sp-core",
  "sp-io",
+ "sp-keystore",
  "sp-runtime",
+ "sp-std",
  "sp-tracing",
+ "tracing-test",
 ]
 
 [[package]]
@@ -5244,7 +5246,9 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-core",
+ "sp-io",
  "sp-runtime",
+ "sp-tracing",
 ]
 
 [[package]]
@@ -7140,6 +7144,14 @@ name = "target-lexicon"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c02424087780c9b71cc96799eaeddff35af2bc513278cda5c99fc1f5d026d3c1"
+
+[[package]]
+name = "task-scheduler-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+]
 
 [[package]]
 name = "tempfile"

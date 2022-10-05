@@ -36,7 +36,7 @@ codec = { package = "parity-scale-codec", version = "2.3.1" }
 tiny-bip39 = "1.0.0"
 hex = "0.4.3"
 creditcoin-node-rpc = { version = "2.211.1", path = "./rpc" }
-creditcoin-runtime-api = { version = "2.211.1", path = "../pallets/creditcoin/runtime-api" }
+task-scheduler-runtime-api = { version = "0.1.0", path = "../pallets/offchain-task-scheduler/runtime-api" }
 primitives = { path = "../primitives" }
 thiserror = "1.0.37"
 
