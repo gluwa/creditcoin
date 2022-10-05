@@ -120,9 +120,6 @@ impl pallet_offchain_task_scheduler::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type UnverifiedTaskTimeout = ConstU64<5>;
 	type AuthorityId = AuthorityId;
-	type AccountIdFrom = AccountId;
-	type InternalPublic = sp_core::sr25519::Public;
-	type PublicSigning = <Signature as Verify>::Signer;
 	type TaskCall = RuntimeCall;
 	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Self>;
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
