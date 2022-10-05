@@ -10,6 +10,7 @@ use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
+use pallet_creditcoin::crypto::CtcAuthId;
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
 use sp_api::impl_runtime_apis;
@@ -21,6 +22,7 @@ use sp_runtime::{
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
 	SaturatedConversion,
 };
+
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -57,6 +59,8 @@ pub type BlockNumber = u32;
 pub type Signature = MultiSignature;
 
 pub type Signer = <Signature as Verify>::Signer;
+
+pub type Moment = u64;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
@@ -214,7 +218,7 @@ parameter_types! {
 
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
-	type Moment = u64;
+	type Moment = Moment;
 	type OnTimestampSet = Difficulty;
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
@@ -305,7 +309,7 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_creditcoin::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Call = RuntimeCall;
-	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
+	type AuthorityId = CtcAuthId;
 	type Signer = Signer;
 	type SignerSignature = Signature;
 	type FromAccountId = AccountId;
@@ -317,7 +321,7 @@ impl pallet_creditcoin::Config for Runtime {
 }
 
 impl pallet_difficulty::Config for Runtime {
-	type Moment = u64;
+	type Moment = Moment;
 	type WeightInfo = pallet_difficulty::weights::WeightInfo<Runtime>;
 }
 
@@ -582,9 +586,9 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl creditcoin_runtime_api::TaskApi<Block, AccountId> for Runtime{
+	impl task_scheduler_runtime_api::TaskApi<Block, AccountId> for Runtime{
 		fn offchain_nonce_key(acc: &AccountId) -> Vec<u8>{
-			pallet_creditcoin::ocw::nonce_key(acc)
+			pallet_offchain_task_scheduler::ocw::nonce_key(acc)
 		}
 	}
 }

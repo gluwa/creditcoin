@@ -10,48 +10,32 @@ serde = { version = "1.0.144", features = ["derive"], default-features = false }
 serde_json = { version = "1.0.85", features = [
     "alloc",
 ], default-features = false }
-
-[dependencies.frame-support]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.frame-system]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.codec]
-default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
-
-[dependencies.scale-info]
-default-features = false
-features = ['derive']
-version = '1.0.0'
-
-[dependencies.sp-runtime]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-core]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-tracing]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-io]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+parity-scale-codec = { workspace = true }
+sp-runtime = { workspace = true }
+sp-core = { workspace = true }
+tracing = { workspace = true }
+sp-io = { workspace = true }
+frame-benchmarking = { optional = true, workspace = true }
+pallet-timestamp = { workspace = true }
+scale-info = { workspace = true }
+sp-std = { workspace = true }
 
 [features]
 default = ['std']
-std = ['frame-support/std', 'frame-system/std', 'serde/std']
+runtime-benchmarks = ['frame-benchmarking']
+std = [
+    'frame-support/std',
+    'frame-system/std',
+    'serde/std',
+    "pallet-timestamp/std",
+    "frame-benchmarking/std",
+]
+
+[dev-dependencies]
+assert_matches = "1.5.0"
+parking_lot = "0.11.0"
+tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
+pallet-balances = { workspace = true, features = ["std"] }
+sp-keystore = { workspace = true, features = ["std"] }
