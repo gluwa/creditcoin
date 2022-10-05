@@ -13,7 +13,7 @@ targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
 smallvec = "1.10.0"
-creditcoin-runtime-api = { path = "../pallets/creditcoin/runtime-api", default-features = false }
+task-scheduler-runtime-api = { path = "../pallets/offchain-task-scheduler/runtime-api", default-features = false }
 
 [dependencies.primitives]
 default-features = false
@@ -24,6 +24,11 @@ version = "2.211.1"
 default-features = false
 path = '../pallets/rewards'
 version = '2.211.1'
+
+[dependencies.pallet-offchain-task-scheduler]
+default-features = false
+path = '../pallets/offchain-task-scheduler'
+version = '0.1.0'
 
 [dependencies.pallet-difficulty]
 default-features = false
@@ -242,6 +247,7 @@ std = [
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
+    'pallet-offchain-task-scheduler/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-core/std',
@@ -253,5 +259,5 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
-    'creditcoin-runtime-api/std',
+    'task-scheduler-runtime-api/std',
 ]

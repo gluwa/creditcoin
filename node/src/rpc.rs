@@ -35,7 +35,7 @@ where
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: creditcoin_runtime_api::TaskApi<Block, AccountId>,
+	C::Api: task_scheduler_runtime_api::TaskApi<Block, AccountId>,
 	P: TransactionPool + 'static,
 {
 	use creditcoin_node_rpc::{CreditcoinApi, CreditcoinRpc, Task, TaskRpc};

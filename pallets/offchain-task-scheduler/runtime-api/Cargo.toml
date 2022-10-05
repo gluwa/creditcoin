@@ -1,6 +1,6 @@
 [package]
-name = "creditcoin-runtime-api"
-version = "2.211.1"
+name = "task-scheduler-runtime-api"
+version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

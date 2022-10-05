@@ -2,7 +2,6 @@ use super::Error;
 use core::marker::PhantomData;
 use core::str::FromStr;
 use creditcoin_node_runtime as runtime;
-use creditcoin_runtime_api::TaskApi;
 use jsonrpc_core::Result as RpcResult;
 use jsonrpc_core::{Error as RpcError, ErrorCode};
 use jsonrpc_derive::rpc;
@@ -10,6 +9,7 @@ use sc_rpc::DenyUnsafe;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits};
 use std::sync::Arc;
+use task_scheduler_runtime_api::TaskApi;
 
 type AccountId = <runtime::Runtime as frame_system::Config>::AccountId;
 
