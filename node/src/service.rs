@@ -1,5 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+mod nonce_monitor;
+
 use codec::Encode;
 use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::{Backend, ExecutorProvider};
@@ -11,6 +13,8 @@ use sha3pow::Sha3Algorithm;
 use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::{app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount};
 use std::{sync::Arc, thread, time::Duration};
+
+use crate::cli::Cli;
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -178,12 +182,11 @@ pub fn decode_mining_key(
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(
-	config: Configuration,
-	mining_key: Option<&str>,
-	mining_threads: Option<usize>,
-	rpc_mapping: Option<impl IntoIterator<Item = (String, String)>>,
-) -> Result<TaskManager, ServiceError> {
+pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
+	let Cli {
+		rpc_mapping, mining_key, mining_threads, monitor_nonce: monitor_nonce_account, ..
+	} = cli;
+
 	let sc_service::PartialComponents {
 		client,
 		backend,
@@ -265,21 +268,29 @@ pub fn new_full(
 		})
 	};
 
-	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+	let rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
 		network: network.clone(),
 		client: client.clone(),
 		keystore: keystore_container.sync_keystore(),
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
 		rpc_extensions_builder,
-		backend,
+		backend: backend.clone(),
 		system_rpc_tx,
 		config,
 		telemetry: telemetry.as_mut(),
 	})?;
 
+	if let Some(nonce_account) = monitor_nonce_account {
+		if let Some(registry) = prometheus_registry.clone() {
+			task_manager.spawn_handle().spawn("nonce_metrics", None, {
+				nonce_monitor::task(registry, nonce_account, rpc_handlers, backend)
+			});
+		}
+	}
+
 	if role.is_authority() {
-		let mining_key = decode_mining_key(mining_key)?;
+		let mining_key = decode_mining_key(mining_key.as_deref())?;
 		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
