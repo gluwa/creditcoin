@@ -4047,6 +4047,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-offchain-task-scheduler"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-tracing",
+]
+
+[[package]]
 name = "pallet-randomness-collective-flip"
 version = "4.0.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?rev=973dd744f5f7c6322799bbfa29366588e0267b0a#973dd744f5f7c6322799bbfa29366588e0267b0a"
