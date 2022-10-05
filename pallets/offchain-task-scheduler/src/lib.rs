@@ -32,6 +32,7 @@ pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"gots");
 pub mod crypto {
 	use super::AppCrypto;
 	use crate::KEY_TYPE;
+	use sp_core::crypto::Wraps;
 	use sp_runtime::{
 		app_crypto::{app_crypto, sr25519},
 		MultiSignature, MultiSigner,
@@ -39,12 +40,19 @@ pub mod crypto {
 
 	app_crypto!(sr25519, KEY_TYPE);
 
+	#[derive(Clone, PartialEq, Eq, core::fmt::Debug)]
 	pub struct AuthorityId;
 
 	impl AppCrypto<MultiSigner, MultiSignature> for AuthorityId {
 		type RuntimeAppPublic = Public;
-		type GenericPublic = sp_core::sr25519::Public;
+		type GenericPublic = <Public as Wraps>::Inner;
 		type GenericSignature = sp_core::sr25519::Signature;
+	}
+
+	impl From<Public> for MultiSigner {
+		fn from(public: Public) -> MultiSigner {
+			sp_core::sr25519::Public::from(public).into()
+		}
 	}
 }
 
@@ -76,19 +84,7 @@ pub mod pallet {
 			+ Debug;
 		type UnverifiedTaskTimeout: Get<<Self as SystemConfig>::BlockNumber>;
 		type WeightInfo: WeightInfo;
-		type AuthorityId: AppCrypto<
-			Self::Public,
-			<Self as frame_system::offchain::SigningTypes>::Signature,
-		>;
-		type AccountIdFrom: From<sp_core::sr25519::Public>
-			+ IsType<Self::AccountId>
-			+ Clone
-			+ core::fmt::Debug
-			+ PartialEq
-			+ AsRef<[u8; 32]>;
-
-		type InternalPublic: sp_core::crypto::UncheckedFrom<[u8; 32]>;
-		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
+		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
 		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin> + Clone;
 	}
 
@@ -124,7 +120,10 @@ pub mod pallet {
 	}
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
+	where
+		<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic: Into<T::Public>,
+	{
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
 
@@ -144,8 +143,8 @@ pub mod pallet {
 		}
 
 		fn offchain_worker(block_number: T::BlockNumber) {
-			let auth_id = match Self::authority_id() {
-				Some(id) => id,
+			let signer = match Self::authority_pubkey() {
+				Some(pubkey) => pubkey,
 				None => {
 					log::debug!(target: "task", "Not an authority, skipping offchain work");
 					return;
@@ -166,8 +165,7 @@ pub mod pallet {
 				use tasks::error::TaskError::*;
 				match task.forward_task(deadline) {
 					Ok(call) => {
-						match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| call.clone())
-						{
+						match Self::submit_txn_with_synced_nonce(signer.clone(), |_| call.clone()) {
 							Ok(_) => guard.forget(),
 							Err(e) => {
 								log::error!("Failed to send a dispatchable transaction: {:?}", e)
