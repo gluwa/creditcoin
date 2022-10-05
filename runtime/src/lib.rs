@@ -22,6 +22,7 @@ use sp_runtime::{
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
 	SaturatedConversion,
 };
+use pallet_offchain_task_scheduler::crypto::AuthorityId;
 
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -139,6 +140,18 @@ parameter_types! {
 	 pub MaximumSchedulerWeight: Weight = 10_000_000;
 	 pub const MaxScheduledPerBlock: u32 = 50;
 
+}
+
+impl pallet_offchain_task_scheduler::Config for Runtime {
+	type Event = Event;
+	type UnverifiedTaskTimeout = ConstU32<60>;
+	type AuthorityId = AuthorityId;
+	type AccountIdFrom = AccountId;
+	type InternalPublic = sp_core::sr25519::Public;
+	type PublicSigning = <Signature as Verify>::Signer;
+	type TaskCall = Call;
+	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
+	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 }
 
 impl pallet_scheduler::Config for Runtime {
@@ -295,6 +308,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type HashIntoNonce = Hash;
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
+	type TaskScheduler = Self;
 }
 
 impl pallet_difficulty::Config for Runtime {
@@ -365,6 +379,7 @@ construct_runtime!(
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
 		Rewards: pallet_rewards::{Pallet, Storage, Event<T>},
 		Scheduler: pallet_scheduler,
+		TaskScheduler: pallet_offchain_task_scheduler::{Pallet, Storage, Event<T>},
 	}
 );
 

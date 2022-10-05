@@ -148,6 +148,7 @@ std = [
     'frame-benchmarking/std',
     'pallet-balances/std',
     'pallet-timestamp/std',
+    'pallet-offchain-task-scheduler/std',
     'sp-core/std',
     'serde/std',
     'serde_json/std',
