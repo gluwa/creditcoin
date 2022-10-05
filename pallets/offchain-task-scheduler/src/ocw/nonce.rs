@@ -1,6 +1,6 @@
 use crate::{Config, Pallet};
 use alloc::vec::Vec;
-use codec::Encode;
+use sp_runtime::codec::Encode;
 use sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use sp_runtime::offchain::Duration;
 
