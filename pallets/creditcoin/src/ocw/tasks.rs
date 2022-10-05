@@ -3,7 +3,8 @@ pub mod verify_transfer;
 
 use crate::ocw::errors::{OffchainError, VerificationResult};
 use crate::types::{
-	CollectedCoins, Task, TaskOutput, Transfer, UnverifiedCollectedCoins, UnverifiedTransfer,
+	CollectedCoins as CollectedCoinsT, Task, TaskOutput, Transfer, UnverifiedCollectedCoins,
+	UnverifiedTransfer,
 };
 use crate::{CollectedCoinsId, Config, TaskData, TransferId};
 use codec::Encode;
@@ -12,6 +13,7 @@ pub use sp_runtime::offchain::storage_lock::{BlockAndTime, Lockable, StorageLock
 use sp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
 use sp_std::vec::Vec;
 
+/// Needed at a pallet level, either Task exclusive or per pallet.
 #[inline]
 pub(crate) fn storage_key<Id: Encode>(id: &Id) -> Vec<u8> {
 	const TASK_GUARD: &[u8] = b"creditcoin/task/guard/";
@@ -56,13 +58,13 @@ impl UnverifiedCollectedCoins {
 		crate::Pallet::<T>::verify_collect_coins_ocw(self)
 	}
 
-	pub fn into_output<T>(self, amount: T::Balance) -> CollectedCoins<T::Hash, T::Balance>
+	pub fn into_output<T>(self, amount: T::Balance) -> CollectedCoinsT<T::Hash, T::Balance>
 	where
 		T: Config,
 	{
 		let Self { to, tx_id, contract: GCreContract { chain, .. } } = self;
 		let to = crate::AddressId::new::<T>(&chain, to.as_slice());
-		CollectedCoins { amount, to, tx_id }
+		CollectedCoinsT { amount, to, tx_id }
 	}
 
 	pub fn to_id<T>(&self) -> CollectedCoinsId<T::Hash>
@@ -123,6 +125,42 @@ where
 			TaskData::CollectCoins(collected_coins, data) => {
 				let id = collected_coins.to_id::<T>();
 				TaskOutput::CollectCoins(id, collected_coins.into_output::<T>(data))
+			},
+		}
+	}
+}
+
+pub(crate) trait OffchainVerification<T: Config> {
+	type Output;
+	fn verify(&self) -> VerificationResult<Self::Output>;
+}
+
+use crate::ocw::errors::SchedulerError;
+use crate::ocw::VerificationFailureCause;
+use pallet_offchain_task_scheduler::tasks::error::TaskError;
+pub use pallet_offchain_task_scheduler::tasks::ForwardTask;
+use pallet_offchain_task_scheduler::tasks::TaskV2;
+use pallet_offchain_task_scheduler::Config as TaskConfig;
+
+impl<T: Config + TaskConfig> ForwardTask<T>
+	for Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
+where
+	<T as TaskConfig>::TaskCall: From<crate::pallet::Call<T>>,
+{
+	type Call = T::TaskCall;
+	type EvaluationError = VerificationFailureCause;
+	type SchedulerError = SchedulerError;
+	fn forward_task(
+		&self,
+		deadline: T::BlockNumber,
+	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
+		use Task::*;
+		match self {
+			VerifyTransfer(unverified) => {
+				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
+			},
+			CollectCoins(unverified) => {
+				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
 			},
 		}
 	}

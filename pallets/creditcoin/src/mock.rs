@@ -10,6 +10,7 @@ use frame_support::{
 	traits::{ConstU32, ConstU64, GenesisBuild, Get, Hooks},
 };
 use frame_system as system;
+use pallet_offchain_task_scheduler::crypto::AuthorityId;
 pub(crate) use parking_lot::RwLock;
 use serde_json::Value;
 use sp_core::H256;
@@ -33,9 +34,6 @@ type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Balance = u128;
 pub type Signature = MultiSignature;
 pub type Extrinsic = TestXt<Call, ()>;
-
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type BlockNumber = u64;
 pub type Hash = H256;
@@ -51,7 +49,8 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage}
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage},
+		TaskScheduler: pallet_offchain_task_scheduler::{Pallet, Storage, Event<T>},
 	}
 );
 
@@ -119,6 +118,20 @@ impl pallet_creditcoin::Config for Test {
 	type UnverifiedTaskTimeout = ConstU64<5>;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
+
+	type TaskScheduler = Self;
+}
+
+impl pallet_offchain_task_scheduler::Config for Test {
+	type Event = Event;
+	type UnverifiedTaskTimeout = ConstU64<5>;
+	type AuthorityId = AuthorityId;
+	type AccountIdFrom = AccountId;
+	type InternalPublic = sp_core::sr25519::Public;
+	type PublicSigning = <Signature as Verify>::Signer;
+	type TaskCall = Call;
+	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Self>;
+	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 }
 
 impl Test {
@@ -144,9 +157,12 @@ pub(crate) fn with_failing_create_transaction<R>(f: impl FnOnce() -> R) -> R {
 	})
 }
 
-impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> for Test {
+impl<LocalCall> system::offchain::CreateSignedTransaction<LocalCall> for Test
+where
+	Call: From<LocalCall>,
+{
 	fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
-		call: Self::OverarchingCall,
+		call: Call,
 		_public: Self::Public,
 		_account: Self::AccountId,
 		nonce: Self::Index,
