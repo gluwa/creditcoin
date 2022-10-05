@@ -117,7 +117,7 @@ async fn get_authority_account(
 	Ok(match target {
 		NonceMonitorTarget::Auto => {
 			let keys = keystore
-				.keys(sp_runtime::KeyTypeId(*b"ctcs"))
+				.keys(sp_runtime::KeyTypeId(*b"gots"))
 				.await
 				.map_err(|e| Error::KeyStore(e.to_string()))?;
 			keys.into_iter()
