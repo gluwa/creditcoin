@@ -46,6 +46,16 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "cargo"
+    directory: "/pallets/offchain-task-scheduler"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/offchain-task-scheduler/runtime-api"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
     directory: "/pallets/rewards"
     schedule:
       interval: "weekly"
@@ -89,7 +99,3 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
 
-  - package-ecosystem: "cargo"
-    directory: "/pallets/offchain-task-scheduler"
-    schedule:
-      interval: "weekly"

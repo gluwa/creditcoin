@@ -10,7 +10,6 @@ use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
-
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
@@ -149,9 +148,6 @@ impl pallet_offchain_task_scheduler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type AuthorityId = AuthorityId;
-	type AccountIdFrom = AccountId;
-	type InternalPublic = sp_core::sr25519::Public;
-	type PublicSigning = <Signature as Verify>::Signer;
 	type TaskCall = RuntimeCall;
 	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
@@ -605,7 +601,7 @@ impl_runtime_apis! {
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
-	type Public = <Signature as Verify>::Signer;
+	type Public = Signer;
 	type Signature = Signature;
 }
 
