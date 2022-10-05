@@ -10,7 +10,6 @@ repository.workspace = true
 
 [dependencies]
 creditcoin-node-runtime = { workspace = true }
-creditcoin-runtime-api = { workspace = true }
 frame-system = { features = ["std"], workspace = true }
 jsonrpsee = { version = "0.15.1", features = ["server", "macros"] }
 primitives = { workspace = true, features = ["prometheus"] }
@@ -19,6 +18,7 @@ serde = { workspace = true }
 sp-api = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-runtime = { features = ["std"], workspace = true }
+task-scheduler-runtime-api = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
@@ -29,4 +29,4 @@ tokio = { version = "1.23.0", features = ["full"] }
 [features]
 default = ["std"]
 runtime-benchmarks = ["creditcoin-node-runtime/runtime-benchmarks"]
-std = ["primitives/std"]
+std = ["primitives/std", "task-scheduler-runtime-api/std"]

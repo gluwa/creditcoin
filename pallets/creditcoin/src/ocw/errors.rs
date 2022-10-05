@@ -12,7 +12,12 @@ pub enum OffchainError {
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
 	IncorrectChainId,
-	InvalidData,
+}
+
+#[derive(Debug)]
+pub enum SchedulerError {
+	NoRpcUrl(RpcUrlError),
+	RpcError(RpcError),
 }
 
 pub type VerificationResult<T> = Result<T, OffchainError>;
@@ -88,4 +93,12 @@ impl_from_error!(
 	RpcUrlError,
 	StorageRetrievalError => StorageFailure,
 	FromUtf8Error => InvalidUrl,
+);
+
+use pallet_offchain_task_scheduler::impl_enum_from_variant;
+
+impl_enum_from_variant!(
+	SchedulerError,
+	RpcUrlError => NoRpcUrl,
+	RpcError => RpcError,
 );
