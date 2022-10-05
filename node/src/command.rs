@@ -123,12 +123,7 @@ pub fn run() -> sc_cli::Result<()> {
 			runner.run_node_until_exit(|config| async move {
 				match config.role {
 					Role::Light => Err("Light clients are not supported at this time".into()),
-					_ => service::new_full(
-						config,
-						cli.mining_key.as_deref(),
-						cli.mining_threads,
-						cli.rpc_mapping,
-					),
+					_ => service::new_full(config, cli),
 				}
 				.map_err(sc_cli::Error::Service)
 			})

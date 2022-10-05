@@ -55,6 +55,9 @@ pub struct Cli {
 	#[structopt(long, parse(try_from_str = parse_rpc_pair))]
 	/// If the node is an oracle authority, the RPC URL to use for a given external chain.
 	pub rpc_mapping: Option<Vec<(String, String)>>,
+
+	#[structopt(long)]
+	pub monitor_nonce: Option<String>,
 }
 #[derive(Debug, StructOpt)]
 pub enum Subcommand {

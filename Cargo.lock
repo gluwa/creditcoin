@@ -999,12 +999,15 @@ dependencies = [
  "sp-consensus-pow",
  "sp-core",
  "sp-inherents",
+ "sp-offchain",
  "sp-runtime",
  "sp-timestamp",
  "structopt",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
+ "substrate-prometheus-endpoint",
  "tiny-bip39 1.0.0",
+ "tokio",
 ]
 
 [[package]]
