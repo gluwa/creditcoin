@@ -22,7 +22,6 @@ targets = ['x86_64-unknown-linux-gnu']
 [dependencies]
 creditcoin-node-rpc = { version = "2.211.2", path = "./rpc" }
 creditcoin-node-runtime = { workspace = true }
-creditcoin-runtime-api = { workspace = true }
 frame-benchmarking = { features = ["std"], workspace = true }
 frame-benchmarking-cli = { workspace = true }
 futures-lite = "1.12.0"
@@ -58,6 +57,7 @@ sp-runtime = { features = ["std"], workspace = true }
 sp-timestamp = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
+task-scheduler-runtime-api = { workspace = true }
 thiserror = "1.0.37"
 try-runtime-cli = { workspace = true, optional = true }
 jsonrpsee = { version = "0.15.1", features = ["server"] }
@@ -79,5 +79,5 @@ runtime-benchmarks = [
     'frame-benchmarking/runtime-benchmarks',
     'frame-benchmarking-cli/runtime-benchmarks',
 ]
-std = ['sp-api/std', 'sp-block-builder/std', 'creditcoin-runtime-api/std']
+std = ['sp-api/std', 'sp-block-builder/std', 'task-scheduler-runtime-api/std']
 try-runtime = ["creditcoin-node-runtime/try-runtime", "try-runtime-cli"]

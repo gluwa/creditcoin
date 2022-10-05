@@ -47,6 +47,7 @@ sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 strum = { version = "0.24.1", features = ["derive"], default-features = false }
 tracing = { workspace = true }
+pallet-offchain-task-scheduler = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
@@ -58,7 +59,10 @@ tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+runtime-benchmarks = [
+    'frame-benchmarking',
+    'pallet-offchain-task-scheduler/runtime-benchmarks',
+]
 std = [
     'parity-scale-codec/std',
     'scale-info/std',
@@ -67,6 +71,7 @@ std = [
     'frame-benchmarking/std',
     'pallet-balances/std',
     'pallet-timestamp/std',
+    'pallet-offchain-task-scheduler/std',
     'sp-core/std',
     'sp-std/std',
     'serde/std',

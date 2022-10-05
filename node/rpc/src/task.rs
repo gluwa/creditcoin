@@ -2,11 +2,11 @@ use super::Error;
 use core::marker::PhantomData;
 use core::str::FromStr;
 use creditcoin_node_runtime as runtime;
-use creditcoin_runtime_api::TaskApi;
 use sc_rpc::DenyUnsafe;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits};
 use std::sync::Arc;
+use task_scheduler_runtime_api::TaskApi;
 
 use jsonrpsee::{
 	core::{async_trait, Error as JsonRpseeError, RpcResult},

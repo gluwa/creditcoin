@@ -5,14 +5,15 @@ use frame_support::traits::Get;
 use frame_system::offchain::AppCrypto;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::Config as SystemConfig;
+pub use ocw::nonce::nonce_key;
 pub use pallet::{Authorities, Config, Error, Event, Pallet, WeightInfo};
 pub use pallet::{__substrate_call_check, __substrate_event_check};
 use sp_core::offchain::KeyTypeId;
 use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
-use sp_tracing as log;
+use tracing as log;
 
-mod ocw;
+pub mod ocw;
 pub mod tasks;
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
@@ -43,21 +44,28 @@ pub mod crypto {
 pub mod pallet {
 	use super::{
 		log,
-		tasks::{self, VerifiableTask},
+		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
-	use codec::FullCodec;
+	use sp_runtime::codec::FullCodec;
 	use core::fmt::Debug;
 	use frame_support::dispatch::Dispatchable;
 	use frame_support::pallet_prelude::*;
 	use frame_system::offchain::CreateSignedTransaction;
 	use frame_system::pallet_prelude::*;
 	use scale_info::TypeInfo;
+	use frame_support::dispatch::Vec;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + CreateSignedTransaction<Self::TaskCall> {
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type Task: TypeInfo + FullCodec + MaxEncodedLen + VerifiableTask<Self> + Debug;
+	pub trait Config:
+		frame_system::Config + pallet_timestamp::Config + CreateSignedTransaction<Self::TaskCall>
+	{
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type Task: TypeInfo
+			+ FullCodec
+			+ MaxEncodedLen
+			+ ForwardTask<Self, Call = Self::TaskCall>
+			+ Debug;
 		type UnverifiedTaskTimeout: Get<<Self as SystemConfig>::BlockNumber>;
 		type WeightInfo: WeightInfo;
 		type AuthorityId: AppCrypto<
@@ -73,7 +81,7 @@ pub mod pallet {
 
 		type InternalPublic: sp_core::crypto::UncheckedFrom<[u8; 32]>;
 		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
-		type TaskCall: Dispatchable<Origin = Self::Origin> + Clone;
+		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin> + Clone;
 	}
 
 	pub trait WeightInfo {
@@ -110,21 +118,18 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
-			use sp_io::KillStorageResult;
-
 			log::debug!("Cleaning up expired entries");
 
 			let mut unverified_task_count = 0u32;
+			let mut cursor: Option<Vec<u8>> = None;
 			loop {
-				match PendingTasks::<T>::remove_prefix(block_number, None) {
-					KillStorageResult::SomeRemaining(u) => {
-						unverified_task_count.saturating_accrue(u)
-					},
-					KillStorageResult::AllRemoved(u) => {
-						unverified_task_count.saturating_accrue(u);
-						break;
-					},
-				};
+
+				let result = PendingTasks::<T>::clear_prefix(block_number, u32::MAX, cursor.as_ref().map(|c| c.as_slice()));
+				unverified_task_count.saturating_accrue(result.backend);
+				cursor = result.maybe_cursor;
+				if cursor.is_none(){
+					break;
+				}
 			}
 
 			<T as Config>::WeightInfo::on_initialize(unverified_task_count)
@@ -187,7 +192,7 @@ impl<Runtime: Config>
 	fn deadline() -> BlockNumberFor<Runtime> {
 		let offset = Runtime::UnverifiedTaskTimeout::get();
 		let block = frame_system::Pallet::<Runtime>::current_block_number();
-		offset.saturating_add(block).into()
+		offset.saturating_add(block)
 	}
 	fn is_scheduled(deadline: &BlockNumberFor<Runtime>, id: &HashFor<Runtime>) -> bool {
 		crate::pallet::PendingTasks::<Runtime>::contains_key(deadline, id)
