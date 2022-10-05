@@ -8,7 +8,7 @@ members = [
     'pallets/rewards',
     'pallets/difficulty',
     'pallets/creditcoin',
-    'pallets/creditcoin/runtime-api',
+    'pallets/offchain-task-scheduler/runtime-api',
     'pallets/offchain-task-scheduler',
     'runtime',
     "sha3pow",
@@ -27,7 +27,6 @@ repository = 'https://github.com/gluwa/creditcoin-substrate/'
 [workspace.dependencies]
 assert_matches = { version = "1.5.0" }
 creditcoin-node-runtime = { version = "2.211.2", path = "runtime" }
-creditcoin-runtime-api = { version = "2.211.2", default-features = false, path = "pallets/creditcoin/runtime-api" }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 frame-benchmarking-cli = { version = "4.0.0-dev", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 frame-executive = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
@@ -42,6 +41,7 @@ log = { version = "0.4.17" }
 pallet-balances = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-creditcoin = { version = "2.211.2", default-features = false, path = "pallets/creditcoin" }
 pallet-difficulty = { version = "2.211.2", default-features = false, path = "pallets/difficulty" }
+pallet-offchain-task-scheduler = { version = "0.1.0", default-features = false, path = "pallets/offchain-task-scheduler" }
 pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-rewards = { version = "2.211.2", default-features = false, path = "pallets/rewards" }
 pallet-scheduler = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
@@ -105,6 +105,7 @@ substrate-frame-rpc-system = { version = "4.0.0-dev", branch = "polkadot-v0.9.32
 substrate-prometheus-endpoint = { version = "0.10.0-dev", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 substrate-test-client = { version = "*", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 substrate-wasm-builder = { version = "5.0.0-dev", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
+task-scheduler-runtime-api = { version = "0.1.0", default-features = false, path = "pallets/offchain-task-scheduler/runtime-api" }
 tracing = { version = "5.0.0", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git", package = "sp-tracing" }
 try-runtime-cli = { version = "0.10.0-dev", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 frame-try-runtime = { version = "0.10.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.32" }
