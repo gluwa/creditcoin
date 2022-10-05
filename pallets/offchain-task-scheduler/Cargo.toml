@@ -1,0 +1,57 @@
+[package]
+name = "pallet-offchain-task-scheduler"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.144", features = ["derive"], default-features = false }
+serde_json = { version = "1.0.85", features = [
+    "alloc",
+], default-features = false }
+
+[dependencies.frame-support]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.frame-system]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '2.0.0'
+
+[dependencies.scale-info]
+default-features = false
+features = ['derive']
+version = '1.0.0'
+
+[dependencies.sp-runtime]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.sp-core]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.sp-tracing]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.sp-io]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[features]
+default = ['std']
+std = ['frame-support/std', 'frame-system/std', 'serde/std']
