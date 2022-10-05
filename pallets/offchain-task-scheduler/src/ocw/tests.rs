@@ -238,7 +238,7 @@ fn effective_guard_lifetime_until_task_expiration() {
 fn offchain_signed_tx_works() {
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	let acct_pubkey = ext_builder.generate_authority();
-	let auth = AccountId::from(acct_pubkey.into_account().0);
+	let auth = acct_pubkey;
 	let pool = ext_builder.with_pool();
 	ext_builder.build().execute_with(|| {
 		roll_to::<Trivial>(1);
@@ -247,7 +247,7 @@ fn offchain_signed_tx_works() {
 			remark: 0.encode(),
 		});
 
-		assert_ok!(Pallet::<Runtime>::offchain_signed_tx(auth.clone(), |_| call.clone()));
+		assert_ok!(Pallet::<Runtime>::offchain_signed_tx(auth.into(), |_| call.clone()));
 		roll_to::<Trivial>(2);
 
 		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
@@ -261,7 +261,7 @@ fn offchain_signed_tx_works() {
 fn offchain_signed_tx_send_fails() {
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	let acct_pubkey = ext_builder.generate_authority();
-	let auth = AccountId::from(acct_pubkey.into_account().0);
+	let auth = acct_pubkey;
 	ext_builder.with_pool();
 	ext_builder.build().execute_with(|| {
 		roll_to::<Trivial>(1);
@@ -273,7 +273,7 @@ fn offchain_signed_tx_send_fails() {
 		use frame_support::assert_err;
 		with_failing_submit_transaction(|| {
 			assert_err!(
-				Pallet::<Runtime>::offchain_signed_tx(auth.clone(), |_| call.clone()),
+				Pallet::<Runtime>::offchain_signed_tx(auth.into(), |_| call.clone()),
 				crate::Error::OffchainSignedTxFailed
 			);
 		})

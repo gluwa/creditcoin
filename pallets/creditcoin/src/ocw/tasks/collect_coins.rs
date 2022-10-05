@@ -502,7 +502,6 @@ pub(crate) mod tests {
 	fn ocw_fail_collect_coins_works() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
-		let acct = AccountId::from(acct_pubkey.into_account().0);
 		let expected_collected_coins_id =
 			crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &[0]);
 		ext.build_offchain_and_execute_with_state(|_state, pool| {
@@ -512,9 +511,9 @@ pub(crate) mod tests {
 				cause: Cause::AbiMismatch,
 				deadline: Test::unverified_transfer_deadline(),
 			};
-			assert_ok!(TaskSchedulerPallet::<Test>::offchain_signed_tx(acct.clone(), |_| call
-				.clone()
-				.into(),));
+			assert_ok!(TaskSchedulerPallet::<Test>::offchain_signed_tx(acct_pubkey.into(), |_| {
+				call.clone().into()
+			},));
 			crate::mock::roll_to(2);
 
 			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
