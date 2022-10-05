@@ -9,6 +9,7 @@ members = [
     'pallets/difficulty',
     'pallets/creditcoin',
     'pallets/creditcoin/runtime-api',
+    'pallets/task-scheduler',
     'runtime',
     "sha3pow",
     "primitives",

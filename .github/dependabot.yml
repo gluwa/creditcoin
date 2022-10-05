@@ -79,3 +79,8 @@ updates:
     directory: "/scripts/js"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/task-scheduler"
+    schedule:
+      interval: "weekly"
