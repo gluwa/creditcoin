@@ -17,7 +17,10 @@ pub trait TaskDefault<T: SystemConfig> {
 }
 
 benchmarks! {
-	where_clause {  where T::Task: TaskDefault<T> }
+	where_clause { where
+		T::Task: TaskDefault<T>,
+		<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic: Into<T::Public>,
+	 }
 	on_initialize {
 		//insert t transfers
 		let t in 0..1024;

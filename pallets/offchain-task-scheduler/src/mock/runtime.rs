@@ -113,9 +113,6 @@ impl crate::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type UnverifiedTaskTimeout = ConstU64<5>;
 	type AuthorityId = crate::crypto::AuthorityId;
-	type AccountIdFrom = AccountId;
-	type InternalPublic = sp_core::sr25519::Public;
-	type PublicSigning = <Signature as Verify>::Signer;
 	type TaskCall = RuntimeCall;
 	type WeightInfo = crate::weights::WeightInfo<Self>;
 	type Task = super::task::MockTask<u32>;
