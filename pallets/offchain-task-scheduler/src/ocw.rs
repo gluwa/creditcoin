@@ -7,7 +7,8 @@ use frame_support::dispatch::Vec;
 use frame_support::traits::IsType;
 use frame_system::offchain::{Account, SendSignedTransaction, Signer};
 use frame_system::{Config as SystemConfig, Pallet as System};
-use nonce::{lock_key, nonce_key};
+use nonce::lock_key;
+pub use nonce::nonce_key;
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::traits::One;
 use sp_runtime::traits::Saturating;
@@ -27,10 +28,8 @@ impl<T: Config> Pallet<T> {
 			local_keys.contains(&acct).then(|| T::AccountIdFrom::from(auth))
 		})
 	}
-}
 
-impl<T: Config> Pallet<T> {
-	fn offchain_signed_tx(
+	pub fn offchain_signed_tx(
 		auth_id: T::AccountIdFrom,
 		call: impl Fn(&Account<T>) -> T::TaskCall,
 	) -> Result<(), Error<T>> {
