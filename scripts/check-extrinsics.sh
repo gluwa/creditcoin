@@ -32,10 +32,7 @@ git fetch --depth="${GIT_DEPTH:-100}" origin 'refs/tags/*:refs/tags/*'
 for RUNTIME in "${runtimes[@]}"; do
   echo "[+] Checking runtime: ${RUNTIME}"
 
-  release_transaction_version=$(
-    git show "tags/$latest_release:runtime/src/lib.rs" | \
-      grep 'transaction_version'
-  )
+  release_transaction_version=$(git show "tags/$latest_release:runtime/src/version.rs" | grep 'transaction_version')
 
   current_transaction_version=$(
     grep 'transaction_version' "./runtime/src/version.rs"
