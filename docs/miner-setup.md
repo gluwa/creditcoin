@@ -61,7 +61,7 @@
             # we want to connect to the mainnet
             --chain mainnet \
             # REPLACE <SS58Address> with your mining public key/address to receive rewards at
-            --mining-key <SS58Address> \            
+            --mining-key <SS58Address> \
             # the port to use for node-to-node communication
             --port 30333
         ```
