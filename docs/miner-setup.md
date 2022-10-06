@@ -45,7 +45,7 @@
 
         ```bash
 
-        docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-beta-7 \
+        docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-runtime-210 \
             # running a mining node
             --validator \
             # (optional) REPLACE <nodename> with a name for your node, to make it easier to identify
@@ -61,9 +61,7 @@
             # we want to connect to the mainnet
             --chain mainnet \
             # REPLACE <SS58Address> with your mining public key/address to receive rewards at
-            --mining-key <SS58Address> \
-            # the base path to store the node's data
-            --base-path /data \
+            --mining-key <SS58Address> \            
             # the port to use for node-to-node communication
             --port 30333
         ```
