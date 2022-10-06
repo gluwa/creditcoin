@@ -38,6 +38,7 @@ hex = "0.4.3"
 creditcoin-node-rpc = { version = "2.0.0-beta.8", path = "./rpc" }
 creditcoin-runtime-api = { version = "2.0.0-beta.8", path = "../pallets/creditcoin/runtime-api" }
 primitives = { path = "../primitives" }
+thiserror = "1.0.37"
 
 [dependencies.tokio]
 version = "1.18.2"

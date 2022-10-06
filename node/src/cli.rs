@@ -57,6 +57,7 @@ pub struct Cli {
 	pub rpc_mapping: Option<Vec<(String, String)>>,
 
 	#[structopt(long)]
+	/// An authority account ID to monitor the nonce of (must be an account actively running as an authority on this node).
 	pub monitor_nonce: Option<String>,
 }
 #[derive(Debug, StructOpt)]
