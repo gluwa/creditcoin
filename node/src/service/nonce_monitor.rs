@@ -142,7 +142,7 @@ type UIntGauge = substrate_prometheus_endpoint::prometheus::core::GenericGauge<
 fn register_u64_gauge(registry: &Registry, name: &str, help: &str) -> UIntGauge {
 	substrate_prometheus_endpoint::register(
 		UIntGauge::new(name, help).expect("gauge creation should not fail"),
-		&registry,
+		registry,
 	)
 	.expect("registering prometheus gauge should not fail")
 }
