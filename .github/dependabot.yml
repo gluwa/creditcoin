@@ -71,7 +71,7 @@ updates:
       interval: "monthly"
     ignore:
       - dependency-name: "*"
-      - update-types: ["version-update:semver-patch"]
+        update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
     directory: "/creditcoin-js"
@@ -79,7 +79,7 @@ updates:
       interval: "monthly"
     ignore:
       - dependency-name: "*"
-      - update-types: ["version-update:semver-patch"]
+        update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
     directory: "/scripts/js"
@@ -87,4 +87,4 @@ updates:
       interval: "monthly"
     ignore:
       - dependency-name: "*"
-      - update-types: ["version-update:semver-patch"]
+        update-types: ["version-update:semver-patch"]
