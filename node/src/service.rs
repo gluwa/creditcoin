@@ -56,8 +56,10 @@ type PartialComponentsType<T> = sc_service::PartialComponents<
 	),
 >;
 
+/// Creates a transaction pool config where the limits are 5x the default, unless a limit has been set higher manually
 fn create_transaction_pool_config(mut config: TransactionPoolOptions) -> TransactionPoolOptions {
 	let set_limit = |limit: &mut PoolLimit, default: &PoolLimit| {
+		// set the value to `max(5 * default_value, current_value)`
 		let new_setting = |curr: usize, def: usize| curr.max(def.saturating_mul(5));
 
 		limit.count = new_setting(limit.count, default.count);
