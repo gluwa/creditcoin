@@ -124,8 +124,13 @@ async fn get_off_chain_nonce_key(
 }
 
 async fn get_off_chain_nonce(backend: &FullBackend, key: &[u8]) -> Result<Option<u64>, Error> {
-	let off = backend.offchain_storage().expect("offchain storage must be accessible in a creditcoin node. \
-		we only support the file-backed storage backend which always has offchain storage; qed").get(sp_offchain::STORAGE_PREFIX, key);
+	let off = backend
+		.offchain_storage()
+		.expect(
+			"offchain storage must be accessible in a creditcoin node. \
+				we only support the file-backed storage backend which always has offchain storage; qed",
+		)
+		.get(sp_offchain::STORAGE_PREFIX, key);
 
 	let off = match off {
 		None => return Ok(None),
