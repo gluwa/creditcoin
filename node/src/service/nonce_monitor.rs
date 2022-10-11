@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use codec::Decode;
 use creditcoin_node_runtime::AccountId;
-use jsonrpc_core::{futures::channel::mpsc, Failure, Response, Success};
+use jsonrpc_core::{futures::channel::mpsc, futures::join, Failure, Response, Success};
 use sc_client_api::Backend;
 use sc_service::{Arc, RpcHandlers, RpcSession};
 use sp_runtime::{app_crypto::Ss58Codec, offchain::OffchainStorage};
@@ -11,52 +11,13 @@ use thiserror::Error;
 
 use super::FullBackend;
 
-#[derive(Clone, Copy, PartialEq, Debug, Error)]
-enum ErrorKind {
-	#[error("Serde error")]
-	Serde,
-	#[error("RPC error")]
-	Rpc,
-	#[error("Codec error")]
-	Codec,
-}
-
 #[derive(Debug, Error)]
-#[error("{kind}: {value}")]
-struct Error {
-	kind: ErrorKind,
-	#[source]
-	value: Box<dyn std::error::Error + Send>,
-}
-
-macro_rules! error_fn {
-	($($fn_id: ident : $kind: ident),+ $(,)?) => {
-		impl Error {
-			$(
-				fn $fn_id(err: impl std::error::Error + Send + 'static) -> Self {
-					Self::new(ErrorKind::$kind, err)
-				}
-			)+
-		}
-	};
-}
-
-error_fn!(serde: Serde, rpc: Rpc, codec: Codec);
-
-impl Error {
-	fn new(kind: ErrorKind, err: impl std::error::Error + Send + 'static) -> Self {
-		Self { kind, value: Box::new(err) }
-	}
-}
-
-#[derive(Clone, PartialEq, Debug, Error)]
-#[error("{message}")]
-struct AdhocError {
-	message: String,
-}
-
-fn adhoc(message: impl Into<String>) -> AdhocError {
-	AdhocError { message: message.into() }
+#[error("{self}")]
+enum Error {
+	Serde(sc_telemetry::serde_json::Error),
+	JsonRpc(jsonrpc_core::Error),
+	Rpc(String),
+	Codec(codec::Error),
 }
 
 async fn rpc_request(
@@ -69,14 +30,16 @@ async fn rpc_request(
 	let response = handlers
 		.rpc_query(&session, request)
 		.await
-		.ok_or_else(|| Error::rpc(adhoc("empty response")))?;
+		.ok_or_else(|| Error::Rpc("empty response".into()))?;
 
-	let response: Response = jsonrpc_core::serde_json::from_str(&response).map_err(Error::serde)?;
+	let response: Response = jsonrpc_core::serde_json::from_str(&response).map_err(Error::Serde)?;
 
 	let result = match response {
 		Response::Single(out) => match out {
 			jsonrpc_core::Output::Success(Success { result, .. }) => result,
-			jsonrpc_core::Output::Failure(Failure { error, .. }) => return Err(Error::rpc(error)),
+			jsonrpc_core::Output::Failure(Failure { error, .. }) => {
+				return Err(Error::JsonRpc(error))
+			},
 		},
 		Response::Batch(_) => {
 			unreachable!("we don't send any batch requests, so we cannot receive batch responses")
@@ -99,7 +62,7 @@ async fn get_on_chain_nonce(handlers: &RpcHandlers, acct: &AccountId) -> Result<
 
 	let result = rpc_request(handlers, &request).await?;
 
-	result.as_u64().ok_or_else(|| Error::rpc(adhoc("expected u64 response")))
+	result.as_u64().ok_or_else(|| Error::Rpc("expected u64 response".into()))
 }
 
 async fn get_off_chain_nonce_key(
@@ -118,7 +81,7 @@ async fn get_off_chain_nonce_key(
 
 	let result = rpc_request(handlers, &request).await?;
 
-	let key: Vec<u8> = jsonrpc_core::serde_json::from_value(result).map_err(Error::serde)?;
+	let key: Vec<u8> = jsonrpc_core::serde_json::from_value(result).map_err(Error::Serde)?;
 
 	Ok(key)
 }
@@ -133,10 +96,10 @@ async fn get_off_chain_nonce(backend: &FullBackend, key: &[u8]) -> Result<Option
 		.get(sp_offchain::STORAGE_PREFIX, key);
 
 	let off = match off {
-		None => return Ok(None),
 		Some(v) => v,
+		None => return Ok(None),
 	};
-	let nonce = u32::decode(&mut off.as_slice()).map_err(Error::codec)?;
+	let nonce = u32::decode(&mut off.as_slice()).map_err(Error::Codec)?;
 
 	Ok(Some(nonce.into()))
 }
@@ -179,8 +142,9 @@ pub(super) async fn task(
 		.expect("Failed to get key for the offchain nonce");
 
 	loop {
-		let onchain = get_on_chain_nonce(&handlers, &acc).await;
-		let offchain = get_off_chain_nonce(&backend, &key).await;
+		let (onchain, offchain) =
+			join!(get_on_chain_nonce(&handlers, &acc), get_off_chain_nonce(&backend, &key));
+
 		match (onchain, offchain) {
 			(Ok(on), Ok(off)) => {
 				log::info!("Onchain: {}, offchain: {:?}", on, off);
