@@ -7,7 +7,6 @@ use crate::{
 	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
 	TransferId, TransferKind, Transfers, WeightInfo,
 };
-
 use assert_matches::assert_matches;
 use bstr::B;
 use codec::Encode;
