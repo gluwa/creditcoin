@@ -41,7 +41,8 @@ base58 = "0.2.0"
 bitcoin-bech32 = { version = "0.12.1", git = "https://github.com/nathanwhit/rust-bech32-bitcoin", default-features = false, branch = "no-std" }
 strum = { version = "0.24.1", features = ["derive"], default-features = false }
 
-[dependencies.sp-tracing]
+[dependencies.tracing]
+package = "sp-tracing"
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
@@ -117,19 +118,12 @@ version = '1.0'
 bstr = { version = "1.0.1", default-features = false }
 parking_lot = "0.11.0"
 tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
-tracing = "0.1.37"
 assert_matches = "1.5.0"
 
 [dev-dependencies.sp-keystore]
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.sp-tracing]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dev-dependencies.sp-core]

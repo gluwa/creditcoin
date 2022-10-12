@@ -80,7 +80,7 @@ pub mod pallet {
 		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
 		Verify,
 	};
-	use sp_tracing as log;
+	use tracing as log;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]

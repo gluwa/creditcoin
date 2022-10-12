@@ -14,7 +14,7 @@ use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
 use sp_runtime::{traits::Saturating, RuntimeAppPublic};
 use sp_std::prelude::*;
-use sp_tracing as log;
+use tracing as log;
 
 #[allow(unused_macros)]
 macro_rules! try_get {

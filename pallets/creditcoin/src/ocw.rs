@@ -20,7 +20,6 @@ pub use nonce::nonce_key;
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::traits::{One, Saturating};
 use sp_std::prelude::*;
-use sp_tracing as tracing;
 
 pub(crate) type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 
