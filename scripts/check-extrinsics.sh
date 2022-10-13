@@ -24,7 +24,7 @@ latest_release() {
 latest_release=$(latest_release 'gluwa/creditcoin')
 RELEASE_BIN="./creditcoin-node"
 echo "[+] Fetching binary for Creditcoin version $latest_release"
-curl -L "https://github.com/gluwa/creditcoin/releases/download/$latest_release/creditcoin-v${latest_release}-x86_64-unknown-linux-gnu.tar.gz"  --output creditcoin.tar.gz && tar -xzf creditcoin.tar.gz || exit 1
+curl -L "https://github.com/gluwa/creditcoin/releases/download/$latest_release/creditcoin-${latest_release}-x86_64-unknown-linux-gnu.zip"  --output creditcoin.zip && unzip creditcoin.zip || exit 1
 chmod +x "$RELEASE_BIN"
 git fetch --depth="${GIT_DEPTH:-100}" origin 'refs/tags/*:refs/tags/*'
 
@@ -32,10 +32,7 @@ git fetch --depth="${GIT_DEPTH:-100}" origin 'refs/tags/*:refs/tags/*'
 for RUNTIME in "${runtimes[@]}"; do
   echo "[+] Checking runtime: ${RUNTIME}"
 
-  release_transaction_version=$(
-    git show "tags/$latest_release:runtime/src/lib.rs" | \
-      grep 'transaction_version'
-  )
+  release_transaction_version=$(git show "tags/$latest_release:runtime/src/version.rs" | grep 'transaction_version')
 
   current_transaction_version=$(
     grep 'transaction_version' "./runtime/src/version.rs"

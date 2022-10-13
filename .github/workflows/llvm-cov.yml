@@ -3,7 +3,6 @@ name: llvm-cov
 # Controls when the action will run.
 on:
   pull_request:
-    branches: [dev]
 
 jobs:
   upload-coverage-info:

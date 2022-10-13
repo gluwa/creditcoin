@@ -38,7 +38,12 @@ hex = "0.4.3"
 creditcoin-node-rpc = { version = "2.0.0-beta.8", path = "./rpc" }
 creditcoin-runtime-api = { version = "2.0.0-beta.8", path = "../pallets/creditcoin/runtime-api" }
 primitives = { path = "../primitives" }
+thiserror = "1.0.37"
 
+[dependencies.tokio]
+version = "1.18.2"
+default-features = false
+features = ["time"]
 
 [dependencies.frame-benchmarking]
 git = "https://github.com/gluwa/substrate.git"
@@ -175,6 +180,16 @@ version = '4.0.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.substrate-frame-rpc-system]
+git = "https://github.com/gluwa/substrate.git"
+version = '4.0.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.substrate-prometheus-endpoint]
+git = "https://github.com/gluwa/substrate.git"
+version = "0.10.0-dev"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.sp-offchain]
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
