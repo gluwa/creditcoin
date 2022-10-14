@@ -999,6 +999,7 @@ dependencies = [
  "sp-consensus-pow",
  "sp-core",
  "sp-inherents",
+ "sp-keystore",
  "sp-offchain",
  "sp-runtime",
  "sp-timestamp",
