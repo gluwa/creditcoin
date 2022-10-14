@@ -120,7 +120,7 @@ const POLL_INTERVAL: Duration = Duration::from_secs(30);
 
 pub(super) async fn task(
 	registry: Registry,
-	nonce_account: String,
+	nonce_account: AccountId,
 	handlers: RpcHandlers,
 	backend: Arc<FullBackend>,
 ) {
@@ -135,15 +135,15 @@ pub(super) async fn task(
 		"the nonce for the authority in onchain storage",
 	);
 
-	let acc = AccountId::from_string(&nonce_account)
-		.expect("Invalid account ID provided for nonce monitoring");
-	let key = get_off_chain_nonce_key(&handlers, &acc)
+	let key = get_off_chain_nonce_key(&handlers, &nonce_account)
 		.await
 		.expect("Failed to get key for the offchain nonce");
 
 	loop {
-		let (onchain, offchain) =
-			join!(get_on_chain_nonce(&handlers, &acc), get_off_chain_nonce(&backend, &key));
+		let (onchain, offchain) = join!(
+			get_on_chain_nonce(&handlers, &nonce_account),
+			get_off_chain_nonce(&backend, &key)
+		);
 
 		match (onchain, offchain) {
 			(Ok(on), Ok(off)) => {

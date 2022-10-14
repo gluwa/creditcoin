@@ -194,6 +194,11 @@ git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
+[dependencies.sp-keystore]
+git = "https://github.com/gluwa/substrate.git"
+version = '0.10.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
 [features]
 default = ['std']
 runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']
