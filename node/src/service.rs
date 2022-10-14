@@ -2,22 +2,25 @@
 
 mod nonce_monitor;
 
+use crate::cli::{Cli, NonceMonitorTarget};
 use codec::Encode;
-use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
+use creditcoin_node_runtime::{self, opaque::Block, AccountId, RuntimeApi};
 use sc_client_api::{Backend, ExecutorProvider};
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;
 use sc_service::{
-	error::Error as ServiceError, Configuration, TaskManager, TransactionPoolOptions,
+	error::Error as ServiceError, Configuration, KeystoreContainer, TaskManager,
+	TransactionPoolOptions,
 };
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool::PoolLimit;
 use sha3pow::Sha3Algorithm;
 use sp_inherents::CreateInherentDataProviders;
-use sp_runtime::{app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount};
-use std::{sync::Arc, thread, time::Duration};
-
-use crate::cli::Cli;
+use sp_keystore::CryptoStore;
+use sp_runtime::{
+	app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount, MultiSigner,
+};
+use std::{convert::TryInto, sync::Arc, thread, time::Duration};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -200,6 +203,34 @@ pub fn decode_mining_key(
 	}
 }
 
+pub fn get_authority_account(
+	target: NonceMonitorTarget,
+	keystore_container: &KeystoreContainer,
+) -> Result<Option<AccountId>, ServiceError> {
+	Ok(match target {
+		NonceMonitorTarget::Auto => {
+			let keys = futures_lite::future::block_on(CryptoStore::keys(
+				&*keystore_container.sync_keystore(),
+				sp_runtime::KeyTypeId(*b"ctcs"),
+			))
+			.map_err(|e| e.to_string())?;
+			keys.into_iter()
+				.next()
+				.map(|key| {
+					Ok::<_, String>(MultiSigner::Sr25519(sp_core::sr25519::Public::from_raw(
+						key.1.try_into().map_err(|e| {
+							format!("Invalid authroity account from public key: {}", hex::encode(e))
+						})?,
+					)))
+				})
+				.transpose()?
+				.map(|signer| signer.into_account())
+		},
+
+		NonceMonitorTarget::Account(acct) => Some(acct),
+	})
+}
+
 /// Builds a new service for a full client.
 pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
 	let Cli {
@@ -302,9 +333,17 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 
 	if let Some(nonce_account) = monitor_nonce_account {
 		if let Some(registry) = prometheus_registry.clone() {
-			task_manager.spawn_handle().spawn("nonce_metrics", None, {
-				nonce_monitor::task(registry, nonce_account, rpc_handlers, backend)
-			});
+			std::thread::sleep(Duration::from_secs(15));
+
+			let nonce_account = get_authority_account(nonce_account, &keystore_container)?;
+
+			if let Some(nonce_account) = nonce_account {
+				task_manager.spawn_handle().spawn("nonce_metrics", None, {
+					nonce_monitor::task(registry, nonce_account, rpc_handlers, backend)
+				});
+			} else {
+				log::warn!("No authority key found in the keystore");
+			}
 		}
 	}
 
