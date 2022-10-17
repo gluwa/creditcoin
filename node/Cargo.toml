@@ -41,7 +41,7 @@ primitives = { path = "../primitives" }
 thiserror = "1.0.37"
 
 [dependencies.tokio]
-version = "1.18.2"
+version = "1.21.2"
 default-features = false
 features = ["time"]
 
