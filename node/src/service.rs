@@ -7,8 +7,11 @@ use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::{Backend, ExecutorProvider};
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
+use sc_service::{
+	error::Error as ServiceError, Configuration, TaskManager, TransactionPoolOptions,
+};
 use sc_telemetry::{Telemetry, TelemetryWorker};
+use sc_transaction_pool::PoolLimit;
 use sha3pow::Sha3Algorithm;
 use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::{app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount};
@@ -57,6 +60,21 @@ type PartialComponentsType<T> = sc_service::PartialComponents<
 	),
 >;
 
+/// Creates a transaction pool config where the limits are 5x the default, unless a limit has been set higher manually
+fn create_transaction_pool_config(mut config: TransactionPoolOptions) -> TransactionPoolOptions {
+	let set_limit = |limit: &mut PoolLimit, default: &PoolLimit| {
+		// set the value to `max(5 * default_value, current_value)`
+		let new_setting = |curr: usize, def: usize| curr.max(def.saturating_mul(5));
+
+		limit.count = new_setting(limit.count, default.count);
+		limit.total_bytes = new_setting(limit.total_bytes, default.total_bytes);
+	};
+	let default = TransactionPoolOptions::default();
+	set_limit(&mut config.future, &default.future);
+	set_limit(&mut config.ready, &default.ready);
+	config
+}
+
 pub fn new_partial(
 	config: &Configuration,
 ) -> Result<PartialComponentsType<impl CreateInherentDataProviders<Block, ()>>, ServiceError> {
@@ -97,8 +115,9 @@ pub fn new_partial(
 
 	let select_chain = sc_consensus::LongestChain::new(backend.clone());
 
+	let tx_pool_config = create_transaction_pool_config(config.transaction_pool.clone());
 	let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-		config.transaction_pool.clone(),
+		tx_pool_config,
 		config.role.is_authority().into(),
 		config.prometheus_registry(),
 		task_manager.spawn_essential_handle(),
