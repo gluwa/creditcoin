@@ -270,7 +270,7 @@ jobs:
           author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
           message: "Auto-update creditcoin-js type definitions"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
