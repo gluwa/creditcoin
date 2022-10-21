@@ -26,3 +26,11 @@ test('Hashrate prometheus metric works', async () => {
         }
     }
 });
+
+test('Nonce metrics are returned', async () => {
+    const metricsBase: string = (global as any).CREDITCOIN_METRICS_BASE;
+    const { data } = await axios.get<string>(`${metricsBase}/metrics`);
+
+    expect(data).toContain('authority_offchain_nonce');
+    expect(data).toContain('authority_onchain_nonce');
+});
