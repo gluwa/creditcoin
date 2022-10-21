@@ -42,6 +42,15 @@ default-features = false
 git = "https://github.com/gluwa/substrate.git"
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
+[dependencies.sp-tracing]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.sp-io]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [features]
 default = ['std']
