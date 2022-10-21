@@ -13,7 +13,9 @@ sudo npm install -g yarn
    for more information:
 
 ```bash
-cargo run --release -- --dev --mining-key XYZ
+KEYSTORE_PATH=$(mktemp -d)
+cp 637463730238bcdc4d9ab1ef09a2f18ea49e512aafabaab02d21a8c6ff7d2ecee1f2a34d $KEYSTORE_PATH
+cargo run --release -- --dev --keystore-path $KEYSTORE_PATH --mining-key XYZ
 ```
 
 1. Execute a local Ethereum node:
