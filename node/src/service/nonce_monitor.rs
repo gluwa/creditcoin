@@ -1,13 +1,18 @@
-use std::time::Duration;
+use std::{convert::TryInto, time::Duration};
 
 use codec::Decode;
 use creditcoin_node_runtime::AccountId;
 use jsonrpc_core::{futures::channel::mpsc, futures::join, Failure, Response, Success};
 use sc_client_api::Backend;
 use sc_service::{Arc, RpcHandlers, RpcSession};
-use sp_runtime::{app_crypto::Ss58Codec, offchain::OffchainStorage};
+use sp_keystore::CryptoStore;
+use sp_runtime::{
+	app_crypto::Ss58Codec, offchain::OffchainStorage, traits::IdentifyAccount, MultiSigner,
+};
 use substrate_prometheus_endpoint::Registry;
 use thiserror::Error;
+
+use crate::cli::NonceMonitorTarget;
 
 use super::FullBackend;
 
@@ -18,6 +23,8 @@ enum Error {
 	JsonRpc(jsonrpc_core::Error),
 	Rpc(String),
 	Codec(codec::Error),
+	KeyStore(String),
+	Signer(String),
 }
 
 async fn rpc_request(
@@ -116,13 +123,50 @@ fn register_u64_gauge(registry: &Registry, name: &str, help: &str) -> UIntGauge 
 	.expect("registering prometheus gauge should not fail")
 }
 
+type Keystore = Arc<dyn CryptoStore>;
+
+async fn get_authority_account(
+	target: NonceMonitorTarget,
+	keystore: &Keystore,
+) -> Result<Option<AccountId>, Error> {
+	Ok(match target {
+		NonceMonitorTarget::Auto => {
+			let keys = keystore
+				.keys(sp_runtime::KeyTypeId(*b"ctcs"))
+				.await
+				.map_err(|e| Error::KeyStore(e.to_string()))?;
+			keys.into_iter()
+				.next()
+				.map(|key| {
+					Ok::<_, Error>(MultiSigner::Sr25519(sp_core::sr25519::Public::from_raw(
+						key.1.try_into().map_err(|e| {
+							Error::Signer(format!(
+								"Invalid authority account from public key: {}",
+								hex::encode(e)
+							))
+						})?,
+					)))
+				})
+				.transpose()?
+				.map(|signer| signer.into_account())
+		},
+
+		NonceMonitorTarget::Account(acct) => Some(acct),
+	})
+}
+
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
 
+pub(super) struct TaskArgs {
+	pub(super) registry: Registry,
+	pub(super) monitor_target: NonceMonitorTarget,
+	pub(super) handlers: RpcHandlers,
+	pub(super) backend: Arc<FullBackend>,
+	pub(super) keystore: Keystore,
+}
+
 pub(super) async fn task(
-	registry: Registry,
-	nonce_account: AccountId,
-	handlers: RpcHandlers,
-	backend: Arc<FullBackend>,
+	TaskArgs { registry, monitor_target, handlers, backend, keystore }: TaskArgs,
 ) {
 	let offchain_gauge = register_u64_gauge(
 		&registry,
@@ -134,6 +178,18 @@ pub(super) async fn task(
 		"authority_onchain_nonce",
 		"the nonce for the authority in onchain storage",
 	);
+
+	let nonce_account =
+		loop {
+			match get_authority_account(monitor_target.clone(), &keystore).await {
+				Ok(Some(acct)) => break acct,
+				Ok(None) => tokio::time::sleep(POLL_INTERVAL * 2).await,
+				Err(e) => {
+					log::error!("Encountered error when trying to get authority account for monitoring: {e}");
+					return;
+				},
+			}
+		};
 
 	let key = get_off_chain_nonce_key(&handlers, &nonce_account)
 		.await
