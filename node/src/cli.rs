@@ -64,7 +64,7 @@ pub struct Cli {
 	pub monitor_nonce: Option<NonceMonitorTarget>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NonceMonitorTarget {
 	Auto,
 	Account(AccountId),
