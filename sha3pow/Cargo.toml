@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 parity-scale-codec = "2.3.1"
 rand = { version = "0.8.4", features = ["small_rng"] }
-sha3 = "0.10.4"
+sha3 = "0.10.6"
 scale-info = "1.0.0"
 primitives = { path = "../primitives" }
 
