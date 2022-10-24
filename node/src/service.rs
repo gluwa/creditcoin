@@ -301,8 +301,6 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 
 	if let Some(monitor_target) = monitor_nonce_account {
 		if let Some(registry) = prometheus_registry.clone() {
-			std::thread::sleep(Duration::from_secs(15));
-
 			task_manager.spawn_handle().spawn("nonce_metrics", None, {
 				nonce_monitor::task(nonce_monitor::TaskArgs {
 					registry,
