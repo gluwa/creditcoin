@@ -183,7 +183,10 @@ pub(super) async fn task(
 		loop {
 			match get_authority_account(monitor_target.clone(), &keystore).await {
 				Ok(Some(acct)) => break acct,
-				Ok(None) => tokio::time::sleep(POLL_INTERVAL * 2).await,
+				Ok(None) => {
+					log::info!("No authority account found");
+					tokio::time::sleep(POLL_INTERVAL * 2).await
+				},
 				Err(e) => {
 					log::error!("Encountered error when trying to get authority account for monitoring: {e}");
 					return;
@@ -191,9 +194,13 @@ pub(super) async fn task(
 			}
 		};
 
-	let key = get_off_chain_nonce_key(&handlers, &nonce_account)
-		.await
-		.expect("Failed to get key for the offchain nonce");
+	let key = match get_off_chain_nonce_key(&handlers, &nonce_account).await {
+		Ok(key) => key,
+		Err(e) => {
+			log::error!("Failed to get key for the offchain nonce of {nonce_account}: {e}");
+			return;
+		},
+	};
 
 	loop {
 		let (onchain, offchain) = join!(
