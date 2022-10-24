@@ -148,6 +148,17 @@ jobs:
           echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
           echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
 
+      - name: Commit changes to current branch
+        run: |
+          echo "TEST ME" > README.md
+
+          git config --global user.email "devops@gluwa.com"
+          git config --global user.name "Gluwa CI Bot"
+
+          CURRENT_BRANCH="experiment_with_automated_commits"
+          git commit -a -m "Auto-update pallet weights"
+          git push origin $CURRENT_BRANCH
+
       - name: Run tests
         uses: actions-rs/cargo@v1
         with:
