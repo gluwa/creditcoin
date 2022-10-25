@@ -17,7 +17,7 @@ use crate::cli::NonceMonitorTarget;
 use super::FullBackend;
 
 #[derive(Debug, Error)]
-#[error("{self}")]
+#[error("{0}")]
 enum Error {
 	Serde(sc_telemetry::serde_json::Error),
 	JsonRpc(jsonrpc_core::Error),
