@@ -80,6 +80,7 @@ jobs:
           fetch-depth: 10
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Set env
         run: |
@@ -128,7 +129,6 @@ jobs:
           author_name: hardwareBenchmark
           author_email: creditcoin@gluwa.com
           message: 'Auto-update pallet weights'
-          github_token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Prepare commit for PR against dev
         run: |
