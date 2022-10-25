@@ -17,7 +17,7 @@
         "@polkadot/keyring": "10.1.9",
         "@types/ws": "^8.5.3",
         "axios": "^1.0.0",
-        "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.7.0.tgz",
+        "creditcoin-js": "https://gitpkg.now.sh/gluwa/creditcoin/creditcoin-js?dd095499589293b9862651b068286e85a5d1e08f&scripts.postinstall=yarn%20install%20--ignore-scripts%20%26%26%20yarn%20build",
         "ws": "^8.5.0"
     },
     "devDependencies": {
