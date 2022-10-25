@@ -24,7 +24,7 @@ ethereum-types = { version = "0.12.1", features = [
     "rlp",
     "serialize",
 ], default-features = false }
-serde = { version = "1.0.145", features = ["derive"], default-features = false }
+serde = { version = "1.0.147", features = ["derive"], default-features = false }
 serde_json = { version = "1.0.87", features = [
     "alloc",
 ], default-features = false }
