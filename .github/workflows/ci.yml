@@ -243,6 +243,11 @@ jobs:
           yarn build:types
           yarn format
 
+          echo "========== DEBUG DEBUG DEBUG =========="
+          git status --short
+          git diff
+          echo "======================================="
+
           if [ -n "$(git status --short)" ]; then
               git diff
               echo "::set-output name=git_diff::true"
