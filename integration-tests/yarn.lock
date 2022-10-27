@@ -1549,9 +1549,9 @@
     form-data "^3.0.0"
 
 "@types/node@*":
-  version "18.11.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.5.tgz#1bc94cf2f9ab5fe33353bc7c79c797dcc5325bef"
-  integrity sha512-3JRwhbjI+cHLAkUorhf8RnqUbFXajvzX4q6fMn5JwkgtuwfYtRQYI3u4V92vI6NJuTsbBQWWh3RZjFsuevyMGQ==
+  version "18.11.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.3.tgz#78a6d7ec962b596fc2d2ec102c4dd3ef073fea6a"
+  integrity sha512-fNjDQzzOsZeKZu5NATgXUPsaFaTxeRgFXoosrHivTl8RGeV733OLawXsGfEk9a8/tySyZUyiZ6E8LcjPFZ2y1A==
 
 "@types/prettier@^2.1.5":
   version "2.7.1"
@@ -2034,9 +2034,9 @@ create-require@^1.1.0:
   resolved "https://registry.yarnpkg.com/create-require/-/create-require-1.1.1.tgz#c1d7e8f1e5f6cfc9ff65f9cd352d37348756c333"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
 
-"creditcoin-js@https://gitpkg.now.sh/gluwa/creditcoin/creditcoin-js?dd095499589293b9862651b068286e85a5d1e08f&scripts.postinstall=yarn%20install%20--ignore-scripts%20%26%26%20yarn%20build":
+"creditcoin-js@file:../creditcoin-js/creditcoin-js-v0.7.0.tgz":
   version "0.7.0"
-  resolved "https://gitpkg.now.sh/gluwa/creditcoin/creditcoin-js?dd095499589293b9862651b068286e85a5d1e08f&scripts.postinstall=yarn%20install%20--ignore-scripts%20%26%26%20yarn%20build#99611a410b2cc58ffb3b6f61835b13ad98dd1235"
+  resolved "file:../creditcoin-js/creditcoin-js-v0.7.0.tgz#c6da05e58f61cf81bcb72a311f64005e179bc9f4"
   dependencies:
     "@polkadot/api" "8.14.1"
     ethers "^5.7.1"
