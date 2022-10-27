@@ -126,7 +126,7 @@ jobs:
       - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
         with:
-          author_name: hardwareBenchmark
+          author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
           message: 'Auto-update pallet weights'
 
