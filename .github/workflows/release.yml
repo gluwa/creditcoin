@@ -164,11 +164,49 @@ jobs:
           docker push gluwa/creditcoin:latest
           docker logout
 
+  build-creditcoin-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
+
+      - name: Figure out tag name
+        shell: bash
+        run: |
+          TAG_NAME=$(git describe --tag)
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
+      - name: Build creditcoin-js package
+        run: |
+          pushd creditcoin-js/
+
+          # version will match the git tag
+          echo "DEBUG: Tag is '${{ env.TAG_NAME }}"
+          sed -i 's/"version": ".*",/"version": "${{ env.TAG_NAME }}",/' package.json
+
+          yarn install && yarn pack
+
+          popd
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          path: 'creditcoin-js/creditcoin-js-v${{ env.TAG_NAME }}.tgz'
+          if-no-files-found: error
+
   create-release:
     runs-on: ubuntu-latest
     needs:
       - build-native-runtime
       - build-wasm-runtime
+      - build-creditcoin-js
     steps:
       - uses: actions/checkout@v3
         with:
