@@ -1,9 +1,6 @@
-import { ApiPromise, Keyring, WsProvider } from 'creditcoin-js';
-import { KeyringPair } from 'creditcoin-js';
-import { Wallet } from 'creditcoin-js';
+import { ApiPromise, Keyring, WsProvider, KeyringPair, Wallet, POINT_01_CTC } from 'creditcoin-js';
 import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 import { signAccountId } from 'creditcoin-js/lib/utils';
-import { POINT_01_CTC } from '../constants';
 import { extractFee } from '../utils';
 
 describe('RegisterAddress', () => {
