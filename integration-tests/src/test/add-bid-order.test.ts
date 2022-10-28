@@ -1,10 +1,10 @@
-import { Guid, LoanTerms, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
-import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
+import { Guid, LoanTerms, KeyringPair, POINT_01_CTC, creditcoinApi } from 'creditcoin-js';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
 import { signAccountId } from 'creditcoin-js/lib/utils';
-import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 
 import { extractFee } from '../utils';
 
@@ -20,7 +20,14 @@ describe('AddBidOrder', () => {
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         borrower = keyring.addFromUri('//Bob');
-        loanTerms = await loanTermsWithCurrency(ccApi);
+
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            undefined,
+        );
+        const currency = testCurrency(eth.testTokenAddress);
+        loanTerms = await loanTermsWithCurrency(ccApi, currency);
     });
 
     afterAll(async () => {

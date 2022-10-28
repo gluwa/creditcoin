@@ -1,12 +1,12 @@
 import { BN, KeyringPair, TransferKind, Guid, POINT_01_CTC } from 'creditcoin-js';
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
+import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
-import { testData, lendOnEth, tryRegisterAddress, setupEth, loanTermsWithCurrency } from './common';
+import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
 import { Wallet } from 'creditcoin-js';
-import { testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
 
 const ethless: TransferKind = {
@@ -28,7 +28,11 @@ describe('RegisterFundingTransfer', (): void => {
     const setup = async () => {
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
-        const eth = await setupEth(lenderWallet);
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+        );
         const currency = testCurrency(eth.testTokenAddress);
         const loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const signedParams = signLoanParams(ccApi.api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);

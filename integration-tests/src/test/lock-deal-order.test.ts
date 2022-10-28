@@ -3,10 +3,10 @@ import { KeyringPair, LoanTerms, TransferKind, Guid, POINT_01_CTC } from 'credit
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, lendOnEth, tryRegisterAddress, setupEth, loanTermsWithCurrency } from './common';
+import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
 import { Wallet } from 'creditcoin-js';
-import { testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 
 const ethless: TransferKind = {
     platform: 'Evm',
@@ -60,7 +60,11 @@ describe('LockDealOrder', (): void => {
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
-        const eth = await setupEth(lenderWallet);
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+        );
         const currency = testCurrency(eth.testTokenAddress);
         loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const askGuid = Guid.newGuid();

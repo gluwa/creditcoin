@@ -2,7 +2,7 @@ import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { fullLoanCycleExample } from 'creditcoin-js/lib/examples/loan-cycle';
 
-import { testData, tryRegisterAddress } from './common';
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 
 describe('Full Loan Cycle', (): void => {
     let ccApi: CreditcoinApi;
