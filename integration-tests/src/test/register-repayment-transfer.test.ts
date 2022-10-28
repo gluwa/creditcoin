@@ -1,13 +1,13 @@
-import { KeyringPair, LoanTerms, TransferKind, Guid, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, KeyringPair, LoanTerms, TransferKind, Guid, Wallet, POINT_01_CTC } from 'creditcoin-js';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { creditcoinApi } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
 import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
-import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+
+import { extractFee } from '../utils';
 
 const ethless: TransferKind = {
     platform: 'Evm',
@@ -24,7 +24,10 @@ describe('RegisterRepaymentTransfer', (): void => {
     let borrowerWallet: Wallet;
     let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);

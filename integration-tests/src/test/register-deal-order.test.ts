@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: The Unlicense
 
 import { creditcoinApi, Guid, LoanTerms, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
@@ -18,7 +19,10 @@ describe('RegisterDealOrder', () => {
     let borrowerAddressId: string;
     let lenderAddressId: string;
     let loanTerms: LoanTerms;
-    const { blockchain, expirationBlock, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);

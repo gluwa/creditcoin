@@ -14,20 +14,22 @@ import { EthConnection } from './examples/ethereum';
 import { AddressRegistered, createAddressId } from './extrinsics/register-address';
 import { createCurrencyId, registerCurrencyAsync } from './extrinsics/register-currency';
 
+type CreateWalletFunc = (who: string) => Wallet;
+
 export type TestData = {
     blockchain: Blockchain;
     expirationBlock: number;
     keyring: Keyring;
-    createWallet: (who: string) => Wallet;
+    createWallet: CreateWalletFunc;
 };
 
-export const testData: TestData = {
-    blockchain: (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
-    expirationBlock: 10_000_000,
-    createWallet: (global as any).CREDITCOIN_CREATE_WALLET
-        ? (global as any).CREDITCOIN_CREATE_WALLET
-        : Wallet.createRandom, // eslint-disable-line
-    keyring: new Keyring({ type: 'sr25519' }),
+export const testData = (ethereumChain: Blockchain, createWalletF: CreateWalletFunc): TestData => {
+    return {
+        blockchain: ethereumChain,
+        expirationBlock: 10_000_000,
+        createWallet: createWalletF,
+        keyring: new Keyring({ type: 'sr25519' }),
+    };
 };
 
 const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey?: KeyringPair) => {
@@ -73,13 +75,14 @@ export const addAskAndBidOrder = async (
     lender: KeyringPair,
     borrower: KeyringPair,
     loanTerms: LoanTerms,
+    testingData: TestData,
 ) => {
     const {
         extrinsics: { addAskOrder, addBidOrder, registerAddress },
         utils: { signAccountId },
     } = ccApi;
 
-    const { blockchain, expirationBlock } = testData;
+    const { blockchain, expirationBlock } = testingData;
     const lenderWallet = Wallet.createRandom();
     const borrowerWallet = Wallet.createRandom();
 
@@ -154,8 +157,9 @@ export const registerCtcDeployerAddress = async (
     privateKey: string,
     ethereumNodeUrl: string,
     reuseExistingAddresses: boolean,
+    testingData: TestData,
 ): Promise<AddressRegistered> => {
-    const { keyring, blockchain } = testData;
+    const { keyring, blockchain } = testingData;
     const {
         utils: { signAccountId },
     } = ccApi;

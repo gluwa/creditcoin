@@ -3,11 +3,15 @@
 
 import { WebSocket } from 'ws';
 import { ApiPromise, WsProvider } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { testData } from 'creditcoin-js/lib/testUtils';
 
 describe('Creditcoin RPC', (): void => {
     let api: ApiPromise;
-    const { keyring } = testData;
+    const { keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         const provider = new WsProvider((global as any).CREDITCOIN_API_URL);

@@ -1,4 +1,5 @@
 import { creditcoinApi } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { fullLoanCycleExample } from 'creditcoin-js/lib/examples/loan-cycle';
 
@@ -7,7 +8,10 @@ import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 describe('Full Loan Cycle', (): void => {
     let ccApi: CreditcoinApi;
     let registeredWallets: any;
-    const { blockchain, createWallet, keyring } = testData;
+    const { blockchain, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);

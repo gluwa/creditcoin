@@ -1,6 +1,7 @@
 import { Guid, LoanTerms, KeyringPair, POINT_01_CTC, creditcoinApi } from 'creditcoin-js';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { signAccountId } from 'creditcoin-js/lib/utils';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
@@ -15,7 +16,10 @@ describe('AddBidOrder', () => {
     let bidGuid: Guid;
     let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
