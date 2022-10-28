@@ -1,12 +1,18 @@
-import { providers } from 'ethers';
-import { Wallet, Guid, BN, creditcoinApi } from 'creditcoin-js';
-import { Keyring, KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
-import { Blockchain, LoanTerms, DealOrderId, Currency } from 'creditcoin-js/lib/model';
-import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { createAddress } from 'creditcoin-js/lib/transforms';
-import { ethConnection, EthConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
-import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
-import { createCurrencyId, registerCurrencyAsync } from 'creditcoin-js/lib/extrinsics/register-currency';
+import { providers, Wallet } from 'ethers';
+import { Guid } from 'js-guid';
+
+import { Keyring } from '@polkadot/api';
+import { Option } from '@polkadot/types';
+import { BN } from '@polkadot/util';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
+
+import { Blockchain, LoanTerms, DealOrderId, Currency } from './model';
+import { CreditcoinApi } from './types';
+import { createAddress } from './transforms';
+import { EthConnection } from './examples/ethereum';
+import { AddressRegistered, createAddressId } from './extrinsics/register-address';
+import { createCurrencyId, registerCurrencyAsync } from './extrinsics/register-currency';
 
 export type TestData = {
     blockchain: Blockchain;
@@ -39,16 +45,7 @@ const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency
     }
 };
 
-export const loanTermsWithCurrency = async (ccApi: CreditcoinApi, currency?: Currency): Promise<LoanTerms> => {
-    const currencyFallback = async (c?: Currency): Promise<Currency> => {
-        if (c === undefined) {
-            const { testTokenAddress } = await setupEth();
-            return testCurrency(testTokenAddress);
-        } else {
-            return c;
-        }
-    };
-    currency = await currencyFallback(currency);
+export const loanTermsWithCurrency = async (ccApi: CreditcoinApi, currency: Currency): Promise<LoanTerms> => {
     const currencyId = createCurrencyId(ccApi.api, currency);
     await ensureCurrencyRegistered(ccApi, currency);
 
@@ -101,22 +98,14 @@ export const addAskAndBidOrder = async (
     return [askOrderAdded.itemId, bidOrderAdded.itemId];
 };
 
-export const setupEth = async (lenderWallet?: Wallet): Promise<EthConnection> => {
-    return ethConnection(
-        (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-        (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-        (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
-    );
-};
-
 export const lendOnEth = async (
     lenderWallet: Wallet,
     borrowerWallet: Wallet,
     dealOrderId: DealOrderId,
     loanTerms: LoanTerms,
-    connection?: EthConnection,
+    connection: EthConnection,
 ) => {
-    const { lend, waitUntilTip } = connection ? connection : await setupEth(lenderWallet);
+    const { lend, waitUntilTip } = connection;
 
     // Lender lends to borrower on ethereum
     const [, lendTxHash, lendBlockNumber] = await lend(
@@ -163,6 +152,8 @@ export const tryRegisterAddress = async (
 export const registerCtcDeployerAddress = async (
     ccApi: CreditcoinApi,
     privateKey: string,
+    ethereumNodeUrl: string,
+    reuseExistingAddresses: boolean,
 ): Promise<AddressRegistered> => {
     const { keyring, blockchain } = testData;
     const {
@@ -171,7 +162,7 @@ export const registerCtcDeployerAddress = async (
 
     const deployer = keyring.addFromUri('//Alice');
 
-    const provider = new providers.JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+    const provider = new providers.JsonRpcProvider(ethereumNodeUrl);
     const deployerWallet = new Wallet(privateKey, provider);
 
     return tryRegisterAddress(
@@ -180,6 +171,6 @@ export const registerCtcDeployerAddress = async (
         blockchain,
         signAccountId(deployerWallet, deployer.address),
         deployer,
-        (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+        reuseExistingAddresses,
     );
 };

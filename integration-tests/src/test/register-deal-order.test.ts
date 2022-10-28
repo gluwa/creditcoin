@@ -1,12 +1,13 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { Guid, LoanTerms, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, Guid, LoanTerms, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+
 import { extractFee } from '../utils';
 
 describe('RegisterDealOrder', () => {
@@ -23,7 +24,14 @@ describe('RegisterDealOrder', () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob');
-        loanTerms = await loanTermsWithCurrency(ccApi);
+
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            undefined,
+        );
+        const currency = testCurrency(eth.testTokenAddress);
+        loanTerms = await loanTermsWithCurrency(ccApi, currency);
     }, 60000);
 
     afterAll(async () => {

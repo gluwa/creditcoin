@@ -3,7 +3,7 @@ import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
 import { createFundingTransferId } from 'creditcoin-js/lib/extrinsics/register-transfers';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData } from './common';
+import { testData } from 'creditcoin-js/lib/testUtils';
 import { extractFee, testIf } from '../utils';
 
 describe('FailTransfer', (): void => {

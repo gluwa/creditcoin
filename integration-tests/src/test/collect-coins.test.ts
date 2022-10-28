@@ -4,7 +4,7 @@ import { createCollectedCoinsId } from 'creditcoin-js/lib/extrinsics/request-col
 import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 import { creditcoinApi, POINT_01_CTC } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, registerCtcDeployerAddress } from './common';
+import { testData, registerCtcDeployerAddress } from 'creditcoin-js/lib/testUtils';
 import { testIf } from '../utils';
 import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 
@@ -50,6 +50,8 @@ describe('CollectCoins', (): void => {
             deployerRegAddr = await registerCtcDeployerAddress(
                 ccApi,
                 (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
+                (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             );
         }, 300_000);
 

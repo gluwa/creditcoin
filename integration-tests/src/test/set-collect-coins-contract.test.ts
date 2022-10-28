@@ -1,6 +1,6 @@
 import { KeyringPair, creditcoinApi, POINT_01_CTC } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData } from './common';
+import { testData } from 'creditcoin-js/lib/testUtils';
 import { extractFee, testIf } from '../utils';
 import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 

@@ -1,8 +1,9 @@
-import { KeyringPair, POINT_01_CTC } from 'creditcoin-js';
-import { LoanTerms, OfferId } from 'creditcoin-js/lib/model';
-import { creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
+import { Currency, LoanTerms, OfferId } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, loanTermsWithCurrency, testData } from './common';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { addAskAndBidOrder, loanTermsWithCurrency, testData } from 'creditcoin-js/lib/testUtils';
+
 import { extractFee } from '../utils';
 
 describe('AddDealOrder', (): void => {
@@ -11,6 +12,7 @@ describe('AddDealOrder', (): void => {
     let lender: KeyringPair;
     let offerId: OfferId;
     let loanTerms: LoanTerms;
+    let currency: Currency;
 
     const { expirationBlock, keyring } = testData;
 
@@ -18,6 +20,13 @@ describe('AddDealOrder', (): void => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            undefined,
+        );
+        currency = testCurrency(eth.testTokenAddress);
     });
 
     afterAll(async () => {
@@ -25,7 +34,7 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        loanTerms = await loanTermsWithCurrency(ccApi);
+        loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms);
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;

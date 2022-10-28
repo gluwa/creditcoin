@@ -3,7 +3,7 @@
 
 import { WebSocket } from 'ws';
 import { ApiPromise, WsProvider } from 'creditcoin-js';
-import { testData } from '../common';
+import { testData } from 'creditcoin-js/lib/testUtils';
 
 describe('Creditcoin RPC', (): void => {
     let api: ApiPromise;

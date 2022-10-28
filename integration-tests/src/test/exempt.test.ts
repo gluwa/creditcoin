@@ -1,11 +1,11 @@
-import { KeyringPair, Guid, POINT_01_CTC } from 'creditcoin-js';
+import { KeyringPair, Guid, POINT_01_CTC, Wallet, creditcoinApi } from 'creditcoin-js';
 
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from './common';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+
 import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
 
 describe('Exempt', (): void => {
     let ccApi: CreditcoinApi;
@@ -55,7 +55,13 @@ describe('Exempt', (): void => {
         ]);
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
-        const loanTerms = await loanTermsWithCurrency(ccApi);
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+        );
+        const currency = testCurrency(eth.testTokenAddress);
+        const loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
         dealOrder = await registerDealOrder(
