@@ -1,13 +1,18 @@
 import { KeyringPair, creditcoinApi, POINT_01_CTC } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData } from 'creditcoin-js/lib/testUtils';
+
 import { extractFee, testIf } from '../utils';
 
 describe('RegisterCurrency', (): void => {
     let ccApi: CreditcoinApi;
     let sudoSigner: KeyringPair;
 
-    const { keyring } = testData;
+    const { keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);

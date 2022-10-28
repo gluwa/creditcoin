@@ -1,13 +1,13 @@
-import { BN, KeyringPair, TransferKind, Guid, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, BN, KeyringPair, TransferKind, Guid, Wallet, POINT_01_CTC } from 'creditcoin-js';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { creditcoinApi } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
 import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
-import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
+
+import { extractFee } from '../utils';
 
 const ethless: TransferKind = {
     platform: 'Evm',
@@ -23,7 +23,10 @@ describe('RegisterFundingTransfer', (): void => {
     let lenderRegAddr: AddressRegistered;
     let borrowerRegAddr: AddressRegistered;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     const setup = async () => {
         const askGuid = Guid.newGuid();

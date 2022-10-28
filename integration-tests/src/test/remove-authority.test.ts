@@ -1,9 +1,10 @@
-import { ApiPromise, Balance, KeyringPair } from 'creditcoin-js';
-import { creditcoinApi } from 'creditcoin-js';
+import { common, creditcoinApi, ApiPromise, Balance, KeyringPair } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { testData } from 'creditcoin-js/lib/testUtils';
-import { testIf } from '../utils';
 import { addAuthorityAsync } from 'creditcoin-js/lib/extrinsics/add-authority';
-import { common } from 'creditcoin-js';
+
+import { testIf } from '../utils';
+
 const { expectNoEventError, expectNoDispatchError } = common;
 
 const globals = global as any;
@@ -13,7 +14,10 @@ describe('RemoveAuthority', (): void => {
     let sudoSigner: KeyringPair;
     let authority: KeyringPair;
 
-    const { keyring } = testData;
+    const { keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         api = (await creditcoinApi((global as any).CREDITCOIN_API_URL)).api;
