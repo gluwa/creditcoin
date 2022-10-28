@@ -1,8 +1,6 @@
-import { Guid, LoanTerms } from 'creditcoin-js';
-import { KeyringPair } from 'creditcoin-js';
+import { Guid, LoanTerms, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
-import { POINT_01_CTC } from '../constants';
 import { signAccountId } from 'creditcoin-js/lib/utils';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';

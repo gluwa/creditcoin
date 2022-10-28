@@ -1,7 +1,6 @@
-import { KeyringPair } from 'creditcoin-js';
+import { KeyringPair, POINT_01_CTC } from 'creditcoin-js';
 import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
 import { createFundingTransferId } from 'creditcoin-js/lib/extrinsics/register-transfers';
-import { POINT_01_CTC } from '../constants';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData } from './common';

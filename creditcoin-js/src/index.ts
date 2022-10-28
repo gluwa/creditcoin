@@ -13,3 +13,6 @@ export type { Balance, DispatchError, DispatchResult } from '@polkadot/types/int
 export { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 export type { EventRecord } from '@polkadot/types/interfaces/system';
 export * as common from './extrinsics/common';
+
+export const CREDO_PER_CTC = 1_000_000_000_000_000_000;
+export const POINT_01_CTC = 0.01 * CREDO_PER_CTC;

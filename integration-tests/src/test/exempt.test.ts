@@ -1,7 +1,4 @@
-import { KeyringPair } from 'creditcoin-js';
-
-import { Guid } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
+import { KeyringPair, Guid, POINT_01_CTC } from 'creditcoin-js';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { creditcoinApi } from 'creditcoin-js';
