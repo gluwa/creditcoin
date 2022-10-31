@@ -127,7 +127,7 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 [dependencies.scale-info]
 default-features = false
 features = ['derive']
-version = '1.0'
+version = '2.3'
 
 [dependencies.sp-api]
 default-features = false
