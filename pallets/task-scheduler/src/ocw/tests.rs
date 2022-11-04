@@ -79,6 +79,34 @@ fn completed_oversubscribed_tasks_are_skipped() {
 	});
 }
 
+
+#[test]
+#[tracing_test::traced_test]
+fn evaluation_error_is_retried() {
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	ext_builder.generate_authority();
+	ext_builder.with_offchain();
+	ext_builder.build().execute_with(|| {
+		roll_to::<Trivial>(1);
+
+		let deadline = Runtime::deadline();
+		let task = MockTask::Evaluation;
+		let id = TaskV2::<Runtime>::to_id(&task);
+		Runtime::insert(&deadline, &id, task);
+
+		roll_to::<WithWorkerHook>(2);
+		assert!(logs_contain("Failed to verify pending task Evaluation"));
+		// It failed Evaluation and remains scheduled.
+		assert!(Runtime::is_scheduled(&deadline, &id));
+
+		let key = storage_key(&id);
+		assert!(StorageValueRef::persistent(key.as_ref())
+			.get::<GuardDeadline>()
+			.expect("decoded")
+			.is_none());
+	});
+}
+
 #[test]
 #[tracing_test::traced_test]
 fn offchain_worker_logs_error_when_transfer_validation_errors() {
