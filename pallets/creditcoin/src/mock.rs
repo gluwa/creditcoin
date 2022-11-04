@@ -103,8 +103,6 @@ impl pallet_creditcoin::Config for Test {
 
 	type Call = Call;
 
-	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
-
 	type Signer = <Signature as Verify>::Signer;
 	type SignerSignature = Signature;
 	type FromAccountId = AccountId;
