@@ -1,10 +1,12 @@
+mod collect_coins;
 pub mod loan_terms;
 pub mod platform;
 mod transfer;
-pub use transfer::*;
 
+pub use collect_coins::*;
 pub use loan_terms::*;
 pub use platform::*;
+pub use transfer::*;
 
 use crate::ocw::tasks::collect_coins::GCreContract;
 use crate::ocw::VerificationFailureCause;
@@ -18,6 +20,7 @@ use frame_support::{
 	BoundedVec, RuntimeDebug, StorageHasher,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::Config as SystemConfig;
 use scale_info::TypeInfo;
 use sha2::Digest;
 use sp_core::ecdsa;
@@ -55,20 +58,6 @@ impl<AccountId> Address<AccountId> {
 	pub fn matches_chain_of(&self, other: &Address<AccountId>) -> bool {
 		self.blockchain == other.blockchain
 	}
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectedCoins<Hash, Balance> {
-	pub to: AddressId<Hash>,
-	pub amount: Balance,
-	pub tx_id: ExternalTxId,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct UnverifiedCollectedCoins {
-	pub to: ExternalAddress,
-	pub tx_id: ExternalTxId,
-	pub contract: GCreContract,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -154,9 +143,6 @@ impl<B: Default, H: Default> DealOrderId<B, H> {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectedCoinsId<Hash>(Hash);
-
 macro_rules! concatenate {
 	(@strip_plus + $($rest: tt)*) => {
 		$($rest)*
@@ -199,23 +185,6 @@ impl<B, H> BidOrderId<B, H> {
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
 		BidOrderId(expiration_block, Config::Hashing::hash(guid))
-	}
-}
-
-impl<H> CollectedCoinsId<H> {
-	pub fn new<Config>(contract_chain: &Blockchain, blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
-	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		let key = concatenate!(contract_chain.as_bytes().iter(), blockchain_tx_id);
-		CollectedCoinsId(Config::Hashing::hash(&key))
-	}
-}
-
-impl<H> From<H> for CollectedCoinsId<H> {
-	fn from(hash: H) -> Self {
-		Self(hash)
 	}
 }
 
