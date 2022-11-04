@@ -1,17 +1,29 @@
 //use crate::mock::runtime::Call;
 use crate::Config;
 use codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
+use core::cell::Cell;
 use frame_system::pallet::Call as SystemCall;
+use scale_info::TypeInfo;
 use sp_runtime::traits::Hash;
+use std::thread_local;
 
-#[derive(Debug, MaxEncodedLen, Encode, TypeInfo, Decode)]
-//#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct MockTask;
+thread_local! { static PERSISTED:Cell<bool> = Cell::new(false); }
 
-use crate::tasks::{error::TaskError, TaskV2, ForwardTask};
+#[derive(Debug, MaxEncodedLen, Encode, TypeInfo, Decode, Clone)]
+/// The task's result depends on the variant.
+pub enum MockTask<T> {
+	Remark(T),
+	Evaluation,
+	Scheduler,
+}
 
-impl<T: Config> ForwardTask<T> for MockTask
+pub(crate) fn is_persisted_replace(new: bool) -> bool {
+	PERSISTED.with(|cell| cell.replace(new))
+}
+
+use crate::tasks::{error::TaskError, ForwardTask, TaskV2};
+
+impl<T: Config, Nonce: Encode> ForwardTask<T> for MockTask<Nonce>
 where
 	T::TaskCall: From<SystemCall<T>>,
 {
@@ -22,12 +34,11 @@ where
 		&self,
 		deadline: T::BlockNumber,
 	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
-		let task = MockTask{};
-		TaskV2::<T>::forward_task(&task,deadline).map(|c| c.into())
+		TaskV2::<T>::forward_task(self, deadline).map(|c| c.into())
 	}
 }
 
-impl<Runtime: Config> TaskV2<Runtime> for MockTask {
+impl<Runtime: Config, Nonce: Encode> TaskV2<Runtime> for MockTask<Nonce> {
 	type Call = SystemCall<Runtime>;
 	type EvaluationError = ();
 	type SchedulerError = ();
@@ -37,13 +48,21 @@ impl<Runtime: Config> TaskV2<Runtime> for MockTask {
 	}
 	//A MockTask is never written into storage. Check [frame_system::pallet::Call::remark]
 	fn is_persisted(_id: &Runtime::Hash) -> bool {
-		false
+		PERSISTED.with(|cell| cell.get())
 	}
 	fn persistence_call(
 		&self,
-		deadline: Runtime::BlockNumber,
+		_deadline: Runtime::BlockNumber,
 		_id: &Runtime::Hash,
 	) -> Result<SystemCall<Runtime>, TaskError<(), ()>> {
-		Ok(frame_system::pallet::Call::remark { remark: deadline.encode() }.into())
+		match self {
+			MockTask::Remark(nonce) => {
+				tracing::warn!("forcing is_persisted!");
+				crate::mock::task::is_persisted_replace(true);
+				Ok(frame_system::pallet::Call::remark_with_event { remark: nonce.encode() })
+			},
+			MockTask::Evaluation => Err(TaskError::Evaluation(())),
+			MockTask::Scheduler => Err(TaskError::Scheduler(())),
+		}
 	}
 }
