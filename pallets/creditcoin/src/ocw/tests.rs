@@ -695,49 +695,6 @@ fn verify_transfer_get_block_invalid_address() {
 	});
 }
 
-//tasks can be oversubscribed with different deadlines
-#[test]
-fn task_deadline_oversubscription() {
-	let ext = ExtBuilder::default();
-	ext.build_offchain_and_execute_with_state(|_, _| {
-		let (acc, addr, sign, _) = generate_address_with_proof("collector");
-
-		assert_ok!(Creditcoin::<Test>::register_address(
-			Origin::signed(acc.clone()),
-			CHAIN,
-			addr.clone(),
-			sign
-		));
-
-		roll_to(1);
-		let deadline_1 = Test::unverified_transfer_deadline();
-		//register twice under different (expiration aka deadline)
-		assert_ok!(Creditcoin::<Test>::request_collect_coins(
-			Origin::signed(acc.clone()),
-			addr.clone(),
-			TX_HASH.hex_to_address()
-		));
-		roll_to(2);
-		let deadline_2 = Test::unverified_transfer_deadline();
-		assert_ok!(Creditcoin::<Test>::request_collect_coins(
-			Origin::signed(acc),
-			addr,
-			TX_HASH.hex_to_address()
-		));
-
-		let collected_coins_id =
-			CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
-
-		assert!(Creditcoin::<Test>::pending_tasks(
-			deadline_1,
-			TaskId::from(collected_coins_id.clone())
-		)
-		.is_some());
-		assert!(Creditcoin::<Test>::pending_tasks(deadline_2, TaskId::from(collected_coins_id))
-			.is_some());
-	});
-}
-
 #[test]
 #[tracing_test::traced_test]
 fn unconfirmed_verify_transfer_retries() {
