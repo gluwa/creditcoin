@@ -389,13 +389,16 @@ fn offchain_signed_tx_works() {
 	let transfer_id = crate::TransferId::new::<crate::mock::Test>(&Blockchain::ETHEREUM, &[0]);
 	ext.build_offchain_and_execute_with_state(|_state, pool| {
 		crate::mock::roll_to(1);
-		let call = crate::Call::<crate::mock::Test>::fail_task {
+		let call = crate::Call::fail_task {
 			task_id: transfer_id.into(),
 			deadline: 10000,
 			cause: IncorrectAmount,
 		};
 		assert_ok!(
-			crate::Pallet::<crate::mock::Test>::offchain_signed_tx(acct.clone(), |_| call.clone(),)
+			pallet_offchain_task_scheduler::Pallet::<crate::mock::Test>::offchain_signed_tx(
+				acct.clone(),
+				|_| call.clone().into(),
+			)
 		);
 		crate::mock::roll_to(2);
 
