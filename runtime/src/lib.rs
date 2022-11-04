@@ -298,7 +298,6 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_creditcoin::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
-	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
 	type Signer = Signer;
 	type SignerSignature = Signature;
 	type FromAccountId = AccountId;
