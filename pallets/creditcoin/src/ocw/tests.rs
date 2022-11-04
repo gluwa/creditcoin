@@ -471,35 +471,6 @@ fn verify_transfer_ocw_returns_err() {
 
 #[test]
 #[tracing_test::traced_test]
-fn offchain_worker_logs_error_when_transfer_validation_errors() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, _pool| {
-		crate::mock::roll_to(1);
-
-		let (_unverified, mut requests) = set_up_verify_transfer_env(true);
-
-		requests.get_transaction.as_mut().unwrap().response = Some(
-			serde_json::to_vec(&JsonRpcResponse::<bool> {
-				jsonrpc: "2.0".into(),
-				id: 1,
-				error: Some(JsonRpcError { code: 555, message: "this is supposed to fail".into() }),
-				result: None,
-			})
-			.unwrap(),
-		);
-
-		requests.mock_chain_id(&mut state.write());
-
-		requests.mock_get_transaction(&mut state.write());
-
-		crate::mock::roll_by_with_ocw(1);
-		assert!(logs_contain("Task verification encountered an error"));
-	});
-}
-
-#[test]
-#[tracing_test::traced_test]
 fn offchain_worker_should_log_and_forget_guard_when_task_is_already_handled() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
