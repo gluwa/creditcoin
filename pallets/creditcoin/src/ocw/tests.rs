@@ -729,7 +729,7 @@ fn unconfirmed_verify_transfer_retries() {
 }
 
 #[test]
-fn duplicate_retry_fail_and_succeed() {
+fn luniverse_succeeds_with_fake_nonce() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
 	ext.build_offchain_and_execute_with_state(|state, pool| {
