@@ -7,10 +7,11 @@ use ethereum_types::U256;
 use frame_support::{
 	once_cell::sync::Lazy,
 	parameter_types,
-	traits::{ConstU32, ConstU64, GenesisBuild, Get, Hooks},
+	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
 };
 use frame_system as system;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
+pub(crate) use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 pub(crate) use parking_lot::RwLock;
 use serde_json::Value;
 use sp_core::H256;
@@ -133,12 +134,8 @@ impl pallet_offchain_task_scheduler::Config for Test {
 }
 
 impl Test {
-	pub(crate) fn unverified_transfer_timeout() -> u64 {
-		<<Test as crate::Config>::UnverifiedTaskTimeout as Get<u64>>::get()
-	}
-
 	pub(crate) fn unverified_transfer_deadline() -> u64 {
-		System::block_number() + Self::unverified_transfer_timeout()
+		Test::deadline()
 	}
 }
 
@@ -235,7 +232,7 @@ impl ExtBuilder {
 			.as_ref()
 			.unwrap()
 			.sr25519_generate_new(
-				crate::crypto::Public::ID,
+				pallet_offchain_task_scheduler::crypto::Public::ID,
 				Some(&format!("{}/auth{}", PHRASE, self.authorities.len() + 1)),
 			)
 			.unwrap();
@@ -259,8 +256,14 @@ impl ExtBuilder {
 		let _ = pallet_balances::GenesisConfig::<Test> { balances: self.balances }
 			.assimilate_storage(&mut storage);
 
-		let _ = crate::GenesisConfig::<Test> {
+		pallet_offchain_task_scheduler::pallet::GenesisConfig::<Test> {
 			authorities: self.authorities,
+		}
+		.assimilate_storage(&mut storage)
+		.unwrap();
+
+		let _ = crate::GenesisConfig::<Test> {
+			authorities: vec![],
 			legacy_wallets: self.legacy_wallets,
 			legacy_balance_keeper: self.legacy_keeper,
 		}
@@ -332,8 +335,8 @@ pub fn roll_to(n: BlockNumber) {
 	let now = System::block_number();
 	for i in now + 1..=n {
 		System::set_block_number(i);
-		Creditcoin::on_initialize(i);
-		Creditcoin::on_finalize(i);
+		TaskScheduler::on_initialize(i);
+		TaskScheduler::on_finalize(i);
 	}
 }
 
@@ -342,9 +345,9 @@ pub fn roll_to_with_ocw(n: BlockNumber) {
 	let now = System::block_number();
 	for i in now + 1..=n {
 		System::set_block_number(i);
-		Creditcoin::on_initialize(i);
-		Creditcoin::offchain_worker(i);
-		Creditcoin::on_finalize(i);
+		TaskScheduler::on_initialize(i);
+		TaskScheduler::offchain_worker(i);
+		TaskScheduler::on_finalize(i);
 	}
 }
 
@@ -352,13 +355,12 @@ pub fn roll_to_with_ocw(n: BlockNumber) {
 pub fn roll_by_with_ocw(n: BlockNumber) {
 	let mut now = System::block_number();
 	for _ in 0..n {
-		Creditcoin::offchain_worker(now);
+		TaskScheduler::offchain_worker(now);
 		now += 1;
 		System::set_block_number(now);
 		System::reset_events();
 		System::on_initialize(now);
-		Creditcoin::on_initialize(now);
-		Creditcoin::on_finalize(now);
+		TaskScheduler::offchain_worker(now);
 	}
 }
 
@@ -590,8 +592,8 @@ fn offchain_worker_should_log_when_authority_is_missing() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		System::set_block_number(1);
 
-		Creditcoin::offchain_worker(System::block_number());
-		assert!(logs_contain("Not authority, skipping off chain work"));
+		TaskScheduler::offchain_worker(System::block_number());
+		assert!(logs_contain("Not an authority, skipping offchain work"));
 	});
 }
 
