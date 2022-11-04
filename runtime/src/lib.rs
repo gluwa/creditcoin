@@ -574,7 +574,7 @@ impl_runtime_apis! {
 
 	impl creditcoin_runtime_api::TaskApi<Block, AccountId> for Runtime{
 		fn offchain_nonce_key(acc: &AccountId) -> Vec<u8>{
-			pallet_creditcoin::ocw::nonce_key(acc)
+			vec![]
 		}
 	}
 }
