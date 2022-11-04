@@ -3,7 +3,7 @@ use super::*;
 
 use crate::benchmarking::alloc::format;
 use crate::helpers::{
-	extensions::{HexToAddress, RefSliceOfTExt},
+	extensions::{HexToAddress, IntoBounded},
 	EVMAddress, PublicToAddress,
 };
 use crate::ocw::errors::VerificationFailureCause as Cause;

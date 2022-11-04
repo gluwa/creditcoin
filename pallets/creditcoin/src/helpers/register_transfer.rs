@@ -170,9 +170,10 @@ impl<T: Config> Pallet<T> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::helpers::extensions::IntoBounded;
 	use crate::mock::{ExtBuilder, Test};
 	use crate::pallet::Pallet as Creditcoin;
-	use crate::tests::{IntoBounded, RegisteredAddress, TestInfo};
+	use crate::tests::{RegisteredAddress, TestInfo};
 	use frame_support::BoundedVec;
 
 	#[test]
