@@ -740,10 +740,10 @@ fn task_deadline_oversubscription() {
 
 #[test]
 #[tracing_test::traced_test]
-fn ocw_retries() {
+fn unconfirmed_verify_transfer_retries() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, pool| {
+	ext.build_offchain_and_execute_with_state(|state, _pool| {
 		roll_to(1);
 
 		let dummy_url = "dummy";
@@ -760,7 +760,8 @@ fn ocw_retries() {
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
 
-		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
+		let test_info =
+			TestInfo { blockchain: blockchain.clone(), loan_terms: terms, ..Default::default() };
 
 		let (deal_order_id, _) = test_info.create_deal_order();
 
@@ -787,34 +788,16 @@ fn ocw_retries() {
 			requests.mock_get_block_number(&mut state.write());
 		};
 
-		// mock requests so the tx is unconfirmed
-		mock_unconfirmed_tx();
-
-		roll_by_with_ocw(1);
-		assert!(logs_contain("TaskUnconfirmed"));
-
-		// we failed, we should retry again here
+		let deadline = System::<Test>::block_number()
+			.saturating_add(<Test as crate::Config>::UnverifiedTaskTimeout::get());
 
 		mock_unconfirmed_tx();
 
-		roll_by_with_ocw(1);
-		assert!(logs_contain("TaskUnconfirmed"));
+		let id = TransferId::leaked_inner_hash::<Test>(&blockchain, &tx_hash.hex_to_address());
+		let task = TaskScheduler::pending_tasks(deadline, id).unwrap();
 
-		// now mock requests so the tx is confirmed
-
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-			.mock_all(&mut state.write());
-
-		roll_by_with_ocw(1);
-
-		// we should have retried and successfully verified the transfer
-		let tx = pool.write().transactions.pop().expect("verify transfer");
-		assert!(pool.read().transactions.is_empty());
-		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
-		assert_matches!(
-			verify_tx.call,
-			crate::mock::Call::Creditcoin(crate::Call::persist_task_output { .. })
-		);
+		let err = ForwardTask::<Test>::forward_task(&task, deadline).expect_err("TaskUnconfirmed");
+		assert_matches!(err, TaskError::Evaluation(_));
 	});
 }
 
