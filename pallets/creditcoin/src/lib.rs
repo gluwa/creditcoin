@@ -80,6 +80,7 @@ pub mod pallet {
 	use sp_runtime::traits::{
 		IdentifyAccount, SaturatedConversion, UniqueSaturatedFrom, UniqueSaturatedInto, Verify,
 	};
+	use pallet_offchain_task_scheduler::authority::AuthorityController;
 	use tracing as log;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -138,10 +139,10 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		type TaskScheduler: TaskScheduler<
-			Self::BlockNumber,
-			Self::Hash,
-			Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
-		>;
+				Self::BlockNumber,
+				Self::Hash,
+				Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
+			> + AuthorityController<Self::AccountId>;
 	}
 
 	pub trait WeightInfo {
@@ -1421,7 +1422,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
 
 			let (task_id, event) = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
@@ -1477,7 +1478,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
 
 			let event = match &task_id {
 				TaskId::VerifyTransfer(transfer_id) => {
@@ -1508,9 +1509,9 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
+			ensure!(!T::TaskScheduler::is_authority(&who), Error::<T>::AlreadyAuthority);
 
-			Authorities::<T>::insert(who, ());
+			T::TaskScheduler::insert_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
@@ -1548,9 +1549,9 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::NotAnAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::NotAnAuthority);
 
-			Authorities::<T>::remove(&who);
+			T::TaskScheduler::remove_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}

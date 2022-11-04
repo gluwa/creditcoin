@@ -12,7 +12,8 @@ use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
 use sp_tracing as log;
 
-mod ocw;
+pub mod authority;
+pub mod ocw;
 pub mod tasks;
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
