@@ -79,6 +79,35 @@ fn completed_oversubscribed_tasks_are_skipped() {
 	});
 }
 
+//tasks can be oversubscribed with different deadlines
+#[test]
+fn task_deadline_oversubscription() {
+	let ext_builder = ExtBuilder::default().with_keystore();
+	ext_builder.build().execute_with(|| {
+		roll_to::<Trivial>(1);
+
+		//register twice under different expiration aka deadline
+		let deadline = Runtime::deadline();
+		let task = MockTask::Remark(0);
+		let id = TaskV2::<Runtime>::to_id(&task);
+		Runtime::insert(&deadline, &id, task.clone());
+
+		roll_to::<Trivial>(2);
+
+		//register twice under different expiration aka deadline
+		let deadline_2 = Runtime::deadline();
+		Runtime::insert(&deadline_2, &id, task);
+
+		roll_to::<WithWorkerHook>(3);
+
+		//insertion checks
+		assert!(Runtime::is_scheduled(&deadline, &id));
+		assert!(Runtime::is_scheduled(&deadline_2, &id));
+
+		assert!(TaskScheduler::pending_tasks(deadline, id).is_some());
+		assert!(TaskScheduler::pending_tasks(deadline_2, id).is_some());
+	});
+}
 
 #[test]
 #[tracing_test::traced_test]
