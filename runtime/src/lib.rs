@@ -10,7 +10,7 @@ use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
-use pallet_creditcoin::crypto::CtcAuthId;
+
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
@@ -297,7 +297,6 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl pallet_creditcoin::Config for Runtime {
-	type AuthorityId = CtcAuthId;
 	type Event = Event;
 	type Call = Call;
 	type Signer = Signer;

@@ -28,6 +28,7 @@ use sp_core::ecdsa;
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign};
 use sp_runtime::traits::One;
 use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom};
+use sp_runtime::KeyTypeId;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum DealKind {

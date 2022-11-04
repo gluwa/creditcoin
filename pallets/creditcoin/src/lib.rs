@@ -7,7 +7,6 @@ use frame_support::traits::StorageVersion;
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
-use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -29,28 +28,6 @@ mod types;
 use ocw::tasks::collect_coins::GCreContract;
 pub use types::*;
 
-pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
-
-pub mod crypto {
-	use crate::KEY_TYPE;
-	use sp_runtime::{
-		app_crypto::{app_crypto, sr25519},
-		MultiSignature, MultiSigner,
-	};
-
-	app_crypto!(sr25519, KEY_TYPE);
-
-	pub struct CtcAuthId;
-
-	impl frame_system::offchain::AppCrypto<MultiSigner, MultiSignature> for CtcAuthId {
-		type RuntimeAppPublic = Public;
-
-		type GenericPublic = sp_core::sr25519::Public;
-
-		type GenericSignature = sp_core::sr25519::Signature;
-	}
-}
-
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
 pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(6);
@@ -67,19 +44,11 @@ pub mod pallet {
 		transactional,
 		weights::PostDispatchInfo,
 	};
-	use frame_system::{
-		ensure_signed,
-		offchain::{AppCrypto, CreateSignedTransaction},
-		pallet_prelude::*,
-	};
+	use frame_system::{ensure_signed, offchain::CreateSignedTransaction, pallet_prelude::*};
 	use ocw::errors::VerificationFailureCause;
-	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
-	use pallet_offchain_task_scheduler::tasks::TaskV2;
-	use sp_runtime::offchain::storage_lock::{BlockAndTime, StorageLock};
-	use sp_runtime::offchain::Duration;
-	use sp_runtime::traits::{
-		IdentifyAccount, SaturatedConversion, UniqueSaturatedFrom, UniqueSaturatedInto, Verify,
-	};
+	use pallet_offchain_task_scheduler::authority::AuthorityController;
+	use pallet_offchain_task_scheduler::tasks::{TaskScheduler, TaskV2};
+	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
 	use tracing as log;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -98,11 +67,6 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		type Call: From<Call<Self>>;
-
-		type AuthorityId: AppCrypto<
-			Self::Public,
-			<Self as frame_system::offchain::SigningTypes>::Signature,
-		>;
 
 		type Signer: From<sp_core::ecdsa::Public>
 			+ IdentifyAccount<AccountId = <Self as frame_system::Config>::AccountId>
@@ -138,10 +102,10 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		type TaskScheduler: TaskScheduler<
-			Self::BlockNumber,
-			Self::Hash,
-			Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
-		>;
+				Self::BlockNumber,
+				Self::Hash,
+				Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
+			> + AuthorityController<Self::AccountId>;
 	}
 
 	pub trait WeightInfo {
@@ -628,80 +592,6 @@ pub mod pallet {
 				unverified_task_count,
 				0,
 			)
-		}
-
-		fn offchain_worker(block_number: T::BlockNumber) {
-			let auth_id = match Self::authority_id() {
-				Some(id) => id,
-				None => {
-					log::debug!(target: "OCW", "Not authority, skipping off chain work");
-					return;
-				},
-			};
-
-			for (deadline, id, task) in PendingTasks::<T>::iter() {
-				let storage_key = crate::ocw::tasks::storage_key(&id);
-				let offset =
-					T::UnverifiedTaskTimeout::get().saturated_into::<u32>().saturating_sub(2u32);
-
-				let mut lock = StorageLock::<BlockAndTime<frame_system::Pallet<T>>>::with_block_and_time_deadline(
-					&storage_key,
-					offset,
-					Duration::from_millis(0),
-				);
-
-				let guard = match lock.try_lock() {
-					Ok(g) => g,
-					Err(_) => continue,
-				};
-
-				if match &id {
-					TaskId::VerifyTransfer(id) => Transfers::<T>::contains_key(id),
-					TaskId::CollectCoins(id) => CollectedCoins::<T>::contains_key(id),
-				} {
-					log::debug!("Already handled Task ({:?}, {:?})", deadline, id);
-					guard.forget();
-					continue;
-				}
-
-				let result = task.verify_ocw::<T>();
-
-				log::trace!(target: "OCW", "@{block_number:?} Task {:8?}", id);
-
-				match result {
-					Ok(task_data) => {
-						let output = task_data.into_output::<T>();
-						match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
-							Call::persist_task_output { deadline, task_output: output.clone() }
-						}) {
-							Ok(_) => guard.forget(),
-							Err(e) => {
-								log::error!(
-									"Failed to send persist dispatchable transaction: {:?}",
-									e
-								)
-							},
-						}
-					},
-					Err((task, ocw::OffchainError::InvalidTask(cause))) => {
-						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
-						if cause.is_fatal() {
-							match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
-								Call::fail_task { deadline, task_id: id.clone(), cause }
-							}) {
-								Err(e) => log::error!(
-									"Failed to send fail dispatchable transaction: {:?}",
-									e
-								),
-								Ok(_) => guard.forget(),
-							}
-						}
-					},
-					Err(error) => {
-						log::error!("Task verification encountered an error {:?}", error);
-					},
-				}
-			}
 		}
 
 		fn on_runtime_upgrade() -> Weight {
@@ -1422,7 +1312,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
 
 			let (task_id, event) = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
@@ -1478,7 +1368,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
 
 			let event = match &task_id {
 				TaskId::VerifyTransfer(transfer_id) => {
@@ -1509,9 +1399,9 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
+			ensure!(!T::TaskScheduler::is_authority(&who), Error::<T>::AlreadyAuthority);
 
-			Authorities::<T>::insert(who, ());
+			T::TaskScheduler::insert_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
@@ -1549,9 +1439,9 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::NotAnAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::NotAnAuthority);
 
-			Authorities::<T>::remove(&who);
+			T::TaskScheduler::remove_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
