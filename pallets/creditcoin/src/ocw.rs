@@ -7,10 +7,8 @@ use super::ExternalAddress;
 use crate::{Blockchain, ExternalTxId};
 use alloc::string::String;
 pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
-use frame_system::Pallet as System;
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_std::prelude::*;
-use tracing as log;
 
 pub(crate) type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
 

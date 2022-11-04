@@ -1,13 +1,13 @@
 use crate::{
 	pallet::*, types::AddressId, Blockchain, Currency, CurrencyId, DealOrderId, Error,
-	EvmCurrencyType, EvmSupportedTransferKinds, EvmTransferKind, ExternalAmount, ExternalTxId, Id,
-	LegacyTransferKind, Task, TaskId, Transfer, TransferId, TransferKind, UnverifiedTransfer,
+	EvmCurrencyType, EvmSupportedTransferKinds, EvmTransferKind, ExternalAddress, ExternalAmount,
+	ExternalTxId, Id, LegacyTransferKind, Task, Transfer, TransferId, TransferKind,
+	UnverifiedTransfer,
 };
-use frame_support::{ensure, traits::Get};
+use frame_support::ensure;
 use frame_system::pallet_prelude::*;
 use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
-use sp_runtime::traits::Saturating;
 use sp_std::prelude::*;
 
 impl<T: Config> Pallet<T> {
@@ -51,28 +51,14 @@ impl<T: Config> Pallet<T> {
 			timestamp: None,
 		};
 
-		let deadline = T::TaskScheduler::deadline();
+		let transfer_id = Self::check_and_submit_transfer_as_task(
+			from.value,
+			to.value,
+			transfer.clone(),
+			crate::CurrencyOrLegacyTransferKind::Currency(currency),
+		)?;
 
-		let pending = UnverifiedTransfer {
-			from_external: from.value,
-			to_external: to.value,
-			transfer: transfer.clone(),
-			deadline,
-			currency_to_check: crate::CurrencyOrLegacyTransferKind::Currency(currency),
-		};
-		let transfer_id = TaskV2::<T>::to_id(&pending);
-		ensure!(
-			!<UnverifiedTransfer<_, _, _, _> as TaskV2::<T>>::is_persisted(&transfer_id),
-			Error::<T>::TransferAlreadyRegistered
-		);
-		ensure!(
-			!T::TaskScheduler::is_scheduled(&deadline, &transfer_id),
-			Error::<T>::TransferAlreadyRegistered
-		);
-		let pending = Task::from(pending);
-		T::TaskScheduler::insert(&deadline, &transfer_id, pending);
-
-		Ok((transfer_id.into(), transfer))
+		Ok((transfer_id, transfer))
 	}
 
 	pub fn register_transfer_internal_legacy(
@@ -95,11 +81,6 @@ impl<T: Config> Pallet<T> {
 		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressBlockchainMismatch);
 
 		ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
-
-		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
-		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
-
-		let block = Self::block_number();
 
 		DealOrders::<T>::mutate(
 			deal_order_id.expiration(),
@@ -140,7 +121,7 @@ impl<T: Config> Pallet<T> {
 				.try_into()
 				.map_err(|()| Error::<T>::UnsupportedTransferKind)?,
 			amount,
-			block,
+			block: Self::block_number(),
 			from: from_id,
 			to: to_id,
 			deal_order_id,
@@ -150,20 +131,46 @@ impl<T: Config> Pallet<T> {
 			timestamp: None,
 		};
 
-		let deadline = block.saturating_add(T::UnverifiedTaskTimeout::get());
-
-		let pending = UnverifiedTransfer {
-			from_external: from.value,
-			to_external: to.value,
-			transfer: transfer.clone(),
-			deadline,
-			currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(transfer_kind),
-		};
-		let task_id = TaskId::from(transfer_id.clone());
-		let pending = Task::from(pending);
-		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
+		let transfer_id = Self::check_and_submit_transfer_as_task(
+			from.value,
+			to.value,
+			transfer.clone(),
+			crate::CurrencyOrLegacyTransferKind::TransferKind(transfer_kind),
+		)?;
 
 		Ok((transfer_id, transfer))
+	}
+
+	#[inline]
+	fn check_and_submit_transfer_as_task(
+		from_value: ExternalAddress,
+		to_value: ExternalAddress,
+		transfer: Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
+		transfer_kind: crate::CurrencyOrLegacyTransferKind,
+	) -> Result<TransferId<T::Hash>, crate::Error<T>> {
+		let deadline = T::TaskScheduler::deadline();
+
+		let pending = UnverifiedTransfer {
+			from_external: from_value,
+			to_external: to_value,
+			transfer,
+			deadline,
+			currency_to_check: transfer_kind,
+		};
+
+		let transfer_id = TaskV2::<T>::to_id(&pending);
+		ensure!(
+			!<UnverifiedTransfer<_, _, _, _> as TaskV2::<T>>::is_persisted(&transfer_id),
+			Error::<T>::TransferAlreadyRegistered
+		);
+		ensure!(
+			!T::TaskScheduler::is_scheduled(&deadline, &transfer_id),
+			Error::<T>::TransferAlreadyRegistered
+		);
+		let pending = Task::from(pending);
+		T::TaskScheduler::insert(&deadline, &transfer_id, pending);
+
+		Ok(transfer_id.into())
 	}
 }
 
@@ -304,7 +311,7 @@ mod tests {
 				test_info.lender.account_id,
 				deal_order.lender_address_id,
 				deal_order.borrower_address_id,
-				LegacyTransferKind::Native,
+				LegacyTransferKind::Ethless(b"foo".into_bounded()),
 				deal_order.terms.amount,
 				deal_order_id,
 				transfer.tx_id,
