@@ -2,7 +2,7 @@ use super::Error;
 use core::marker::PhantomData;
 use core::str::FromStr;
 use creditcoin_node_runtime as runtime;
-use creditcoin_runtime_api::TaskApi;
+use task_scheduler_runtime_api::TaskApi;
 use jsonrpc_core::Result as RpcResult;
 use jsonrpc_core::{Error as RpcError, ErrorCode};
 use jsonrpc_derive::rpc;

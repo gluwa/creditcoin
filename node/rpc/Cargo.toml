@@ -17,7 +17,7 @@ sp-blockchain = { git = "https://github.com/gluwa/substrate.git", rev = "973dd74
 sp-api = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
 jsonrpc-pubsub = "18.0.0"
 frame-system = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-creditcoin-runtime-api = { path = "../../pallets/creditcoin/runtime-api" }
+task-scheduler-runtime-api = { path = "../../pallets/task-scheduler/runtime-api" }
 creditcoin-node-runtime = { path = "../../runtime" }
 
 [dev-dependencies]

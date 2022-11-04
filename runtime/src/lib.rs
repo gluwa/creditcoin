@@ -572,9 +572,9 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl creditcoin_runtime_api::TaskApi<Block, AccountId> for Runtime{
+	impl task_scheduler_runtime_api::TaskApi<Block, AccountId> for Runtime{
 		fn offchain_nonce_key(acc: &AccountId) -> Vec<u8>{
-			vec![]
+			pallet_offchain_task_scheduler::ocw::nonce_key(acc)
 		}
 	}
 }
