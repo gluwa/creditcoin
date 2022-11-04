@@ -133,7 +133,7 @@ pub mod extensions {
 		}
 	}
 
-	#[extend::ext]
+	#[extend::ext(name = IntoBounded)]
 	pub(crate) impl<'a, S, T> &'a [T]
 	where
 		S: Get<u32>,

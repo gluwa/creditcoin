@@ -355,11 +355,12 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::helpers::extensions::IntoBounded;
 	use crate::{
 		concatenate,
 		helpers::extensions::HexToAddress,
 		mock::{ExtBuilder, Test},
-		tests::{IntoBounded, TestInfo},
+		tests::TestInfo,
 		Duration, InterestRate,
 	};
 	use frame_support::Blake2_128Concat;

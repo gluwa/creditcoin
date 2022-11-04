@@ -1,5 +1,8 @@
 use crate::{
-	helpers::{extensions::HexToAddress, non_paying_error, EVMAddress, PublicToAddress},
+	helpers::{
+		extensions::{HexToAddress, IntoBounded},
+		non_paying_error, EVMAddress, PublicToAddress,
+	},
 	mock::*,
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
@@ -20,21 +23,6 @@ use sp_runtime::{
 	MultiSigner,
 };
 use std::convert::{TryFrom, TryInto};
-
-//Duplicated code; pallet_creditcoin::benchmarking.rs
-#[extend::ext(name = IntoBounded)]
-pub impl<'a, S, T> &'a [T]
-where
-	S: Get<u32>,
-	T: Clone,
-{
-	fn try_into_bounded(self) -> Result<BoundedVec<T, S>, ()> {
-		core::convert::TryFrom::try_from(self.to_vec())
-	}
-	fn into_bounded(self) -> BoundedVec<T, S> {
-		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RegisteredAddress {
