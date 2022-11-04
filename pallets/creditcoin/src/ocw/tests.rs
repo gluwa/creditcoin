@@ -1000,68 +1000,6 @@ fn duplicate_retry_fail_and_succeed() {
 }
 
 #[test]
-fn effective_guard_lifetime_until_task_expiration() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, pool| {
-		mock_rpc_for_collect_coins(&state);
-
-		let (acc, addr, sign, _) = generate_address_with_proof("collector");
-		assert_ok!(Creditcoin::<Test>::register_address(
-			Origin::signed(acc.clone()),
-			CHAIN,
-			addr.clone(),
-			sign
-		));
-
-		roll_to(1);
-		let deadline = Test::unverified_transfer_deadline();
-		assert_ok!(Creditcoin::<Test>::request_collect_coins(
-			Origin::signed(acc),
-			addr.clone(),
-			TX_HASH.hex_to_address()
-		));
-		roll_to_with_ocw(2);
-
-		let tx = pool.write().transactions.pop().expect("persist collect_coins");
-		assert!(pool.read().transactions.is_empty());
-		let tx = Extrinsic::decode(&mut &*tx).unwrap();
-
-		let collected_coins_id =
-			CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
-		let collected_coins = CollectedCoins {
-			to: AddressId::new::<Test>(&CHAIN, addr.as_ref()),
-			amount: RPC_RESPONSE_AMOUNT.as_u128(),
-			tx_id: TX_HASH.hex_to_address(),
-		};
-
-		assert_eq!(
-			tx.call,
-			Call::Creditcoin(crate::Call::persist_task_output {
-				task_output: (collected_coins_id, collected_coins).into(),
-				deadline
-			})
-		);
-
-		let key = {
-			let collected_coins_id =
-				CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
-
-			super::tasks::storage_key(&TaskId::from(collected_coins_id))
-		};
-
-		type Y = <BlockAndTime<System<Test>> as Lockable>::Deadline;
-		//lock set
-		let Y { block_number, .. } = StorageValueRef::persistent(key.as_ref())
-			.get::<Y>()
-			.expect("decoded")
-			.expect("deadline");
-		println!("{block_number} {deadline}");
-		assert!(block_number >= deadline - 1);
-	});
-}
-
-#[test]
 fn parallel_worker_trivial() {
 	let (offchain, _) = TestOffchainExt::new();
 	const TRIES_PER_THREAD: u32 = 10_000;
