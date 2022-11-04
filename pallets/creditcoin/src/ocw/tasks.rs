@@ -6,7 +6,7 @@ use crate::types::{
 	CollectedCoins as CollectedCoinsT, Task, TaskOutput, Transfer, UnverifiedCollectedCoins,
 	UnverifiedTransfer,
 };
-use crate::{CollectedCoinsId, Config, TaskData, TransferId};
+use crate::{Config, TaskData};
 use codec::Encode;
 use collect_coins::GCreContract;
 pub use sp_runtime::offchain::storage_lock::{BlockAndTime, Lockable, StorageLock};
@@ -41,13 +41,6 @@ where
 	{
 		Transfer { timestamp, ..self.transfer }
 	}
-
-	pub fn to_id<T: Config>(&self) -> TransferId<Hash>
-	where
-		T: Config<AccountId = AccountId, BlockNumber = BlockNum, Hash = Hash, Moment = Moment>,
-	{
-		TransferId::new::<T>(&self.transfer.blockchain, &self.transfer.tx_id)
-	}
 }
 
 impl UnverifiedCollectedCoins {
@@ -65,13 +58,6 @@ impl UnverifiedCollectedCoins {
 		let Self { to, tx_id, contract: GCreContract { chain, .. } } = self;
 		let to = crate::AddressId::new::<T>(&chain, to.as_slice());
 		CollectedCoinsT { amount, to, tx_id }
-	}
-
-	pub fn to_id<T>(&self) -> CollectedCoinsId<T::Hash>
-	where
-		T: Config,
-	{
-		CollectedCoinsId::new::<T>(&self.contract.chain, &self.tx_id)
 	}
 }
 
@@ -118,13 +104,13 @@ where
 		>,
 	{
 		match self {
-			TaskData::VerifyTransfer(transfer, data) => {
-				let id = transfer.to_id::<T>();
-				TaskOutput::VerifyTransfer(id, transfer.into_output::<T>(data))
+			TaskData::VerifyTransfer(pending, data) => {
+				let id = TaskV2::<T>::to_id(&pending).into();
+				TaskOutput::VerifyTransfer(id, pending.into_output::<T>(data))
 			},
-			TaskData::CollectCoins(collected_coins, data) => {
-				let id = collected_coins.to_id::<T>();
-				TaskOutput::CollectCoins(id, collected_coins.into_output::<T>(data))
+			TaskData::CollectCoins(pending, data) => {
+				let id = TaskV2::<T>::to_id(&pending).into();
+				TaskOutput::CollectCoins(id, pending.into_output::<T>(data))
 			},
 		}
 	}
