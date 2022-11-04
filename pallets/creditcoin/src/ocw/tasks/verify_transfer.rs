@@ -222,16 +222,9 @@ mod tests {
 		get_mock_tx_hash, roll_to_with_ocw, set_rpc_uri, with_failing_create_transaction,
 		Creditcoin, ExtBuilder, MockedRpcRequests, Test, ETHLESS_RESPONSES,
 	};
-	use crate::ocw::System;
 	use crate::tests::{adjust_deal_order_to_nonce, ethless_currency, TestInfo};
-	use crate::types::Task;
-	use crate::TaskId;
-	use crate::TransferId;
 	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
 	use frame_support::assert_ok;
-	use frame_support::traits::Get;
-	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
-	use pallet_offchain_task_scheduler::tasks::TaskV2;
 
 	#[test]
 	#[tracing_test::traced_test]
@@ -263,7 +256,7 @@ mod tests {
 			let currency = ethless_currency(contract.clone());
 			let test_info = TestInfo::with_currency(currency);
 			let test_info = TestInfo {
-				blockchain: blockchain.clone(),
+				blockchain,
 				loan_terms: LoanTerms { amount: loan_amount, ..test_info.loan_terms },
 				..test_info
 			};
@@ -298,27 +291,6 @@ mod tests {
 					fake_deal_order_id.clone(),
 					tx_hash.hex_to_address(),
 				));
-
-				//reinsert the task in the new storage.
-				{
-					let deadline = System::<Test>::block_number()
-						.saturating_add(<Test as crate::Config>::UnverifiedTaskTimeout::get());
-
-					let id = {
-						let transfer_id =
-							TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
-						TaskId::from(transfer_id)
-					};
-
-					let task = Creditcoin::pending_tasks(deadline, id).unwrap();
-					let task = match task {
-						Task::VerifyTransfer(pending) => pending,
-						_ => unreachable!(),
-					};
-					let id = TaskV2::<Test>::to_id(&task);
-
-					Test::insert(&deadline, &id, task.into());
-				}
 
 				roll_to_with_ocw(2);
 				assert!(logs_contain("Failed to send a dispatchable transaction"));
