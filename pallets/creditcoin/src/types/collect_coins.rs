@@ -18,13 +18,23 @@ pub struct UnverifiedCollectedCoins {
 pub struct CollectedCoinsId<Hash>(Hash);
 
 impl<H> CollectedCoinsId<H> {
-	pub fn new<Config>(contract_chain: &Blockchain, blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
+	fn inner_hash<Hasher>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> H
 	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+		Hasher: Hash<Output = H>,
 	{
-		let key = concatenate!(contract_chain.as_bytes().iter(), blockchain_tx_id);
-		CollectedCoinsId(Config::Hashing::hash(&key))
+		let key = concatenate!(&*blockchain.as_bytes(), blockchain_tx_id);
+		<Hasher as Hash>::hash(&key)
+	}
+
+	pub fn new<C: SystemConfig>(
+		contract_chain: &Blockchain,
+		blockchain_tx_id: &[u8],
+	) -> CollectedCoinsId<H>
+	where
+		<C as SystemConfig>::Hashing: Hash<Output = H>,
+	{
+		let hash = Self::inner_hash::<C::Hashing>(contract_chain, blockchain_tx_id);
+		CollectedCoinsId(hash)
 	}
 }
 
@@ -62,8 +72,7 @@ where
 	type EvaluationError = VerificationFailureCause;
 	type SchedulerError = SchedulerError;
 	fn to_id(&self) -> T::Hash {
-		let key = concatenate!(self.contract.chain.as_bytes().as_ref(), self.tx_id.as_slice());
-		T::Hashing::hash(&key)
+		CollectedCoinsId::inner_hash::<T::Hashing>(&self.contract.chain, self.tx_id.as_slice())
 	}
 
 	fn persistence_call(

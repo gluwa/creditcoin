@@ -212,3 +212,117 @@ impl<T: Config> crate::Pallet<T> {
 		Ok(timestamp)
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use crate::helpers::extensions::HexToAddress;
+	use crate::mock::Origin;
+	use crate::mock::{
+		get_mock_amount, get_mock_contract, get_mock_nonce, get_mock_tx_block_num,
+		get_mock_tx_hash, roll_to_with_ocw, set_rpc_uri, with_failing_create_transaction,
+		Creditcoin, ExtBuilder, MockedRpcRequests, Test, ETHLESS_RESPONSES,
+	};
+	use crate::ocw::System;
+	use crate::tests::{adjust_deal_order_to_nonce, ethless_currency, TestInfo};
+	use crate::types::Task;
+	use crate::TaskId;
+	use crate::TransferId;
+	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
+	use frame_support::assert_ok;
+	use frame_support::traits::Get;
+	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
+	use pallet_offchain_task_scheduler::tasks::TaskV2;
+
+	#[test]
+	#[tracing_test::traced_test]
+	fn register_transfer_ocw_fail_to_send() {
+		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let dummy_url = "dummy";
+			let tx_hash = get_mock_tx_hash();
+			let contract = get_mock_contract().hex_to_address();
+			let tx_block_num = get_mock_tx_block_num();
+			let blockchain = Blockchain::RINKEBY;
+
+			// we're going to verify a transfer twice:
+			// First when we expect failure, which means we won't make all of the requests
+			{
+				let mut state = state.write();
+				MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
+					.mock_chain_id(&mut state)
+					.mock_get_block_number(&mut state);
+			}
+			// Second when we expect success, where we'll do all the requests
+			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
+				.mock_all(&mut state.write());
+
+			set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
+
+			let loan_amount = get_mock_amount();
+			let currency = ethless_currency(contract.clone());
+			let test_info = TestInfo::with_currency(currency);
+			let test_info = TestInfo {
+				blockchain: blockchain.clone(),
+				loan_terms: LoanTerms { amount: loan_amount, ..test_info.loan_terms },
+				..test_info
+			};
+
+			let (deal_order_id, _) = test_info.create_deal_order();
+
+			let lender = test_info.lender.account_id;
+
+			// exercise when we try to send a fail_transfer but tx send fails
+			with_failing_create_transaction(|| {
+				assert_ok!(Creditcoin::register_funding_transfer(
+					Origin::signed(lender.clone()),
+					EvmTransferKind::Ethless.into(),
+					deal_order_id.clone(),
+					tx_hash.hex_to_address(),
+				));
+
+				roll_to_with_ocw(1);
+
+				assert!(logs_contain("Failed to send a dispatchable transaction"));
+			});
+
+			pallet_offchain_task_scheduler::pallet::PendingTasks::<Test>::remove_all(None);
+
+			let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
+
+			// exercise when we try to send a verify_transfer but tx send fails
+			with_failing_create_transaction(|| {
+				assert_ok!(Creditcoin::register_funding_transfer_legacy(
+					Origin::signed(lender.clone()),
+					LegacyTransferKind::Ethless(contract.clone()),
+					fake_deal_order_id.clone(),
+					tx_hash.hex_to_address(),
+				));
+
+				//reinsert the task in the new storage.
+				{
+					let deadline = System::<Test>::block_number()
+						.saturating_add(<Test as crate::Config>::UnverifiedTaskTimeout::get());
+
+					let id = {
+						let transfer_id =
+							TransferId::new::<Test>(&blockchain, &tx_hash.hex_to_address());
+						TaskId::from(transfer_id)
+					};
+
+					let task = Creditcoin::pending_tasks(deadline, id).unwrap();
+					let task = match task {
+						Task::VerifyTransfer(pending) => pending,
+						_ => unreachable!(),
+					};
+					let id = TaskV2::<Test>::to_id(&task);
+
+					Test::insert(&deadline, &id, task.into());
+				}
+
+				roll_to_with_ocw(2);
+				assert!(logs_contain("Failed to send a dispatchable transaction"));
+			});
+		});
+	}
+}
