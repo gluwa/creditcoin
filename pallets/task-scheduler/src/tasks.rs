@@ -2,6 +2,7 @@ pub mod error;
 pub mod macros;
 
 pub use super::pallet::Config;
+use crate::SystemConfig;
 use alloc::fmt::Debug;
 use error::TaskError;
 use frame_support::dispatch::Vec;
@@ -35,7 +36,7 @@ where
 	)
 }
 
-pub trait ForwardTask<Runtime: Config> {
+pub trait ForwardTask<Runtime: SystemConfig> {
 	type Call;
 	type EvaluationError: Debug;
 	type SchedulerError: Debug;

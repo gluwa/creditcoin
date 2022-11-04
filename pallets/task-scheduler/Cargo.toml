@@ -42,7 +42,8 @@ default-features = false
 git = "https://github.com/gluwa/substrate.git"
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
-[dependencies.sp-tracing]
+[dependencies.tracing]
+package = "sp-tracing"
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
@@ -54,4 +55,33 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [features]
 default = ['std']
-std = ['frame-support/std', 'frame-system/std', 'serde/std']
+std = [
+    'frame-support/std',
+    'frame-system/std',
+    'serde/std',
+    "pallet-balances/std",
+    "pallet-timestamp/std",
+    "sp-keystore/std",
+]
+
+[dev-dependencies]
+assert_matches = "1.5.0"
+parking_lot = "0.11.0"
+tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
+
+[dev-dependencies.pallet-balances]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+version = '4.0.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dev-dependencies.pallet-timestamp]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+version = '4.0.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dev-dependencies.sp-keystore]
+default-features = false
+git = "https://github.com/gluwa/substrate.git"
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
