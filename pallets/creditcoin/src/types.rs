@@ -1,10 +1,15 @@
 pub mod loan_terms;
 pub mod platform;
+mod transfer;
+pub use transfer::*;
 
 pub use loan_terms::*;
 pub use platform::*;
 
 use crate::ocw::tasks::collect_coins::GCreContract;
+use crate::ocw::VerificationFailureCause;
+use crate::ocw::VerificationResult;
+use crate::Config;
 use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use extend::ext;
 use frame_support::{
@@ -60,34 +65,10 @@ pub struct CollectedCoins<Hash, Balance> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
-	pub kind: TransferKind,
-	pub from: AddressId<Hash>,
-	pub to: AddressId<Hash>,
-	pub deal_order_id: DealOrderId<BlockNum, Hash>,
-	pub amount: ExternalAmount,
-	pub tx_id: ExternalTxId,
-	pub block: BlockNum,
-	pub is_processed: bool,
-	pub account_id: AccountId,
-	pub timestamp: Option<Moment>,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct UnverifiedCollectedCoins {
 	pub to: ExternalAddress,
 	pub tx_id: ExternalTxId,
 	pub contract: GCreContract,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
-	pub transfer: Transfer<AccountId, BlockNum, Hash, Moment>,
-	pub from_external: ExternalAddress,
-	pub to_external: ExternalAddress,
-	pub deadline: BlockNum,
-	pub currency_to_check: CurrencyOrLegacyTransferKind,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -174,9 +155,6 @@ impl<B: Default, H: Default> DealOrderId<B, H> {
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct TransferId<Hash>(Hash);
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct CollectedCoinsId<Hash>(Hash);
 
 macro_rules! concatenate {
@@ -221,23 +199,6 @@ impl<B, H> BidOrderId<B, H> {
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
 		BidOrderId(expiration_block, Config::Hashing::hash(guid))
-	}
-}
-
-impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
-	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		let key = concatenate!(&*blockchain.as_bytes(), blockchain_tx_id);
-		TransferId(Config::Hashing::hash(&key))
-	}
-}
-
-impl<H> From<H> for TransferId<H> {
-	fn from(hash: H) -> Self {
-		Self(hash)
 	}
 }
 
