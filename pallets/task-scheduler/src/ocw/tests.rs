@@ -29,6 +29,28 @@ use sp_runtime::traits::IdentifyAccount;
 type GuardDeadline = <BlockAndTime<System> as Lockable>::Deadline;
 
 #[test]
+#[tracing_test::traced_test]
+fn offchain_worker_logs_error_when_transfer_validation_errors() {
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	ext_builder.generate_authority();
+	ext_builder.with_offchain();
+	ext_builder.with_pool();
+	ext_builder.build().execute_with(|| {
+		roll_to::<Trivial>(1);
+
+		let deadline = Runtime::deadline();
+		let task = MockTask::Scheduler;
+		let id = TaskV2::<Runtime>::to_id(&task);
+
+		Runtime::insert(&deadline, &id, task);
+
+		roll_to::<WithWorkerHook>(2);
+
+		assert!(logs_contain("Task verification encountered a processing error"));
+	});
+}
+
+#[test]
 fn offchain_signed_tx_works() {
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	let acct_pubkey = ext_builder.generate_authority();
