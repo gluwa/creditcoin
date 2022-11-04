@@ -5,8 +5,8 @@ use crate::{
 	},
 	mock::*,
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
-	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Config, Currencies,
+	Currency, CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
 	EvmTransferKind, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind,
 	LoanTerms, Offer, OfferId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
@@ -16,6 +16,7 @@ use codec::Encode;
 use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
+use pallet_offchain_task_scheduler::authority::AuthorityController;
 use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
@@ -1540,19 +1541,6 @@ fn add_authority_should_fail_when_authority_already_exists() {
 			Creditcoin::add_authority(crate::mock::Origin::from(root), acct,),
 			TestError::AlreadyAuthority,
 		);
-	});
-}
-
-#[test]
-fn add_authority_works_for_root() {
-	ExtBuilder::default().build_and_execute(|| {
-		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
-
-		assert_ok!(Creditcoin::add_authority(crate::mock::Origin::from(root), acct.clone(),));
-
-		let value = crate::Pallet::<Test>::authorities(acct);
-		assert_eq!(value, Some(()))
 	});
 }
 
@@ -3234,19 +3222,16 @@ fn remove_authority_should_fail_when_authority_does_not_exist() {
 }
 
 #[test]
-fn remove_authority_works_for_root() {
+fn add_and_remove_authority_works_for_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
+		let account: AccountId = AccountId::new([0; 32]);
 
-		crate::Authorities::<Test>::insert(acct.clone(), ());
+		assert!(!<Test as Config>::TaskScheduler::is_authority(&account));
+		<Test as Config>::TaskScheduler::insert_authority(&account);
+		assert!(<Test as Config>::TaskScheduler::is_authority(&account));
 
-		let value = crate::Pallet::<Test>::authorities(&acct);
-		assert_eq!(value, Some(()));
-
-		assert_ok!(Creditcoin::remove_authority(crate::mock::Origin::from(root), acct.clone()));
-
-		let value = crate::Pallet::<Test>::authorities(acct);
-		assert_eq!(value, None)
+		assert_ok!(Creditcoin::remove_authority(crate::mock::Origin::from(root), account.clone()));
+		assert!(!<Test as Config>::TaskScheduler::is_authority(&account));
 	});
 }
