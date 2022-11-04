@@ -14,7 +14,7 @@ use assert_matches::assert_matches;
 use bstr::B;
 use codec::Encode;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
+use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_core::Pair;
 use sp_runtime::{
