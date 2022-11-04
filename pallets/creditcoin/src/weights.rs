@@ -32,6 +32,18 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `super`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
+	// Storage: unknown [0xd766358cca00233e6155d7c14e2c085f4e7b9012096b41c4eb3aaf947f6ea429] (r:1 w:1)
+	// Storage: Creditcoin PendingTasks (r:1 w:0)
+	// Storage: TaskScheduler PendingTasks (r:0 w:1)
+	fn migration_v7(t: u32, ) -> Weight {
+		(0 as Weight)
+			// Standard Error: 20_000
+			.saturating_add((14_896_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(t as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(t as Weight)))
+	}
 	// Storage: Creditcoin DealOrders (r:511 w:510)
 	// Storage: Creditcoin BidOrders (r:0 w:255)
 	// Storage: Creditcoin Offers (r:0 w:255)

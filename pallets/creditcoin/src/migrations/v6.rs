@@ -443,7 +443,7 @@ mod tests {
 			timestamp: Some(10000),
 		};
 
-		let transfer_id = crate::TransferId::make({
+		let transfer_id = crate::TransferId::from({
 			let key = concatenate!(blockchain.as_bytes(), &*transfer.tx_id);
 			hash(&key)
 		});
@@ -807,7 +807,7 @@ mod tests {
 
 			let deadline = 100;
 
-			let id = TaskId::from(crate::CollectedCoinsId::make(hash(&tx_id)));
+			let id = TaskId::from(crate::CollectedCoinsId::from(hash(&tx_id)));
 
 			let new_collect_coins = UnverifiedCollectedCoins {
 				to: b"baba".to_vec().try_into().unwrap(),

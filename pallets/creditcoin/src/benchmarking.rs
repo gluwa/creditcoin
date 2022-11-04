@@ -36,6 +36,28 @@ enum DealKind {
 }
 
 benchmarks! {
+	migration_v7 {
+		let t in 0..1024;
+
+		use frame_support::traits::StorageVersion;
+		StorageVersion::new(6).put::<Pallet<T>>();
+
+		let pending = types::UnverifiedCollectedCoins {
+			to: [0u8; 256].into_bounded(),
+			tx_id: [0u8; 256].into_bounded(),
+			contract: Default::default(),
+		};
+		for t in 0..t {
+			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
+			crate::PendingTasks::<T>::insert(
+				T::BlockNumber::one(),
+				crate::TaskId::from(collected_coins_id),
+				crate::Task::from(pending.clone()),
+			);
+		}
+
+	 }: {Creditcoin::<T>::on_runtime_upgrade()}
+
 	on_initialize {
 		//insert a askorders
 		let a in 0..255;
