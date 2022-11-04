@@ -5,14 +5,16 @@ use frame_support::traits::Get;
 use frame_system::offchain::AppCrypto;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::Config as SystemConfig;
+pub use ocw::nonce::nonce_key;
 pub use pallet::{Authorities, Config, Error, Event, Pallet, WeightInfo};
 pub use pallet::{__substrate_call_check, __substrate_event_check};
 use sp_core::offchain::KeyTypeId;
 use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
-use sp_tracing as log;
+use tracing as log;
 
-mod ocw;
+pub mod mock;
+pub mod ocw;
 pub mod tasks;
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
@@ -177,6 +179,27 @@ pub mod pallet {
 						log::error!("Task verification encountered a processing error {:?}", error)
 					},
 				}
+			}
+		}
+	}
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub authorities: Vec<T::AccountId>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<Runtime: Config> Default for GenesisConfig<Runtime> {
+		fn default() -> Self {
+			Self { authorities: vec![] }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for authority in &self.authorities {
+				Authorities::<T>::insert(authority.clone(), ());
 			}
 		}
 	}
