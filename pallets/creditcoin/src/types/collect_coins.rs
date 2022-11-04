@@ -14,6 +14,17 @@ pub struct UnverifiedCollectedCoins {
 	pub contract: GCreContract,
 }
 
+impl UnverifiedCollectedCoins {
+	pub fn into_output<T>(self, amount: T::Balance) -> CollectedCoins<T::Hash, T::Balance>
+	where
+		T: Config,
+	{
+		let Self { to, tx_id, contract: GCreContract { chain, .. } } = self;
+		let to = crate::AddressId::new::<T>(&chain, to.as_slice());
+		CollectedCoins { amount, to, tx_id }
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct CollectedCoinsId<Hash>(Hash);
 
