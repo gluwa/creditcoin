@@ -1,14 +1,7 @@
-use core::fmt::Debug;
-use std::{convert::TryFrom, str::FromStr};
-
 use super::errors::{
 	RpcUrlError,
 	VerificationFailureCause::{self, *},
 };
-
-use super::tasks::collect_coins::tests::{mock_rpc_for_collect_coins, RPC_RESPONSE_AMOUNT};
-use super::tasks::BlockAndTime;
-use super::tasks::Lockable;
 use super::{
 	errors::OffchainError,
 	parse_eth_address,
@@ -17,47 +10,43 @@ use super::{
 	tasks::verify_transfer::validate_ethless_transfer,
 	ETH_CONFIRMATIONS,
 };
-use crate::ocw::tasks::collect_coins::{testing_constants::CHAIN, tests::TX_HASH};
 use crate::tests::adjust_deal_order_to_nonce;
-use crate::tests::generate_address_with_proof;
-use crate::types::{AddressId, CollectedCoins, CollectedCoinsId, TaskId};
 use crate::Pallet as Creditcoin;
 use crate::{
 	helpers::extensions::HexToAddress,
 	mock::{
 		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
 		get_mock_nonce, get_mock_timestamp, get_mock_to_address, get_mock_tx_block_num,
-		get_mock_tx_hash, roll_by_with_ocw, roll_to, roll_to_with_ocw, set_rpc_uri, AccountId,
-		Call, ExtBuilder, Extrinsic, MockedRpcRequests, Origin, PendingRequestExt, RwLock, Test,
+		get_mock_tx_hash, roll_to, roll_to_with_ocw, set_rpc_uri, Call, ExtBuilder, Extrinsic,
+		MockedRpcRequests, Origin, PendingRequestExt, RwLock, TaskScheduler, Test,
 		ETHLESS_RESPONSES,
 	},
-	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
-	ocw::tasks::StorageLock,
+	ocw::rpc::{errors::RpcError, JsonRpcResponse},
 	tests::TestInfo,
 	types::{DoubleMapExt, TransferId},
 	Blockchain, CurrencyOrLegacyTransferKind, ExternalAddress, Id, LegacyTransferKind, LoanTerms,
-	TransferKind, Transfers,
+	TransferKind,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
 use codec::Decode;
+use core::fmt::Debug;
 use ethabi::Token;
 use ethereum_types::{BigEndianHash, H160, U256, U64};
-use frame_support::{assert_ok, once_cell::sync::Lazy, BoundedVec};
+use frame_support::{assert_ok, once_cell::sync::Lazy, traits::Get, BoundedVec};
 use frame_system::Pallet as System;
+use pallet_offchain_task_scheduler::tasks::error::TaskError;
+use pallet_offchain_task_scheduler::tasks::ForwardTask;
 use sp_core::H256;
 use sp_io::offchain;
 use sp_runtime::offchain::storage::MutateStorageError;
 use sp_runtime::offchain::testing::TestOffchainExt;
-use sp_runtime::traits::Dispatchable;
-use sp_runtime::{
-	offchain::{
-		storage::{StorageRetrievalError, StorageValueRef},
-		testing::OffchainState,
-		Duration,
-	},
-	traits::IdentifyAccount,
+use sp_runtime::offchain::{
+	storage::{StorageRetrievalError, StorageValueRef},
+	testing::OffchainState,
+	Duration,
 };
+use std::{convert::TryFrom, str::FromStr};
 
 fn make_external_address(hex_str: &str) -> ExternalAddress {
 	BoundedVec::try_from(hex::decode(hex_str.trim_start_matches("0x")).unwrap()).unwrap()
@@ -379,34 +368,6 @@ fn blockchain_unsupported() {
 	assert!(!Blockchain::ETHEREUM.supports(&crate::LegacyTransferKind::Other(default())));
 	assert!(!Blockchain::RINKEBY.supports(&crate::LegacyTransferKind::Other(default())));
 	assert!(!Blockchain::LUNIVERSE.supports(&crate::LegacyTransferKind::Other(default())));
-}
-
-#[test]
-fn offchain_signed_tx_works() {
-	let mut ext = ExtBuilder::default();
-	let acct_pubkey = ext.generate_authority();
-	let acct = AccountId::from(acct_pubkey.into_account().0);
-	let transfer_id = crate::TransferId::new::<crate::mock::Test>(&Blockchain::ETHEREUM, &[0]);
-	ext.build_offchain_and_execute_with_state(|_state, pool| {
-		crate::mock::roll_to(1);
-		let call = crate::Call::fail_task {
-			task_id: transfer_id.into(),
-			deadline: 10000,
-			cause: IncorrectAmount,
-		};
-		assert_ok!(
-			pallet_offchain_task_scheduler::Pallet::<crate::mock::Test>::offchain_signed_tx(
-				acct.clone(),
-				|_| call.clone().into(),
-			)
-		);
-		crate::mock::roll_to(2);
-
-		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
-			let tx = Extrinsic::decode(&mut &*tx).unwrap();
-			assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
-		});
-	});
 }
 
 type MockTransfer = crate::Transfer<
