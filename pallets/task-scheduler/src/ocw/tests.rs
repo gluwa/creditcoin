@@ -29,6 +29,57 @@ use sp_runtime::traits::IdentifyAccount;
 type GuardDeadline = <BlockAndTime<System> as Lockable>::Deadline;
 
 #[test]
+//#[tracing_test::traced_test]
+fn completed_oversubscribed_tasks_are_skipped() {
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	let acct_pubkey = ext_builder.generate_authority();
+	let pool = ext_builder.with_pool();
+	ext_builder.with_offchain();
+	let auth = AccountId::from(acct_pubkey.into_account().0);
+	ext_builder.build().execute_with(|| {
+		roll_to::<Trivial>(1);
+
+		//register twice (oversubscribe) under different expiration (aka deadline).
+
+		let deadline = Runtime::deadline();
+		let task = MockTask::Remark(0);
+		let id = TaskV2::<Runtime>::to_id(&task);
+		Runtime::insert(&deadline, &id, task.clone());
+
+		roll_to::<Trivial>(2);
+
+		let deadline_2 = Runtime::deadline();
+		Runtime::insert(&deadline_2, &id, task);
+
+		roll_to::<WithWorkerHook>(3);
+
+		//We now have 2 enqueued tasks.
+		let tx = pool.write().transactions.pop().expect("A single task");
+		// No more tasks
+		assert!(pool.read().transactions.is_empty());
+		let tx = Extrinsic::decode(&mut &*tx).unwrap();
+		assert_eq!(
+			tx.call,
+			Call::System(frame_system::pallet::Call::remark_with_event { remark: 0.encode() })
+		);
+
+		assert_ok!(tx.call.dispatch(Origin::signed(auth)));
+
+		roll_to::<WithWorkerHook>(deadline_2);
+
+		//task expires without yielding txns.
+		assert!(pool.read().transactions.is_empty());
+
+		let key = storage_key(&id);
+		//lock set
+		assert!(StorageValueRef::persistent(key.as_ref())
+			.get::<GuardDeadline>()
+			.expect("decoded")
+			.is_some());
+	});
+}
+
+#[test]
 #[tracing_test::traced_test]
 fn offchain_worker_logs_error_when_transfer_validation_errors() {
 	let mut ext_builder = ExtBuilder::default().with_keystore();
