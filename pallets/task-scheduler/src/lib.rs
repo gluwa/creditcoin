@@ -13,6 +13,7 @@ use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
 use tracing as log;
 
+pub mod authority;
 pub mod mock;
 pub mod ocw;
 pub mod tasks;
