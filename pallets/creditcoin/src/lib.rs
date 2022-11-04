@@ -7,7 +7,6 @@ use frame_support::traits::StorageVersion;
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::KillStorageResult;
-use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -28,28 +27,6 @@ mod types;
 
 use ocw::tasks::collect_coins::GCreContract;
 pub use types::*;
-
-pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
-
-pub mod crypto {
-	use crate::KEY_TYPE;
-	use sp_runtime::{
-		app_crypto::{app_crypto, sr25519},
-		MultiSignature, MultiSigner,
-	};
-
-	app_crypto!(sr25519, KEY_TYPE);
-
-	pub struct CtcAuthId;
-
-	impl frame_system::offchain::AppCrypto<MultiSigner, MultiSignature> for CtcAuthId {
-		type RuntimeAppPublic = Public;
-
-		type GenericPublic = sp_core::sr25519::Public;
-
-		type GenericSignature = sp_core::sr25519::Signature;
-	}
-}
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
