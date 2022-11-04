@@ -11,7 +11,6 @@ pub use transfer::*;
 use crate::ocw::tasks::collect_coins::GCreContract;
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
-use crate::Config;
 use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use extend::ext;
 use frame_support::{

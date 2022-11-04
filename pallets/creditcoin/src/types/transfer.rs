@@ -1,4 +1,13 @@
 use super::*;
+use crate::ocw::errors::SchedulerError;
+use crate::ocw::tasks::OffchainVerification;
+use crate::types::concatenate;
+use crate::Config;
+use crate::TaskOutput;
+use pallet_offchain_task_scheduler::tasks::error::TaskError;
+use pallet_offchain_task_scheduler::tasks::TaskV2;
+use pallet_timestamp::Config as TimestampConfig;
+use sp_runtime::traits::Hash;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
@@ -28,13 +37,20 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 pub struct TransferId<Hash>(Hash);
 
 impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
+	fn inner_hash<Hasher>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> H
 	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+		Hasher: Hash<Output = H>,
 	{
 		let key = concatenate!(&*blockchain.as_bytes(), blockchain_tx_id);
-		TransferId(Config::Hashing::hash(&key))
+		<Hasher as Hash>::hash(&key)
+	}
+
+	pub fn new<C: SystemConfig>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
+	where
+		<C as SystemConfig>::Hashing: Hash<Output = H>,
+	{
+		let hash = Self::inner_hash::<C::Hashing>(blockchain, blockchain_tx_id);
+		TransferId(hash)
 	}
 }
 
@@ -44,35 +60,17 @@ impl<H> From<H> for TransferId<H> {
 	}
 }
 
-type UnverifiedTransferT<T> = UnverifiedTransfer<
+type UnverifiedTransferFor<T> = UnverifiedTransfer<
 	<T as SystemConfig>::AccountId,
 	<T as SystemConfig>::BlockNumber,
 	<T as SystemConfig>::Hash,
 	<T as TimestampConfig>::Moment,
 >;
 
-impl<T: Config> OffchainVerification<T> for UnverifiedTransferT<T> {
-	type Output = Option<T::Moment>;
-
-	fn verify(&self) -> VerificationResult<Self::Output> {
-		crate::Pallet::<T>::verify_transfer_ocw(self)
-	}
-}
-
-use crate::ocw::errors::SchedulerError;
-use crate::ocw::tasks::OffchainVerification;
-use crate::types::concatenate;
-use crate::TaskOutput;
-use frame_system::Config as SystemConfig;
-use pallet_offchain_task_scheduler::tasks::error::TaskError;
-use pallet_offchain_task_scheduler::tasks::TaskV2;
-use pallet_timestamp::Config as TimestampConfig;
-use sp_runtime::traits::Hash;
-
-impl<T: Config> TaskV2<T> for UnverifiedTransferT<T>
+impl<T: Config> TaskV2<T> for UnverifiedTransferFor<T>
 where
-	UnverifiedTransferT<T>: OffchainVerification<T>,
-	<UnverifiedTransferT<T> as OffchainVerification<T>>::Output: Into<Option<T::Moment>>,
+	UnverifiedTransferFor<T>: OffchainVerification<T>,
+	<UnverifiedTransferFor<T> as OffchainVerification<T>>::Output: Into<Option<T::Moment>>,
 {
 	type Call = crate::pallet::Call<T>;
 	type EvaluationError = VerificationFailureCause;
@@ -80,8 +78,7 @@ where
 
 	fn to_id(&self) -> T::Hash {
 		let Transfer { blockchain, tx_id, .. } = &self.transfer;
-		let key = concatenate!(blockchain.as_bytes().as_ref(), tx_id.as_slice());
-		T::Hashing::hash(&key)
+		TransferId::inner_hash::<T::Hashing>(blockchain, tx_id)
 	}
 
 	fn persistence_call(
@@ -114,5 +111,13 @@ where
 	fn is_persisted(id: &T::Hash) -> bool {
 		let id = TransferId::from(*id);
 		crate::pallet::Transfers::<T>::contains_key(&id)
+	}
+}
+
+impl<T: Config> OffchainVerification<T> for UnverifiedTransferFor<T> {
+	type Output = Option<T::Moment>;
+
+	fn verify(&self) -> VerificationResult<Self::Output> {
+		crate::Pallet::<T>::verify_transfer_ocw(self)
 	}
 }
