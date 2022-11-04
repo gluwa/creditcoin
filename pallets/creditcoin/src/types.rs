@@ -435,12 +435,6 @@ impl<AccountId, Balance, BlockNum, Hash, Moment>
 	}
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
-	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>, Option<Moment>),
-	CollectCoins(UnverifiedCollectedCoins, Balance),
-}
-
 #[cfg(test)]
 mod test {
 	use crate::{
@@ -615,10 +609,6 @@ mod test {
 	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
 		create_funding_transfer()
 	),
-	task_data: TaskData<AccountId, Balance, BlockNum, Hash, Moment> : TaskData::<AccountId, Balance, BlockNum, Hash, Moment>::CollectCoins(
-		create_unverified_collected_coins(), 2000
-	),
-
 	// from types/loan_terms.rs
 	duration: Duration : Duration::from_millis(100),
 	interest_type: InterestType : InterestType::Simple,

@@ -8,6 +8,8 @@ use pallet_offchain_task_scheduler::tasks::error::TaskError;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
 use pallet_timestamp::Config as TimestampConfig;
 use sp_runtime::traits::Hash;
+use sp_runtime::traits::UniqueSaturatedFrom;
+use sp_runtime::traits::UniqueSaturatedInto;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
@@ -33,10 +35,34 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 	pub currency_to_check: CurrencyOrLegacyTransferKind,
 }
 
+impl<AccountId, BlockNum, Hash, Moment> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>
+where
+	Moment: UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
+	BlockNum: UniqueSaturatedInto<u64>,
+{
+	pub fn into_output<T: Config>(
+		self,
+		timestamp: Option<T::Moment>,
+	) -> Transfer<AccountId, BlockNum, Hash, Moment>
+	where
+		T: Config<AccountId = AccountId, BlockNumber = BlockNum, Hash = Hash, Moment = Moment>,
+	{
+		Transfer { timestamp, ..self.transfer }
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct TransferId<Hash>(Hash);
 
 impl<H> TransferId<H> {
+	#[cfg(test)]
+	pub fn leaked_inner_hash<C: SystemConfig>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> H
+	where
+		<C as SystemConfig>::Hashing: Hash<Output = H>,
+	{
+		Self::inner_hash::<C::Hashing>(blockchain, blockchain_tx_id)
+	}
+
 	fn inner_hash<Hasher>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> H
 	where
 		Hasher: Hash<Output = H>,
