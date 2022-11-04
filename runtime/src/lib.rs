@@ -12,6 +12,7 @@ use frame_support::{
 };
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
+use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
 use sp_runtime::{
@@ -21,7 +22,6 @@ use sp_runtime::{
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
 	SaturatedConversion,
 };
-use pallet_offchain_task_scheduler::crypto::AuthorityId;
 
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
