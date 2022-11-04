@@ -138,6 +138,47 @@ fn evaluation_error_is_retried() {
 
 #[test]
 #[tracing_test::traced_test]
+fn forget_task_guard_when_task_has_benn_persisted() {
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	ext_builder.generate_authority();
+	ext_builder.with_offchain();
+	ext_builder.with_pool();
+	ext_builder.build().execute_with(|| {
+		roll_to::<Trivial>(1);
+
+		let deadline = Runtime::deadline();
+		let task = MockTask::Remark(0);
+		let id = TaskV2::<Runtime>::to_id(&task);
+		Runtime::insert(&deadline, &id, task.clone());
+
+		roll_to::<WithWorkerHook>(2);
+		let key = crate::tasks::storage_key(&id);
+		let mut lock = crate::tasks::task_lock::<Runtime>(&key);
+		let lock_deadline = lock.try_lock().map(|_| ()).expect_err("deadline");
+		sleep_until(lock_deadline.timestamp.add(Duration::from_millis(1)));
+
+		let deadline = Runtime::deadline();
+		Runtime::insert(&deadline, &id, task);
+
+		//fake a task being in storage.
+		crate::mock::task::is_persisted_replace(true);
+		roll_to::<WithWorkerHook>(lock_deadline.block_number + 1);
+
+		assert!(logs_contain("Already handled Task"));
+
+		let key = storage_key(&id);
+		let mut lock = task_lock::<Runtime>(&key);
+
+		let guard = lock.try_lock();
+		assert!(guard.is_err());
+
+		//revert thread_local
+		crate::mock::task::is_persisted_replace(false);
+	});
+}
+
+#[test]
+#[tracing_test::traced_test]
 fn offchain_worker_logs_error_when_transfer_validation_errors() {
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	ext_builder.generate_authority();

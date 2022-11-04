@@ -469,36 +469,6 @@ fn verify_transfer_ocw_returns_err() {
 	});
 }
 
-#[test]
-#[tracing_test::traced_test]
-fn offchain_worker_should_log_and_forget_guard_when_task_is_already_handled() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute(|| {
-		crate::mock::roll_to(1);
-
-		let (unverified, _) = set_up_verify_transfer_env(true);
-		let id =
-			TransferId::new::<Test>(&unverified.transfer.blockchain, &unverified.transfer.tx_id);
-		// simulate a transfer that has already been handled
-		Transfers::<Test>::insert(&id, &unverified.transfer);
-
-		crate::mock::roll_by_with_ocw(1);
-		assert!(logs_contain("Already handled Task"));
-
-		// check that guard for the same ID has been released
-		let storage_key = crate::ocw::tasks::storage_key(&TaskId::VerifyTransfer(id));
-		let mut lock = StorageLock::<'_, BlockAndTime<System<Test>>>::with_block_and_time_deadline(
-			&storage_key,
-			1,
-			Duration::from_millis(0),
-		);
-
-		let guard = lock.try_lock();
-		assert!(guard.is_err());
-	});
-}
-
 fn set_up_verify_transfer_env(
 	register_transfer: bool,
 ) -> (MockUnverifiedTransfer, MockedRpcRequests) {
