@@ -242,7 +242,7 @@ fn offchain_signed_tx_works() {
 		let call =
 			Call::System(frame_system::pallet::Call::remark_with_event { remark: 0.encode() });
 
-		assert_ok!(Pallet::<Runtime>::offchain_signed_tx(auth.clone(), |_| call.clone().into(),));
+		assert_ok!(Pallet::<Runtime>::offchain_signed_tx(auth.clone(), |_| call.clone()));
 		roll_to::<Trivial>(2);
 
 		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
