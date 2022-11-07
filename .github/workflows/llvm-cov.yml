@@ -70,7 +70,7 @@ jobs:
 
       - name: Post comment to PR
         if: env.GITHUB_TOKEN
-        uses: mshick/add-pr-comment@v1
+        uses: mshick/add-pr-comment@v2
         env:
           GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
         with:
