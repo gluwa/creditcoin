@@ -29,7 +29,7 @@ version = '2.0.0-beta.8'
 jsonrpc-core = '18.0.0'
 structopt = '0.3.8'
 sha3pow = { path = '../sha3pow' }
-num_cpus = "1.13.0"
+num_cpus = "1.14.0"
 futures-lite = "1.12.0"
 log = "0.4.17"
 codec = { package = "parity-scale-codec", version = "2.3.1" }
