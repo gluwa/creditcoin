@@ -90,6 +90,6 @@ updates:
         update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "cargo"
-    directory: "/pallets/task-scheduler"
+    directory: "/pallets/offchain-task-scheduler"
     schedule:
       interval: "weekly"

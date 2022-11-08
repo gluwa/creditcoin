@@ -116,7 +116,7 @@ version = '1.0'
 
 [dependencies.pallet-offchain-task-scheduler]
 default-features = false
-path = '../task-scheduler'
+path = '../offchain-task-scheduler'
 version = '0.1.0'
 
 [dev-dependencies]

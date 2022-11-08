@@ -27,7 +27,7 @@ mod tests {
 	use super::*;
 	use crate::mock::runtime::Call;
 	use crate::mock::runtime::Runtime;
-	use crate::mock::{roll_to, task::MockTask, ExtBuilder, Trivial, WithWorkerHook};
+	use crate::mock::{roll_to, ExtBuilder, task::MockTask, Trivial, WithWorkerHook};
 	use crate::tasks::TaskScheduler;
 	use crate::tasks::TaskV2;
 	use core::sync::atomic::AtomicU64;

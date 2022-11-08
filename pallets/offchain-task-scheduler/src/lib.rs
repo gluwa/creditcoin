@@ -58,7 +58,9 @@ pub mod pallet {
 	use scale_info::TypeInfo;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + CreateSignedTransaction<Self::TaskCall> {
+	pub trait Config:
+		frame_system::Config + pallet_timestamp::Config + CreateSignedTransaction<Self::TaskCall>
+	{
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Task: TypeInfo
 			+ FullCodec

@@ -1,13 +1,9 @@
-#![cfg(test)]
-
-pub(crate) mod runtime;
-pub(crate) mod task;
 
 use frame_support::traits::{GenesisBuild, OffchainWorker, OnFinalize, OnInitialize};
 use frame_system as system;
 pub(crate) use parking_lot::RwLock;
-use runtime::{AccountId, Runtime};
-use runtime::{BlockNumber, System, TaskScheduler};
+use super::runtime::{AccountId, Runtime};
+use super::runtime::{BlockNumber, System, TaskScheduler};
 use sp_io::TestExternalities;
 use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
 pub(crate) use sp_runtime::offchain::{
@@ -85,7 +81,7 @@ pub(crate) trait RollTo<BlockNumber> {
 	fn with(i: BlockNumber);
 }
 
-pub(super) struct Trivial;
+pub(crate) struct Trivial;
 
 impl RollTo<BlockNumber> for Trivial {
 	fn with(_i: BlockNumber) {}
