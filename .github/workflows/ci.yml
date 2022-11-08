@@ -213,7 +213,7 @@ jobs:
           fi
 
           echo "INFO: MINING_KEY=$MINING_KEY"
-          cargo run --release -- --dev --mining-key $MINING_KEY --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          cargo run --release -- --dev --mining-key $MINING_KEY --monitor-nonce auto --mining-threads 1 >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
