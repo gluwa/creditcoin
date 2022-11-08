@@ -14,6 +14,7 @@ use sp_runtime::traits::Saturating;
 use tracing as log;
 
 pub mod authority;
+pub mod benchmarking;
 pub mod mock;
 pub mod ocw;
 pub mod tasks;

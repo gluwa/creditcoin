@@ -20,9 +20,11 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::pallet_prelude::*;
+use frame_system::Config as SystemConfig;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use pallet_balances::Pallet as Balances;
+use pallet_timestamp::Config as TimestampConfig;
 use pallet_timestamp::Pallet as Timestamp;
 use sp_core::ecdsa;
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign};
@@ -69,10 +71,6 @@ benchmarks! {
 		let d in 0..255;
 		//insert f fundedorders
 		let f in 0..255;
-		//insert u unverifiedtransfers
-		let u in 0..255;
-		//insert c unverifiedcollectedcoins
-		let c in 0..255;
 
 		<Timestamp<T>>::set_timestamp(1u32.into());
 
@@ -103,28 +101,7 @@ benchmarks! {
 			insert_fake_deal::<T>(&lender, expiration_block, DealKind::Funded, i);
 		}
 
-		for i in 0..u {
-			insert_fake_unverified_transfer::<T>(&lender, expiration_block, i);
-		}
-
-		let deadline = expiration_block;
-
-		for i in 0..c {
-			let collector: T::AccountId = lender_account::<T>(true);
-			let evm_address = format!("{:03x}",i).as_bytes() .into_bounded();
-			let address_id = AddressId::new::<T>(&CHAIN, &evm_address);
-			let entry = Address { blockchain: CHAIN, value: evm_address.clone(), owner: collector.clone() };
-			<Addresses<T>>::insert(address_id, entry);
-
-			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
-			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
-
-			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() , contract: Default::default()};
-
-			crate::PendingTasks::<T>::insert(deadline, crate::TaskId::from(collected_coins_id), crate::Task::from(pending));
-		}
-
-	}: { Creditcoin::<T>::on_initialize(deadline) }
+	}: { Creditcoin::<T>::on_initialize(expiration_block) }
 	verify {}
 
 	register_address {
@@ -745,7 +722,7 @@ fn generate_bid<T: Config>(
 	Ok((address_id, bid_order_id, guid.to_vec()))
 }
 
-fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
+pub(crate) fn fake_address_id<T: SystemConfig>(seed: u32) -> AddressId<T::Hash> {
 	let address = format!("somefakeaddress{}", seed);
 	crate::AddressId::new::<T>(&Blockchain::ETHEREUM, address.as_bytes())
 }
@@ -765,7 +742,7 @@ fn insert_fake_address<T: Config>(owner: T::AccountId, seed: u32) -> AddressId<T
 	id
 }
 
-fn fake_ask_id<T: Config>(
+pub(crate) fn fake_ask_id<T: SystemConfig>(
 	seed: u32,
 	expiration_block: BlockNumberFor<T>,
 ) -> AskOrderId<T::BlockNumber, T::Hash> {
@@ -793,7 +770,7 @@ fn insert_fake_ask<T: Config>(
 	ask_id
 }
 
-fn fake_bid_id<T: Config>(
+pub(crate) fn fake_bid_id<T: SystemConfig>(
 	seed: u32,
 	expiration_block: BlockNumberFor<T>,
 ) -> BidOrderId<T::BlockNumber, T::Hash> {
@@ -821,7 +798,7 @@ fn insert_fake_bid<T: Config>(
 	bid_id
 }
 
-fn fake_offer_id<T: Config>(
+fn fake_offer_id<T: SystemConfig>(
 	expiration_block: BlockNumberFor<T>,
 	ask_id: &AskOrderId<T::BlockNumber, T::Hash>,
 	bid_id: &BidOrderId<T::BlockNumber, T::Hash>,
@@ -849,14 +826,14 @@ fn insert_fake_offer<T: Config>(
 	crate::Offers::<T>::insert_id(offer_id, offer);
 }
 
-fn fake_deal_id<T: Config>(
+pub(crate) fn fake_deal_id<T: SystemConfig>(
 	expiration_block: BlockNumberFor<T>,
 	offer_id: &OfferId<T::BlockNumber, T::Hash>,
 ) -> DealOrderId<T::BlockNumber, T::Hash> {
 	DealOrderId::new::<T>(expiration_block, offer_id)
 }
 
-fn fake_transfer_id<T: Config>(seed: u32) -> TransferId<T::Hash> {
+pub(crate) fn fake_transfer_id<T: SystemConfig>(seed: u32) -> TransferId<T::Hash> {
 	let tx_id = format!("somefaketransfertxid{}", seed);
 	crate::TransferId::new::<T>(&Blockchain::ETHEREUM, tx_id.as_bytes())
 }
@@ -892,15 +869,14 @@ fn insert_fake_deal<T: Config>(
 	crate::DealOrders::<T>::insert_id(deal_id, deal);
 }
 
-fn insert_fake_unverified_transfer<T: Config>(
+pub(crate) fn generate_fake_unverified_transfer<T: SystemConfig + TimestampConfig>(
 	who: &T::AccountId,
 	deadline: BlockNumberFor<T>,
 	seed: u32,
-) {
+) -> crate::types::UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment> {
 	let from_external = format!("somefakefromext{}", seed).as_bytes().into_bounded();
 	let to_external = format!("somefaketoext{}", seed).as_bytes().into_bounded();
-	let transfer_id = fake_transfer_id::<T>(seed);
-	let transfer = crate::UnverifiedTransfer {
+	crate::UnverifiedTransfer {
 		deadline,
 		from_external,
 		to_external,
@@ -927,9 +903,5 @@ fn insert_fake_unverified_transfer<T: Config>(
 		currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
 			LegacyTransferKind::Native,
 		),
-	};
-
-	let task_id = TaskId::VerifyTransfer(transfer_id);
-	let task = Task::VerifyTransfer(transfer);
-	crate::PendingTasks::<T>::insert(deadline, task_id, task)
+	}
 }

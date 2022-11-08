@@ -4053,6 +4053,7 @@ name = "pallet-offchain-task-scheduler"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -4066,6 +4067,7 @@ dependencies = [
  "sp-io",
  "sp-keystore",
  "sp-runtime",
+ "sp-std",
  "sp-tracing",
  "tracing-test",
 ]

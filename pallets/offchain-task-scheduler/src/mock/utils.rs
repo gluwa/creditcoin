@@ -1,9 +1,8 @@
-
+use super::runtime::{AccountId, Runtime};
+use super::runtime::{BlockNumber, System, TaskScheduler};
 use frame_support::traits::{GenesisBuild, OffchainWorker, OnFinalize, OnInitialize};
 use frame_system as system;
 pub(crate) use parking_lot::RwLock;
-use super::runtime::{AccountId, Runtime};
-use super::runtime::{BlockNumber, System, TaskScheduler};
 use sp_io::TestExternalities;
 use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
 pub(crate) use sp_runtime::offchain::{

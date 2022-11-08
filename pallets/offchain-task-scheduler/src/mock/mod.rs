@@ -1,4 +1,4 @@
-#![cfg(any(test, feature = "runtime-benchmarks"))]
+#![cfg(test)]
 
 pub(crate) mod runtime;
 pub(crate) mod task;

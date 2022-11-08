@@ -139,7 +139,10 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+runtime-benchmarks = [
+    'frame-benchmarking',
+    'pallet-offchain-task-scheduler/runtime-benchmarks',
+]
 std = [
     'codec/std',
     'scale-info/std',

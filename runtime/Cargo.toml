@@ -228,6 +228,7 @@ runtime-benchmarks = [
     'pallet-rewards/runtime-benchmarks',
     'pallet-difficulty/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
+    'pallet-offchain-task-scheduler/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
 ]
 std = [
