@@ -17,7 +17,7 @@
         "@polkadot/keyring": "10.1.9",
         "@types/ws": "^8.5.3",
         "axios": "^1.0.0",
-        "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.7.0.tgz",
+        "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.7.1.tgz",
         "ws": "^8.5.0"
     },
     "devDependencies": {

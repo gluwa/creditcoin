@@ -18,10 +18,10 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
         console.log('setting target block time to 4000');
         await api.tx.sudo.sudo(api.tx.difficulty.setTargetBlockTime(4000)).signAndSend(sudoSigner, { nonce: -1 });
     }
-    const hasAuthKey = await api.rpc.author.hasKey(AUTHORITY_PUBKEY, 'ctcs');
+    const hasAuthKey = await api.rpc.author.hasKey(AUTHORITY_PUBKEY, 'gots');
     if (hasAuthKey.isFalse) {
         console.log('no auth key!');
-        await api.rpc.author.insertKey('ctcs', AUTHORITY_SURI, AUTHORITY_PUBKEY);
+        await api.rpc.author.insertKey('gots', AUTHORITY_SURI, AUTHORITY_PUBKEY);
     }
     const auth = await api.query.creditcoin.authorities<Option<Null>>(AUTHORITY_ACCOUNTID);
     if (auth.isNone) {
