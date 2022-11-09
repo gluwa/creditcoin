@@ -20,6 +20,7 @@ macro_rules! try_get {
 	};
 }
 
+#[macro_export]
 macro_rules! try_get_id {
 	($storage: ident <$t: ident>, $key: expr, $err: ident) => {
 		<crate::pallet::$storage<$t> as DoubleMapExt<_, _, _, _, _, _, _, _, _, _>>::try_get_id(

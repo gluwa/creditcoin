@@ -20,6 +20,7 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::Config as SystemConfig;
+#[cfg(feature = "runtime-benchmarks")]
 use pallet_timestamp::Config as TimestampConfig;
 use scale_info::TypeInfo;
 use sha2::Digest;
