@@ -1,4 +1,6 @@
+use creditcoin_node_runtime::AccountId;
 use sc_cli::RunCmd;
+use sp_core::crypto::{PublicError, Ss58Codec};
 use structopt::StructOpt;
 
 fn parse_rpc_pair(input: &str) -> Result<(String, String), String> {
@@ -57,9 +59,28 @@ pub struct Cli {
 	pub rpc_mapping: Option<Vec<(String, String)>>,
 
 	#[structopt(long)]
-	/// An authority account ID to monitor the nonce of (must be an account actively running as an authority on this node).
-	pub monitor_nonce: Option<String>,
+	/// An authority account ID to monitor the nonce of (must be an account actively running as an authority on this node), or
+	/// `auto` to find the authority account automatically.
+	pub monitor_nonce: Option<NonceMonitorTarget>,
 }
+
+#[derive(Debug, Clone)]
+pub enum NonceMonitorTarget {
+	Auto,
+	Account(AccountId),
+}
+
+impl std::str::FromStr for NonceMonitorTarget {
+	type Err = PublicError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Ok(match s {
+			"auto" | "AUTO" | "Auto" => Self::Auto,
+			acct => Self::Account(AccountId::from_string(acct)?),
+		})
+	}
+}
+
 #[derive(Debug, StructOpt)]
 pub enum Subcommand {
 	/// Key management cli utilities

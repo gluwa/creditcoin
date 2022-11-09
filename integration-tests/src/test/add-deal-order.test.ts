@@ -1,9 +1,9 @@
-import { KeyringPair } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-import { OfferId } from 'creditcoin-js/lib/model';
-import { creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
+import { Blockchain, Currency, LoanTerms, OfferId } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, testData } from './common';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { addAskAndBidOrder, loanTermsWithCurrency, testData } from 'creditcoin-js/lib/testUtils';
+
 import { extractFee } from '../utils';
 
 describe('AddDealOrder', (): void => {
@@ -11,13 +11,26 @@ describe('AddDealOrder', (): void => {
     let borrower: KeyringPair;
     let lender: KeyringPair;
     let offerId: OfferId;
+    let loanTerms: LoanTerms;
+    let currency: Currency;
 
-    const { expirationBlock, keyring } = testData;
+    const testingData = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
+    const { expirationBlock, keyring } = testingData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            undefined,
+        );
+        currency = testCurrency(eth.testTokenAddress);
     });
 
     afterAll(async () => {
@@ -25,7 +38,8 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
+        loanTerms = await loanTermsWithCurrency(ccApi, currency);
+        const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms, testingData);
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;
     }, 210000);

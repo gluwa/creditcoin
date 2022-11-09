@@ -1,15 +1,19 @@
-import { KeyringPair } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-import { creditcoinApi } from 'creditcoin-js';
+import { KeyringPair, creditcoinApi, POINT_01_CTC } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData } from './common';
+import { testData } from 'creditcoin-js/lib/testUtils';
+import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
+
 import { extractFee, testIf } from '../utils';
 
 describe('SetCollectCoinsContract', (): void => {
     let ccApi: CreditcoinApi;
     let sudoSigner: KeyringPair;
-
-    const { keyring } = testData;
+    const testingData = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
+    const { keyring } = testingData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
@@ -28,7 +32,7 @@ describe('SetCollectCoinsContract', (): void => {
         /* eslint-disable @typescript-eslint/naming-convention */
         const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
             address: '0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419',
-            chain: testData.blockchain,
+            chain: createCreditcoinBlockchain(api, testingData.blockchain),
         });
 
         return new Promise((resolve, reject): void => {

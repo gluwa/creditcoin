@@ -1,21 +1,57 @@
-import { providers } from 'ethers';
-import { Wallet, Guid, BN } from 'creditcoin-js';
-import { Keyring, KeyringPair, Option, PalletCreditcoinAddress } from 'creditcoin-js';
-import { Blockchain, LoanTerms, DealOrderId } from 'creditcoin-js/lib/model';
-import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { createAddress } from 'creditcoin-js/lib/transforms';
-import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
-import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
+import { providers, Wallet } from 'ethers';
+import { Guid } from 'js-guid';
 
-type TestData = {
-    loanTerms: LoanTerms;
+import { Keyring } from '@polkadot/api';
+import { Option } from '@polkadot/types';
+import { BN } from '@polkadot/util';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
+
+import { Blockchain, LoanTerms, DealOrderId, Currency } from './model';
+import { CreditcoinApi } from './types';
+import { createAddress } from './transforms';
+import { EthConnection } from './examples/ethereum';
+import { AddressRegistered, createAddressId } from './extrinsics/register-address';
+import { createCurrencyId, registerCurrencyAsync } from './extrinsics/register-currency';
+
+type CreateWalletFunc = (who: string) => Wallet;
+
+export type TestData = {
     blockchain: Blockchain;
     expirationBlock: number;
     keyring: Keyring;
-    createWallet: (who: string) => Wallet;
+    createWallet: CreateWalletFunc;
 };
-export const testData: TestData = {
-    loanTerms: {
+
+export const testData = (ethereumChain: Blockchain, createWalletF: CreateWalletFunc): TestData => {
+    return {
+        blockchain: ethereumChain,
+        expirationBlock: 10_000_000,
+        createWallet: createWalletF,
+        keyring: new Keyring({ type: 'sr25519' }),
+    };
+};
+
+const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey?: KeyringPair) => {
+    const id = createCurrencyId(ccApi.api, currency);
+    const onChainCurrency = await ccApi.api.query.creditcoin.currencies(id);
+    if (onChainCurrency.isEmpty) {
+        if (sudoKey === undefined) {
+            const keyring = new Keyring({ type: 'sr25519' });
+            sudoKey = keyring.addFromUri('//Alice');
+        }
+        const { itemId } = await registerCurrencyAsync(ccApi.api, currency, sudoKey);
+        if (itemId !== id) {
+            throw new Error(`Unequal: ${itemId} !== ${id}`);
+        }
+    }
+};
+
+export const loanTermsWithCurrency = async (ccApi: CreditcoinApi, currency: Currency): Promise<LoanTerms> => {
+    const currencyId = createCurrencyId(ccApi.api, currency);
+    await ensureCurrencyRegistered(ccApi, currency);
+
+    return {
         amount: new BN(1_000),
         interestRate: {
             ratePerPeriod: 100,
@@ -30,22 +66,23 @@ export const testData: TestData = {
             secs: 60 * 60 * 24 * 30,
             nanos: 0,
         },
-    } as LoanTerms,
-    blockchain: (global as any).CREDITCOIN_ETHEREUM_NAME as Blockchain,
-    expirationBlock: 10_000_000,
-    createWallet: (global as any).CREDITCOIN_CREATE_WALLET
-        ? (global as any).CREDITCOIN_CREATE_WALLET
-        : Wallet.createRandom, // eslint-disable-line
-    keyring: new Keyring({ type: 'sr25519' }),
+        currency: currencyId,
+    };
 };
 
-export const addAskAndBidOrder = async (ccApi: CreditcoinApi, lender: KeyringPair, borrower: KeyringPair) => {
+export const addAskAndBidOrder = async (
+    ccApi: CreditcoinApi,
+    lender: KeyringPair,
+    borrower: KeyringPair,
+    loanTerms: LoanTerms,
+    testingData: TestData,
+) => {
     const {
         extrinsics: { addAskOrder, addBidOrder, registerAddress },
         utils: { signAccountId },
     } = ccApi;
 
-    const { blockchain, expirationBlock, loanTerms } = testData;
+    const { blockchain, expirationBlock } = testingData;
     const lenderWallet = Wallet.createRandom();
     const borrowerWallet = Wallet.createRandom();
 
@@ -69,15 +106,12 @@ export const lendOnEth = async (
     borrowerWallet: Wallet,
     dealOrderId: DealOrderId,
     loanTerms: LoanTerms,
+    connection: EthConnection,
 ) => {
-    const { lend, waitUntilTip } = await ethConnection(
-        (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-        (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-        (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
-    );
+    const { lend, waitUntilTip } = connection;
 
     // Lender lends to borrower on ethereum
-    const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
+    const [, lendTxHash, lendBlockNumber] = await lend(
         lenderWallet,
         borrowerWallet.address,
         dealOrderId[1],
@@ -87,7 +121,7 @@ export const lendOnEth = async (
     // wait 15 blocks on Ethereum
     await waitUntilTip(lendBlockNumber + 15);
 
-    return [tokenAddress, lendTxHash];
+    return lendTxHash;
 };
 
 export const tryRegisterAddress = async (
@@ -121,15 +155,18 @@ export const tryRegisterAddress = async (
 export const registerCtcDeployerAddress = async (
     ccApi: CreditcoinApi,
     privateKey: string,
+    ethereumNodeUrl: string,
+    reuseExistingAddresses: boolean,
+    testingData: TestData,
 ): Promise<AddressRegistered> => {
-    const { keyring, blockchain } = testData;
+    const { keyring, blockchain } = testingData;
     const {
         utils: { signAccountId },
     } = ccApi;
 
     const deployer = keyring.addFromUri('//Alice');
 
-    const provider = new providers.JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+    const provider = new providers.JsonRpcProvider(ethereumNodeUrl);
     const deployerWallet = new Wallet(privateKey, provider);
 
     return tryRegisterAddress(
@@ -138,6 +175,6 @@ export const registerCtcDeployerAddress = async (
         blockchain,
         signAccountId(deployerWallet, deployer.address),
         deployer,
-        (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+        reuseExistingAddresses,
     );
 };

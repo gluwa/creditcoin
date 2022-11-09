@@ -48,14 +48,15 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
-    PalletCreditcoinBlockchain,
     PalletCreditcoinCall,
     PalletCreditcoinCollectedCoins,
+    PalletCreditcoinCurrencyOrLegacyTransferKind,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinError,
     PalletCreditcoinEvent,
     PalletCreditcoinLegacySighash,
+    PalletCreditcoinLegacyTransferKind,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinLoanTermsAskTerms,
     PalletCreditcoinLoanTermsBidTerms,
@@ -66,18 +67,17 @@ import type {
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
-    PalletCreditcoinOrderId,
+    PalletCreditcoinPlatformBlockchain,
     PalletCreditcoinPlatformCurrency,
     PalletCreditcoinPlatformEvmChainId,
     PalletCreditcoinPlatformEvmCurrencyType,
     PalletCreditcoinPlatformEvmInfo,
     PalletCreditcoinPlatformEvmTransferKind,
-    PalletCreditcoinRepaymentOrderId,
+    PalletCreditcoinPlatformTransferKind,
     PalletCreditcoinTask,
     PalletCreditcoinTaskId,
     PalletCreditcoinTaskOutput,
     PalletCreditcoinTransfer,
-    PalletCreditcoinTransferKind,
     PalletCreditcoinUnverifiedCollectedCoins,
     PalletCreditcoinUnverifiedTransfer,
     PalletDifficultyCall,
@@ -156,14 +156,15 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinAskOrderId: PalletCreditcoinAskOrderId;
         PalletCreditcoinBidOrder: PalletCreditcoinBidOrder;
         PalletCreditcoinBidOrderId: PalletCreditcoinBidOrderId;
-        PalletCreditcoinBlockchain: PalletCreditcoinBlockchain;
         PalletCreditcoinCall: PalletCreditcoinCall;
         PalletCreditcoinCollectedCoins: PalletCreditcoinCollectedCoins;
+        PalletCreditcoinCurrencyOrLegacyTransferKind: PalletCreditcoinCurrencyOrLegacyTransferKind;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
         PalletCreditcoinDealOrderId: PalletCreditcoinDealOrderId;
         PalletCreditcoinError: PalletCreditcoinError;
         PalletCreditcoinEvent: PalletCreditcoinEvent;
         PalletCreditcoinLegacySighash: PalletCreditcoinLegacySighash;
+        PalletCreditcoinLegacyTransferKind: PalletCreditcoinLegacyTransferKind;
         PalletCreditcoinLoanTerms: PalletCreditcoinLoanTerms;
         PalletCreditcoinLoanTermsAskTerms: PalletCreditcoinLoanTermsAskTerms;
         PalletCreditcoinLoanTermsBidTerms: PalletCreditcoinLoanTermsBidTerms;
@@ -174,18 +175,17 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinOcwTasksCollectCoinsGCreContract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;
-        PalletCreditcoinOrderId: PalletCreditcoinOrderId;
+        PalletCreditcoinPlatformBlockchain: PalletCreditcoinPlatformBlockchain;
         PalletCreditcoinPlatformCurrency: PalletCreditcoinPlatformCurrency;
         PalletCreditcoinPlatformEvmChainId: PalletCreditcoinPlatformEvmChainId;
         PalletCreditcoinPlatformEvmCurrencyType: PalletCreditcoinPlatformEvmCurrencyType;
         PalletCreditcoinPlatformEvmInfo: PalletCreditcoinPlatformEvmInfo;
         PalletCreditcoinPlatformEvmTransferKind: PalletCreditcoinPlatformEvmTransferKind;
-        PalletCreditcoinRepaymentOrderId: PalletCreditcoinRepaymentOrderId;
+        PalletCreditcoinPlatformTransferKind: PalletCreditcoinPlatformTransferKind;
         PalletCreditcoinTask: PalletCreditcoinTask;
         PalletCreditcoinTaskId: PalletCreditcoinTaskId;
         PalletCreditcoinTaskOutput: PalletCreditcoinTaskOutput;
         PalletCreditcoinTransfer: PalletCreditcoinTransfer;
-        PalletCreditcoinTransferKind: PalletCreditcoinTransferKind;
         PalletCreditcoinUnverifiedCollectedCoins: PalletCreditcoinUnverifiedCollectedCoins;
         PalletCreditcoinUnverifiedTransfer: PalletCreditcoinUnverifiedTransfer;
         PalletDifficultyCall: PalletDifficultyCall;

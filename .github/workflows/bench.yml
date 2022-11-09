@@ -7,6 +7,9 @@ on:
 
 jobs:
   check-if-needed:
+    # To avoid endless loop in CI skip this job on the commit which
+    # auto-updates the weights and is generated further below.
+    if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'notaturkey' }}
     runs-on: ubuntu-20.04
     outputs:
       needs-bench: ${{ steps.version-check.outputs.needs_bench }}
@@ -77,6 +80,7 @@ jobs:
           fetch-depth: 10
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Set env
         run: |
@@ -122,10 +126,9 @@ jobs:
       - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
         with:
-          author_name: hardwareBenchmark
+          author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
           message: 'Auto-update pallet weights'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare commit for PR against dev
         run: |
@@ -140,7 +143,7 @@ jobs:
         id: open_pr
         uses: rematocorp/open-pull-request-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
           from-branch: auto-update-weights-for-dev-${{ github.sha }}
           to-branch: dev
           repository-owner: gluwa

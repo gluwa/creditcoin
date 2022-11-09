@@ -1,14 +1,11 @@
-import { KeyringPair } from 'creditcoin-js';
-
-import { Guid } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { creditcoinApi } from 'creditcoin-js';
+import { KeyringPair, Guid, POINT_01_CTC, Wallet, creditcoinApi } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, tryRegisterAddress } from './common';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
+import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+
 import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
 
 describe('Exempt', (): void => {
     let ccApi: CreditcoinApi;
@@ -18,7 +15,10 @@ describe('Exempt', (): void => {
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
 
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
@@ -58,6 +58,13 @@ describe('Exempt', (): void => {
         ]);
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+        );
+        const currency = testCurrency(eth.testTokenAddress);
+        const loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
         dealOrder = await registerDealOrder(

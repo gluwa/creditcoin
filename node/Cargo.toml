@@ -1,6 +1,6 @@
 [package]
 name = 'creditcoin-node'
-version = '2.0.0-beta.8'
+version = '2.211.1'
 description = 'A Creditcoin node built on substrate.'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 homepage = 'https://creditcoin.org'
@@ -23,25 +23,25 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [dependencies.creditcoin-node-runtime]
 path = '../runtime'
-version = '2.0.0-beta.8'
+version = '2.211.1'
 
 [dependencies]
 jsonrpc-core = '18.0.0'
 structopt = '0.3.8'
 sha3pow = { path = '../sha3pow' }
-num_cpus = "1.13.0"
+num_cpus = "1.14.0"
 futures-lite = "1.12.0"
 log = "0.4.17"
 codec = { package = "parity-scale-codec", version = "2.3.1" }
 tiny-bip39 = "1.0.0"
 hex = "0.4.3"
-creditcoin-node-rpc = { version = "2.0.0-beta.8", path = "./rpc" }
-creditcoin-runtime-api = { version = "2.0.0-beta.8", path = "../pallets/creditcoin/runtime-api" }
+creditcoin-node-rpc = { version = "2.211.1", path = "./rpc" }
+creditcoin-runtime-api = { version = "2.211.1", path = "../pallets/creditcoin/runtime-api" }
 primitives = { path = "../primitives" }
 thiserror = "1.0.37"
 
 [dependencies.tokio]
-version = "1.18.2"
+version = "1.21.2"
 default-features = false
 features = ["time"]
 
@@ -192,6 +192,11 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 [dependencies.sp-offchain]
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
+rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+
+[dependencies.sp-keystore]
+git = "https://github.com/gluwa/substrate.git"
+version = '0.10.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [features]

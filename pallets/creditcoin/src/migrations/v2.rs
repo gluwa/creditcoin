@@ -1,16 +1,54 @@
 // `block` added to `DealOrder` and `timestamp` added to `Transfer`
 
-use crate::{
-	AddressId, Blockchain, Config, ExternalAmount, ExternalTxId, OfferId, OrderId, TransferId,
-	TransferKind,
+use crate::ExternalAddress;
+use crate::{AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, TransferId};
+use frame_support::{
+	generate_storage_alias, pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat,
 };
-use frame_support::{generate_storage_alias, pallet_prelude::*, Identity, Twox64Concat};
 
-use super::v1::DealOrder as OldDealOrder;
-use super::v1::LoanTerms;
+pub use super::v1::Blockchain;
+pub use super::v1::DealOrder as OldDealOrder;
+pub use super::v1::LoanTerms;
+pub use super::v1::{AskOrder, AskTerms, BidOrder, BidTerms, InterestRate};
 
-use crate::Transfer;
+type OtherTransferKindLen = ConstU32<256>;
+pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
+#[derive(Encode, Decode, RuntimeDebug, Clone)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
+pub enum TransferKind {
+	Erc20(ExternalAddress),
+	Ethless(ExternalAddress),
+	Native,
+	Other(OtherTransferKind),
+}
+
+#[derive(Encode, Decode, RuntimeDebug)]
+#[cfg_attr(test, derive(PartialEq, Eq, Clone))]
+pub struct RepaymentOrderId<BlockNum, Hash>(BlockNum, Hash);
+
+#[derive(Encode, Decode)]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
+pub enum OrderId<BlockNum, Hash> {
+	Deal(DealOrderId<BlockNum, Hash>),
+	Repayment(RepaymentOrderId<BlockNum, Hash>),
+}
+
+#[derive(Encode, Decode)]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
+pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
+	pub blockchain: Blockchain,
+	pub kind: TransferKind,
+	pub from: AddressId<Hash>,
+	pub to: AddressId<Hash>,
+	pub order_id: OrderId<BlockNum, Hash>,
+	pub amount: ExternalAmount,
+	pub tx_id: ExternalTxId,
+	pub block: BlockNum,
+	pub is_processed: bool,
+	pub account_id: AccountId,
+	pub timestamp: Option<Moment>,
+}
 #[derive(Encode, Decode)]
 struct OldTransfer<AccountId, BlockNum, Hash> {
 	blockchain: Blockchain,
@@ -102,14 +140,31 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 mod test {
 	use core::convert::TryInto;
 
-	use super::{Config, DealOrder, Identity, OldDealOrder, OldTransfer, Transfer, Twox64Concat};
+	use super::{
+		Blockchain, Config, DealOrder, Identity, OldDealOrder, OldTransfer, OrderId, Transfer,
+		TransferKind, Twox64Concat,
+	};
 	use crate::{
 		mock::{ExtBuilder, Test},
 		tests::TestInfo,
-		Blockchain, DealOrderId, DoubleMapExt, Duration, OfferId, OrderId, TransferId,
-		TransferKind,
+		DealOrderId, DoubleMapExt, Duration, OfferId, TransferId,
 	};
 	use frame_support::generate_storage_alias;
+	use sp_runtime::traits::Hash;
+
+	impl<H> TransferId<H> {
+		pub fn from_old_blockchain<Config>(
+			blockchain: &Blockchain,
+			blockchain_tx_id: &[u8],
+		) -> TransferId<H>
+		where
+			Config: frame_system::Config,
+			<Config as frame_system::Config>::Hashing: Hash<Output = H>,
+		{
+			let key = crate::types::concatenate!(blockchain.as_bytes(), blockchain_tx_id);
+			TransferId::make(Config::Hashing::hash(&key))
+		}
+	}
 
 	generate_storage_alias!(
 		Creditcoin,
@@ -186,7 +241,7 @@ mod test {
 		ExtBuilder::default().build_and_execute(|| {
 			let test_info = TestInfo::new_defaults();
 			let blockchain = Blockchain::Ethereum;
-			let transfer_id = TransferId::new::<Test>(&blockchain, &[0]);
+			let transfer_id = TransferId::from_old_blockchain::<Test>(&blockchain, &[0]);
 			let old_transfer = OldTransfer {
 				blockchain: Blockchain::Ethereum,
 				kind: TransferKind::Native,

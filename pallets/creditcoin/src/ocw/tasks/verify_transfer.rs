@@ -11,10 +11,11 @@ use crate::{
 	ocw::{
 		self, parse_eth_address,
 		rpc::{self, Address, EthBlock, EthTransaction, EthTransactionReceipt},
-		OffchainResult, VerificationFailureCause, VerificationResult, ETH_CONFIRMATIONS,
+		OffchainError, OffchainResult, VerificationFailureCause, VerificationResult,
+		ETH_CONFIRMATIONS,
 	},
-	Blockchain, Config, ExternalAddress, ExternalAmount, ExternalTxId, Id, OrderId, Transfer,
-	TransferKind, UnverifiedTransfer,
+	Blockchain, Config, Currency, DealOrderId, EvmChainId, EvmInfo, ExternalAddress,
+	ExternalAmount, ExternalTxId, Id, LegacyTransferKind, Transfer, UnverifiedTransfer,
 };
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
@@ -102,23 +103,58 @@ pub(in crate::ocw) fn validate_ethless_transfer(
 	Ok(())
 }
 
+fn verify_chain_id(rpc_url: &str, expected: EvmChainId) -> VerificationResult<()> {
+	let id = rpc::eth_chain_id(rpc_url)?.as_u64();
+	if id == expected.as_u64() {
+		Ok(())
+	} else {
+		Err(OffchainError::IncorrectChainId)
+	}
+}
+
 impl<T: Config> crate::Pallet<T> {
 	pub fn verify_transfer_ocw(
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
 	) -> VerificationResult<Option<T::Moment>> {
 		let UnverifiedTransfer {
-			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
+			transfer: Transfer { blockchain, deal_order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
+			currency_to_check,
 			..
 		} = transfer;
 		log::debug!("verifying OCW transfer");
-		match kind {
-			TransferKind::Ethless(contract) => {
-				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
+		match currency_to_check {
+			crate::CurrencyOrLegacyTransferKind::TransferKind(kind) => match kind {
+				LegacyTransferKind::Ethless(contract) => Self::verify_ethless_transfer(
+					blockchain,
+					contract,
+					from,
+					to,
+					deal_order_id,
+					amount,
+					tx,
+					None,
+				),
+				LegacyTransferKind::Native
+				| LegacyTransferKind::Erc20(_)
+				| LegacyTransferKind::Other(_) => Err(VerificationFailureCause::UnsupportedMethod.into()),
 			},
-			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
-				Err(VerificationFailureCause::UnsupportedMethod.into())
+			crate::CurrencyOrLegacyTransferKind::Currency(currency) => match currency {
+				Currency::Evm(currency_type, EvmInfo { chain_id }) => match currency_type {
+					crate::EvmCurrencyType::SmartContract(contract, _) => {
+						Self::verify_ethless_transfer(
+							blockchain,
+							contract,
+							from,
+							to,
+							deal_order_id,
+							amount,
+							tx,
+							Some(*chain_id),
+						)
+					},
+				},
 			},
 		}
 	}
@@ -128,11 +164,17 @@ impl<T: Config> crate::Pallet<T> {
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
-		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
+		deal_order_id: &DealOrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
+		chain_id: Option<EvmChainId>,
 	) -> VerificationResult<Option<T::Moment>> {
 		let rpc_url = blockchain.rpc_url()?;
+
+		if let Some(chain_id) = chain_id {
+			verify_chain_id(&rpc_url, chain_id)?;
+		}
+
 		let tx = ocw::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
@@ -152,7 +194,7 @@ impl<T: Config> crate::Pallet<T> {
 			&tx_receipt,
 			&tx,
 			eth_tip,
-			T::HashIntoNonce::from(order_id.hash()),
+			T::HashIntoNonce::from(deal_order_id.hash()),
 		)?;
 
 		let timestamp = if let Some(num) = tx_block_num {

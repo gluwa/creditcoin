@@ -1,9 +1,13 @@
-import { ApiPromise, WsProvider, Keyring } from 'creditcoin-js';
+import { ApiPromise, WsProvider, Wallet, Keyring, CHAINS } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { main as deployCtcContract } from './ctc-deploy';
 
 const setup = async () => {
     process.env.NODE_ENV = 'test';
+
+    if ((global as any).CREDITCOIN_CREATE_WALLET === undefined) {
+        (global as any).CREDITCOIN_CREATE_WALLET = Wallet.createRandom; // eslint-disable-line
+    }
 
     // WARNING: when setting global variables `undefined' means no value has been assigned
     // to this variable up to now so we fall-back to the defaults.
@@ -18,8 +22,8 @@ const setup = async () => {
         (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL = true;
     }
 
-    if ((global as any).CREDITCOIN_ETHEREUM_NAME === undefined) {
-        (global as any).CREDITCOIN_ETHEREUM_NAME = 'Ethereum';
+    if ((global as any).CREDITCOIN_ETHEREUM_CHAIN === undefined) {
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN = CHAINS.hardhat;
     }
 
     if ((global as any).CREDITCOIN_ETHEREUM_NODE_URL === undefined) {

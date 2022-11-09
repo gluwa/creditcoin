@@ -1,14 +1,14 @@
-use crate::ocw::{
-	self,
-	errors::{VerificationFailureCause, VerificationResult},
-	rpc::{self, EthTransaction, EthTransactionReceipt},
-	OffchainResult, ETH_CONFIRMATIONS,
-};
 use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
-	types::{Blockchain, UnverifiedCollectedCoins},
-	ExternalAddress, ExternalAmount,
+	ocw::{
+		self,
+		errors::{VerificationFailureCause, VerificationResult},
+		rpc::{self, EthTransaction, EthTransactionReceipt},
+		OffchainResult, ETH_CONFIRMATIONS,
+	},
+	Blockchain,
 };
+use crate::{types::UnverifiedCollectedCoins, ExternalAddress, ExternalAmount};
 use codec::{Decode, Encode, MaxEncodedLen};
 use core::default::Default;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
@@ -28,7 +28,7 @@ pub struct GCreContract {
 }
 
 impl GCreContract {
-	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
+	const DEFAULT_CHAIN: Blockchain = Blockchain::ETHEREUM;
 }
 
 impl Default for GCreContract {
@@ -214,7 +214,7 @@ pub(crate) mod tests {
 	});
 
 	use crate::helpers::non_paying_error;
-	use crate::helpers::RefstrExt;
+	use crate::helpers::HexToAddress;
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, Balances, ExtBuilder, MockedRpcRequests,
 		OffchainState, Origin, RwLock, Test,
@@ -997,7 +997,7 @@ pub(crate) mod tests {
 		ext.build_and_execute(|| {
 			let contract = GCreContract {
 				address: sp_core::H160(hex!("aaaaabbbbbcccccdddddeeeeefffff08F3820419")),
-				chain: Blockchain::Rinkeby,
+				chain: Blockchain::RINKEBY,
 			};
 			assert_ok!(Creditcoin::<Test>::set_collect_coins_contract(
 				RawOrigin::Root.into(),

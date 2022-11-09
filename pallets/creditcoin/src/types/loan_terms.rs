@@ -1,5 +1,7 @@
 use core::ops::Deref;
 
+use crate::CurrencyId;
+
 use super::ExternalAmount;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::RuntimeDebug;
@@ -48,17 +50,18 @@ pub struct InterestRate {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct LoanTerms {
+pub struct LoanTerms<Hash> {
 	pub amount: ExternalAmount,
 	pub interest_rate: InterestRate,
 	pub term_length: Duration,
+	pub currency: CurrencyId<Hash>,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct AskTerms(LoanTerms);
+pub struct AskTerms<Hash>(LoanTerms<Hash>);
 
-impl Deref for AskTerms {
-	type Target = LoanTerms;
+impl<Hash> Deref for AskTerms<Hash> {
+	type Target = LoanTerms<Hash>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
@@ -74,9 +77,9 @@ impl<T: crate::Config> From<InvalidTermLengthError> for crate::Error<T> {
 	}
 }
 
-impl TryFrom<LoanTerms> for AskTerms {
+impl<Hash> TryFrom<LoanTerms<Hash>> for AskTerms<Hash> {
 	type Error = InvalidTermLengthError;
-	fn try_from(terms: LoanTerms) -> Result<Self, Self::Error> {
+	fn try_from(terms: LoanTerms<Hash>) -> Result<Self, Self::Error> {
 		if terms.term_length.is_zero() {
 			return Err(InvalidTermLengthError);
 		}
@@ -85,32 +88,32 @@ impl TryFrom<LoanTerms> for AskTerms {
 	}
 }
 
-impl AskTerms {
-	pub fn match_with(&self, bid_terms: &BidTerms) -> bool {
+impl<Hash> AskTerms<Hash> {
+	pub fn match_with(&self, bid_terms: &BidTerms<Hash>) -> bool {
 		self.amount == bid_terms.amount
 			&& self.interest_rate == bid_terms.interest_rate
 			&& self.term_length == bid_terms.term_length
 	}
 
-	pub fn agreed_terms(&self, bid_terms: BidTerms) -> Option<LoanTerms> {
+	pub fn agreed_terms(&self, bid_terms: BidTerms<Hash>) -> Option<LoanTerms<Hash>> {
 		self.match_with(&bid_terms).then_some(bid_terms.0)
 	}
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct BidTerms(LoanTerms);
+pub struct BidTerms<Hash>(LoanTerms<Hash>);
 
-impl Deref for BidTerms {
-	type Target = LoanTerms;
+impl<Hash> Deref for BidTerms<Hash> {
+	type Target = LoanTerms<Hash>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
 }
 
-impl TryFrom<LoanTerms> for BidTerms {
+impl<Hash> TryFrom<LoanTerms<Hash>> for BidTerms<Hash> {
 	type Error = InvalidTermLengthError;
-	fn try_from(terms: LoanTerms) -> Result<Self, Self::Error> {
+	fn try_from(terms: LoanTerms<Hash>) -> Result<Self, Self::Error> {
 		if terms.term_length.is_zero() {
 			return Err(InvalidTermLengthError);
 		}
@@ -119,23 +122,24 @@ impl TryFrom<LoanTerms> for BidTerms {
 	}
 }
 
-impl BidTerms {
-	pub fn match_with(&self, ask_terms: &AskTerms) -> bool {
+impl<Hash> BidTerms<Hash> {
+	pub fn match_with(&self, ask_terms: &AskTerms<Hash>) -> bool {
 		ask_terms.match_with(self)
 	}
 
-	pub fn agreed_terms(self, ask_terms: &AskTerms) -> Option<LoanTerms> {
+	pub fn agreed_terms(self, ask_terms: &AskTerms<Hash>) -> Option<LoanTerms<Hash>> {
 		ask_terms.agreed_terms(self)
 	}
 }
 
 #[cfg(test)]
-impl Default for LoanTerms {
+impl Default for LoanTerms<sp_core::H256> {
 	fn default() -> Self {
 		Self {
 			amount: Default::default(),
 			interest_rate: InterestRate::default(),
 			term_length: Duration::from_millis(100_000),
+			currency: CurrencyId::new::<crate::mock::Test>(&crate::Currency::default()),
 		}
 	}
 }

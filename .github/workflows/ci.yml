@@ -213,7 +213,7 @@ jobs:
           fi
 
           echo "INFO: MINING_KEY=$MINING_KEY"
-          cargo run --release -- --dev --mining-key $MINING_KEY >~/creditcoin-node.log 2>&1 &
+          cargo run --release -- --dev --mining-key $MINING_KEY --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
@@ -243,6 +243,11 @@ jobs:
           yarn build:types
           yarn format
 
+          echo "========== DEBUG DEBUG DEBUG =========="
+          git status --short
+          git diff
+          echo "======================================="
+
           if [ -n "$(git status --short)" ]; then
               git diff
               echo "::set-output name=git_diff::true"
@@ -270,7 +275,7 @@ jobs:
           author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
           message: "Auto-update creditcoin-js type definitions"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Upload logs
         uses: actions/upload-artifact@v3

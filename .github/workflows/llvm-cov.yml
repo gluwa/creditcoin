@@ -69,9 +69,10 @@ jobs:
           az storage blob upload-batch --account-name staticsitellvmhtml --auth-mode key -d "\$web" --destination-path $PR_NUMBER --overwrite -s ./target/llvm-cov
 
       - name: Post comment to PR
-        uses: mshick/add-pr-comment@v1
+        if: env.GITHUB_TOKEN
+        uses: mshick/add-pr-comment@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
         with:
           message: ${{ steps.coverage.outputs.uncovered_lines }}
           allow-repeats: false

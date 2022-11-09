@@ -55,13 +55,13 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AddressAlreadyRegistered: AugmentedError<ApiType>;
             /**
+             * The addresses specified are not on compatible external chains.
+             **/
+            AddressBlockchainMismatch: AugmentedError<ApiType>;
+            /**
              * The address format was not recognized for the given blockchain and external address.
              **/
             AddressFormatNotSupported: AugmentedError<ApiType>;
-            /**
-             * The addresses specified are not on compatible external chains.
-             **/
-            AddressPlatformMismatch: AugmentedError<ApiType>;
             /**
              * The account is already an authority.
              **/
@@ -87,6 +87,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             CurrencyAlreadyRegistered: AugmentedError<ApiType>;
             /**
+             * The currency with the given ID has not been registered.
+             **/
+            CurrencyNotRegistered: AugmentedError<ApiType>;
+            /**
              * The deal cannot be locked because it is not funded yet.
              **/
             DealNotFunded: AugmentedError<ApiType>;
@@ -110,6 +114,10 @@ declare module '@polkadot/api-base/types/errors' {
              * The deal order must be locked before it can be closed.
              **/
             DealOrderMustBeLocked: AugmentedError<ApiType>;
+            /**
+             * The legacy/deprecated version of an extrinsic was called, the new version should be used instead.
+             **/
+            DeprecatedExtrinsic: AugmentedError<ApiType>;
             /**
              * The deal order already exists.
              **/

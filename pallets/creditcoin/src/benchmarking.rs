@@ -2,14 +2,14 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, PublicToAddress, RefSliceOfTExt, RefstrExt};
+use crate::helpers::{EVMAddress, HexToAddress, PublicToAddress, RefSliceOfTExt};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
+use crate::types::Blockchain;
+use crate::Duration;
+#[allow(unused)]
 use crate::Pallet as Creditcoin;
-use crate::{
-	types::{Blockchain, Currency::Evm as CurrencyEvm},
-	Duration, EvmTransferKind,
-};
+use crate::{types::Currency::Evm as CurrencyEvm, EvmTransferKind};
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
@@ -54,16 +54,16 @@ benchmarks! {
 		let lender = lender_account::<T>(false);
 		let borrower = borrower_account::<T>(false);
 
-		let terms = get_all_fit_terms::<T>();
+		let terms = loan_terms::<T>();
 
 		let expiration_block = T::BlockNumber::one();
 		//generate this many filler asks
 		for i in 0..a {
-			insert_fake_ask::<T>(&borrower, expiration_block, i);
+			insert_fake_ask::<T>(&borrower, expiration_block, None, i);
 		}
 		//generate this many filler bids
 		for i in 0..b {
-			insert_fake_bid::<T>(&lender, expiration_block, i);
+			insert_fake_bid::<T>(&lender, expiration_block, None, i);
 		}
 		//generate this many matching offers,bids,asks
 		for i in 0..o {
@@ -111,7 +111,7 @@ benchmarks! {
 		let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 
-	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address,signature)
+	}: _(RawOrigin::Signed(who), Blockchain::ETHEREUM, address,signature)
 
 	claim_legacy_wallet {
 		let pubkey = {
@@ -140,7 +140,7 @@ benchmarks! {
 	add_ask_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = lender_account::<T>(true);
-		let terms = get_all_fit_terms::<T>();
+		let terms = loan_terms::<T>();
 		let expiration_block = T::BlockNumber::one();
 
 		let (address_id,ask_id,guid) = generate_ask::<T>(&who,&terms,&expiration_block,false,0).unwrap();
@@ -151,7 +151,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = borrower_account::<T>(true);
 
-		let loan_terms = get_all_fit_terms::<T>();
+		let loan_terms = loan_terms::<T>();
 
 		let expiration_block = T::BlockNumber::one();
 
@@ -162,7 +162,7 @@ benchmarks! {
 	add_offer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
-		let loan_terms = get_all_fit_terms::<T>();
+		let loan_terms = loan_terms::<T>();
 		let expiration_block = T::BlockNumber::one();
 
 		let (_, ask_id, bid_id) = generate_offer::<T>(&lender,&loan_terms,&expiration_block,false,0u8).unwrap();
@@ -173,7 +173,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender = lender_account::<T>(false);
 		let borrower= borrower_account::<T>(true);
-		let loan_terms = get_all_fit_terms::<T>();
+		let loan_terms = loan_terms::<T>();
 		let expiration_block = T::BlockNumber::one();
 
 		let (offer_id,ask_id,bid_id) = generate_offer::<T>(&lender, &loan_terms, &expiration_block, true,0u8).unwrap();
@@ -227,7 +227,7 @@ benchmarks! {
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,true,0u8);
-	}: _(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
+	}: register_funding_transfer(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
 
 	register_repayment_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -235,7 +235,26 @@ benchmarks! {
 		let repayment_amount = ExternalAmount::from(1);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,true,0u8);
-	}: _(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
+	}: register_repayment_transfer(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
+
+	register_funding_transfer_legacy {
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let lender: T::AccountId = lender_account::<T>(true);
+		loan_terms::<T>();
+		let deal_id = generate_deal_legacy::<T>(true,1u8).unwrap();
+		let tx = format!("0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620{:02x}", 0u8).as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".hex_to_address();
+	}: register_funding_transfer_legacy(RawOrigin::Signed(lender),LegacyTransferKind::Ethless(contract),deal_id,tx)
+
+	register_repayment_transfer_legacy {
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let borrower: T::AccountId = borrower_account::<T>(true);
+		loan_terms::<T>();
+		let repayment_amount = ExternalAmount::from(1);
+		let deal_id = generate_deal_legacy::<T>(true,0u8).unwrap();
+		let tx = format!("0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620{:02x}", 0u8).as_bytes().into_bounded();
+		let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".hex_to_address();
+	}: register_repayment_transfer_legacy(RawOrigin::Signed(borrower),LegacyTransferKind::Ethless(contract),repayment_amount,deal_id,tx)
 
 	close_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -255,7 +274,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender:T::AccountId = lender_account::<T>(true);
 		let lender_addr_id = register_eth_addr::<T>(&lender,"lender");
-		let terms = get_all_fit_terms::<T>();
+		let terms = loan_terms::<T>();
 		let expiry = T::BlockNumber::one();
 		let ask_guid = "ask_guid".as_bytes();
 		let bid_guid = "bid_guid".as_bytes();
@@ -338,7 +357,8 @@ benchmarks! {
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
-fn get_all_fit_terms<T: Config>() -> LoanTerms {
+fn loan_terms<T: Config>() -> LoanTerms<T::Hash> {
+	let currency = register_fake_currency::<T>();
 	LoanTerms {
 		amount: 10u64.into(),
 		interest_rate: InterestRate {
@@ -348,7 +368,35 @@ fn get_all_fit_terms<T: Config>() -> LoanTerms {
 			interest_type: InterestType::Simple,
 		},
 		term_length: Duration::new(1u64, 0u32),
+		currency,
 	}
+}
+
+fn loan_terms_legacy<T: Config>() -> LoanTerms<T::Hash> {
+	LoanTerms {
+		amount: 10u64.into(),
+		interest_rate: InterestRate {
+			rate_per_period: 1,
+			decimals: 1,
+			period: Duration::from_millis(100),
+			interest_type: InterestType::Simple,
+		},
+		term_length: Duration::new(1u64, 0u32),
+		currency: CurrencyId::placeholder(),
+	}
+}
+
+fn register_fake_currency<T: Config>() -> CurrencyId<T::Hash> {
+	let currency = CurrencyEvm(
+		EvmCurrencyType::SmartContract(
+			"0x0000000000000000000000000000000000000000".hex_to_address(),
+			[EvmTransferKind::Ethless].into_bounded(),
+		),
+		EvmInfo { chain_id: 1.into() },
+	);
+	let id = CurrencyId::new::<T>(&currency);
+	crate::Currencies::<T>::insert(&id, currency);
+	id
 }
 
 fn generate_funded_deal<T: Config>(
@@ -391,14 +439,12 @@ fn generate_transfer<T: Config>(
 		)
 	};
 	let tx = raw_tx.as_bytes().into_bounded();
-	let transfer_id = TransferId::new::<T>(&Blockchain::Ethereum, &tx);
-
-	let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
+	let transfer_id = TransferId::new::<T>(&Blockchain::ETHEREUM, &tx);
 
 	if swap_sender {
 		Creditcoin::<T>::register_repayment_transfer(
 			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract),
+			TransferKind::Evm(EvmTransferKind::Ethless),
 			gain.into(),
 			deal_id,
 			tx,
@@ -407,7 +453,7 @@ fn generate_transfer<T: Config>(
 	} else {
 		Creditcoin::<T>::register_funding_transfer(
 			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract),
+			TransferKind::Evm(EvmTransferKind::Ethless),
 			deal_id,
 			tx,
 		)
@@ -483,12 +529,32 @@ fn lender_account<T: Config>(whitelist: bool) -> T::AccountId {
 	lender
 }
 
+fn generate_deal_legacy<T: Config>(
+	insert: bool,
+	seed: u8,
+) -> Result<DealOrderId<T::BlockNumber, T::Hash>, crate::Error<T>> {
+	let terms = loan_terms_legacy::<T>();
+	let expiration_block = T::BlockNumber::one();
+
+	let borrower = borrower_account::<T>(false);
+	let origin = RawOrigin::Signed(borrower).into();
+	let (offer_id, _, _) = generate_offer_legacy::<T>(&terms, &expiration_block, true, seed)?;
+
+	let deal_id = DealOrderId::new::<T>(expiration_block, &offer_id);
+
+	if insert {
+		Creditcoin::<T>::add_deal_order(origin, offer_id, expiration_block).unwrap();
+	}
+
+	Ok(deal_id)
+}
+
 fn generate_deal<T: Config>(
 	insert: bool,
 	seed: u8,
 ) -> Result<DealOrderId<T::BlockNumber, T::Hash>, crate::Error<T>> {
 	let lender = lender_account::<T>(true);
-	let terms = get_all_fit_terms::<T>();
+	let terms = loan_terms::<T>();
 	let expiration_block = T::BlockNumber::one();
 
 	let borrower = borrower_account::<T>(false);
@@ -504,9 +570,51 @@ fn generate_deal<T: Config>(
 	Ok(deal_id)
 }
 
+fn generate_offer_legacy<T: Config>(
+	loan_terms: &LoanTerms<T::Hash>,
+	expiration_block: &T::BlockNumber,
+	call: bool,
+	seed: u8,
+) -> Result<
+	(
+		OfferId<T::BlockNumber, T::Hash>,
+		AskOrderId<T::BlockNumber, T::Hash>,
+		BidOrderId<T::BlockNumber, T::Hash>,
+	),
+	crate::Error<T>,
+> {
+	let lender = lender_account::<T>(false);
+
+	let origin = RawOrigin::Signed(lender.clone());
+
+	let ask_id =
+		insert_fake_ask::<T>(&lender, *expiration_block, Some(loan_terms.clone()), seed.into());
+	let borrower: T::AccountId = borrower_account::<T>(false);
+	let bid_id = insert_fake_bid::<T>(
+		&borrower,
+		*expiration_block,
+		Some(loan_terms.clone()),
+		u32::from(seed) + 1u32,
+	);
+
+	let offer_id = OfferId::new::<T>(*expiration_block, &ask_id, &bid_id);
+
+	if call {
+		Creditcoin::<T>::add_offer(
+			origin.into(),
+			ask_id.clone(),
+			bid_id.clone(),
+			*expiration_block,
+		)
+		.unwrap();
+	}
+
+	Ok((offer_id, ask_id, bid_id))
+}
+
 fn generate_offer<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms,
+	loan_terms: &LoanTerms<T::Hash>,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
@@ -543,13 +651,13 @@ fn register_eth_addr<T: Config>(who: &T::AccountId, seed: &str) -> AddressId<<T>
 	let ktypeid = KeyTypeId(*b"dumy");
 	let pkey = ecdsa_generate(ktypeid, Some(format!("//{}", seed).as_bytes().to_vec()));
 	let address = EVMAddress::from_public(&pkey);
-	let address_id = crate::AddressId::new::<T>(&Blockchain::Ethereum, &address);
+	let address_id = crate::AddressId::new::<T>(&Blockchain::ETHEREUM, &address);
 
 	let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 	let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 
 	let origin = RawOrigin::Signed(who.clone());
-	Creditcoin::<T>::register_address(origin.into(), Blockchain::Ethereum, address, signature)
+	Creditcoin::<T>::register_address(origin.into(), Blockchain::ETHEREUM, address, signature)
 		.unwrap();
 
 	address_id
@@ -557,7 +665,7 @@ fn register_eth_addr<T: Config>(who: &T::AccountId, seed: &str) -> AddressId<<T>
 
 fn generate_ask<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms,
+	loan_terms: &LoanTerms<T::Hash>,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
@@ -585,7 +693,7 @@ fn generate_ask<T: Config>(
 
 fn generate_bid<T: Config>(
 	who: &T::AccountId,
-	loan_terms: &LoanTerms,
+	loan_terms: &LoanTerms<T::Hash>,
 	expiration_block: &T::BlockNumber,
 	call: bool,
 	seed: u8,
@@ -614,7 +722,22 @@ fn generate_bid<T: Config>(
 
 fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
 	let address = format!("somefakeaddress{}", seed);
-	crate::AddressId::new::<T>(&Blockchain::Ethereum, address.as_bytes())
+	crate::AddressId::new::<T>(&Blockchain::ETHEREUM, address.as_bytes())
+}
+
+fn insert_fake_address<T: Config>(owner: T::AccountId, seed: u32) -> AddressId<T::Hash> {
+	let addr = format!("somefakeaddress{}", seed);
+	let id = crate::AddressId::new::<T>(&Blockchain::ETHEREUM, addr.as_bytes());
+
+	let address = crate::Address {
+		blockchain: Blockchain::ETHEREUM,
+		value: addr.as_bytes().into_bounded(),
+		owner,
+	};
+
+	crate::Addresses::<T>::insert(&id, address);
+
+	id
 }
 
 fn fake_ask_id<T: Config>(
@@ -625,19 +748,24 @@ fn fake_ask_id<T: Config>(
 	crate::AskOrderId::new::<T>(expiration_block, guid.as_bytes())
 }
 
-fn insert_fake_ask<T: Config>(who: &T::AccountId, expiration_block: BlockNumberFor<T>, seed: u32) {
-	let address_id = fake_address_id::<T>(seed);
+fn insert_fake_ask<T: Config>(
+	who: &T::AccountId,
+	expiration_block: BlockNumberFor<T>,
+	terms: Option<LoanTerms<T::Hash>>,
+	seed: u32,
+) -> AskOrderId<T::BlockNumber, T::Hash> {
+	let address_id = insert_fake_address::<T>(who.clone(), seed);
 	let ask_id = fake_ask_id::<T>(seed, expiration_block);
 	let ask = crate::AskOrder {
 		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
 		expiration_block,
 		lender: who.clone(),
 		lender_address_id: address_id,
-		terms: AskTerms::try_from(get_all_fit_terms::<T>()).unwrap(),
+		terms: AskTerms::try_from(terms.unwrap_or_else(|| loan_terms::<T>())).unwrap(),
 	};
 
-	crate::AskOrders::<T>::insert_id(ask_id, ask);
+	crate::AskOrders::<T>::insert_id(&ask_id, ask);
+	ask_id
 }
 
 fn fake_bid_id<T: Config>(
@@ -648,19 +776,24 @@ fn fake_bid_id<T: Config>(
 	crate::BidOrderId::new::<T>(expiration_block, guid.as_bytes())
 }
 
-fn insert_fake_bid<T: Config>(who: &T::AccountId, expiration_block: BlockNumberFor<T>, seed: u32) {
-	let address_id = fake_address_id::<T>(seed);
+fn insert_fake_bid<T: Config>(
+	who: &T::AccountId,
+	expiration_block: BlockNumberFor<T>,
+	terms: Option<LoanTerms<T::Hash>>,
+	seed: u32,
+) -> BidOrderId<T::BlockNumber, T::Hash> {
+	let address_id = insert_fake_address::<T>(who.clone(), seed);
 	let bid_id = fake_bid_id::<T>(seed, expiration_block);
 	let bid = crate::BidOrder {
 		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
 		expiration_block,
 		borrower: who.clone(),
 		borrower_address_id: address_id,
-		terms: BidTerms::try_from(get_all_fit_terms::<T>()).unwrap(),
+		terms: BidTerms::try_from(terms.unwrap_or_else(|| loan_terms::<T>())).unwrap(),
 	};
 
-	crate::BidOrders::<T>::insert_id(bid_id, bid);
+	crate::BidOrders::<T>::insert_id(&bid_id, bid);
+	bid_id
 }
 
 fn fake_offer_id<T: Config>(
@@ -684,7 +817,6 @@ fn insert_fake_offer<T: Config>(
 		ask_id,
 		bid_id,
 		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
 		expiration_block,
 		lender: who.clone(),
 	};
@@ -701,7 +833,7 @@ fn fake_deal_id<T: Config>(
 
 fn fake_transfer_id<T: Config>(seed: u32) -> TransferId<T::Hash> {
 	let tx_id = format!("somefaketransfertxid{}", seed);
-	crate::TransferId::new::<T>(&Blockchain::Ethereum, tx_id.as_bytes())
+	crate::TransferId::new::<T>(&Blockchain::ETHEREUM, tx_id.as_bytes())
 }
 
 fn insert_fake_deal<T: Config>(
@@ -717,7 +849,6 @@ fn insert_fake_deal<T: Config>(
 	let deal_id = fake_deal_id::<T>(expiration_block, &offer_id);
 	let deal = crate::DealOrder::<_, _, _, T::Moment> {
 		block: None,
-		blockchain: Blockchain::Ethereum,
 		borrower: who.clone(),
 		borrower_address_id: address_id.clone(),
 		lender_address_id: address_id,
@@ -729,7 +860,7 @@ fn insert_fake_deal<T: Config>(
 		},
 		offer_id,
 		repayment_transfer_id: None,
-		terms: get_all_fit_terms::<T>(),
+		terms: loan_terms::<T>(),
 		timestamp: pallet_timestamp::Pallet::<T>::now(),
 	};
 
@@ -752,22 +883,25 @@ fn insert_fake_unverified_transfer<T: Config>(
 			account_id: who.clone(),
 			amount: ExternalAmount::from(1),
 			block: System::<T>::block_number(),
-			blockchain: Blockchain::Ethereum,
+			blockchain: Blockchain::ETHEREUM,
 			from: fake_address_id::<T>(seed - 1),
 			to: fake_address_id::<T>(seed),
 			is_processed: false,
-			kind: TransferKind::Native,
-			order_id: OrderId::Deal(fake_deal_id::<T>(
+			kind: crate::TransferKind::Evm(crate::EvmTransferKind::Ethless),
+			deal_order_id: fake_deal_id::<T>(
 				deadline,
 				&fake_offer_id::<T>(
 					deadline,
 					&fake_ask_id::<T>(seed, deadline),
 					&fake_bid_id::<T>(seed, deadline),
 				),
-			)),
+			),
 			tx_id: format!("{:03x}", seed).as_bytes().into_bounded(),
 			timestamp: None,
 		},
+		currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
+			LegacyTransferKind::Native,
+		),
 	};
 
 	let task_id = TaskId::VerifyTransfer(transfer_id);

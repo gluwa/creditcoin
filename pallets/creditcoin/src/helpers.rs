@@ -1,20 +1,21 @@
 mod external_address;
-
-pub use external_address::{address_is_well_formed, generate_external_address};
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-pub use external_address::{EVMAddress, PublicToAddress};
+mod register_transfer;
 
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, TaskId, Transfer,
-	TransferId, TransferKind, UnverifiedTransfer,
+	DealOrderId, Error, Guid, Id, TransferId,
 };
-use frame_support::{ensure, traits::Get};
+pub use external_address::{address_is_well_formed, generate_external_address};
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+pub use external_address::{EVMAddress, PublicToAddress};
+use frame_support::ensure;
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+use frame_support::traits::Get;
 use frame_system::pallet_prelude::*;
-use sp_runtime::{traits::Saturating, RuntimeAppPublic};
+use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
-use sp_tracing as log;
+use tracing as log;
 
 #[allow(unused_macros)]
 macro_rules! try_get {
@@ -117,61 +118,6 @@ impl<T: Config> Pallet<T> {
 		UsedGuids::<T>::insert(guid, ());
 		Ok(())
 	}
-
-	pub fn register_transfer_internal(
-		who: T::AccountId,
-		from_id: AddressId<T::Hash>,
-		to_id: AddressId<T::Hash>,
-		transfer_kind: TransferKind,
-		amount: ExternalAmount,
-		order_id: OrderId<T::BlockNumber, T::Hash>,
-		blockchain_tx_id: ExternalTxId,
-	) -> Result<
-		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>),
-		crate::Error<T>,
-	> {
-		let from = Self::get_address(&from_id)?;
-		let to = Self::get_address(&to_id)?;
-
-		ensure!(from.owner == who, Error::<T>::NotAddressOwner);
-
-		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
-
-		ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
-
-		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
-		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
-
-		let block = Self::block_number();
-
-		let transfer = Transfer {
-			blockchain: from.blockchain,
-			kind: transfer_kind,
-			amount,
-			block,
-			from: from_id,
-			to: to_id,
-			order_id,
-			is_processed: false,
-			account_id: who,
-			tx_id: blockchain_tx_id,
-			timestamp: None,
-		};
-
-		let deadline = block.saturating_add(T::UnverifiedTaskTimeout::get());
-
-		let pending = UnverifiedTransfer {
-			from_external: from.value,
-			to_external: to.value,
-			transfer: transfer.clone(),
-			deadline,
-		};
-		let task_id = TaskId::from(transfer_id.clone());
-		let pending = Task::from(pending);
-		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
-
-		Ok((transfer_id, transfer))
-	}
 }
 
 pub fn non_paying_error<T: Config>(
@@ -187,10 +133,16 @@ pub fn non_paying_error<T: Config>(
 }
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
-#[extend::ext]
+#[extend::ext(name = HexToAddress)]
 pub(crate) impl<'a> &'a str {
 	fn hex_to_address(self) -> crate::ExternalAddress {
 		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+	}
+	fn into_bounded<S>(self) -> frame_support::BoundedVec<u8, S>
+	where
+		S: Get<u32>,
+	{
+		self.as_bytes().into_bounded()
 	}
 }
 

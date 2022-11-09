@@ -350,8 +350,7 @@ pub fn roll_by_with_ocw(n: BlockNumber) {
 
 // must be called in an externalities-provided environment
 pub fn set_rpc_uri(blockchain: &Blockchain, value: impl AsRef<[u8]>) {
-	let mut key = Vec::from(blockchain.as_bytes());
-	key.extend(b"-rpc-uri");
+	let key = blockchain.rpc_key();
 	let rpc_url_storage = StorageValueRef::persistent(&key);
 	rpc_url_storage.set(&value.as_ref());
 }
@@ -482,6 +481,7 @@ pub(crate) struct MockedRpcRequests {
 	pub(crate) get_transaction_receipt: Option<PendingRequest>,
 	pub(crate) get_block_number: Option<PendingRequest>,
 	pub(crate) get_block_by_number: Option<PendingRequest>,
+	pub(crate) chain_id: Option<PendingRequest>,
 }
 
 impl Default for MockedRpcRequests {
@@ -521,7 +521,20 @@ impl MockedRpcRequests {
 			uri,
 			responses,
 		));
-		Self { get_transaction, get_transaction_receipt, get_block_number, get_block_by_number }
+		let chain_id = Some(pending_rpc_request("eth_chainId", vec![], uri, responses));
+		Self {
+			get_transaction,
+			get_transaction_receipt,
+			get_block_number,
+			get_block_by_number,
+			chain_id,
+		}
+	}
+
+	pub(crate) fn mock_chain_id(&mut self, state: &mut OffchainState) -> &mut Self {
+		let chain_id = self.chain_id.take().unwrap();
+		state.expect_request(chain_id);
+		self
 	}
 
 	/// Mocks only the RPC response for get_transaction

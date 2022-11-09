@@ -1,32 +1,45 @@
-import { KeyringPair } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-import { AskOrderId, BidOrderId } from 'creditcoin-js/lib/model';
-import { creditcoinApi } from 'creditcoin-js';
+import { KeyringPair, POINT_01_CTC, creditcoinApi } from 'creditcoin-js';
+import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, testData } from './common';
+import { addAskAndBidOrder, loanTermsWithCurrency, testData } from 'creditcoin-js/lib/testUtils';
+import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+
 import { extractFee } from '../utils';
 
-describe('AddOffer', (): void => {
+describe('AddOffer', () => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
     let askOrderId: AskOrderId;
     let bidOrderId: BidOrderId;
+    let loanTerms: LoanTerms;
 
-    const { expirationBlock, keyring } = testData;
+    const testingData = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
+    const { expirationBlock, keyring } = testingData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         lender = keyring.addFromUri('//Alice');
         borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-    });
+
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            undefined,
+        );
+        const currency = testCurrency(eth.testTokenAddress);
+        loanTerms = await loanTermsWithCurrency(ccApi, currency);
+    }, 60000);
 
     afterAll(async () => {
         await ccApi.api.disconnect();
     });
 
     beforeEach(async () => {
-        [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
+        [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms, testingData);
     }, 210000);
 
     afterEach(async () => {

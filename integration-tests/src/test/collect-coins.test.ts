@@ -2,17 +2,23 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
 import { createCollectedCoinsId } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
 import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
-import { POINT_01_CTC } from '../constants';
-import { creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi, POINT_01_CTC } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, registerCtcDeployerAddress } from './common';
+import { testData, registerCtcDeployerAddress } from 'creditcoin-js/lib/testUtils';
 import { testIf } from '../utils';
+import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 
 describe('CollectCoins', (): void => {
     let ccApi: CreditcoinApi;
     let authority: KeyringPair;
 
-    const { keyring, blockchain } = testData;
+    const testingData = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
+    const { keyring, blockchain } = testingData;
+
     const evmAddress = '0xffffffffffffffffffffffffffffffffffffffff';
     const badHash = '0xbad';
     const addressId = createAddressId(blockchain, evmAddress);
@@ -40,7 +46,7 @@ describe('CollectCoins', (): void => {
             /* eslint-disable @typescript-eslint/naming-convention */
             const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
                 address: (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
-                chain: blockchain,
+                chain: createCreditcoinBlockchain(api, blockchain),
             });
 
             await api.tx.sudo
@@ -50,6 +56,9 @@ describe('CollectCoins', (): void => {
             deployerRegAddr = await registerCtcDeployerAddress(
                 ccApi,
                 (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
+                (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+                testingData,
             );
         }, 300_000);
 

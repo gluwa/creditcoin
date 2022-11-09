@@ -1,6 +1,6 @@
 [package]
 name = 'creditcoin-node-runtime'
-version = '2.0.0-beta.8'
+version = '2.211.1'
 description = 'Creditcoin runtime built on substrate.'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2018'
@@ -18,22 +18,22 @@ creditcoin-runtime-api = { path = "../pallets/creditcoin/runtime-api", default-f
 [dependencies.primitives]
 default-features = false
 path = "../primitives"
-version = "2.0.0-beta.8"
+version = "2.211.1"
 
 [dependencies.pallet-rewards]
 default-features = false
 path = '../pallets/rewards'
-version = '2.0.0-beta.8'
+version = '2.211.1'
 
 [dependencies.pallet-difficulty]
 default-features = false
 path = '../pallets/difficulty'
-version = '2.0.0-beta.8'
+version = '2.211.1'
 
 [dependencies.pallet-creditcoin]
 default-features = false
 path = '../pallets/creditcoin'
-version = '2.0.0-beta.8'
+version = '2.211.1'
 
 [build-dependencies.substrate-wasm-builder]
 git = "https://github.com/gluwa/substrate.git"
