@@ -219,10 +219,10 @@ export default {
     PalletCreditcoinEvent: {
         _enum: {
             AddressRegistered: '(H256,PalletCreditcoinAddress)',
-            CollectCoinsRegistered: '(H256,PalletCreditcoinUnverifiedCollectedCoins)',
+            CollectCoinsRegistered: '(H256,PalletCreditcoinCollectCoinsUnverifiedCollectedCoins)',
             TransferRegistered: '(H256,PalletCreditcoinTransfer)',
             TransferVerified: 'H256',
-            CollectedCoinsMinted: '(H256,PalletCreditcoinCollectedCoins)',
+            CollectedCoinsMinted: '(H256,PalletCreditcoinCollectCoinsCollectedCoins)',
             TransferProcessed: 'H256',
             AskOrderAdded: '(PalletCreditcoinAskOrderId,PalletCreditcoinAskOrder)',
             BidOrderAdded: '(PalletCreditcoinBidOrderId,PalletCreditcoinBidOrder)',
@@ -265,9 +265,9 @@ export default {
      **/
     PalletCreditcoinPlatformEvmChainId: 'Compact<u64>',
     /**
-     * Lookup40: pallet_creditcoin::types::UnverifiedCollectedCoins
+     * Lookup40: pallet_creditcoin::types::collect_coins::UnverifiedCollectedCoins
      **/
-    PalletCreditcoinUnverifiedCollectedCoins: {
+    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins: {
         to: 'Bytes',
         txId: 'Bytes',
         contract: 'PalletCreditcoinOcwTasksCollectCoinsGCreContract',
@@ -280,7 +280,7 @@ export default {
         chain: 'PalletCreditcoinPlatformBlockchain',
     },
     /**
-     * Lookup45: pallet_creditcoin::types::Transfer<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
+     * Lookup45: pallet_creditcoin::types::transfer::Transfer<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
      **/
     PalletCreditcoinTransfer: {
         blockchain: 'PalletCreditcoinPlatformBlockchain',
@@ -314,9 +314,9 @@ export default {
      **/
     PalletCreditcoinDealOrderId: '(u32,H256)',
     /**
-     * Lookup53: pallet_creditcoin::types::CollectedCoins<primitive_types::H256, Balance>
+     * Lookup53: pallet_creditcoin::types::collect_coins::CollectedCoins<primitive_types::H256, Balance>
      **/
-    PalletCreditcoinCollectedCoins: {
+    PalletCreditcoinCollectCoinsCollectedCoins: {
         to: 'H256',
         amount: 'u128',
         txId: 'Bytes',
@@ -504,7 +504,11 @@ export default {
         _enum: ['Unknown', 'BadFormat'],
     },
     /**
-     * Lookup82: frame_system::Phase
+     * Lookup82: pallet_offchain_task_scheduler::pallet::Event<T>
+     **/
+    PalletOffchainTaskSchedulerEvent: 'Null',
+    /**
+     * Lookup83: frame_system::Phase
      **/
     FrameSystemPhase: {
         _enum: {
@@ -514,14 +518,14 @@ export default {
         },
     },
     /**
-     * Lookup85: frame_system::LastRuntimeUpgradeInfo
+     * Lookup86: frame_system::LastRuntimeUpgradeInfo
      **/
     FrameSystemLastRuntimeUpgradeInfo: {
         specVersion: 'Compact<u32>',
         specName: 'Text',
     },
     /**
-     * Lookup88: frame_system::pallet::Call<T>
+     * Lookup89: frame_system::pallet::Call<T>
      **/
     FrameSystemCall: {
         _enum: {
@@ -559,7 +563,7 @@ export default {
         },
     },
     /**
-     * Lookup93: frame_system::limits::BlockWeights
+     * Lookup94: frame_system::limits::BlockWeights
      **/
     FrameSystemLimitsBlockWeights: {
         baseBlock: 'u64',
@@ -567,7 +571,7 @@ export default {
         perClass: 'FrameSupportWeightsPerDispatchClassWeightsPerClass',
     },
     /**
-     * Lookup94: frame_support::weights::PerDispatchClass<frame_system::limits::WeightsPerClass>
+     * Lookup95: frame_support::weights::PerDispatchClass<frame_system::limits::WeightsPerClass>
      **/
     FrameSupportWeightsPerDispatchClassWeightsPerClass: {
         normal: 'FrameSystemLimitsWeightsPerClass',
@@ -575,7 +579,7 @@ export default {
         mandatory: 'FrameSystemLimitsWeightsPerClass',
     },
     /**
-     * Lookup95: frame_system::limits::WeightsPerClass
+     * Lookup96: frame_system::limits::WeightsPerClass
      **/
     FrameSystemLimitsWeightsPerClass: {
         baseExtrinsic: 'u64',
@@ -584,13 +588,13 @@ export default {
         reserved: 'Option<u64>',
     },
     /**
-     * Lookup96: frame_system::limits::BlockLength
+     * Lookup97: frame_system::limits::BlockLength
      **/
     FrameSystemLimitsBlockLength: {
         max: 'FrameSupportWeightsPerDispatchClassU32',
     },
     /**
-     * Lookup97: frame_support::weights::PerDispatchClass<T>
+     * Lookup98: frame_support::weights::PerDispatchClass<T>
      **/
     FrameSupportWeightsPerDispatchClassU32: {
         normal: 'u32',
@@ -598,14 +602,14 @@ export default {
         mandatory: 'u32',
     },
     /**
-     * Lookup98: frame_support::weights::RuntimeDbWeight
+     * Lookup99: frame_support::weights::RuntimeDbWeight
      **/
     FrameSupportWeightsRuntimeDbWeight: {
         read: 'u64',
         write: 'u64',
     },
     /**
-     * Lookup99: sp_version::RuntimeVersion
+     * Lookup100: sp_version::RuntimeVersion
      **/
     SpVersionRuntimeVersion: {
         specName: 'Text',
@@ -618,7 +622,7 @@ export default {
         stateVersion: 'u8',
     },
     /**
-     * Lookup105: frame_system::pallet::Error<T>
+     * Lookup106: frame_system::pallet::Error<T>
      **/
     FrameSystemError: {
         _enum: [
@@ -631,7 +635,7 @@ export default {
         ],
     },
     /**
-     * Lookup106: pallet_timestamp::pallet::Call<T>
+     * Lookup107: pallet_timestamp::pallet::Call<T>
      **/
     PalletTimestampCall: {
         _enum: {
@@ -641,7 +645,7 @@ export default {
         },
     },
     /**
-     * Lookup108: pallet_balances::BalanceLock<Balance>
+     * Lookup109: pallet_balances::BalanceLock<Balance>
      **/
     PalletBalancesBalanceLock: {
         id: '[u8;8]',
@@ -649,26 +653,26 @@ export default {
         reasons: 'PalletBalancesReasons',
     },
     /**
-     * Lookup109: pallet_balances::Reasons
+     * Lookup110: pallet_balances::Reasons
      **/
     PalletBalancesReasons: {
         _enum: ['Fee', 'Misc', 'All'],
     },
     /**
-     * Lookup112: pallet_balances::ReserveData<ReserveIdentifier, Balance>
+     * Lookup113: pallet_balances::ReserveData<ReserveIdentifier, Balance>
      **/
     PalletBalancesReserveData: {
         id: '[u8;8]',
         amount: 'u128',
     },
     /**
-     * Lookup114: pallet_balances::Releases
+     * Lookup115: pallet_balances::Releases
      **/
     PalletBalancesReleases: {
         _enum: ['V1_0_0', 'V2_0_0'],
     },
     /**
-     * Lookup115: pallet_balances::pallet::Call<T, I>
+     * Lookup116: pallet_balances::pallet::Call<T, I>
      **/
     PalletBalancesCall: {
         _enum: {
@@ -701,7 +705,7 @@ export default {
         },
     },
     /**
-     * Lookup119: pallet_balances::pallet::Error<T, I>
+     * Lookup120: pallet_balances::pallet::Error<T, I>
      **/
     PalletBalancesError: {
         _enum: [
@@ -716,13 +720,13 @@ export default {
         ],
     },
     /**
-     * Lookup121: pallet_transaction_payment::Releases
+     * Lookup122: pallet_transaction_payment::Releases
      **/
     PalletTransactionPaymentReleases: {
         _enum: ['V1Ancient', 'V2'],
     },
     /**
-     * Lookup123: frame_support::weights::WeightToFeeCoefficient<Balance>
+     * Lookup124: frame_support::weights::WeightToFeeCoefficient<Balance>
      **/
     FrameSupportWeightsWeightToFeeCoefficient: {
         coeffInteger: 'u128',
@@ -731,7 +735,7 @@ export default {
         degree: 'u8',
     },
     /**
-     * Lookup124: pallet_sudo::pallet::Call<T>
+     * Lookup125: pallet_sudo::pallet::Call<T>
      **/
     PalletSudoCall: {
         _enum: {
@@ -755,7 +759,7 @@ export default {
         },
     },
     /**
-     * Lookup126: pallet_creditcoin::pallet::Call<T>
+     * Lookup127: pallet_creditcoin::pallet::Call<T>
      **/
     PalletCreditcoinCall: {
         _enum: {
@@ -862,15 +866,15 @@ export default {
         },
     },
     /**
-     * Lookup127: sp_core::ecdsa::Public
+     * Lookup128: sp_core::ecdsa::Public
      **/
     SpCoreEcdsaPublic: '[u8;33]',
     /**
-     * Lookup129: sp_core::ecdsa::Signature
+     * Lookup130: sp_core::ecdsa::Signature
      **/
     SpCoreEcdsaSignature: '[u8;65]',
     /**
-     * Lookup131: sp_runtime::MultiSigner
+     * Lookup132: sp_runtime::MultiSigner
      **/
     SpRuntimeMultiSigner: {
         _enum: {
@@ -880,15 +884,15 @@ export default {
         },
     },
     /**
-     * Lookup132: sp_core::ed25519::Public
+     * Lookup133: sp_core::ed25519::Public
      **/
     SpCoreEd25519Public: '[u8;32]',
     /**
-     * Lookup133: sp_core::sr25519::Public
+     * Lookup134: sp_core::sr25519::Public
      **/
     SpCoreSr25519Public: '[u8;32]',
     /**
-     * Lookup134: sp_runtime::MultiSignature
+     * Lookup135: sp_runtime::MultiSignature
      **/
     SpRuntimeMultiSignature: {
         _enum: {
@@ -898,15 +902,15 @@ export default {
         },
     },
     /**
-     * Lookup135: sp_core::ed25519::Signature
+     * Lookup136: sp_core::ed25519::Signature
      **/
     SpCoreEd25519Signature: '[u8;64]',
     /**
-     * Lookup137: sp_core::sr25519::Signature
+     * Lookup138: sp_core::sr25519::Signature
      **/
     SpCoreSr25519Signature: '[u8;64]',
     /**
-     * Lookup138: pallet_creditcoin::types::LegacyTransferKind
+     * Lookup139: pallet_creditcoin::types::LegacyTransferKind
      **/
     PalletCreditcoinLegacyTransferKind: {
         _enum: {
@@ -917,16 +921,16 @@ export default {
         },
     },
     /**
-     * Lookup139: pallet_creditcoin::types::TaskOutput<sp_core::crypto::AccountId32, Balance, BlockNum, primitive_types::H256, Moment>
+     * Lookup140: pallet_creditcoin::types::TaskOutput<sp_core::crypto::AccountId32, Balance, BlockNum, primitive_types::H256, Moment>
      **/
     PalletCreditcoinTaskOutput: {
         _enum: {
             VerifyTransfer: '(H256,PalletCreditcoinTransfer)',
-            CollectCoins: '(H256,PalletCreditcoinCollectedCoins)',
+            CollectCoins: '(H256,PalletCreditcoinCollectCoinsCollectedCoins)',
         },
     },
     /**
-     * Lookup140: pallet_creditcoin::types::TaskId<primitive_types::H256>
+     * Lookup141: pallet_creditcoin::types::TaskId<primitive_types::H256>
      **/
     PalletCreditcoinTaskId: {
         _enum: {
@@ -935,7 +939,7 @@ export default {
         },
     },
     /**
-     * Lookup141: pallet_difficulty::pallet::Call<T>
+     * Lookup142: pallet_difficulty::pallet::Call<T>
      **/
     PalletDifficultyCall: {
         _enum: {
@@ -948,7 +952,7 @@ export default {
         },
     },
     /**
-     * Lookup143: pallet_scheduler::pallet::Call<T>
+     * Lookup144: pallet_scheduler::pallet::Call<T>
      **/
     PalletSchedulerCall: {
         _enum: {
@@ -988,7 +992,7 @@ export default {
         },
     },
     /**
-     * Lookup145: frame_support::traits::schedule::MaybeHashed<creditcoin_node_runtime::Call, primitive_types::H256>
+     * Lookup146: frame_support::traits::schedule::MaybeHashed<creditcoin_node_runtime::Call, primitive_types::H256>
      **/
     FrameSupportScheduleMaybeHashed: {
         _enum: {
@@ -997,24 +1001,24 @@ export default {
         },
     },
     /**
-     * Lookup146: pallet_sudo::pallet::Error<T>
+     * Lookup147: pallet_sudo::pallet::Error<T>
      **/
     PalletSudoError: {
         _enum: ['RequireSudo'],
     },
     /**
-     * Lookup148: pallet_creditcoin::types::Task<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
+     * Lookup149: pallet_creditcoin::types::Task<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
      **/
     PalletCreditcoinTask: {
         _enum: {
-            VerifyTransfer: 'PalletCreditcoinUnverifiedTransfer',
-            CollectCoins: 'PalletCreditcoinUnverifiedCollectedCoins',
+            VerifyTransfer: 'PalletCreditcoinTransferUnverifiedTransfer',
+            CollectCoins: 'PalletCreditcoinCollectCoinsUnverifiedCollectedCoins',
         },
     },
     /**
-     * Lookup149: pallet_creditcoin::types::UnverifiedTransfer<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
+     * Lookup150: pallet_creditcoin::types::transfer::UnverifiedTransfer<sp_core::crypto::AccountId32, BlockNum, primitive_types::H256, Moment>
      **/
-    PalletCreditcoinUnverifiedTransfer: {
+    PalletCreditcoinTransferUnverifiedTransfer: {
         transfer: 'PalletCreditcoinTransfer',
         fromExternal: 'Bytes',
         toExternal: 'Bytes',
@@ -1022,7 +1026,7 @@ export default {
         currencyToCheck: 'PalletCreditcoinCurrencyOrLegacyTransferKind',
     },
     /**
-     * Lookup150: pallet_creditcoin::types::CurrencyOrLegacyTransferKind
+     * Lookup151: pallet_creditcoin::types::CurrencyOrLegacyTransferKind
      **/
     PalletCreditcoinCurrencyOrLegacyTransferKind: {
         _enum: {
@@ -1031,7 +1035,7 @@ export default {
         },
     },
     /**
-     * Lookup152: pallet_creditcoin::pallet::Error<T>
+     * Lookup153: pallet_creditcoin::pallet::Error<T>
      **/
     PalletCreditcoinError: {
         _enum: [
@@ -1092,20 +1096,20 @@ export default {
         ],
     },
     /**
-     * Lookup154: pallet_difficulty::DifficultyAndTimestamp<Moment>
+     * Lookup155: pallet_difficulty::DifficultyAndTimestamp<Moment>
      **/
     PalletDifficultyDifficultyAndTimestamp: {
         difficulty: 'U256',
         timestamp: 'u64',
     },
     /**
-     * Lookup156: pallet_difficulty::pallet::Error<T>
+     * Lookup157: pallet_difficulty::pallet::Error<T>
      **/
     PalletDifficultyError: {
         _enum: ['ZeroTargetTime', 'ZeroAdjustmentPeriod', 'NegativeAdjustmentPeriod'],
     },
     /**
-     * Lookup159: pallet_scheduler::ScheduledV3<frame_support::traits::schedule::MaybeHashed<creditcoin_node_runtime::Call, primitive_types::H256>, BlockNumber, creditcoin_node_runtime::OriginCaller, sp_core::crypto::AccountId32>
+     * Lookup160: pallet_scheduler::ScheduledV3<frame_support::traits::schedule::MaybeHashed<creditcoin_node_runtime::Call, primitive_types::H256>, BlockNumber, creditcoin_node_runtime::OriginCaller, sp_core::crypto::AccountId32>
      **/
     PalletSchedulerScheduledV3: {
         maybeId: 'Option<Bytes>',
@@ -1115,7 +1119,7 @@ export default {
         origin: 'CreditcoinNodeRuntimeOriginCaller',
     },
     /**
-     * Lookup160: creditcoin_node_runtime::OriginCaller
+     * Lookup161: creditcoin_node_runtime::OriginCaller
      **/
     CreditcoinNodeRuntimeOriginCaller: {
         _enum: {
@@ -1124,7 +1128,7 @@ export default {
         },
     },
     /**
-     * Lookup161: frame_system::RawOrigin<sp_core::crypto::AccountId32>
+     * Lookup162: frame_system::RawOrigin<sp_core::crypto::AccountId32>
      **/
     FrameSystemRawOrigin: {
         _enum: {
@@ -1134,47 +1138,53 @@ export default {
         },
     },
     /**
-     * Lookup162: sp_core::Void
+     * Lookup163: sp_core::Void
      **/
     SpCoreVoid: 'Null',
     /**
-     * Lookup163: pallet_scheduler::Releases
+     * Lookup164: pallet_scheduler::Releases
      **/
     PalletSchedulerReleases: {
         _enum: ['V1', 'V2', 'V3'],
     },
     /**
-     * Lookup164: pallet_scheduler::pallet::Error<T>
+     * Lookup165: pallet_scheduler::pallet::Error<T>
      **/
     PalletSchedulerError: {
         _enum: ['FailedToSchedule', 'NotFound', 'TargetBlockNumberInPast', 'RescheduleNoChange'],
     },
     /**
-     * Lookup167: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
+     * Lookup166: pallet_offchain_task_scheduler::pallet::Error<T>
+     **/
+    PalletOffchainTaskSchedulerError: {
+        _enum: ['OffchainSignedTxFailed', 'NoLocalAcctForSignedTx'],
+    },
+    /**
+     * Lookup169: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
      **/
     FrameSystemExtensionsCheckSpecVersion: 'Null',
     /**
-     * Lookup168: frame_system::extensions::check_tx_version::CheckTxVersion<T>
+     * Lookup170: frame_system::extensions::check_tx_version::CheckTxVersion<T>
      **/
     FrameSystemExtensionsCheckTxVersion: 'Null',
     /**
-     * Lookup169: frame_system::extensions::check_genesis::CheckGenesis<T>
+     * Lookup171: frame_system::extensions::check_genesis::CheckGenesis<T>
      **/
     FrameSystemExtensionsCheckGenesis: 'Null',
     /**
-     * Lookup172: frame_system::extensions::check_nonce::CheckNonce<T>
+     * Lookup174: frame_system::extensions::check_nonce::CheckNonce<T>
      **/
     FrameSystemExtensionsCheckNonce: 'Compact<u32>',
     /**
-     * Lookup173: frame_system::extensions::check_weight::CheckWeight<T>
+     * Lookup175: frame_system::extensions::check_weight::CheckWeight<T>
      **/
     FrameSystemExtensionsCheckWeight: 'Null',
     /**
-     * Lookup174: pallet_transaction_payment::ChargeTransactionPayment<T>
+     * Lookup176: pallet_transaction_payment::ChargeTransactionPayment<T>
      **/
     PalletTransactionPaymentChargeTransactionPayment: 'Compact<u128>',
     /**
-     * Lookup175: creditcoin_node_runtime::Runtime
+     * Lookup177: creditcoin_node_runtime::Runtime
      **/
     CreditcoinNodeRuntimeRuntime: 'Null',
 };
