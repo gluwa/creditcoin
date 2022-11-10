@@ -962,7 +962,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
@@ -1014,7 +1014,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "assert_matches",
  "creditcoin-node-runtime",
@@ -1035,7 +1035,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-runtime"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "assert_matches",
  "creditcoin-runtime-api",
@@ -1077,7 +1077,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-runtime-api"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -3990,7 +3990,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-creditcoin"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "assert_matches",
  "base58",
@@ -4028,7 +4028,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4062,7 +4062,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4583,7 +4583,7 @@ dependencies = [
 
 [[package]]
 name = "primitives"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "sp-core",
  "sp-tracing",
@@ -6134,7 +6134,7 @@ dependencies = [
 
 [[package]]
 name = "sha3pow"
-version = "2.211.1"
+version = "2.211.2"
 dependencies = [
  "assert_matches",
  "parity-scale-codec",
