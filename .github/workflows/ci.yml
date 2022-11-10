@@ -240,6 +240,7 @@ jobs:
         run: |
           pushd creditcoin-js/
 
+          ./get-metadata.sh
           yarn build:types
           yarn format
 
