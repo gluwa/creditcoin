@@ -229,6 +229,6 @@ jobs:
       - name: Make the release
         uses: softprops/action-gh-release@v1
         with:
-          files: 'artifact/creditcoin-${{ env.TAG_NAME }}-*'
+          files: 'artifact/creditcoin-*${{ env.TAG_NAME }}*'
           fail_on_unmatched_files: true
           name: ${{ env.TAG_NAME }}

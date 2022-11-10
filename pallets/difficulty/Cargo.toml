@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-difficulty'
-version = '2.211.1'
+version = '2.211.2'
 description = 'FRAME pallet for dynamic difficulty adjustment.'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2018'
@@ -16,7 +16,7 @@ log = "0.4.17"
 
 [dependencies.primitives]
 default-features = false
-version = "2.211.1"
+version = "2.211.2"
 path = "../../primitives"
 
 [dependencies.sp-arithmetic]
