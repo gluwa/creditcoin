@@ -123,6 +123,14 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
+      - name: Task Sheduler
+        shell: bash
+        continue-on-error: false
+        env:
+          PALLET: task-scheduler
+        run: |
+          ./scripts/bench.sh -p $PALLET -b
+
       - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
         with:
