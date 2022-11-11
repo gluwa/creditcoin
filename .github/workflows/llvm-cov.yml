@@ -43,6 +43,8 @@ jobs:
             export PR_NUMBER=$(echo $GITHUB_REF | sed "s|refs/pull/||" | sed "s|/merge||")
             echo "**For full LLVM coverage report [click here](https://staticsitellvmhtml.z13.web.core.windows.net/$PR_NUMBER/html/)!**" > uncovered-lines.log
 
+            export RUST_BACKTRACE=1
+
             cargo llvm-cov \
                 --workspace --html --show-missing-lines --doctests --hide-instantiations \
                 --ignore-filename-regex "(tests.rs|mock.rs)"
