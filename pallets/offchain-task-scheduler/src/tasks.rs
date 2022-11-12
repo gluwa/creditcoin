@@ -50,7 +50,6 @@ pub trait TaskV2<Runtime: SystemConfig> {
 	type Call;
 	type EvaluationError;
 	type SchedulerError;
-
 	/// A task generates its own id. This Id is used as a task id in the scheduler and also to check onchain storage persistence.
 	fn to_id(&self) -> Runtime::Hash;
 	//A task will know how to check onchain storage persistence.
