@@ -81,3 +81,5 @@ impl<T: Config> Pallet<T> {
 			.map(|_| synced_nonce_storage.set(&account_data.nonce.saturating_add(One::one())))
 	}
 }
+
+pub(crate) mod tests;
