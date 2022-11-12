@@ -13,6 +13,8 @@ use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
 use tracing as log;
 
+pub mod authority;
+pub mod mock;
 pub mod ocw;
 pub mod tasks;
 #[allow(clippy::unnecessary_cast)]
@@ -178,6 +180,27 @@ pub mod pallet {
 						log::error!("Task verification encountered a processing error {:?}", error)
 					},
 				}
+			}
+		}
+	}
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub authorities: Vec<T::AccountId>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<Runtime: Config> Default for GenesisConfig<Runtime> {
+		fn default() -> Self {
+			Self { authorities: vec![] }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for authority in &self.authorities {
+				Authorities::<T>::insert(authority.clone(), ());
 			}
 		}
 	}
