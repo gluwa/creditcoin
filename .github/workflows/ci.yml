@@ -250,7 +250,7 @@ jobs:
 
           if [ -n "$(git status --short)" ]; then
               git diff
-              echo "::set-output name=git_diff::true"
+              echo "git_diff=true" >> $GITHUB_OUTPUT
           fi
 
           popd
