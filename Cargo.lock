@@ -5246,9 +5246,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-core",
- "sp-io",
  "sp-runtime",
- "sp-tracing",
 ]
 
 [[package]]
