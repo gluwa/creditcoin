@@ -74,7 +74,7 @@ jobs:
           profile: minimal
           override: true
           components: clippy
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Run Clippy
         uses: actions-rs/cargo@v1
@@ -108,7 +108,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Check Build
         run: |
@@ -140,7 +140,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Configure flags for collecting coverage
         run: |
@@ -195,7 +195,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build SUT
         uses: actions-rs/cargo@v1
@@ -402,7 +402,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build benchmarks
         uses: actions-rs/cargo@v1
