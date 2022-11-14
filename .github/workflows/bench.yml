@@ -14,61 +14,61 @@ jobs:
     outputs:
       needs-bench: ${{ steps.version-check.outputs.needs_bench }}
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Check versions
-      id: version-check
-      run: |
-        ./scripts/check-spec-increase.sh "remotes/origin/$GITHUB_BASE_REF" "HEAD"
+      - name: Check versions
+        id: version-check
+        run: |
+          ./scripts/check-spec-increase.sh "remotes/origin/$GITHUB_BASE_REF" "HEAD"
 
   build-benchmarks:
     runs-on: ubuntu-20.04
     needs: check-if-needed
     if: needs.check-if-needed.outputs.needs-bench == 1
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Inspect benchmark CI config
-      run: |
-        PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
-        PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
-        if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
-            echo "FAIL: Pallet mismatch between source code and benchmark CI config"
-            exit 1
-        fi
+      - name: Inspect benchmark CI config
+        run: |
+          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
+          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              exit 1
+          fi
 
-    - name: Set-Up
-      run: |
-        sudo apt-get update
-        sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
-    - name: Configure rustc version
-      run: |
-        source ci/env
-        echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
 
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ env.RUSTC_VERSION }}
-        target: wasm32-unknown-unknown
-        profile: minimal
-        override: true
-    - uses: Swatinem/rust-cache@v2
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
 
-    - name: Build benchmarks
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --release --features runtime-benchmarks
+      - name: Build benchmarks
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features runtime-benchmarks
 
-    - name: Upload benchmark binary
-      uses: actions/upload-artifact@v3
-      with:
-        name: creditcoin-node
-        path: target/release/creditcoin-node
+      - name: Upload benchmark binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release/creditcoin-node
 
   hardware-benchmarks:
     runs-on: self-hosted
@@ -123,12 +123,20 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
+      - name: Task Scheduler
+        shell: bash
+        continue-on-error: false
+        env:
+          PALLET: offchain-task-scheduler
+        run: |
+          ./scripts/bench.sh -p $PALLET -b
+
       - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
         with:
           author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
-          message: 'Auto-update pallet weights'
+          message: "Auto-update pallet weights"
 
       - name: Prepare commit for PR against dev
         run: |
