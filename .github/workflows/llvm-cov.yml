@@ -53,7 +53,7 @@ jobs:
             UNCOVERED_LINES="${UNCOVERED_LINES//'%'/'%25'}"
             UNCOVERED_LINES="${UNCOVERED_LINES//$'\n'/'%0A'}"
             UNCOVERED_LINES="${UNCOVERED_LINES//$'\r'/'%0D'}"
-            echo "::set-output name=uncovered_lines::$UNCOVERED_LINES"
+            echo "uncovered_lines=$UNCOVERED_LINES" >> $GITHUB_OUTPUT
 
       - name: Azure login
         uses: azure/login@v1
