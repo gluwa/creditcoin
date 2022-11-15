@@ -530,6 +530,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_creditcoin, Creditcoin);
 			list_benchmark!(list, extra, pallet_rewards, Rewards);
 			list_benchmark!(list, extra, pallet_difficulty, Difficulty);
+			list_benchmark!(list, extra, pallet_offchain_task_scheduler, TaskScheduler);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -566,6 +567,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_creditcoin, Creditcoin);
 			add_benchmark!(params, batches, pallet_rewards, Rewards);
 			add_benchmark!(params, batches, pallet_difficulty, Difficulty);
+			add_benchmark!(params, batches, pallet_offchain_task_scheduler, TaskScheduler);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

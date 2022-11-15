@@ -20,6 +20,8 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::Config as SystemConfig;
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_timestamp::Config as TimestampConfig;
 use scale_info::TypeInfo;
 use sha2::Digest;
 use sp_core::ecdsa;
@@ -373,6 +375,22 @@ impl<'de> serde::Deserialize<'de> for LegacySighash {
 pub enum Task<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
 	CollectCoins(UnverifiedCollectedCoins),
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: SystemConfig + TimestampConfig> pallet_offchain_task_scheduler::benchmarking::TaskDefault<T>
+	for Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
+{
+	fn generate_from_seed(seed: u32) -> Self {
+		use crate::benchmarking::generate_fake_unverified_transfer;
+		use frame_benchmarking::{account, whitelist};
+		use sp_runtime::traits::One;
+		let who = account("{seed}", 0, 0);
+		whitelist!(who);
+		let pending_transfer =
+			generate_fake_unverified_transfer::<T>(&who, T::BlockNumber::one(), seed);
+		pending_transfer.into()
+	}
 }
 
 impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>

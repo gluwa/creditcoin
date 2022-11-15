@@ -37,8 +37,8 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: TaskScheduler PendingTasks (r:0 w:1)
 	fn migration_v7(t: u32, ) -> Weight {
 		(0 as Weight)
-			// Standard Error: 20_000
-			.saturating_add((14_896_000 as Weight).saturating_mul(t as Weight))
+			// Standard Error: 237_000
+			.saturating_add((17_901_000 as Weight).saturating_mul(t as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(t as Weight)))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
@@ -47,24 +47,17 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin DealOrders (r:511 w:510)
 	// Storage: Creditcoin BidOrders (r:0 w:255)
 	// Storage: Creditcoin Offers (r:0 w:255)
-	// Storage: Creditcoin PendingTasks (r:0 w:510)
-	// Storage: Creditcoin AskOrders (r:0 w:31)
-	fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32, ) -> Weight {
-		(0 as Weight)
-			// Standard Error: 20_580_000
-			.saturating_add((41_853_000 as Weight).saturating_mul(a as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((42_567_000 as Weight).saturating_mul(b as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((68_676_000 as Weight).saturating_mul(o as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((80_742_000 as Weight).saturating_mul(d as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((62_392_000 as Weight).saturating_mul(f as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((65_465_000 as Weight).saturating_mul(u as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((71_023_000 as Weight).saturating_mul(c as Weight))
+	// Storage: Creditcoin AskOrders (r:0 w:25)
+	fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, ) -> Weight {
+		(1_210_357_000 as Weight)
+			// Standard Error: 2_179_000
+			.saturating_add((1_253_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 2_179_000
+			.saturating_add((313_000 as Weight).saturating_mul(o as Weight))
+			// Standard Error: 2_179_000
+			.saturating_add((10_053_000 as Weight).saturating_mul(d as Weight))
+			// Standard Error: 2_179_000
+			.saturating_add((15_846_000 as Weight).saturating_mul(f as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(f as Weight)))
@@ -73,8 +66,6 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(o as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(f as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(u as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Creditcoin Addresses (r:1 w:1)
 	fn register_address() -> Weight {
