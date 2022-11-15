@@ -105,7 +105,7 @@ pub mod pallet {
 				Self::BlockNumber,
 				Self::Hash,
 				Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
-			> + AuthorityController<Self::AccountId>;
+			> + AuthorityController<AccountId = Self::AccountId>;
 	}
 
 	pub trait WeightInfo {

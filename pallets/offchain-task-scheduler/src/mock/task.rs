@@ -9,16 +9,17 @@ use std::thread_local;
 
 thread_local! { static PERSISTED:Cell<bool> = Cell::new(false); }
 
+pub(crate) fn is_persisted_replace(new: bool) -> bool {
+	tracing::warn!("forcing {new} is_persisted!");
+	PERSISTED.with(|cell| cell.replace(new))
+}
+
 #[derive(Debug, MaxEncodedLen, Encode, TypeInfo, Decode, Clone)]
 /// The task's result depends on the variant.
 pub enum MockTask<T> {
 	Remark(T),
 	Evaluation,
 	Scheduler,
-}
-
-pub(crate) fn is_persisted_replace(new: bool) -> bool {
-	PERSISTED.with(|cell| cell.replace(new))
 }
 
 use crate::tasks::{error::TaskError, ForwardTask, TaskV2};
@@ -57,8 +58,6 @@ impl<Runtime: Config, Nonce: Encode> TaskV2<Runtime> for MockTask<Nonce> {
 	) -> Result<SystemCall<Runtime>, TaskError<(), ()>> {
 		match self {
 			MockTask::Remark(nonce) => {
-				tracing::warn!("forcing is_persisted!");
-				crate::mock::task::is_persisted_replace(true);
 				Ok(frame_system::pallet::Call::remark_with_event { remark: nonce.encode() })
 			},
 			MockTask::Evaluation => Err(TaskError::Evaluation(())),
