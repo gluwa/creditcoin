@@ -1,17 +1,32 @@
 use crate::{
 	pallet::*, types::AddressId, Blockchain, Currency, CurrencyId, DealOrderId, Error,
-	EvmCurrencyType, EvmSupportedTransferKinds, EvmTransferKind, ExternalAddress, ExternalAmount,
-	ExternalTxId, Id, LegacyTransferKind, Task, Transfer, TransferId, TransferKind,
-	UnverifiedTransfer,
+	EvmCurrencyType, EvmSupportedTransferKinds, EvmTransferKind, ExternalAmount, ExternalTxId, Id,
+	LegacyTransferKind, Task, Transfer, TransferId, TransferKind, UnverifiedTransfer,
 };
 use frame_support::ensure;
 use frame_system::pallet_prelude::*;
+use frame_system::Config as SystemConfig;
 use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
+use pallet_timestamp::Config as TimestampConfig;
 use sp_std::prelude::*;
 
+type UnverifiedTransferFor<T> = UnverifiedTransfer<
+	<T as SystemConfig>::AccountId,
+	BlockNumberFor<T>,
+	<T as SystemConfig>::Hash,
+	<T as TimestampConfig>::Moment,
+>;
+
+type TransferFor<T> = Transfer<
+	<T as SystemConfig>::AccountId,
+	BlockNumberFor<T>,
+	<T as SystemConfig>::Hash,
+	<T as TimestampConfig>::Moment,
+>;
+
 impl<T: Config> Pallet<T> {
-	pub fn register_transfer_internal(
+	pub fn generate_transfer(
 		who: T::AccountId,
 		from_id: AddressId<T::Hash>,
 		to_id: AddressId<T::Hash>,
@@ -20,10 +35,7 @@ impl<T: Config> Pallet<T> {
 		deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
 		blockchain_tx_id: ExternalTxId,
 		currency: &CurrencyId<T::Hash>,
-	) -> Result<
-		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>),
-		crate::Error<T>,
-	> {
+	) -> Result<(TransferFor<T>, UnverifiedTransferFor<T>), crate::Error<T>> {
 		let from = Self::get_address(&from_id)?;
 		let to = Self::get_address(&to_id)?;
 
@@ -51,14 +63,49 @@ impl<T: Config> Pallet<T> {
 			timestamp: None,
 		};
 
-		let transfer_id = Self::check_and_submit_transfer_as_task(
-			from.value,
-			to.value,
+		let deadline = T::TaskScheduler::deadline();
+
+		Ok((
 			transfer.clone(),
-			crate::CurrencyOrLegacyTransferKind::Currency(currency),
+			UnverifiedTransfer {
+				from_external: from.value,
+				to_external: to.value,
+				transfer,
+				deadline,
+				currency_to_check: crate::CurrencyOrLegacyTransferKind::Currency(currency),
+			},
+		))
+	}
+
+	pub fn register_transfer_internal(
+		who: T::AccountId,
+		from_id: AddressId<T::Hash>,
+		to_id: AddressId<T::Hash>,
+		transfer_kind: TransferKind,
+		amount: ExternalAmount,
+		deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
+		blockchain_tx_id: ExternalTxId,
+		currency: &CurrencyId<T::Hash>,
+	) -> Result<
+		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>),
+		crate::Error<T>,
+	> {
+		let (transfer, pending) = Self::generate_transfer(
+			who,
+			from_id,
+			to_id,
+			transfer_kind,
+			amount,
+			deal_order_id,
+			blockchain_tx_id,
+			currency,
 		)?;
 
-		Ok((transfer_id, transfer))
+		let inner_id = TaskV2::<T>::to_id(&pending);
+
+		Self::check_and_submit_transfer_as_task(&inner_id, pending)?;
+
+		Ok((inner_id.into(), transfer))
 	}
 
 	pub fn register_transfer_internal_legacy(
@@ -131,46 +178,42 @@ impl<T: Config> Pallet<T> {
 			timestamp: None,
 		};
 
-		let transfer_id = Self::check_and_submit_transfer_as_task(
-			from.value,
-			to.value,
-			transfer.clone(),
-			crate::CurrencyOrLegacyTransferKind::TransferKind(transfer_kind),
-		)?;
+		let deadline = T::TaskScheduler::deadline();
 
-		Ok((transfer_id, transfer))
+		let pending = UnverifiedTransferFor::<T> {
+			from_external: from.value,
+			to_external: to.value,
+			transfer: transfer.clone(),
+			deadline,
+			currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(transfer_kind),
+		};
+
+		let inner_id = TaskV2::<T>::to_id(&pending);
+
+		Self::check_and_submit_transfer_as_task(&inner_id, pending)?;
+
+		Ok((inner_id.into(), transfer))
 	}
 
 	#[inline]
 	fn check_and_submit_transfer_as_task(
-		from_value: ExternalAddress,
-		to_value: ExternalAddress,
-		transfer: Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
-		transfer_kind: crate::CurrencyOrLegacyTransferKind,
-	) -> Result<TransferId<T::Hash>, crate::Error<T>> {
-		let deadline = T::TaskScheduler::deadline();
+		task_id: &T::Hash,
+		pending_transfer: UnverifiedTransferFor<T>,
+	) -> Result<(), crate::Error<T>> {
+		let deadline = pending_transfer.deadline;
 
-		let pending = UnverifiedTransfer {
-			from_external: from_value,
-			to_external: to_value,
-			transfer,
-			deadline,
-			currency_to_check: transfer_kind,
-		};
-
-		let transfer_id = TaskV2::<T>::to_id(&pending);
 		ensure!(
-			!<UnverifiedTransfer<_, _, _, _> as TaskV2::<T>>::is_persisted(&transfer_id),
+			!<UnverifiedTransfer<_, _, _, _> as TaskV2::<T>>::is_persisted(task_id),
 			Error::<T>::TransferAlreadyRegistered
 		);
 		ensure!(
-			!T::TaskScheduler::is_scheduled(&deadline, &transfer_id),
+			!T::TaskScheduler::is_scheduled(&deadline, task_id),
 			Error::<T>::TransferAlreadyRegistered
 		);
-		let pending = Task::from(pending);
-		T::TaskScheduler::insert(&deadline, &transfer_id, pending);
+		let pending_transfer = Task::from(pending_transfer);
+		T::TaskScheduler::insert(&deadline, task_id, pending_transfer);
 
-		Ok(transfer_id.into())
+		Ok(())
 	}
 }
 

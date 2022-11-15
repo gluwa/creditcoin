@@ -1,4 +1,4 @@
-//use crate::mock::runtime::Call;
+use crate::tasks::{error::TaskError, ForwardTask, TaskV2};
 use crate::Config;
 use codec::{Decode, Encode, MaxEncodedLen};
 use core::cell::Cell;
@@ -9,6 +9,10 @@ use std::thread_local;
 
 thread_local! { static PERSISTED:Cell<bool> = Cell::new(false); }
 
+pub(crate) fn is_persisted_replace(new: bool) -> bool {
+	PERSISTED.with(|cell| cell.replace(new))
+}
+
 #[derive(Debug, MaxEncodedLen, Encode, TypeInfo, Decode, Clone)]
 /// The task's result depends on the variant.
 pub enum MockTask<T> {
@@ -16,12 +20,6 @@ pub enum MockTask<T> {
 	Evaluation,
 	Scheduler,
 }
-
-pub(crate) fn is_persisted_replace(new: bool) -> bool {
-	PERSISTED.with(|cell| cell.replace(new))
-}
-
-use crate::tasks::{error::TaskError, ForwardTask, TaskV2};
 
 impl<T: Config, Nonce: Encode> ForwardTask<T> for MockTask<Nonce>
 where

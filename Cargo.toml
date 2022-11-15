@@ -8,7 +8,7 @@ members = [
     'pallets/rewards',
     'pallets/difficulty',
     'pallets/creditcoin',
-    'pallets/offchain-task-scheduler/runtime-api',
+    'pallets/creditcoin/runtime-api',
     'pallets/offchain-task-scheduler',
     'runtime',
     "sha3pow",

@@ -110,7 +110,7 @@ pub mod pallet {
 
 	pub trait WeightInfo {
 		fn migration_v7(t: u32) -> Weight;
-		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32) -> Weight;
+		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
@@ -552,10 +552,6 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
 
-			let unverified_task_count = match PendingTasks::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
-
 			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
 				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
 			};
@@ -589,8 +585,6 @@ pub mod pallet {
 				offer_count,
 				deals_count,
 				funded_deals_count,
-				unverified_task_count,
-				0,
 			)
 		}
 

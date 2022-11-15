@@ -27,7 +27,7 @@ version = '2.211.1'
 
 [dependencies.pallet-offchain-task-scheduler]
 default-features = false
-path = '../pallets/task-scheduler'
+path = '../pallets/offchain-task-scheduler'
 version = '0.1.0'
 
 [dependencies.pallet-difficulty]
@@ -228,6 +228,7 @@ runtime-benchmarks = [
     'pallet-rewards/runtime-benchmarks',
     'pallet-difficulty/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
+    'pallet-offchain-task-scheduler/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
 ]
 std = [
