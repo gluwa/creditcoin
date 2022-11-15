@@ -5,14 +5,17 @@ use frame_support::traits::Get;
 use frame_system::offchain::AppCrypto;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::Config as SystemConfig;
+pub use ocw::nonce::nonce_key;
 pub use pallet::{Authorities, Config, Error, Event, Pallet, WeightInfo};
 pub use pallet::{__substrate_call_check, __substrate_event_check};
 use sp_core::offchain::KeyTypeId;
 use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
-use sp_tracing as log;
+use tracing as log;
 
-mod ocw;
+pub mod authority;
+pub mod mock;
+pub mod ocw;
 pub mod tasks;
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
@@ -43,7 +46,7 @@ pub mod crypto {
 pub mod pallet {
 	use super::{
 		log,
-		tasks::{self, VerifiableTask},
+		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
 	use codec::FullCodec;
@@ -57,7 +60,11 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + CreateSignedTransaction<Self::TaskCall> {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type Task: TypeInfo + FullCodec + MaxEncodedLen + VerifiableTask<Self> + Debug;
+		type Task: TypeInfo
+			+ FullCodec
+			+ MaxEncodedLen
+			+ ForwardTask<Self, Call = Self::TaskCall>
+			+ Debug;
 		type UnverifiedTaskTimeout: Get<<Self as SystemConfig>::BlockNumber>;
 		type WeightInfo: WeightInfo;
 		type AuthorityId: AppCrypto<
@@ -176,6 +183,27 @@ pub mod pallet {
 			}
 		}
 	}
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub authorities: Vec<T::AccountId>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<Runtime: Config> Default for GenesisConfig<Runtime> {
+		fn default() -> Self {
+			Self { authorities: vec![] }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for authority in &self.authorities {
+				Authorities::<T>::insert(authority.clone(), ());
+			}
+		}
+	}
 }
 
 type TaskFor<T> = <T as Config>::Task;
@@ -187,7 +215,7 @@ impl<Runtime: Config>
 	fn deadline() -> BlockNumberFor<Runtime> {
 		let offset = Runtime::UnverifiedTaskTimeout::get();
 		let block = frame_system::Pallet::<Runtime>::current_block_number();
-		offset.saturating_add(block).into()
+		offset.saturating_add(block)
 	}
 	fn is_scheduled(deadline: &BlockNumberFor<Runtime>, id: &HashFor<Runtime>) -> bool {
 		crate::pallet::PendingTasks::<Runtime>::contains_key(deadline, id)

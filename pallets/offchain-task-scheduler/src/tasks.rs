@@ -2,6 +2,7 @@ pub mod error;
 pub mod macros;
 
 pub use super::pallet::Config;
+use crate::SystemConfig;
 use alloc::fmt::Debug;
 use error::TaskError;
 use frame_support::dispatch::Vec;
@@ -15,7 +16,7 @@ use sp_runtime::SaturatedConversion;
 
 #[inline]
 pub(crate) fn storage_key<Id: Encode>(id: &Id) -> Vec<u8> {
-	const TASK_GUARD: &[u8] = b"offchain-task-scheduler/task/guard/";
+	const TASK_GUARD: &[u8] = b"task-scheduler/task/guard/";
 	id.using_encoded(|encoded_id| TASK_GUARD.iter().chain(encoded_id).copied().collect())
 }
 
@@ -35,16 +36,20 @@ where
 	)
 }
 
-pub trait VerifiableTask<Runtime: Config> {
+pub trait ForwardTask<Runtime: SystemConfig> {
+	type Call;
 	type EvaluationError: Debug;
 	type SchedulerError: Debug;
 	fn forward_task(
 		&self,
 		deadline: Runtime::BlockNumber,
-	) -> Result<Runtime::TaskCall, TaskError<Self::EvaluationError, Self::SchedulerError>>;
+	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>>;
 }
 
-pub trait TaskV2<Runtime: frame_system::Config, Call, EvaluationError, SchedulerError> {
+pub trait TaskV2<Runtime: frame_system::Config> {
+	type Call;
+	type EvaluationError;
+	type SchedulerError;
 	/// A task generates its own id. This Id is used as a task id in the scheduler and also to check onchain storage persistence.
 	fn to_id(&self) -> Runtime::Hash;
 	//A task will know how to check onchain storage persistence.
@@ -55,12 +60,12 @@ pub trait TaskV2<Runtime: frame_system::Config, Call, EvaluationError, Scheduler
 		&self,
 		deadline: Runtime::BlockNumber,
 		id: &Runtime::Hash,
-	) -> Result<Call, TaskError<EvaluationError, SchedulerError>>;
+	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>>;
 	/// complete task verification flow.
 	fn forward_task(
 		&self,
 		deadline: Runtime::BlockNumber,
-	) -> Result<Call, TaskError<EvaluationError, SchedulerError>> {
+	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
 		let id = self.to_id();
 		if Self::is_persisted(&id) {
 			return Err(TaskError::FinishedTask);
