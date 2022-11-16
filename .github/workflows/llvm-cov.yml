@@ -40,6 +40,9 @@ jobs:
       - name: Run tests
         id: coverage
         run: |
+            echo "***** DEBUG "
+            cat /proc/cpuinfo
+            echo "***** END ****"
             export PR_NUMBER=$(echo $GITHUB_REF | sed "s|refs/pull/||" | sed "s|/merge||")
             echo "**For full LLVM coverage report [click here](https://staticsitellvmhtml.z13.web.core.windows.net/$PR_NUMBER/html/)!**" > uncovered-lines.log
 
