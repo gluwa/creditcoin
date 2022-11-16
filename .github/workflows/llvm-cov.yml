@@ -49,6 +49,7 @@ jobs:
             export RUST_BACKTRACE=1
 
             cargo llvm-cov \
+                --jobs 1 \
                 --workspace --html --show-missing-lines --doctests --hide-instantiations \
                 --ignore-filename-regex "(tests.rs|mock.rs)"
 
