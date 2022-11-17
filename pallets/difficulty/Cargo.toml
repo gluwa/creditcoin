@@ -25,11 +25,10 @@ git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
-[dependencies.codec]
+[dependencies.parity-scale-codec]
 default-features = false
 features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+version = '2.3.1'
 
 [dependencies.frame-benchmarking]
 default-features = false
@@ -79,7 +78,8 @@ git = "https://github.com/gluwa/substrate.git"
 version = '4.1.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
-[dev-dependencies.sp-tracing]
+[dev-dependencies.tracing]
+package = "sp-tracing"
 default-features = false
 git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
@@ -95,7 +95,7 @@ rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
-    'codec/std',
+    'parity-scale-codec/std',
     'scale-info/std',
     'frame-support/std',
     'frame-system/std',

@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::Codec;
+use parity_scale_codec::Codec;
 extern crate alloc;
 use alloc::vec::Vec;
 

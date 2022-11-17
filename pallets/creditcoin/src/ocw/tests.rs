@@ -40,11 +40,11 @@ use crate::{
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
-use codec::Decode;
 use ethabi::Token;
 use ethereum_types::{BigEndianHash, H160, U256, U64};
 use frame_support::{assert_ok, once_cell::sync::Lazy, BoundedVec};
 use frame_system::Pallet as System;
+use parity_scale_codec::Decode;
 use sp_core::H256;
 use sp_io::offchain;
 use sp_runtime::offchain::storage::MutateStorageError;

@@ -3,7 +3,7 @@ use crate::{
 	types::{ExternalAddress, ExternalTxId},
 	CollectedCoinsId, Config, TransferId,
 };
-use codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode};
 
 use frame_support::{generate_storage_alias, migration, pallet_prelude::*, Identity};
 
