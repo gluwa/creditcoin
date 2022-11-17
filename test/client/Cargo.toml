@@ -15,7 +15,7 @@ sc-service = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5
 ] }
 sp-runtime = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
 sp-core = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sc-client-db = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a", features = [
+sc-client-db = { version = "0.10.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a", features = [
     "test-helpers",
 ] }
 sc-executor = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
