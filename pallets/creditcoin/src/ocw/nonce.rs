@@ -1,6 +1,6 @@
 use crate::{Config, Pallet};
 use alloc::vec::Vec;
-use codec::Encode;
+use parity_scale_codec::Encode;
 use sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use sp_runtime::offchain::Duration;
 
@@ -34,11 +34,11 @@ mod tests {
 	use crate::types::{Address, AddressId};
 	use crate::Pallet as Creditcoin;
 	use assert_matches::assert_matches;
-	use codec::Decode;
 	use core::sync::atomic::AtomicU64;
 	use frame_support::assert_ok;
 	use frame_system::Config as SystemConfig;
 	use frame_system::Pallet as System;
+	use parity_scale_codec::Decode;
 	use sp_runtime::offchain::storage::StorageValueRef;
 	use sp_runtime::offchain::testing::TestOffchainExt;
 	use sp_runtime::traits::IdentifyAccount;
