@@ -3,8 +3,8 @@
 mod nonce_monitor;
 
 use crate::cli::Cli;
-use codec::Encode;
 use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
+use parity_scale_codec::Encode;
 use sc_client_api::{Backend, ExecutorProvider};
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;

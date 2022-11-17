@@ -5,10 +5,10 @@ use crate::{
 	loan_terms::{Decimals, Duration},
 	AddressId, Config, ExternalAmount, OfferId, RatePerPeriod, TransferId,
 };
-use codec::{Decode, Encode};
 use frame_support::generate_storage_alias;
 use frame_support::pallet_prelude::*;
 use frame_support::{Identity, Twox64Concat};
+use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
 
 type OldInterestRate = u64;

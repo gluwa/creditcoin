@@ -2,7 +2,7 @@ use core::str::Utf8Error;
 
 use super::rpc::errors::RpcError;
 use alloc::string::FromUtf8Error;
-use codec::{Decode, Encode, MaxEncodedLen};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::offchain::storage::StorageRetrievalError;
 

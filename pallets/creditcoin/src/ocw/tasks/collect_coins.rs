@@ -9,12 +9,12 @@ use crate::{
 	Blockchain,
 };
 use crate::{types::UnverifiedCollectedCoins, ExternalAddress, ExternalAmount};
-use codec::{Decode, Encode, MaxEncodedLen};
 use core::default::Default;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::U64;
 use frame_support::{ensure, RuntimeDebug};
 use hex_literal::hex;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::H160;
 use sp_runtime::SaturatedConversion;
@@ -230,10 +230,10 @@ pub(crate) mod tests {
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
 	use alloc::sync::Arc;
 	use assert_matches::assert_matches;
-	use codec::Decode;
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
 	use frame_system::RawOrigin;
+	use parity_scale_codec::Decode;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 	use sp_runtime::{ArithmeticError, TokenError};
 

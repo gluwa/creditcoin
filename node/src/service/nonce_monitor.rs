@@ -1,8 +1,8 @@
 use std::{convert::TryInto, time::Duration};
 
-use codec::Decode;
 use creditcoin_node_runtime::AccountId;
 use jsonrpc_core::{futures::channel::mpsc, futures::join, Failure, Response, Success};
+use parity_scale_codec::Decode;
 use sc_client_api::Backend;
 use sc_service::{Arc, RpcHandlers, RpcSession};
 use sp_keystore::CryptoStore;
@@ -22,7 +22,7 @@ enum Error {
 	Serde(sc_telemetry::serde_json::Error),
 	JsonRpc(jsonrpc_core::Error),
 	Rpc(String),
-	Codec(codec::Error),
+	Codec(parity_scale_codec::Error),
 	KeyStore(String),
 	Signer(String),
 }
