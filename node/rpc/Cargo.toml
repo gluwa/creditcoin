@@ -1,30 +1,31 @@
 [package]
 name = "creditcoin-node-rpc"
-version = "2.211.2"
-edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
 [dependencies]
-jsonrpc-core = "18.0.0"
+creditcoin-node-runtime = { workspace = true }
+creditcoin-runtime-api = { workspace = true }
+frame-system = { features = ["std"], workspace = true }
+jsonrpc-core = { workspace = true }
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
-primitives = { path = "../../primitives", features = ["std", "prometheus"] }
-serde = { version = "1.0.147", features = ["derive"] }
-sc-rpc = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-runtime = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-blockchain = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-api = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
 jsonrpc-pubsub = "18.0.0"
-frame-system = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-creditcoin-runtime-api = { path = "../../pallets/creditcoin/runtime-api" }
-creditcoin-node-runtime = { path = "../../runtime" }
+primitives = { workspace = true }
+sc-rpc = { workspace = true }
+serde = { workspace = true }
+sp-api = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-runtime = { features = ["std"], workspace = true }
 
 [dev-dependencies]
+assert_matches = { workspace = true }
 test-client = { path = "../../test/client" }
-
-[dev-dependencies.assert_matches]
-version = "1.5.0"
 
 [features]
 runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']
