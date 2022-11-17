@@ -1,9 +1,9 @@
 // address registration now verifies ownership, so removed existing addresses
 use super::v3;
-use codec::{Decode, Encode};
 use frame_support::traits::Get;
 use frame_support::Blake2_128Concat;
 use frame_support::{dispatch::Weight, generate_storage_alias};
+use parity_scale_codec::{Decode, Encode};
 use sp_runtime::SaturatedConversion;
 
 use crate::{Config, ExternalAddress};
