@@ -5,7 +5,6 @@ pub use loan_terms::*;
 pub use platform::*;
 
 use crate::ocw::tasks::collect_coins::GCreContract;
-use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use extend::ext;
 use frame_support::{
 	storage::types::QueryKindTrait,
@@ -13,6 +12,7 @@ use frame_support::{
 	BoundedVec, RuntimeDebug, StorageHasher,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
+use parity_scale_codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha2::Digest;
 use sp_core::ecdsa;
@@ -519,7 +519,7 @@ mod test {
 	use crate::{
 		helpers::HexToAddress, mock, ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
 	};
-	use codec::{Decode, Encode};
+	use parity_scale_codec::{Decode, Encode};
 	use sp_runtime::testing::H256;
 
 	type AccountId = mock::AccountId;
@@ -549,7 +549,7 @@ mod test {
 
 	macro_rules! trait_tests {
 	($($name:ident: $type:ty: $default_value:expr,)*) => {
-		use codec::MaxEncodedLen;
+		use parity_scale_codec::MaxEncodedLen;
 		use scale_info::TypeInfo;
 	$(
 		mod $name {

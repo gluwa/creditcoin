@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-parity-scale-codec = "2.3.1"
+parity-scale-codec = { version = "2.3.1" }
 rand = { version = "0.8.4", features = ["small_rng"] }
 sha3 = "0.10.6"
 scale-info = "1.0.0"

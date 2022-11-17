@@ -1,9 +1,9 @@
 // `interest_type` added to `LoanTerms`
 
 use super::v2;
-use codec::{Decode, Encode};
 use frame_support::dispatch::Weight;
 use frame_support::{generate_storage_alias, traits::Get, Identity, Twox64Concat};
+use parity_scale_codec::{Decode, Encode};
 
 use crate::{AddressId, Config, Duration, ExternalAmount, OfferId, TransferId};
 

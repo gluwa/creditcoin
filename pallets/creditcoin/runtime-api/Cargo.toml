@@ -9,7 +9,7 @@ edition = "2021"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "2.3.1", default-features = false }
+parity-scale-codec = { version = "2.3.1", default-features = false }
 
 [dependencies.sp-api]
 git = "https://github.com/gluwa/substrate.git"
@@ -19,4 +19,4 @@ default-features = false
 
 [features]
 default = ["std"]
-std = ["sp-api/std", "codec/std"]
+std = ["sp-api/std", "parity-scale-codec/std"]
