@@ -1,203 +1,74 @@
 [package]
 name = 'creditcoin-node'
-version = '2.211.2'
 description = 'A Creditcoin node built on substrate.'
-authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
-homepage = 'https://creditcoin.org'
-edition = '2018'
-license = 'Unlicense'
-publish = false
-repository = 'https://github.com/gluwa/creditcoin-substrate/'
 build = 'build.rs'
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = 'creditcoin-node'
 
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }
+
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
-[build-dependencies.substrate-build-script-utils]
-git = "https://github.com/gluwa/substrate.git"
-version = '3.0.0'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.creditcoin-node-runtime]
-path = '../runtime'
-version = '2.211.2'
-
 [dependencies]
-jsonrpc-core = '18.0.0'
-structopt = '0.3.8'
-sha3pow = { path = '../sha3pow' }
-num_cpus = "1.14.0"
-futures-lite = "1.12.0"
-log = "0.4.17"
-parity-scale-codec = { version = "2.3.1" }
-tiny-bip39 = "1.0.0"
-hex = "0.4.3"
 creditcoin-node-rpc = { version = "2.211.2", path = "./rpc" }
-creditcoin-runtime-api = { version = "2.211.2", path = "../pallets/creditcoin/runtime-api" }
-primitives = { path = "../primitives" }
+creditcoin-node-runtime = { workspace = true }
+creditcoin-runtime-api = { workspace = true }
+frame-benchmarking = { features = ["std"], workspace = true }
+frame-benchmarking-cli = { workspace = true }
+futures-lite = "1.12.0"
+hex = { workspace = true }
+jsonrpc-core = { workspace = true }
+log = { workspace = true }
+num_cpus = "1.14.0"
+pallet-transaction-payment-rpc = { workspace = true }
+parity-scale-codec = { features = ["std"], workspace = true }
+primitives = { workspace = true }
+sc-basic-authorship = { workspace = true }
+sc-cli = { workspace = true }
+sc-client-api = { workspace = true }
+sc-consensus = { workspace = true }
+sc-consensus-pow = { workspace = true }
+sc-executor = { workspace = true }
+sc-keystore = { workspace = true }
+sc-offchain = { workspace = true }
+sc-rpc = { workspace = true }
+sc-rpc-api = { workspace = true }
+sc-service = { workspace = true }
+sc-telemetry = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sha3pow = { path = '../sha3pow' }
+sp-api = { workspace = true }
+sp-block-builder = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-consensus = { workspace = true }
+sp-consensus-pow = { workspace = true }
+sp-core = { features = ["std"], workspace = true }
+sp-inherents = { features = ["std"], workspace = true }
+sp-keystore = { workspace = true }
+sp-offchain = { features = ["std"], workspace = true }
+sp-runtime = { features = ["std"], workspace = true }
+sp-timestamp = { workspace = true }
+structopt = '0.3.8'
+substrate-frame-rpc-system = { workspace = true }
+substrate-prometheus-endpoint = { workspace = true }
 thiserror = "1.0.37"
+tiny-bip39 = "1.0.0"
 
 [dependencies.tokio]
 version = "1.22.0"
 default-features = false
 features = ["time"]
-
-[dependencies.frame-benchmarking]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.frame-benchmarking-cli]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.pallet-transaction-payment-rpc]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-basic-authorship]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-cli]
-features = ['wasmtime']
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-client-api]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-consensus]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-consensus-pow]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-executor]
-features = ['wasmtime']
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-keystore]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-offchain]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-rpc]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-rpc-api]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-service]
-features = ['wasmtime']
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-telemetry]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-transaction-pool]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-transaction-pool-api]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-api]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-block-builder]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-blockchain]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-consensus]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-consensus-pow]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-inherents]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-core]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-runtime]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-timestamp]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.substrate-frame-rpc-system]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.substrate-prometheus-endpoint]
-git = "https://github.com/gluwa/substrate.git"
-version = "0.10.0-dev"
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-offchain]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-keystore]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
 [features]
 default = ['std']
