@@ -1,7 +1,7 @@
 use core::convert::TryFrom;
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{traits::ConstU32, BoundedVec, RuntimeDebug};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::traits::Hash as HashT;
 use strum::EnumCount;
