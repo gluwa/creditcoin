@@ -1,96 +1,34 @@
 [package]
 name = 'pallet-rewards'
-version = '2.211.2'
 description = 'FRAME pallet for rewarding block authors.'
-authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
-edition = '2018'
-license = 'Unlicense'
-publish = false
-repository = 'https://github.com/gluwa/creditcoin-substrate/'
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
-log = "0.4.17"
+frame-benchmarking = { optional = true, workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+log = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+sp-consensus-pow = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
 
-[dependencies.parity-scale-codec]
-default-features = false
-features = ['derive']
-version = '2.3.1'
-
-[dependencies.frame-benchmarking]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-optional = true
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-std]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.frame-support]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.frame-system]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.scale-info]
-default-features = false
-features = ['derive']
-version = '1.0'
-
-[dependencies.sp-consensus-pow]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-runtime]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-
-[dev-dependencies.sp-core]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.sp-io]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.sp-runtime]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.pallet-balances]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.tracing]
-package = "sp-tracing"
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+[dev-dependencies]
+pallet-balances = { features = ["std"], workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+tracing = { workspace = true }
 
 [features]
 default = ['std']

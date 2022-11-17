@@ -1,7 +1,11 @@
 [package]
 name = "test-client"
-version = "0.1.0"
-edition = "2021"
+
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,14 +13,10 @@ edition = "2021"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-creditcoin-node-runtime = { path = "../../runtime" }
-sc-service = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a", features = [
-    "test-helpers",
-] }
-sp-runtime = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sp-core = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-sc-client-db = { version = "0.10.0-dev", git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a", features = [
-    "test-helpers",
-] }
-sc-executor = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
-substrate-test-client = { git = "https://github.com/gluwa/substrate.git", rev = "973dd744f5f7c6322799bbfa29366588e0267b0a" }
+creditcoin-node-runtime = { workspace = true }
+sc-client-db = { workspace = true }
+sc-executor = { workspace = true }
+sc-service = { workspace = true }
+sp-core = { features = ["std"], workspace = true }
+sp-runtime = { features = ["std"], workspace = true }
+substrate-test-client = { workspace = true }

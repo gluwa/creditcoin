@@ -1,56 +1,27 @@
 [package]
 name = "sha3pow"
-version = "2.211.2"
-edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
 [dependencies]
-parity-scale-codec = { version = "2.3.1" }
+parity-scale-codec = { features = ["std"], workspace = true }
+primitives = { workspace = true }
 rand = { version = "0.8.4", features = ["small_rng"] }
+sc-client-api = { workspace = true }
+sc-consensus-pow = { workspace = true }
+sc-keystore = { workspace = true }
+scale-info = { features = ["std"], workspace = true }
 sha3 = "0.10.6"
-scale-info = "1.0.0"
-primitives = { path = "../primitives" }
+sp-api = { workspace = true }
+sp-application-crypto = { workspace = true }
+sp-consensus-pow = { features = ["std"], workspace = true }
+sp-core = { features = ["std"], workspace = true }
 
-[dependencies.sc-consensus-pow]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-keystore]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sc-client-api]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-api]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-consensus-pow]
-git = "https://github.com/gluwa/substrate.git"
-version = '0.10.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-application-crypto]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-core]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.sp-runtime]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.assert_matches]
-version = "1.5.0"
+[dev-dependencies]
+assert_matches = { workspace = true }
+sp-runtime = { features = ["std"], workspace = true }
