@@ -79,7 +79,7 @@ impl pallet_timestamp::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	sp_tracing::try_init_simple();
+	tracing::try_init_simple();
 	let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));

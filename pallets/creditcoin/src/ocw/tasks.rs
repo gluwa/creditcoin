@@ -6,8 +6,8 @@ use crate::types::{
 	CollectedCoins, Task, TaskOutput, Transfer, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
 use crate::{CollectedCoinsId, Config, TaskData, TransferId};
-use codec::Encode;
 use collect_coins::GCreContract;
+use parity_scale_codec::Encode;
 pub use sp_runtime::offchain::storage_lock::{BlockAndTime, Lockable, StorageLock};
 use sp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
 use sp_std::vec::Vec;
