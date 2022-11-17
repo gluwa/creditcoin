@@ -1,21 +1,19 @@
 [package]
 name = "creditcoin-runtime-api"
-version = "2.211.2"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-parity-scale-codec = { version = "2.3.1", default-features = false }
-
-[dependencies.sp-api]
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-default-features = false
+parity-scale-codec = { workspace = true }
+sp-api = { workspace = true }
 
 [features]
 default = ["std"]
