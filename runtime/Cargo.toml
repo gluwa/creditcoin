@@ -210,6 +210,12 @@ git = "https://github.com/gluwa/substrate.git"
 version = '4.0.0-dev'
 rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
 
+[dependencies.pallet-chaos]
+default-features = false
+git = "https://github.com/gluwa/pallet-chaos.git"
+version = '3.0.0-monthly-2021-10'
+rev = "18cd6db115dde40cf802a7d1f91255dc6870c8f1"
+
 [features]
 default = ['std']
 runtime-benchmarks = [
@@ -219,6 +225,7 @@ runtime-benchmarks = [
     'frame-system/runtime-benchmarks',
     'hex-literal',
     'pallet-creditcoin/runtime-benchmarks',
+    'pallet-chaos/runtime-benchmarks',
     'pallet-balances/runtime-benchmarks',
     'pallet-rewards/runtime-benchmarks',
     'pallet-difficulty/runtime-benchmarks',
@@ -234,6 +241,7 @@ std = [
     'frame-system/std',
     'pallet-balances/std',
     'pallet-creditcoin/std',
+    'pallet-chaos/std',
     'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
     'pallet-rewards/std',

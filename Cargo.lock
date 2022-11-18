@@ -1047,6 +1047,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "hex-literal",
  "pallet-balances",
+ "pallet-chaos",
  "pallet-creditcoin",
  "pallet-difficulty",
  "pallet-randomness-collective-flip",
@@ -3986,6 +3987,18 @@ dependencies = [
  "scale-info",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-chaos"
+version = "3.0.0-monthly-2021-10"
+source = "git+https://github.com/gluwa/pallet-chaos.git?rev=18cd6db115dde40cf802a7d1f91255dc6870c8f1#18cd6db115dde40cf802a7d1f91255dc6870c8f1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
 ]
 
 [[package]]

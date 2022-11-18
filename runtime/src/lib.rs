@@ -43,6 +43,7 @@ pub use frame_support::{
 	StorageValue,
 };
 pub use pallet_balances::Call as BalancesCall;
+pub use pallet_chaos;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
 #[cfg(any(feature = "std", test))]
@@ -345,6 +346,10 @@ where
 	}
 }
 
+impl pallet_chaos::Config for Runtime {
+	type Event = Event;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -361,6 +366,7 @@ construct_runtime!(
 		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
 		Rewards: pallet_rewards::{Pallet, Storage, Event<T>},
 		Scheduler: pallet_scheduler,
+		Chaos: pallet_chaos::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
