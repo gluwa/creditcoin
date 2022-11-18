@@ -1,5 +1,5 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
-import { Address, AddressId, Blockchain, EventReturnJoinType } from '../model';
+import { Address, AddressId, Blockchain, CHAINS, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, processEvents } from './common';
 import { TxCallback, TxFailureCallback } from '../types';
@@ -9,8 +9,29 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 
 export type AddressRegistered = EventReturnJoinType<AddressId, Address>;
 
+const assertUnreachable = (_x: never): never => {
+    throw new Error("Didn't expect to get here");
+};
+
+const blockchainToString = (blockchain: Blockchain): string => {
+    switch (blockchain) {
+        case CHAINS.ethereum:
+            return 'ethereum';
+        case CHAINS.rinkeby:
+            return 'rinkeby';
+        case CHAINS.luniverse:
+            return 'luniverse';
+    }
+    switch (blockchain.platform) {
+        case 'Evm':
+            return `evm-${blockchain.chainId.toString()}`;
+        default:
+            return assertUnreachable(blockchain.platform);
+    }
+};
+
 export const createAddressId = (blockchain: Blockchain, externalAddress: string) => {
-    const blockchainBytes = Buffer.from(blockchain.toString().toLowerCase());
+    const blockchainBytes = Buffer.from(blockchainToString(blockchain));
     const key = u8aConcat(blockchainBytes, u8aToU8a(externalAddress));
     return blake2AsHex(key);
 };
