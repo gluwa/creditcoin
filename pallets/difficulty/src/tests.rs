@@ -1,8 +1,9 @@
 use crate::{
-	mock::*, next_difficulty, DifficultyAdjustmentPeriod, DifficultyAndTimestamp,
+	mock::{RuntimeOrigin as Origin, *},
+	next_difficulty, DifficultyAdjustmentPeriod, DifficultyAndTimestamp,
 	PreviousDifficultiesAndTimestamps, TargetBlockTime, WeightInfo,
 };
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, weights::Weight};
 use pallet_timestamp::{self as timestamp};
 use sp_runtime::traits::BadOrigin;
 
@@ -176,9 +177,10 @@ fn exercise_on_timestamp_set_when_previous_is_configured() {
 
 #[test]
 fn exercise_weightinfo_functions() {
+	const ZERO: Weight = Weight::zero();
 	let result = super::weights::WeightInfo::<Test>::set_target_block_time();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::set_adjustment_period();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 }
