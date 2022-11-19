@@ -31,7 +31,7 @@ pub(crate) fn ethless_transfer_function_abi() -> Function {
 			Param { name: "_sig".into(), kind: ParamType::Bytes, internal_type: None },
 		],
 		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
-		constant: false,
+		constant: Some(false),
 		state_mutability: StateMutability::NonPayable,
 	}
 }

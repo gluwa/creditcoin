@@ -1,6 +1,6 @@
 use crate::{
 	helpers::{non_paying_error, EVMAddress, HexToAddress, PublicToAddress},
-	mock::*,
+	mock::{RuntimeOrigin as Origin, *},
 	types::DoubleMapExt,
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
 	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
@@ -10,7 +10,7 @@ use crate::{
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
+use frame_support::{assert_noop, assert_ok, traits::Get, weights::Weight, BoundedVec};
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
 use sp_core::Pair;
@@ -26,9 +26,9 @@ use std::convert::{TryFrom, TryInto};
 pub impl<'a, S, T> &'a [T]
 where
 	S: Get<u32>,
-	T: Clone,
+	T: Clone + std::fmt::Debug,
 {
-	fn try_into_bounded(self) -> Result<BoundedVec<T, S>, ()> {
+	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, Vec<T>> {
 		core::convert::TryFrom::try_from(self.to_vec())
 	}
 	fn into_bounded(self) -> BoundedVec<T, S> {
@@ -411,7 +411,7 @@ fn register_address_should_work() {
 
 		assert_matches!(
 			event,
-			crate::mock::Event::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
 				assert_eq!(registered_address_id, address_id);
 				assert_eq!(registered_address, address);
 			}
@@ -1068,7 +1068,7 @@ fn lock_deal_order_should_emit_deal_order_locked_event() {
 		));
 		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
 
-		assert_matches!(event, crate::mock::Event::Creditcoin(crate::Event::DealOrderLocked(id))=>{
+		assert_matches!(event, crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderLocked(id))=>{
 			assert_eq!(id,deal_order_id);
 		});
 	});
@@ -1550,7 +1550,7 @@ fn fund_deal_order_works() {
 		let event2 = all_events.pop().expect("Second EventRecord").event;
 		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::TransferProcessed(id)) =>{
 				assert_eq!(transfer_id, id)
 
 			}
@@ -1559,7 +1559,7 @@ fn fund_deal_order_works() {
 		let event1 = all_events.pop().expect("First EventRecord").event;
 		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderFunded(id))=>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderFunded(id))=>{
 				assert_eq!(deal_order_id, id)
 			}
 		);
@@ -1593,7 +1593,7 @@ fn claim_legacy_wallet_works() {
 		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
 		assert!(matches!(
 			event,
-			crate::mock::Event::Creditcoin(crate::Event::LegacyWalletClaimed(..))
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::LegacyWalletClaimed(..))
 		));
 		assert_eq!(frame_system::pallet::Account::<Test>::get(&claimer).data.free, 1000000);
 	});
@@ -1615,13 +1615,13 @@ fn add_authority_should_fail_when_authority_already_exists() {
 		let acct: AccountId = AccountId::new([0; 32]);
 
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
+			crate::mock::RuntimeOrigin::from(root.clone()),
 			acct.clone(),
 		));
 
 		// try again
 		assert_noop!(
-			Creditcoin::add_authority(crate::mock::Origin::from(root), acct,),
+			Creditcoin::add_authority(crate::mock::RuntimeOrigin::from(root), acct,),
 			TestError::AlreadyAuthority,
 		);
 	});
@@ -1633,7 +1633,9 @@ fn add_authority_works_for_root() {
 		let root = RawOrigin::Root;
 		let acct: AccountId = AccountId::new([0; 32]);
 
-		assert_ok!(Creditcoin::add_authority(crate::mock::Origin::from(root), acct.clone(),));
+		assert_ok!(
+			Creditcoin::add_authority(crate::mock::RuntimeOrigin::from(root), acct.clone(),)
+		);
 
 		let value = crate::Pallet::<Test>::authorities(acct);
 		assert_eq!(value, Some(()))
@@ -2009,16 +2011,28 @@ fn register_deal_order_should_succeed() {
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 		let event4 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event4, crate::mock::Event::Creditcoin(crate::Event::DealOrderAdded(..))));
+		assert!(matches!(
+			event4,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderAdded(..))
+		));
 
 		let event3 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event3, crate::mock::Event::Creditcoin(crate::Event::OfferAdded(..))));
+		assert!(matches!(
+			event3,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::OfferAdded(..))
+		));
 
 		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event2, crate::mock::Event::Creditcoin(crate::Event::BidOrderAdded(..))));
+		assert!(matches!(
+			event2,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::BidOrderAdded(..))
+		));
 
 		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event1, crate::mock::Event::Creditcoin(crate::Event::AskOrderAdded(..))));
+		assert!(matches!(
+			event1,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::AskOrderAdded(..))
+		));
 	});
 }
 
@@ -2552,7 +2566,7 @@ fn close_deal_order_should_succeed() {
 		let event2 = all_events.pop().expect("Second EventRecord").event;
 		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::TransferProcessed(id)) =>{
 				assert_eq!(id,transfer_id);
 			}
 		);
@@ -2560,7 +2574,7 @@ fn close_deal_order_should_succeed() {
 		let event1 = all_events.pop().expect("First EventRecord").event;
 		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderClosed(id)) =>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderClosed(id)) =>{
 				assert_eq!(id,deal_order_id);
 			}
 		);
@@ -2637,7 +2651,7 @@ fn exempt_should_succeed() {
 		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
 		assert_eq!(
 			event,
-			crate::mock::Event::Creditcoin(crate::Event::LoanExempted(deal_order_id))
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::LoanExempted(deal_order_id))
 		);
 	});
 }
@@ -2686,7 +2700,7 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 		// authorize lender
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2715,7 +2729,7 @@ fn verify_transfer_should_work() {
 		// authorize lender
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2751,7 +2765,7 @@ fn verify_transfer_should_work() {
 		let last_event = all_events.pop().expect("At least one EventRecord").event;
 		assert_matches!(
 			last_event,
-			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(id)) => {
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::TransferVerified(id)) => {
 				assert_eq!(transfer_id, id)
 			}
 		);
@@ -2769,7 +2783,7 @@ fn fail_transfer_should_work() {
 
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2792,7 +2806,7 @@ fn fail_transfer_should_work() {
 
 		assert_matches!(
 			all_events.pop().unwrap().event,
-			crate::mock::Event::Creditcoin(crate::Event::<Test>::TransferFailedVerification(id, cause)) => {
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::TransferFailedVerification(id, cause)) => {
 				assert_eq!(id, transfer_id);
 				assert_eq!(cause, failure_cause);
 			}
@@ -2862,7 +2876,7 @@ fn fail_transfer_should_error_when_transfer_registered() {
 
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -3204,7 +3218,7 @@ fn register_currency_should_work() {
 
 		assert_matches!(
 			event,
-			crate::mock::Event::Creditcoin(crate::Event::<Test>::CurrencyRegistered(registered_id, registered_currency)) => {
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::CurrencyRegistered(registered_id, registered_currency)) => {
 				assert_eq!(registered_id, id);
 				assert_eq!(registered_currency, currency);
 			}
@@ -3228,71 +3242,72 @@ fn register_currency_should_error_when_currency_already_registered() {
 
 #[test]
 fn exercise_weightinfo_functions() {
+	const ZERO: Weight = Weight::zero();
 	let result = super::weights::WeightInfo::<Test>::register_address();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::claim_legacy_wallet();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::add_ask_order();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::add_bid_order();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::add_offer();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::add_deal_order();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::add_authority();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::persist_transfer();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::fail_transfer();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::fund_deal_order();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::lock_deal_order();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::register_funding_transfer();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::register_repayment_transfer();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::close_deal_order();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::exempt();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::register_deal_order();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::request_collect_coins();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::fail_collect_coins();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::remove_authority();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 
 	let result = super::weights::WeightInfo::<Test>::register_currency();
-	assert!(result > 0);
+	assert!(result.all_gt(ZERO));
 }
 
 #[test]
@@ -3311,7 +3326,7 @@ fn remove_authority_should_fail_when_authority_does_not_exist() {
 		let acct: AccountId = AccountId::new([0; 32]);
 
 		assert_noop!(
-			Creditcoin::remove_authority(crate::mock::Origin::from(root), acct),
+			Creditcoin::remove_authority(crate::mock::RuntimeOrigin::from(root), acct),
 			crate::Error::<Test>::NotAnAuthority,
 		);
 	});
@@ -3328,7 +3343,10 @@ fn remove_authority_works_for_root() {
 		let value = crate::Pallet::<Test>::authorities(&acct);
 		assert_eq!(value, Some(()));
 
-		assert_ok!(Creditcoin::remove_authority(crate::mock::Origin::from(root), acct.clone()));
+		assert_ok!(Creditcoin::remove_authority(
+			crate::mock::RuntimeOrigin::from(root),
+			acct.clone()
+		));
 
 		let value = crate::Pallet::<Test>::authorities(acct);
 		assert_eq!(value, None)
