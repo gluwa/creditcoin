@@ -26,7 +26,7 @@ impl<T: Config> Pallet<T> {
 mod tests {
 	use super::*;
 	use crate::helpers::HexToAddress;
-	use crate::mock::{roll_to, roll_to_with_ocw, ExtBuilder, Origin, Test};
+	use crate::mock::{roll_to, roll_to_with_ocw, ExtBuilder, RuntimeOrigin, Test};
 	use crate::ocw::errors::VerificationFailureCause as Cause;
 	use crate::ocw::tasks::collect_coins::tests::mock_rpc_for_collect_coins;
 	use crate::ocw::tasks::collect_coins::{testing_constants::CHAIN, tests::TX_HASH};
@@ -55,7 +55,7 @@ mod tests {
 
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
-				Origin::signed(acc.clone()),
+				RuntimeOrigin::signed(acc.clone()),
 				CHAIN,
 				addr.clone(),
 				sign
@@ -63,7 +63,7 @@ mod tests {
 
 			roll_to(1);
 			assert_ok!(Creditcoin::<Test>::request_collect_coins(
-				Origin::signed(acc),
+				RuntimeOrigin::signed(acc),
 				addr,
 				TX_HASH.hex_to_address()
 			));
@@ -88,7 +88,7 @@ mod tests {
 
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
-				Origin::signed(acc.clone()),
+				RuntimeOrigin::signed(acc.clone()),
 				CHAIN,
 				addr.clone(),
 				sign
@@ -102,7 +102,7 @@ mod tests {
 
 			roll_to(1);
 			assert_ok!(Creditcoin::<Test>::request_collect_coins(
-				Origin::signed(acc),
+				RuntimeOrigin::signed(acc),
 				fake.clone(),
 				TX_HASH.hex_to_address()
 			));
@@ -131,7 +131,7 @@ mod tests {
 			assert_matches!(pool.write().transactions.pop(),
 				Some(tx) => {
 					let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
-					assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
+					assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
 				}
 			);
 		});
@@ -156,7 +156,7 @@ mod tests {
 		ext.build_offchain_and_execute_with_state(|_, pool| {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 			assert_ok!(Creditcoin::<Test>::register_address(
-				Origin::signed(acc.clone()),
+				RuntimeOrigin::signed(acc.clone()),
 				CHAIN,
 				addr.clone(),
 				sign
@@ -164,7 +164,7 @@ mod tests {
 
 			roll_to(1);
 			assert_ok!(Creditcoin::<Test>::request_collect_coins(
-				Origin::signed(acc),
+				RuntimeOrigin::signed(acc),
 				addr,
 				TX_HASH.hex_to_address()
 			));
@@ -213,7 +213,7 @@ mod tests {
 					assert_matches!(pool.write().transactions.pop(),
 						Some(tx) => {
 							let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
-							assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
+							assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
 						}
 					);
 

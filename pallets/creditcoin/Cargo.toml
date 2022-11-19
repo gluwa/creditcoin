@@ -15,8 +15,8 @@ targets = ['x86_64-unknown-linux-gnu']
 [dependencies]
 base58 = "0.2.0"
 bitcoin-bech32 = { version = "0.12.1", git = "https://github.com/nathanwhit/rust-bech32-bitcoin", default-features = false, branch = "no-std" }
-ethabi = { version = "16.0.0", features = ["rlp"], default-features = false }
-ethereum-types = { version = "0.12.1", features = [
+ethabi = { version = "18.0.0", features = ["rlp"], default-features = false }
+ethereum-types = { version = "0.14.0", features = [
     "rlp",
     "serialize",
 ], default-features = false }
@@ -38,6 +38,7 @@ log = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-timestamp = { workspace = true }
 parity-scale-codec = { workspace = true }
+paste = "1.0.9"
 scale-info = { workspace = true }
 serde = { workspace = true }
 serde_json = { version = "1.0.89", features = [
@@ -54,7 +55,7 @@ tracing = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 bstr = { version = "1.0.1", default-features = false }
-parking_lot = "0.11.0"
+parking_lot = "0.12.1"
 sp-core = { workspace = true }
 sp-keystore = { workspace = true }
 tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
@@ -71,6 +72,7 @@ std = [
     'pallet-balances/std',
     'pallet-timestamp/std',
     'sp-core/std',
+    'sp-std/std',
     'serde/std',
     'serde_json/std',
     'hex/std',

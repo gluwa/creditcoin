@@ -11,7 +11,7 @@ repository.workspace = true
 [dependencies]
 parity-scale-codec = { features = ["std"], workspace = true }
 primitives = { workspace = true }
-rand = { version = "0.8.4", features = ["small_rng"] }
+rand = { version = "0.8.5", features = ["small_rng"], default-features = false }
 sc-client-api = { workspace = true }
 sc-consensus-pow = { workspace = true }
 sc-keystore = { workspace = true }
