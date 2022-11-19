@@ -1,5 +1,5 @@
 use super::*;
-use crate::{Call, Runtime, System};
+use crate::{Runtime, RuntimeCall as Call, RuntimeEvent as Event, System};
 use assert_matches::assert_matches;
 use frame_support::{assert_noop, assert_ok, traits::Hooks};
 use frame_system::EventRecord;
