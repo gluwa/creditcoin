@@ -28,8 +28,8 @@ use crate::{
 		get_mock_amount, get_mock_contract, get_mock_from_address, get_mock_input_data,
 		get_mock_nonce, get_mock_timestamp, get_mock_to_address, get_mock_tx_block_num,
 		get_mock_tx_hash, roll_by_with_ocw, roll_to, roll_to_with_ocw, set_rpc_uri, AccountId,
-		Call, ExtBuilder, Extrinsic, MockedRpcRequests, Origin, PendingRequestExt, RwLock, Test,
-		ETHLESS_RESPONSES,
+		ExtBuilder, Extrinsic, MockedRpcRequests, PendingRequestExt, RuntimeCall as Call,
+		RuntimeOrigin as Origin, RwLock, Test, ETHLESS_RESPONSES,
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
 	ocw::tasks::StorageLock,
@@ -401,7 +401,7 @@ fn offchain_signed_tx_works() {
 
 		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
 			let tx = Extrinsic::decode(&mut &*tx).unwrap();
-			assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
+			assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
 		});
 	});
 }
@@ -593,7 +593,7 @@ fn set_up_verify_transfer_env(
 		crate::DealOrders::<Test>::insert_id(deal_order_id.clone(), deal_order);
 
 		assert_ok!(crate::mock::Creditcoin::register_funding_transfer(
-			crate::mock::Origin::signed(test_info.lender.account_id),
+			crate::mock::RuntimeOrigin::signed(test_info.lender.account_id),
 			crate::EvmTransferKind::Ethless.into(),
 			deal_order_id,
 			transfer.tx_id,
@@ -949,7 +949,7 @@ fn ocw_retries() {
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_matches!(
 			verify_tx.call,
-			crate::mock::Call::Creditcoin(crate::Call::persist_task_output { .. })
+			crate::mock::RuntimeCall::Creditcoin(crate::Call::persist_task_output { .. })
 		);
 	});
 }

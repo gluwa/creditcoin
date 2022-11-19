@@ -1,8 +1,8 @@
 // address registration now verifies ownership, so removed existing addresses
-use super::v3;
+use super::{v3, HashOf, AccountIdOf};
 use frame_support::traits::Get;
 use frame_support::Blake2_128Concat;
-use frame_support::{dispatch::Weight, generate_storage_alias};
+use frame_support::{dispatch::Weight, storage_alias};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::SaturatedConversion;
 
@@ -20,10 +20,9 @@ pub struct Address<AccountId> {
 	pub owner: AccountId,
 }
 
-generate_storage_alias!(
-	Creditcoin,
-	Addresses<T: Config> => Map<(Blake2_128Concat, AddressId<T::Hash>), Address<T::AccountId>>
-);
+#[storage_alias]
+type Addresses<T: Config> =
+	StorageMap<crate::Pallet<T>, Blake2_128Concat, AddressId<HashOf<T>>, Address<AccountIdOf<T>>>;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let count_removed = match Addresses::<T>::remove_all(None) {
