@@ -32,7 +32,7 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Balance = u128;
 pub type Signature = MultiSignature;
-pub type Extrinsic = TestXt<Call, ()>;
+pub type Extrinsic = TestXt<RuntimeCall, ()>;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
@@ -67,8 +67,8 @@ impl system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -76,7 +76,7 @@ impl system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -100,9 +100,9 @@ impl pallet_timestamp::Config for Test {
 }
 
 impl pallet_creditcoin::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 
-	type Call = Call;
+	type Call = RuntimeCall;
 
 	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
 
@@ -150,7 +150,7 @@ impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> fo
 		_public: Self::Public,
 		_account: Self::AccountId,
 		nonce: Self::Index,
-	) -> Option<(Call, <Extrinsic as ExtrinsicT>::SignaturePayload)> {
+	) -> Option<(RuntimeCall, <Extrinsic as ExtrinsicT>::SignaturePayload)> {
 		CREATE_TRANSACTION_FAIL.with(|should_fail| {
 			if should_fail.get() {
 				eprintln!("Failing!");
@@ -165,9 +165,9 @@ impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> fo
 
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Test
 where
-	Call: From<C>,
+	RuntimeCall: From<C>,
 {
-	type OverarchingCall = Call;
+	type OverarchingCall = RuntimeCall;
 	type Extrinsic = Extrinsic;
 }
 impl system::offchain::SigningTypes for Test {
@@ -187,7 +187,7 @@ impl pallet_balances::Config for Test {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
