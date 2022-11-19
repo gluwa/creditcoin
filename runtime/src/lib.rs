@@ -138,7 +138,7 @@ parameter_types! {
 }
 
 impl pallet_scheduler::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Origin = Origin;
 	type PalletsOrigin = OriginCaller;
 	type Call = Call;
@@ -177,7 +177,7 @@ impl frame_system::Config for Runtime {
 	/// The header type.
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
@@ -230,7 +230,7 @@ impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -275,12 +275,12 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 impl pallet_sudo::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Call = Call;
 }
 
 impl pallet_creditcoin::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Call = Call;
 	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
 	type Signer = Signer;
@@ -299,7 +299,7 @@ impl pallet_difficulty::Config for Runtime {
 }
 
 impl pallet_rewards::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type WeightInfo = pallet_rewards::weights::WeightInfo<Runtime>;
 }
@@ -352,14 +352,14 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
-		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
-		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Difficulty: pallet_difficulty::{Pallet, Call, Config<T>, Storage},
-		Rewards: pallet_rewards::{Pallet, Storage, Event<T>},
+		System: frame_system,
+		Timestamp: pallet_timestamp ,
+		Balances: pallet_balances ,
+		TransactionPayment: pallet_transaction_payment ,
+		Sudo: pallet_sudo ,
+		Creditcoin: pallet_creditcoin ,
+		Difficulty: pallet_difficulty ,
+		Rewards: pallet_rewards ,
 		Scheduler: pallet_scheduler,
 	}
 );

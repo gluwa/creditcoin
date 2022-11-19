@@ -1,4 +1,5 @@
 use super::v5;
+use super::{storage_macro, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::Config;
 use crate::EvmCurrencyType;
 use crate::EvmInfo;
@@ -6,8 +7,8 @@ use crate::EvmSupportedTransferKinds;
 use crate::EvmTransferKind;
 use crate::Id;
 use core::convert::TryFrom;
-use frame_support::generate_storage_alias;
 use frame_support::pallet_prelude::*;
+use frame_support::storage_alias;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::prelude::*;
@@ -70,8 +71,8 @@ fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
 
 fn translate_loan_terms<T: Config>(
 	old: OldLoanTerms,
-	currency: CurrencyId<T::Hash>,
-) -> LoanTerms<T::Hash> {
+	currency: CurrencyId<HashOf<T>>,
+) -> LoanTerms<HashOf<T>> {
 	LoanTerms {
 		amount: old.amount,
 		interest_rate: old.interest_rate,
@@ -124,7 +125,7 @@ fn reconstruct_currency(blockchain: &OldBlockchain, kind: &OldTransferKind) -> O
 }
 
 fn reconstruct_currency_from_deal<T: Config>(
-	deal_order: &OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+	deal_order: &OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 ) -> Option<Currency> {
 	let transfer_id = deal_order.funding_transfer_id.as_ref()?;
 	let transfer = OldTransfers::<T>::get(transfer_id)?;
@@ -133,8 +134,8 @@ fn reconstruct_currency_from_deal<T: Config>(
 }
 
 fn translate_transfer<T: Config>(
-	transfer: OldTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-) -> Option<Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>> {
+	transfer: OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+) -> Option<Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>> {
 	Some(Transfer {
 		amount: transfer.amount,
 		from: transfer.from,
@@ -165,10 +166,13 @@ fn to_legacy_transfer_kind(transfer_kind: OldTransferKind) -> LegacyTransferKind
 	}
 }
 
-generate_storage_alias!(
-	Creditcoin,
-	Transfers<T: Config> => Map<(Identity, TransferId<T::Hash>), Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-);
+#[storage_alias]
+type Transfers<T: Config> = StorageMap<
+	crate::Pallet<T>,
+	Identity,
+	TransferId<HashOf<T>>,
+	Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
 struct OldTransfersInstance;
 impl frame_support::traits::StorageInstance for OldTransfersInstance {
@@ -181,37 +185,50 @@ impl frame_support::traits::StorageInstance for OldTransfersInstance {
 type OldTransfers<T: Config> = frame_support::storage::types::StorageMap<
 	OldTransfersInstance,
 	Identity,
-	TransferId<T::Hash>,
-	OldTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
+	TransferId<HashOf<T>>,
+	OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-generate_storage_alias!(
-	Creditcoin,
-	Addresses<T: Config> => Map<(Blake2_128Concat, AddressId<T::Hash>), Address<T::AccountId>>
+#[storage_alias]
+type Addresses<T: Config> =
+	StorageMap<crate::Pallet<T>, Blake2_128Concat, AddressId<HashOf<T>>, Address<AccountIdOf<T>>>;
+
+#[storage_alias]
+type PendingTasks<T: Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	TaskId<HashOf<T>>,
+	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
+
+storage_macro!(
+	AskOrders,
+	T,
+	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
 );
 
-generate_storage_alias!(
-	Creditcoin,
-	AskOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), AskOrder<T::AccountId, T::BlockNumber, T::Hash>>
+storage_macro!(
+	BidOrders,
+	T,
+	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
 );
 
-generate_storage_alias!(
-	Creditcoin,
-	BidOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), BidOrder<T::AccountId, T::BlockNumber, T::Hash>>
+storage_macro!(
+	DealOrders,
+	T,
+	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
 );
 
-generate_storage_alias!(
-	Creditcoin,
-	DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-);
+ask_orders_storage!(T, AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
 
-generate_storage_alias!(
-	Creditcoin,
-	PendingTasks<T: Config> => DoubleMap<(Identity, T::BlockNumber), (Identity, TaskId<T::Hash>), Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-);
+bid_orders_storage!(T, BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
+
+deal_orders_storage!(T, DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = 0;
+	let mut weight: Weight = Weight::zero();
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
 	let write = T::DbWeight::get().writes(1);
 	let read = T::DbWeight::get().reads(1);
@@ -220,51 +237,51 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut reconstructed_currency_bid = BTreeMap::new();
 	let mut currencies = BTreeSet::new();
 
-	DealOrders::<T>::translate::<OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
-		|_exp, _hash, deal_order| {
-			weight = weight.saturating_add(weight_each);
+	DealOrders::<T>::translate::<
+		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+		_,
+	>(|_exp, _hash, deal_order| {
+		weight = weight.saturating_add(weight_each);
 
-			let currency = reconstruct_currency_from_deal::<T>(&deal_order);
-			let currency_id = if let Some(currency) = currency.as_ref() {
-				currency.to_id::<T>()
-			} else {
-				CurrencyId::placeholder()
-			};
+		let currency = reconstruct_currency_from_deal::<T>(&deal_order);
+		let currency_id = if let Some(currency) = currency.as_ref() {
+			currency.to_id::<T>()
+		} else {
+			CurrencyId::placeholder()
+		};
 
-			weight = weight.saturating_add(read);
-			let offer = if let Some(offer) = crate::Offers::<T>::get(
-				deal_order.offer_id.expiration(),
-				deal_order.offer_id.hash(),
-			) {
-				offer
-			} else {
-				log::warn!("deal order has a non-existent offer: {:?}", deal_order.offer_id);
-				return None;
-			};
+		weight = weight.saturating_add(read);
+		let offer = if let Some(offer) =
+			crate::Offers::<T>::get(deal_order.offer_id.expiration(), deal_order.offer_id.hash())
+		{
+			offer
+		} else {
+			log::warn!("deal order has a non-existent offer: {:?}", deal_order.offer_id);
+			return None;
+		};
 
-			if let Some(currency) = currency {
-				reconstructed_currency_ask.insert(offer.ask_id, currency_id.clone());
-				reconstructed_currency_bid.insert(offer.bid_id, currency_id.clone());
-				currencies.insert((currency_id.clone(), currency));
-			}
+		if let Some(currency) = currency {
+			reconstructed_currency_ask.insert(offer.ask_id, currency_id.clone());
+			reconstructed_currency_bid.insert(offer.bid_id, currency_id.clone());
+			currencies.insert((currency_id.clone(), currency));
+		}
 
-			Some(DealOrder {
-				offer_id: deal_order.offer_id,
-				lender_address_id: deal_order.lender_address_id,
-				borrower_address_id: deal_order.borrower_address_id,
-				terms: translate_loan_terms::<T>(deal_order.terms, currency_id),
-				expiration_block: deal_order.expiration_block,
-				timestamp: deal_order.timestamp,
-				block: deal_order.block,
-				funding_transfer_id: deal_order.funding_transfer_id,
-				repayment_transfer_id: deal_order.repayment_transfer_id,
-				lock: deal_order.lock,
-				borrower: deal_order.borrower,
-			})
-		},
-	);
+		Some(DealOrder {
+			offer_id: deal_order.offer_id,
+			lender_address_id: deal_order.lender_address_id,
+			borrower_address_id: deal_order.borrower_address_id,
+			terms: translate_loan_terms::<T>(deal_order.terms, currency_id),
+			expiration_block: deal_order.expiration_block,
+			timestamp: deal_order.timestamp,
+			block: deal_order.block,
+			funding_transfer_id: deal_order.funding_transfer_id,
+			repayment_transfer_id: deal_order.repayment_transfer_id,
+			lock: deal_order.lock,
+			borrower: deal_order.borrower,
+		})
+	});
 
-	AskOrders::<T>::translate::<OldAskOrder<T::AccountId, T::BlockNumber, T::Hash>, _>(
+	AskOrders::<T>::translate::<OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
 		|exp, hash, ask_order| {
 			weight = weight.saturating_add(weight_each);
 			let ask_id = AskOrderId::with_expiration_hash::<T>(exp, hash);
@@ -284,7 +301,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		},
 	);
 
-	BidOrders::<T>::translate::<OldBidOrder<T::AccountId, T::BlockNumber, T::Hash>, _>(
+	BidOrders::<T>::translate::<OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
 		|exp, hash, bid_order| {
 			weight = weight.saturating_add(weight_each);
 			let bid_id = BidOrderId::with_expiration_hash::<T>(exp, hash);
@@ -301,41 +318,41 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		},
 	);
 
-	Transfers::<T>::translate::<OldTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
-		|_id, transfer| {
-			weight = weight.saturating_add(weight_each);
-			translate_transfer::<T>(transfer)
-		},
-	);
+	Transfers::<T>::translate::<
+		OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+		_,
+	>(|_id, transfer| {
+		weight = weight.saturating_add(weight_each);
+		translate_transfer::<T>(transfer)
+	});
 
-	PendingTasks::<T>::translate::<OldTask<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
-		|_exp, _id, task| {
-			weight = weight.saturating_add(weight_each);
-			Some(match task {
-				OldTask::VerifyTransfer(unverified_transfer) => {
-					let kind = unverified_transfer.transfer.kind.clone();
-					Task::VerifyTransfer(UnverifiedTransfer {
-						transfer: translate_transfer::<T>(unverified_transfer.transfer)?,
-						from_external: unverified_transfer.from_external,
-						to_external: unverified_transfer.to_external,
-						deadline: unverified_transfer.deadline,
-						currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
-							to_legacy_transfer_kind(kind),
-						),
-					})
-				},
-				OldTask::CollectCoins(collect_coins) => {
-					Task::CollectCoins(UnverifiedCollectedCoins {
-						to: collect_coins.to,
-						tx_id: collect_coins.tx_id,
-						contract: Default::default(),
-					})
-				},
-			})
-		},
-	);
+	PendingTasks::<T>::translate::<
+		OldTask<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+		_,
+	>(|_exp, _id, task| {
+		weight = weight.saturating_add(weight_each);
+		Some(match task {
+			OldTask::VerifyTransfer(unverified_transfer) => {
+				let kind = unverified_transfer.transfer.kind.clone();
+				Task::VerifyTransfer(UnverifiedTransfer {
+					transfer: translate_transfer::<T>(unverified_transfer.transfer)?,
+					from_external: unverified_transfer.from_external,
+					to_external: unverified_transfer.to_external,
+					deadline: unverified_transfer.deadline,
+					currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
+						to_legacy_transfer_kind(kind),
+					),
+				})
+			},
+			OldTask::CollectCoins(collect_coins) => Task::CollectCoins(UnverifiedCollectedCoins {
+				to: collect_coins.to,
+				tx_id: collect_coins.tx_id,
+				contract: Default::default(),
+			}),
+		})
+	});
 
-	Addresses::<T>::translate::<OldAddress<T::AccountId>, _>(|_id, address| {
+	Addresses::<T>::translate::<OldAddress<AccountIdOf<T>>, _>(|_id, address| {
 		weight = weight.saturating_add(weight_each);
 		Some(Address {
 			blockchain: translate_blockchain(address.blockchain)?,
@@ -365,38 +382,40 @@ mod tests {
 	use frame_support::Blake2_128Concat;
 	use sp_runtime::traits::Hash as _;
 
-	generate_storage_alias!(
-		Creditcoin,
-		Addresses<T: Config> => Map<(Blake2_128Concat, AddressId<T::Hash>), super::OldAddress<T::AccountId>>
-	);
-
 	type OldAddresses = Addresses<Test>;
 
-	generate_storage_alias!(
-		Creditcoin,
-		DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), super::OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
+	deal_orders_storage!(
+		T,
+		super::OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>
 	);
 
 	type OldDealOrders = DealOrders<Test>;
 
-	generate_storage_alias!(
-		Creditcoin,
-		AskOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), super::OldAskOrder<T::AccountId, T::BlockNumber, T::Hash>>
-	);
+	ask_orders_storage!(T, super::OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
 
 	type OldAskOrders = AskOrders<Test>;
 
-	generate_storage_alias!(
-		Creditcoin,
-		BidOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), super::OldBidOrder<T::AccountId, T::BlockNumber, T::Hash>>
-	);
+	bid_orders_storage!(T, super::OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
 
 	type OldBidOrders = BidOrders<Test>;
 
-	generate_storage_alias!(
-		Creditcoin,
-		PendingTasks<T: Config> => DoubleMap<(Identity, T::BlockNumber), (Identity, TaskId<T::Hash>), super::OldTask<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-	);
+	#[storage_alias]
+	type Addresses<T: Config> = StorageMap<
+		crate::Pallet<T>,
+		Blake2_128Concat,
+		AddressId<HashOf<T>>,
+		super::OldAddress<AccountIdOf<T>>,
+	>;
+
+	#[storage_alias]
+	type PendingTasks<T: Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Identity,
+		BlockNumberOf<T>,
+		Identity,
+		TaskId<HashOf<T>>,
+		super::OldTask<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+	>;
 
 	type OldPendingTasks = PendingTasks<Test>;
 
