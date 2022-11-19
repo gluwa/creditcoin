@@ -34,13 +34,10 @@ pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: System Digest (r:1 w:0)
 	fn on_initialize() -> Weight {
-		(3_400_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		todo!()
 	}
 	// Storage: System Account (r:1 w:1)
 	fn on_finalize() -> Weight {
-		(49_800_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 }
