@@ -10,7 +10,7 @@ mod v6;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
-	let mut weight: Weight = 0;
+	let mut weight: Weight = Weight::zero();
 
 	if version < 1 {
 		weight = weight.saturating_add(v1::migrate::<T>());
@@ -44,3 +44,34 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 	weight
 }
+
+macro_rules! projection_alias {
+	($($config: path : { $($typ: ident),+ }),+) => {
+		$(
+			$(
+				paste::paste! {
+					type [<$typ Of>]<T> = <T as $config>::$typ;
+				}
+			)+
+		)+
+	};
+}
+
+projection_alias!(frame_system::Config: { Hash, BlockNumber, AccountId }, pallet_timestamp::Config: { Moment });
+
+macro_rules! storage_macro {
+	($name: ident, $t: ident, $storage: ident < $($typ: ty),+ >) => {
+		paste::paste! {
+			macro_rules! [<$name:snake _storage>] {
+				($inner_t: ident, $thing: ty) => {
+					#[frame_support::storage_alias]
+					type $name<$inner_t: crate::Config> = $storage < $($typ),+ , $thing >;
+				};
+			}
+			#[allow(unused_imports)]
+			use [<$name:snake _storage>];
+		}
+	};
+}
+
+use storage_macro;

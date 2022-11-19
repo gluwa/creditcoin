@@ -16,7 +16,7 @@ jsonrpc-core = { workspace = true }
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
 jsonrpc-pubsub = "18.0.0"
-primitives = { workspace = true }
+primitives = { workspace = true, features = ["prometheus"] }
 sc-rpc = { workspace = true }
 serde = { workspace = true }
 sp-api = { workspace = true }

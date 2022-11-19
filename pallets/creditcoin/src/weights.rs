@@ -38,72 +38,38 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin PendingTasks (r:0 w:510)
 	// Storage: Creditcoin AskOrders (r:0 w:31)
 	fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32, ) -> Weight {
-		(0 as Weight)
-			// Standard Error: 20_580_000
-			.saturating_add((41_853_000 as Weight).saturating_mul(a as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((42_567_000 as Weight).saturating_mul(b as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((68_676_000 as Weight).saturating_mul(o as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((80_742_000 as Weight).saturating_mul(d as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((62_392_000 as Weight).saturating_mul(f as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((65_465_000 as Weight).saturating_mul(u as Weight))
-			// Standard Error: 20_580_000
-			.saturating_add((71_023_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(d as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(f as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(o as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(f as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(u as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
+		todo!()
 	}
 	// Storage: Creditcoin Addresses (r:1 w:1)
 	fn register_address() -> Weight {
-		(280_902_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin LegacyWallets (r:1 w:1)
 	// Storage: Creditcoin LegacyBalanceKeeper (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim_legacy_wallet() -> Weight {
-		(73_100_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin AskOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Creditcoin Currencies (r:1 w:0)
 	// Storage: Creditcoin UsedGuids (r:1 w:1)
 	fn add_ask_order() -> Weight {
-		(48_500_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin BidOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Creditcoin Currencies (r:1 w:0)
 	// Storage: Creditcoin UsedGuids (r:1 w:1)
 	fn add_bid_order() -> Weight {
-		(48_100_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin AskOrders (r:1 w:0)
 	// Storage: Creditcoin BidOrders (r:1 w:0)
 	// Storage: Creditcoin Addresses (r:2 w:0)
 	// Storage: Creditcoin Offers (r:1 w:1)
 	fn add_offer() -> Weight {
-		(60_700_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Offers (r:1 w:0)
@@ -111,46 +77,34 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin BidOrders (r:1 w:0)
 	// Storage: Timestamp Now (r:1 w:0)
 	fn add_deal_order() -> Weight {
-		(54_900_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Authorities (r:1 w:1)
 	fn add_authority() -> Weight {
-		(7_300_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Authorities (r:1 w:0)
 	// Storage: Creditcoin Transfers (r:1 w:1)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn persist_transfer() -> Weight {
-		(39_600_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Authorities (r:1 w:0)
 	// Storage: Creditcoin Transfers (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn fail_transfer() -> Weight {
-		(31_100_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Timestamp Now (r:1 w:0)
 	// Storage: Creditcoin Transfers (r:1 w:1)
 	fn fund_deal_order() -> Weight {
-		(57_200_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	fn lock_deal_order() -> Weight {
-		(32_000_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:0)
 	// Storage: Creditcoin Addresses (r:2 w:0)
@@ -158,9 +112,7 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin Currencies (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn register_funding_transfer() -> Weight {
-		(59_300_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:0)
 	// Storage: Creditcoin Addresses (r:2 w:0)
@@ -168,44 +120,34 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin Currencies (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn register_repayment_transfer() -> Weight {
-		(57_500_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:2 w:0)
 	// Storage: Creditcoin Transfers (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn register_funding_transfer_legacy() -> Weight {
-		(56_701_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:2 w:0)
 	// Storage: Creditcoin Transfers (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn register_repayment_transfer_legacy() -> Weight {
-		(57_600_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Timestamp Now (r:1 w:0)
 	// Storage: Creditcoin Transfers (r:1 w:1)
 	fn close_deal_order() -> Weight {
-		(59_601_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Timestamp Now (r:1 w:0)
 	fn exempt() -> Weight {
-		(42_400_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Currencies (r:1 w:0)
 	// Storage: Creditcoin Addresses (r:2 w:0)
@@ -215,51 +157,38 @@ impl<T: frame_system::Config> super::WeightInfo for WeightInfo<T> {
 	// Storage: Creditcoin DealOrders (r:1 w:1)
 	// Storage: Timestamp Now (r:1 w:0)
 	fn register_deal_order() -> Weight {
-		(339_301_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin CollectCoinsContract (r:1 w:0)
 	// Storage: Creditcoin CollectedCoins (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	fn request_collect_coins() -> Weight {
-		(43_001_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Authorities (r:1 w:0)
 	// Storage: Creditcoin CollectedCoins (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn fail_collect_coins() -> Weight {
-		(23_900_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Authorities (r:1 w:0)
 	// Storage: Creditcoin CollectedCoins (r:1 w:1)
 	// Storage: Creditcoin Addresses (r:1 w:0)
 	// Storage: Creditcoin PendingTasks (r:0 w:1)
 	fn persist_collect_coins() -> Weight {
-		(77_800_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Authorities (r:1 w:1)
 	fn remove_authority() -> Weight {
-		(8_500_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin Currencies (r:1 w:1)
 	fn register_currency() -> Weight {
-		(20_700_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 	// Storage: Creditcoin CollectCoinsContract (r:0 w:1)
 	fn set_collect_coins_contract() -> Weight {
-		(3_900_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		todo!()
 	}
 }
