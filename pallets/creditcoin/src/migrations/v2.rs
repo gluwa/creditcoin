@@ -1,10 +1,9 @@
 // `block` added to `DealOrder` and `timestamp` added to `Transfer`
 
+use super::{storage_macro, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::ExternalAddress;
 use crate::{AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, TransferId};
-use frame_support::{
-	generate_storage_alias, pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat,
-};
+use frame_support::{pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat};
 
 pub use super::v1::Blockchain;
 pub use super::v1::DealOrder as OldDealOrder;
@@ -80,41 +79,44 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub borrower: AccountId,
 }
 
-generate_storage_alias!(
-	Creditcoin,
-	DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
+storage_macro!(Transfers, T, StorageMap<crate::Pallet<T>, Identity, TransferId<HashOf<T>>>);
+
+storage_macro!(
+	DealOrders,
+	T,
+	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
 );
 
-generate_storage_alias!(
-	Creditcoin,
-	Transfers<T: Config> => Map<(Identity, TransferId<T::Hash>), Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-);
+deal_orders_storage!(T, DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
+
+transfers_storage!(T, Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = 0;
+	let mut weight: Weight = Weight::zero();
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
 
-	DealOrders::<T>::translate::<OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
-		|_exp, _hash, deal| {
-			weight = weight.saturating_add(weight_each);
-			Some(DealOrder {
-				blockchain: deal.blockchain,
-				offer_id: deal.offer_id,
-				lender_address_id: deal.lender_address_id,
-				borrower_address_id: deal.borrower_address_id,
-				terms: deal.terms,
-				expiration_block: deal.expiration_block,
-				timestamp: deal.timestamp,
-				funding_transfer_id: deal.funding_transfer_id,
-				lock: deal.lock,
-				borrower: deal.borrower,
-				repayment_transfer_id: deal.repayment_transfer_id,
-				block: None,
-			})
-		},
-	);
+	DealOrders::<T>::translate::<
+		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+		_,
+	>(|_exp, _hash, deal| {
+		weight = weight.saturating_add(weight_each);
+		Some(DealOrder {
+			blockchain: deal.blockchain,
+			offer_id: deal.offer_id,
+			lender_address_id: deal.lender_address_id,
+			borrower_address_id: deal.borrower_address_id,
+			terms: deal.terms,
+			expiration_block: deal.expiration_block,
+			timestamp: deal.timestamp,
+			funding_transfer_id: deal.funding_transfer_id,
+			lock: deal.lock,
+			borrower: deal.borrower,
+			repayment_transfer_id: deal.repayment_transfer_id,
+			block: None,
+		})
+	});
 
-	Transfers::<T>::translate::<OldTransfer<T::AccountId, T::BlockNumber, T::Hash>, _>(
+	Transfers::<T>::translate::<OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
 		|_id, transfer| {
 			weight = weight.saturating_add(weight_each);
 			Some(Transfer {
@@ -141,15 +143,15 @@ mod test {
 	use core::convert::TryInto;
 
 	use super::{
-		Blockchain, Config, DealOrder, Identity, OldDealOrder, OldTransfer, OrderId, Transfer,
-		TransferKind, Twox64Concat,
+		deal_orders_storage, transfers_storage, AccountIdOf, BlockNumberOf, Blockchain, DealOrder,
+		HashOf, Identity, MomentOf, OldDealOrder, OldTransfer, OrderId, Transfer, TransferKind,
+		Twox64Concat,
 	};
 	use crate::{
 		mock::{ExtBuilder, Test},
 		tests::TestInfo,
 		DealOrderId, DoubleMapExt, Duration, OfferId, TransferId,
 	};
-	use frame_support::generate_storage_alias;
 	use sp_runtime::traits::Hash;
 
 	impl<H> TransferId<H> {
@@ -166,17 +168,11 @@ mod test {
 		}
 	}
 
-	generate_storage_alias!(
-		Creditcoin,
-		DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-	);
+	deal_orders_storage!(T, OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
 
 	type OldDealOrders = DealOrders<Test>;
 
-	generate_storage_alias!(
-		Creditcoin,
-		Transfers<T: Config> => Map<(Identity, TransferId<T::Hash>), OldTransfer<T::AccountId, T::BlockNumber, T::Hash>>
-	);
+	transfers_storage!(T, OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
 
 	type OldTransfers = Transfers<Test>;
 

@@ -32,7 +32,7 @@ log = { workspace = true }
 num_cpus = "1.14.0"
 pallet-transaction-payment-rpc = { workspace = true }
 parity-scale-codec = { features = ["std"], workspace = true }
-primitives = { workspace = true }
+primitives = { workspace = true, features = ["prometheus"] }
 sc-basic-authorship = { workspace = true }
 sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
@@ -59,7 +59,7 @@ sp-keystore = { workspace = true }
 sp-offchain = { features = ["std"], workspace = true }
 sp-runtime = { features = ["std"], workspace = true }
 sp-timestamp = { workspace = true }
-structopt = '0.3.8'
+structopt = "0.3.26"
 substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 thiserror = "1.0.37"
@@ -73,4 +73,9 @@ features = ["time"]
 [features]
 default = ['std']
 runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']
-std = ['sp-consensus-pow/std']
+std = [
+    'sp-consensus-pow/std',
+    'sp-api/std',
+    'sp-block-builder/std',
+    'creditcoin-runtime-api/std',
+]
