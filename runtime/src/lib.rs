@@ -16,7 +16,7 @@ use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
 use sp_runtime::{
 	generic,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
 	SaturatedConversion,
@@ -125,30 +125,31 @@ parameter_types! {
 	/// that combined with `AdjustmentVariable`, we can recover from the minimum.
 	/// See `multiplier_can_grow_from_zero`.
 	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000u128);
+	/// The maximum amount of the multiplier.
+	pub MaximumMultiplier: Multiplier = Multiplier::max_value();
 	/// We allow for 20 seconds of compute with a 60 second average block time.
 	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(20 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
+		::with_sensible_defaults(20u64 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
 
-	 pub MaximumSchedulerWeight: Weight = 10_000_000;
+	 pub MaximumSchedulerWeight: Weight = Weight::from_ref_time(10_000_000);
 	 pub const MaxScheduledPerBlock: u32 = 50;
 
 }
 
 impl pallet_scheduler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	type PalletsOrigin = OriginCaller;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	type MaximumWeight = MaximumSchedulerWeight;
 	type ScheduleOrigin = frame_system::EnsureRoot<AccountId>;
 	type MaxScheduledPerBlock = MaxScheduledPerBlock;
 	type WeightInfo = ();
 	type OriginPrivilegeCmp = EqualPrivilegeOnly;
-	type PreimageProvider = ();
-	type NoPreimagePostponement = ();
+	type Preimages = ();
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -163,7 +164,7 @@ impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	/// The index type for storing how many extrinsics an account has signed.
@@ -179,7 +180,7 @@ impl frame_system::Config for Runtime {
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
 	type BlockHashCount = BlockHashCount;
 	/// The weight of database operations that the runtime can invoke.
@@ -241,6 +242,21 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
+pub struct LengthToCtcFee;
+
+impl WeightToFeePolynomial for LengthToCtcFee {
+	type Balance = Balance;
+
+	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+		smallvec::smallvec![WeightToFeeCoefficient {
+			coeff_integer: 1,
+			coeff_frac: Perbill::zero(),
+			negative: false,
+			degree: 1,
+		}]
+	}
+}
+
 pub const TARGET_FEE_CREDO: Balance = 10_000_000_000_000_000;
 
 pub struct WeightToCtcFee;
@@ -249,7 +265,7 @@ impl WeightToFeePolynomial for WeightToCtcFee {
 	type Balance = Balance;
 
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		let base = Balance::from(creditcoin_weights::<Runtime>::lock_deal_order());
+		let base = Balance::from(creditcoin_weights::<Runtime>::lock_deal_order().ref_time());
 		let ratio = TARGET_FEE_CREDO / base;
 		let rem = TARGET_FEE_CREDO % base;
 		smallvec::smallvec!(WeightToFeeCoefficient {
@@ -263,25 +279,31 @@ impl WeightToFeePolynomial for WeightToCtcFee {
 
 /// Parameterized slow adjusting fee updated based on
 /// https://research.web3.foundation/en/latest/polkadot/overview/2-token-economics.html#-2.-slow-adjusting-mechanism
-pub type SlowAdjustingFeeUpdate<R> =
-	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+pub type SlowAdjustingFeeUpdate<R> = TargetedFeeAdjustment<
+	R,
+	TargetBlockFullness,
+	AdjustmentVariable,
+	MinimumMultiplier,
+	MaximumMultiplier,
+>;
 
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
-	type TransactionByteFee = TransactionByteFee;
 	type WeightToFee = WeightToCtcFee;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 	type OperationalFeeMultiplier = ConstU8<1u8>;
+	type LengthToFee = LengthToCtcFee;
+	type RuntimeEvent = RuntimeEvent;
 }
 
 impl pallet_sudo::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 }
 
 impl pallet_creditcoin::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Call = Call;
+	type Call = RuntimeCall;
 	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
 	type Signer = Signer;
 	type SignerSignature = Signature;
@@ -304,18 +326,21 @@ impl pallet_rewards::Config for Runtime {
 	type WeightInfo = pallet_rewards::weights::WeightInfo<Runtime>;
 }
 
-pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
-	Call: From<LocalCall>,
+	RuntimeCall: From<LocalCall>,
 {
 	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
-		call: Call,
+		call: RuntimeCall,
 		public: Self::Public,
 		account: AccountId,
 		nonce: Index,
-	) -> Option<(Call, <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload)> {
+	) -> Option<(
+		RuntimeCall,
+		<UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
+	)> {
 		let period = BlockHashCount::get() as u64;
 		let current_block = System::block_number().saturated_into::<u64>().saturating_sub(1);
 		let tip = 0;
@@ -381,7 +406,8 @@ pub type SignedExtra = (
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic =
+	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
 	Runtime,
@@ -568,8 +594,8 @@ impl frame_system::offchain::SigningTypes for Runtime {
 
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
-	Call: From<C>,
+	RuntimeCall: From<C>,
 {
-	type OverarchingCall = Call;
+	type OverarchingCall = RuntimeCall;
 	type Extrinsic = UncheckedExtrinsic;
 }
