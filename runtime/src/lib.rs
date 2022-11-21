@@ -301,9 +301,6 @@ impl pallet_creditcoin::Config for Runtime {
 	type Call = Call;
 	type Signer = Signer;
 	type SignerSignature = Signature;
-	type FromAccountId = AccountId;
-	type PublicSigning = <Signature as Verify>::Signer;
-	type InternalPublic = sp_core::sr25519::Public;
 	type HashIntoNonce = Hash;
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;

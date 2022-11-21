@@ -3,6 +3,7 @@ use core::str::Utf8Error;
 use super::rpc::errors::RpcError;
 use alloc::string::FromUtf8Error;
 use codec::{Decode, Encode, MaxEncodedLen};
+use pallet_offchain_task_scheduler::impl_enum_from_variant;
 use scale_info::TypeInfo;
 use sp_runtime::offchain::storage::StorageRetrievalError;
 
@@ -67,36 +68,17 @@ pub enum RpcUrlError {
 	NoValue,
 }
 
-macro_rules! _impl_from_error {
-	($self_ty: ident, $err_ty: path, $variant: ident) => {
-		impl From<$err_ty> for $self_ty {
-			fn from(err: $err_ty) -> Self {
-				$self_ty::$variant(err)
-			}
-		}
-	};
-	($self_ty: ident, $($err_ty: path => $variant: ident),+ $(,)?) => {
-        $(
-            impl_from_error!($self_ty, $err_ty, $variant);
-        )+
-    };
-}
-
-pub(crate) use _impl_from_error as impl_from_error;
-
-impl_from_error!(
+impl_enum_from_variant!(
 	OffchainError,
 	RpcUrlError => NoRpcUrl,
 	RpcError => RpcError,
 	VerificationFailureCause => InvalidTask,
 );
-impl_from_error!(
+impl_enum_from_variant!(
 	RpcUrlError,
 	StorageRetrievalError => StorageFailure,
 	FromUtf8Error => InvalidUrl,
 );
-
-use pallet_offchain_task_scheduler::impl_enum_from_variant;
 
 impl_enum_from_variant!(
 	SchedulerError,

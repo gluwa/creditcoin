@@ -76,17 +76,6 @@ pub mod pallet {
 			+ From<sp_core::ecdsa::Signature>
 			+ Parameter;
 
-		type FromAccountId: From<sp_core::sr25519::Public>
-			+ IsType<Self::AccountId>
-			+ Clone
-			+ core::fmt::Debug
-			+ PartialEq<Self::FromAccountId>
-			+ AsRef<[u8; 32]>;
-
-		type InternalPublic: sp_core::crypto::UncheckedFrom<[u8; 32]>;
-
-		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
-
 		// in order to turn a `Hash` into a U256 for checking the nonces on
 		// ethless transfers we need the `Hash` type to implement
 		// the BigEndianHash trait. This effectively constrains the Hash

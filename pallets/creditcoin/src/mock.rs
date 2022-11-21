@@ -106,11 +106,6 @@ impl pallet_creditcoin::Config for Test {
 
 	type Signer = <Signature as Verify>::Signer;
 	type SignerSignature = Signature;
-	type FromAccountId = AccountId;
-
-	type InternalPublic = sp_core::sr25519::Public;
-
-	type PublicSigning = <Signature as Verify>::Signer;
 
 	type HashIntoNonce = H256;
 
@@ -499,16 +494,6 @@ pub(crate) struct MockedRpcRequests {
 	pub(crate) get_block_number: Option<PendingRequest>,
 	pub(crate) get_block_by_number: Option<PendingRequest>,
 	pub(crate) chain_id: Option<PendingRequest>,
-}
-
-impl Default for MockedRpcRequests {
-	fn default() -> Self {
-		let rpc_uri = "http://localhost:8545";
-		let tx_hash = get_mock_tx_hash();
-		let tx_block_number = get_mock_tx_block_num();
-
-		Self::new(rpc_uri, &tx_hash, &tx_block_number, &ETHLESS_RESPONSES)
-	}
 }
 
 impl MockedRpcRequests {

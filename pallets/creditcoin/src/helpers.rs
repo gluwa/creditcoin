@@ -140,9 +140,6 @@ pub mod extensions {
 		S: Get<u32>,
 		T: Clone,
 	{
-		fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, ()> {
-			core::convert::TryFrom::try_from(self.to_vec())
-		}
 		fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
 			core::convert::TryFrom::try_from(self.to_vec()).unwrap()
 		}
