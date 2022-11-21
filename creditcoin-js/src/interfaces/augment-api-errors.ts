@@ -49,6 +49,17 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        chaos: {
+            AdderOverflow: AugmentedError<ApiType>;
+            /**
+             * Error names should be descriptive.
+             **/
+            NoneValue: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         creditcoin: {
             /**
              * The specified address has already been registered to another account

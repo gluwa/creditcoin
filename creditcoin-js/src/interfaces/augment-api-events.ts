@@ -6,7 +6,7 @@
 import '@polkadot/api-base/types/events';
 
 import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
-import type { Bytes, Null, Option, Result, u128, u32 } from '@polkadot/types-codec';
+import type { Bytes, Null, Option, Result, u128, u32, u64 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
 import type {
@@ -108,6 +108,19 @@ declare module '@polkadot/api-base/types/events' {
              * Some amount was withdrawn from the account (e.g. for transaction fees).
              **/
             Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        chaos: {
+            Added: AugmentedEvent<ApiType, [u32, AccountId32]>;
+            Cleared: AugmentedEvent<ApiType, [AccountId32]>;
+            /**
+             * Event documentation should end with an array that provides descriptive names for event
+             * parameters. [something, who]
+             **/
+            Stalled: AugmentedEvent<ApiType, [u64, AccountId32]>;
             /**
              * Generic event
              **/

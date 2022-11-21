@@ -91,6 +91,13 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        chaos: {
+            adder: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         creditcoin: {
             addresses: AugmentedQuery<
                 ApiType,

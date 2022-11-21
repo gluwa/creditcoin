@@ -43,6 +43,9 @@ import type {
     PalletBalancesReasons,
     PalletBalancesReleases,
     PalletBalancesReserveData,
+    PalletChaosCall,
+    PalletChaosError,
+    PalletChaosEvent,
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinAskOrderId,
@@ -151,6 +154,9 @@ declare module '@polkadot/types/types/registry' {
         PalletBalancesReasons: PalletBalancesReasons;
         PalletBalancesReleases: PalletBalancesReleases;
         PalletBalancesReserveData: PalletBalancesReserveData;
+        PalletChaosCall: PalletChaosCall;
+        PalletChaosError: PalletChaosError;
+        PalletChaosEvent: PalletChaosEvent;
         PalletCreditcoinAddress: PalletCreditcoinAddress;
         PalletCreditcoinAskOrder: PalletCreditcoinAskOrder;
         PalletCreditcoinAskOrderId: PalletCreditcoinAskOrderId;

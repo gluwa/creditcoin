@@ -224,6 +224,31 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        chaos: {
+            /**
+             * Clears the `Adder` storage item.
+             **/
+            clearAdder: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * By using the smallest possible weight we are essentially telling
+             * the runtime that this dispatchable function will be executed immediately
+             **/
+            dragBlockUnitWeight: AugmentedSubmittable<
+                (n: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /**
+             * Illustrates storage integer overflow
+             **/
+            overflowAdder: AugmentedSubmittable<
+                (n: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         creditcoin: {
             addAskOrder: AugmentedSubmittable<
                 (
