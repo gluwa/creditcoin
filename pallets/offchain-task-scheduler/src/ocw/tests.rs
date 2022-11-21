@@ -138,7 +138,7 @@ fn evaluation_error_is_retried() {
 
 #[test]
 #[tracing_test::traced_test]
-fn forget_task_guard_when_task_has_benn_persisted() {
+fn forget_task_guard_when_task_has_been_persisted() {
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	ext_builder.generate_authority();
 	ext_builder.with_offchain();
