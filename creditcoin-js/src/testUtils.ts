@@ -124,6 +124,24 @@ export const lendOnEth = async (
     return lendTxHash;
 };
 
+export const checkAddress = async (
+    ccApi: CreditcoinApi,
+    existingAddressId: string,
+): Promise<AddressRegistered | undefined> => {
+    const { api } = ccApi;
+
+    const result = await api.query.creditcoin.addresses<Option<PalletCreditcoinAddress>>(existingAddressId);
+
+    if (result.isSome) {
+        return {
+            itemId: existingAddressId,
+            item: createAddress(result.unwrap()),
+        } as AddressRegistered;
+    }
+
+    return undefined;
+};
+
 export const tryRegisterAddress = async (
     ccApi: CreditcoinApi,
     externalAddress: string,
@@ -133,19 +151,14 @@ export const tryRegisterAddress = async (
     checkForExisting = false,
 ): Promise<AddressRegistered> => {
     const {
-        api,
         extrinsics: { registerAddress },
     } = ccApi;
 
     if (checkForExisting) {
         const existingAddressId = createAddressId(blockchain, externalAddress);
-        const result = await api.query.creditcoin.addresses<Option<PalletCreditcoinAddress>>(existingAddressId);
-
-        if (result.isSome) {
-            return {
-                itemId: existingAddressId,
-                item: createAddress(result.unwrap()),
-            } as AddressRegistered;
+        const result = await checkAddress(ccApi, existingAddressId);
+        if (result) {
+            return result;
         }
     }
 
