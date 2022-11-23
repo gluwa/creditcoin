@@ -13,7 +13,7 @@ use frame_support::{
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
 use sp_api::impl_runtime_apis;
-use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, ConstU128, Encode, OpaqueMetadata};
 use sp_runtime::{
 	generic,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, Verify},
@@ -42,6 +42,7 @@ pub use frame_support::{
 	},
 	StorageValue,
 };
+pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
@@ -219,8 +220,9 @@ impl pallet_timestamp::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub const EXISTENTIAL_DEPOSIT: u128 = 500;
+
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 500;
 	pub const MaxLocks: u32 = 50;
 }
 
@@ -233,7 +235,7 @@ impl pallet_balances::Config for Runtime {
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
+	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
 	type AccountStore = System;
 	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -346,6 +348,7 @@ where
 		let tip = 0;
 
 		let extra: SignedExtra = (
+			frame_system::CheckNonZeroSender::<Runtime>::new(),
 			frame_system::CheckSpecVersion::<Runtime>::new(),
 			frame_system::CheckTxVersion::<Runtime>::new(),
 			frame_system::CheckGenesis::<Runtime>::new(),
@@ -397,6 +400,7 @@ pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
+	frame_system::CheckNonZeroSender<Runtime>,
 	frame_system::CheckSpecVersion<Runtime>,
 	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,

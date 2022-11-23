@@ -64,6 +64,12 @@ substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 thiserror = "1.0.37"
 tiny-bip39 = "1.0.0"
+try-runtime-cli = { workspace = true, optional = true }
+jsonrpsee = { version = "0.15.1", features = ["server"] }
+serde_json = "1.0.89"
+frame-system = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+sp-keyring = { workspace = true }
 
 [dependencies.tokio]
 version = "1.22.0"
@@ -79,3 +85,4 @@ std = [
     'sp-block-builder/std',
     'creditcoin-runtime-api/std',
 ]
+try-runtime = ["creditcoin-node-runtime/try-runtime", "try-runtime-cli"]

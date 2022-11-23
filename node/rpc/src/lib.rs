@@ -1,21 +1,20 @@
-use jsonrpc_core::Result as RpcResult;
-use jsonrpc_derive::rpc;
-use jsonrpc_pubsub::PubSubMetadata;
+use jsonrpsee::{
+	core::{async_trait, Error as JsonRpseeError, RpcResult},
+	proc_macros::rpc,
+};
 use primitives::metrics::MiningMetrics;
 
-#[rpc]
+#[rpc(client, server)]
 pub trait CreditcoinApi {
-	type Metadata: PubSubMetadata;
-
-	#[rpc(name = "creditcoin_hashrate")]
-	fn mining_stats(&self) -> RpcResult<MiningStats>;
+	#[method(name = "creditcoin_hashrate")]
+	async fn mining_stats(&self) -> RpcResult<MiningStats>;
 }
 
-pub struct CreditcoinRpc {
+pub struct Creditcoin {
 	mining_metrics: MiningMetrics,
 }
 
-impl CreditcoinRpc {
+impl Creditcoin {
 	pub fn new(mining_metrics: MiningMetrics) -> Self {
 		Self { mining_metrics }
 	}
@@ -28,16 +27,15 @@ pub enum Error {
 	RuntimeError,
 }
 
-impl From<Error> for i64 {
-	fn from(e: Error) -> i64 {
-		e as i64
+impl From<Error> for i32 {
+	fn from(e: Error) -> i32 {
+		e as i32
 	}
 }
 
-impl CreditcoinApi for CreditcoinRpc {
-	type Metadata = sc_rpc::Metadata;
-
-	fn mining_stats(&self) -> RpcResult<MiningStats> {
+#[async_trait]
+impl CreditcoinApiServer for Creditcoin {
+	async fn mining_stats(&self) -> RpcResult<MiningStats> {
 		let hash_count = self.mining_metrics.count();
 		let elapsed = self.mining_metrics.elapsed();
 		let rate = hash_count as f64 / elapsed.as_secs_f64();
@@ -53,7 +51,7 @@ pub struct MiningStats {
 }
 
 mod task;
-pub use task::{Task, TaskRpc};
+pub use task::{Task, TaskApiServer};
 
 #[cfg(test)]
 mod test {
@@ -61,13 +59,13 @@ mod test {
 	use assert_matches::assert_matches;
 	use std::time::Duration;
 
-	#[test]
+	#[tokio::test]
 	#[allow(clippy::redundant_clone)]
-	fn metrics_work() {
+	async fn metrics_work() {
 		let metrics = MiningMetrics::new(None).unwrap();
-		let rpc = CreditcoinRpc::new(metrics);
+		let rpc = Creditcoin::new(metrics);
 
-		let result = rpc.mining_stats();
+		let result = rpc.mining_stats().await.map_err(|_| ());
 		assert_matches!(result.clone(), Ok(stats) => {
 			assert_eq!(stats.hash_count, 0);
 			assert!(stats.elapsed > Duration::from_secs(0));
@@ -81,8 +79,8 @@ mod test {
 
 	#[test]
 	fn can_create_integer_from_error() {
-		assert_eq!(i64::from(Error::StorageError), 1);
-		assert_eq!(i64::from(Error::DecodeError), 2);
-		assert_eq!(i64::from(Error::SubscriptionError), 3);
+		assert_eq!(i32::from(Error::StorageError), 1);
+		assert_eq!(i32::from(Error::DecodeError), 2);
+		assert_eq!(i32::from(Error::SubscriptionError), 3);
 	}
 }
