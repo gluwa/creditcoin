@@ -6,7 +6,6 @@ extern crate alloc;
 use frame_support::traits::StorageVersion;
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
-use sp_io::KillStorageResult;
 use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
 
@@ -62,11 +61,10 @@ pub mod pallet {
 
 	use super::*;
 	use frame_support::{
-		dispatch::DispatchResult,
+		dispatch::{DispatchResult, PostDispatchInfo},
 		pallet_prelude::*,
 		traits::tokens::{currency::Currency as CurrencyT, fungible::Mutate, ExistenceRequirement},
 		transactional,
-		weights::PostDispatchInfo,
 	};
 	use frame_system::{
 		ensure_signed,
@@ -581,19 +579,12 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
 
-			let unverified_task_count = match PendingTasks::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
+			let unverified_task_count =
+				PendingTasks::<T>::clear_prefix(block_number, u32::MAX, None).unique;
 
-			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
-			let bid_count = match BidOrders::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
-			let offer_count = match Offers::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
+			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None).unique;
+			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).unique;
+			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).unique;
 
 			let mut deals_count = 0u32;
 			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
