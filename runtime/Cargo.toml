@@ -20,7 +20,6 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-benchmarking = { optional = true, workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
-hex-literal = { optional = true, workspace = true }
 pallet-balances = { workspace = true }
 pallet-creditcoin = { workspace = true }
 pallet-difficulty = { workspace = true }
@@ -57,11 +56,10 @@ sp-io = { workspace = true }
 [features]
 default = ['std']
 runtime-benchmarks = [
-    'frame-benchmarking',
+    'frame-benchmarking/runtime-benchmarks',
     'frame-support/runtime-benchmarks',
-    'frame-system-benchmarking',
+    'frame-system-benchmarking/runtime-benchmarks',
     'frame-system/runtime-benchmarks',
-    'hex-literal',
     'pallet-creditcoin/runtime-benchmarks',
     'pallet-balances/runtime-benchmarks',
     'pallet-rewards/runtime-benchmarks',
@@ -78,7 +76,6 @@ std = [
     'frame-system/std',
     'pallet-balances/std',
     'pallet-creditcoin/std',
-    'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
     'pallet-rewards/std',
     'pallet-difficulty/std',

@@ -26,10 +26,6 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 hex = { workspace = true }
 hex-literal = { workspace = true }
-itertools = { version = "~0.10", default-features = false }
-lexical = { version = "6.1.1", features = [
-    "write-integers",
-], default-features = false }
 libsecp256k1 = { version = "0.7", default-features = false, features = [
     "hmac",
     "static-context",

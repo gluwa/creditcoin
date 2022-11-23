@@ -5,8 +5,8 @@ use crate::{
 };
 use parity_scale_codec::{Decode, Encode};
 
-use frame_support::{storage_alias, migration, pallet_prelude::*, Identity};
-use super::{HashOf, AccountIdOf, BlockNumberOf, MomentOf};
+use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use frame_support::{migration, pallet_prelude::*, storage_alias, Identity};
 
 pub use super::v4::Transfer;
 pub use super::v4::*;
@@ -78,9 +78,15 @@ impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
 // 	>
 // );
 
-
 #[storage_alias]
-type UnverifiedTransfers<T: Config> = StorageDoubleMap<crate::Pallet<T>, Identity, BlockNumberOf<T>, Identity, TransferId<HashOf<T>>, UnverifiedTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>>;
+type UnverifiedTransfers<T: Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	TransferId<HashOf<T>>,
+	UnverifiedTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
 // generate_storage_alias!(
 // 	Creditcoin,
@@ -92,7 +98,14 @@ type UnverifiedTransfers<T: Config> = StorageDoubleMap<crate::Pallet<T>, Identit
 // );
 
 #[storage_alias]
-type UnverifiedCollectedCoins<T: Config> = StorageDoubleMap<crate::Pallet<T>, Identity, BlockNumberOf<T>, Identity, CollectedCoinsId<HashOf<T>>, UnverifiedCollectedCoinsStruct>;
+type UnverifiedCollectedCoins<T: Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	CollectedCoinsId<HashOf<T>>,
+	UnverifiedCollectedCoinsStruct,
+>;
 
 #[storage_alias]
 type PendingTasks<T: Config> = StorageDoubleMap<
@@ -133,8 +146,8 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	}
 
 	let module = crate::Pallet::<T>::name().as_bytes();
-	migration::clear_storage_prefix(module, b"UnverifiedTransfers", b"", None, None);
-
+	let _results = migration::clear_storage_prefix(module, b"UnverifiedTransfers", b"", None, None);
+	let _results = UnverifiedCollectedCoins::<T>::clear(u32::MAX, None);
 	weight
 }
 
