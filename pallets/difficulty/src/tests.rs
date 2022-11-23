@@ -3,7 +3,7 @@ use crate::{
 	next_difficulty, DifficultyAdjustmentPeriod, DifficultyAndTimestamp,
 	PreviousDifficultiesAndTimestamps, TargetBlockTime, WeightInfo,
 };
-use frame_support::{assert_noop, assert_ok, weights::Weight};
+use frame_support::{assert_noop, assert_ok};
 use pallet_timestamp::{self as timestamp};
 use sp_runtime::traits::BadOrigin;
 
@@ -177,10 +177,9 @@ fn exercise_on_timestamp_set_when_previous_is_configured() {
 
 #[test]
 fn exercise_weightinfo_functions() {
-	const ZERO: Weight = Weight::zero();
 	let result = super::weights::WeightInfo::<Test>::set_target_block_time();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::set_adjustment_period();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 }
