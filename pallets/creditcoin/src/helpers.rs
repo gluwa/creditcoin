@@ -127,7 +127,7 @@ pub fn non_paying_error<T: Config>(
 		error: error.into(),
 		post_info: frame_support::dispatch::PostDispatchInfo {
 			actual_weight: None,
-			pays_fee: frame_support::weights::Pays::No,
+			pays_fee: frame_support::dispatch::Pays::No,
 		},
 	}
 }
@@ -153,7 +153,9 @@ where
 	S: Get<u32>,
 	T: Clone + core::fmt::Debug,
 {
-	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, frame_benchmarking::Vec<T>> {
+	fn try_into_bounded(
+		self,
+	) -> Result<frame_support::BoundedVec<T, S>, frame_benchmarking::Vec<T>> {
 		core::convert::TryFrom::try_from(self.to_vec())
 	}
 	fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
