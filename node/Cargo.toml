@@ -41,7 +41,6 @@ sc-consensus-pow = { workspace = true }
 sc-executor = { workspace = true }
 sc-keystore = { workspace = true }
 sc-offchain = { workspace = true }
-sc-rpc = { workspace = true }
 sc-rpc-api = { workspace = true }
 sc-service = { workspace = true }
 sc-telemetry = { workspace = true }
@@ -51,25 +50,22 @@ sha3pow = { path = '../sha3pow' }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
-sp-consensus = { workspace = true }
-sp-consensus-pow = { workspace = true }
 sp-core = { features = ["std"], workspace = true }
 sp-inherents = { features = ["std"], workspace = true }
 sp-keystore = { workspace = true }
 sp-offchain = { features = ["std"], workspace = true }
 sp-runtime = { features = ["std"], workspace = true }
 sp-timestamp = { workspace = true }
-structopt = "0.3.26"
 substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 thiserror = "1.0.37"
-tiny-bip39 = "1.0.0"
 try-runtime-cli = { workspace = true, optional = true }
 jsonrpsee = { version = "0.15.1", features = ["server"] }
 serde_json = "1.0.89"
 frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 sp-keyring = { workspace = true }
+futures = "0.3.25"
 
 [dependencies.tokio]
 version = "1.22.0"
@@ -78,11 +74,10 @@ features = ["time"]
 
 [features]
 default = ['std']
-runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']
-std = [
-    'sp-consensus-pow/std',
-    'sp-api/std',
-    'sp-block-builder/std',
-    'creditcoin-runtime-api/std',
+runtime-benchmarks = [
+    'creditcoin-node-runtime/runtime-benchmarks',
+    'frame-benchmarking/runtime-benchmarks',
+    'frame-benchmarking-cli/runtime-benchmarks',
 ]
+std = ['sp-api/std', 'sp-block-builder/std', 'creditcoin-runtime-api/std']
 try-runtime = ["creditcoin-node-runtime/try-runtime", "try-runtime-cli"]
