@@ -33,7 +33,7 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 	}
 }
 
-type FullClient =
+pub(crate) type FullClient =
 	sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
@@ -50,9 +50,6 @@ type PartialComponentsType<T> = sc_service::PartialComponents<
 			FullClient,
 			FullSelectChain,
 			Sha3Algorithm<FullClient>,
-			sp_consensus::CanAuthorWithNativeVersion<
-				<FullClient as ExecutorProvider<Block>>::Executor,
-			>,
 			T,
 		>,
 		Option<Telemetry>,
@@ -123,8 +120,6 @@ pub fn new_partial(
 		client.clone(),
 	);
 
-	let can_author_with = sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
-
 	let algorithm = Sha3Algorithm::new(client.clone());
 
 	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
@@ -137,7 +132,6 @@ pub fn new_partial(
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 			Ok(timestamp)
 		},
-		can_author_with,
 	);
 
 	let import_queue = sc_consensus_pow::import_queue(
@@ -228,7 +222,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 		};
 	}
 
-	let (network, system_rpc_tx, network_starter) =
+	let (network, system_rpc_tx, tx_handler_controller, network_starter) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
 			client: client.clone(),
@@ -282,7 +276,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 				mining_metrics: mining_metrics.clone(),
 			};
 
-			Ok(crate::rpc::create_full(deps))
+			crate::rpc::create_full(deps).map_err(Into::into)
 		})
 	};
 
@@ -292,11 +286,12 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 		keystore: keystore_container.sync_keystore(),
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
-		rpc_extensions_builder,
 		backend: backend.clone(),
 		system_rpc_tx,
 		config,
 		telemetry: telemetry.as_mut(),
+		tx_handler_controller,
+		rpc_builder: rpc_extensions_builder,
 	})?;
 
 	if let Some(monitor_target) = monitor_nonce_account {
@@ -323,9 +318,6 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 			telemetry.as_ref().map(|x| x.handle()),
 		);
 
-		let can_author_with =
-			sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
-
 		let algorithm = Sha3Algorithm::new(client.clone());
 
 		let (worker, worker_task) = sc_consensus_pow::start_mining_worker(
@@ -343,7 +335,6 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 			},
 			Duration::from_secs(10),
 			Duration::from_secs(10),
-			can_author_with,
 		);
 
 		task_manager

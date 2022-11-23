@@ -1,10 +1,13 @@
 use creditcoin_node_runtime::{
 	AccountId, BalancesConfig, CreditcoinConfig, DifficultyConfig, GenesisConfig, Signature,
-	SudoConfig, SystemConfig, WASM_BINARY,
+	SudoConfig, SystemConfig, TransactionPaymentConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public, U256};
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::{
+	traits::{IdentifyAccount, Verify},
+	FixedU128,
+};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -152,6 +155,6 @@ fn testnet_genesis(
 			difficulty_adjustment_period: adjustment.unwrap_or(43),
 		},
 		creditcoin: CreditcoinConfig::default(),
-		scheduler: Default::default(),
+		transaction_payment: TransactionPaymentConfig { multiplier: FixedU128::from_float(1.0) },
 	}
 }
