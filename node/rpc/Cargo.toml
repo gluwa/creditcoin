@@ -12,6 +12,7 @@ repository.workspace = true
 creditcoin-node-runtime = { workspace = true }
 creditcoin-runtime-api = { workspace = true }
 frame-system = { features = ["std"], workspace = true }
+jsonrpsee = { version = "0.15.1", features = ["server", "macros"] }
 jsonrpc-core = { workspace = true }
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
@@ -26,6 +27,8 @@ sp-runtime = { features = ["std"], workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 test-client = { path = "../../test/client" }
+tokio = { version = "1.22.0", features = ["full"] }
+
 
 [features]
 runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']

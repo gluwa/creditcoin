@@ -99,3 +99,4 @@ std = [
     'sp-version/std',
     'creditcoin-runtime-api/std',
 ]
+try-runtime = []

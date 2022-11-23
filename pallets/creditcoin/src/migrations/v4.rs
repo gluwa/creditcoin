@@ -1,5 +1,5 @@
 // address registration now verifies ownership, so removed existing addresses
-use super::{v3, HashOf, AccountIdOf};
+use super::{v3, AccountIdOf, HashOf};
 use frame_support::traits::Get;
 use frame_support::Blake2_128Concat;
 use frame_support::{dispatch::Weight, storage_alias};
@@ -25,10 +25,8 @@ type Addresses<T: Config> =
 	StorageMap<crate::Pallet<T>, Blake2_128Concat, AddressId<HashOf<T>>, Address<AccountIdOf<T>>>;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	let count_removed = match Addresses::<T>::remove_all(None) {
-		sp_io::KillStorageResult::AllRemoved(count) => count,
-		sp_io::KillStorageResult::SomeRemaining(count) => count,
-	};
+	let sp_io::MultiRemovalResults { unique: count_removed, .. } =
+		Addresses::<T>::clear(u32::MAX, None);
 
 	T::DbWeight::get().writes(count_removed.saturated_into())
 }
