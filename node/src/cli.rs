@@ -2,7 +2,6 @@ use creditcoin_node_runtime::AccountId;
 pub use sc_cli::clap;
 use sc_cli::{clap::Parser, RunCmd};
 use sp_core::crypto::{PublicError, Ss58Codec};
-use structopt::StructOpt;
 
 fn parse_rpc_pair(input: &str) -> Result<(String, String), String> {
 	let (name, uri) = input

@@ -10,7 +10,7 @@ use crate::{
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, traits::Get, weights::Weight, BoundedVec};
+use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
 use sp_core::Pair;
@@ -588,7 +588,7 @@ fn register_transfer_ocw_fail_to_send() {
 			assert!(logs_contain("Failed to send fail dispatchable transaction"));
 		});
 
-		crate::PendingTasks::<Test>::remove_all(None);
+		let _results = crate::PendingTasks::<Test>::clear(u32::MAX, None);
 
 		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
@@ -3242,72 +3242,71 @@ fn register_currency_should_error_when_currency_already_registered() {
 
 #[test]
 fn exercise_weightinfo_functions() {
-	const ZERO: Weight = Weight::zero();
 	let result = super::weights::WeightInfo::<Test>::register_address();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::claim_legacy_wallet();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_ask_order();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_bid_order();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_offer();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_deal_order();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_authority();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::persist_transfer();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::fail_transfer();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::fund_deal_order();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::lock_deal_order();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_funding_transfer();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_repayment_transfer();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::close_deal_order();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::exempt();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_deal_order();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::request_collect_coins();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::fail_collect_coins();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::remove_authority();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_currency();
-	assert!(result.all_gt(ZERO));
+	assert!(result.ref_time() > 0);
 }
 
 #[test]
