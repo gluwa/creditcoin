@@ -1,5 +1,5 @@
 use jsonrpsee::{
-	core::{async_trait, Error as JsonRpseeError, RpcResult},
+	core::{async_trait, RpcResult},
 	proc_macros::rpc,
 };
 use primitives::metrics::MiningMetrics;

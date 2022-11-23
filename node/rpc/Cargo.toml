@@ -13,10 +13,6 @@ creditcoin-node-runtime = { workspace = true }
 creditcoin-runtime-api = { workspace = true }
 frame-system = { features = ["std"], workspace = true }
 jsonrpsee = { version = "0.15.1", features = ["server", "macros"] }
-jsonrpc-core = { workspace = true }
-jsonrpc-core-client = "18.0.0"
-jsonrpc-derive = "18.0.0"
-jsonrpc-pubsub = "18.0.0"
 primitives = { workspace = true, features = ["prometheus"] }
 sc-rpc = { workspace = true }
 serde = { workspace = true }
