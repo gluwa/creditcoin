@@ -37,6 +37,6 @@ fi
 
 if [[ $BENCH -eq 0 ]]
 then
-    ./target/release/creditcoin-node benchmark --chain dev --steps="$STEPS" --repeat="$REPEAT" --pallet "pallet_$PALLET" --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output "$OUTPUT"
-    sed -i "s/pallet_$PALLET/super/" "$OUTPUT"
+    ./target/release/creditcoin-node benchmark pallet --chain dev --steps="$STEPS" --repeat="$REPEAT" --pallet "pallet_$PALLET" --extrinsic='*' --execution wasm --wasm-execution=compiled --heap-pages=10000 --output "$OUTPUT"
+    sed -i "s/pallet_$PALLET/crate/" "$OUTPUT"
 fi
