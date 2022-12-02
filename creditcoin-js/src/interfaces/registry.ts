@@ -8,23 +8,22 @@ import '@polkadot/types/types/registry';
 import type {
     CreditcoinNodeRuntimeOriginCaller,
     CreditcoinNodeRuntimeRuntime,
-    FrameSupportScheduleLookupError,
-    FrameSupportScheduleMaybeHashed,
+    FrameSupportDispatchDispatchClass,
+    FrameSupportDispatchDispatchInfo,
+    FrameSupportDispatchPays,
+    FrameSupportDispatchPerDispatchClassU32,
+    FrameSupportDispatchPerDispatchClassWeight,
+    FrameSupportDispatchPerDispatchClassWeightsPerClass,
+    FrameSupportDispatchRawOrigin,
+    FrameSupportPreimagesBounded,
     FrameSupportTokensMiscBalanceStatus,
-    FrameSupportWeightsDispatchClass,
-    FrameSupportWeightsDispatchInfo,
-    FrameSupportWeightsPays,
-    FrameSupportWeightsPerDispatchClassU32,
-    FrameSupportWeightsPerDispatchClassU64,
-    FrameSupportWeightsPerDispatchClassWeightsPerClass,
-    FrameSupportWeightsRuntimeDbWeight,
-    FrameSupportWeightsWeightToFeeCoefficient,
     FrameSystemAccountInfo,
     FrameSystemCall,
     FrameSystemError,
     FrameSystemEvent,
     FrameSystemEventRecord,
     FrameSystemExtensionsCheckGenesis,
+    FrameSystemExtensionsCheckNonZeroSender,
     FrameSystemExtensionsCheckNonce,
     FrameSystemExtensionsCheckSpecVersion,
     FrameSystemExtensionsCheckTxVersion,
@@ -34,7 +33,6 @@ import type {
     FrameSystemLimitsBlockWeights,
     FrameSystemLimitsWeightsPerClass,
     FrameSystemPhase,
-    FrameSystemRawOrigin,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesCall,
@@ -87,13 +85,13 @@ import type {
     PalletSchedulerCall,
     PalletSchedulerError,
     PalletSchedulerEvent,
-    PalletSchedulerReleases,
-    PalletSchedulerScheduledV3,
+    PalletSchedulerScheduled,
     PalletSudoCall,
     PalletSudoError,
     PalletSudoEvent,
     PalletTimestampCall,
     PalletTransactionPaymentChargeTransactionPayment,
+    PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
     SpCoreEcdsaPublic,
     SpCoreEcdsaSignature,
@@ -106,33 +104,36 @@ import type {
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
+    SpRuntimeModuleError,
     SpRuntimeMultiSignature,
     SpRuntimeMultiSigner,
     SpRuntimeTokenError,
+    SpRuntimeTransactionalError,
     SpVersionRuntimeVersion,
+    SpWeightsRuntimeDbWeight,
+    SpWeightsWeightV2Weight,
 } from '@polkadot/types/lookup';
 
 declare module '@polkadot/types/types/registry' {
     interface InterfaceTypes {
         CreditcoinNodeRuntimeOriginCaller: CreditcoinNodeRuntimeOriginCaller;
         CreditcoinNodeRuntimeRuntime: CreditcoinNodeRuntimeRuntime;
-        FrameSupportScheduleLookupError: FrameSupportScheduleLookupError;
-        FrameSupportScheduleMaybeHashed: FrameSupportScheduleMaybeHashed;
+        FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
+        FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
+        FrameSupportDispatchPays: FrameSupportDispatchPays;
+        FrameSupportDispatchPerDispatchClassU32: FrameSupportDispatchPerDispatchClassU32;
+        FrameSupportDispatchPerDispatchClassWeight: FrameSupportDispatchPerDispatchClassWeight;
+        FrameSupportDispatchPerDispatchClassWeightsPerClass: FrameSupportDispatchPerDispatchClassWeightsPerClass;
+        FrameSupportDispatchRawOrigin: FrameSupportDispatchRawOrigin;
+        FrameSupportPreimagesBounded: FrameSupportPreimagesBounded;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
-        FrameSupportWeightsDispatchClass: FrameSupportWeightsDispatchClass;
-        FrameSupportWeightsDispatchInfo: FrameSupportWeightsDispatchInfo;
-        FrameSupportWeightsPays: FrameSupportWeightsPays;
-        FrameSupportWeightsPerDispatchClassU32: FrameSupportWeightsPerDispatchClassU32;
-        FrameSupportWeightsPerDispatchClassU64: FrameSupportWeightsPerDispatchClassU64;
-        FrameSupportWeightsPerDispatchClassWeightsPerClass: FrameSupportWeightsPerDispatchClassWeightsPerClass;
-        FrameSupportWeightsRuntimeDbWeight: FrameSupportWeightsRuntimeDbWeight;
-        FrameSupportWeightsWeightToFeeCoefficient: FrameSupportWeightsWeightToFeeCoefficient;
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
         FrameSystemError: FrameSystemError;
         FrameSystemEvent: FrameSystemEvent;
         FrameSystemEventRecord: FrameSystemEventRecord;
         FrameSystemExtensionsCheckGenesis: FrameSystemExtensionsCheckGenesis;
+        FrameSystemExtensionsCheckNonZeroSender: FrameSystemExtensionsCheckNonZeroSender;
         FrameSystemExtensionsCheckNonce: FrameSystemExtensionsCheckNonce;
         FrameSystemExtensionsCheckSpecVersion: FrameSystemExtensionsCheckSpecVersion;
         FrameSystemExtensionsCheckTxVersion: FrameSystemExtensionsCheckTxVersion;
@@ -142,7 +143,6 @@ declare module '@polkadot/types/types/registry' {
         FrameSystemLimitsBlockWeights: FrameSystemLimitsBlockWeights;
         FrameSystemLimitsWeightsPerClass: FrameSystemLimitsWeightsPerClass;
         FrameSystemPhase: FrameSystemPhase;
-        FrameSystemRawOrigin: FrameSystemRawOrigin;
         PalletBalancesAccountData: PalletBalancesAccountData;
         PalletBalancesBalanceLock: PalletBalancesBalanceLock;
         PalletBalancesCall: PalletBalancesCall;
@@ -195,13 +195,13 @@ declare module '@polkadot/types/types/registry' {
         PalletSchedulerCall: PalletSchedulerCall;
         PalletSchedulerError: PalletSchedulerError;
         PalletSchedulerEvent: PalletSchedulerEvent;
-        PalletSchedulerReleases: PalletSchedulerReleases;
-        PalletSchedulerScheduledV3: PalletSchedulerScheduledV3;
+        PalletSchedulerScheduled: PalletSchedulerScheduled;
         PalletSudoCall: PalletSudoCall;
         PalletSudoError: PalletSudoError;
         PalletSudoEvent: PalletSudoEvent;
         PalletTimestampCall: PalletTimestampCall;
         PalletTransactionPaymentChargeTransactionPayment: PalletTransactionPaymentChargeTransactionPayment;
+        PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
         SpCoreEcdsaPublic: SpCoreEcdsaPublic;
         SpCoreEcdsaSignature: SpCoreEcdsaSignature;
@@ -214,9 +214,13 @@ declare module '@polkadot/types/types/registry' {
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;
+        SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
         SpRuntimeMultiSigner: SpRuntimeMultiSigner;
         SpRuntimeTokenError: SpRuntimeTokenError;
+        SpRuntimeTransactionalError: SpRuntimeTransactionalError;
         SpVersionRuntimeVersion: SpVersionRuntimeVersion;
+        SpWeightsRuntimeDbWeight: SpWeightsRuntimeDbWeight;
+        SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
     } // InterfaceTypes
 } // declare module
