@@ -11,11 +11,10 @@ import type {
     SubmittableExtrinsic,
     SubmittableExtrinsicFunction,
 } from '@polkadot/api-base/types';
-import type { Bytes, Compact, Option, U256, Vec, bool, i64, u128, u32, u64, u8 } from '@polkadot/types-codec';
+import type { Bytes, Compact, Option, U256, U8aFixed, Vec, bool, i64, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from '@polkadot/types/interfaces/runtime';
 import type {
-    FrameSupportScheduleMaybeHashed,
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinDealOrderId,
@@ -33,6 +32,7 @@ import type {
     SpCoreEcdsaSignature,
     SpRuntimeMultiSignature,
     SpRuntimeMultiSigner,
+    SpWeightsWeightV2Weight,
 } from '@polkadot/types/lookup';
 
 export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
@@ -504,8 +504,8 @@ declare module '@polkadot/api-base/types/submittable' {
              * Cancel a named scheduled task.
              **/
             cancelNamed: AugmentedSubmittable<
-                (id: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Bytes]
+                (id: U8aFixed | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [U8aFixed]
             >;
             /**
              * Anonymously schedule a task.
@@ -520,9 +520,9 @@ declare module '@polkadot/api-base/types/submittable' {
                         | ITuple<[u32, u32]>
                         | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
                     priority: u8 | AnyNumber | Uint8Array,
-                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+                [u32, Option<ITuple<[u32, u32]>>, u8, Call]
             >;
             /**
              * Anonymously schedule a task after a delay.
@@ -541,16 +541,16 @@ declare module '@polkadot/api-base/types/submittable' {
                         | ITuple<[u32, u32]>
                         | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
                     priority: u8 | AnyNumber | Uint8Array,
-                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+                [u32, Option<ITuple<[u32, u32]>>, u8, Call]
             >;
             /**
              * Schedule a named task.
              **/
             scheduleNamed: AugmentedSubmittable<
                 (
-                    id: Bytes | string | Uint8Array,
+                    id: U8aFixed | string | Uint8Array,
                     when: u32 | AnyNumber | Uint8Array,
                     maybePeriodic:
                         | Option<ITuple<[u32, u32]>>
@@ -559,9 +559,9 @@ declare module '@polkadot/api-base/types/submittable' {
                         | ITuple<[u32, u32]>
                         | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
                     priority: u8 | AnyNumber | Uint8Array,
-                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [Bytes, u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+                [U8aFixed, u32, Option<ITuple<[u32, u32]>>, u8, Call]
             >;
             /**
              * Schedule a named task after a delay.
@@ -572,7 +572,7 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             scheduleNamedAfter: AugmentedSubmittable<
                 (
-                    id: Bytes | string | Uint8Array,
+                    id: U8aFixed | string | Uint8Array,
                     after: u32 | AnyNumber | Uint8Array,
                     maybePeriodic:
                         | Option<ITuple<[u32, u32]>>
@@ -581,9 +581,9 @@ declare module '@polkadot/api-base/types/submittable' {
                         | ITuple<[u32, u32]>
                         | [u32 | AnyNumber | Uint8Array, u32 | AnyNumber | Uint8Array],
                     priority: u8 | AnyNumber | Uint8Array,
-                    call: FrameSupportScheduleMaybeHashed | { Value: any } | { Hash: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [Bytes, u32, Option<ITuple<[u32, u32]>>, u8, FrameSupportScheduleMaybeHashed]
+                [U8aFixed, u32, Option<ITuple<[u32, u32]>>, u8, Call]
             >;
             /**
              * Generic tx
@@ -676,9 +676,9 @@ declare module '@polkadot/api-base/types/submittable' {
             sudoUncheckedWeight: AugmentedSubmittable<
                 (
                     call: Call | IMethod | string | Uint8Array,
-                    weight: u64 | AnyNumber | Uint8Array,
+                    weight: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [Call, u64]
+                [Call, SpWeightsWeightV2Weight]
             >;
             /**
              * Generic tx
@@ -726,11 +726,6 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             /**
              * Make some on-chain remark and emit event.
-             *
-             * # <weight>
-             * - `O(b)` where b is the length of the remark.
-             * - 1 event.
-             * # </weight>
              **/
             remarkWithEvent: AugmentedSubmittable<
                 (remark: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
