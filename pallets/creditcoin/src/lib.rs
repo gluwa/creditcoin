@@ -702,7 +702,7 @@ pub mod pallet {
 			public_key: sp_core::ecdsa::Public,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
-			let account_id_of_key = T::Signer::from(public_key.clone()).into_account();
+			let account_id_of_key = T::Signer::from(public_key).into_account();
 			ensure!(account_id_of_key == who, Error::<T>::NotLegacyWalletOwner);
 
 			let sighash = LegacySighash::from(&public_key);
