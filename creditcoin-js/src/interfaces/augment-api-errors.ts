@@ -290,6 +290,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             FailedToSchedule: AugmentedError<ApiType>;
             /**
+             * Attempt to use a non-named function on a named task.
+             **/
+            Named: AugmentedError<ApiType>;
+            /**
              * Cannot find the scheduled call.
              **/
             NotFound: AugmentedError<ApiType>;
