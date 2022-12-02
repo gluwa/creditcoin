@@ -71,7 +71,7 @@ impl RegisteredAddress {
 		signature: sp_core::ecdsa::Signature,
 	) -> RegisteredAddress {
 		let signer = public_key.into();
-		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
+		let address = if let MultiSigner::Ecdsa(pkey) = signer {
 			EVMAddress::from_public(&pkey)
 		} else {
 			unimplemented!();
@@ -107,7 +107,7 @@ pub(crate) fn generate_address_with_proof(
 	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
 	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
 	let pkey = key_pair.public();
-	let signer: MultiSigner = pkey.clone().into();
+	let signer: MultiSigner = pkey.into();
 	let who = signer.into_account();
 	let message = get_register_address_message(who.clone());
 	let ownership_proof = key_pair.sign(message.as_slice());
@@ -1577,7 +1577,7 @@ fn claim_legacy_wallet_works() {
 		&hex::decode("0399d6e7c784494fd7edc26fc9ca460a68c97cc64c49c85dfbb68148f0607893bf").unwrap(),
 	)
 	.unwrap();
-	let claimer = MultiSigner::from(pub_key.clone()).into_account();
+	let claimer = MultiSigner::from(pub_key).into_account();
 
 	let mut ext = ExtBuilder::default();
 	ext.fund(keeper.clone(), legacy_amount)
@@ -1763,11 +1763,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 
 		let test_info = TestInfo {
 			lender: RegisteredAddress::new("lender2", Blockchain::ETHEREUM),
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::RINKEBY,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1798,11 +1794,7 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::RINKEBY,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 		// create AskOrder which will use-up the default ID
@@ -1869,11 +1861,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::RINKEBY,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1922,11 +1910,7 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::RINKEBY,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1985,11 +1969,7 @@ fn register_deal_order_should_succeed() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::RINKEBY,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -2131,11 +2111,7 @@ fn register_deal_order_should_error_when_currency_unregistered() {
 		let pub_key = key_pair.public();
 
 		let mut test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::RINKEBY,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 		test_info.loan_terms.currency = ethless_currency("0xabab".hex_to_address()).to_id::<Test>();
@@ -2169,11 +2145,7 @@ fn register_deal_order_should_error_when_currency_blockchain_mismatch() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::RINKEBY,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::RINKEBY, ownership_proof),
 			..TestInfo::with_currency(match ethless_currency("0xaaaa".hex_to_address()) {
 				Currency::Evm(typ, _) => Currency::Evm(typ, EvmInfo::ETHEREUM),
 			})
