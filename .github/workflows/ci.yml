@@ -94,7 +94,7 @@ jobs:
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
@@ -126,7 +126,7 @@ jobs:
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
@@ -181,7 +181,7 @@ jobs:
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
@@ -389,7 +389,7 @@ jobs:
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
