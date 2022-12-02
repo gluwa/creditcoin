@@ -21,7 +21,7 @@ jobs:
         if: matrix.operating-system == 'ubuntu-20.04'
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         shell: bash
