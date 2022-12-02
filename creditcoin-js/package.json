@@ -21,7 +21,7 @@
         "test": "$npm_execpath example"
     },
     "devDependencies": {
-        "@polkadot/typegen": "8.14.1",
+        "@polkadot/typegen": "9.9.4",
         "@typescript-eslint/eslint-plugin": "^5.42.1",
         "@typescript-eslint/parser": "^5.45.0",
         "eslint": "^8.27.0",
