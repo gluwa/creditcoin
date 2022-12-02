@@ -49,10 +49,10 @@ where
 	let mut module = RpcModule::new(());
 	let FullDeps { client, pool, deny_unsafe, mining_metrics } = deps;
 
-	module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
 	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 	module.merge(Creditcoin::new(mining_metrics).into_rpc())?;
-	module.merge(Task::new(client.clone(), deny_unsafe).into_rpc())?;
+	module.merge(Task::new(client, deny_unsafe).into_rpc())?;
 
 	// io.extend_with(CreditcoinApi::to_delegate(CreditcoinRpc::new(mining_metrics)));
 

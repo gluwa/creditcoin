@@ -47,7 +47,7 @@ fn pallet_scheduler_works() {
 		let call =
 			Call::System(frame_system::Call::remark_with_event { remark: b"dummy".to_vec() });
 		{
-			let boxed = Box::new(call.into());
+			let boxed = Box::new(call);
 			assert_ok!(Scheduler::schedule(RawOrigin::Root.into(), 4, None, 0, boxed));
 		}
 		scheduler_roll_to(3);
@@ -78,13 +78,13 @@ fn must_be_root_to_schedule() {
 		System::set_block_number(1);
 		let call =
 			Call::System(frame_system::Call::remark_with_event { remark: b"dummy".to_vec() });
-		let boxed = Box::new(call.clone().into());
+		let boxed = Box::new(call.clone());
 		let acc = generate_account("Somebody");
 		assert_noop!(
 			Scheduler::schedule(RawOrigin::Signed(acc).into(), 4, None, 0, boxed),
 			BadOrigin
 		);
-		let boxed = Box::new(call.into());
+		let boxed = Box::new(call);
 		assert_noop!(Scheduler::schedule(RawOrigin::None.into(), 4, None, 0, boxed), BadOrigin);
 	});
 }
