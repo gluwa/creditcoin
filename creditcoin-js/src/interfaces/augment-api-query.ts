@@ -6,11 +6,11 @@
 import '@polkadot/api-base/types/storage';
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from '@polkadot/api-base/types';
-import type { Bytes, Null, Option, U256, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
+import type { Bytes, Null, Option, U256, U8aFixed, Vec, bool, i64, u128, u32, u64 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
 import type {
-    FrameSupportWeightsPerDispatchClassU64,
+    FrameSupportDispatchPerDispatchClassWeight,
     FrameSystemAccountInfo,
     FrameSystemEventRecord,
     FrameSystemLastRuntimeUpgradeInfo,
@@ -32,8 +32,7 @@ import type {
     PalletCreditcoinTaskId,
     PalletCreditcoinTransfer,
     PalletDifficultyDifficultyAndTimestamp,
-    PalletSchedulerReleases,
-    PalletSchedulerScheduledV3,
+    PalletSchedulerScheduled,
     PalletTransactionPaymentReleases,
     SpRuntimeDigest,
 } from '@polkadot/types/lookup';
@@ -46,8 +45,29 @@ declare module '@polkadot/api-base/types/storage' {
     interface AugmentedQueries<ApiType extends ApiTypes> {
         balances: {
             /**
-             * The balance of an account.
+             * The Balances pallet example of storing the balance of an account.
              *
+             * # Example
+             *
+             * ```nocompile
+             * impl pallet_balances::Config for Runtime {
+             * type AccountStore = StorageMapShim<Self::Account<Runtime>, frame_system::Provider<Runtime>, AccountId, Self::AccountData<Balance>>
+             * }
+             * ```
+             *
+             * You can also store the balance of an account in the `System` pallet.
+             *
+             * # Example
+             *
+             * ```nocompile
+             * impl pallet_balances::Config for Runtime {
+             * type AccountStore = System
+             * }
+             * ```
+             *
+             * But this comes with tradeoffs, storing account balances in the system pallet stores
+             * `frame_system` data alongside the account data contrary to storing account balances in the
+             * `Balances` pallet, which uses a `StorageMap` to store balances data only.
              * NOTE: This is only used in the case that this pallet is used to store balances.
              **/
             account: AugmentedQuery<
@@ -227,26 +247,24 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             agenda: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Option<PalletSchedulerScheduledV3>>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Option<PalletSchedulerScheduled>>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            incompleteSince: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /**
-             * Lookup from identity to the block number and index of the task.
+             * Lookup from a name to the block number and index of the task.
+             *
+             * For v3 -> v4 the previously unbounded identities are Blake2-256 hashed to form the v4
+             * identities.
              **/
             lookup: AugmentedQuery<
                 ApiType,
-                (arg: Bytes | string | Uint8Array) => Observable<Option<ITuple<[u32, u32]>>>,
-                [Bytes]
+                (arg: U8aFixed | string | Uint8Array) => Observable<Option<ITuple<[u32, u32]>>>,
+                [U8aFixed]
             > &
-                QueryableStorageEntry<ApiType, [Bytes]>;
-            /**
-             * Storage version of the pallet.
-             *
-             * New networks start with last version.
-             **/
-            storageVersion: AugmentedQuery<ApiType, () => Observable<PalletSchedulerReleases>, []> &
-                QueryableStorageEntry<ApiType, []>;
+                QueryableStorageEntry<ApiType, [U8aFixed]>;
             /**
              * Generic query
              **/
@@ -286,7 +304,7 @@ declare module '@polkadot/api-base/types/storage' {
             /**
              * The current weight for the block.
              **/
-            blockWeight: AugmentedQuery<ApiType, () => Observable<FrameSupportWeightsPerDispatchClassU64>, []> &
+            blockWeight: AugmentedQuery<ApiType, () => Observable<FrameSupportDispatchPerDispatchClassWeight>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Digest of the current block, also part of the block header.
@@ -299,8 +317,11 @@ declare module '@polkadot/api-base/types/storage' {
             /**
              * Events deposited for the current block.
              *
-             * NOTE: This storage item is explicitly unbounded since it is never intended to be read
-             * from within the runtime.
+             * NOTE: The item is unbound and should therefore never be read on chain.
+             * It could otherwise inflate the PoV size of a block.
+             *
+             * Events have a large in-memory size. Box the events to not go out-of-memory
+             * just in case someone still reads them from within the runtime.
              **/
             events: AugmentedQuery<ApiType, () => Observable<Vec<FrameSystemEventRecord>>, []> &
                 QueryableStorageEntry<ApiType, []>;
