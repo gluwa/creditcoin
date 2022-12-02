@@ -119,7 +119,7 @@ benchmarks! {
 			ecdsa::Public::from_raw(raw_key)
 		};
 
-		let claimer = T::Signer::from(pubkey.clone()).into_account();
+		let claimer = T::Signer::from(pubkey).into_account();
 		whitelist_account!(claimer);
 
 		let sighash = LegacySighash::from(&pubkey);
@@ -288,7 +288,7 @@ benchmarks! {
 
 		let ktypeid = KeyTypeId(*b"dumy");
 		let pkey = ecdsa_generate(ktypeid, None);
-		let borrower = T::Signer::from(pkey.clone()).into_account();
+		let borrower = T::Signer::from(pkey).into_account();
 
 		let borrower_addr_id = register_eth_addr::<T>(&borrower,"borrower");
 		let signature = ecdsa_sign(ktypeid, &pkey, &payload[..]).expect("ecdsa signature");
