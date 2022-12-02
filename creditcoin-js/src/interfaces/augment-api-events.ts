@@ -6,13 +6,12 @@
 import '@polkadot/api-base/types/events';
 
 import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
-import type { Bytes, Null, Option, Result, u128, u32 } from '@polkadot/types-codec';
+import type { Null, Option, Result, U8aFixed, u128, u32 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
 import type {
-    FrameSupportScheduleLookupError,
+    FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
-    FrameSupportWeightsDispatchInfo,
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinAskOrderId,
@@ -237,10 +236,10 @@ declare module '@polkadot/api-base/types/events' {
             /**
              * The call for the provided hash was not found so the task has been aborted.
              **/
-            CallLookupFailed: AugmentedEvent<
+            CallUnavailable: AugmentedEvent<
                 ApiType,
-                [task: ITuple<[u32, u32]>, id: Option<Bytes>, error: FrameSupportScheduleLookupError],
-                { task: ITuple<[u32, u32]>; id: Option<Bytes>; error: FrameSupportScheduleLookupError }
+                [task: ITuple<[u32, u32]>, id: Option<U8aFixed>],
+                { task: ITuple<[u32, u32]>; id: Option<U8aFixed> }
             >;
             /**
              * Canceled some task.
@@ -251,8 +250,24 @@ declare module '@polkadot/api-base/types/events' {
              **/
             Dispatched: AugmentedEvent<
                 ApiType,
-                [task: ITuple<[u32, u32]>, id: Option<Bytes>, result: Result<Null, SpRuntimeDispatchError>],
-                { task: ITuple<[u32, u32]>; id: Option<Bytes>; result: Result<Null, SpRuntimeDispatchError> }
+                [task: ITuple<[u32, u32]>, id: Option<U8aFixed>, result: Result<Null, SpRuntimeDispatchError>],
+                { task: ITuple<[u32, u32]>; id: Option<U8aFixed>; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * The given task was unable to be renewed since the agenda is full at that block.
+             **/
+            PeriodicFailed: AugmentedEvent<
+                ApiType,
+                [task: ITuple<[u32, u32]>, id: Option<U8aFixed>],
+                { task: ITuple<[u32, u32]>; id: Option<U8aFixed> }
+            >;
+            /**
+             * The given task can never be executed since it is overweight.
+             **/
+            PermanentlyOverweight: AugmentedEvent<
+                ApiType,
+                [task: ITuple<[u32, u32]>, id: Option<U8aFixed>],
+                { task: ITuple<[u32, u32]>; id: Option<U8aFixed> }
             >;
             /**
              * Scheduled some task.
@@ -299,16 +314,16 @@ declare module '@polkadot/api-base/types/events' {
              **/
             ExtrinsicFailed: AugmentedEvent<
                 ApiType,
-                [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSupportWeightsDispatchInfo],
-                { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSupportWeightsDispatchInfo }
+                [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSupportDispatchDispatchInfo],
+                { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSupportDispatchDispatchInfo }
             >;
             /**
              * An extrinsic completed successfully.
              **/
             ExtrinsicSuccess: AugmentedEvent<
                 ApiType,
-                [dispatchInfo: FrameSupportWeightsDispatchInfo],
-                { dispatchInfo: FrameSupportWeightsDispatchInfo }
+                [dispatchInfo: FrameSupportDispatchDispatchInfo],
+                { dispatchInfo: FrameSupportDispatchDispatchInfo }
             >;
             /**
              * An account was reaped.
@@ -322,6 +337,21 @@ declare module '@polkadot/api-base/types/events' {
              * On on-chain remark happened.
              **/
             Remarked: AugmentedEvent<ApiType, [sender: AccountId32, hash_: H256], { sender: AccountId32; hash_: H256 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        transactionPayment: {
+            /**
+             * A transaction fee `actual_fee`, of which `tip` was added to the minimum inclusion fee,
+             * has been paid by `who`.
+             **/
+            TransactionFeePaid: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, actualFee: u128, tip: u128],
+                { who: AccountId32; actualFee: u128; tip: u128 }
+            >;
             /**
              * Generic event
              **/

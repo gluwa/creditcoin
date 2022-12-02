@@ -6,14 +6,14 @@
 import '@polkadot/api-base/types/consts';
 
 import type { ApiTypes, AugmentedConst } from '@polkadot/api-base/types';
-import type { Vec, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
+import type { u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { Codec } from '@polkadot/types-codec/types';
 import type {
-    FrameSupportWeightsRuntimeDbWeight,
-    FrameSupportWeightsWeightToFeeCoefficient,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
     SpVersionRuntimeVersion,
+    SpWeightsRuntimeDbWeight,
+    SpWeightsWeightV2Weight,
 } from '@polkadot/types/lookup';
 
 export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
@@ -41,13 +41,11 @@ declare module '@polkadot/api-base/types/consts' {
         };
         scheduler: {
             /**
-             * The maximum weight that may be scheduled per block for any dispatchables of less
-             * priority than `schedule::HARD_DEADLINE`.
+             * The maximum weight that may be scheduled per block for any dispatchables.
              **/
-            maximumWeight: u64 & AugmentedConst<ApiType>;
+            maximumWeight: SpWeightsWeightV2Weight & AugmentedConst<ApiType>;
             /**
              * The maximum number of scheduled calls in the queue for a single block.
-             * Not strictly enforced, but used for weight estimation.
              **/
             maxScheduledPerBlock: u32 & AugmentedConst<ApiType>;
             /**
@@ -71,9 +69,9 @@ declare module '@polkadot/api-base/types/consts' {
             /**
              * The weight of runtime database operations the runtime can invoke.
              **/
-            dbWeight: FrameSupportWeightsRuntimeDbWeight & AugmentedConst<ApiType>;
+            dbWeight: SpWeightsRuntimeDbWeight & AugmentedConst<ApiType>;
             /**
-             * The designated SS85 prefix of this chain.
+             * The designated SS58 prefix of this chain.
              *
              * This replaces the "ss58Format" property declared in the chain spec. Reason is
              * that the runtime should know about the prefix in order to make use of it as
@@ -127,14 +125,6 @@ declare module '@polkadot/api-base/types/consts' {
              * transactions.
              **/
             operationalFeeMultiplier: u8 & AugmentedConst<ApiType>;
-            /**
-             * The fee to be paid for making a transaction; the per-byte portion.
-             **/
-            transactionByteFee: u128 & AugmentedConst<ApiType>;
-            /**
-             * The polynomial that is applied in order to derive fee from weight.
-             **/
-            weightToFee: Vec<FrameSupportWeightsWeightToFeeCoefficient> & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
