@@ -1,4 +1,4 @@
-import { Blockchain, Keyring, KeyringPair, Wallet, POINT_01_CTC, creditcoinApi } from 'creditcoin-js';
+import { Blockchain, KeyringPair, Wallet, POINT_01_CTC, creditcoinApi } from 'creditcoin-js';
 import { createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
@@ -8,11 +8,16 @@ import { extractFee } from '../utils';
 
 describe('RegisterAddress', () => {
     let ccApi: CreditcoinApi;
-    let alice: KeyringPair;
+    let lender: KeyringPair;
+
+    const { blockchain, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        alice = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
     });
 
     afterAll(async () => await ccApi.api.disconnect());
@@ -26,9 +31,9 @@ describe('RegisterAddress', () => {
                 .registerAddress(
                     createCreditcoinBlockchain(api, (global as any).CREDITCOIN_ETHEREUM_CHAIN).toJSON(),
                     wallet.address,
-                    signAccountId(api, wallet, alice.address),
+                    signAccountId(api, wallet, lender.address),
                 )
-                .signAndSend(alice, { nonce: -1 }, async ({ dispatchError, events, status }) => {
+                .signAndSend(lender, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
                 .catch((error) => reject(error));
@@ -38,17 +43,11 @@ describe('RegisterAddress', () => {
     });
 
     it('createAddressId works as expected', async (): Promise<void> => {
-        const { blockchain } = testData(
-            (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
-            (global as any).CREDITCOIN_CREATE_WALLET,
-        );
-
         const {
             api,
             extrinsics: { registerAddress },
         } = ccApi;
 
-        const lender = alice;
         const lenderWallet = Wallet.createRandom();
         const lenderRegAddr = await registerAddress(
             lenderWallet.address,
