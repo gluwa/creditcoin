@@ -29,8 +29,8 @@ describe('FundDealOrder', (): void => {
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
