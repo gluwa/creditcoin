@@ -93,7 +93,7 @@ describe('Creditcoin RPC', (): void => {
     });
 
     it('getOffchainNonceKey() should work when passed a valid AccountId', async () => {
-        const lender = keyring.addFromUri('//Alice');
+        const lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
 
         const rawResponse = await (api.rpc as any).task.getOffchainNonceKey(lender.address);
         const parsedResponse = JSON.parse(rawResponse);
