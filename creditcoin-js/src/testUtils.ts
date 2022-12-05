@@ -1,4 +1,4 @@
-import { providers, Wallet } from 'ethers';
+import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 
 import { Keyring } from '@polkadot/api';
@@ -163,31 +163,4 @@ export const tryRegisterAddress = async (
     }
 
     return registerAddress(externalAddress, blockchain, ownershipProof, signer);
-};
-
-export const registerCtcDeployerAddress = async (
-    ccApi: CreditcoinApi,
-    privateKey: string,
-    ethereumNodeUrl: string,
-    reuseExistingAddresses: boolean,
-    testingData: TestData,
-): Promise<AddressRegistered> => {
-    const { keyring, blockchain } = testingData;
-    const {
-        utils: { signAccountId },
-    } = ccApi;
-
-    const deployer = keyring.addFromUri('//Alice');
-
-    const provider = new providers.JsonRpcProvider(ethereumNodeUrl);
-    const deployerWallet = new Wallet(privateKey, provider);
-
-    return tryRegisterAddress(
-        ccApi,
-        deployerWallet.address,
-        blockchain,
-        signAccountId(deployerWallet, deployer.address),
-        deployer,
-        reuseExistingAddresses,
-    );
 };
