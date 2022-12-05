@@ -41,7 +41,7 @@ describe('CollectCoins', (): void => {
         beforeAll(async () => {
             const { api } = ccApi;
 
-            collector = keyring.addFromUri('//Alice');
+            collector = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
 
             /* eslint-disable @typescript-eslint/naming-convention */
             const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
