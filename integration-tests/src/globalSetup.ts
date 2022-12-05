@@ -1,12 +1,27 @@
-import { ApiPromise, WsProvider, Wallet, Keyring, CHAINS } from 'creditcoin-js';
+import { ApiPromise, WsProvider, Wallet, Keyring, KeyringPair, CHAINS } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { main as deployCtcContract } from './ctc-deploy';
+
+const createSigner = (keyring: Keyring, who: 'lender' | 'borrower'): KeyringPair => {
+    switch (who) {
+        case 'lender':
+            return keyring.addFromUri('//Alice');
+        case 'borrower':
+            return keyring.addFromUri('//Bob');
+        default:
+            throw new Error(`Unexpected value "${who}"`); // eslint-disable-line
+    }
+};
 
 const setup = async () => {
     process.env.NODE_ENV = 'test';
 
     if ((global as any).CREDITCOIN_CREATE_WALLET === undefined) {
         (global as any).CREDITCOIN_CREATE_WALLET = Wallet.createRandom; // eslint-disable-line
+    }
+
+    if ((global as any).CREDITCOIN_CREATE_SIGNER === undefined) {
+        (global as any).CREDITCOIN_CREATE_SIGNER = createSigner; // eslint-disable-line
     }
 
     // WARNING: when setting global variables `undefined' means no value has been assigned
@@ -73,7 +88,8 @@ const setup = async () => {
         provider: new WsProvider((global as any).CREDITCOIN_API_URL),
     });
     if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
-        const alice = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
+        const keyring = new Keyring({ type: 'sr25519' });
+        const alice = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
         await setupAuthority(api, alice);
     }
     await api.disconnect();

@@ -19,8 +19,8 @@ describe('Full Loan Cycle', (): void => {
             utils: { signAccountId },
         } = ccApi;
 
-        const lender = keyring.addFromUri('//Alice');
-        const borrower = keyring.addFromUri('//Bob');
+        const lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        const borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
 
         const lenderWallet = createWallet('lender');
         const borrowerWallet = createWallet('borrower');

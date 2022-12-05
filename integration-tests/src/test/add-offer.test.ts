@@ -22,8 +22,8 @@ describe('AddOffer', () => {
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
 
         const eth = await ethConnection(
             (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
