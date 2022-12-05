@@ -32,14 +32,10 @@ export const testData = (ethereumChain: Blockchain, createWalletF: CreateWalletF
     };
 };
 
-const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey?: KeyringPair) => {
+const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey: KeyringPair) => {
     const id = createCurrencyId(ccApi.api, currency);
     const onChainCurrency = await ccApi.api.query.creditcoin.currencies(id);
     if (onChainCurrency.isEmpty) {
-        if (sudoKey === undefined) {
-            const keyring = new Keyring({ type: 'sr25519' });
-            sudoKey = keyring.addFromUri('//Alice');
-        }
         const { itemId } = await registerCurrencyAsync(ccApi.api, currency, sudoKey);
         if (itemId !== id) {
             throw new Error(`Unequal: ${itemId} !== ${id}`);
@@ -47,9 +43,13 @@ const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency
     }
 };
 
-export const loanTermsWithCurrency = async (ccApi: CreditcoinApi, currency: Currency): Promise<LoanTerms> => {
+export const loanTermsWithCurrency = async (
+    ccApi: CreditcoinApi,
+    currency: Currency,
+    sudoKey: KeyringPair,
+): Promise<LoanTerms> => {
     const currencyId = createCurrencyId(ccApi.api, currency);
-    await ensureCurrencyRegistered(ccApi, currency);
+    await ensureCurrencyRegistered(ccApi, currency, sudoKey);
 
     return {
         amount: new BN(1_000),
