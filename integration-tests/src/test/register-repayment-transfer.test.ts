@@ -71,7 +71,11 @@ describe('RegisterRepaymentTransfer', (): void => {
             (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
         );
         const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(ccApi, currency);
+        loanTerms = await loanTermsWithCurrency(
+            ccApi,
+            currency,
+            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
+        );
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);

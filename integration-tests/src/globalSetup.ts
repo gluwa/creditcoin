@@ -2,12 +2,14 @@ import { ApiPromise, WsProvider, Wallet, Keyring, KeyringPair, CHAINS } from 'cr
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { main as deployCtcContract } from './ctc-deploy';
 
-const createSigner = (keyring: Keyring, who: 'lender' | 'borrower'): KeyringPair => {
+const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
     switch (who) {
         case 'lender':
             return keyring.addFromUri('//Alice');
         case 'borrower':
             return keyring.addFromUri('//Bob');
+        case 'sudo':
+            return keyring.addFromUri('//Alice');
         default:
             throw new Error(`Unexpected value "${who}"`); // eslint-disable-line
     }
@@ -89,8 +91,8 @@ const setup = async () => {
     });
     if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
         const keyring = new Keyring({ type: 'sr25519' });
-        const alice = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
-        await setupAuthority(api, alice);
+        const sudo = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo');
+        await setupAuthority(api, sudo);
     }
     await api.disconnect();
 };
