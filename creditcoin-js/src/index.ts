@@ -2,7 +2,7 @@ export * from './creditcoin-api';
 export * from './types';
 export * from './model';
 
-export { Wallet } from 'ethers';
+export { providers, Wallet } from 'ethers';
 export { Guid } from 'js-guid';
 
 export { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
