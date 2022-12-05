@@ -31,7 +31,11 @@ describe('AddBidOrder', () => {
             undefined,
         );
         const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(ccApi, currency);
+        loanTerms = await loanTermsWithCurrency(
+            ccApi,
+            currency,
+            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
+        );
     });
 
     afterAll(async () => {
