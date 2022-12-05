@@ -2,22 +2,21 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
 import { createCollectedCoinsId } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
 import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
-import { creditcoinApi, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, POINT_01_CTC, providers, Wallet } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, registerCtcDeployerAddress } from 'creditcoin-js/lib/testUtils';
-import { testIf } from '../utils';
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
+import { testIf } from '../utils';
 
 describe('CollectCoins', (): void => {
     let ccApi: CreditcoinApi;
     let authority: KeyringPair;
 
-    const testingData = testData(
+    const { keyring, blockchain } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
-    const { keyring, blockchain } = testingData;
 
     const evmAddress = '0xffffffffffffffffffffffffffffffffffffffff';
     const badHash = '0xbad';
@@ -39,7 +38,10 @@ describe('CollectCoins', (): void => {
         let deployerRegAddr: AddressRegistered;
 
         beforeAll(async () => {
-            const { api } = ccApi;
+            const {
+                api,
+                utils: { signAccountId },
+            } = ccApi;
 
             collector = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
 
@@ -53,12 +55,15 @@ describe('CollectCoins', (): void => {
                 .sudo(api.tx.creditcoin.setCollectCoinsContract(contract))
                 .signAndSend(collector, { nonce: -1 });
 
-            deployerRegAddr = await registerCtcDeployerAddress(
+            const provider = new providers.JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+            const deployerWallet = new Wallet((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY, provider);
+            deployerRegAddr = await tryRegisterAddress(
                 ccApi,
-                (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
-                (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+                deployerWallet.address,
+                blockchain,
+                signAccountId(deployerWallet, collector.address),
+                collector,
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
-                testingData,
             );
         }, 300_000);
 
