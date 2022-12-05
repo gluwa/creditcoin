@@ -38,7 +38,11 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        loanTerms = await loanTermsWithCurrency(ccApi, currency);
+        loanTerms = await loanTermsWithCurrency(
+            ccApi,
+            currency,
+            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
+        );
         const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms, testingData);
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;
