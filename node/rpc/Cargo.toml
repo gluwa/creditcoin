@@ -27,4 +27,6 @@ tokio = { version = "1.22.0", features = ["full"] }
 
 
 [features]
-runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks']
+default = ["std"]
+runtime-benchmarks = ["creditcoin-node-runtime/runtime-benchmarks"]
+std = ["primitives/std"]
