@@ -1,6 +1,6 @@
 // `block` added to `DealOrder` and `timestamp` added to `Transfer`
 
-use super::{storage_macro, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::ExternalAddress;
 use crate::{AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, TransferId};
 use frame_support::{pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat};
@@ -79,17 +79,23 @@ pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
 	pub borrower: AccountId,
 }
 
-storage_macro!(Transfers, T, StorageMap<crate::Pallet<T>, Identity, TransferId<HashOf<T>>>);
+#[frame_support::storage_alias]
+type DealOrders<T: crate::Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Twox64Concat,
+	BlockNumberOf<T>,
+	Identity,
+	HashOf<T>,
+	DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
-storage_macro!(
-	DealOrders,
-	T,
-	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
-);
-
-deal_orders_storage!(T, DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
-
-transfers_storage!(T, Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
+#[frame_support::storage_alias]
+type Transfers<T: crate::Config> = StorageMap<
+	crate::Pallet<T>,
+	Identity,
+	TransferId<HashOf<T>>,
+	Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = Weight::zero();
@@ -143,9 +149,8 @@ mod test {
 	use core::convert::TryInto;
 
 	use super::{
-		deal_orders_storage, transfers_storage, AccountIdOf, BlockNumberOf, Blockchain, DealOrder,
-		HashOf, Identity, MomentOf, OldDealOrder, OldTransfer, OrderId, Transfer, TransferKind,
-		Twox64Concat,
+		AccountIdOf, BlockNumberOf, Blockchain, DealOrder, HashOf, Identity, MomentOf,
+		OldDealOrder, OldTransfer, OrderId, Transfer, TransferKind, Twox64Concat,
 	};
 	use crate::{
 		mock::{ExtBuilder, Test},
@@ -168,11 +173,25 @@ mod test {
 		}
 	}
 
-	deal_orders_storage!(T, OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
+	#[frame_support::storage_alias]
+	type DealOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+	>;
 
 	type OldDealOrders = DealOrders<Test>;
 
-	transfers_storage!(T, OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
+	#[frame_support::storage_alias]
+	type Transfers<T: crate::Config> = StorageMap<
+		crate::Pallet<T>,
+		Identity,
+		TransferId<HashOf<T>>,
+		OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	>;
 
 	type OldTransfers = Transfers<Test>;
 
