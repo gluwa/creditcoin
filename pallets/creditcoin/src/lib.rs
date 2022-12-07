@@ -580,11 +580,11 @@ pub mod pallet {
 			log::debug!("Cleaning up expired entries");
 
 			let unverified_task_count =
-				PendingTasks::<T>::clear_prefix(block_number, u32::MAX, None).unique;
+				PendingTasks::<T>::clear_prefix(block_number, u32::MAX, None).backend;
 
-			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None).unique;
-			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).unique;
-			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).unique;
+			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
+			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
+			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).backend;
 
 			let mut deals_count = 0u32;
 			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
