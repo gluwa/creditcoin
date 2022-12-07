@@ -68,12 +68,6 @@ where
 				Some(format!("{e:?}")),
 			)))
 		})
-		/*
-		.map_err(|e| RpcError {
-			code: ErrorCode::ServerError(Error::RuntimeError.into()),
-			message: "Unable to query offchain nonce key.".into(),
-			data: Some(format!("{:?}", e).into()),
-		}) */
 	}
 }
 
@@ -104,7 +98,10 @@ pub mod test {
 
 		match t.offchain_nonce_key("0xThisIsNotValid".into()).await {
 			Err(e) => {
-				assert_eq!(e.to_string(), "RPC call failed: ErrorObject { code: InvalidParams, message: \"Not a valid hex-string or SS58 address.\", data: Some(RawValue(\"\\\"invalid ss58 address.\\\"\")) }");
+				assert_eq!(
+					e.to_string(),
+					r#"RPC call failed: ErrorObject { code: InvalidParams, message: "Not a valid hex-string or SS58 address.", data: Some(RawValue("\"invalid ss58 address.\"")) }"#
+				);
 			},
 			Ok(_) => panic!("This is not expected"),
 		}
