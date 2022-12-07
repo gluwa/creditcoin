@@ -49,20 +49,3 @@ type HashOf<T> = <T as frame_system::Config>::Hash;
 type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 type MomentOf<T> = <T as pallet_timestamp::Config>::Moment;
-
-macro_rules! storage_macro {
-	($name: ident, $t: ident, $storage: ident < $($typ: ty),+ >) => {
-		paste::paste! {
-			macro_rules! [<$name:snake _storage>] {
-				($inner_t: ident, $thing: ty) => {
-					#[frame_support::storage_alias]
-					type $name<$inner_t: crate::Config> = $storage < $($typ),+ , $thing >;
-				};
-			}
-			#[allow(unused_imports)]
-			use [<$name:snake _storage>];
-		}
-	};
-}
-
-use storage_macro;
