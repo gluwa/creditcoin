@@ -45,19 +45,10 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	weight
 }
 
-macro_rules! projection_alias {
-	($($config: path : { $($typ: ident),+ }),+) => {
-		$(
-			$(
-				paste::paste! {
-					type [<$typ Of>]<T> = <T as $config>::$typ;
-				}
-			)+
-		)+
-	};
-}
-
-projection_alias!(frame_system::Config: { Hash, BlockNumber, AccountId }, pallet_timestamp::Config: { Moment });
+type HashOf<T> = <T as frame_system::Config>::Hash;
+type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+type MomentOf<T> = <T as pallet_timestamp::Config>::Moment;
 
 macro_rules! storage_macro {
 	($name: ident, $t: ident, $storage: ident < $($typ: ty),+ >) => {
