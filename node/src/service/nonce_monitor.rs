@@ -20,7 +20,6 @@ use super::FullBackend;
 #[error("{0}")]
 enum Error {
 	Serde(sc_telemetry::serde_json::Error),
-
 	JsonRpc(jsonrpsee::core::error::Error),
 	Rpc(String),
 	Codec(parity_scale_codec::Error),
@@ -37,7 +36,7 @@ impl From<jsonrpsee::core::Error> for Error {
 async fn rpc_request(handlers: &RpcHandlers, request: &str) -> Result<serde_json::Value, Error> {
 	let (response, _stream) = handlers.rpc_query(request).await?;
 
-	let result = serde_json::from_str(&response).unwrap();
+	let result = serde_json::from_str(&response).map_err(|e| Error::Serde(e))?;
 
 	Ok(result)
 }

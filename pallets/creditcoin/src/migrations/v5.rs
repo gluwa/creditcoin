@@ -6,7 +6,7 @@ use crate::{
 use parity_scale_codec::{Decode, Encode};
 
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
-use frame_support::{migration, pallet_prelude::*, storage_alias, Identity};
+use frame_support::{pallet_prelude::*, storage_alias, Identity};
 
 pub use super::v4::Transfer;
 pub use super::v4::*;
@@ -69,15 +69,6 @@ impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
 	}
 }
 
-// generate_storage_alias!(
-// 	Creditcoin,
-// 	UnverifiedTransfers<T: Config> => DoubleMap<
-// 		(Identity, BlockNumberOf<T>),
-// 		(Identity, TransferId<HashOf<T>>),
-// 		UnverifiedTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>
-// 	>
-// );
-
 #[storage_alias]
 type UnverifiedTransfers<T: Config> = StorageDoubleMap<
 	crate::Pallet<T>,
@@ -87,15 +78,6 @@ type UnverifiedTransfers<T: Config> = StorageDoubleMap<
 	TransferId<HashOf<T>>,
 	UnverifiedTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
-
-// generate_storage_alias!(
-// 	Creditcoin,
-// 	UnverifiedCollectedCoins<T: Config> => DoubleMap<
-// 		(Identity, BlockNumberOf<T>),
-// 		(Identity, CollectedCoinsId<HashOf<T>>),
-// 		UnverifiedCollectedCoinsStruct
-// 	>
-// );
 
 #[storage_alias]
 type UnverifiedCollectedCoins<T: Config> = StorageDoubleMap<
@@ -117,18 +99,6 @@ type PendingTasks<T: Config> = StorageDoubleMap<
 	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-/*
-#[pallet::storage]
-#[pallet::getter(fn pending_tasks)]
-pub type PendingTasks<T: Config> = StorageDoubleMap<
-	_,
-	Identity,
-	BlockNumberOf<T>,
-	Identity,
-	TaskId<HashOf<T>>,
-	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
->; */
-
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = Weight::zero();
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
@@ -145,8 +115,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(collect_coins));
 	}
 
-	let module = crate::Pallet::<T>::name().as_bytes();
-	let _results = migration::clear_storage_prefix(module, b"UnverifiedTransfers", b"", None, None);
+	let _results = UnverifiedTransfers::<T>::clear(u32::MAX, None);
 	let _results = UnverifiedCollectedCoins::<T>::clear(u32::MAX, None);
 	weight
 }
