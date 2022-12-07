@@ -175,25 +175,6 @@ bid_orders_storage!(T, BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
 
 deal_orders_storage!(T, DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
 
-// #[storage_alias]
-// type AskOrders<T: Config> = StorageDoubleMap<
-// 	crate::Pallet<T>,
-// 	Twox64Concat,
-// 	BlockNumberOf<T>,
-// 	Identity,
-// 	HashOf<T>,
-// 	AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
-// >;
-
-// #[storage_alias]
-// type BidOrders<T: Config> = StorageDoubleMap<
-// 	crate::Pallet<T>,
-// 	Twox64Concat,
-// 	BlockNumberOf<T>,
-// 	Identity,
-// 	HashOf<T>,
-// 	BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
-// >;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = Weight::zero();

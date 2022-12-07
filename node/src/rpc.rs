@@ -9,12 +9,11 @@ use std::sync::Arc;
 
 use creditcoin_node_runtime::{opaque::Block, AccountId, Balance, Index};
 use jsonrpsee::RpcModule;
+pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
-
-pub use sc_rpc_api::DenyUnsafe;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -53,10 +52,6 @@ where
 	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 	module.merge(Creditcoin::new(mining_metrics).into_rpc())?;
 	module.merge(Task::new(client, deny_unsafe).into_rpc())?;
-
-	// io.extend_with(CreditcoinApi::to_delegate(CreditcoinRpc::new(mining_metrics)));
-
-	// io.extend_with(TaskRpc::to_delegate(Task::new(client, deny_unsafe)));
 
 	Ok(module)
 }
