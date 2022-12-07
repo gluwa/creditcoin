@@ -1,5 +1,5 @@
 use super::v5;
-use super::{storage_macro, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::Config;
 use crate::EvmCurrencyType;
 use crate::EvmInfo;
@@ -203,29 +203,35 @@ type PendingTasks<T: Config> = StorageDoubleMap<
 	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-storage_macro!(
-	AskOrders,
-	T,
-	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
-);
+#[frame_support::storage_alias]
+type AskOrders<T: crate::Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Twox64Concat,
+	BlockNumberOf<T>,
+	Identity,
+	HashOf<T>,
+	AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+>;
 
-storage_macro!(
-	BidOrders,
-	T,
-	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
-);
+#[frame_support::storage_alias]
+type BidOrders<T: crate::Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Twox64Concat,
+	BlockNumberOf<T>,
+	Identity,
+	HashOf<T>,
+	BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+>;
 
-storage_macro!(
-	DealOrders,
-	T,
-	StorageDoubleMap<crate::Pallet<T>, Twox64Concat, BlockNumberOf<T>, Identity, HashOf<T>>
-);
-
-ask_orders_storage!(T, AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
-
-bid_orders_storage!(T, BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
-
-deal_orders_storage!(T, DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>);
+#[frame_support::storage_alias]
+type DealOrders<T: crate::Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Twox64Concat,
+	BlockNumberOf<T>,
+	Identity,
+	HashOf<T>,
+	DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut weight: Weight = Weight::zero();
@@ -384,19 +390,38 @@ mod tests {
 
 	type OldAddresses = Addresses<Test>;
 
-	deal_orders_storage!(
-		T,
-		super::OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>
-	);
+	#[frame_support::storage_alias]
+	type DealOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		super::OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+	>;
 
 	type OldDealOrders = DealOrders<Test>;
 
-	ask_orders_storage!(T, super::OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
-
+	#[frame_support::storage_alias]
+	type AskOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		super::OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	>;
 	type OldAskOrders = AskOrders<Test>;
 
-	bid_orders_storage!(T, super::OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>);
-
+	#[frame_support::storage_alias]
+	type BidOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		super::OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	>;
 	type OldBidOrders = BidOrders<Test>;
 
 	#[storage_alias]
