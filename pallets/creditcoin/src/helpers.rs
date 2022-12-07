@@ -151,29 +151,12 @@ pub(crate) impl<'a> &'a str {
 pub(crate) impl<'a, S, T> &'a [T]
 where
 	S: Get<u32>,
-	T: Clone + core::fmt::Debug,
+	T: Clone,
 {
-	fn try_into_bounded(
-		self,
-	) -> Result<frame_support::BoundedVec<T, S>, frame_benchmarking::Vec<T>> {
-		core::convert::TryFrom::try_from(self.to_vec())
+	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, ()> {
+		core::convert::TryFrom::try_from(self.to_vec()).map_err(|_| ())
 	}
 	fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
-		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
+		self.try_into_bounded().unwrap()
 	}
 }
-
-// #[cfg(all(feature = "runtime-benchmarks", not(test)))]
-// #[extend::ext]
-// pub(crate) impl<'a, S, T> &'a [T]
-// where
-// 	S: Get<u32>,
-// 	T: Clone + core::fmt::Debug,
-// {
-// 	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, frame_benchmarking::Vec<T>> {
-// 		core::convert::TryFrom::try_from(self.to_vec())
-// 	}
-// 	fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
-// 		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-// 	}
-// }
