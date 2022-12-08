@@ -36,7 +36,7 @@ impl From<jsonrpsee::core::Error> for Error {
 async fn rpc_request(handlers: &RpcHandlers, request: &str) -> Result<serde_json::Value, Error> {
 	let (response, _stream) = handlers.rpc_query(request).await?;
 
-	let result = serde_json::from_str(&response).map_err(|e| Error::Serde(e))?;
+	let result = serde_json::from_str(&response).map_err(Error::Serde)?;
 
 	Ok(result)
 }
