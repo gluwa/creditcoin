@@ -1,5 +1,4 @@
-import { CHAINS } from 'creditcoin-js';
-import { providers, Wallet } from 'ethers';
+import { providers, CHAINS, Wallet } from 'creditcoin-js';
 import { default as globalSetup } from './globalSetup';
 
 const createWallet = (who: 'lender' | 'borrower') => {
