@@ -213,12 +213,13 @@ pub(crate) mod tests {
 		}
 	});
 
+	use crate::helpers::extensions::HexToAddress;
 	use crate::helpers::non_paying_error;
-	use crate::helpers::HexToAddress;
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, Balances, ExtBuilder, MockedRpcRequests,
 		OffchainState, RuntimeOrigin, RwLock, Test,
 	};
+	use crate::ocw::tasks::TaskV2;
 	use crate::ocw::{
 		errors::{OffchainError, VerificationFailureCause as Cause},
 		rpc::{EthTransaction, EthTransactionReceipt},
@@ -233,6 +234,8 @@ pub(crate) mod tests {
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
 	use frame_system::RawOrigin;
+	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
+	use pallet_offchain_task_scheduler::Pallet as TaskSchedulerPallet;
 	use parity_scale_codec::Decode;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 	use sp_runtime::{ArithmeticError, TokenError};
@@ -504,15 +507,14 @@ pub(crate) mod tests {
 			crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &[0]);
 		ext.build_offchain_and_execute_with_state(|_state, pool| {
 			crate::mock::roll_to(1);
-			let call = crate::Call::<crate::mock::Test>::fail_task {
+			let call = crate::Call::<Test>::fail_task {
 				task_id: expected_collected_coins_id.into(),
 				cause: Cause::AbiMismatch,
 				deadline: Test::unverified_transfer_deadline(),
 			};
-			assert_ok!(crate::Pallet::<crate::mock::Test>::offchain_signed_tx(
-				acct.clone(),
-				|_| call.clone(),
-			));
+			assert_ok!(TaskSchedulerPallet::<Test>::offchain_signed_tx(acct.clone(), |_| call
+				.clone()
+				.into(),));
 			crate::mock::roll_to(2);
 
 			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
@@ -717,17 +719,14 @@ pub(crate) mod tests {
 				crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::CollectCoinsRegistered(collect_coins_id, pending)) => {
 					assert_eq!(collect_coins_id, collected_coins_id);
 
+					let id = TaskV2::<Test>::to_id(&pending);
+					assert!( <Test>::is_scheduled( &Test::unverified_transfer_deadline(), &id));
+
 					let UnverifiedCollectedCoins { to, tx_id, .. } = pending;
 					assert_eq!(to, addr);
 					assert_eq!(tx_id, TX_HASH.hex_to_address());
 				}
 			);
-
-			assert!(Creditcoin::<Test>::pending_tasks(
-				Test::unverified_transfer_deadline(),
-				TaskId::from(collected_coins_id.clone()),
-			)
-			.is_some());
 
 			assert_noop!(
 				Creditcoin::<Test>::request_collect_coins(

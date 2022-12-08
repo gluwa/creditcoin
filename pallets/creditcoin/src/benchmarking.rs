@@ -2,7 +2,10 @@
 use super::*;
 
 use crate::benchmarking::alloc::format;
-use crate::helpers::{EVMAddress, HexToAddress, PublicToAddress, RefSliceOfTExt};
+use crate::helpers::{
+	extensions::{HexToAddress, IntoBounded},
+	EVMAddress, PublicToAddress,
+};
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::types::Blockchain;
@@ -17,14 +20,17 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::pallet_prelude::*;
+use frame_system::Config as SystemConfig;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use pallet_balances::Pallet as Balances;
+use pallet_timestamp::Config as TimestampConfig;
 use pallet_timestamp::Pallet as Timestamp;
 use sp_core::ecdsa;
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign};
 use sp_runtime::traits::One;
 use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom};
+use sp_runtime::KeyTypeId;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum DealKind {
@@ -33,6 +39,28 @@ enum DealKind {
 }
 
 benchmarks! {
+	migration_v7 {
+		let t in 0..1024;
+
+		use frame_support::traits::StorageVersion;
+		StorageVersion::new(6).put::<Pallet<T>>();
+
+		let pending = types::UnverifiedCollectedCoins {
+			to: [0u8; 256].into_bounded(),
+			tx_id: [0u8; 256].into_bounded(),
+			contract: Default::default(),
+		};
+		for t in 0..t {
+			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
+			crate::PendingTasks::<T>::insert(
+				T::BlockNumber::one(),
+				crate::TaskId::from(collected_coins_id),
+				crate::Task::from(pending.clone()),
+			);
+		}
+
+	 }: {Creditcoin::<T>::on_runtime_upgrade()}
+
 	on_initialize {
 		//insert a askorders
 		let a in 0..255;
@@ -44,10 +72,6 @@ benchmarks! {
 		let d in 0..255;
 		//insert f fundedorders
 		let f in 0..255;
-		//insert u unverifiedtransfers
-		let u in 0..255;
-		//insert c unverifiedcollectedcoins
-		let c in 0..255;
 
 		<Timestamp<T>>::set_timestamp(1u32.into());
 
@@ -78,28 +102,7 @@ benchmarks! {
 			insert_fake_deal::<T>(&lender, expiration_block, DealKind::Funded, i);
 		}
 
-		for i in 0..u {
-			insert_fake_unverified_transfer::<T>(&lender, expiration_block, i);
-		}
-
-		let deadline = expiration_block;
-
-		for i in 0..c {
-			let collector: T::AccountId = lender_account::<T>(true);
-			let evm_address = format!("{:03x}",i).as_bytes() .into_bounded();
-			let address_id = AddressId::new::<T>(&CHAIN, &evm_address);
-			let entry = Address { blockchain: CHAIN, value: evm_address.clone(), owner: collector.clone() };
-			<Addresses<T>>::insert(address_id, entry);
-
-			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
-			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
-
-			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() , contract: Default::default()};
-
-			crate::PendingTasks::<T>::insert(deadline, crate::TaskId::from(collected_coins_id), crate::Task::from(pending));
-		}
-
-	}: { Creditcoin::<T>::on_initialize(deadline) }
+	}: { Creditcoin::<T>::on_initialize(expiration_block) }
 	verify {}
 
 	register_address {
@@ -191,7 +194,8 @@ benchmarks! {
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let deadline = T::BlockNumber::one();
-		let transfer = generate_transfer::<T>(deal_id,false,false,true,0u8);
+		// pending task does not matter
+		let transfer = generate_transfer::<T>(deal_id,false,false,0u8);
 		let task_output = crate::TaskOutput::from(transfer);
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
 
@@ -200,7 +204,7 @@ benchmarks! {
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
-		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,false,true,0u8);
+		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,false,0u8);
 		let cause = crate::ocw::VerificationFailureCause::TaskFailed;
 		let deadline = T::BlockNumber::one();
 		let task_id = crate::TaskId::from(transfer_id);
@@ -210,7 +214,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
-		let (transfer_id,_) = generate_transfer::<T>(deal_id.clone(),true,false,true,0u8);
+		let (transfer_id,_) = generate_transfer::<T>(deal_id.clone(),true,false,0u8);
 
 	}: _(RawOrigin::Signed(lender), deal_id, transfer_id)
 
@@ -226,7 +230,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
-		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,true,0u8);
+		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,0u8);
 	}: register_funding_transfer(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
 
 	register_repayment_transfer {
@@ -234,7 +238,7 @@ benchmarks! {
 		let borrower: T::AccountId = borrower_account::<T>(true);
 		let repayment_amount = ExternalAmount::from(1);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
-		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,true,0u8);
+		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,0u8);
 	}: register_repayment_transfer(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
 
 	register_funding_transfer_legacy {
@@ -260,7 +264,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let borrower: T::AccountId = borrower_account::<T>(true);
 		let (deal_id,_) = generate_locked_deal::<T>(true).unwrap();
-		let (transfer_id, _) = generate_transfer::<T>(deal_id.clone(),true,true,true,0u8);
+		let (transfer_id, _) = generate_transfer::<T>(deal_id.clone(),true,true,0u8);
 
 	}: _(RawOrigin::Signed(borrower),deal_id,transfer_id)
 
@@ -404,7 +408,7 @@ fn generate_funded_deal<T: Config>(
 	seed: u8,
 ) -> Result<(DealOrderId<T::BlockNumber, T::Hash>, TransferId<T::Hash>), Error<T>> {
 	let deal_id = generate_deal::<T>(true, seed).unwrap();
-	let (transfer_id, _) = generate_transfer::<T>(deal_id.clone(), true, false, true, seed);
+	let (transfer_id, _) = generate_transfer::<T>(deal_id.clone(), true, false, seed);
 	let lender: T::AccountId = lender_account::<T>(true);
 
 	if fund {
@@ -422,7 +426,6 @@ fn generate_transfer<T: Config>(
 	deal_id: DealOrderId<T::BlockNumber, T::Hash>,
 	insert: bool,
 	swap_sender: bool,
-	kill_unverified: bool,
 	seed: u8,
 ) -> (TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>) {
 	let (raw_tx, gain, who) = if swap_sender {
@@ -438,51 +441,37 @@ fn generate_transfer<T: Config>(
 			lender_account::<T>(true),
 		)
 	};
+
 	let tx = raw_tx.as_bytes().into_bounded();
 	let transfer_id = TransferId::new::<T>(&Blockchain::ETHEREUM, &tx);
 
-	if swap_sender {
-		Creditcoin::<T>::register_repayment_transfer(
-			RawOrigin::Signed(who).into(),
+	let order = try_get_id!(DealOrders<T>, &deal_id, NonExistentDealOrder).unwrap();
+
+	let (transfer, _) = if swap_sender {
+		Creditcoin::<T>::generate_transfer(
+			who,
+			order.borrower_address_id,
+			order.lender_address_id,
 			TransferKind::Evm(EvmTransferKind::Ethless),
 			gain.into(),
 			deal_id,
 			tx,
+			&order.terms.currency,
 		)
-		.unwrap();
+		.unwrap()
 	} else {
-		Creditcoin::<T>::register_funding_transfer(
-			RawOrigin::Signed(who).into(),
+		Creditcoin::<T>::generate_transfer(
+			who,
+			order.lender_address_id,
+			order.borrower_address_id,
 			TransferKind::Evm(EvmTransferKind::Ethless),
+			order.terms.amount,
 			deal_id,
 			tx,
+			&order.terms.currency,
 		)
-		.unwrap();
-	}
-
-	let transfer = PendingTasks::<T>::iter_values()
-		.find_map(|task| match task {
-			crate::Task::VerifyTransfer(ut) => {
-				let transfer = &ut.transfer;
-				let seek_id = TransferId::new::<T>(&transfer.blockchain, &transfer.tx_id);
-				if transfer_id == seek_id {
-					Some(ut)
-				} else {
-					None
-				}
-			},
-			_ => None,
-		})
 		.unwrap()
-		.transfer;
-	if kill_unverified {
-		let to_remove: Vec<_> = PendingTasks::<T>::iter_keys()
-			.filter(|(_, id)| matches!(id, crate::TaskId::VerifyTransfer(..)))
-			.collect();
-		for (deadline, id) in to_remove {
-			PendingTasks::<T>::remove(deadline, id);
-		}
-	}
+	};
 
 	if insert {
 		Transfers::<T>::insert(&transfer_id, transfer.clone());
@@ -720,7 +709,7 @@ fn generate_bid<T: Config>(
 	Ok((address_id, bid_order_id, guid.to_vec()))
 }
 
-fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
+pub(crate) fn fake_address_id<T: SystemConfig>(seed: u32) -> AddressId<T::Hash> {
 	let address = format!("somefakeaddress{}", seed);
 	crate::AddressId::new::<T>(&Blockchain::ETHEREUM, address.as_bytes())
 }
@@ -740,7 +729,7 @@ fn insert_fake_address<T: Config>(owner: T::AccountId, seed: u32) -> AddressId<T
 	id
 }
 
-fn fake_ask_id<T: Config>(
+pub(crate) fn fake_ask_id<T: SystemConfig>(
 	seed: u32,
 	expiration_block: BlockNumberFor<T>,
 ) -> AskOrderId<T::BlockNumber, T::Hash> {
@@ -768,7 +757,7 @@ fn insert_fake_ask<T: Config>(
 	ask_id
 }
 
-fn fake_bid_id<T: Config>(
+pub(crate) fn fake_bid_id<T: SystemConfig>(
 	seed: u32,
 	expiration_block: BlockNumberFor<T>,
 ) -> BidOrderId<T::BlockNumber, T::Hash> {
@@ -796,7 +785,7 @@ fn insert_fake_bid<T: Config>(
 	bid_id
 }
 
-fn fake_offer_id<T: Config>(
+fn fake_offer_id<T: SystemConfig>(
 	expiration_block: BlockNumberFor<T>,
 	ask_id: &AskOrderId<T::BlockNumber, T::Hash>,
 	bid_id: &BidOrderId<T::BlockNumber, T::Hash>,
@@ -824,14 +813,14 @@ fn insert_fake_offer<T: Config>(
 	crate::Offers::<T>::insert_id(offer_id, offer);
 }
 
-fn fake_deal_id<T: Config>(
+pub(crate) fn fake_deal_id<T: SystemConfig>(
 	expiration_block: BlockNumberFor<T>,
 	offer_id: &OfferId<T::BlockNumber, T::Hash>,
 ) -> DealOrderId<T::BlockNumber, T::Hash> {
 	DealOrderId::new::<T>(expiration_block, offer_id)
 }
 
-fn fake_transfer_id<T: Config>(seed: u32) -> TransferId<T::Hash> {
+pub(crate) fn fake_transfer_id<T: SystemConfig>(seed: u32) -> TransferId<T::Hash> {
 	let tx_id = format!("somefaketransfertxid{}", seed);
 	crate::TransferId::new::<T>(&Blockchain::ETHEREUM, tx_id.as_bytes())
 }
@@ -867,15 +856,14 @@ fn insert_fake_deal<T: Config>(
 	crate::DealOrders::<T>::insert_id(deal_id, deal);
 }
 
-fn insert_fake_unverified_transfer<T: Config>(
+pub(crate) fn generate_fake_unverified_transfer<T: SystemConfig + TimestampConfig>(
 	who: &T::AccountId,
 	deadline: BlockNumberFor<T>,
 	seed: u32,
-) {
+) -> crate::types::UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment> {
 	let from_external = format!("somefakefromext{}", seed).as_bytes().into_bounded();
 	let to_external = format!("somefaketoext{}", seed).as_bytes().into_bounded();
-	let transfer_id = fake_transfer_id::<T>(seed);
-	let transfer = crate::UnverifiedTransfer {
+	crate::UnverifiedTransfer {
 		deadline,
 		from_external,
 		to_external,
@@ -902,9 +890,5 @@ fn insert_fake_unverified_transfer<T: Config>(
 		currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
 			LegacyTransferKind::Native,
 		),
-	};
-
-	let task_id = TaskId::VerifyTransfer(transfer_id);
-	let task = Task::VerifyTransfer(transfer);
-	crate::PendingTasks::<T>::insert(deadline, task_id, task)
+	}
 }

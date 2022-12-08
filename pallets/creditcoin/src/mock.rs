@@ -7,9 +7,11 @@ use ethereum_types::U256;
 use frame_support::{
 	once_cell::sync::Lazy,
 	parameter_types,
-	traits::{ConstU32, ConstU64, GenesisBuild, Get, Hooks},
+	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
 };
 use frame_system as system;
+use pallet_offchain_task_scheduler::crypto::AuthorityId;
+pub(crate) use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 pub(crate) use parking_lot::RwLock;
 use serde_json::Value;
 use sp_core::H256;
@@ -33,9 +35,6 @@ type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Balance = u128;
 pub type Signature = MultiSignature;
 pub type Extrinsic = TestXt<RuntimeCall, ()>;
-
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type BlockNumber = u64;
 pub type Hash = H256;
@@ -51,7 +50,8 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Creditcoin: pallet_creditcoin::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage}
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage},
+		TaskScheduler: pallet_offchain_task_scheduler::{Pallet, Storage, Event<T>},
 	}
 );
 
@@ -104,30 +104,33 @@ impl pallet_creditcoin::Config for Test {
 
 	type Call = RuntimeCall;
 
-	type AuthorityId = pallet_creditcoin::crypto::CtcAuthId;
-
 	type Signer = <Signature as Verify>::Signer;
 	type SignerSignature = Signature;
-	type FromAccountId = AccountId;
-
-	type InternalPublic = sp_core::sr25519::Public;
-
-	type PublicSigning = <Signature as Verify>::Signer;
 
 	type HashIntoNonce = H256;
 
 	type UnverifiedTaskTimeout = ConstU64<5>;
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
+
+	type TaskScheduler = Self;
+}
+
+impl pallet_offchain_task_scheduler::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+	type UnverifiedTaskTimeout = ConstU64<5>;
+	type AuthorityId = AuthorityId;
+	type AccountIdFrom = AccountId;
+	type InternalPublic = sp_core::sr25519::Public;
+	type PublicSigning = <Signature as Verify>::Signer;
+	type TaskCall = RuntimeCall;
+	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Self>;
+	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 }
 
 impl Test {
-	pub(crate) fn unverified_transfer_timeout() -> u64 {
-		<<Test as crate::Config>::UnverifiedTaskTimeout as Get<u64>>::get()
-	}
-
 	pub(crate) fn unverified_transfer_deadline() -> u64 {
-		System::block_number() + Self::unverified_transfer_timeout()
+		Test::deadline()
 	}
 }
 
@@ -144,9 +147,12 @@ pub(crate) fn with_failing_create_transaction<R>(f: impl FnOnce() -> R) -> R {
 	})
 }
 
-impl system::offchain::CreateSignedTransaction<pallet_creditcoin::Call<Test>> for Test {
+impl<LocalCall> system::offchain::CreateSignedTransaction<LocalCall> for Test
+where
+	RuntimeCall: From<LocalCall>,
+{
 	fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
-		call: Self::OverarchingCall,
+		call: RuntimeCall,
 		_public: Self::Public,
 		_account: Self::AccountId,
 		nonce: Self::Index,
@@ -221,7 +227,7 @@ impl ExtBuilder {
 			.as_ref()
 			.unwrap()
 			.sr25519_generate_new(
-				crate::crypto::Public::ID,
+				pallet_offchain_task_scheduler::crypto::Public::ID,
 				Some(&format!("{}/auth{}", PHRASE, self.authorities.len() + 1)),
 			)
 			.unwrap();
@@ -245,8 +251,14 @@ impl ExtBuilder {
 		let _ = pallet_balances::GenesisConfig::<Test> { balances: self.balances }
 			.assimilate_storage(&mut storage);
 
-		let _ = crate::GenesisConfig::<Test> {
+		pallet_offchain_task_scheduler::pallet::GenesisConfig::<Test> {
 			authorities: self.authorities,
+		}
+		.assimilate_storage(&mut storage)
+		.unwrap();
+
+		let _ = crate::GenesisConfig::<Test> {
+			authorities: vec![],
 			legacy_wallets: self.legacy_wallets,
 			legacy_balance_keeper: self.legacy_keeper,
 		}
@@ -318,8 +330,8 @@ pub fn roll_to(n: BlockNumber) {
 	let now = System::block_number();
 	for i in now + 1..=n {
 		System::set_block_number(i);
-		Creditcoin::on_initialize(i);
-		Creditcoin::on_finalize(i);
+		TaskScheduler::on_initialize(i);
+		TaskScheduler::on_finalize(i);
 	}
 }
 
@@ -328,9 +340,9 @@ pub fn roll_to_with_ocw(n: BlockNumber) {
 	let now = System::block_number();
 	for i in now + 1..=n {
 		System::set_block_number(i);
-		Creditcoin::on_initialize(i);
-		Creditcoin::offchain_worker(i);
-		Creditcoin::on_finalize(i);
+		TaskScheduler::on_initialize(i);
+		TaskScheduler::offchain_worker(i);
+		TaskScheduler::on_finalize(i);
 	}
 }
 
@@ -338,13 +350,13 @@ pub fn roll_to_with_ocw(n: BlockNumber) {
 pub fn roll_by_with_ocw(n: BlockNumber) {
 	let mut now = System::block_number();
 	for _ in 0..n {
-		Creditcoin::offchain_worker(now);
+		TaskScheduler::offchain_worker(now);
 		now += 1;
 		System::set_block_number(now);
 		System::reset_events();
 		System::on_initialize(now);
-		Creditcoin::on_initialize(now);
-		Creditcoin::on_finalize(now);
+		TaskScheduler::on_initialize(now);
+		TaskScheduler::on_finalize(now);
 	}
 }
 
@@ -484,16 +496,6 @@ pub(crate) struct MockedRpcRequests {
 	pub(crate) chain_id: Option<PendingRequest>,
 }
 
-impl Default for MockedRpcRequests {
-	fn default() -> Self {
-		let rpc_uri = "http://localhost:8545";
-		let tx_hash = get_mock_tx_hash();
-		let tx_block_number = get_mock_tx_block_num();
-
-		Self::new(rpc_uri, &tx_hash, &tx_block_number, &ETHLESS_RESPONSES)
-	}
-}
-
 impl MockedRpcRequests {
 	pub(crate) fn new<'a>(
 		rpc_uri: impl Into<Option<&'a str>>,
@@ -576,8 +578,8 @@ fn offchain_worker_should_log_when_authority_is_missing() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		System::set_block_number(1);
 
-		Creditcoin::offchain_worker(System::block_number());
-		assert!(logs_contain("Not authority, skipping off chain work"));
+		TaskScheduler::offchain_worker(System::block_number());
+		assert!(logs_contain("Not an authority, skipping offchain work"));
 	});
 }
 

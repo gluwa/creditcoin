@@ -1,17 +1,21 @@
 use crate::{
-	helpers::{non_paying_error, EVMAddress, HexToAddress, PublicToAddress},
+	helpers::{
+		extensions::{HexToAddress, IntoBounded},
+		non_paying_error, EVMAddress, PublicToAddress,
+	},
 	mock::{RuntimeOrigin as Origin, *},
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
-	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Config, Currencies,
+	Currency, CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
 	EvmTransferKind, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind,
 	LoanTerms, Offer, OfferId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
+use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
+use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
 use sp_core::Pair;
 use sp_runtime::{
@@ -20,21 +24,6 @@ use sp_runtime::{
 	MultiSigner,
 };
 use std::convert::{TryFrom, TryInto};
-
-//Duplicated code; pallet_creditcoin::benchmarking.rs
-#[extend::ext(name = IntoBounded)]
-pub impl<'a, S, T> &'a [T]
-where
-	S: Get<u32>,
-	T: Clone + std::fmt::Debug,
-{
-	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, Vec<T>> {
-		core::convert::TryFrom::try_from(self.to_vec())
-	}
-	fn into_bounded(self) -> BoundedVec<T, S> {
-		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RegisteredAddress {
@@ -532,78 +521,6 @@ fn verify_ethless_transfer() {
 			&tx_id,
 			None,
 		));
-	});
-}
-
-#[test]
-#[tracing_test::traced_test]
-fn register_transfer_ocw_fail_to_send() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, _| {
-		let dummy_url = "dummy";
-		let tx_hash = get_mock_tx_hash();
-		let contract = get_mock_contract().hex_to_address();
-		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = Blockchain::RINKEBY;
-
-		// we're going to verify a transfer twice:
-		// First when we expect failure, which means we won't make all of the requests
-		{
-			let mut state = state.write();
-			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-				.mock_chain_id(&mut state)
-				.mock_get_block_number(&mut state);
-		}
-		// Second when we expect success, where we'll do all the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-			.mock_all(&mut state.write());
-
-		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
-
-		let loan_amount = get_mock_amount();
-		let currency = ethless_currency(contract.clone());
-		let test_info = TestInfo::with_currency(currency);
-		let test_info = TestInfo {
-			blockchain,
-			loan_terms: LoanTerms { amount: loan_amount, ..test_info.loan_terms },
-			..test_info
-		};
-
-		let (deal_order_id, _) = test_info.create_deal_order();
-
-		let lender = test_info.lender.account_id;
-
-		// exercise when we try to send a fail_transfer but tx send fails
-		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer(
-				Origin::signed(lender.clone()),
-				EvmTransferKind::Ethless.into(),
-				deal_order_id.clone(),
-				tx_hash.hex_to_address(),
-			));
-
-			roll_by_with_ocw(1);
-
-			assert!(logs_contain("Failed to send fail dispatchable transaction"));
-		});
-
-		let _results = crate::PendingTasks::<Test>::clear(u32::MAX, None);
-
-		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
-
-		// exercise when we try to send a verify_transfer but tx send fails
-		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer_legacy(
-				Origin::signed(lender.clone()),
-				LegacyTransferKind::Ethless(contract.clone()),
-				fake_deal_order_id.clone(),
-				tx_hash.hex_to_address(),
-			));
-
-			roll_by_with_ocw(1);
-			assert!(logs_contain("Failed to send persist dispatchable transaction"));
-		});
 	});
 }
 
@@ -1624,21 +1541,6 @@ fn add_authority_should_fail_when_authority_already_exists() {
 			Creditcoin::add_authority(crate::mock::RuntimeOrigin::from(root), acct,),
 			TestError::AlreadyAuthority,
 		);
-	});
-}
-
-#[test]
-fn add_authority_works_for_root() {
-	ExtBuilder::default().build_and_execute(|| {
-		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
-
-		assert_ok!(
-			Creditcoin::add_authority(crate::mock::RuntimeOrigin::from(root), acct.clone(),)
-		);
-
-		let value = crate::Pallet::<Test>::authorities(acct);
-		assert_eq!(value, Some(()))
 	});
 }
 
@@ -3304,22 +3206,16 @@ fn remove_authority_should_fail_when_authority_does_not_exist() {
 }
 
 #[test]
-fn remove_authority_works_for_root() {
+fn add_and_remove_authority_works_for_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
+		let account: AccountId = AccountId::new([0; 32]);
 
-		crate::Authorities::<Test>::insert(acct.clone(), ());
+		assert!(!<Test as Config>::TaskScheduler::is_authority(&account));
+		<Test as Config>::TaskScheduler::insert_authority(&account);
+		assert!(<Test as Config>::TaskScheduler::is_authority(&account));
 
-		let value = crate::Pallet::<Test>::authorities(&acct);
-		assert_eq!(value, Some(()));
-
-		assert_ok!(Creditcoin::remove_authority(
-			crate::mock::RuntimeOrigin::from(root),
-			acct.clone()
-		));
-
-		let value = crate::Pallet::<Test>::authorities(acct);
-		assert_eq!(value, None)
+		assert_ok!(Creditcoin::remove_authority(Origin::from(root), account.clone()));
+		assert!(!<Test as Config>::TaskScheduler::is_authority(&account));
 	});
 }

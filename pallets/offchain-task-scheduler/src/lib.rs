@@ -7,13 +7,14 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::Config as SystemConfig;
 pub use ocw::nonce::nonce_key;
 pub use pallet::{Authorities, Config, Error, Event, Pallet, WeightInfo};
-pub use pallet::{__substrate_call_check, __substrate_event_check};
+pub use pallet::{__substrate_call_check, __substrate_event_check, tt_error_token};
 use sp_core::offchain::KeyTypeId;
 use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
 use tracing as log;
 
 pub mod authority;
+pub mod benchmarking;
 pub mod mock;
 pub mod ocw;
 pub mod tasks;
@@ -49,14 +50,14 @@ pub mod pallet {
 		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
-	use sp_runtime::codec::FullCodec;
 	use core::fmt::Debug;
 	use frame_support::dispatch::Dispatchable;
+	use frame_support::dispatch::Vec;
 	use frame_support::pallet_prelude::*;
 	use frame_system::offchain::CreateSignedTransaction;
 	use frame_system::pallet_prelude::*;
 	use scale_info::TypeInfo;
-	use frame_support::dispatch::Vec;
+	use sp_runtime::codec::FullCodec;
 
 	#[pallet::config]
 	pub trait Config:
@@ -125,11 +126,14 @@ pub mod pallet {
 			let mut unverified_task_count = 0u32;
 			let mut cursor: Option<Vec<u8>> = None;
 			loop {
-
-				let result = PendingTasks::<T>::clear_prefix(block_number, u32::MAX, cursor.as_ref().map(|c| c.as_slice()));
+				let result = PendingTasks::<T>::clear_prefix(
+					block_number,
+					u32::MAX,
+					cursor.as_ref().map(|c| c.as_slice()),
+				);
 				unverified_task_count.saturating_accrue(result.backend);
 				cursor = result.maybe_cursor;
-				if cursor.is_none(){
+				if cursor.is_none() {
 					break;
 				}
 			}

@@ -10,12 +10,8 @@ pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub use external_address::{EVMAddress, PublicToAddress};
 use frame_support::ensure;
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-use frame_support::traits::Get;
 use frame_system::pallet_prelude::*;
-use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
-use tracing as log;
 
 #[allow(unused_macros)]
 macro_rules! try_get {
@@ -24,12 +20,13 @@ macro_rules! try_get {
 	};
 }
 
+#[macro_export]
 macro_rules! try_get_id {
 	($storage: ident <$t: ident>, $key: expr, $err: ident) => {
-		<crate::pallet::$storage<$t> as DoubleMapExt<_, _, _, _, _, _, _, _, _, _>>::try_get_id(
+		<$crate::pallet::$storage<$t> as DoubleMapExt<_, _, _, _, _, _, _, _, _, _>>::try_get_id(
 			$key,
 		)
-		.map_err(|()| crate::pallet::Error::<$t>::$err)
+		.map_err(|()| $crate::pallet::Error::<$t>::$err)
 	};
 }
 
@@ -55,20 +52,6 @@ impl<T: Config> Pallet<T> {
 	}
 	pub fn get_address(address_id: &AddressId<T::Hash>) -> Result<Address<T::AccountId>, Error<T>> {
 		Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)
-	}
-
-	pub fn authority_id() -> Option<T::AccountId> {
-		let local_keys = crate::crypto::Public::all()
-			.into_iter()
-			.map(|p| sp_core::sr25519::Public::from(p).into())
-			.collect::<Vec<T::FromAccountId>>();
-
-		log::trace!(target: "OCW", "local keys {local_keys:?}");
-
-		Authorities::<T>::iter_keys().find_map(|auth| {
-			let acct = auth.clone().into();
-			local_keys.contains(&acct).then_some(auth)
-		})
 	}
 
 	pub fn try_mutate_deal_order_and_transfer(
@@ -132,31 +115,36 @@ pub fn non_paying_error<T: Config>(
 	}
 }
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-#[extend::ext(name = HexToAddress)]
-pub(crate) impl<'a> &'a str {
-	fn hex_to_address(self) -> crate::ExternalAddress {
-		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
-	}
-	fn into_bounded<S>(self) -> frame_support::BoundedVec<u8, S>
-	where
-		S: Get<u32>,
-	{
-		self.as_bytes().into_bounded()
-	}
-}
+pub mod extensions {
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-#[extend::ext]
-pub(crate) impl<'a, S, T> &'a [T]
-where
-	S: Get<u32>,
-	T: Clone,
-{
-	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, ()> {
-		core::convert::TryFrom::try_from(self.to_vec()).map_err(|_| ())
+	#[cfg(any(test, feature = "runtime-benchmarks"))]
+	#[extend::ext(name = HexToAddress)]
+	pub(crate) impl<'a> &'a str {
+		fn hex_to_address(self) -> crate::ExternalAddress {
+			use sp_std::convert::TryInto;
+			hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+		}
+		fn into_bounded<S>(self) -> frame_support::BoundedVec<u8, S>
+		where
+			S: frame_support::pallet_prelude::Get<u32>,
+		{
+			self.as_bytes().into_bounded()
+		}
 	}
-	fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
-		self.try_into_bounded().unwrap()
+
+	#[cfg(any(test, feature = "runtime-benchmarks"))]
+	#[extend::ext(name = IntoBounded)]
+	pub(crate) impl<'a, S, T> &'a [T]
+	where
+		S: frame_support::pallet_prelude::Get<u32>,
+		T: Clone + alloc::fmt::Debug,
+	{
+		fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, crate::Vec<T>> {
+			core::convert::TryFrom::try_from(self.to_vec())
+		}
+
+		fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
+			self.try_into_bounded().unwrap()
+		}
 	}
 }
