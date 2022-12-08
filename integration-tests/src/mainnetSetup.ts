@@ -1,6 +1,4 @@
-import { Wallet, Keyring, KeyringPair } from 'creditcoin-js';
-import { providers } from 'ethers';
-// TODO: needs to be imported from creditcoin-js, see other files as well
+import { providers, Keyring, KeyringPair, Wallet } from 'creditcoin-js';
 import { default as globalSetup } from './globalSetup';
 
 const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
