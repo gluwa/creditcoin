@@ -96,6 +96,10 @@ jobs:
         run: |
           chmod a+x ./target/release/creditcoin-node
 
+      - name: Check if runner machine meets chain's requirements
+        run: |
+          ./target/release/creditcoin-node benchmark machine --chain main
+
       - name: Difficulty
         shell: bash
         continue-on-error: false
