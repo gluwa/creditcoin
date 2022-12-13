@@ -13,6 +13,7 @@ serde_json = { version = "1.0.85", features = [
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 parity-scale-codec = { workspace = true }
+sp-arithmetic = { workspace = true }
 sp-runtime = { workspace = true }
 sp-core = { workspace = true }
 tracing = { workspace = true }
@@ -21,6 +22,11 @@ frame-benchmarking = { optional = true, workspace = true }
 pallet-timestamp = { workspace = true }
 scale-info = { workspace = true }
 sp-std = { workspace = true }
+num = { version = "0.4.0", default-features = false }
+num-rational = { version = "0.4.1", default_features = false, features = [
+    "num-bigint",
+] }
+sp-runtime-interface = { workspace = true }
 
 [features]
 default = ['std']
@@ -39,3 +45,4 @@ tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing
 pallet-balances = { workspace = true, features = ["std"] }
 sp-keystore = { workspace = true, features = ["std"] }
 runtime-utils = { workspace = true }
+rand = "0.8.5"
