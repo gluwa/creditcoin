@@ -126,11 +126,8 @@ pub mod pallet {
 			let mut unverified_task_count = 0u32;
 			let mut cursor: Option<Vec<u8>> = None;
 			loop {
-				let result = PendingTasks::<T>::clear_prefix(
-					block_number,
-					u32::MAX,
-					cursor.as_ref().map(|c| c.as_slice()),
-				);
+				let result =
+					PendingTasks::<T>::clear_prefix(block_number, u32::MAX, cursor.as_deref());
 				unverified_task_count.saturating_accrue(result.backend);
 				cursor = result.maybe_cursor;
 				if cursor.is_none() {
