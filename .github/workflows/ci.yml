@@ -416,6 +416,11 @@ jobs:
           command: build
           args: --release --features runtime-benchmarks
 
+      - name: Check if runner machine meets chain's requirements
+        continue-on-error: true
+        run: |
+          ./target/release/creditcoin-node benchmark machine --chain main
+
       - name: Run benchmarks to generate dummy weights
         run: |
           ./scripts/bench.sh -p difficulty -b -r 1 -s 2
