@@ -23,6 +23,7 @@ pub mod benchmarking;
 pub mod mock;
 pub mod ocw;
 pub mod tasks;
+mod vrf;
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
 
