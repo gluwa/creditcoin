@@ -20,6 +20,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-benchmarking = { optional = true, workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
+frame-try-runtime = { optional = true, workspace = true }
 pallet-balances = { workspace = true }
 pallet-creditcoin = { workspace = true }
 pallet-difficulty = { workspace = true }
@@ -68,6 +69,7 @@ runtime-benchmarks = [
     'sp-runtime/runtime-benchmarks',
 ]
 std = [
+    "frame-try-runtime?/std",
     'parity-scale-codec/std',
     'scale-info/std',
     'frame-executive/std',
@@ -96,4 +98,17 @@ std = [
     'sp-version/std',
     'creditcoin-runtime-api/std',
 ]
-try-runtime = []
+try-runtime = [
+    "frame-try-runtime",
+    "frame-executive/try-runtime",
+    "frame-system/try-runtime",
+    "frame-support/try-runtime",
+    "pallet-balances/try-runtime",
+    "pallet-sudo/try-runtime",
+    "pallet-creditcoin/try-runtime",
+    "pallet-scheduler/try-runtime",
+    "pallet-rewards/try-runtime",
+    "pallet-difficulty/try-runtime",
+    "pallet-timestamp/try-runtime",
+    "pallet-transaction-payment/try-runtime",
+]
