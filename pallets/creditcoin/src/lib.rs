@@ -688,6 +688,23 @@ pub mod pallet {
 			}
 		}
 
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
+			let version = StorageVersion::get::<Pallet<T>>();
+			// run the pre-migration checks
+			migrations::pre_upgrade::<T>(version)?;
+			// pass the storage version to the post_upgrade call so we can
+			// do some version-dependent checks
+			Ok(version.encode())
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade(data: Vec<u8>) -> Result<(), &'static str> {
+			let version = StorageVersion::decode(&mut data.as_slice()).unwrap();
+			// run the post-migration checks
+			migrations::post_upgrade::<T>(version)
+		}
+
 		fn on_runtime_upgrade() -> Weight {
 			migrations::migrate::<T>()
 		}
