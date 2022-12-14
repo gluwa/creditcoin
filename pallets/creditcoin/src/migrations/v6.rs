@@ -375,6 +375,21 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	weight
 }
 
+#[cfg(feature = "try-runtime")]
+pub(crate) fn pre_upgrade<T: Config>() -> Result<(), &'static str> {
+	Ok(())
+}
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
+	ensure!(
+		StorageVersion::get::<crate::Pallet<T>>() == 6,
+		"expected storage version to be 6 after migrations complete"
+	);
+
+	Ok(())
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;

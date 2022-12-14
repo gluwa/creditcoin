@@ -8,6 +8,24 @@ mod v4;
 mod v5;
 mod v6;
 
+#[cfg(feature = "try-runtime")]
+pub(crate) fn pre_upgrade<T: Config>(version: StorageVersion) -> Result<(), &'static str> {
+	// potentially do some checks on the state before the migration
+	if version < 6 {
+		v6::pre_upgrade::<T>()?;
+	}
+	Ok(())
+}
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>(version: StorageVersion) -> Result<(), &'static str> {
+	// do some post-migration checks
+	if version < 6 {
+		v6::post_upgrade::<T>()?;
+	}
+	Ok(())
+}
+
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
 	let mut weight: Weight = Weight::zero();
