@@ -11,13 +11,19 @@ repository.workspace = true
 [dependencies]
 sp-core = { workspace = true }
 substrate-prometheus-endpoint = { optional = true, workspace = true }
+merlin = { version = "2.0.1", default-features = false }
 num = { version = "0.4.0", default-features = false, features = [
     "num-bigint",
     "alloc",
 ] }
+schnorrkel = { version = "*", features = ["u64_backend"] }
 sp-arithmetic = { workspace = true }
+sp-keystore = { workspace = true }
 sp-runtime-interface = { workspace = true }
 parity-scale-codec = { workspace = true }
+sp-externalities = { workspace = true }
+sp-consensus-vrf = { version = "0.11.0", default-features = false }
+tracing.workspace = true
 
 [dev-dependencies]
 tracing = { workspace = true }
@@ -28,5 +34,13 @@ tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing
 
 [features]
 default = ["std", "prometheus"]
-std = ["sp-core/std", "sp-arithmetic/std"]
+std = [
+    "sp-core/std",
+    "sp-arithmetic/std",
+    "merlin/std",
+    "sp-keystore/std",
+    "schnorrkel/std",
+    "sp-externalities/std",
+    "sp-consensus-vrf/std",
+]
 prometheus = ["substrate-prometheus-endpoint"]
