@@ -1,3 +1,5 @@
+use crate::warn_or_panic;
+
 use super::v5;
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::Config;
@@ -60,7 +62,7 @@ fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
 		// old "Luniverse" variant on-chain-storage to make testnet work
 		OldBlockchain::Luniverse => Some(Blockchain::LUNIVERSE),
 		other => {
-			log::warn!(
+			warn_or_panic!(
 				"unexpected blockchain found on storage item: {:?}",
 				core::str::from_utf8(other.as_bytes()).ok()
 			);
@@ -86,7 +88,7 @@ fn translate_transfer_kind(old: OldTransferKind) -> Option<TransferKind> {
 		OldTransferKind::Ethless(_) => TransferKind::Evm(EvmTransferKind::Ethless),
 		OldTransferKind::Erc20(_) => TransferKind::Evm(EvmTransferKind::Erc20),
 		other => {
-			log::warn!("unexpected transfer kind found on storage item: {:?}", other);
+			warn_or_panic!("unexpected transfer kind found on storage item: {:?}", other);
 			return None;
 		},
 	})
@@ -98,7 +100,7 @@ fn reconstruct_currency(blockchain: &OldBlockchain, kind: &OldTransferKind) -> O
 		OldBlockchain::Rinkeby => EvmInfo::RINKEBY,
 		OldBlockchain::Luniverse => EvmInfo::LUNIVERSE,
 		other => {
-			log::warn!(
+			warn_or_panic!(
 				"unexpected blockchain found on storage item: {:?}",
 				core::str::from_utf8(other.as_bytes()).ok()
 			);
@@ -117,7 +119,7 @@ fn reconstruct_currency(blockchain: &OldBlockchain, kind: &OldTransferKind) -> O
 				.expect("1 is less than the bound (2); qed"),
 		),
 		other => {
-			log::warn!("unexpected transfer kind found in storage: {:?}", other);
+			warn_or_panic!("unexpected transfer kind found in storage: {:?}", other);
 			return None;
 		},
 	};
@@ -148,7 +150,7 @@ fn translate_transfer<T: Config>(
 		deal_order_id: match transfer.order_id {
 			OldOrderId::Deal(id) => id,
 			OldOrderId::Repayment(id) => {
-				log::warn!("Found unexpected repayment ID attached to a transfer: {:?}", id);
+				warn_or_panic!("Found unexpected repayment ID attached to a transfer: {:?}", id);
 				return None;
 			},
 		},
@@ -262,7 +264,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		{
 			offer
 		} else {
-			log::warn!("deal order has a non-existent offer: {:?}", deal_order.offer_id);
+			warn_or_panic!("deal order has a non-existent offer: {:?}", deal_order.offer_id);
 			return None;
 		};
 

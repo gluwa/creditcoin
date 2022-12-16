@@ -1,6 +1,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
+#[macro_export]
+macro_rules! warn_or_panic {
+	($($arg:tt)*) => {
+		log::warn!($($arg)*);
+		if cfg!(feature = "try-runtime") {
+			panic!()
+		}
+	};
+}
+
 extern crate alloc;
 
 use frame_support::traits::StorageVersion;
