@@ -9,8 +9,6 @@ use crate::Id;
 use core::convert::TryFrom;
 use frame_support::pallet_prelude::*;
 use frame_support::storage_alias;
-use sp_std::collections::btree_map::BTreeMap;
-use sp_std::collections::btree_set::BTreeSet;
 use sp_std::prelude::*;
 
 pub use v5::*;
@@ -33,10 +31,8 @@ pub use v5::UnverifiedTransfer as OldUnverifiedTransfer;
 use crate::Address;
 use crate::AddressId;
 use crate::AskOrder;
-use crate::AskOrderId;
 use crate::AskTerms;
 use crate::BidOrder;
-use crate::BidOrderId;
 use crate::BidTerms;
 use crate::Blockchain;
 use crate::Currency;
@@ -157,6 +153,37 @@ fn translate_transfer<T: Config>(
 	})
 }
 
+fn translate_ask_orders<T: Config>(
+	ask_order: OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	currency: CurrencyId<HashOf<T>>,
+) -> Option<AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>> {
+	Some(AskOrder {
+		lender_address_id: ask_order.lender_address_id,
+		terms: AskTerms::try_from(translate_loan_terms::<T>(
+			ask_order.terms.0,
+			currency,
+		)).expect("terms are checked for validity on creation so they must be valid on an existing ask order; qed"),
+		expiration_block: ask_order.expiration_block,
+		block: ask_order.block,
+		lender: ask_order.lender,
+	})
+}
+
+fn translate_bid_orders<T: Config>(
+	bid_order: OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	currency: CurrencyId<HashOf<T>>,
+) -> Option<BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>> {
+	Some(BidOrder {
+		borrower_address_id: bid_order.borrower_address_id,
+		terms: BidTerms::try_from(translate_loan_terms::<T>(bid_order.terms.0, currency)).expect(
+			"terms are checked on creation so they must be valid on existing bid order; qed",
+		),
+		expiration_block: bid_order.expiration_block,
+		block: bid_order.block,
+		borrower: bid_order.borrower,
+	})
+}
+
 fn to_legacy_transfer_kind(transfer_kind: OldTransferKind) -> LegacyTransferKind {
 	match transfer_kind {
 		OldTransferKind::Erc20(addr) => LegacyTransferKind::Erc20(addr),
@@ -239,10 +266,6 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	let write = T::DbWeight::get().writes(1);
 	let read = T::DbWeight::get().reads(1);
 
-	let mut reconstructed_currency_ask = BTreeMap::new();
-	let mut reconstructed_currency_bid = BTreeMap::new();
-	let mut currencies = BTreeSet::new();
-
 	DealOrders::<T>::translate::<
 		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 		_,
@@ -266,10 +289,27 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 			return None;
 		};
 
+		if let Some(ask) = old::AskOrders::<T>::take(offer.ask_id.expiration(), offer.ask_id.hash())
+		{
+			let ask_id = offer.ask_id;
+			if let Some(ask) = translate_ask_orders::<T>(ask, currency_id.clone()) {
+				weight = weight.saturating_add(write);
+				AskOrders::<T>::insert(ask_id.expiration(), ask_id.hash(), ask);
+			}
+		}
+
+		if let Some(bid) = old::BidOrders::<T>::take(offer.bid_id.expiration(), offer.bid_id.hash())
+		{
+			let bid_id = offer.bid_id;
+			if let Some(bid) = translate_bid_orders::<T>(bid, currency_id.clone()) {
+				weight = weight.saturating_add(write);
+				BidOrders::<T>::insert(bid_id.expiration(), bid_id.hash(), bid);
+			}
+		}
+
 		if let Some(currency) = currency {
-			reconstructed_currency_ask.insert(offer.ask_id, currency_id.clone());
-			reconstructed_currency_bid.insert(offer.bid_id, currency_id.clone());
-			currencies.insert((currency_id.clone(), currency));
+			weight = weight.saturating_add(write);
+			crate::Currencies::<T>::insert(&currency_id, currency);
 		}
 
 		Some(DealOrder {
@@ -288,12 +328,9 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	});
 
 	AskOrders::<T>::translate::<OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
-		|exp, hash, ask_order| {
+		|_, _, ask_order| {
 			weight = weight.saturating_add(weight_each);
-			let ask_id = AskOrderId::with_expiration_hash::<T>(exp, hash);
-			let currency = reconstructed_currency_ask
-				.remove(&ask_id)
-				.unwrap_or_else(CurrencyId::placeholder);
+			let currency = CurrencyId::placeholder();
 			Some(AskOrder {
 				lender_address_id: ask_order.lender_address_id,
 				terms: AskTerms::try_from(translate_loan_terms::<T>(
@@ -308,12 +345,9 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	);
 
 	BidOrders::<T>::translate::<OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
-		|exp, hash, bid_order| {
+		|_, _, bid_order| {
 			weight = weight.saturating_add(weight_each);
-			let bid_id = BidOrderId::with_expiration_hash::<T>(exp, hash);
-			let currency = reconstructed_currency_bid
-				.remove(&bid_id)
-				.unwrap_or_else(CurrencyId::placeholder);
+			let currency = CurrencyId::placeholder();
 			Some(BidOrder {
 				borrower_address_id: bid_order.borrower_address_id,
 				terms: BidTerms::try_from(translate_loan_terms::<T>(bid_order.terms.0, currency)).expect("terms are checked on creation so they must be valid on existing bid order; qed"),
@@ -367,12 +401,31 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		})
 	});
 
-	for (currency_id, currency) in currencies {
-		weight = weight.saturating_add(write);
-		crate::Currencies::<T>::insert(currency_id, currency);
-	}
-
 	weight
+}
+
+mod old {
+	use super::{AccountIdOf, BlockNumberOf, HashOf, Identity, Twox64Concat};
+
+	#[frame_support::storage_alias]
+	pub type AskOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		super::OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	>;
+
+	#[frame_support::storage_alias]
+	pub type BidOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		super::OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	>;
 }
 
 #[cfg(feature = "try-runtime")]
