@@ -10,6 +10,7 @@ members = [
     'pallets/creditcoin',
     'pallets/offchain-task-scheduler/runtime-api',
     'pallets/offchain-task-scheduler',
+    'pallets/task-voting',
     'runtime',
     "sha3pow",
     "primitives",
@@ -47,6 +48,7 @@ pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = 
 pallet-rewards = { version = "2.211.2", default-features = false, path = "pallets/rewards" }
 pallet-scheduler = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-sudo = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
+pallet-task-voting = { version = "2.211.2", default-features = false, path = "pallets/task-voting" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-transaction-payment = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-transaction-payment-rpc = { version = "4.0.0-dev", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
