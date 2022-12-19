@@ -61,7 +61,7 @@ substrate-prometheus-endpoint = { workspace = true }
 thiserror = "1.0.37"
 try-runtime-cli = { workspace = true, optional = true }
 jsonrpsee = { version = "0.15.1", features = ["server"] }
-serde_json = "1.0.89"
+serde_json = "1.0.91"
 frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 sp-keyring = { workspace = true }
