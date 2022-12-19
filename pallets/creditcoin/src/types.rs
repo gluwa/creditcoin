@@ -580,7 +580,8 @@ pub(crate) mod test {
 		}
 	}
 
-	pub(crate) fn create_unverified_transfer() -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
+	pub(crate) fn create_unverified_transfer(
+	) -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, _) = test_info.create_deal_order();
 		let (_, transfer) = test_info.create_funding_transfer(&deal_order_id);

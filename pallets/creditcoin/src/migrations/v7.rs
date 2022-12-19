@@ -26,10 +26,10 @@ pub mod tests {
 	use crate::helpers::extensions::IntoBounded;
 	use crate::mock::ExtBuilder;
 	use crate::mock::Test;
+	use crate::test::create_unverified_transfer;
 	use crate::types;
 	use crate::CollectedCoinsId;
 	use crate::TransferId;
-	use crate::test::create_unverified_transfer;
 
 	#[test]
 	fn migrate_collect_coins() {

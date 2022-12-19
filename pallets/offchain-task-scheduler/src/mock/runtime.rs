@@ -95,6 +95,20 @@ where
 	type Extrinsic = Extrinsic;
 }
 
+use core::cell::Cell;
+thread_local! {
+	pub static CREATE_TRANSACTION_FAIL: Cell<bool> = Cell::new(false);
+}
+
+pub(crate) fn with_failing_create_transaction<R>(f: impl FnOnce() -> R) -> R {
+	CREATE_TRANSACTION_FAIL.with(|c| {
+		c.set(true);
+		let result = f();
+		c.set(false);
+		result
+	})
+}
+
 impl<LocalCall> CreateSignedTransaction<LocalCall> for Runtime
 where
 	RuntimeCall: From<LocalCall>,
@@ -105,7 +119,15 @@ where
 		_account: AccountId,
 		nonce: u64,
 	) -> Option<(RuntimeCall, <Self::Extrinsic as ExtrinsicT>::SignaturePayload)> {
-		Some((call, (nonce, ())))
+		CREATE_TRANSACTION_FAIL.with(|should_fail| {
+			if should_fail.get() {
+				tracing::error!(target: "OCW", "Mocking create_transaction failing!");
+				None
+			} else {
+				tracing::warn!(target: "OCW", "Mocking create_transaction not failing!");
+				Some((call, (nonce, ())))
+			}
+		})
 	}
 }
 

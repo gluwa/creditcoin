@@ -6,8 +6,13 @@ use frame_system::offchain::AppCrypto;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::Config as SystemConfig;
 pub use ocw::nonce::nonce_key;
+#[cfg(feature = "std")]
+pub use pallet::GenesisConfig;
 pub use pallet::{Authorities, Config, Error, Event, Pallet, WeightInfo};
-pub use pallet::{__substrate_call_check, __substrate_event_check, tt_error_token};
+pub use pallet::{
+	__InherentHiddenInstance, __substrate_call_check, __substrate_event_check,
+	__substrate_genesis_config_check, tt_default_parts, tt_error_token,
+};
 use sp_core::offchain::KeyTypeId;
 use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::traits::Saturating;
