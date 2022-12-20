@@ -331,7 +331,7 @@ fn blockchain_rpc_url_missing() {
 #[test]
 fn blockchain_rpc_url_non_utf8() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
-		set_rpc_uri(&Blockchain::ETHEREUM, &[0x80]);
+		set_rpc_uri(&Blockchain::ETHEREUM, [0x80]);
 
 		assert_matches!(Blockchain::ETHEREUM.rpc_url().unwrap_err(), RpcUrlError::InvalidUrl(_));
 	});
@@ -891,7 +891,7 @@ fn ocw_retries() {
 		let tx_block_num_value =
 			u64::from_str_radix(tx_block_num.trim_start_matches("0x"), 16).unwrap();
 
-		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -976,7 +976,7 @@ fn duplicate_retry_fail_and_succeed() {
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
-		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let currency = crate::tests::ethless_currency(contract.clone());

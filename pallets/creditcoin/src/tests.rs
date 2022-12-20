@@ -199,7 +199,7 @@ impl TestInfo {
 	}
 
 	pub fn register_currency(&self) {
-		if !Currencies::<Test>::contains_key(&self.currency.to_id::<Test>()) {
+		if !Currencies::<Test>::contains_key(self.currency.to_id::<Test>()) {
 			assert_ok!(Creditcoin::register_currency(Origin::root(), self.currency.clone()));
 		}
 	}
@@ -559,7 +559,7 @@ fn register_transfer_ocw_fail_to_send() {
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
-		set_rpc_uri(&Blockchain::RINKEBY, &dummy_url);
+		set_rpc_uri(&Blockchain::RINKEBY, dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let currency = ethless_currency(contract.clone());
@@ -1054,8 +1054,8 @@ fn lock_deal_order_should_emit_deal_order_locked_event() {
 		let (deal_order_id, deal_order) = test_info.create_deal_order();
 
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&test_info.blockchain, b"12345678"));
@@ -1128,8 +1128,8 @@ fn lock_deal_order_should_fail_for_non_borrower() {
 
 		// simulate deal transfer
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&test_info.blockchain, b"12345678"));
@@ -1152,8 +1152,8 @@ fn lock_deal_order_should_fail_if_already_locked() {
 
 		// simulate deal transfer
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&test_info.blockchain, b"12345678"));
@@ -1184,8 +1184,8 @@ fn lock_deal_order_locks_by_borrower() {
 
 		// simulate deal transfer
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&test_info.blockchain, b"12345678"));
@@ -1226,8 +1226,8 @@ fn fund_deal_order_should_error_when_address_not_registered() {
 
 		// simulate deal with an address that isn't registered
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				let blockchain = Blockchain::RINKEBY;
 
@@ -1274,8 +1274,8 @@ fn fund_deal_order_should_error_when_timestamp_is_in_the_future() {
 
 		// simulate deal with a timestamp in the future
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().timestamp = Creditcoin::timestamp() + 99999;
 			},
@@ -1301,8 +1301,8 @@ fn fund_deal_order_should_error_when_deal_is_funded() {
 
 		// simulate a funded deal
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&test_info.blockchain, b"12345678"));
@@ -1331,8 +1331,8 @@ fn fund_deal_order_should_error_when_deal_has_expired() {
 
 		// simulate an expired deal by setting expiration_block < head
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().expiration_block = 0;
 			},
@@ -1424,8 +1424,8 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 
 		// modify deal amount in order to cause transfer mismatch
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				// note: the transfer above has amount of 0 b/c it is an exemption!
 				deal_order_storage.as_mut().unwrap().terms.amount = ExternalAmount::from(4444u64);
@@ -2194,8 +2194,8 @@ fn close_deal_order_should_error_when_borrower_address_is_not_registered() {
 
 		// simulate deal with an address that isn't registered
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				let blockchain = Blockchain::RINKEBY;
 
@@ -2243,8 +2243,8 @@ fn close_deal_order_should_error_when_deal_timestamp_is_in_the_future() {
 
 		// simulate deal with a timestamp in the future
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().timestamp = Creditcoin::timestamp() + 99999;
 			},
@@ -2270,8 +2270,8 @@ fn close_deal_order_should_error_when_deal_order_has_already_been_repaid() {
 
 		// simulate DealOrder which has been repaid
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().repayment_transfer_id =
 					Some(TransferId::new::<Test>(&test_info.blockchain, b"4444"));
@@ -2298,8 +2298,8 @@ fn close_deal_order_should_error_when_deal_isnt_locked() {
 
 		// simulate deal which is not locked
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock = None;
 			},
@@ -2324,8 +2324,8 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2373,8 +2373,8 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2411,8 +2411,8 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2447,8 +2447,8 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2488,8 +2488,8 @@ fn close_deal_order_should_succeed() {
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2571,8 +2571,8 @@ fn exempt_should_error_when_deal_order_has_already_been_repaid() {
 
 		// simulate DealOrder which has been repaid
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().repayment_transfer_id =
 					Some(TransferId::new::<Test>(&test_info.blockchain, b"4444"));
