@@ -22,7 +22,7 @@ import type {
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinBidOrder,
-    PalletCreditcoinCollectedCoins,
+    PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
@@ -150,7 +150,7 @@ declare module '@polkadot/api-base/types/storage' {
                 QueryableStorageEntry<ApiType, []>;
             collectedCoins: AugmentedQuery<
                 ApiType,
-                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectedCoins>>,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectCoinsCollectedCoins>>,
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
@@ -386,6 +386,27 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             upgradedToU32RefCount: AugmentedQuery<ApiType, () => Observable<bool>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        taskScheduler: {
+            authorities: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<Null>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            pendingTasks: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u32 | AnyNumber | Uint8Array,
+                    arg2: H256 | string | Uint8Array,
+                ) => Observable<Option<PalletCreditcoinTask>>,
+                [u32, H256]
+            > &
+                QueryableStorageEntry<ApiType, [u32, H256]>;
             /**
              * Generic query
              **/

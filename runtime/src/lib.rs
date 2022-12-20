@@ -10,9 +10,10 @@ use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
-use pallet_creditcoin::crypto::CtcAuthId;
+
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
+use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
 use sp_runtime::{
@@ -142,6 +143,18 @@ parameter_types! {
 	 pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * BlockWeights::get().max_block;
 	 pub const MaxScheduledPerBlock: u32 = 50;
 
+}
+
+impl pallet_offchain_task_scheduler::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type UnverifiedTaskTimeout = ConstU32<60>;
+	type AuthorityId = AuthorityId;
+	type AccountIdFrom = AccountId;
+	type InternalPublic = sp_core::sr25519::Public;
+	type PublicSigning = <Signature as Verify>::Signer;
+	type TaskCall = RuntimeCall;
+	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
+	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 }
 
 impl pallet_scheduler::Config for Runtime {
@@ -309,15 +322,12 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_creditcoin::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Call = RuntimeCall;
-	type AuthorityId = CtcAuthId;
 	type Signer = Signer;
 	type SignerSignature = Signature;
-	type FromAccountId = AccountId;
-	type PublicSigning = <Signature as Verify>::Signer;
-	type InternalPublic = sp_core::sr25519::Public;
 	type HashIntoNonce = Hash;
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
+	type TaskScheduler = Self;
 }
 
 impl pallet_difficulty::Config for Runtime {
@@ -392,6 +402,7 @@ construct_runtime!(
 		Difficulty: pallet_difficulty,
 		Rewards: pallet_rewards,
 		Scheduler: pallet_scheduler,
+		TaskScheduler: pallet_offchain_task_scheduler,
 	}
 );
 

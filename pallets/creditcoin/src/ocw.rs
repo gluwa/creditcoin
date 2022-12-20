@@ -1,24 +1,13 @@
-pub(crate) mod errors;
-mod nonce;
+pub mod errors;
 pub(crate) mod rpc;
 pub(crate) mod tasks;
 
 use self::{errors::RpcUrlError, rpc::errors::RpcError};
-use super::{
-	pallet::{Config, Error, Pallet},
-	ExternalAddress,
-};
-use crate::{Blockchain, Call, ExternalTxId};
+use super::ExternalAddress;
+use crate::{Blockchain, ExternalTxId};
 use alloc::string::String;
 pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
-use frame_support::traits::IsType;
-use frame_system::offchain::{Account, SendSignedTransaction, Signer};
-use frame_system::Config as SystemConfig;
-use frame_system::Pallet as System;
-use nonce::lock_key;
-pub use nonce::nonce_key;
 use sp_runtime::offchain::storage::StorageValueRef;
-use sp_runtime::traits::{One, Saturating};
 use sp_std::prelude::*;
 
 pub(crate) type OffchainResult<T, E = errors::OffchainError> = Result<T, E>;
@@ -59,61 +48,6 @@ fn eth_get_transaction(tx_id: &ExternalTxId, rpc_url: &str) -> OffchainResult<rp
 			e.into()
 		}
 	})
-}
-
-impl<T: Config> Pallet<T> {
-	fn offchain_signed_tx(
-		auth_id: T::FromAccountId,
-		call: impl Fn(&Account<T>) -> Call<T>,
-	) -> Result<(), Error<T>> {
-		use sp_core::crypto::UncheckedFrom;
-		let auth_bytes: &[u8; 32] = auth_id.as_ref();
-		let public: T::PublicSigning = T::InternalPublic::unchecked_from(*auth_bytes).into();
-		let signer =
-			Signer::<T, T::AuthorityId>::any_account().with_filter(sp_std::vec![public.into()]);
-		let result = signer.send_signed_transaction(call);
-
-		if let Some((acc, res)) = result {
-			if res.is_err() {
-				log::error!("failure: offchain_signed_tx: tx sent: {:?}", acc.id);
-				return Err(Error::OffchainSignedTxFailed);
-			} else {
-				return Ok(());
-			}
-		}
-
-		log::error!("No local account available");
-		Err(Error::NoLocalAcctForSignedTx)
-	}
-
-	pub fn submit_txn_with_synced_nonce(
-		auth_id: T::FromAccountId,
-		call: impl Fn(&Account<T>) -> Call<T>,
-	) -> Result<(), Error<T>> {
-		let acc_id: &<T as SystemConfig>::AccountId = auth_id.into_ref();
-		let mut account_data = System::<T>::account(acc_id);
-
-		let key = &lock_key(auth_id.into_ref());
-		let mut lock = Pallet::<T>::nonce_lock_new(key);
-		let _guard = lock.lock();
-
-		let key = &nonce_key(auth_id.into_ref());
-		let synced_nonce_storage = StorageValueRef::persistent(key);
-		let synced_nonce = synced_nonce_storage.get::<T::Index>().ok().flatten();
-
-		let n = Self::block_number();
-		tracing::trace!(target: "OCW", "@{n:?} Offnonce {synced_nonce:?} Onnonce {:?}", account_data.nonce);
-
-		if let Some(nonce) = synced_nonce {
-			if nonce > account_data.nonce {
-				account_data.nonce = nonce;
-				frame_system::Account::<T>::insert(acc_id, account_data.clone());
-			}
-		}
-
-		Pallet::<T>::offchain_signed_tx(auth_id, call)
-			.map(|_| synced_nonce_storage.set(&account_data.nonce.saturating_add(One::one())))
-	}
 }
 
 #[cfg(test)]
