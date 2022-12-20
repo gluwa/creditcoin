@@ -1,22 +1,19 @@
 #![cfg(test)]
 
-use crate::mock::roll_to;
-use crate::mock::runtime::AccountId;
-use crate::mock::runtime::Extrinsic;
-use crate::mock::runtime::Runtime;
-use crate::mock::runtime::RuntimeCall;
-use crate::mock::runtime::RuntimeOrigin;
-use crate::mock::runtime::System;
-use crate::mock::runtime::TaskScheduler;
-use crate::mock::task::MockTask;
-use crate::mock::ExtBuilder;
-use crate::mock::Trivial;
-use crate::mock::WithWorkerHook;
-use crate::ocw::StorageValueRef;
-use crate::tasks::storage_key;
-use crate::tasks::TaskScheduler as TaskSchedulerT;
-use crate::tasks::{task_lock, TaskV2};
-use crate::Pallet;
+use crate::{
+	mock::{
+		pool::with_failing_submit_transaction,
+		roll_to,
+		runtime::{
+			AccountId, Extrinsic, Runtime, RuntimeCall, RuntimeOrigin, System, TaskScheduler,
+		},
+		task::MockTask,
+		ExtBuilder, Trivial, WithWorkerHook,
+	},
+	ocw::StorageValueRef,
+	tasks::{storage_key, task_lock, TaskScheduler as TaskSchedulerT, TaskV2},
+	Pallet,
+};
 use assert_matches::assert_matches;
 use frame_support::assert_ok;
 use frame_support::dispatch::Dispatchable;
@@ -257,5 +254,28 @@ fn offchain_signed_tx_works() {
 			let tx = Extrinsic::decode(&mut &*tx).unwrap();
 			assert_eq!(tx.call, call);
 		});
+	});
+}
+
+#[test]
+fn offchain_signed_tx_send_fails() {
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	let acct_pubkey = ext_builder.generate_authority();
+	let auth = AccountId::from(acct_pubkey.into_account().0);
+	ext_builder.with_pool();
+	ext_builder.build().execute_with(|| {
+		roll_to::<Trivial>(1);
+
+		let call = RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
+			remark: 0.encode(),
+		});
+
+		use frame_support::assert_err;
+		with_failing_submit_transaction(|| {
+			assert_err!(
+				Pallet::<Runtime>::offchain_signed_tx(auth.clone(), |_| call.clone()),
+				crate::Error::OffchainSignedTxFailed
+			);
+		})
 	});
 }
