@@ -354,5 +354,21 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        taskScheduler: {
+            /**
+             * The node is an authority but there is no account to create a
+             * callback transaction. This is likely an internal error.
+             **/
+            NoLocalAcctForSignedTx: AugmentedError<ApiType>;
+            /**
+             * Failed to send an offchain callback transaction. This is likely
+             * an internal error.
+             **/
+            OffchainSignedTxFailed: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
     } // AugmentedErrors
 } // declare module
