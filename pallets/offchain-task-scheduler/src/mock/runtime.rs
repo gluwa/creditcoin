@@ -23,15 +23,15 @@ type Hash = sp_core::H256;
 type Balance = u128;
 pub type Signature = MultiSignature;
 pub(crate) type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-pub(crate) type Extrinsic = TestXt<Call, ()>;
+pub(crate) type Extrinsic = TestXt<RuntimeCall, ()>;
 
 impl system::Config for Runtime {
 	type BaseCallFilter = support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -39,7 +39,7 @@ impl system::Config for Runtime {
 	type AccountId = AccountId;
 	type Lookup = sp_runtime::traits::IdentityLookup<Self::AccountId>;
 	type Header = sp_runtime::testing::Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -62,7 +62,7 @@ impl pallet_balances::Config for Runtime {
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];
 	type Balance = Balance;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -89,34 +89,34 @@ use sp_runtime::testing::TestXt;
 
 impl<LocalCall> SendTransactionTypes<LocalCall> for Runtime
 where
-	Call: From<LocalCall>,
+	RuntimeCall: From<LocalCall>,
 {
-	type OverarchingCall = Call;
+	type OverarchingCall = RuntimeCall;
 	type Extrinsic = Extrinsic;
 }
 
 impl<LocalCall> CreateSignedTransaction<LocalCall> for Runtime
 where
-	Call: From<LocalCall>,
+	RuntimeCall: From<LocalCall>,
 {
 	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
-		call: Call,
+		call: RuntimeCall,
 		_public: <Signature as Verify>::Signer,
 		_account: AccountId,
 		nonce: u64,
-	) -> Option<(Call, <Self::Extrinsic as ExtrinsicT>::SignaturePayload)> {
+	) -> Option<(RuntimeCall, <Self::Extrinsic as ExtrinsicT>::SignaturePayload)> {
 		Some((call, (nonce, ())))
 	}
 }
 
 impl crate::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type UnverifiedTaskTimeout = ConstU64<5>;
 	type AuthorityId = crate::crypto::AuthorityId;
 	type AccountIdFrom = AccountId;
 	type InternalPublic = sp_core::sr25519::Public;
 	type PublicSigning = <Signature as Verify>::Signer;
-	type TaskCall = Call;
+	type TaskCall = RuntimeCall;
 	type WeightInfo = crate::weights::WeightInfo<Self>;
 	type Task = super::task::MockTask<u32>;
 }
