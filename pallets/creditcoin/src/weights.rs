@@ -34,29 +34,40 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `crate`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
+	// Storage: unknown [0xd766358cca00233e6155d7c14e2c085f4e7b9012096b41c4eb3aaf947f6ea429] (r:1 w:1)
+	// Storage: Creditcoin PendingTasks (r:1 w:0)
+	// Storage: TaskScheduler PendingTasks (r:0 w:1)
+	fn migration_v7(t: u32, ) -> Weight {
+		Weight::from_ref_time(0 as u64)
+			// Standard Error: 237_000
+			.saturating_add(Weight::from_ref_time(17_901_000 as u64).saturating_mul(t as u64))
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(t as u64)))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(t as u64)))
+	}
 	// Storage: Creditcoin DealOrders (r:511 w:510)
 	// Storage: Creditcoin BidOrders (r:0 w:255)
 	// Storage: Creditcoin Offers (r:0 w:255)
-	// Storage: Creditcoin PendingTasks (r:0 w:510)
-	// Storage: Creditcoin AskOrders (r:0 w:5)
-	/// The range of component `a` is `[0, 255]`.
-	/// The range of component `b` is `[0, 255]`.
-	/// The range of component `o` is `[0, 255]`.
-	/// The range of component `d` is `[0, 255]`.
-	/// The range of component `f` is `[0, 255]`.
-	/// The range of component `u` is `[0, 255]`.
-	/// The range of component `c` is `[0, 255]`.
-	fn on_initialize(_a: u32, _b: u32, _o: u32, d: u32, f: u32, _u: u32, _c: u32, ) -> Weight {
-		// Minimum execution time: 2_656_000 nanoseconds.
-		Weight::from_ref_time(2_671_000_000 as u64)
-			// Standard Error: 56_869
-			.saturating_add(Weight::from_ref_time(5_803_598 as u64).saturating_mul(d as u64))
-			// Standard Error: 56_869
-			.saturating_add(Weight::from_ref_time(7_229_341 as u64).saturating_mul(f as u64))
+	// Storage: Creditcoin AskOrders (r:0 w:25)
+	fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, ) -> Weight {
+		Weight::from_ref_time(1_210_357_000 as u64)
+			// Standard Error: 2_179_000
+			.saturating_add(Weight::from_ref_time(1_253_000 as u64).saturating_mul(a as u64))
+			// Standard Error: 2_179_000
+			.saturating_add(Weight::from_ref_time(313_000 as u64).saturating_mul(o as u64))
+			// Standard Error: 2_179_000
+			.saturating_add(Weight::from_ref_time(10_053_000 as u64).saturating_mul(d as u64))
+			// Standard Error: 2_179_000
+			.saturating_add(Weight::from_ref_time(15_846_000 as u64).saturating_mul(f as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(d as u64)))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(f as u64)))
-			.saturating_add(T::DbWeight::get().writes(1530 as u64))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(a as u64)))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(b as u64)))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(o as u64)))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(d as u64)))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(f as u64)))
 	}
 	// Storage: Creditcoin Addresses (r:1 w:1)
 	fn register_address() -> Weight {
