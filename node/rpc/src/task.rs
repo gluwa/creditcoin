@@ -57,7 +57,7 @@ where
 			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
 				ErrorCode::InvalidParams.code(),
 				"Not a valid hex-string or SS58 address.",
-				Some(format!("{:?}", e)),
+				Some(format!("{e:?}")),
 			)))
 		})?;
 
