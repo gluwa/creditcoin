@@ -15,7 +15,7 @@ use crate::ExternalTxId;
 
 pub mod errors {
 	use super::JsonRpcError;
-	use crate::ocw::errors::impl_from_error;
+	use pallet_offchain_task_scheduler::impl_enum_from_variant;
 	use sp_runtime::offchain::{http::PendingRequest, HttpError};
 
 	#[derive(Debug)]
@@ -29,7 +29,7 @@ pub mod errors {
 		Timeout(PendingRequest),
 	}
 
-	impl_from_error!(
+	impl_enum_from_variant!(
 		RpcError,
 		JsonRpcError => FailureResponse,
 		serde_json::Error => SerdeError,

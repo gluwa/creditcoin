@@ -169,7 +169,7 @@ mod test {
 			<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 		{
 			let key = crate::types::concatenate!(blockchain.as_bytes(), blockchain_tx_id);
-			TransferId::make(Config::Hashing::hash(&key))
+			TransferId::from(Config::Hashing::hash(&key))
 		}
 	}
 
