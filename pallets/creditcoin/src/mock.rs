@@ -422,7 +422,7 @@ fn get_mock_contract_input<T>(index: usize, convert: impl FnOnce(ethabi::Token) 
 		.as_str()
 		.unwrap()
 		.to_string();
-	let input_bytes = hex::decode(&input.trim_start_matches("0x")).unwrap();
+	let input_bytes = hex::decode(input.trim_start_matches("0x")).unwrap();
 	let inputs = abi.decode_input(&input_bytes[4..]).unwrap();
 	convert(inputs[index].clone()).unwrap()
 }

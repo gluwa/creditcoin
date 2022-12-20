@@ -86,12 +86,12 @@ benchmarks! {
 
 		for i in 0..c {
 			let collector: T::AccountId = lender_account::<T>(true);
-			let evm_address = format!("{:03x}",i).as_bytes() .into_bounded();
+			let evm_address = format!("{i:03x}").as_bytes() .into_bounded();
 			let address_id = AddressId::new::<T>(&CHAIN, &evm_address);
 			let entry = Address { blockchain: CHAIN, value: evm_address.clone(), owner: collector.clone() };
 			<Addresses<T>>::insert(address_id, entry);
 
-			let tx_id = format!("{:03x}",i) .as_bytes() .into_bounded();
+			let tx_id = format!("{i:03x}") .as_bytes() .into_bounded();
 			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 
 			let pending = types::UnverifiedCollectedCoins { to: evm_address.clone(), tx_id: tx_id.clone() , contract: Default::default()};
@@ -300,7 +300,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let collector: T::AccountId = lender_account::<T>(true);
 		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
-		let address = Creditcoin::<T>::addresses(&collector_addr_id).unwrap();
+		let address = Creditcoin::<T>::addresses(collector_addr_id).unwrap();
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
 			.as_bytes()
 			.into_bounded();
@@ -427,13 +427,13 @@ fn generate_transfer<T: Config>(
 ) -> (TransferId<T::Hash>, Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>) {
 	let (raw_tx, gain, who) = if swap_sender {
 		(
-			format!("0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620{:02x}", seed),
+			format!("0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a620{seed:02x}"),
 			1u64,
 			borrower_account::<T>(true),
 		)
 	} else {
 		(
-			format!("0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a621{:02x}", seed),
+			format!("0xcb13b65dd4d9d7f3cb8fcddeb442dfdf767403f8a9e5fe8587859225f8a621{seed:02x}"),
 			0u64,
 			lender_account::<T>(true),
 		)
@@ -649,7 +649,7 @@ fn generate_offer<T: Config>(
 
 fn register_eth_addr<T: Config>(who: &T::AccountId, seed: &str) -> AddressId<<T>::Hash> {
 	let ktypeid = KeyTypeId(*b"dumy");
-	let pkey = ecdsa_generate(ktypeid, Some(format!("//{}", seed).as_bytes().to_vec()));
+	let pkey = ecdsa_generate(ktypeid, Some(format!("//{seed}").as_bytes().to_vec()));
 	let address = EVMAddress::from_public(&pkey);
 	let address_id = crate::AddressId::new::<T>(&Blockchain::ETHEREUM, &address);
 
@@ -670,9 +670,9 @@ fn generate_ask<T: Config>(
 	call: bool,
 	seed: u8,
 ) -> Result<(AddressId<<T>::Hash>, AskOrderId<T::BlockNumber, T::Hash>, Vec<u8>), crate::Error<T>> {
-	let secretkey = &format!("lender{:02x}", seed)[..];
+	let secretkey = &format!("lender{seed:02x}")[..];
 	let address_id = register_eth_addr::<T>(who, secretkey);
-	let guid = format!("ask_guid{:02x}", seed);
+	let guid = format!("ask_guid{seed:02x}");
 	let guid = guid.as_bytes();
 
 	let ask_order_id = AskOrderId::new::<T>(*expiration_block, guid);
@@ -698,9 +698,9 @@ fn generate_bid<T: Config>(
 	call: bool,
 	seed: u8,
 ) -> Result<(AddressId<<T>::Hash>, BidOrderId<T::BlockNumber, T::Hash>, Vec<u8>), crate::Error<T>> {
-	let secretkey = &format!("borrower{:02x}", seed)[..];
+	let secretkey = &format!("borrower{seed:02x}")[..];
 	let address_id = register_eth_addr::<T>(who, secretkey);
-	let guid = format!("bid_guid{:02x}", seed);
+	let guid = format!("bid_guid{seed:02x}");
 	let guid = guid.as_bytes();
 
 	let bid_order_id = BidOrderId::new::<T>(*expiration_block, guid);
@@ -721,12 +721,12 @@ fn generate_bid<T: Config>(
 }
 
 fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
-	let address = format!("somefakeaddress{}", seed);
+	let address = format!("somefakeaddress{seed}");
 	crate::AddressId::new::<T>(&Blockchain::ETHEREUM, address.as_bytes())
 }
 
 fn insert_fake_address<T: Config>(owner: T::AccountId, seed: u32) -> AddressId<T::Hash> {
-	let addr = format!("somefakeaddress{}", seed);
+	let addr = format!("somefakeaddress{seed}");
 	let id = crate::AddressId::new::<T>(&Blockchain::ETHEREUM, addr.as_bytes());
 
 	let address = crate::Address {
@@ -744,7 +744,7 @@ fn fake_ask_id<T: Config>(
 	seed: u32,
 	expiration_block: BlockNumberFor<T>,
 ) -> AskOrderId<T::BlockNumber, T::Hash> {
-	let guid = format!("somefakeaskguid{}", seed);
+	let guid = format!("somefakeaskguid{seed}");
 	crate::AskOrderId::new::<T>(expiration_block, guid.as_bytes())
 }
 
@@ -772,7 +772,7 @@ fn fake_bid_id<T: Config>(
 	seed: u32,
 	expiration_block: BlockNumberFor<T>,
 ) -> BidOrderId<T::BlockNumber, T::Hash> {
-	let guid = format!("somefakebidguid{}", seed);
+	let guid = format!("somefakebidguid{seed}");
 	crate::BidOrderId::new::<T>(expiration_block, guid.as_bytes())
 }
 
@@ -832,7 +832,7 @@ fn fake_deal_id<T: Config>(
 }
 
 fn fake_transfer_id<T: Config>(seed: u32) -> TransferId<T::Hash> {
-	let tx_id = format!("somefaketransfertxid{}", seed);
+	let tx_id = format!("somefaketransfertxid{seed}");
 	crate::TransferId::new::<T>(&Blockchain::ETHEREUM, tx_id.as_bytes())
 }
 
@@ -872,8 +872,8 @@ fn insert_fake_unverified_transfer<T: Config>(
 	deadline: BlockNumberFor<T>,
 	seed: u32,
 ) {
-	let from_external = format!("somefakefromext{}", seed).as_bytes().into_bounded();
-	let to_external = format!("somefaketoext{}", seed).as_bytes().into_bounded();
+	let from_external = format!("somefakefromext{seed}").as_bytes().into_bounded();
+	let to_external = format!("somefaketoext{seed}").as_bytes().into_bounded();
 	let transfer_id = fake_transfer_id::<T>(seed);
 	let transfer = crate::UnverifiedTransfer {
 		deadline,
@@ -896,7 +896,7 @@ fn insert_fake_unverified_transfer<T: Config>(
 					&fake_bid_id::<T>(seed, deadline),
 				),
 			),
-			tx_id: format!("{:03x}", seed).as_bytes().into_bounded(),
+			tx_id: format!("{seed:03x}").as_bytes().into_bounded(),
 			timestamp: None,
 		},
 		currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(

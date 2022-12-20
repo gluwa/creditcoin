@@ -78,6 +78,7 @@ where
 	Moment: UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
 	BlockNum: UniqueSaturatedInto<u64>,
 {
+	#[allow(clippy::result_large_err)]
 	pub fn verify_ocw<T>(
 		self,
 	) -> Result<TaskData<AccountId, T::Balance, BlockNum, Hash, Moment>, (Self, OffchainError)>

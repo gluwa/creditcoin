@@ -394,7 +394,7 @@ impl From<&ecdsa::Public> for LegacySighash {
 		let mut hasher = sha2::Sha512::new();
 		hasher.update(compressed_key_hex.as_bytes());
 		let key_hash = hasher.finalize();
-		let key_hash_hex = hex::encode(&key_hash);
+		let key_hash_hex = hex::encode(key_hash);
 
 		const SKIP_TO_GET_60: usize = 512 / 8 * 2 - 60; // 512 - hash size in bits, 8 - bits in byte, 2 - hex digits for byte, 60 - merkle address length (70) without creditcoin namespace length (6) and prefix length (4)
 
@@ -782,6 +782,6 @@ mod test {
 	fn exercise_invalid_term_length_error_clone_and_runtime_debug() {
 		let value = InvalidTermLengthError;
 		let new_value = value.clone();
-		format!("{:?}", new_value);
+		format!("{new_value:?}");
 	}
 }
