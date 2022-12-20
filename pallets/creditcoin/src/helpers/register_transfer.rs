@@ -33,7 +33,7 @@ impl<T: Config> Pallet<T> {
 		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
 		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
 
-		let currency = Currencies::<T>::get(&currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
+		let currency = Currencies::<T>::get(currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
 
 		ensure!(currency.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
 
@@ -64,7 +64,7 @@ impl<T: Config> Pallet<T> {
 		};
 		let task_id = TaskId::from(transfer_id.clone());
 		let pending = Task::from(pending);
-		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
+		PendingTasks::<T>::insert(deadline, task_id, &pending);
 
 		Ok((transfer_id, transfer))
 	}
@@ -97,7 +97,7 @@ impl<T: Config> Pallet<T> {
 
 		DealOrders::<T>::mutate(
 			deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.hash(),
 			|deal_order| -> Result<(), crate::Error<T>> {
 				let mut deal_order = deal_order.as_mut().ok_or(Error::<T>::NonExistentDealOrder)?;
 				let currency = match &from.blockchain {
@@ -155,7 +155,7 @@ impl<T: Config> Pallet<T> {
 		};
 		let task_id = TaskId::from(transfer_id.clone());
 		let pending = Task::from(pending);
-		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
+		PendingTasks::<T>::insert(deadline, task_id, &pending);
 
 		Ok((transfer_id, transfer))
 	}
