@@ -1,3 +1,4 @@
+use super::pool::{PoolState, TestTransactionPoolExt};
 use super::runtime::{AccountId, Runtime};
 use super::runtime::{BlockNumber, System, TaskScheduler};
 use frame_support::traits::{GenesisBuild, OffchainWorker, OnFinalize, OnInitialize};
@@ -6,7 +7,7 @@ pub(crate) use parking_lot::RwLock;
 use sp_io::TestExternalities;
 use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
 pub(crate) use sp_runtime::offchain::{
-	testing::{OffchainState, PoolState, TestOffchainExt, TestTransactionPoolExt},
+	testing::{OffchainState, TestOffchainExt},
 	OffchainDbExt, OffchainWorkerExt, TransactionPoolExt,
 };
 use sp_runtime::{traits::IdentifyAccount, RuntimeAppPublic};
