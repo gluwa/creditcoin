@@ -12,7 +12,7 @@ fn parse_rpc_pair(input: &str) -> Result<(String, String), String> {
 			Ok(s.trim_matches('\'').into())
 		} else if s.starts_with('\"') && s.ends_with('\"') {
 			Ok(s.trim_matches('\"').into())
-		} else if !s.starts_with(&['\'', '\"']) {
+		} else if !s.starts_with(['\'', '\"']) {
 			Ok(s.into())
 		} else {
 			Err(String::from("invalid quotes in rpc mapping"))

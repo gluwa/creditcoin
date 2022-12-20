@@ -1213,12 +1213,12 @@ pub mod pallet {
 			let deadline = Self::block_number().saturating_add(T::UnverifiedTaskTimeout::get());
 
 			ensure!(
-				!PendingTasks::<T>::contains_key(deadline, &TaskId::from(collect_coins_id.clone())),
+				!PendingTasks::<T>::contains_key(deadline, TaskId::from(collect_coins_id.clone())),
 				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
 			let address_id = AddressId::new::<T>(contract_chain, &evm_address);
-			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
+			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
 			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id, contract };
@@ -1354,8 +1354,8 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			DealOrders::<T>::try_mutate(
-				&deal_order_id.expiration(),
-				&deal_order_id.hash(),
+				deal_order_id.expiration(),
+				deal_order_id.hash(),
 				|value| -> DispatchResult {
 					let deal_order =
 						value.as_mut().ok_or(crate::Error::<T>::NonExistentDealOrder)?;
@@ -1444,7 +1444,7 @@ pub mod pallet {
 				},
 			};
 
-			PendingTasks::<T>::remove(&deadline, &task_id);
+			PendingTasks::<T>::remove(deadline, task_id);
 
 			Self::deposit_event(event);
 
@@ -1468,20 +1468,20 @@ pub mod pallet {
 			let event = match &task_id {
 				TaskId::VerifyTransfer(transfer_id) => {
 					ensure!(
-						!Transfers::<T>::contains_key(&transfer_id),
+						!Transfers::<T>::contains_key(transfer_id),
 						Error::<T>::TransferAlreadyRegistered
 					);
 					Event::<T>::TransferFailedVerification(transfer_id.clone(), cause)
 				},
 				TaskId::CollectCoins(collected_coins_id) => {
 					ensure!(
-						!CollectedCoins::<T>::contains_key(&collected_coins_id),
+						!CollectedCoins::<T>::contains_key(collected_coins_id),
 						Error::<T>::CollectCoinsAlreadyRegistered
 					);
 					Event::<T>::CollectCoinsFailedVerification(collected_coins_id.clone(), cause)
 				},
 			};
-			PendingTasks::<T>::remove(&deadline, &task_id);
+			PendingTasks::<T>::remove(deadline, &task_id);
 			Self::deposit_event(event);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })

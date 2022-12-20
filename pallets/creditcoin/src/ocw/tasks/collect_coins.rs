@@ -98,7 +98,7 @@ pub fn validate_collect_coins(
 		if selector != transfer_fn.short_signature() {
 			log::error!(
 				"function selector mismatch, expected: {}, got: {}",
-				hex::encode(&transfer_fn.short_signature()),
+				hex::encode(transfer_fn.short_signature()),
 				hex::encode(selector)
 			);
 			return Err(VerificationFailureCause::AbiMismatch.into());
@@ -244,7 +244,7 @@ pub(crate) mod tests {
 	fn prepare_rpc_mocks() -> MockedRpcRequests {
 		let dummy_url = "dummy";
 		let contract_chain = Creditcoin::<Test>::collect_coins_contract();
-		set_rpc_uri(&contract_chain.chain, &dummy_url);
+		set_rpc_uri(&contract_chain.chain, dummy_url);
 
 		MockedRpcRequests::new(dummy_url, &TX_HASH, &BLOCK_NUMBER_STR, &RESPONSES)
 	}
