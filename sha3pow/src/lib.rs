@@ -83,8 +83,7 @@ where
 		let parent_id = BlockId::<B>::hash(parent);
 		self.runtime_api().difficulty(&parent_id).map_err(|err| {
 			sc_consensus_pow::Error::Environment(format!(
-				"Fetching difficulty from runtime failed: {:?}",
-				err
+				"Fetching difficulty from runtime failed: {err:?}"
 			))
 		})
 	}
@@ -152,7 +151,7 @@ where
 	C: GetDifficulty<B>,
 {
 	let mut rng = SmallRng::from_rng(&mut rand::thread_rng()).map_err(|e| {
-		sc_consensus_pow::Error::Environment(format!("Initialize RNG failed for mining: {:?}", e))
+		sc_consensus_pow::Error::Environment(format!("Initialize RNG failed for mining: {e:?}"))
 	})?;
 
 	let nonce = H256::random_using(&mut rng);
