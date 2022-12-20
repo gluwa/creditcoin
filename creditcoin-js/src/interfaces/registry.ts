@@ -47,7 +47,8 @@ import type {
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinCall,
-    PalletCreditcoinCollectedCoins,
+    PalletCreditcoinCollectCoinsCollectedCoins,
+    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
     PalletCreditcoinCurrencyOrLegacyTransferKind,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
@@ -76,11 +77,12 @@ import type {
     PalletCreditcoinTaskId,
     PalletCreditcoinTaskOutput,
     PalletCreditcoinTransfer,
-    PalletCreditcoinUnverifiedCollectedCoins,
-    PalletCreditcoinUnverifiedTransfer,
+    PalletCreditcoinTransferUnverifiedTransfer,
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
     PalletDifficultyError,
+    PalletOffchainTaskSchedulerError,
+    PalletOffchainTaskSchedulerEvent,
     PalletRewardsEvent,
     PalletSchedulerCall,
     PalletSchedulerError,
@@ -157,7 +159,8 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinBidOrder: PalletCreditcoinBidOrder;
         PalletCreditcoinBidOrderId: PalletCreditcoinBidOrderId;
         PalletCreditcoinCall: PalletCreditcoinCall;
-        PalletCreditcoinCollectedCoins: PalletCreditcoinCollectedCoins;
+        PalletCreditcoinCollectCoinsCollectedCoins: PalletCreditcoinCollectCoinsCollectedCoins;
+        PalletCreditcoinCollectCoinsUnverifiedCollectedCoins: PalletCreditcoinCollectCoinsUnverifiedCollectedCoins;
         PalletCreditcoinCurrencyOrLegacyTransferKind: PalletCreditcoinCurrencyOrLegacyTransferKind;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
         PalletCreditcoinDealOrderId: PalletCreditcoinDealOrderId;
@@ -186,11 +189,12 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinTaskId: PalletCreditcoinTaskId;
         PalletCreditcoinTaskOutput: PalletCreditcoinTaskOutput;
         PalletCreditcoinTransfer: PalletCreditcoinTransfer;
-        PalletCreditcoinUnverifiedCollectedCoins: PalletCreditcoinUnverifiedCollectedCoins;
-        PalletCreditcoinUnverifiedTransfer: PalletCreditcoinUnverifiedTransfer;
+        PalletCreditcoinTransferUnverifiedTransfer: PalletCreditcoinTransferUnverifiedTransfer;
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;
         PalletDifficultyError: PalletDifficultyError;
+        PalletOffchainTaskSchedulerError: PalletOffchainTaskSchedulerError;
+        PalletOffchainTaskSchedulerEvent: PalletOffchainTaskSchedulerEvent;
         PalletRewardsEvent: PalletRewardsEvent;
         PalletSchedulerCall: PalletSchedulerCall;
         PalletSchedulerError: PalletSchedulerError;
