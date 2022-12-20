@@ -167,8 +167,8 @@ pub fn decode_mining_key(
 	if let Some(key) = mining_key {
 		// raw public key
 		if let Some(key_without_prefix) = key.strip_prefix("0x") {
-			let key_bytes = hex::decode(&key_without_prefix)
-				.map_err(|e| format!("Invalid mining key, expected hex: {}", e))?;
+			let key_bytes = hex::decode(key_without_prefix)
+				.map_err(|e| format!("Invalid mining key, expected hex: {e}"))?;
 			Ok(creditcoin_node_runtime::Signer::from(
 				sp_core::ecdsa::Public::from_full(&key_bytes)
 					.map_err(|_| String::from("Invalid mining key, expected 33 bytes"))?,
@@ -181,7 +181,7 @@ pub fn decode_mining_key(
 				Err(err) => match creditcoin_node_runtime::AccountId::from_ss58check(key) {
 					Ok(account_id) => Ok(account_id),
 					Err(e) => {
-						let msg = format!("Invalid mining key, failed to interpret it as an ECDSA public key (error: {}) and as an account ID (error: {})", err, e);
+						let msg = format!("Invalid mining key, failed to interpret it as an ECDSA public key (error: {err}) and as an account ID (error: {e})");
 						log::error!("{}", msg);
 						Err(msg)
 					},
@@ -215,8 +215,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 			Ok(k) => keystore_container.set_remote_keystore(k),
 			Err(e) => {
 				return Err(ServiceError::Other(format!(
-					"Error hooking up remote keystore for {}: {}",
-					url, e
+					"Error hooking up remote keystore for {url}: {e}"
 				)))
 			},
 		};
@@ -370,7 +369,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 									Ok(None) => {
 										count += 1;
 									},
-									Err(e) => eprintln!("Mining error: {}", e),
+									Err(e) => eprintln!("Mining error: {e}"),
 								}
 								if count >= 1_000_000 {
 									mining_metrics.add(count);
