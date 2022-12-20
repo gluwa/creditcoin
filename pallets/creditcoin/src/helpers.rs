@@ -54,7 +54,7 @@ impl<T: Config> Pallet<T> {
 		<pallet_timestamp::Pallet<T>>::get()
 	}
 	pub fn get_address(address_id: &AddressId<T::Hash>) -> Result<Address<T::AccountId>, Error<T>> {
-		Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)
+		Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)
 	}
 
 	pub fn authority_id() -> Option<T::AccountId> {
