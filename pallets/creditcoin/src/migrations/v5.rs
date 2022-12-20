@@ -191,7 +191,7 @@ mod tests {
 				tx_id: tx_id.clone(),
 			};
 
-			let collect_coins_id = crate::CollectedCoinsId::make(
+			let collect_coins_id = crate::CollectedCoinsId::from(
 				<Test as frame_system::Config>::Hashing::hash(&tx_id),
 			);
 
