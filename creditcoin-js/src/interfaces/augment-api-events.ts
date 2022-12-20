@@ -17,7 +17,8 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
-    PalletCreditcoinCollectedCoins,
+    PalletCreditcoinCollectCoinsCollectedCoins,
+    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLegacySighash,
@@ -26,7 +27,6 @@ import type {
     PalletCreditcoinOfferId,
     PalletCreditcoinPlatformCurrency,
     PalletCreditcoinTransfer,
-    PalletCreditcoinUnverifiedCollectedCoins,
     SpRuntimeDispatchError,
 } from '@polkadot/types/lookup';
 
@@ -142,12 +142,15 @@ declare module '@polkadot/api-base/types/events' {
              * Collecting coins from Eth ERC-20 has been registered and will be verified.
              * [collected_coins_id, registered_collect_coins]
              **/
-            CollectCoinsRegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinUnverifiedCollectedCoins]>;
+            CollectCoinsRegistered: AugmentedEvent<
+                ApiType,
+                [H256, PalletCreditcoinCollectCoinsUnverifiedCollectedCoins]
+            >;
             /**
              * CollectCoins has been successfully verified and minted.
              * [collected_coins_id, collected_coins]
              **/
-            CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectedCoins]>;
+            CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectCoinsCollectedCoins]>;
             /**
              * A currency has been registered and can now be used in loan terms.
              * [currency_id, currency]
@@ -337,6 +340,12 @@ declare module '@polkadot/api-base/types/events' {
              * On on-chain remark happened.
              **/
             Remarked: AugmentedEvent<ApiType, [sender: AccountId32, hash_: H256], { sender: AccountId32; hash_: H256 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        taskScheduler: {
             /**
              * Generic event
              **/

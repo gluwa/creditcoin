@@ -12,8 +12,8 @@ import {
     PalletCreditcoinTransfer,
     PalletCreditcoinPlatformBlockchain,
     PalletCreditcoinPlatformTransferKind,
-    PalletCreditcoinCollectedCoins,
-    PalletCreditcoinUnverifiedCollectedCoins,
+    PalletCreditcoinCollectCoinsCollectedCoins,
+    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
     PalletCreditcoinPlatformEvmInfo,
     PalletCreditcoinPlatformCurrency,
     PalletCreditcoinPlatformEvmTransferKind,
@@ -272,7 +272,7 @@ export const createTransfer = (transfer: PalletCreditcoinTransfer): Transfer => 
 };
 
 export const createUnverifiedCollectedCoins = (
-    collectedCoins: PalletCreditcoinUnverifiedCollectedCoins,
+    collectedCoins: PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
 ): UnverifiedCollectedCoins => {
     const { to, txId } = collectedCoins;
     return {
@@ -281,7 +281,7 @@ export const createUnverifiedCollectedCoins = (
     };
 };
 
-export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectedCoins): CollectedCoins => {
+export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectCoinsCollectedCoins): CollectedCoins => {
     const { to, txId, amount } = collectedCoins;
     return {
         to: to.toString(),
