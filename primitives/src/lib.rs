@@ -1,5 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod vrf;
+
 use sp_core::U256;
 
 pub type Difficulty = U256;

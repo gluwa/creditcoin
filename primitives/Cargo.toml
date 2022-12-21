@@ -11,6 +11,14 @@ repository.workspace = true
 [dependencies]
 sp-core = { workspace = true }
 substrate-prometheus-endpoint = { optional = true, workspace = true }
+num = { version = "0.4.0", default-features = false }
+num-rational = { version = "0.4.1", default_features = false, features = [
+    "num-bigint",
+] }
+sp-arithmetic = { workspace = true }
+sp-runtime-interface = { workspace = true }
+parity-scale-codec = { workspace = true }
+parking_lot = "0.12.1"
 
 [dev-dependencies]
 tracing = { workspace = true }
@@ -20,5 +28,5 @@ tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing
 
 [features]
 default = ["std", "prometheus"]
-std = ["sp-core/std"]
+std = ["sp-core/std", "sp-arithmetic/std"]
 prometheus = ["substrate-prometheus-endpoint"]
