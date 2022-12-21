@@ -268,6 +268,9 @@ pub mod pallet {
 	#[pallet::getter(fn collect_coins_contract)]
 	pub type CollectCoinsContract<T: Config> = StorageValue<_, GCreContract, ValueQuery>;
 
+	#[pallet::storage]
+	pub type CurrentMigration<T: Config> = StorageValue<_, MigrationStatus, ValueQuery>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -582,25 +585,62 @@ pub mod pallet {
 			let unverified_task_count =
 				PendingTasks::<T>::clear_prefix(block_number, u32::MAX, None).backend;
 
-			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
-			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
+			let migrating = CurrentMigration::<T>::get() == MigrationStatus::MigratingV6;
+
+			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None)
+				.backend
+				.saturating_add(if migrating {
+					migrations::OldAskOrders::<T>::clear_prefix(block_number, u32::MAX, None)
+						.backend
+				} else {
+					0
+				});
+			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None)
+				.backend
+				.saturating_add(if migrating {
+					migrations::OldBidOrders::<T>::clear_prefix(block_number, u32::MAX, None)
+						.backend
+				} else {
+					0
+				});
 			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).backend;
 
-			let mut deals_count = 0u32;
-			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
-				.filter_map(|(hash, deal)| {
-					deals_count = deals_count.saturating_add(1);
-					if deal.funding_transfer_id.is_some() {
-						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
-					} else {
-						None
-					}
-				})
-				.collect();
-			let funded_deals_count = deals_to_keep.len().unique_saturated_into();
-			let deals_count = deals_count.saturating_sub(funded_deals_count);
+			macro_rules! clean_deals {
+				($deal_orders: ty, $block: ident) => {{
+					let mut deals_count = 0u32;
+					let deals_to_keep: Vec<_> = <$deal_orders>::drain_prefix($block)
+						.filter_map(|(hash, deal)| {
+							deals_count = deals_count.saturating_add(1);
+							if deal.funding_transfer_id.is_some() {
+								Some((DealOrderId::with_expiration_hash::<T>($block, hash), deal))
+							} else {
+								None
+							}
+						})
+						.collect();
+					(deals_to_keep, deals_count)
+				}};
+			}
+
+			let (deals_to_keep, deals_count) = clean_deals!(DealOrders<T>, block_number);
+
+			let (old_deals_to_keep, old_deals_count) = if migrating {
+				clean_deals!(migrations::OldDealOrders<T>, block_number)
+			} else {
+				(Vec::new(), 0)
+			};
+
+			let funded_deals_count = deals_to_keep
+				.len()
+				.saturated_into::<u32>()
+				.saturating_add(old_deals_to_keep.len().saturated_into::<u32>());
+			let deals_count =
+				deals_count.saturating_add(old_deals_count).saturating_sub(funded_deals_count);
 			for (key, deal) in deals_to_keep {
 				DealOrders::<T>::insert_id(key, deal);
+			}
+			for (key, deal) in old_deals_to_keep {
+				migrations::OldDealOrders::<T>::insert_id(key, deal);
 			}
 
 			<T as Config>::WeightInfo::on_initialize(
@@ -612,6 +652,14 @@ pub mod pallet {
 				unverified_task_count,
 				0,
 			)
+		}
+
+		fn on_idle(_block_number: T::BlockNumber, remaining: Weight) -> Weight {
+			if let MigrationStatus::MigratingV6 = CurrentMigration::<T>::get() {
+				migrations::migrate_partial::<T>(remaining)
+			} else {
+				Weight::zero()
+			}
 		}
 
 		fn offchain_worker(block_number: T::BlockNumber) {

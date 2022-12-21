@@ -32,6 +32,18 @@ type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum MigrationStatus {
+	Inactive,
+	MigratingV6,
+}
+
+impl Default for MigrationStatus {
+	fn default() -> Self {
+		Self::Inactive
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum LegacyTransferKind {
 	Erc20(ExternalAddress),
 	Ethless(ExternalAddress),
