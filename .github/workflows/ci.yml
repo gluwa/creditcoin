@@ -419,7 +419,7 @@ jobs:
       - name: Check if runner machine meets chain's requirements
         continue-on-error: true
         run: |
-          ./target/release/creditcoin-node benchmark machine --chain main
+          ./scripts/check-hardware.sh
 
       - name: Run benchmarks to generate dummy weights
         run: |
