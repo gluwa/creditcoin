@@ -97,8 +97,9 @@ jobs:
           chmod a+x ./target/release/creditcoin-node
 
       - name: Check if runner machine meets chain's requirements
+        continue-on-error: true
         run: |
-          ./target/release/creditcoin-node benchmark machine --chain main
+          ./scripts/check-hardware.sh
 
       - name: Difficulty
         shell: bash
