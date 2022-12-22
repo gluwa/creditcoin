@@ -1,13 +1,14 @@
 use super::v5;
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use crate::types::DoubleMapExt;
 use crate::EvmCurrencyType;
 use crate::EvmInfo;
 use crate::EvmSupportedTransferKinds;
 use crate::EvmTransferKind;
 use crate::Id;
-use crate::{AskOrderId, Config};
+use crate::{AskOrderId, BidOrderId, Config, DealOrderId};
 use core::convert::TryFrom;
-use frame_support::migration::{clear_storage_prefix, move_prefix};
+use frame_support::migration::move_prefix;
 use frame_support::pallet_prelude::*;
 use frame_support::storage::storage_prefix;
 use frame_support::storage_alias;
@@ -158,8 +159,8 @@ fn translate_transfer<T: Config>(
 fn translate_ask_order<T: Config>(
 	ask_order: OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
 	currency: CurrencyId<HashOf<T>>,
-) -> Option<AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>> {
-	Some(AskOrder {
+) -> AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>> {
+	AskOrder {
 		lender_address_id: ask_order.lender_address_id,
 		terms: AskTerms::try_from(translate_loan_terms::<T>(
 			ask_order.terms.0,
@@ -168,14 +169,14 @@ fn translate_ask_order<T: Config>(
 		expiration_block: ask_order.expiration_block,
 		block: ask_order.block,
 		lender: ask_order.lender,
-	})
+	}
 }
 
 fn translate_bid_order<T: Config>(
 	bid_order: OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
 	currency: CurrencyId<HashOf<T>>,
-) -> Option<BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>> {
-	Some(BidOrder {
+) -> BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>> {
+	BidOrder {
 		borrower_address_id: bid_order.borrower_address_id,
 		terms: BidTerms::try_from(translate_loan_terms::<T>(bid_order.terms.0, currency)).expect(
 			"terms are checked on creation so they must be valid on existing bid order; qed",
@@ -183,7 +184,26 @@ fn translate_bid_order<T: Config>(
 		expiration_block: bid_order.expiration_block,
 		block: bid_order.block,
 		borrower: bid_order.borrower,
-	})
+	}
+}
+
+fn translate_deal_order<T: Config>(
+	deal_order: OldDealOrderOf<T>,
+	currency: CurrencyId<HashOf<T>>,
+) -> DealOrderOf<T> {
+	DealOrder {
+		offer_id: deal_order.offer_id,
+		lender_address_id: deal_order.lender_address_id,
+		borrower_address_id: deal_order.borrower_address_id,
+		terms: translate_loan_terms::<T>(deal_order.terms, currency),
+		expiration_block: deal_order.expiration_block,
+		timestamp: deal_order.timestamp,
+		block: deal_order.block,
+		funding_transfer_id: deal_order.funding_transfer_id,
+		repayment_transfer_id: deal_order.repayment_transfer_id,
+		lock: deal_order.lock,
+		borrower: deal_order.borrower,
+	}
 }
 
 fn to_legacy_transfer_kind(transfer_kind: OldTransferKind) -> LegacyTransferKind {
@@ -338,27 +358,261 @@ pub(super) fn migrate<T: Config>() -> Weight {
 	weight
 }
 
-// pub(crate) fn get_or_migrate_ask_order<T: Config>(
-// 	ask_id: &AskOrderId<BlockNumberOf<T>, HashOf<T>>,
-// ) -> Result<AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, crate::Error<T>> {
-// 	todo!()
-// }
+pub(crate) trait GetOrMigrate<T: Config> {
+	type IdTy;
+	type Entry;
+
+	fn get_or_migrate(id: &Self::IdTy) -> Result<Self::Entry, crate::Error<T>>;
+}
+
+macro_rules! impl_get_or_migrate {
+	($t: ident, getter = $get: ident, $map: ty, $old_map: ty, $id: ty, $entry: ty, $migrate_fn: ident, $error: expr) => {
+		impl<$t: crate::Config> GetOrMigrate<$t> for $map {
+			type IdTy = $id;
+			type Entry = $entry;
+
+			fn get_or_migrate(id: &$id) -> Result<$entry, crate::Error<$t>> {
+				if crate::CurrentMigration::<$t>::get() == crate::MigrationStatus::MigratingV6 {
+					if let Some(entry) = <$map>::$get(id) {
+						return Ok(entry);
+					}
+					if let Some(old_entry) = <$old_map>::$get(id) {
+						return $migrate_fn::<$t>(id, old_entry);
+					}
+				} else {
+					if let Some(entry) = <$map>::$get(id) {
+						return Ok(entry);
+					}
+				}
+				Err($error)
+			}
+		}
+	};
+
+	($t: ident, single $map: ty, $old_map: ty, $id: ty, $entry: ty, $migrate_fn: ident, $error: expr) => {
+		impl_get_or_migrate!($t, getter = get, $map, $old_map, $id, $entry, $migrate_fn, $error);
+	};
+	($t: ident, $map: ty, $old_map: ty, $id: ty, $entry: ty, $migrate_fn: ident, $error: expr) => {
+		impl_get_or_migrate!($t, getter = get_id, $map, $old_map, $id, $entry, $migrate_fn, $error);
+	};
+}
+
+impl_get_or_migrate!(
+	T,
+	AskOrders<T>,
+	OldAskOrders<T>,
+	AskOrderId<BlockNumberOf<T>, HashOf<T>>,
+	AskOrderOf<T>,
+	migrate_ask_order,
+	crate::Error::NonExistentAskOrder
+);
+impl_get_or_migrate!(
+	T,
+	crate::AskOrders<T>,
+	OldAskOrders<T>,
+	AskOrderId<BlockNumberOf<T>, HashOf<T>>,
+	AskOrderOf<T>,
+	migrate_ask_order,
+	crate::Error::NonExistentAskOrder
+);
+impl_get_or_migrate!(
+	T,
+	BidOrders<T>,
+	OldBidOrders<T>,
+	BidOrderId<BlockNumberOf<T>, HashOf<T>>,
+	BidOrderOf<T>,
+	migrate_bid_order,
+	crate::Error::NonExistentBidOrder
+);
+impl_get_or_migrate!(
+	T,
+	crate::BidOrders<T>,
+	OldBidOrders<T>,
+	BidOrderId<BlockNumberOf<T>, HashOf<T>>,
+	BidOrderOf<T>,
+	migrate_bid_order,
+	crate::Error::NonExistentBidOrder
+);
+impl_get_or_migrate!(
+	T,
+	DealOrders<T>,
+	OldDealOrders<T>,
+	DealOrderId<BlockNumberOf<T>, HashOf<T>>,
+	DealOrderOf<T>,
+	migrate_deal_order,
+	crate::Error::NonExistentDealOrder
+);
+impl_get_or_migrate!(
+	T,
+	crate::DealOrders<T>,
+	OldDealOrders<T>,
+	DealOrderId<BlockNumberOf<T>, HashOf<T>>,
+	DealOrderOf<T>,
+	migrate_deal_order,
+	crate::Error::NonExistentDealOrder
+);
+impl_get_or_migrate!(
+	T,
+	single Addresses<T>,
+	OldAddresses<T>,
+	AddressId<HashOf<T>>,
+	Address<AccountIdOf<T>>,
+	migrate_address,
+	crate::Error::NonExistentAddress
+);
+impl_get_or_migrate!(
+	T,
+	single crate::Addresses<T>,
+	OldAddresses<T>,
+	AddressId<HashOf<T>>,
+	Address<AccountIdOf<T>>,
+	migrate_address,
+	crate::Error::NonExistentAddress
+);
+impl_get_or_migrate!(
+	T,
+	single Transfers<T>,
+	OldTransfers<T>,
+	TransferId<HashOf<T>>,
+	TransferOf<T>,
+	migrate_transfer,
+	crate::Error::NonExistentTransfer
+);
+impl_get_or_migrate!(
+	T,
+	single crate::Transfers<T>,
+	OldTransfers<T>,
+	TransferId<HashOf<T>>,
+	TransferOf<T>,
+	migrate_transfer,
+	crate::Error::NonExistentTransfer
+);
+
+pub(crate) fn get_or_migrate<T: Config, M: GetOrMigrate<T>>(
+	id: &M::IdTy,
+) -> Result<M::Entry, crate::Error<T>> {
+	M::get_or_migrate(id)
+}
+
+type AskOrderOf<T> = AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
+type OldAskOrderOf<T> = OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
+type BidOrderOf<T> = BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
+type OldBidOrderOf<T> = OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
+type DealOrderOf<T> = DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
+type OldDealOrderOf<T> = OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
+type TransferOf<T> = Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
+type OldTransferOf<T> = OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
+
+pub(crate) fn migrate_ask_order<T: Config>(
+	ask_id: &AskOrderId<BlockNumberOf<T>, HashOf<T>>,
+	old_ask: OldAskOrderOf<T>,
+) -> Result<AskOrderOf<T>, crate::Error<T>> {
+	let ask = translate_ask_order::<T>(old_ask, CurrencyId::placeholder());
+
+	AskOrders::<T>::insert_id(ask_id, &ask);
+
+	Ok(ask)
+}
+
+pub(crate) fn migrate_bid_order<T: Config>(
+	bid_id: &BidOrderId<BlockNumberOf<T>, HashOf<T>>,
+	old_bid: OldBidOrderOf<T>,
+) -> Result<BidOrderOf<T>, crate::Error<T>> {
+	let bid = translate_bid_order::<T>(old_bid, CurrencyId::placeholder());
+
+	BidOrders::<T>::insert_id(bid_id, &bid);
+
+	Ok(bid)
+}
+
+pub(crate) fn migrate_transfer<T: Config>(
+	transfer_id: &TransferId<HashOf<T>>,
+	old_transfer: OldTransferOf<T>,
+) -> Result<TransferOf<T>, crate::Error<T>> {
+	let transfer =
+		translate_transfer::<T>(old_transfer).ok_or(crate::Error::LazyMigrationFailed)?;
+
+	Transfers::<T>::insert(transfer_id, &transfer);
+
+	Ok(transfer)
+}
+
+pub(crate) fn migrate_deal_order<T: Config>(
+	deal_id: &DealOrderId<BlockNumberOf<T>, HashOf<T>>,
+	old_deal: OldDealOrderOf<T>,
+) -> Result<DealOrderOf<T>, crate::Error<T>> {
+	let currency = reconstruct_currency_from_deal::<T>(&old_deal);
+	let currency_id = if let Some(currency) = currency.as_ref() {
+		currency.to_id::<T>()
+	} else {
+		CurrencyId::placeholder()
+	};
+
+	if let Some(offer) = crate::Offers::<T>::get_id(&old_deal.offer_id) {
+		let ask_id = offer.ask_id;
+		if let Some(ask) = OldAskOrders::<T>::take(ask_id.expiration(), ask_id.hash()) {
+			let ask = translate_ask_order::<T>(ask, currency_id.clone());
+			AskOrders::<T>::insert(ask_id.expiration(), ask_id.hash(), ask);
+		} else {
+			AskOrders::<T>::mutate(ask_id.expiration(), ask_id.hash(), |ask| {
+				if let Some(ask) = ask {
+					ask.terms.currency = currency_id.clone();
+				}
+			});
+		}
+
+		let bid_id = offer.bid_id;
+		if let Some(bid) = OldBidOrders::<T>::take(bid_id.expiration(), bid_id.hash()) {
+			let bid = translate_bid_order::<T>(bid, currency_id.clone());
+			BidOrders::<T>::insert(bid_id.expiration(), bid_id.hash(), bid);
+		} else {
+			BidOrders::<T>::mutate(bid_id.expiration(), bid_id.hash(), |bid| {
+				if let Some(bid) = bid {
+					bid.terms.currency = currency_id.clone();
+				}
+			});
+		}
+	} else {
+		log::warn!("deal order has a non-existent offer: {:?}", old_deal.offer_id);
+	}
+
+	if let Some(currency) = currency {
+		crate::Currencies::<T>::insert(&currency_id, currency);
+	}
+
+	let deal = translate_deal_order::<T>(old_deal, currency_id);
+	DealOrders::<T>::insert_id(deal_id, &deal);
+
+	Ok(deal)
+}
+
+pub(crate) fn migrate_address<T: Config>(
+	address_id: &AddressId<HashOf<T>>,
+	old_address: OldAddress<AccountIdOf<T>>,
+) -> Result<Address<AccountIdOf<T>>, crate::Error<T>> {
+	let Some(blockchain) = translate_blockchain(old_address.blockchain) else {
+		return Err(crate::Error::LazyMigrationFailed);
+	};
+	let address = Address { blockchain, value: old_address.value, owner: old_address.owner };
+	Addresses::<T>::insert(address_id, &address);
+
+	Ok(address)
+}
 
 pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
+	log::info!("migrating partially");
 	let mut weight: Weight = Weight::zero();
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
 	let write = T::DbWeight::get().writes(1);
 	let read = T::DbWeight::get().reads(1);
 
 	for (id, address) in OldAddresses::<T>::drain() {
-		weight = weight.saturating_add(weight_each);
-		let Some(blockchain) = translate_blockchain(address.blockchain) else {
-			continue
-		};
-		Addresses::<T>::insert(
-			id,
-			Address { blockchain, value: address.value, owner: address.owner },
-		);
+		weight.saturating_accrue(weight_each); // read + delete
+
+		weight.saturating_accrue(write);
+		if let Err(_) = migrate_address::<T>(&id, address) {
+			continue;
+		}
 
 		if weight.any_gte(cutoff) {
 			return weight;
@@ -366,6 +620,8 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	}
 
 	for (exp, hash, deal_order) in OldDealOrders::<T>::drain() {
+		weight = weight.saturating_add(weight_each); // read + write old deal
+
 		weight.saturating_accrue(read); // read transfer from storage in `reconstruct_currency_from_deal`
 		let currency = reconstruct_currency_from_deal::<T>(&deal_order);
 		let currency_id = if let Some(currency) = currency.as_ref() {
@@ -387,19 +643,17 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		weight.saturating_accrue(weight_each); // read then write to delete old ask
 		if let Some(ask) = OldAskOrders::<T>::take(offer.ask_id.expiration(), offer.ask_id.hash()) {
 			let ask_id = offer.ask_id;
-			if let Some(ask) = translate_ask_order::<T>(ask, currency_id.clone()) {
-				weight = weight.saturating_add(write); // write migrated ask order to storage
-				AskOrders::<T>::insert(ask_id.expiration(), ask_id.hash(), ask);
-			}
+			let ask = translate_ask_order::<T>(ask, currency_id.clone());
+			weight = weight.saturating_add(write); // write migrated ask order to storage
+			AskOrders::<T>::insert(ask_id.expiration(), ask_id.hash(), ask);
 		}
 
 		weight.saturating_accrue(weight_each); // read + write to delete old bid
 		if let Some(bid) = OldBidOrders::<T>::take(offer.bid_id.expiration(), offer.bid_id.hash()) {
 			let bid_id = offer.bid_id;
-			if let Some(bid) = translate_bid_order::<T>(bid, currency_id.clone()) {
-				weight = weight.saturating_add(write); // write migrated bid order to storage
-				BidOrders::<T>::insert(bid_id.expiration(), bid_id.hash(), bid);
-			}
+			let bid = translate_bid_order::<T>(bid, currency_id.clone());
+			weight = weight.saturating_add(write); // write migrated bid order to storage
+			BidOrders::<T>::insert(bid_id.expiration(), bid_id.hash(), bid);
 		}
 
 		if let Some(currency) = currency {
@@ -407,24 +661,8 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 			crate::Currencies::<T>::insert(&currency_id, currency);
 		}
 
-		weight = weight.saturating_add(weight_each);
-		DealOrders::<T>::insert(
-			exp,
-			hash,
-			DealOrder {
-				offer_id: deal_order.offer_id,
-				lender_address_id: deal_order.lender_address_id,
-				borrower_address_id: deal_order.borrower_address_id,
-				terms: translate_loan_terms::<T>(deal_order.terms, currency_id),
-				expiration_block: deal_order.expiration_block,
-				timestamp: deal_order.timestamp,
-				block: deal_order.block,
-				funding_transfer_id: deal_order.funding_transfer_id,
-				repayment_transfer_id: deal_order.repayment_transfer_id,
-				lock: deal_order.lock,
-				borrower: deal_order.borrower,
-			},
-		);
+		weight.saturating_accrue(write); // insert migrated deal
+		DealOrders::<T>::insert(exp, hash, translate_deal_order::<T>(deal_order, currency_id));
 
 		if weight.any_gte(cutoff) {
 			return weight;
@@ -434,10 +672,9 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	for (exp, hash, ask_order) in OldAskOrders::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		let currency = CurrencyId::placeholder();
-		if let Some(ask) = translate_ask_order::<T>(ask_order, currency) {
-			weight.saturating_accrue(write);
-			AskOrders::<T>::insert(exp, hash, ask);
-		}
+		let ask = translate_ask_order::<T>(ask_order, currency);
+		weight.saturating_accrue(write);
+		AskOrders::<T>::insert(exp, hash, ask);
 
 		if weight.any_gte(cutoff) {
 			return weight;
@@ -447,10 +684,9 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	for (exp, hash, bid_order) in OldBidOrders::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		let currency = CurrencyId::placeholder();
-		if let Some(bid) = translate_bid_order::<T>(bid_order, currency) {
-			weight.saturating_accrue(write);
-			BidOrders::<T>::insert(exp, hash, bid);
-		}
+		let bid = translate_bid_order::<T>(bid_order, currency);
+		weight.saturating_accrue(write);
+		BidOrders::<T>::insert(exp, hash, bid);
 
 		if weight.any_gte(cutoff) {
 			return weight;
@@ -473,6 +709,8 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		weight.saturating_accrue(write); // write migration status
 		crate::CurrentMigration::<T>::put(crate::MigrationStatus::Inactive);
 	}
+
+	log::info!("Consumed {weight:?}");
 
 	weight
 }

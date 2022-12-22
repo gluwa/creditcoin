@@ -542,6 +542,8 @@ pub mod pallet {
 
 		/// The currency with the given ID has not been registered.
 		CurrencyNotRegistered,
+
+		LazyMigrationFailed,
 	}
 
 	#[pallet::genesis_config]

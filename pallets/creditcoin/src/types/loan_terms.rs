@@ -1,4 +1,4 @@
-use core::ops::Deref;
+use core::ops::{Deref, DerefMut};
 
 use crate::CurrencyId;
 
@@ -68,6 +68,12 @@ impl<Hash> Deref for AskTerms<Hash> {
 	}
 }
 
+impl<Hash> DerefMut for AskTerms<Hash> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
+
 #[derive(Clone, Copy, RuntimeDebug)]
 pub struct InvalidTermLengthError;
 
@@ -108,6 +114,12 @@ impl<Hash> Deref for BidTerms<Hash> {
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
+	}
+}
+
+impl<Hash> DerefMut for BidTerms<Hash> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
 	}
 }
 

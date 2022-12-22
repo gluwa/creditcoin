@@ -382,6 +382,10 @@ pub(crate) impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value, QueryKind, OnEmpty,
 		Self::insert(id.expiration(), id.hash(), val);
 	}
 
+	fn get_id(id: &IdTy) -> QueryKind::Query {
+		Self::get(id.expiration(), id.hash())
+	}
+
 	fn try_get_id(id: &IdTy) -> frame_support::dispatch::result::Result<Value, ()> {
 		Self::try_get(id.expiration(), id.hash())
 	}
