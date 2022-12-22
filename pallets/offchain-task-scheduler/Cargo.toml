@@ -40,4 +40,3 @@ tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing
 pallet-balances = { workspace = true, features = ["std"] }
 sp-keystore = { workspace = true, features = ["std"] }
 runtime-utils = { workspace = true }
-rand = "0.8.5"
