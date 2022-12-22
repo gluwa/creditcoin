@@ -643,7 +643,7 @@ pub mod pallet {
 				migrations::OldDealOrders::<T>::insert_id(key, deal);
 			}
 
-			<T as Config>::WeightInfo::on_initialize(
+			let cleanup_weight = <T as Config>::WeightInfo::on_initialize(
 				ask_count,
 				bid_count,
 				offer_count,
@@ -651,7 +651,23 @@ pub mod pallet {
 				funded_deals_count,
 				unverified_task_count,
 				0,
-			)
+			);
+
+			let migration_weight = if migrating {
+				let limit = T::BlockWeights::get().max_block.saturating_sub(cleanup_weight);
+				let weight = migrations::migrate_partial::<T>(limit);
+				if weight != Weight::zero() {
+					limit.max(weight)
+				} else {
+					weight
+				}
+			} else {
+				Weight::zero()
+			};
+
+			let total_weight = cleanup_weight.saturating_add(migration_weight);
+
+			total_weight
 		}
 
 		fn on_idle(_block_number: T::BlockNumber, remaining: Weight) -> Weight {
