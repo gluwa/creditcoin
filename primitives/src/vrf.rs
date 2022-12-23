@@ -1,3 +1,4 @@
+use merlin::Transcript;
 use num::rational::BigRational;
 use num::ToPrimitive;
 use parity_scale_codec::{Decode, Encode};
@@ -168,7 +169,9 @@ pub mod sortition {
 	}
 
 	pub fn is_selected(inout: &VRFInOut, threshold: u128) -> bool {
-		u128::from_le_bytes(inout.make_bytes::<[u8; 16]>(b"creditcoin-vrf")) < threshold
+		let random = u128::from_le_bytes(inout.make_bytes::<[u8; 16]>(b"creditcoin-vrf"));
+		log::trace!(target: "VRF", "is {random:#} < {threshold:#}? selected.");
+		random < threshold
 	}
 
 	#[cfg(test)]
@@ -281,6 +284,23 @@ pub fn prove_vrf(
 		.map(|(inout, _proofbatchable)| inout)
 }
 
+pub fn finalize_randomness(
+	public: &PublicKey,
+	transcript: Transcript,
+	output: &VRFOutput,
+) -> Option<VRFInOut> {
+	match output.attach_input_hash(public, transcript) {
+		Ok(inout) => Some(inout),
+		Err(e) => {
+			log::warn!(
+				target = "VRF",
+				"attaching transcript failed due to {e}, the random is unusable."
+			);
+			None
+		},
+	}
+}
+
 #[runtime_interface]
 pub trait Vrf {
 	fn generate_vrf(
@@ -340,7 +360,7 @@ mod tests {
 			.keystore
 			.as_ref()
 			.expect("A keystore")
-			.sr25519_generate_new(key_type_id, None)
+			.sr25519_generate_new(key_type_id, Some("//fixed"))
 			.unwrap()
 	}
 
@@ -353,7 +373,15 @@ mod tests {
 		let pubkey = add_random_key(key_type_id, &builder);
 
 		builder.build_sans_config().execute_with(|| {
-			generate_vrf(key_type_id, &pubkey, pre_hash, epoch, task_id).unwrap();
+			let (output, _proof) =
+				generate_vrf(key_type_id, &pubkey, pre_hash, epoch, task_id).unwrap();
+
+			let public_key = PublicKey::from_bytes(&pubkey.0).unwrap();
+			let transcript = make_transcript(transcript_data(pre_hash, epoch, task_id));
+			let inout = finalize_randomness(&public_key, transcript, &output).unwrap();
+
+			let level = sortition::threshold(Perquintill::from_float(0.5), 1, 10);
+			assert!(!sortition::is_selected(&inout, level));
 		})
 	}
 
@@ -368,17 +396,16 @@ mod tests {
 			let (output, proof) =
 				generate_vrf(key_type_id, &pubkey, pre_hash, epoch, task_id).unwrap();
 
-			prove_vrf(
-				PublicKey::from_bytes(&pubkey.0).unwrap(),
-				pre_hash,
-				epoch,
-				task_id,
-				output,
-				proof,
-			)
-			.unwrap();
+			let public_key = PublicKey::from_bytes(&pubkey.0).unwrap();
+
+			let transcript = make_transcript(transcript_data(pre_hash, epoch, task_id));
+
+			let inout = finalize_randomness(&public_key, transcript, &output).unwrap();
+
+			let reconstituted_inout =
+				prove_vrf(public_key, pre_hash, epoch, task_id, output, proof).unwrap();
+
+			assert_eq!(inout, reconstituted_inout);
 		})
 	}
-
-	//inout from prove equals inout from generator
 }
