@@ -27,7 +27,8 @@ pub(crate) fn post_upgrade<T: Config>(version: StorageVersion) -> Result<(), &'s
 }
 
 pub(crate) use v6::{
-	migrate_partial, OldAddresses, OldAskOrders, OldBidOrders, OldDealOrders, OldTransfers,
+	migrate_partial, OldAddress, OldAddresses, OldAskOrderOf, OldAskOrders, OldBidOrderOf,
+	OldBidOrders, OldDealOrderOf, OldDealOrders, OldTransferOf, OldTransfers,
 };
 
 pub(crate) fn migrate<T: Config>() -> Weight {

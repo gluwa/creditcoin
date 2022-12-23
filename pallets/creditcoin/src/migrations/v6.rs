@@ -313,8 +313,16 @@ pub(crate) type OldDealOrders<T: crate::Config> = StorageDoubleMap<
 	OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
+fn weight_dbg(w: Weight) -> alloc::string::String {
+	alloc::format!("Weight {{ ref_time: {}, proof_size: {} }}", w.ref_time(), w.proof_size())
+}
+
 pub(super) fn migrate<T: Config>() -> Weight {
 	let cutoff = T::BlockWeights::get().max_block / 2;
+
+	crate::CurrentMigration::<T>::put(crate::MigrationStatus::MigratingV6);
+
+	log::info!("Cutoff is {}", weight_dbg(cutoff));
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
 	let mut weight = Weight::zero();
 
@@ -353,8 +361,14 @@ pub(super) fn migrate<T: Config>() -> Weight {
 	});
 
 	if weight.all_lt(cutoff) {
-		weight.saturating_accrue(migrate_partial::<T>(cutoff.saturating_sub(weight)));
+		let w = migrate_partial::<T>(cutoff.saturating_sub(weight));
+		weight.saturating_accrue(w);
 	}
+	log::info!(
+		"Consumed Weight {{ ref_time: {}, proof_size: {} }} in initial migration",
+		weight.ref_time(),
+		weight.proof_size()
+	);
 	weight
 }
 
@@ -495,13 +509,13 @@ pub(crate) fn get_or_migrate<T: Config, M: GetOrMigrate<T>>(
 }
 
 type AskOrderOf<T> = AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
-type OldAskOrderOf<T> = OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
+pub type OldAskOrderOf<T> = OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
 type BidOrderOf<T> = BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
-type OldBidOrderOf<T> = OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
+pub type OldBidOrderOf<T> = OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>;
 type DealOrderOf<T> = DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
-type OldDealOrderOf<T> = OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
+pub type OldDealOrderOf<T> = OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
 type TransferOf<T> = Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
-type OldTransferOf<T> = OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
+pub type OldTransferOf<T> = OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>;
 
 pub(crate) fn migrate_ask_order<T: Config>(
 	ask_id: &AskOrderId<BlockNumberOf<T>, HashOf<T>>,
@@ -709,8 +723,6 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		weight.saturating_accrue(write); // write migration status
 		crate::CurrentMigration::<T>::put(crate::MigrationStatus::Inactive);
 	}
-
-	log::info!("Consumed {weight:?}");
 
 	weight
 }

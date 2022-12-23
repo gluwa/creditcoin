@@ -658,6 +658,11 @@ pub mod pallet {
 			let migration_weight = if migrating {
 				let limit = T::BlockWeights::get().max_block.saturating_sub(cleanup_weight);
 				let weight = migrations::migrate_partial::<T>(limit);
+				log::info!(
+					"Consumed Weight {{ ref_time: {}, proof_size: {} }}",
+					weight.ref_time(),
+					weight.proof_size()
+				);
 				if weight != Weight::zero() {
 					limit.max(weight)
 				} else {
