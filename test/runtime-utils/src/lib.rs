@@ -7,7 +7,6 @@ use frame_support::{
 use frame_system as system;
 pub(crate) use parking_lot::RwLock;
 use pool::{PoolState, TestTransactionPoolExt};
-use sp_core::offchain::storage;
 pub(crate) use sp_core::offchain::{
 	testing::{OffchainState, TestOffchainExt},
 	OffchainDbExt, OffchainWorkerExt, TransactionPoolExt,
