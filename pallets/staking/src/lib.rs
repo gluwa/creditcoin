@@ -1,0 +1,229 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use frame_election_provider_support::{
+	ElectionDataProvider, ElectionProvider, ElectionProviderBase, SortedListProvider, Supports,
+};
+use frame_support::{traits::Defensive, RuntimeDebug};
+#[cfg(feature = "std")]
+pub use pallet_staking_substrate::GenesisConfig;
+#[cfg(feature = "std")]
+pub use pallet_staking_substrate::TestBenchmarkingConfig;
+use pallet_staking_substrate::ValidatorPrefs;
+pub use pallet_staking_substrate::{
+	ActiveEra, ActiveEraInfo, Config, ErasStartSessionIndex, Error, Event, ForceEra, Forcing,
+	Pallet, RewardDestination, UseValidatorsMap,
+};
+pub use pallet_staking_substrate::{
+	__InherentHiddenInstance, __substrate_call_check, __substrate_event_check,
+	__substrate_genesis_config_check, tt_default_parts, tt_error_token,
+};
+use parity_scale_codec::{Decode, Encode, EncodeLike};
+use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
+use sp_runtime::traits::{OpaqueKeys, Zero};
+use sp_runtime::AccountId32;
+pub use sp_staking::{EraIndex, StakingInterface};
+use sp_std::{boxed::Box, fmt::Debug, marker::PhantomData, vec, vec::Vec};
+
+pub(crate) const LOG_TARGET: &str = "runtime::staking";
+
+macro_rules! logger {
+	($level:tt, $patter:expr $(, $values:expr)* $(,)?) => {
+		log::$level!(
+			target: crate::LOG_TARGET,
+			concat!("[{:?}] 💸 ", $patter), <frame_system::Pallet<T>>::block_number() $(, $values)*
+		)
+	};
+}
+pub(crate) use logger;
+
+pub mod weights {
+	pub use pallet_staking_substrate::weights::*;
+}
+
+pub struct EmptyList<T>(PhantomData<T>);
+impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
+	type Error = ();
+	type Score = u64;
+
+	fn iter() -> Box<dyn Iterator<Item = T::AccountId>> {
+		Box::new(vec![].into_iter())
+	}
+
+	fn iter_from(
+		_start: &T::AccountId,
+	) -> Result<Box<dyn Iterator<Item = T::AccountId>>, Self::Error> {
+		Ok(Self::iter())
+	}
+
+	fn count() -> u32 {
+		logger!(debug, "Faking VoterList count");
+		1
+	}
+
+	fn contains(_id: &T::AccountId) -> bool {
+		false
+	}
+
+	fn on_insert(_id: T::AccountId, _score: Self::Score) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn on_update(_id: &T::AccountId, _score: Self::Score) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn get_score(_id: &T::AccountId) -> Result<Self::Score, Self::Error> {
+		Ok(Zero::zero())
+	}
+
+	fn on_remove(_id: &T::AccountId) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn unsafe_regenerate(
+		_all: impl IntoIterator<Item = T::AccountId>,
+		_score_of: Box<dyn Fn(&T::AccountId) -> Self::Score>,
+	) -> u32 {
+		0
+	}
+
+	fn unsafe_clear() {}
+
+	fn try_state() -> Result<(), &'static str> {
+		Ok(())
+	}
+}
+
+pub struct TrivialSessionHandler<T>(PhantomData<T>);
+
+impl<T: Config> pallet_session::SessionHandler<T::AccountId> for TrivialSessionHandler<T> {
+	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[];
+
+	fn on_genesis_session<Ks: sp_runtime::traits::OpaqueKeys>(validators: &[(T::AccountId, Ks)]) {
+		for (id, _) in validators {
+			pallet_staking_substrate::Validators::<T>::insert(id, ValidatorPrefs::default());
+		}
+	}
+
+	fn on_new_session<Ks: sp_runtime::traits::OpaqueKeys>(
+		_changed: bool,
+		_validators: &[(T::AccountId, Ks)],
+		_queued_validators: &[(T::AccountId, Ks)],
+	) {
+	}
+
+	fn on_disabled(_validator_index: u32) {}
+}
+
+#[derive(PartialEq, Eq, Clone, Decode, Encode, TypeInfo, RuntimeDebug, Deserialize, Serialize)]
+pub struct NoKeys;
+
+impl OpaqueKeys for NoKeys {
+	type KeyTypeIdProviders = ();
+
+	fn key_ids() -> &'static [sp_runtime::KeyTypeId] {
+		static EMPTY: &[sp_runtime::KeyTypeId] = &[];
+		EMPTY
+	}
+
+	fn get_raw(&self, _i: sp_runtime::KeyTypeId) -> &[u8] {
+		static EMPTY: &[u8] = &[];
+		EMPTY
+	}
+}
+
+pub struct TrivialTargetList<T: Config>(PhantomData<T>);
+impl<T: Config> SortedListProvider<AccountId32> for TrivialTargetList<T>
+where
+	AccountId32: EncodeLike<T::AccountId>,
+{
+	type Error = ();
+	type Score = u128;
+
+	fn iter() -> Box<dyn Iterator<Item = AccountId32>> {
+		let x = AccountId32::new([0; 32]);
+		pallet_staking_substrate::Validators::<T>::insert(x, ValidatorPrefs::default());
+		Box::new(vec![AccountId32::new([0; 32])].into_iter())
+	}
+
+	fn iter_from(
+		_start: &AccountId32,
+	) -> Result<Box<dyn Iterator<Item = AccountId32>>, Self::Error> {
+		unreachable!()
+	}
+
+	fn count() -> u32 {
+		logger!(debug, "Faking VoterList count");
+		1
+	}
+
+	fn contains(_id: &AccountId32) -> bool {
+		unreachable!()
+	}
+
+	fn on_insert(_id: AccountId32, _score: Self::Score) -> Result<(), Self::Error> {
+		unreachable!()
+	}
+
+	fn on_update(_id: &AccountId32, _score: Self::Score) -> Result<(), Self::Error> {
+		unreachable!()
+	}
+
+	fn get_score(_id: &AccountId32) -> Result<Self::Score, Self::Error> {
+		unreachable!()
+	}
+
+	fn on_remove(_id: &AccountId32) -> Result<(), Self::Error> {
+		unreachable!()
+	}
+
+	fn unsafe_regenerate(
+		_all: impl IntoIterator<Item = AccountId32>,
+		_score_of: Box<dyn Fn(&AccountId32) -> Self::Score>,
+	) -> u32 {
+		unreachable!()
+	}
+
+	fn unsafe_clear() {
+		unreachable!()
+	}
+
+	fn try_state() -> Result<(), &'static str> {
+		unreachable!()
+	}
+}
+
+pub struct DefaultElection<X>(sp_std::marker::PhantomData<X>);
+
+impl<AccountId, BlockNumber, DataProvider> ElectionProviderBase
+	for DefaultElection<(AccountId, BlockNumber, DataProvider)>
+where
+	DataProvider: ElectionDataProvider<AccountId = AccountId, BlockNumber = BlockNumber>,
+{
+	type AccountId = AccountId;
+	type BlockNumber = BlockNumber;
+	type Error = &'static str;
+	type DataProvider = DataProvider;
+
+	fn ongoing() -> bool {
+		false
+	}
+}
+
+impl<AccountId, BlockNumber, DataProvider> ElectionProvider
+	for DefaultElection<(AccountId, BlockNumber, DataProvider)>
+where
+	DataProvider: ElectionDataProvider<AccountId = AccountId, BlockNumber = BlockNumber>,
+	AccountId: Clone + Debug,
+{
+	fn elect() -> Result<Supports<AccountId>, Self::Error> {
+		let candidates: Result<Supports<AccountId>, Self::Error> =
+			DataProvider::electable_targets(Some(1))
+				.defensive_proof("Trivial 0 AccountId")
+				.map(|accounts| {
+					accounts.iter().map(|acc| (acc.clone(), Default::default())).collect::<Vec<_>>()
+				});
+		candidates
+	}
+}
