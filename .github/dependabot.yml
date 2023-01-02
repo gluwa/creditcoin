@@ -59,6 +59,11 @@ updates:
       interval: "monthly"
 
   - package-ecosystem: "cargo"
+    directory: "/pallets/staking"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
     directory: "/primitives"
     schedule:
       interval: "monthly"
