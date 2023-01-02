@@ -10,6 +10,7 @@ members = [
     'pallets/creditcoin',
     'pallets/offchain-task-scheduler/runtime-api',
     'pallets/offchain-task-scheduler',
+    'pallets/staking',
     'runtime',
     "sha3pow",
     "primitives",
@@ -28,6 +29,7 @@ repository = 'https://github.com/gluwa/creditcoin-substrate/'
 [workspace.dependencies]
 assert_matches = { version = "1.5.0" }
 creditcoin-node-runtime = { version = "2.211.2", path = "runtime" }
+frame-election-provider-support = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 frame-benchmarking-cli = { version = "4.0.0-dev", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 frame-executive = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
@@ -46,6 +48,8 @@ pallet-offchain-task-scheduler = { version = "0.1.0", default-features = false, 
 pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-rewards = { version = "2.211.2", default-features = false, path = "pallets/rewards" }
 pallet-scheduler = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
+pallet-session = { package = "pallet-session", version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
+pallet-staking = { default-features = false, path = "pallets/staking" }
 pallet-sudo = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-transaction-payment = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
@@ -99,6 +103,7 @@ sp-offchain = { version = "4.0.0-dev", default-features = false, branch = "polka
 sp-runtime = { version = "6.0.0", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 sp-runtime-interface = { version = "6.0.0", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 sp-session = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
+sp-staking = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 sp-state-machine = { default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 sp-std = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 sp-timestamp = { version = "4.0.0-dev", branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
