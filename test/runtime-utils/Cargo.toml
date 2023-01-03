@@ -1,0 +1,20 @@
+[package]
+name = "test-runtime-utils"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+frame-support = { workspace = true, features = ["std"] }
+parking_lot = "0.12.1"
+frame-system = { workspace = true, features = ["std"] }
+sp-io.workspace = true
+sp-keystore.workspace = true
+sp-core.workspace = true
+tracing.workspace = true
+sp-arithmetic.workspace = true
+sp-state-machine.workspace = true
