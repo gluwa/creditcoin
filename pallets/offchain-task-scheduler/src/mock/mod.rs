@@ -4,5 +4,4 @@ pub(crate) mod runtime;
 pub(crate) mod task;
 
 mod utils;
-pub use utils::*;
-pub(crate) mod pool;
+pub(crate) use utils::*;
