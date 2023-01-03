@@ -75,6 +75,16 @@ updates:
     schedule:
       interval: "weekly"
 
+  - package-ecosystem: "cargo"
+    directory: "/test/client"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
+    directory: "/test/runtime-utils"
+    schedule:
+      interval: "monthly"
+
   - package-ecosystem: "npm"
     directory: "/integration-tests"
     schedule:

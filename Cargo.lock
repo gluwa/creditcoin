@@ -4167,7 +4167,6 @@ dependencies = [
  "pallet-balances",
  "pallet-timestamp",
  "parity-scale-codec",
- "parking_lot 0.12.1",
  "scale-info",
  "serde",
  "serde_json",
@@ -4177,6 +4176,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-tracing",
+ "test-runtime-utils",
  "tracing-test",
 ]
 
@@ -4705,9 +4705,12 @@ dependencies = [
 name = "primitives"
 version = "2.211.2"
 dependencies = [
+ "rand 0.8.5",
  "sp-core",
  "sp-tracing",
  "substrate-prometheus-endpoint",
+ "test-runtime-utils",
+ "tracing-test",
 ]
 
 [[package]]
@@ -7594,6 +7597,21 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "substrate-test-client",
+]
+
+[[package]]
+name = "test-runtime-utils"
+version = "2.211.2"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parking_lot 0.12.1",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-state-machine",
+ "sp-tracing",
 ]
 
 [[package]]
