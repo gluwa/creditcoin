@@ -4,8 +4,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      time: "04:00"
+      interval: "monthly"
     open-pull-requests-limit: 5
     rebase-strategy: "disabled"
 
@@ -13,8 +12,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "weekly"
-      time: "05:00"
+      interval: "monthly"
     open-pull-requests-limit: 5
     rebase-strategy: "disabled"
 
@@ -23,57 +21,57 @@ updates:
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/node"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/node/rpc"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/creditcoin"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/difficulty"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/offchain-task-scheduler"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/offchain-task-scheduler/runtime-api"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/rewards"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/primitives"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/runtime"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/sha3pow"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/test/client"
