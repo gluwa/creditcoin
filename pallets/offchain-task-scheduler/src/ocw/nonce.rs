@@ -25,15 +25,19 @@ impl<T: Config> Pallet<T> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::mock::generate_authority;
 	use crate::mock::runtime::Runtime;
 	use crate::mock::runtime::RuntimeCall;
-	use crate::mock::{roll_to, task::MockTask, ExtBuilder, Trivial, WithWorkerHook};
+	use crate::mock::task::MockTask;
 	use crate::tasks::TaskScheduler;
 	use crate::tasks::TaskV2;
+	use crate::GenesisConfig;
 	use core::sync::atomic::AtomicU64;
 	use frame_support::assert_ok;
 	use frame_system::Config as SystemConfig;
 	use frame_system::Pallet as System;
+	use runtime_utils::WithWorkerHook;
+	use runtime_utils::{roll_to, ExtBuilder, Trivial};
 	use sp_runtime::offchain::storage::StorageValueRef;
 	use sp_runtime::offchain::testing::TestOffchainExt;
 	use sp_runtime::traits::IdentifyAccount;
@@ -42,21 +46,21 @@ mod tests {
 
 	#[test]
 	fn increment_after_call() {
-		let mut builder = ExtBuilder::default().with_keystore();
-		let pkey = builder.generate_authority();
-		builder.with_offchain();
-		builder.with_pool();
-		let mut ext = builder.build();
+		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder);
+		ext_builder.with_offchain();
+		ext_builder.with_pool();
+		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			roll_to::<Trivial>(1);
+			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Remark(0);
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			roll_to::<WithWorkerHook>(2);
+			roll_to::<WithWorkerHook<Pallet<Runtime>>, Runtime, Pallet<Runtime>>(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -69,10 +73,10 @@ mod tests {
 
 	#[test]
 	fn unique_per_account() {
-		let mut builder = ExtBuilder::default().with_keystore();
-		let pkey = builder.generate_authority();
+		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder);
 		let acct_1 = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
-		let pkey = builder.generate_authority();
+		let pkey = generate_authority(&mut ext_builder);
 		let acct_2 = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		assert!(nonce_key(&acct_1) != nonce_key(&acct_2));
 		assert!(lock_key(&acct_1) != lock_key(&acct_2));
@@ -80,20 +84,20 @@ mod tests {
 
 	#[test]
 	fn not_incremented_on_evaluation_error() {
-		let mut builder = ExtBuilder::default().with_keystore();
-		let pkey = builder.generate_authority();
-		builder.with_offchain();
-		let mut ext = builder.build();
+		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder);
+		ext_builder.with_offchain();
+		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			roll_to::<Trivial>(1);
+			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Evaluation;
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			roll_to::<WithWorkerHook>(2);
+			roll_to::<WithWorkerHook<Pallet<Runtime>>, Runtime, Pallet<Runtime>>(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -106,20 +110,20 @@ mod tests {
 
 	#[test]
 	fn not_incremented_on_scheduler_error() {
-		let mut builder = ExtBuilder::default().with_keystore();
-		let pkey = builder.generate_authority();
-		builder.with_offchain();
-		let mut ext = builder.build();
+		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder);
+		ext_builder.with_offchain();
+		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			roll_to::<Trivial>(1);
+			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Scheduler;
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			roll_to::<WithWorkerHook>(2);
+			roll_to::<WithWorkerHook<Pallet<Runtime>>, Runtime, Pallet<Runtime>>(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -142,23 +146,22 @@ mod tests {
 			let nonces = nonces.clone();
 
 			std::thread::spawn(move || {
-				let mut ext_builder = ExtBuilder::default().with_keystore();
-				let acct_sr25519_pubkey = ext_builder.generate_authority();
-				let acct = {
-					<Runtime as SystemConfig>::AccountId::from(acct_sr25519_pubkey.into_account().0)
-				};
+				let mut ext_builder =
+					ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
+				let acct_pubkey = generate_authority(&mut ext_builder);
+				let acct = <Runtime as SystemConfig>::AccountId::from(acct_pubkey.into_account().0);
 				ext_builder.offchain = Some(offchain);
 				ext_builder.with_pool();
 				let mut ext = ext_builder.build();
 
 				let execute = || {
-					roll_to::<Trivial>(1);
+					roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
 					let call: RuntimeCall =
 						MockTask::Remark(0).forward_task(Runtime::deadline()).expect("call").into();
 
 					for _ in 0..LOOP {
 						assert_ok!(crate::Pallet::<Runtime>::submit_txn_with_synced_nonce(
-							acct_sr25519_pubkey.into(),
+							acct_pubkey.into(),
 							|_| call.clone(),
 						));
 
@@ -175,7 +178,7 @@ mod tests {
 			h.join().expect("testing context is shared");
 		}
 
-		let mut ext_builder = ExtBuilder::default();
+		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default();
 		ext_builder.offchain = Some(offchain);
 		let mut ext = ext_builder.build();
 		ext.execute_with(|| {
@@ -193,14 +196,15 @@ mod tests {
 			let offchain = offchain.clone();
 
 			std::thread::spawn(move || {
-				let mut ext_builder = ExtBuilder::default().with_keystore();
-				let acct_pubkey = ext_builder.generate_authority();
+				let mut ext_builder =
+					ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
+				let acct_pubkey = generate_authority(&mut ext_builder);
 				let acct = <Runtime as SystemConfig>::AccountId::from(acct_pubkey.into_account().0);
 				ext_builder.offchain = Some(offchain);
 				let mut ext = ext_builder.build();
 
 				let execute = || {
-					roll_to::<Trivial>(1);
+					roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
 
 					let key = lock_key(&acct);
 					let mut lock = crate::Pallet::<Runtime>::nonce_lock_new(&key);
@@ -224,10 +228,10 @@ mod tests {
 
 	#[test]
 	fn nonce_lock_expires() {
-		let mut ext_builder = ExtBuilder::default().with_keystore();
+		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
 		ext_builder.with_offchain();
 		ext_builder.build().execute_with(|| {
-			roll_to::<Trivial>(1);
+			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
 
 			let key = &b"lock_key"[..];
 			let mut lock = Pallet::<Runtime>::nonce_lock_new(key);
