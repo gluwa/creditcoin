@@ -88,7 +88,7 @@ fn translate_transfer_kind(old: OldTransferKind) -> Option<TransferKind> {
 		OldTransferKind::Ethless(_) => TransferKind::Evm(EvmTransferKind::Ethless),
 		OldTransferKind::Erc20(_) => TransferKind::Evm(EvmTransferKind::Erc20),
 		other => {
-			warn_or_panic!("unexpected transfer kind found on storage item: {:?}", other);
+			warn_or_panic!("unexpected transfer kind found on storage item: {other:?}");
 			return None;
 		},
 	})
@@ -119,7 +119,7 @@ fn reconstruct_currency(blockchain: &OldBlockchain, kind: &OldTransferKind) -> O
 				.expect("1 is less than the bound (2); qed"),
 		),
 		other => {
-			warn_or_panic!("unexpected transfer kind found in storage: {:?}", other);
+			warn_or_panic!("unexpected transfer kind found in storage: {other:?}");
 			return None;
 		},
 	};
@@ -150,7 +150,7 @@ fn translate_transfer<T: Config>(
 		deal_order_id: match transfer.order_id {
 			OldOrderId::Deal(id) => id,
 			OldOrderId::Repayment(id) => {
-				warn_or_panic!("Found unexpected repayment ID attached to a transfer: {:?}", id);
+				warn_or_panic!("Found unexpected repayment ID attached to a transfer: {id:?}");
 				return None;
 			},
 		},
