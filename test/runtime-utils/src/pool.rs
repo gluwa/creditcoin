@@ -1,5 +1,5 @@
 use parking_lot::RwLock;
-use sp_runtime::offchain::TransactionPool;
+use sp_core::offchain::TransactionPool;
 use std::sync::Arc;
 
 #[derive(Default)]
@@ -40,7 +40,7 @@ thread_local! {
 	pub static CREATE_TRANSACTION_FAIL: Cell<bool> = Cell::new(false);
 }
 
-pub(crate) fn with_failing_submit_transaction<R>(f: impl FnOnce() -> R) -> R {
+pub fn with_failing_submit_transaction<R>(f: impl FnOnce() -> R) -> R {
 	CREATE_TRANSACTION_FAIL.with(|c| {
 		c.set(true);
 		let result = f();
