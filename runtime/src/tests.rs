@@ -13,6 +13,8 @@ use sp_runtime::{
 };
 use std::default::Default;
 
+mod staking;
+
 fn generate_account(seed: &str) -> AccountId32 {
 	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
 	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
