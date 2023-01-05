@@ -116,6 +116,7 @@ try-runtime = [
     "pallet-offchain-task-scheduler/try-runtime",
     "pallet-rewards/try-runtime",
     "pallet-scheduler/try-runtime",
+    "pallet-staking/try-runtime",
     "pallet-sudo/try-runtime",
     "pallet-timestamp/try-runtime",
     "pallet-transaction-payment/try-runtime",
