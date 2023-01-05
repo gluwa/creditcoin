@@ -60,7 +60,7 @@ mod model {
 		use super::*;
 
 		#[test]
-		fn distribution_works() {
+		fn sortition_model_should_return_expected_distribution() {
 			let r = Perquintill::from_float(0.000_001);
 			let c = Perquintill::from_float(0.5);
 
@@ -68,7 +68,7 @@ mod model {
 		}
 
 		#[test]
-		fn sane_to_float() {
+		fn converting_floats_forth_and_back_stays_within_epsilon_precision() {
 			use rand::Rng;
 			use sp_arithmetic::Perbill;
 			let mut rng = rand::thread_rng();
