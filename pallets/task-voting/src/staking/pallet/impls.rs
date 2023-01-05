@@ -1,7 +1,8 @@
 use super::*;
 use crate::staking::ledger::StakingLedger;
-use crate::staking::EraIndex;
+use crate::staking::{EraIndex, Stake, StakingInterface};
 use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::RawOrigin;
 use frame_support::dispatch::{
 	DispatchError, DispatchResultWithPostInfo, Weight, WithPostDispatchInfo,
 };
@@ -12,6 +13,7 @@ use frame_support::traits::{Currency, Imbalance, LockableCurrency, OnUnbalanced,
 use pallet_staking::RewardDestination;
 use pallet_staking::WeightInfo;
 use sp_arithmetic::traits::Zero;
+use sp_runtime::traits::StaticLookup;
 
 use pallet::STAKING_ID;
 
@@ -201,5 +203,65 @@ impl<T: Config> Pallet<T> {
 			},
 			RewardDestination::None => None,
 		}
+	}
+}
+
+impl<T: Config> StakingInterface for Pallet<T> {
+	type Balance = T::CurrencyBalance;
+	type AccountId = T::AccountId;
+
+	fn minimum_staking_bond() -> Self::Balance {
+		MinStakerBond::<T>::get()
+	}
+
+	fn bonding_duration() -> EraIndex {
+		T::BondingDuration::get()
+	}
+
+	fn stake(who: &Self::AccountId) -> Result<crate::staking::Stake<Self>, DispatchError> {
+		Self::bonded(who)
+			.and_then(|c| Self::ledger(c))
+			.map(|StakingLedger { stash, total, active, .. }| Stake { stash, total, active })
+			.ok_or(Error::<T>::NotStash.into())
+	}
+
+	//bond with stash as the controller.
+	fn bond(
+		who: &Self::AccountId,
+		value: Self::Balance,
+		payee: &Self::AccountId,
+	) -> DispatchResult {
+		Self::bond(
+			RawOrigin::Signed(who.clone()).into(),
+			T::Lookup::unlookup(who.clone()),
+			value,
+			RewardDestination::Account(payee.clone()),
+		)
+	}
+
+	fn bond_extra(who: &Self::AccountId, extra: Self::Balance) -> DispatchResult {
+		Self::bond_extra(RawOrigin::Signed(who.clone()).into(), extra)
+	}
+
+	fn unbond(stash: &Self::AccountId, value: Self::Balance) -> DispatchResult {
+		let ctrl = Self::bonded(stash).ok_or(Error::<T>::NotStash)?;
+		Self::unbond(RawOrigin::Signed(ctrl).into(), value)
+			.map_err(|with_post| with_post.error)
+			.map(|_| ())
+	}
+
+	fn withdraw_unbonded(
+		stash: Self::AccountId,
+		num_slashing_spans: u32,
+	) -> Result<bool, DispatchError> {
+		let ctrl = Self::bonded(stash).ok_or(Error::<T>::NotStash)?;
+		Self::withdraw_unbonded(RawOrigin::Signed(ctrl.clone()).into(), num_slashing_spans)
+			.map(|_| !Ledger::<T>::contains_key(&ctrl))
+			.map_err(|with_post| with_post.error)
+	}
+
+	fn force_unstake(who: Self::AccountId) -> DispatchResult {
+		let num_slashing_spans = Self::slashing_spans(&who).iter().count() as u32;
+		Self::force_unstake(RawOrigin::Root.into(), who, num_slashing_spans)
 	}
 }

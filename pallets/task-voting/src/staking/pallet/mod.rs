@@ -19,7 +19,7 @@ mod pallet {
 	use pallet_staking::slashing;
 	use pallet_staking::Forcing;
 	use pallet_staking::{ConfigOp, WeightInfo};
-	use pallet_staking::{EraRewardPoints, Exposure, RewardDestination, UnappliedSlash};
+	use pallet_staking::{EraRewardPoints, RewardDestination, UnappliedSlash};
 	use sp_runtime::codec;
 	use sp_runtime::{
 		traits::{CheckedSub, SaturatedConversion, StaticLookup, Zero},
@@ -41,19 +41,6 @@ mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(crate) trait Store)]
 	pub struct Pallet<T>(_);
-
-	/*
-	/// Possible operations on the configuration values of this pallet.
-	#[derive(TypeInfo, Debug, Clone, Encode, Decode, PartialEq)]
-	pub enum ConfigOp<T: Default + Codec> {
-		/// Don't change.
-		Noop,
-		/// Set the given value.
-		Set(T),
-		/// Remove from storage.
-		Remove,
-	}
-	 */
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -220,7 +207,7 @@ mod pallet {
 		EraIndex,
 		Twox64Concat,
 		T::AccountId,
-		Exposure<T::AccountId, BalanceOf<T>>,
+		T::CurrencyBalance,
 		ValueQuery,
 	>;
 
