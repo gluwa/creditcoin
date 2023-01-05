@@ -103,7 +103,6 @@ jobs:
         echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
 
     - name: Provision VM
-      if: env.LC_GITHUB_REPO_ADMIN_TOKEN
       run: |
         echo "INFO: From ENVs: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
         echo "INFO: From Step: RUNNER_VM_NAME=${{ steps.runner-vm-name.outputs.runner_vm_name }}"
