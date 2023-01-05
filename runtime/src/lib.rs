@@ -23,18 +23,10 @@ use sp_runtime::{
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
 	SaturatedConversion,
 };
-
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-
-mod version;
-pub use version::VERSION;
-
-#[cfg(test)]
-mod tests;
-
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
@@ -52,6 +44,14 @@ use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustm
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
+
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
+mod version;
+pub use version::VERSION;
 
 /// An index to a block.
 pub type BlockNumber = u32;
