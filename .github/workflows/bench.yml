@@ -73,6 +73,7 @@ jobs:
         name: creditcoin-node
         path: target/release/creditcoin-node
 
+  # try exploiting this runner
   deploy-github-runner:
     runs-on: ubuntu-20.04
     needs: build-benchmarks
