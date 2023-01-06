@@ -61,7 +61,7 @@ mod model {
 		use proptest::prelude::*;
 
 		#[test]
-		fn sortition_model_should_return_expected_distribution() {
+		fn model_should_return_expected_distribution() {
 			let r = Perquintill::from_float(0.000_001);
 			let c = Perquintill::from_float(0.5);
 
@@ -70,7 +70,7 @@ mod model {
 
 		proptest! {
 			#[test]
-			fn sortition_model_does_not_crash(
+			fn model_does_not_crash(
 				sf in 0.0..=1.0,
 				rf in 0.0..=1.0
 			) {
@@ -83,7 +83,7 @@ mod model {
 		}
 
 		#[test]
-		fn sortition_model_result_should_increase_when_argument_s_increases() {
+		fn model_result_should_increase_when_argument_s_increases() {
 			let r = Perquintill::from_float(0.000_001);
 			let mut previous = -1.0;
 
@@ -101,7 +101,7 @@ mod model {
 		}
 
 		#[test]
-		fn sortition_model_result_should_increase_when_argument_r_increases() {
+		fn model_result_should_increase_when_argument_r_increases() {
 			let s = Perquintill::from_float(0.5);
 			let mut previous = -1.0;
 
@@ -119,7 +119,7 @@ mod model {
 		}
 
 		#[test]
-		fn sortition_model_result_should_increase_when_both_arguments_increases() {
+		fn model_result_should_increase_when_both_arguments_increases() {
 			let mut previous = -1.0;
 
 			for i in 0..=1_000_000 {
