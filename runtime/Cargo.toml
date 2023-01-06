@@ -86,6 +86,7 @@ std = [
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
     'pallet-offchain-task-scheduler/std',
+    'primitives/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-core/std',
