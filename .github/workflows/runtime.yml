@@ -3,6 +3,8 @@ name: Build WASM Runtime
 on:
   push:
     branches: [main, testnet, dev]
+  pull_request:
+    branches: [testnet, dev]
   workflow_dispatch:
 
 jobs:
