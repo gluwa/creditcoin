@@ -3969,6 +3969,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43db66d1170d347f9a065114077f7dccb00c1b9478c89384490a3425279a4606"
 dependencies = [
+ "num-bigint",
  "num-complex",
  "num-integer",
  "num-iter",
@@ -4731,9 +4732,7 @@ name = "primitives"
 version = "2.211.2"
 dependencies = [
  "num",
- "num-rational",
  "parity-scale-codec",
- "parking_lot 0.12.1",
  "rand 0.8.5",
  "sp-arithmetic",
  "sp-core",
