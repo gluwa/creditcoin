@@ -58,6 +58,7 @@ mod model {
 	#[cfg(test)]
 	mod tests {
 		use super::*;
+		use proptest::prelude::*;
 
 		#[test]
 		fn sortition_model_should_return_expected_distribution() {
@@ -65,6 +66,74 @@ mod model {
 			let c = Perquintill::from_float(0.5);
 
 			assert!((model(c, r).to_sub_1_float() - 6.931_469_403_334_939E-7).abs() < f64::EPSILON);
+		}
+
+		proptest! {
+			#[test]
+			fn sortition_model_does_not_crash(
+				sf in 0.0..=1.0,
+				rf in 0.0..=1.0
+			) {
+				let s = Perquintill::from_float(sf);
+				let r = Perquintill::from_float(rf);
+
+				let result = model(s, r).to_sub_1_float();
+				assert!(0.0 <= result);
+			}
+		}
+
+		#[test]
+		fn sortition_model_result_should_increase_when_argument_s_increases() {
+			let r = Perquintill::from_float(0.000_001);
+			let mut previous = -1.0;
+
+			for i in 0..=1_000_000 {
+				let sf = f64::from(i) * 0.000_001;
+				let s = Perquintill::from_float(sf);
+				let result = model(s, r).to_sub_1_float();
+
+				assert!(
+					previous < result,
+					"previous={previous:?}, result={result:?}, s={s:?}, r={r:?}"
+				);
+				previous = result;
+			}
+		}
+
+		#[test]
+		fn sortition_model_result_should_increase_when_argument_r_increases() {
+			let s = Perquintill::from_float(0.5);
+			let mut previous = -1.0;
+
+			for i in 0..=1_000_000 {
+				let rf = f64::from(i) * 0.000_001;
+				let r = Perquintill::from_float(rf);
+				let result = model(s, r).to_sub_1_float();
+
+				assert!(
+					previous < result,
+					"previous={previous:?}, result={result:?}, s={s:?}, r={r:?}"
+				);
+				previous = result;
+			}
+		}
+
+		#[test]
+		fn sortition_model_result_should_increase_when_both_arguments_increases() {
+			let mut previous = -1.0;
+
+			for i in 0..=1_000_000 {
+				let xf = f64::from(i) * 0.000_001;
+				let s = Perquintill::from_float(xf);
+				let r = Perquintill::from_float(xf);
+				let result = model(s, r).to_sub_1_float();
+
+				assert!(
+					previous < result,
+					"previous={previous:?}, result={result:?}, s={s:?}, r={r:?}"
+				);
+				previous = result;
+			}
 		}
 
 		#[test]
