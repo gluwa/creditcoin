@@ -1144,6 +1144,7 @@ dependencies = [
  "sp-version",
  "substrate-wasm-builder",
  "task-scheduler-runtime-api",
+ "test-runtime-utils",
 ]
 
 [[package]]
