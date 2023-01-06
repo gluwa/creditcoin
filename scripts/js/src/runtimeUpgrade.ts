@@ -89,8 +89,7 @@ async function doRuntimeUpgrade(
         // schedule the upgrade
         await new Promise<void>((resolve, reject) => {
             const unsubscribe = api.tx.sudo
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                .sudo(api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, { Value: api.tx.system.setCode(hexBlob) }))
+                .sudo(api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, api.tx.system.setCode(hexBlob)))
                 .signAndSend(keyring, { nonce: -1 }, (result) => {
                     const finish = (fn: () => void) => {
                         unsubscribe
