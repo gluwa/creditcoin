@@ -28,8 +28,9 @@ mod tests {
 	use crate::mock::generate_authority;
 	use crate::mock::runtime::Runtime;
 	use crate::mock::runtime::RuntimeCall;
+	use crate::mock::runtime::TaskScheduler;
 	use crate::mock::task::MockTask;
-	use crate::tasks::TaskScheduler;
+	use crate::tasks::TaskScheduler as TaskSchedulerT;
 	use crate::tasks::TaskV2;
 	use crate::GenesisConfig;
 	use core::sync::atomic::AtomicU64;
@@ -37,7 +38,7 @@ mod tests {
 	use frame_system::Config as SystemConfig;
 	use frame_system::Pallet as System;
 	use runtime_utils::WithWorkerHook;
-	use runtime_utils::{roll_to, ExtBuilder, Trivial};
+	use runtime_utils::{ExtBuilder, RollTo, Trivial};
 	use sp_runtime::offchain::storage::StorageValueRef;
 	use sp_runtime::offchain::testing::TestOffchainExt;
 	use sp_runtime::traits::IdentifyAccount;
@@ -53,14 +54,14 @@ mod tests {
 		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
+			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Remark(0);
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			roll_to::<WithWorkerHook<Pallet<Runtime>>, Runtime, Pallet<Runtime>>(2);
+			WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -90,14 +91,14 @@ mod tests {
 		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
+			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Evaluation;
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			roll_to::<WithWorkerHook<Pallet<Runtime>>, Runtime, Pallet<Runtime>>(2);
+			WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -116,14 +117,14 @@ mod tests {
 		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
+			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Scheduler;
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			roll_to::<WithWorkerHook<Pallet<Runtime>>, Runtime, Pallet<Runtime>>(2);
+			WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -155,7 +156,7 @@ mod tests {
 				let mut ext = ext_builder.build();
 
 				let execute = || {
-					roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
+					Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
 					let call: RuntimeCall =
 						MockTask::Remark(0).forward_task(Runtime::deadline()).expect("call").into();
 
@@ -204,7 +205,7 @@ mod tests {
 				let mut ext = ext_builder.build();
 
 				let execute = || {
-					roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
+					Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
 
 					let key = lock_key(&acct);
 					let mut lock = crate::Pallet::<Runtime>::nonce_lock_new(&key);
@@ -231,7 +232,7 @@ mod tests {
 		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
 		ext_builder.with_offchain();
 		ext_builder.build().execute_with(|| {
-			roll_to::<Trivial, Runtime, Pallet<Runtime>>(1);
+			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
 
 			let key = &b"lock_key"[..];
 			let mut lock = Pallet::<Runtime>::nonce_lock_new(key);
