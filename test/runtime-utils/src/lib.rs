@@ -7,6 +7,7 @@ use frame_support::{
 use frame_system as system;
 pub(crate) use parking_lot::RwLock;
 use pool::{PoolState, TestTransactionPoolExt};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, One};
 pub(crate) use sp_core::offchain::{
 	testing::{OffchainState, TestOffchainExt},
 	OffchainDbExt, OffchainWorkerExt, TransactionPoolExt,
@@ -91,35 +92,39 @@ use frame_system::Config as SystemConfig;
 use frame_system::Pallet as System;
 use std::marker::PhantomData;
 
-pub trait RollTo {
-	fn with(_: u64);
+pub trait RollTo<BlockNumber> {
+	fn with(_: BlockNumber);
 }
 
 pub struct Trivial;
 
-impl RollTo for Trivial {
-	fn with(_: u64) {}
+impl<BlockNumber> RollTo<BlockNumber> for Trivial {
+	fn with(_: BlockNumber) {}
 }
 
 pub struct WithWorkerHook<P>(PhantomData<P>);
 
-impl<Pallet: OffchainWorker<u64>> RollTo for WithWorkerHook<Pallet> {
-	fn with(i: u64) {
+impl<BlockNumber, Pallet: OffchainWorker<BlockNumber>> RollTo<BlockNumber>
+	for WithWorkerHook<Pallet>
+{
+	fn with(i: BlockNumber) {
 		Pallet::offchain_worker(i);
 	}
 }
 
-pub fn roll_to<T, Runtime, Pallet>(n: u64)
+pub fn roll_to<T, Runtime, Pallet>(n: Runtime::BlockNumber)
 where
-	T: RollTo,
-	Runtime: SystemConfig<BlockNumber = u64>,
+	T: RollTo<Runtime::BlockNumber>,
+	Runtime: SystemConfig,
+	Runtime::BlockNumber: AtLeast32BitUnsigned + One,
 	Pallet: OnInitialize<Runtime::BlockNumber> + OnFinalize<Runtime::BlockNumber>,
 {
-	let now = System::<Runtime>::block_number();
-	for i in now + 1..=n {
-		System::<Runtime>::set_block_number(i);
-		Pallet::on_initialize(i);
-		T::with(i);
-		Pallet::on_finalize(i);
+	let mut now = System::<Runtime>::block_number();
+	while now < n {
+		now += One::one();
+		System::<Runtime>::set_block_number(now);
+		Pallet::on_initialize(now);
+		T::with(now);
+		Pallet::on_finalize(now);
 	}
 }
