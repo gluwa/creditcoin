@@ -135,7 +135,7 @@ impl<T: Config> StakingLedger<T> {
 	///
 	/// This calls `Config::OnStakerSlash::on_slash` with information as to how the slash was
 	/// applied.
-	pub fn _slash(
+	pub fn slash(
 		&mut self,
 		slash_amount: BalanceOf<T>,
 		minimum_balance: BalanceOf<T>,
