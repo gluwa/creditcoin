@@ -48,6 +48,7 @@ pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = 
 pallet-rewards = { version = "2.211.2", default-features = false, path = "pallets/rewards" }
 pallet-scheduler = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-staking-substrate = { package = "pallet-staking", version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
+pallet-staking = { default-features = false, path = "pallets/staking" }
 pallet-sudo = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 pallet-transaction-payment = { version = "4.0.0-dev", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }

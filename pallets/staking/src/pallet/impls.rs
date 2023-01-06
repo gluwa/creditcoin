@@ -1,5 +1,6 @@
 use super::*;
 use crate::ledger::StakingLedger;
+use crate::{logger, slashing};
 use crate::{EraIndex, Stake, StakingInterface};
 use frame_support::dispatch::DispatchResult;
 use frame_support::dispatch::RawOrigin;
@@ -202,6 +203,21 @@ impl<T: Config> Pallet<T> {
 				Some(T::Currency::deposit_creating(&dest_account, amount))
 			},
 			RewardDestination::None => None,
+		}
+	}
+
+	/// Apply previously-unapplied slashes on the beginning of a new era, after a delay.
+	pub(crate) fn apply_unapplied_slashes(active_era: EraIndex) {
+		let era_slashes = <Self as Store>::UnappliedSlashes::take(active_era);
+		logger!(
+			debug,
+			"found {} slashes scheduled to be executed in era {:?}",
+			era_slashes.len(),
+			active_era,
+		);
+		for slash in era_slashes {
+			let slash_era = active_era.saturating_sub(T::SlashDeferDuration::get());
+			slashing::apply_slash::<T>(slash, slash_era);
 		}
 	}
 }

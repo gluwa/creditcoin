@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use frame_support::dispatch::{
 	Decode, DispatchError, DispatchResult, Encode, MaxEncodedLen, RuntimeDebug,
 };
@@ -6,11 +8,15 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::Convert;
 pub use sp_staking::EraIndex;
 
+pub mod era;
 pub mod ledger;
 pub mod pallet;
+mod slashing;
 
 #[cfg(feature = "std")]
 pub use pallet::GenesisConfig;
+pub use pallet::RewardDestination;
+use pallet::Store;
 pub use pallet::{Config, Error, Event, Pallet};
 pub use pallet::{
 	__InherentHiddenInstance, __substrate_call_check, __substrate_event_check,

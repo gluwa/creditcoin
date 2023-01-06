@@ -7,6 +7,7 @@ mod pallet {
 
 	use crate::ledger::{StakingLedger, UnlockChunk};
 	use crate::logger;
+	use crate::slashing::UnappliedSlash;
 	use crate::ActiveEraInfo;
 	use frame_support::{
 		pallet_prelude::*,
@@ -18,15 +19,17 @@ mod pallet {
 	};
 	use frame_system::{ensure_root, ensure_signed, pallet_prelude::*};
 	use pallet_staking_substrate::slashing;
+	use pallet_staking_substrate::EraPayout;
+	use pallet_staking_substrate::EraRewardPoints;
 	use pallet_staking_substrate::Forcing;
+	pub use pallet_staking_substrate::RewardDestination;
 	use pallet_staking_substrate::{ConfigOp, WeightInfo};
-	use pallet_staking_substrate::{EraRewardPoints, RewardDestination, UnappliedSlash};
 	use sp_runtime::codec;
 	use sp_runtime::{
 		traits::{CheckedSub, SaturatedConversion, StaticLookup, Zero},
 		Perbill, Percent,
 	};
-	use sp_staking::{EraIndex, SessionIndex};
+	use sp_staking::EraIndex;
 	use sp_std::prelude::*;
 
 	pub type BalanceOf<T> = <T as Config>::CurrencyBalance;
@@ -139,6 +142,9 @@ mod pallet {
 		// Weight information for extrinsics in this pallet.
 		//TODO finish benchmarks.
 		type WeightInfo: WeightInfo;
+		type EraPayout: EraPayout<Self::CurrencyBalance>;
+		#[pallet::constant]
+		type BlocksPerEra: Get<Self::BlockNumber>;
 	}
 
 	/// Any validators that may never be slashed or forcibly kicked. It's a Vec since they're
@@ -191,7 +197,7 @@ mod pallet {
 	/// for the eras in `[CurrentEra - HISTORY_DEPTH, CurrentEra]`.
 	#[pallet::storage]
 	#[pallet::getter(fn eras_start_session_index)]
-	pub type ErasStartSessionIndex<T> = StorageMap<_, Twox64Concat, EraIndex, SessionIndex>;
+	pub type ErasStartSessionIndex<T> = StorageMap<_, Twox64Concat, EraIndex, BlockNumberFor<T>>;
 
 	/// Exposure of validator at era.
 	///
@@ -257,7 +263,7 @@ mod pallet {
 	#[pallet::storage]
 	#[pallet::unbounded]
 	pub(crate) type BondedEras<T: Config> =
-		StorageValue<_, Vec<(EraIndex, SessionIndex)>, ValueQuery>;
+		StorageValue<_, Vec<(EraIndex, T::BlockNumber)>, ValueQuery>;
 
 	/// All slashing events on validators, mapped by era to the highest slash proportion
 	/// and slash value of the era.
@@ -287,7 +293,7 @@ mod pallet {
 	/// This is basically in sync with the call to [`pallet_session::SessionManager::new_session`].
 	#[pallet::storage]
 	#[pallet::getter(fn current_planned_session)]
-	pub type CurrentPlannedSession<T> = StorageValue<_, SessionIndex, ValueQuery>;
+	pub type CurrentPlannedSession<T> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
 
 	/// Indices of validators that have offended in the active era and whether they are currently
 	/// disabled.
@@ -359,7 +365,7 @@ mod pallet {
 		SlashReported { validator: T::AccountId, fraction: Perbill, slash_era: EraIndex },
 		/// An old slashing report from a prior era was discarded because it could
 		/// not be processed.
-		OldSlashingReportDiscarded { session_index: SessionIndex },
+		OldSlashingReportDiscarded { block_number: BlockNumberFor<T> },
 		/// An account has bonded this amount. \[stash, amount\]
 		///
 		/// NOTE: This event is only emitted when funds are bonded via a dispatchable. Notably,
