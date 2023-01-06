@@ -21,6 +21,7 @@ parity-scale-codec = { workspace = true }
 
 [dev-dependencies]
 tracing = { workspace = true }
+proptest = "1.0.0"
 rand = "0.8.5"
 runtime-utils.workspace = true
 tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
