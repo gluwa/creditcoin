@@ -98,5 +98,6 @@ std = [
     'sp-transaction-pool/std',
     'sp-version/std',
     'task-scheduler-runtime-api/std',
+    'primitives/std',
 ]
 try-runtime = []
