@@ -15,8 +15,8 @@ mod tests;
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo)]
 #[scale_info(skip_type_params(MaxVoters))]
 pub struct Votes<AccountId, DataId, MaxVoters> {
-	votes: BoundedBTreeMap<DataId, VoteData<AccountId, MaxVoters>, MaxVoters>,
-	vote_total: VotingPower,
+	pub votes: BoundedBTreeMap<DataId, VoteData<AccountId, MaxVoters>, MaxVoters>,
+	pub vote_total: VotingPower,
 }
 
 impl<AccountId, DataId: Ord + Clone, MaxVoters> Votes<AccountId, DataId, MaxVoters> {
@@ -54,12 +54,12 @@ pub struct VoteData<AccountId, MaxVoters> {
 	pub voters: BoundedBTreeSet<AccountId, MaxVoters>,
 }
 
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, PartialEq, Eq, Clone)]
 pub struct VoteResultSummary<DataId> {
-	vote_total: VotingPower,
-	winning_vote_total: VotingPower,
-	winning_data: DataId,
-	runner_up_total: VotingPower,
+	pub vote_total: VotingPower,
+	pub winning_vote_total: VotingPower,
+	pub winning_data: DataId,
+	pub runner_up_total: VotingPower,
 }
 
 impl<AccountId, DataId: Ord, MaxVoters> Votes<AccountId, DataId, MaxVoters> {
