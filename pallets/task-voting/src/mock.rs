@@ -80,6 +80,7 @@ parameter_types! {
 type Balance = u128;
 
 // Build genesis storage according to the mock runtime.
+#[allow(dead_code)]
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	tracing::try_init_simple();
 	let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
@@ -88,7 +89,8 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	ext
 }
 
-pub fn roll_to(n: BlockNumber, author_account_id: u64) {
+#[allow(dead_code)]
+pub fn roll_to(n: BlockNumber, _author_account_id: u64) {
 	let mut i = System::block_number();
 	while i < n {
 		i += 1;

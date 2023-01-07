@@ -12,11 +12,6 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-mod benchmarking;
-
-#[allow(clippy::unnecessary_cast)]
-pub mod weights;
-
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo)]
 #[scale_info(skip_type_params(MaxVoters))]
 pub struct Votes<AccountId, DataId, MaxVoters> {
@@ -191,7 +186,6 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {}
 
 	#[pallet::error]
