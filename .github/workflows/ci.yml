@@ -33,9 +33,10 @@ jobs:
           echo "========================"
           ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh
 
-      - name: Check for direct usage of log::warn vs. warn_or_panic in migrations
+      - name: Check migrations
         run: |
           ./scripts/check-usage-of-log-warn.sh
+          ./scripts/check-storage-version-assert-in-migrations.sh
 
   fmt:
     name: Rustfmt
