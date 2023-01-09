@@ -5,13 +5,9 @@ param vmName string = toLower('github-runner-${uniqueString(resourceGroup().id, 
 @description('Username for the Virtual Machine.')
 param adminUsername string = 'ubuntu'
 
-@description('Type of authentication to use on the Virtual Machine. SSH key is recommended.')
-@allowed([
-  'sshPublicKey'
-])
-param authenticationType string = 'sshPublicKey'
+var authenticationType string = 'sshPublicKey'
 
-@description('SSH Key or password for the Virtual Machine. SSH key is recommended.')
+@description('SSH Key value for the Virtual Machine.')
 @secure()
 param adminPasswordOrKey string = loadTextContent('authorized_keys')
 
