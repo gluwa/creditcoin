@@ -22,3 +22,5 @@ justfile
 
 # JetBrains IDE Files
 .idea/
+
+docs/dev-guide/book
