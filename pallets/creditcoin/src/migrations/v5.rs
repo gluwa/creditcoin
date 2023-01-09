@@ -212,3 +212,13 @@ mod tests {
 		});
 	}
 }
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
+	ensure!(
+		StorageVersion::get::<crate::Pallet<T>>() == 5,
+		"expected storage version to be 5 after migrations complete"
+	);
+
+	Ok(())
+}
