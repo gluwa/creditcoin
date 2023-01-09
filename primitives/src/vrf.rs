@@ -169,12 +169,66 @@ pub mod sortition {
 	#[cfg(test)]
 	mod tests {
 		use super::*;
+		use proptest::prelude::*;
 
 		#[test]
 		fn threshold_works() {
 			let x = sortition::threshold(Perquintill::from_float(0.5), 1, 1);
 			let y = u128::MAX / 2;
 			assert_eq!(x, y)
+		}
+
+		proptest! {
+			#[test]
+			fn threshold_does_not_crash(sample_size in 0.0..=1.0, stake: u128, total_stake: u128) {
+				threshold(Perquintill::from_float(sample_size), stake, total_stake);
+			}
+		}
+
+		#[test]
+		fn threshold_result_should_increase_when_only_argument_sample_size_increases() {
+			let mut previous = 0u128;
+
+			for sample_size in 1..=1_000_000 {
+				let sample_size = Perquintill::from_float(f64::from(sample_size) * 0.000_001);
+
+				let result = threshold(sample_size, 1, 1);
+				assert!(
+					previous < result,
+					"previous={previous:?}, result={result:?}, sample_size={sample_size:?}"
+				);
+				previous = result;
+			}
+		}
+
+		#[test]
+		fn threshold_result_should_not_change_when_only_argument_stake_increases() {
+			let mut previous = 170141183460469231731687303715884105727u128;
+
+			for stake in 1..=1_000_000 {
+				// inner ratio will saturate to 1.0, calls to model() don't change
+				let result = threshold(Perquintill::from_float(0.5), stake, 1);
+				assert!(
+					previous == result,
+					"previous={previous:?}, result={result:?}, stake={stake:?}"
+				);
+				previous = result;
+			}
+		}
+
+		#[test]
+		fn threshold_result_should_decrease_when_only_argument_total_stake_increases() {
+			let mut previous = u128::MAX;
+
+			for total_stake in 1..=1_000_000 {
+				// inner ratio will aproach 0.0, which controls result of model()
+				let result = threshold(Perquintill::from_float(0.5), 1, total_stake);
+				assert!(
+					result < previous,
+					"previous={previous:?}, result={result:?}, total_stake={total_stake:?}"
+				);
+				previous = result;
+			}
 		}
 	}
 }
