@@ -2,6 +2,8 @@
 
 use super::{v2, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use frame_support::dispatch::Weight;
+#[cfg(feature = "try-runtime")]
+use frame_support::pallet_prelude::*;
 use frame_support::{traits::Get, Identity, Twox64Concat};
 use parity_scale_codec::{Decode, Encode};
 
@@ -427,4 +429,14 @@ mod tests {
 			);
 		});
 	}
+}
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
+	ensure!(
+		StorageVersion::get::<crate::Pallet<T>>() == 3,
+		"expected storage version to be 3 after migrations complete"
+	);
+
+	Ok(())
 }
