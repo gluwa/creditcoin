@@ -1,0 +1,8 @@
+# Summary
+
+- [Getting started](./getting-started/getting-started.md)
+  - [Building from source](./getting-started/building.md)
+  - [Running a development node](./getting-started/running-a-node.md)
+  - [Observing your development chain](./getting-started/observing-your-chain.md)
+  - [Learning about substrate](./getting-started/substrate-resources.md)
+- [Architecture and Repo Layout](./architecture.md)
