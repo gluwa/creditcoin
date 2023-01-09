@@ -1,5 +1,7 @@
 // address registration now verifies ownership, so removed existing addresses
 use super::{v3, AccountIdOf, HashOf};
+#[cfg(feature = "try-runtime")]
+use frame_support::pallet_prelude::*;
 use frame_support::traits::Get;
 use frame_support::Blake2_128Concat;
 use frame_support::{dispatch::Weight, storage_alias};
@@ -82,4 +84,14 @@ mod tests {
 			}
 		});
 	}
+}
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
+	ensure!(
+		StorageVersion::get::<crate::Pallet<T>>() == 4,
+		"expected storage version to be 4 after migrations complete"
+	);
+
+	Ok(())
 }
