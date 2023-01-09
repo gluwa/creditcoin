@@ -66,6 +66,7 @@ frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 sp-keyring = { workspace = true }
 futures = "0.3.25"
+mimalloc-rust = { version = "0.2.0", default-features = false }
 
 [dependencies.tokio]
 version = "1.23.0"
@@ -74,10 +75,6 @@ features = ["time"]
 
 [features]
 default = ['std']
-runtime-benchmarks = [
-    'creditcoin-node-runtime/runtime-benchmarks',
-    'frame-benchmarking/runtime-benchmarks',
-    'frame-benchmarking-cli/runtime-benchmarks',
-]
+runtime-benchmarks = ['creditcoin-node-runtime/runtime-benchmarks', 'frame-benchmarking/runtime-benchmarks', 'frame-benchmarking-cli/runtime-benchmarks']
 std = ['sp-api/std', 'sp-block-builder/std', 'creditcoin-runtime-api/std']
 try-runtime = ["creditcoin-node-runtime/try-runtime", "try-runtime-cli"]
