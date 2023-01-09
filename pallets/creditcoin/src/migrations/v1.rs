@@ -463,10 +463,10 @@ mod tests {
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
-        ensure!(
-                StorageVersion::get::<crate::Pallet<T>>() == 1,
-                "expected storage version to be 1 after migrations complete"
-        );
+	ensure!(
+		StorageVersion::get::<crate::Pallet<T>>() == 1,
+		"expected storage version to be 1 after migrations complete"
+	);
 
-        Ok(())
+	Ok(())
 }

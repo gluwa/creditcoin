@@ -1,6 +1,8 @@
 use crate::pallet::WeightInfo;
 use crate::types::Task;
 use crate::Config;
+#[cfg(feature = "try-runtime")]
+use frame_support::pallet_prelude::*;
 use frame_support::weights::Weight;
 use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
