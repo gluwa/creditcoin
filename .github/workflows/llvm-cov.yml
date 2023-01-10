@@ -44,7 +44,7 @@ jobs:
             echo "**For full LLVM coverage report [click here](https://staticsitellvmhtml.z13.web.core.windows.net/$PR_NUMBER/html/)!**" > uncovered-lines.log
 
             cargo llvm-cov \
-                --workspace --html --show-missing-lines --doctests --hide-instantiations \
+                --workspace --html --show-missing-lines --hide-instantiations \
                 --ignore-filename-regex "(tests.rs|mock.rs)"
 
             UNCOVERED_LINES=$(cat uncovered-lines.log | sed "s|$(pwd)|.|")
