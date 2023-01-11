@@ -64,6 +64,39 @@ jobs:
         run: |
           ./scripts/check-usage-of-log-warn.sh
 
+  audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo audit
+        run: |
+          cargo install cargo-audit --features=fix
+
+      - name: Run cargo audit
+        run: |
+          cargo audit --deny warnings
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
