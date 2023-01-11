@@ -2,10 +2,20 @@ use merlin::Transcript;
 use num::rational::BigRational;
 use num::ToPrimitive;
 use parity_scale_codec::{Decode, Encode};
+use schnorrkel::vrf::VRFInOut;
 use sp_arithmetic::per_things::{PerThing, Perbill, Perquintill};
-use sp_consensus_vrf::schnorrkel::SignatureError;
+use sp_consensus_vrf::schnorrkel::{PublicKey, SignatureError, VRFOutput, VRFProof};
+use sp_core::crypto::KeyTypeId;
+use sp_core::sr25519::Public;
+use sp_core::H256;
+#[cfg(feature = "std")]
+use sp_externalities::ExternalitiesExt;
+pub use sp_keystore::vrf::{make_transcript, VRFSignature, VRFTranscriptData, VRFTranscriptValue};
+#[cfg(feature = "std")]
+use sp_keystore::{KeystoreExt, SyncCryptoStore};
 use sp_runtime_interface::pass_by::PassByCodec;
 use sp_runtime_interface::runtime_interface;
+use tracing as log;
 
 mod model {
 	use super::*;
@@ -241,10 +251,6 @@ pub mod sortition {
 	}
 }
 
-use sp_core::H256;
-use sp_keystore::vrf::VRFTranscriptValue;
-pub use sp_keystore::vrf::{make_transcript, VRFTranscriptData};
-
 const ENGINE_ID: &[u8; 4] = b"COTS";
 
 pub(super) fn transcript_data(pre_hash: H256, epoch: u64, task_id: H256) -> VRFTranscriptData {
@@ -257,18 +263,6 @@ pub(super) fn transcript_data(pre_hash: H256, epoch: u64, task_id: H256) -> VRFT
 		],
 	}
 }
-
-use schnorrkel::vrf::VRFInOut;
-use sp_consensus_vrf::schnorrkel::PublicKey;
-use sp_consensus_vrf::schnorrkel::{VRFOutput, VRFProof};
-use sp_core::crypto::KeyTypeId;
-use sp_core::sr25519::Public;
-#[cfg(feature = "std")]
-use sp_externalities::ExternalitiesExt;
-use sp_keystore::vrf::VRFSignature;
-#[cfg(feature = "std")]
-use sp_keystore::{KeystoreExt, SyncCryptoStore};
-use tracing as log;
 
 pub fn prove_vrf(
 	pubkey: PublicKey,
