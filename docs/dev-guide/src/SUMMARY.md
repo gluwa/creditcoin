@@ -9,3 +9,4 @@
   - [Client](./architecture/client.md)
   - [Runtime](./architecture/runtime/runtime.md)
     - [Creditcoin pallet](./architecture/runtime/pallet-creditcoin.md)
+    - [Difficulty pallet](./architecture/runtime/pallet-difficulty.md)
