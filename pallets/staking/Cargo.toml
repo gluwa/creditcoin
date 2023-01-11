@@ -1,6 +1,6 @@
 [package]
-name = 'pallet-task-voting'
-description = 'FRAME pallet for voting on task execution results.'
+name = 'pallet-staking'
+description = "Gluwa's offchain worker staking based on substrate frame staking"
 
 version.workspace = true
 authors.workspace = true
@@ -17,20 +17,13 @@ frame-benchmarking = { optional = true, workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
+pallet-staking-substrate.workspace = true
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
-sp-consensus-pow = { workspace = true }
+sp-arithmetic.workspace = true
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
-pallet-staking.workspace = true
 sp-staking.workspace = true
-sp-arithmetic.workspace = true
-
-[dev-dependencies]
-pallet-balances = { features = ["std"], workspace = true }
-sp-core = { workspace = true }
-sp-io = { workspace = true }
-tracing = { workspace = true }
 
 [features]
 default = ['std']
@@ -41,8 +34,7 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'frame-benchmarking/std',
-    'pallet-staking/std',
-    'sp-consensus-pow/std',
+    'pallet-staking-substrate/std',
     'sp-std/std',
 ]
 try-runtime = ['frame-support/try-runtime']
