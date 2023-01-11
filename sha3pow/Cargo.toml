@@ -10,7 +10,6 @@ repository.workspace = true
 
 [dependencies]
 parity-scale-codec = { features = ["std"], workspace = true }
-primitives = { workspace = true }
 rand = { version = "0.8.5", features = ["small_rng"], default-features = false }
 sc-consensus-pow = { workspace = true }
 sc-keystore = { workspace = true }
@@ -19,6 +18,7 @@ sha3 = "0.10.6"
 sp-api = { workspace = true }
 sp-consensus-pow = { features = ["std"], workspace = true }
 sp-core = { features = ["std"], workspace = true }
+pallet-difficulty = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 assert_matches = { workspace = true }

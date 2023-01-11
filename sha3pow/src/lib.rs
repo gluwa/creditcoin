@@ -1,5 +1,5 @@
+use pallet_difficulty::Difficulty;
 use parity_scale_codec::{Decode, Encode};
-use primitives::Difficulty;
 use rand::{prelude::SmallRng, SeedableRng};
 use sc_consensus_pow::{Error, PowAlgorithm};
 use sc_keystore::LocalKeystore;
@@ -168,7 +168,7 @@ where
 
 #[cfg(test)]
 mod test {
-	use primitives::Difficulty;
+	use super::Difficulty;
 	use sc_keystore::LocalKeystore;
 	use sp_core::H256;
 	use sp_runtime::{testing::Block, OpaqueExtrinsic};
