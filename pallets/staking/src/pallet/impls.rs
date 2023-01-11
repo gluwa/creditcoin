@@ -1,6 +1,6 @@
 use super::*;
-use crate::staking::ledger::StakingLedger;
-use crate::staking::{EraIndex, Stake, StakingInterface};
+use crate::ledger::StakingLedger;
+use crate::{EraIndex, Stake, StakingInterface};
 use frame_support::dispatch::DispatchResult;
 use frame_support::dispatch::RawOrigin;
 use frame_support::dispatch::{
@@ -10,8 +10,8 @@ use frame_support::ensure;
 use frame_support::traits::DefensiveResult;
 use frame_support::traits::Get;
 use frame_support::traits::{Currency, Imbalance, LockableCurrency, OnUnbalanced, WithdrawReasons};
-use pallet_staking::RewardDestination;
-use pallet_staking::WeightInfo;
+use pallet_staking_substrate::RewardDestination;
+use pallet_staking_substrate::WeightInfo;
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::StaticLookup;
 
@@ -218,7 +218,7 @@ impl<T: Config> StakingInterface for Pallet<T> {
 		T::BondingDuration::get()
 	}
 
-	fn stake(who: &Self::AccountId) -> Result<crate::staking::Stake<Self>, DispatchError> {
+	fn stake(who: &Self::AccountId) -> Result<crate::Stake<Self>, DispatchError> {
 		Self::bonded(who)
 			.and_then(|c| Self::ledger(c))
 			.map(|StakingLedger { stash, total, active, .. }| Stake { stash, total, active })
