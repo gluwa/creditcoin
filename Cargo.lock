@@ -1128,7 +1128,6 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
- "primitives",
  "scale-info",
  "smallvec",
  "sp-api",
@@ -4188,7 +4187,6 @@ dependencies = [
  "log",
  "pallet-timestamp",
  "parity-scale-codec",
- "primitives",
  "scale-info",
  "sp-arithmetic",
  "sp-core",
@@ -6596,8 +6594,8 @@ name = "sha3pow"
 version = "2.211.2"
 dependencies = [
  "assert_matches",
+ "pallet-difficulty",
  "parity-scale-codec",
- "primitives",
  "rand 0.8.5",
  "sc-consensus-pow",
  "sc-keystore",
