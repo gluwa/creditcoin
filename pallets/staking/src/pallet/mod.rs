@@ -1,12 +1,13 @@
 mod impls;
 pub use pallet::*;
 
+#[allow(clippy::module_inception)]
 #[frame_support::pallet]
 mod pallet {
 
-	use crate::staking::ledger::{StakingLedger, UnlockChunk};
-	use crate::staking::logger;
-	use crate::staking::ActiveEraInfo;
+	use crate::ledger::{StakingLedger, UnlockChunk};
+	use crate::logger;
+	use crate::ActiveEraInfo;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -16,10 +17,10 @@ mod pallet {
 		weights::Weight,
 	};
 	use frame_system::{ensure_root, ensure_signed, pallet_prelude::*};
-	use pallet_staking::slashing;
-	use pallet_staking::Forcing;
-	use pallet_staking::{ConfigOp, WeightInfo};
-	use pallet_staking::{EraRewardPoints, RewardDestination, UnappliedSlash};
+	use pallet_staking_substrate::slashing;
+	use pallet_staking_substrate::Forcing;
+	use pallet_staking_substrate::{ConfigOp, WeightInfo};
+	use pallet_staking_substrate::{EraRewardPoints, RewardDestination, UnappliedSlash};
 	use sp_runtime::codec;
 	use sp_runtime::{
 		traits::{CheckedSub, SaturatedConversion, StaticLookup, Zero},
