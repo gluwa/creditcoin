@@ -2,9 +2,11 @@
 
 use frame_support::{pallet_prelude::*, sp_runtime, traits::OnTimestampSet};
 pub use pallet::*;
-use primitives::Difficulty;
 use sp_arithmetic::traits::BaseArithmetic;
+use sp_core::U256;
 use sp_runtime::traits::{SaturatedConversion, UniqueSaturatedInto};
+
+pub type Difficulty = U256;
 
 #[cfg(test)]
 mod mock;
@@ -25,12 +27,12 @@ pub struct DifficultyAndTimestamp<Moment> {
 
 #[frame_support::pallet]
 pub mod pallet {
+	use super::Difficulty;
 	use frame_support::{
 		pallet_prelude::*,
 		sp_runtime::traits::{MaybeSerializeDeserialize, SaturatedConversion},
 	};
 	use frame_system::pallet_prelude::*;
-	use primitives::Difficulty;
 	use sp_arithmetic::traits::{BaseArithmetic, UniqueSaturatedInto, Zero};
 
 	use crate::DifficultyAndTimestamp;
