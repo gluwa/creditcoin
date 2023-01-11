@@ -349,7 +349,7 @@ mod tests {
 		PublicData { key_type_id, pre_hash, epoch, task_id }
 	}
 
-	fn add_random_key(key_type_id: KeyTypeId, builder: &ExtBuilder<()>) -> Public {
+	fn add_testing_key(key_type_id: KeyTypeId, builder: &ExtBuilder<()>) -> Public {
 		builder
 			.keystore
 			.as_ref()
@@ -359,47 +359,46 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn generate_vrf_output() {
-		let PublicData { key_type_id, pre_hash, epoch, task_id } = mocked_public_data();
+		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
 		let builder = ExtBuilder::<()>::default().with_keystore();
-		let pubkey = add_random_key(key_type_id, &builder);
+		let pubkey = add_testing_key(keyring_id, &builder);
 
 		builder.build_sans_config().execute_with(|| {
-			let (output, _proof) =
-				generate_vrf(key_type_id, &pubkey, pre_hash, epoch, task_id).unwrap();
+			let (public_seed, _proof) =
+				generate_vrf(keyring_id, &pubkey, pre_hash, epoch, task_id).unwrap();
 
-			let public_key = PublicKey::from_bytes(&pubkey.0).unwrap();
+			let pubkey = PublicKey::from_bytes(&pubkey.0).unwrap();
 			let transcript = make_transcript(transcript_data(pre_hash, epoch, task_id));
-			let inout = finalize_randomness(&public_key, transcript, &output).unwrap();
+			let seed = finalize_randomness(&pubkey, transcript, &public_seed).unwrap();
 
 			let level = sortition::threshold(Perquintill::from_float(0.5), 1, 10);
-			assert!(!sortition::is_selected(&inout, level));
+			assert!(!sortition::is_selected(&seed, level));
 		})
 	}
 
 	#[test]
 	fn prove_vrf_output() {
-		let PublicData { key_type_id, pre_hash, epoch, task_id } = mocked_public_data();
+		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
 		let builder = ExtBuilder::<()>::default().with_keystore();
-		let pubkey = add_random_key(key_type_id, &builder);
+		let pubkey = add_testing_key(keyring_id, &builder);
 
 		builder.build_sans_config().execute_with(|| {
-			let (output, proof) =
-				generate_vrf(key_type_id, &pubkey, pre_hash, epoch, task_id).unwrap();
+			let (public_seed, proof) =
+				generate_vrf(keyring_id, &pubkey, pre_hash, epoch, task_id).unwrap();
 
-			let public_key = PublicKey::from_bytes(&pubkey.0).unwrap();
+			let pubkey = PublicKey::from_bytes(&pubkey.0).unwrap();
 
 			let transcript = make_transcript(transcript_data(pre_hash, epoch, task_id));
 
-			let inout = finalize_randomness(&public_key, transcript, &output).unwrap();
+			let seed = finalize_randomness(&pubkey, transcript, &public_seed).unwrap();
 
-			let reconstituted_inout =
-				prove_vrf(public_key, pre_hash, epoch, task_id, output, proof).unwrap();
+			let expected_seed =
+				prove_vrf(pubkey, pre_hash, epoch, task_id, public_seed, proof).unwrap();
 
-			assert_eq!(inout, reconstituted_inout);
+			assert_eq!(seed, expected_seed);
 		})
 	}
 }
