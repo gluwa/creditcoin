@@ -4,7 +4,7 @@ use frame_support::dispatch::{
 use frame_support::traits::StorageVersion;
 use scale_info::TypeInfo;
 use sp_runtime::traits::Convert;
-use sp_staking::EraIndex;
+pub use sp_staking::EraIndex;
 
 pub mod ledger;
 pub mod pallet;
@@ -23,7 +23,7 @@ pub(crate) const LOG_TARGET: &str = "runtime::staking";
 macro_rules! logger {
 	($level:tt, $patter:expr $(, $values:expr)* $(,)?) => {
 		log::$level!(
-			target: crate::staking::LOG_TARGET,
+			target: crate::LOG_TARGET,
 			concat!("[{:?}] 💸 ", $patter), <frame_system::Pallet<T>>::block_number() $(, $values)*
 		)
 	};

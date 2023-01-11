@@ -1,6 +1,6 @@
 use super::pallet::BalanceOf;
 use super::TypeInfo;
-use crate::staking::pallet::Config;
+use crate::pallet::Config;
 use frame_support::dispatch::{Decode, Encode, HasCompact, MaxEncodedLen, RuntimeDebug};
 use frame_support::traits::{Defensive, Get};
 use frame_support::{BoundedVec, RuntimeDebugNoBound};
@@ -193,7 +193,7 @@ impl<T: Config> StakingLedger<T> {
 		};
 
 		// Helper to update `target` and the ledgers total after accounting for slashing `target`.
-		crate::staking::logger!(
+		crate::logger!(
 			debug,
 			"slashing {:?} for era {:?} out of {:?}, priority: {:?}, proportional = {:?}",
 			slash_amount,
