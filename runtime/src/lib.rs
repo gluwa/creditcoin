@@ -12,6 +12,7 @@ use frame_support::{
 };
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
+use pallet_difficulty::Difficulty as DifficultyT;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
@@ -545,8 +546,8 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl sp_consensus_pow::DifficultyApi<Block, primitives::Difficulty> for Runtime {
-		fn difficulty() -> primitives::Difficulty {
+	impl sp_consensus_pow::DifficultyApi<Block, DifficultyT> for Runtime {
+		fn difficulty() -> DifficultyT {
 			Difficulty::difficulty()
 		}
 	}
