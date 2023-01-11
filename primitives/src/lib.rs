@@ -2,10 +2,6 @@
 
 pub mod vrf;
 
-use sp_core::U256;
-
-pub type Difficulty = U256;
-
 #[cfg(all(feature = "std", feature = "prometheus"))]
 pub mod metrics {
 	use std::sync::Arc;

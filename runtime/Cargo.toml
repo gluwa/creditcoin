@@ -34,7 +34,6 @@ pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 parity-scale-codec = { workspace = true }
-primitives = { workspace = true }
 scale-info = { workspace = true }
 smallvec = "1.10.0"
 sp-block-builder = { workspace = true }
@@ -100,7 +99,6 @@ std = [
     'sp-transaction-pool/std',
     'sp-version/std',
     'task-scheduler-runtime-api/std',
-    'primitives/std',
 ]
 try-runtime = [
     "frame-try-runtime",
