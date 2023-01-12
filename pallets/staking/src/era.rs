@@ -127,3 +127,16 @@ impl<T: Config> EraInterface<T::BlockNumber> for Pallet<T> {
 			.unwrap_or(current_session_index)
 	}
 }
+
+impl EraInterface<u32> for () {
+	fn start_era(_block_number: u32) {}
+
+	fn end_active_era() {}
+
+	fn set_era_start_time() {}
+
+	fn next_era_start(_: u32) -> u32 {
+		defensive!("always 0");
+		0
+	}
+}
