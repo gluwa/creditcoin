@@ -4,15 +4,15 @@ use crate::{self as pallet_task_voting, VotingPower};
 use frame_support::{parameter_types, traits::ConstU32, BoundedBTreeSet};
 use frame_system as system;
 use sp_core::H256;
+use sp_runtime::generic::Header;
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 	Saturating,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-pub type BlockNumber = u64;
+pub type BlockNumber = u32;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -27,7 +27,7 @@ frame_support::construct_runtime!(
 );
 
 parameter_types! {
-	pub const BlockHashCount: u64 = 250;
+	pub const BlockHashCount: u32 = 250;
 	pub const SS58Prefix: u8 = 42;
 }
 
@@ -44,7 +44,7 @@ impl system::Config for Test {
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
+	type Header = Header<Self::BlockNumber, Self::Hashing>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -60,18 +60,13 @@ impl system::Config for Test {
 
 impl crate::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-
 	type TaskId = u64;
-
 	type OutputId = u64;
-
 	type OnVoteConclusion = ();
-
 	type VotingProvider =
 		crate::VotingProviderStrategy<crate::UniformVoterPower, crate::AtLeastOneVote>;
-
 	type MaxVoters = ConstU32<10>;
-
+	type Era = ();
 	// type WeightInfo = ();
 }
 

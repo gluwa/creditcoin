@@ -3,16 +3,13 @@
 use core::marker::PhantomData;
 pub use pallet::*;
 use parity_scale_codec::MaxEncodedLen;
-
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
-
-mod voting;
 use voting::traits::{OnVoteConclusion, QuorumMet, VoterPower};
 use voting::{Power as VotingPower, Votes};
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+mod voting;
 
 pub struct UnknownVoterError;
 
@@ -55,7 +52,13 @@ impl<T: Config> VoterPower<T> for UniformVoterPower {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{pallet_prelude::*, traits::Get, Identity, Parameter};
+	use frame_support::defensive;
+	use frame_support::{dispatch::Weight, pallet_prelude::*, traits::Get, Identity, Parameter};
+	use frame_system::pallet_prelude::*;
+	use pallet_staking::era::EraInterface;
+	use pallet_staking::EraIndex;
+	use sp_arithmetic::traits::One;
+	use sp_arithmetic::traits::Saturating;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -67,6 +70,8 @@ pub mod pallet {
 		type OutputId: Parameter + Ord + MaxEncodedLen;
 
 		type OnVoteConclusion: OnVoteConclusion<Self>;
+
+		type Era: EraInterface<Self::BlockNumber>;
 
 		type VotingProvider: VoterPower<Self> + QuorumMet<Self>;
 
@@ -100,4 +105,34 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type Rounds<T: Config> = StorageMap<_, Identity, T::TaskId, RoundOf<T>>;
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
+	where
+		EraIndex: From<T::BlockNumber>,
+	{
+		fn on_initialize(block_number: T::BlockNumber) -> Weight {
+			let next_era = T::Era::next_era_start(block_number);
+			if next_era == block_number {
+				T::Era::start_era(block_number);
+			} else if next_era < block_number {
+				defensive!("Next era behind current block height");
+				T::Era::start_era(block_number);
+			}
+			//TODO benchmark
+			Weight::from_ref_time(1_000_000u64)
+		}
+
+		//TODO benchmark
+		fn on_finalize(block_number: T::BlockNumber) {
+			let next_era = T::Era::next_era_start(block_number);
+			if !T::Era::is_era_timestamped() {
+				T::Era::set_era_timestamp()
+			}
+
+			if next_era == block_number.saturating_add(One::one()) {
+				T::Era::end_active_era();
+			}
+		}
+	}
 }

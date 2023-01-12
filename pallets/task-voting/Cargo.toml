@@ -18,9 +18,11 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
+pallet-staking = { workspace = true }
 scale-info = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
+sp-arithmetic.workspace = true
 
 [dev-dependencies]
 pallet-balances = { features = ["std"], workspace = true }
@@ -37,6 +39,7 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'frame-benchmarking/std',
+    'pallet-staking/std',
     'sp-std/std',
 ]
 try-runtime = ['frame-support/try-runtime']
