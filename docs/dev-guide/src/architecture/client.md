@@ -3,16 +3,16 @@
 This is the part that handles all interactions with the host machine and outside world.
 By extension, the client is the primary point of interaction for node operators - whether that be
 through the CLI or by performing RPC calls.
-The code for the client lives in the [`node` directory](../../../node).
+The code for the client lives in the [`node` directory](https://github.com/gluwa/creditcoin/tree/dev/node).
 
 ## CLI
 
 The command line interface you interact with as a user (the `creditcoin-node` binary) uses
 [clap](https://docs.rs/clap), similar to many Rust projects.
-The actual interface is defined in [`node/src/cli.rs`](../../../node/src/cli.rs). It consists of the
+The actual interface is defined in [`node/src/cli.rs`](https://github.com/gluwa/creditcoin/tree/dev/node/src/cli.rs). It consists of the
 CLI options and subcommands.
 
-The actual parsing and execution of the CLI command occurs in [`command.rs`](../../../node/src/command.rs).
+The actual parsing and execution of the CLI command occurs in [`command.rs`](https://github.com/gluwa/creditcoin/tree/dev/node/src/command.rs).
 This is the entrypoint to a creditcoin node (`main` just calls into `command::run`)
 For most subcommands this means calling the appropriate implementations provided by substrate.
 
@@ -26,7 +26,7 @@ setting up the RPC server,
 connecting to telemetry, setting up the block import pipeline (and consensus, which is part of the import pipeline), and more.
 This is also the entrypoint to mining (we just spawn a bunch of threads which are tasked with mining and submitting results).
 
-This code lives in [`node/src/service.rs`](../../../node/src/service.rs).
+This code lives in [`node/src/service.rs`](https://github.com/gluwa/creditcoin/tree/dev/node/src/service.rs).
 
 ## RPC
 
@@ -34,10 +34,10 @@ This is where we define custom RPC methods and extend the standard RPC server wi
 For example, we expose a custom RPC method for retrieving
 your node's current hashrate so node operators can monitor their mining performance.
 
-The code for extending the RPC server with custom handlers lives in [`node/src/rpc.rs`](../../../node/src/rpc.rs). Once
+The code for extending the RPC server with custom handlers lives in [`node/src/rpc.rs`](https://github.com/gluwa/creditcoin/tree/dev/node/src/rpc.rs). Once
 you've defined your custom RPC methods and their handlers, you would need to edit this code to register your new handlers.
 
-The code for _defining_ new RPC methods is currently located in [`node/rpc`](../../../node/rpc).
+The code for _defining_ new RPC methods is currently located in [`node/rpc`](https://github.com/gluwa/creditcoin/tree/dev/node/rpc).
 
 ## Consensus / PoW
 
@@ -81,10 +81,10 @@ Given a proposed solution, we consider it valid if
 1. The hash is correct (matches the value obtained by recalculating the hash from input data)
 2. The product of the hash and difficulty do not overflow a 256-bit unsigned integer. In other words `hash * difficulty <= 2^256 - 1`
 
-This code lives in the [`sha3pow` crate](../../../sha3pow).
+This code lives in the [`sha3pow` crate](https://github.com/gluwa/creditcoin/tree/dev/sha3pow).
 
 ### Generating Solutions (Mining)
 
 Mining comes down to essentially picking random nonce values until you find one with the correct properties.
 Once we find an appropriate nonce, we submit the solution to a `MiningHandle` which then proceeds with verification and moving forward
-with publishing the block. This occurs in [`service.rs`](../../../node/src/../../../node/src/service.rs) in the `creditcoin-node` crate.
+with publishing the block. This occurs in [`service.rs`](https://github.com/gluwa/creditcoin/tree/dev/node/src/service.rs) in the `creditcoin-node` crate.
