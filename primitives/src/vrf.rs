@@ -359,22 +359,25 @@ mod tests {
 	}
 
 	#[test]
-	fn generate_vrf_output() {
+	fn generate_vrf_output_should_be_different_for_different_private_data() {
 		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
 		let builder = ExtBuilder::<()>::default().with_keystore();
-		let pubkey = add_testing_key(keyring_id, &builder);
+		let pubkey_struct = add_testing_key(keyring_id, &builder);
 
 		builder.build_sans_config().execute_with(|| {
-			let (public_seed, _proof) =
-				generate_vrf(keyring_id, &pubkey, pre_hash, epoch, task_id).unwrap();
+			let (mut previous, _proof) =
+				generate_vrf(keyring_id, &pubkey_struct, pre_hash, epoch, task_id).unwrap();
 
-			let pubkey = PublicKey::from_bytes(&pubkey.0).unwrap();
-			let transcript = make_transcript(transcript_data(pre_hash, epoch, task_id));
-			let seed = finalize_randomness(&pubkey, transcript, &public_seed).unwrap();
+			for i in 0..=1_000u32 {
+				let pre_hash = blake2_256(&i.to_be_bytes()).into();
 
-			let level = sortition::threshold(Perquintill::from_float(0.5), 1, 10);
-			assert!(!sortition::is_selected(&seed, level));
+				let (public_seed, _proof) =
+					generate_vrf(keyring_id, &pubkey_struct, pre_hash, epoch, task_id).unwrap();
+
+				assert_ne!(public_seed, previous);
+				previous = public_seed;
+			}
 		})
 	}
 
