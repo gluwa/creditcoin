@@ -27,8 +27,8 @@ Some pallets also define runtime APIs. For the most part you can ignore these, b
 for the outer node/client to call into the runtime. So, for instance, if you wanted to expose an RPC that needed some information from the runtime,
 you would define a runtime API, implement the logic in the runtime, and then call your runtime API from the RPC handler.
 
-Pretty much the entirety of the runtime is in [`lib.rs`](../../../runtime/src/lib.rs). If you need to increase the runtime version
-(required after non-backwards-compatible changes to the runtime, i.e. any consensus-affecting change) that's in [`version.rs`](../../../runtime/src/version.rs)
+Pretty much the entirety of the runtime is in [`lib.rs`](https://github.com/gluwa/creditcoin/tree/dev/runtime/src/lib.rs). If you need to increase the runtime version
+(required after non-backwards-compatible changes to the runtime, i.e. any consensus-affecting change) that's in [`version.rs`](https://github.com/gluwa/creditcoin/tree/dev/runtime/src/version.rs)
 
 ## What pallets do we use?
 
@@ -50,8 +50,8 @@ These pallets are all part of substrate and aren't maintained by the creditcoin 
 These pallets are written and maintained by the creditcoin developers:
 
 - [Creditcoin](./pallet-creditcoin.md)
-- [Difficulty](../../../../pallets/difficulty)
-- [Rewards](../../../../pallets/rewards)
-- [Offchain Task Scheduler](../../../../pallets/offchain-task-scheduler)
+- [Difficulty](pallet-difficulty.md)
+- [Rewards](https://github.com/gluwa/creditcoin/tree/dev/pallets/rewards)
+- [Offchain Task Scheduler](https://github.com/gluwa/creditcoin/tree/dev/pallets/offchain-task-scheduler)
 
 The majority of the creditcoin developers' work is spent developing these pallets (and probably more in the future).
