@@ -11,6 +11,10 @@
 AZURE_RESOURCE_GROUP=$1
 NAME_PREFIX=$2
 RESOURCE_LIST=$(az resource list -g "$AZURE_RESOURCE_GROUP")
+echo "**** INFO RESOURCE_LIST ****"
+echo "$RESOURCE_LIST"
+echo "$RESOURCE_LIST" > azure_resource_list.json
+echo "****************************"
 
 # Delete resources in a specific order, as dependency on one another might prevent resource deletion
 RESOURCE_TYPES=(
