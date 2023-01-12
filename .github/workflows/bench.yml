@@ -232,3 +232,10 @@ jobs:
         az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
 
         ./scripts/azure-remove.sh "Creditcoin-Test" "${{ env.RUNNER_VM_NAME }}"
+
+    - name: Upload logs
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: 'Azure resources'
+        path: azure_resource_list.json
