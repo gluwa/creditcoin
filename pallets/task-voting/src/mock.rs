@@ -63,7 +63,7 @@ impl crate::Config for Test {
 
 	type TaskId = u64;
 
-	type DataId = u64;
+	type OutputId = u64;
 
 	type OnVoteConclusion = ();
 
@@ -103,12 +103,12 @@ pub fn roll_to(n: BlockNumber, _author_account_id: u64) {
 // useful aliases + trait impls for use in tests
 
 pub type Pallet = crate::Pallet<Test>;
-pub type ActiveVotes = crate::ActiveVotes<Test>;
+pub type ActiveVotes = crate::Rounds<Test>;
 pub type AccountId = <Test as frame_system::Config>::AccountId;
 pub type MaxVoters = <Test as crate::Config>::MaxVoters;
-pub type DataId = <Test as crate::Config>::DataId;
+pub type DataId = <Test as crate::Config>::OutputId;
 pub type TaskId = <Test as crate::Config>::TaskId;
-pub type VoteData = crate::VoteData<AccountId, MaxVoters>;
+pub type VoteData = crate::voting::Data<AccountId, MaxVoters>;
 pub type Votes = crate::Votes<AccountId, DataId, MaxVoters>;
 pub type Voting = <Test as crate::Config>::VotingProvider;
 
