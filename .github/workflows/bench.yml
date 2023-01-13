@@ -7,11 +7,7 @@ on:
 
 env:
   RUNNER_VM_NAME: github-runner-$GITHUB_RUN_ID
-<<<<<<< HEAD
   RESOURCE_GROUP: "github-runner-$GITHUB_RUN_ID$GITHUB_RUN_ATTEMPT"
-=======
-  RESOURCE_GROUP: "${{env.RUNNER_VM_NAME}}${{github.run_attempt}}"
->>>>>>> cc3dc506 (first attempt)
   AZ_LOCATION: "westus3"
 
 jobs:
