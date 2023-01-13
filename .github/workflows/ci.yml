@@ -388,7 +388,10 @@ jobs:
 
       - name: Inspect benchmark CI config
         run: |
-          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
+          # WARNING: Command below may differ depending on which workflow config file
+          # your job is defined in !!! Don't copy&paste it blindly !!!
+          PALLETS_IN_CI_CONFIG=$(grep "./scripts/bench.sh -p" .github/workflows/ci.yml | grep -v PALLETS_IN_CI_CONFIG | tr -s ' ' | cut -d' ' -f4 | sort | xargs)
+
           PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
           if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
               echo "FAIL: Pallet mismatch between source code and benchmark CI config"
