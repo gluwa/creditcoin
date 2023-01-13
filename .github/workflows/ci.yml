@@ -28,6 +28,9 @@ jobs:
 
       - name: Check for parity between extrinsics, benchmarks and weights
         run: |
+          echo "INFO: active pallets are"
+          ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets
+          echo "========================"
           ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh
 
       - name: Check for direct usage of log::warn vs. warn_or_panic in migrations
