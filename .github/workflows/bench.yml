@@ -120,7 +120,7 @@ jobs:
 
           # RG Creditcoin-Test is in WestUS and the CPU quota is already full
           # that's why specify a different region here
-          az deployment group create -g $RESOURCE_GROUP" -f .github/runner.bicep \
+          az deployment group create -g "$RESOURCE_GROUP" -f .github/runner.bicep \
               --parameters location="${{env.AZ_LOCATION}}" --parameters vmName=${{ env.RUNNER_VM_NAME }} > output.json
 
           # provision the GitHub Runner binary on the VM
@@ -250,5 +250,5 @@ jobs:
           echo "INFO: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
 
           az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
-
-          az group delete -n "${{env.RESOURCE_GROUP}}" --location "${{env.AZ_LOCATION}}"
+          az account set --subscription "Playground Subscription"
+          az group delete -n "${{env.RESOURCE_GROUP}}"
