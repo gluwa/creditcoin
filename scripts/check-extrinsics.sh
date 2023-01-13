@@ -6,7 +6,7 @@
 # - Compiles and build a binary from the current branch (HEAD_BIN)
 # - Runs the two nodes
 
-set -e
+set -ex
 
 HEAD_BIN=./target/release/creditcoin-node
 HEAD_WS=ws://localhost:9944
@@ -24,7 +24,8 @@ latest_release() {
 latest_release=$(latest_release 'gluwa/creditcoin')
 RELEASE_BIN="./creditcoin-node"
 echo "[+] Fetching binary for Creditcoin version $latest_release"
-curl -L "https://github.com/gluwa/creditcoin/releases/download/$latest_release/creditcoin-${latest_release}-x86_64-unknown-linux-gnu.zip"  --output creditcoin.zip && unzip creditcoin.zip || exit 1
+curl -L "https://github.com/gluwa/creditcoin/releases/download/$latest_release/creditcoin-${latest_release}-x86_64-unknown-linux-gnu.zip"  --output creditcoin.zip
+unzip creditcoin.zip
 chmod +x "$RELEASE_BIN"
 git fetch --depth="${GIT_DEPTH:-100}" origin 'refs/tags/*:refs/tags/*'
 
