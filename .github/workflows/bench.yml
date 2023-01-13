@@ -181,14 +181,6 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b
 
-      - name: Rewards
-        shell: bash
-        continue-on-error: false
-        env:
-          PALLET: rewards
-        run: |
-          ./scripts/bench.sh -p $PALLET -b
-
       # Run creditcoin pallet with lesser steps
       - name: Creditcoin
         shell: bash
@@ -200,6 +192,7 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
+<<<<<<< HEAD
       - name: Task Scheduler
         shell: bash
         continue-on-error: false
@@ -214,6 +207,14 @@ jobs:
       #     author_name: gluwa-bot
       #     author_email: creditcoin@gluwa.com
       #     message: "Auto-update pallet weights"
+=======
+      - name: Commit changes to current branch
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: gluwa-bot
+          author_email: creditcoin@gluwa.com
+          message: "Auto-update pallet weights"
+>>>>>>> 78bc40dc (Don't benchmark pallets which don't have extrinsics)
 
       # - name: Prepare commit for PR against dev
       #   run: |
