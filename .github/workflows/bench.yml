@@ -172,14 +172,6 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b
 
-      - name: Rewards
-        shell: bash
-        continue-on-error: false
-        env:
-          PALLET: rewards
-        run: |
-          ./scripts/bench.sh -p $PALLET -b
-
       # Run creditcoin pallet with lesser steps
       - name: Creditcoin
         shell: bash
@@ -190,14 +182,6 @@ jobs:
           PALLET: creditcoin
         run: |
           ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
-
-      - name: Task Scheduler
-        shell: bash
-        continue-on-error: false
-        env:
-          PALLET: offchain-task-scheduler
-        run: |
-          ./scripts/bench.sh -p $PALLET -b
 
       - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
