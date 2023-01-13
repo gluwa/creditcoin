@@ -95,7 +95,6 @@ impl<T: Config> EraInterface<T::BlockNumber> for Pallet<T> {
 
 		// Set ending era reward.
 		<ErasValidatorReward<T>>::insert(era_info.index, validator_payout);
-		//T::RewardRemainder::on_unbalanced(T::Currency::issue(remainder));
 
 		// Clear offending validators.
 		<OffendingValidators<T>>::kill();
@@ -112,6 +111,8 @@ impl<T: Config> EraInterface<T::BlockNumber> for Pallet<T> {
 		ActiveEra::<T>::mutate(|era_info| {
 			if let Some(info) = era_info {
 				info.start = Some(T::UnixTime::now().as_millis().saturated_into::<u64>());
+			} else {
+				defensive!("No active era to timestamp.");
 			}
 		});
 	}
@@ -133,7 +134,11 @@ impl EraInterface<u32> for () {
 
 	fn end_active_era() {}
 
-	fn set_era_start_time() {}
+	fn is_era_timestamped() -> bool {
+		false
+	}
+
+	fn set_era_timestamp() {}
 
 	fn next_era_start(_: u32) -> u32 {
 		defensive!("always 0");
