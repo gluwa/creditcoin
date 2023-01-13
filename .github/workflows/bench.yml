@@ -39,9 +39,11 @@ jobs:
           # your job is defined in !!! Don't copy&paste it blindly !!!
           PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
 
-          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          PALLETS_IN_SOURCE=$(./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets)
           if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
               echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              echo "INFO: in source: '$PALLETS_IN_SOURCE'"
+              echo "INFO: CI config: '$PALLETS_IN_CI_CONFIG'"
               exit 1
           fi
 
