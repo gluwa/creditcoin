@@ -115,7 +115,7 @@ jobs:
 
           # create resource group
           echo "INFO: ${{env.RESOURCE_GROUP}}"
-          az group create -n "${{env.RESOURCE_GROUP}}" -l "${{env.AZ_LOCATION}}"
+          az group create -n "${{env.RESOURCE_GROUP}}" --location "${{env.AZ_LOCATION}}"
 
           # RG Creditcoin-Test is in WestUS and the CPU quota is already full
           # that's why specify a different region here
@@ -202,34 +202,34 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b
 
-      - name: Commit changes to current branch
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: gluwa-bot
-          author_email: creditcoin@gluwa.com
-          message: "Auto-update pallet weights"
+      # - name: Commit changes to current branch
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     author_name: gluwa-bot
+      #     author_email: creditcoin@gluwa.com
+      #     message: "Auto-update pallet weights"
 
-      - name: Prepare commit for PR against dev
-        run: |
-          LAST_COMMIT=$(git rev-parse HEAD)
-          BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
+      # - name: Prepare commit for PR against dev
+      #   run: |
+      #     LAST_COMMIT=$(git rev-parse HEAD)
+      #     BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
 
-          git checkout -b $BRANCH_NAME origin/dev
-          git cherry-pick $LAST_COMMIT
-          git push origin $BRANCH_NAME
+      #     git checkout -b $BRANCH_NAME origin/dev
+      #     git cherry-pick $LAST_COMMIT
+      #     git push origin $BRANCH_NAME
 
-      - name: Open PR against dev
-        id: open_pr
-        uses: rematocorp/open-pull-request-action@v1
-        with:
-          github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
-          from-branch: auto-update-weights-for-dev-${{ github.sha }}
-          to-branch: dev
-          repository-owner: gluwa
-          repository: creditcoin
+      # - name: Open PR against dev
+      #   id: open_pr
+      #   uses: rematocorp/open-pull-request-action@v1
+      #   with:
+      #     github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+      #     from-branch: auto-update-weights-for-dev-${{ github.sha }}
+      #     to-branch: dev
+      #     repository-owner: gluwa
+      #     repository: creditcoin
 
-      - name: PR number against dev
-        run: echo ${{ steps.open_pr.outputs.pull_number }}
+      # - name: PR number against dev
+      #   run: echo ${{ steps.open_pr.outputs.pull_number }}
 
   remove-github-runner:
     runs-on: ubuntu-20.04
@@ -250,4 +250,4 @@ jobs:
 
           az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
 
-          az group delete -n "${{env.RESOURCE_GROUP}}" -l "${{env.AZ_LOCATION}}"
+          az group delete -n "${{env.RESOURCE_GROUP}}" --location "${{env.AZ_LOCATION}}"
