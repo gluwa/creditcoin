@@ -1,10 +1,11 @@
 // address registration now verifies ownership, so removed existing addresses
 use super::{v3, AccountIdOf, HashOf};
-#[cfg(feature = "try-runtime")]
-use frame_support::pallet_prelude::*;
-use frame_support::traits::Get;
-use frame_support::Blake2_128Concat;
-use frame_support::{dispatch::Weight, storage_alias};
+use frame_support::{
+	dispatch::Weight,
+	storage_alias,
+	traits::{Get, StorageVersion},
+	Blake2_128Concat,
+};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::SaturatedConversion;
 
@@ -87,11 +88,13 @@ mod tests {
 }
 
 #[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
-	ensure!(
-		StorageVersion::get::<crate::Pallet<T>>() == 4,
+pub(crate) fn pre_upgrade<T: Config>() {}
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>() {
+	assert_eq!(
+		StorageVersion::get::<crate::Pallet<T>>(),
+		4,
 		"expected storage version to be 4 after migrations complete"
 	);
-
-	Ok(())
 }

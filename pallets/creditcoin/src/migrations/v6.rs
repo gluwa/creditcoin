@@ -378,18 +378,15 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 }
 
 #[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() -> Result<(), &'static str> {
-	Ok(())
-}
+pub(crate) fn pre_upgrade<T: Config>() {}
 
 #[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
-	ensure!(
-		StorageVersion::get::<crate::Pallet<T>>() == 6,
+pub(crate) fn post_upgrade<T: Config>() {
+	assert_eq!(
+		StorageVersion::get::<crate::Pallet<T>>(),
+		6,
 		"expected storage version to be 6 after migrations complete"
 	);
-
-	Ok(())
 }
 
 #[cfg(test)]
