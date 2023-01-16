@@ -297,11 +297,13 @@ mod test {
 }
 
 #[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
-	ensure!(
-		StorageVersion::get::<crate::Pallet<T>>() == 2,
+pub(crate) fn pre_upgrade<T: Config>() {}
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>() {
+	assert_eq!(
+		StorageVersion::get::<crate::Pallet<T>>(),
+		2,
 		"expected storage version to be 2 after migrations complete"
 	);
-
-	Ok(())
 }

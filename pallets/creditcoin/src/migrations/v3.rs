@@ -1,10 +1,9 @@
 // `interest_type` added to `LoanTerms`
 
 use super::{v2, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
-use frame_support::dispatch::Weight;
-#[cfg(feature = "try-runtime")]
-use frame_support::pallet_prelude::*;
-use frame_support::{traits::Get, Identity, Twox64Concat};
+use frame_support::{
+	dispatch::Weight, traits::Get, traits::StorageVersion, Identity, Twox64Concat,
+};
 use parity_scale_codec::{Decode, Encode};
 
 use crate::{AddressId, Config, Duration, ExternalAmount, OfferId, TransferId};
@@ -432,11 +431,13 @@ mod tests {
 }
 
 #[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() -> Result<(), &'static str> {
-	ensure!(
-		StorageVersion::get::<crate::Pallet<T>>() == 3,
+pub(crate) fn pre_upgrade<T: Config>() {}
+
+#[cfg(feature = "try-runtime")]
+pub(crate) fn post_upgrade<T: Config>() {
+	assert_eq!(
+		StorageVersion::get::<crate::Pallet<T>>(),
+		3,
 		"expected storage version to be 3 after migrations complete"
 	);
-
-	Ok(())
 }
