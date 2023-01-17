@@ -9,7 +9,7 @@ var authenticationType = 'sshPublicKey'
 
 @description('SSH Key value for the Virtual Machine.')
 @secure()
-param adminPasswordOrKey string = loadTextContent('authorized_keys')
+param adminPasswordOrKey string
 
 @description('The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version.')
 param ubuntuOSVersion string = '20_04-lts'
