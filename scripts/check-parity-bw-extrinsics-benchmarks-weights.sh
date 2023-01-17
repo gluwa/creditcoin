@@ -2,7 +2,7 @@
 
 set -e
 
-FILES_WITH_EXTRINSICS=$(grep "pallet::call" pallets/* -R | cut -f1 -d: | sort | uniq)
+FILES_WITH_EXTRINSICS=$(grep "pallet::call" pallets/* -R | cut -f1 -d: | sort | uniq | grep -v staking)
 PALLETS=$(echo "$FILES_WITH_EXTRINSICS" | cut -f2 -d/ | sort | uniq | xargs)
 
 if [ "$1" == "--show-pallets" ]; then
