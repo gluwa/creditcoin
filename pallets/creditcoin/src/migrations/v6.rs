@@ -328,11 +328,20 @@ pub(super) fn migrate<T: Config>() -> Weight {
 
 	let storage = |item: &[u8]| storage_prefix(crate::Pallet::<T>::name().as_bytes(), item);
 
+	log::info!("Moving prefixes!");
+
 	move_prefix(&storage(b"DealOrders"), &storage(b"OldDealOrders"));
+	log::info!("Moved DealOrders!");
 	move_prefix(&storage(b"AskOrders"), &storage(b"OldAskOrders"));
+	log::info!("Moved AskOrders!");
 	move_prefix(&storage(b"BidOrders"), &storage(b"OldBidOrders"));
+	log::info!("Moved BidOrders!");
 	move_prefix(&storage(b"Addresses"), &storage(b"OldAddresses"));
+	log::info!("Moved Addresses!");
 	move_prefix(&storage(b"Transfers"), &storage(b"OldTransfers"));
+	log::info!("Moved Transfers!");
+
+	log::info!("Now migrating pending tasks");
 
 	PendingTasks::<T>::translate::<
 		OldTask<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
@@ -360,7 +369,10 @@ pub(super) fn migrate<T: Config>() -> Weight {
 		})
 	});
 
+	log::info!("Done migrating pending tasks!");
+
 	if weight.all_lt(cutoff) {
+		log::info!("Under the cutoff, migrating partially!");
 		let w = migrate_partial::<T>(cutoff.saturating_sub(weight));
 		weight.saturating_accrue(w);
 	}
@@ -614,12 +626,13 @@ pub(crate) fn migrate_address<T: Config>(
 }
 
 pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
-	log::info!("migrating partially");
+	log::info!("migrating partially, cutoff = {}", weight_dbg(cutoff));
 	let mut weight: Weight = Weight::zero();
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
 	let write = T::DbWeight::get().writes(1);
 	let read = T::DbWeight::get().reads(1);
 
+	log::info!("Migrating old deal orders, consumed so far {}!", weight_dbg(weight));
 	for (id, address) in OldAddresses::<T>::drain() {
 		weight.saturating_accrue(weight_each); // read + delete
 
@@ -633,6 +646,7 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		}
 	}
 
+	log::info!("Migrating old deal orders, consumed so far {}!", weight_dbg(weight));
 	for (exp, hash, deal_order) in OldDealOrders::<T>::drain() {
 		weight = weight.saturating_add(weight_each); // read + write old deal
 
@@ -683,6 +697,7 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		}
 	}
 
+	log::info!("Migrating old ask orders, consumed so far {}!", weight_dbg(weight));
 	for (exp, hash, ask_order) in OldAskOrders::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		let currency = CurrencyId::placeholder();
@@ -695,6 +710,7 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		}
 	}
 
+	log::info!("Migrating old bid orders, consumed so far {}!", weight_dbg(weight));
 	for (exp, hash, bid_order) in OldBidOrders::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		let currency = CurrencyId::placeholder();
@@ -707,6 +723,7 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		}
 	}
 
+	log::info!("Migrating old transfers, consumed so far {}!", weight_dbg(weight));
 	for (id, transfer) in OldTransfers::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		if let Some(transfer) = translate_transfer::<T>(transfer) {
@@ -719,7 +736,10 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		}
 	}
 
+	log::info!("Done with partial migration, consumed so far {}!", weight_dbg(weight));
+
 	if weight == Weight::zero() {
+		log::info!("Migrations fully complete!");
 		weight.saturating_accrue(write); // write migration status
 		crate::CurrentMigration::<T>::put(crate::MigrationStatus::Inactive);
 	}
