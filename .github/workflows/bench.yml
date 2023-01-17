@@ -6,13 +6,15 @@ on:
     branches: [testnet]
 
 env:
-    RUNNER_VM_NAME: github-runner-$GITHUB_RUN_ID
+  RUNNER_VM_NAME: github-runner-$GITHUB_RUN_ID
+  RESOURCE_GROUP: "github-runner-$GITHUB_RUN_ID$GITHUB_RUN_ATTEMPT"
+  AZ_LOCATION: "westus3"
 
 jobs:
   check-if-needed:
     # To avoid endless loop in CI skip this job on the commit which
     # auto-updates the weights and is generated further below.
-    if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'notaturkey' }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-20.04
     outputs:
       needs-bench: ${{ steps.version-check.outputs.needs_bench }}
@@ -84,56 +86,63 @@ jobs:
     outputs:
       runner_vm_name: ${{ steps.runner-vm-name.outputs.runner_vm_name }}
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Install azure-cli
-      run: |
-        sudo apt remove azure-cli -y && sudo apt autoremove -y
-        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-        sudo apt install -y jq
-        az version
+      - name: Install azure-cli
+        run: |
+          sudo apt remove azure-cli -y && sudo apt autoremove -y
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          sudo apt install -y jq
+          az version
 
-    - name: Authorize hosted-runner
-      run: |
-        mkdir -p ~/.ssh/
-        ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa
-        cat ~/.ssh/id_rsa.pub >> .github/authorized_keys
+      - name: Authorize hosted-runner
+        run: |
+          mkdir -p ~/.ssh/
+          ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa
+          cat ~/.ssh/id_rsa.pub >> .github/authorized_keys
 
-    - name: Evaluate runner VM name
-      id: runner-vm-name
-      run: |
-        # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
-        # doesn't evaluate the $GITHUB_RUN_ID reference
-        echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
+      - name: Evaluate runner VM name
+        id: runner-vm-name
+        run: |
+          # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
+          # doesn't evaluate the $GITHUB_RUN_ID reference
+          echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
 
-    - name: Provision VM
-      if: env.LC_GITHUB_REPO_ADMIN_TOKEN
-      run: |
-        echo "INFO: From ENVs: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
-        echo "INFO: From Step: RUNNER_VM_NAME=${{ steps.runner-vm-name.outputs.runner_vm_name }}"
+      - name: Provision VM
+        if: env.LC_GITHUB_REPO_ADMIN_TOKEN
+        run: |
+          echo "INFO: From ENVs: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
+          echo "INFO: From Step: RUNNER_VM_NAME=${{ steps.runner-vm-name.outputs.runner_vm_name }}"
 
-        az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
-        ## az account set -s "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
+          az account set --subscription "Playground Subscription"
+          ## az account set -s "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
-        # RG Creditcoin-Test is in WestUS and the CPU quota is already full
-        # that's why specify a different region here
-        az deployment group create -g 'Creditcoin-Test' -f .github/runner.bicep \
-            --parameters location=westus3 --parameters vmName=${{ env.RUNNER_VM_NAME }} > output.json
 
-        # provision the GitHub Runner binary on the VM
-        # passing additional ENV values
-        SSH_USER_AT_HOSTNAME=$(cat output.json | jq -r '.properties.outputs.sshUserAtHostname.value')
-        echo "INFO: $SSH_USER_AT_HOSTNAME"
+          # create resource group
+          echo "INFO: ${{env.RESOURCE_GROUP}}"
+          az group create -n "${{env.RESOURCE_GROUP}}" --location "${{env.AZ_LOCATION}}"
 
-        export LC_RUNNER_VM_NAME="${{ env.RUNNER_VM_NAME }}"
-        cat ./scripts/provision-github-runner.sh | ssh \
-            -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME -o StrictHostKeyChecking=no $SSH_USER_AT_HOSTNAME
-      env:
-        LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+          # RG Creditcoin-Test is in WestUS and the CPU quota is already full
+          # that's why specify a different region here
+          az deployment group create -g "$RESOURCE_GROUP" -f .github/runner.bicep \
+              --parameters location="${{env.AZ_LOCATION}}" --parameters vmName=${{ env.RUNNER_VM_NAME }} > output.json
+
+          # provision the GitHub Runner binary on the VM
+          # passing additional ENV values
+          SSH_USER_AT_HOSTNAME=$(cat output.json | jq -r '.properties.outputs.sshUserAtHostname.value')
+          echo "INFO: $SSH_USER_AT_HOSTNAME"
+
+          export LC_RUNNER_VM_NAME="${{ env.RUNNER_VM_NAME }}"
+          cat ./scripts/provision-github-runner.sh | ssh \
+              -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME -o StrictHostKeyChecking=no $SSH_USER_AT_HOSTNAME
+        env:
+          LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
 
   hardware-benchmarks:
     # see https://gist.github.com/jonico/a94d03cac7a858e0613926d9f1bc7f2b
-    runs-on: [ self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}" ]
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
     permissions: write-all
     needs:
       - deploy-github-runner
@@ -183,59 +192,67 @@ jobs:
         run: |
           ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
-      - name: Commit changes to current branch
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: gluwa-bot
-          author_email: creditcoin@gluwa.com
-          message: "Auto-update pallet weights"
-
-      - name: Prepare commit for PR against dev
+      - name: Task Scheduler
+        shell: bash
+        continue-on-error: false
+        env:
+          PALLET: offchain-task-scheduler
         run: |
-          LAST_COMMIT=$(git rev-parse HEAD)
-          BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
+          ./scripts/bench.sh -p $PALLET -b
 
-          git checkout -b $BRANCH_NAME origin/dev
-          git cherry-pick $LAST_COMMIT
-          git push origin $BRANCH_NAME
+      # - name: Commit changes to current branch
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     author_name: gluwa-bot
+      #     author_email: creditcoin@gluwa.com
+      #     message: "Auto-update pallet weights"
 
-      - name: Open PR against dev
-        id: open_pr
-        uses: rematocorp/open-pull-request-action@v1
-        with:
-          github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
-          from-branch: auto-update-weights-for-dev-${{ github.sha }}
-          to-branch: dev
-          repository-owner: gluwa
-          repository: creditcoin
+      # - name: Prepare commit for PR against dev
+      #   run: |
+      #     LAST_COMMIT=$(git rev-parse HEAD)
+      #     BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
 
-      - name: PR number against dev
-        run: echo ${{ steps.open_pr.outputs.pull_number }}
+      #     git checkout -b $BRANCH_NAME origin/dev
+      #     git cherry-pick $LAST_COMMIT
+      #     git push origin $BRANCH_NAME
+
+      # - name: Open PR against dev
+      #   id: open_pr
+      #   uses: rematocorp/open-pull-request-action@v1
+      #   with:
+      #     github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+      #     from-branch: auto-update-weights-for-dev-${{ github.sha }}
+      #     to-branch: dev
+      #     repository-owner: gluwa
+      #     repository: creditcoin
+
+      # - name: PR number against dev
+      #   run: echo ${{ steps.open_pr.outputs.pull_number }}
 
   remove-github-runner:
     runs-on: ubuntu-20.04
     needs: hardware-benchmarks
     if: always()
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Install azure-cli
-      run: |
-        sudo apt remove azure-cli -y && sudo apt autoremove -y
-        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-        az version
+      - name: Install azure-cli
+        run: |
+          sudo apt remove azure-cli -y && sudo apt autoremove -y
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az version
 
-    - name: Remove VM
-      run: |
-        echo "INFO: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
+      - name: Remove VM
+        run: |
+          echo "INFO: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
 
-        az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
+          az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
+          az account set --subscription "Playground Subscription"
+          az group delete -n "${{env.RESOURCE_GROUP}}"
 
-        ./scripts/azure-remove.sh "Creditcoin-Test" "${{ env.RUNNER_VM_NAME }}"
-
-    - name: Upload logs
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: 'Azure resources'
-        path: azure_resource_list.json
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: "Azure resources"
+          path: azure_resource_list.json
