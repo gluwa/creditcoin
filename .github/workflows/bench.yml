@@ -82,7 +82,7 @@ jobs:
 
   deploy-github-runner:
     runs-on: ubuntu-20.04
-    # needs: build-benchmarks
+    needs: build-benchmarks
     outputs:
       runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
       resource_group: ${{ steps.get-env.outputs.resource_group }}
@@ -232,8 +232,7 @@ jobs:
 
   remove-github-runner:
     runs-on: ubuntu-20.04
-    needs: deploy-github-runner
-    # needs: hardware-benchmarks
+    needs: hardware-benchmarks
     if: always()
     steps:
       - uses: actions/checkout@v3
