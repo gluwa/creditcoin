@@ -111,7 +111,7 @@ jobs:
           # doesn't evaluate the $GITHUB_RUN_ID reference
           echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
           echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
-          echo "az_location=${{ steps.get-env.outputs.az_location }}" >> $GITHUB_OUTPUT
+          echo "az_location=${{ env.AZ_LOCATION }}" >> $GITHUB_OUTPUT
 
       - name: Provision VM
         if: env.LC_GITHUB_REPO_ADMIN_TOKEN
