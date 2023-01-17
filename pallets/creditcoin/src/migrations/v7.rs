@@ -1,41 +1,49 @@
+use super::{Migrate, PhantomData};
 use crate::pallet::WeightInfo;
 use crate::types::Task;
 use crate::Config;
-#[cfg(feature = "try-runtime")]
-use frame_support::pallet_prelude::*;
+use crate::StorageVersion;
 use frame_support::weights::Weight;
 use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
 use sp_runtime::traits::UniqueSaturatedInto;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut n = 0u32;
-	for (i, (k1, _, v)) in crate::PendingTasks::<T>::drain().enumerate() {
-		n = i.unique_saturated_into();
-		let id: T::Hash = match &v {
-			Task::CollectCoins(pending) => TaskV2::<T>::to_id(pending),
-			Task::VerifyTransfer(pending) => TaskV2::<T>::to_id(pending),
-		};
+pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
 
-		T::TaskScheduler::insert(&k1, &id, v);
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData::<Runtime>)
 	}
-	crate::weights::WeightInfo::<T>::migration_v7(n)
 }
 
-#[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() {}
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) {}
 
-#[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() {
-	assert_eq!(
-		StorageVersion::get::<crate::Pallet<T>>(),
-		7,
-		"expected storage version to be 7 after migrations complete"
-	);
+	fn migrate(&self) -> Weight {
+		let mut n = 0u32;
+		for (i, (k1, _, v)) in crate::PendingTasks::<T>::drain().enumerate() {
+			n = i.unique_saturated_into();
+			let id: T::Hash = match &v {
+				Task::CollectCoins(pending) => TaskV2::<T>::to_id(pending),
+				Task::VerifyTransfer(pending) => TaskV2::<T>::to_id(pending),
+			};
+
+			T::TaskScheduler::insert(&k1, &id, v);
+		}
+		crate::weights::WeightInfo::<T>::migration_v7(n)
+	}
+	fn post_upgrade(&self) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			7,
+			"expected storage version to be 7 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 pub mod tests {
+	use super::Migrate;
 	use super::*;
 	use crate::helpers::extensions::IntoBounded;
 	use crate::mock::ExtBuilder;
@@ -61,7 +69,7 @@ pub mod tests {
 				Task::from(pending.clone()),
 			);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_pending = {
 				if let Task::CollectCoins(pending) =
@@ -90,7 +98,7 @@ pub mod tests {
 				Task::from(pending.clone()),
 			);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_pending = {
 				if let Task::VerifyTransfer(pending) =

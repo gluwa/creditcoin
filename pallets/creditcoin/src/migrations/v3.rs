@@ -1,12 +1,12 @@
 // `interest_type` added to `LoanTerms`
 
 use super::{v2, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use super::{Migrate, PhantomData};
+use crate::{AddressId, Config, Duration, ExternalAmount, OfferId, TransferId};
 use frame_support::{
 	dispatch::Weight, traits::Get, traits::StorageVersion, Identity, Twox64Concat,
 };
 use parity_scale_codec::{Decode, Encode};
-
-use crate::{AddressId, Config, Duration, ExternalAmount, OfferId, TransferId};
 
 pub use v2::AskOrder as OldAskOrder;
 pub use v2::AskTerms as OldAskTerms;
@@ -149,64 +149,85 @@ type DealOrders<T: crate::Config> = StorageDoubleMap<
 	DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = Weight::zero();
-	let weight_each = T::DbWeight::get().reads_writes(1, 1);
+pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
 
-	DealOrders::<T>::translate::<
-		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_exp, _hash, old_deal| {
-		weight = weight.saturating_add(weight_each);
-		Some(DealOrder {
-			blockchain: old_deal.blockchain,
-			offer_id: old_deal.offer_id,
-			lender_address_id: old_deal.lender_address_id,
-			borrower_address_id: old_deal.borrower_address_id,
-			terms: LoanTerms::from(old_deal.terms),
-			expiration_block: old_deal.expiration_block,
-			timestamp: old_deal.timestamp,
-			block: old_deal.block,
-			funding_transfer_id: old_deal.funding_transfer_id,
-			repayment_transfer_id: old_deal.repayment_transfer_id,
-			lock: old_deal.lock,
-			borrower: old_deal.borrower,
-		})
-	});
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData::<Runtime>)
+	}
+}
 
-	AskOrders::<T>::translate::<OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
-		|_exp, _hash, old_ask| {
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) {}
+
+	fn migrate(&self) -> Weight {
+		let mut weight: Weight = Weight::zero();
+		let weight_each = T::DbWeight::get().reads_writes(1, 1);
+
+		DealOrders::<T>::translate::<
+			OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_exp, _hash, old_deal| {
 			weight = weight.saturating_add(weight_each);
-			Some(AskOrder {
-				blockchain: old_ask.blockchain,
-				lender_address_id: old_ask.lender_address_id,
-				terms: AskTerms::from(old_ask.terms),
-				expiration_block: old_ask.expiration_block,
-				block: old_ask.block,
-				lender: old_ask.lender,
+			Some(DealOrder {
+				blockchain: old_deal.blockchain,
+				offer_id: old_deal.offer_id,
+				lender_address_id: old_deal.lender_address_id,
+				borrower_address_id: old_deal.borrower_address_id,
+				terms: LoanTerms::from(old_deal.terms),
+				expiration_block: old_deal.expiration_block,
+				timestamp: old_deal.timestamp,
+				block: old_deal.block,
+				funding_transfer_id: old_deal.funding_transfer_id,
+				repayment_transfer_id: old_deal.repayment_transfer_id,
+				lock: old_deal.lock,
+				borrower: old_deal.borrower,
 			})
-		},
-	);
+		});
 
-	BidOrders::<T>::translate::<OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
-		|_exp, _hash, old_bid| {
-			weight = weight.saturating_add(weight_each);
-			Some(BidOrder {
-				blockchain: old_bid.blockchain,
-				borrower_address_id: old_bid.borrower_address_id,
-				terms: BidTerms::from(old_bid.terms),
-				expiration_block: old_bid.expiration_block,
-				block: old_bid.block,
-				borrower: old_bid.borrower,
-			})
-		},
-	);
+		AskOrders::<T>::translate::<OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
+			|_exp, _hash, old_ask| {
+				weight = weight.saturating_add(weight_each);
+				Some(AskOrder {
+					blockchain: old_ask.blockchain,
+					lender_address_id: old_ask.lender_address_id,
+					terms: AskTerms::from(old_ask.terms),
+					expiration_block: old_ask.expiration_block,
+					block: old_ask.block,
+					lender: old_ask.lender,
+				})
+			},
+		);
 
-	weight
+		BidOrders::<T>::translate::<OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
+			|_exp, _hash, old_bid| {
+				weight = weight.saturating_add(weight_each);
+				Some(BidOrder {
+					blockchain: old_bid.blockchain,
+					borrower_address_id: old_bid.borrower_address_id,
+					terms: BidTerms::from(old_bid.terms),
+					expiration_block: old_bid.expiration_block,
+					block: old_bid.block,
+					borrower: old_bid.borrower,
+				})
+			},
+		);
+
+		weight
+	}
+
+	fn post_upgrade(&self) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			3,
+			"expected storage version to be 3 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 mod tests {
+	use super::Migrate;
 	use core::convert::TryFrom;
 
 	use crate::{
@@ -282,7 +303,7 @@ mod tests {
 
 			OldAskOrders::insert_id(&ask_order_id, &old_ask_order);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let ask_order = super::AskOrders::<Test>::try_get_id(&ask_order_id).unwrap();
 
@@ -335,7 +356,7 @@ mod tests {
 
 			OldBidOrders::insert_id(&bid_order_id, &old_bid_order);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let bid_order = super::BidOrders::<Test>::try_get_id(&bid_order_id).unwrap();
 
@@ -396,7 +417,7 @@ mod tests {
 
 			OldDealOrders::insert_id(&deal_id, &old_deal);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let deal = super::DealOrders::<Test>::try_get_id(&deal_id).unwrap();
 
@@ -428,16 +449,4 @@ mod tests {
 			);
 		});
 	}
-}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() {}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() {
-	assert_eq!(
-		StorageVersion::get::<crate::Pallet<T>>(),
-		3,
-		"expected storage version to be 3 after migrations complete"
-	);
 }

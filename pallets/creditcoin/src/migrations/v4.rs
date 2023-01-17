@@ -1,5 +1,6 @@
 // address registration now verifies ownership, so removed existing addresses
 use super::{v3, AccountIdOf, HashOf};
+use super::{Migrate, PhantomData};
 use frame_support::{
 	dispatch::Weight,
 	storage_alias,
@@ -27,15 +28,36 @@ pub struct Address<AccountId> {
 type Addresses<T: Config> =
 	StorageMap<crate::Pallet<T>, Blake2_128Concat, AddressId<HashOf<T>>, Address<AccountIdOf<T>>>;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let sp_io::MultiRemovalResults { unique: count_removed, .. } =
-		Addresses::<T>::clear(u32::MAX, None);
+pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
 
-	T::DbWeight::get().writes(count_removed.saturated_into())
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData::<Runtime>)
+	}
+}
+
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) {}
+
+	fn migrate(&self) -> Weight {
+		let sp_io::MultiRemovalResults { unique: count_removed, .. } =
+			Addresses::<T>::clear(u32::MAX, None);
+
+		T::DbWeight::get().writes(count_removed.saturated_into())
+	}
+
+	fn post_upgrade(&self) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			4,
+			"expected storage version to be 4 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 mod tests {
+	use super::Migrate;
 	use super::{Address, Addresses, OldBlockchain};
 	use crate::{
 		concatenate,
@@ -78,23 +100,11 @@ mod tests {
 				ids.push(id);
 			}
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			for id in ids {
 				assert!(!Addresses::<Test>::contains_key(id));
 			}
 		});
 	}
-}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() {}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() {
-	assert_eq!(
-		StorageVersion::get::<crate::Pallet<T>>(),
-		4,
-		"expected storage version to be 4 after migrations complete"
-	);
 }
