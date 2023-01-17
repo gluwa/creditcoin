@@ -1,6 +1,7 @@
 // First `LoanTerms` rework. `maturity` is replaced with `term_length`,
 // and `InterestRate` changed from a type alias = u64 to a new struct `InterestRate`
 
+use super::Migrate;
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::{
 	loan_terms::{Decimals, Duration},
@@ -181,90 +182,113 @@ type DealOrders<T: crate::Config> = StorageDoubleMap<
 	DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = Weight::zero();
+pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
 
-	let weight_each = T::DbWeight::get().reads_writes(1, 1);
-	AskOrders::<T>::translate::<
-		OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_expiration, _hash, ask| {
-		weight = weight.saturating_add(weight_each);
-		Some(AskOrder {
-			block: ask.block,
-			blockchain: ask.blockchain,
-			expiration_block: ask.expiration_block,
-			lender: ask.lender,
-			lender_address_id: ask.lender_address_id,
-			terms: AskTerms(LoanTerms {
-				amount: ask.terms.0.amount,
-				interest_rate: InterestRate {
-					rate_per_period: ask.terms.0.interest_rate,
-					decimals: OLD_INTEREST_RATE_DECIMALS,
-					period: Duration::from_millis(ask.terms.0.maturity.unique_saturated_into()),
-				},
-				term_length: Duration::from_millis(ask.terms.0.maturity.unique_saturated_into()),
-			}),
-		})
-	});
+impl<Runtime: Config> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData::<Runtime>)
+	}
+}
 
-	BidOrders::<T>::translate::<
-		OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_expiration, _hash, bid| {
-		weight = weight.saturating_add(weight_each);
-		Some(BidOrder {
-			block: bid.block,
-			blockchain: bid.blockchain,
-			expiration_block: bid.expiration_block,
-			borrower: bid.borrower,
-			borrower_address_id: bid.borrower_address_id,
-			terms: BidTerms(LoanTerms {
-				amount: bid.terms.0.amount,
-				interest_rate: InterestRate {
-					rate_per_period: bid.terms.0.interest_rate,
-					decimals: OLD_INTEREST_RATE_DECIMALS,
-					period: Duration::from_millis(bid.terms.0.maturity.unique_saturated_into()),
-				},
-				term_length: Duration::from_millis(bid.terms.0.maturity.unique_saturated_into()),
-			}),
-		})
-	});
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) {}
+	fn post_upgrade(&self) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			1,
+			"expected storage version to be 1 after migrations complete"
+		);
+	}
+	fn migrate(&self) -> Weight {
+		let mut weight: Weight = Weight::zero();
 
-	DealOrders::<T>::translate::<
-		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_expiration, _hash, deal| {
-		weight = weight.saturating_add(weight_each);
-		Some(DealOrder {
-			blockchain: deal.blockchain,
-			offer_id: deal.offer_id,
-			lender_address_id: deal.lender_address_id,
-			borrower_address_id: deal.borrower_address_id,
-			terms: LoanTerms {
-				amount: deal.terms.amount,
-				interest_rate: InterestRate {
-					rate_per_period: deal.terms.interest_rate,
-					decimals: OLD_INTEREST_RATE_DECIMALS,
-					period: Duration::from_millis(deal.terms.maturity.unique_saturated_into()),
+		let weight_each = T::DbWeight::get().reads_writes(1, 1);
+		AskOrders::<T>::translate::<
+			OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_expiration, _hash, ask| {
+			weight = weight.saturating_add(weight_each);
+			Some(AskOrder {
+				block: ask.block,
+				blockchain: ask.blockchain,
+				expiration_block: ask.expiration_block,
+				lender: ask.lender,
+				lender_address_id: ask.lender_address_id,
+				terms: AskTerms(LoanTerms {
+					amount: ask.terms.0.amount,
+					interest_rate: InterestRate {
+						rate_per_period: ask.terms.0.interest_rate,
+						decimals: OLD_INTEREST_RATE_DECIMALS,
+						period: Duration::from_millis(ask.terms.0.maturity.unique_saturated_into()),
+					},
+					term_length: Duration::from_millis(
+						ask.terms.0.maturity.unique_saturated_into(),
+					),
+				}),
+			})
+		});
+
+		BidOrders::<T>::translate::<
+			OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_expiration, _hash, bid| {
+			weight = weight.saturating_add(weight_each);
+			Some(BidOrder {
+				block: bid.block,
+				blockchain: bid.blockchain,
+				expiration_block: bid.expiration_block,
+				borrower: bid.borrower,
+				borrower_address_id: bid.borrower_address_id,
+				terms: BidTerms(LoanTerms {
+					amount: bid.terms.0.amount,
+					interest_rate: InterestRate {
+						rate_per_period: bid.terms.0.interest_rate,
+						decimals: OLD_INTEREST_RATE_DECIMALS,
+						period: Duration::from_millis(bid.terms.0.maturity.unique_saturated_into()),
+					},
+					term_length: Duration::from_millis(
+						bid.terms.0.maturity.unique_saturated_into(),
+					),
+				}),
+			})
+		});
+
+		DealOrders::<T>::translate::<
+			OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_expiration, _hash, deal| {
+			weight = weight.saturating_add(weight_each);
+			Some(DealOrder {
+				blockchain: deal.blockchain,
+				offer_id: deal.offer_id,
+				lender_address_id: deal.lender_address_id,
+				borrower_address_id: deal.borrower_address_id,
+				terms: LoanTerms {
+					amount: deal.terms.amount,
+					interest_rate: InterestRate {
+						rate_per_period: deal.terms.interest_rate,
+						decimals: OLD_INTEREST_RATE_DECIMALS,
+						period: Duration::from_millis(deal.terms.maturity.unique_saturated_into()),
+					},
+					term_length: Duration::from_millis(
+						deal.terms.maturity.saturating_sub(deal.timestamp).unique_saturated_into(),
+					),
 				},
-				term_length: Duration::from_millis(
-					deal.terms.maturity.saturating_sub(deal.timestamp).unique_saturated_into(),
-				),
-			},
-			expiration_block: deal.expiration_block,
-			timestamp: deal.timestamp,
-			funding_transfer_id: deal.funding_transfer_id,
-			repayment_transfer_id: deal.repayment_transfer_id,
-			lock: deal.lock,
-			borrower: deal.borrower,
-		})
-	});
-	weight
+				expiration_block: deal.expiration_block,
+				timestamp: deal.timestamp,
+				funding_transfer_id: deal.funding_transfer_id,
+				repayment_transfer_id: deal.repayment_transfer_id,
+				lock: deal.lock,
+				borrower: deal.borrower,
+			})
+		});
+		weight
+	}
 }
 
 #[cfg(test)]
 mod tests {
+	use super::Migrate;
 	use sp_core::U256;
 
 	use crate::{
@@ -333,7 +357,7 @@ mod tests {
 			};
 			OldAskOrders::insert_id(&ask_id, &old_ask);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let ask = super::AskOrders::<Test>::try_get_id(&ask_id).unwrap();
 
@@ -379,7 +403,7 @@ mod tests {
 			};
 			OldBidOrders::insert_id(&bid_id, &old_bid);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let bid = super::BidOrders::<Test>::try_get_id(&bid_id).unwrap();
 
@@ -427,7 +451,7 @@ mod tests {
 
 			OldDealOrders::insert_id(&deal_id, &old_deal);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let deal = super::DealOrders::<Test>::try_get_id(&deal_id).unwrap();
 
@@ -459,16 +483,4 @@ mod tests {
 			);
 		});
 	}
-}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() {}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() {
-	assert_eq!(
-		StorageVersion::get::<crate::Pallet<T>>(),
-		1,
-		"expected storage version to be 1 after migrations complete"
-	);
 }

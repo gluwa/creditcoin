@@ -1,15 +1,14 @@
 // task storage moved from UnverifiedTransfers + UnverifiedCollectedCoins to PendingTasks
+pub use super::v4::Transfer;
+pub use super::v4::*;
+use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use super::{Migrate, PhantomData};
 use crate::{
 	types::{ExternalAddress, ExternalTxId},
 	CollectedCoinsId, Config, TransferId,
 };
-use parity_scale_codec::{Decode, Encode};
-
-use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use frame_support::{pallet_prelude::*, storage_alias, Identity};
-
-pub use super::v4::Transfer;
-pub use super::v4::*;
+use parity_scale_codec::{Decode, Encode};
 
 #[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -99,46 +98,63 @@ type PendingTasks<T: Config> = StorageDoubleMap<
 	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = Weight::zero();
-	let weight_each = T::DbWeight::get().reads_writes(1, 1);
+pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
 
-	for (deadline, id, transfer) in UnverifiedTransfers::<T>::iter() {
-		weight = weight.saturating_add(weight_each);
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData::<Runtime>)
+	}
+}
 
-		PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(transfer));
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) {}
+
+	fn migrate(&self) -> Weight {
+		let mut weight: Weight = Weight::zero();
+		let weight_each = T::DbWeight::get().reads_writes(1, 1);
+
+		for (deadline, id, transfer) in UnverifiedTransfers::<T>::iter() {
+			weight = weight.saturating_add(weight_each);
+
+			PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(transfer));
+		}
+
+		for (deadline, id, collect_coins) in UnverifiedCollectedCoins::<T>::iter() {
+			weight = weight.saturating_add(weight_each);
+
+			PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(collect_coins));
+		}
+
+		let _results = UnverifiedTransfers::<T>::clear(u32::MAX, None);
+		let _results = UnverifiedCollectedCoins::<T>::clear(u32::MAX, None);
+		weight
 	}
 
-	for (deadline, id, collect_coins) in UnverifiedCollectedCoins::<T>::iter() {
-		weight = weight.saturating_add(weight_each);
-
-		PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(collect_coins));
+	fn post_upgrade(&self) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			5,
+			"expected storage version to be 5 after migrations complete"
+		);
 	}
-
-	let _results = UnverifiedTransfers::<T>::clear(u32::MAX, None);
-	let _results = UnverifiedCollectedCoins::<T>::clear(u32::MAX, None);
-	weight
 }
 
 #[cfg(test)]
 mod tests {
-	use core::{convert::TryInto, ops::Not};
-
-	use ethereum_types::H256;
-
-	use sp_runtime::traits::Hash;
-
-	use crate::{
-		mock::{ExtBuilder, Test},
-		tests::TestInfo,
-		ExternalTxId, TransferId,
-	};
-
+	use super::Migrate;
 	use super::{
 		Blockchain, OrderId, PendingTasks, Task, TaskId, Transfer, TransferKind,
 		UnverifiedCollectedCoins, UnverifiedCollectedCoinsStruct, UnverifiedTransfer,
 		UnverifiedTransfers,
 	};
+	use crate::{
+		mock::{ExtBuilder, Test},
+		tests::TestInfo,
+		ExternalTxId, TransferId,
+	};
+	use core::{convert::TryInto, ops::Not};
+	use ethereum_types::H256;
+	use sp_runtime::traits::Hash;
 
 	#[test]
 	fn unverified_transfer_migrates() {
@@ -170,7 +186,7 @@ mod tests {
 			UnverifiedTransfers::<Test>::insert(deadline, &transfer_id, &transfer);
 			assert!(UnverifiedTransfers::<Test>::contains_key(deadline, &transfer_id));
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			assert_eq!(
 				PendingTasks::<Test>::get(deadline, TaskId::VerifyTransfer(transfer_id.clone())),
@@ -199,7 +215,7 @@ mod tests {
 
 			assert!(UnverifiedCollectedCoins::<Test>::contains_key(deadline, &collect_coins_id));
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			assert_eq!(
 				PendingTasks::<Test>::get(deadline, TaskId::CollectCoins(collect_coins_id.clone())),
@@ -211,16 +227,4 @@ mod tests {
 			);
 		});
 	}
-}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() {}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() {
-	assert_eq!(
-		StorageVersion::get::<crate::Pallet<T>>(),
-		5,
-		"expected storage version to be 5 after migrations complete"
-	);
 }
