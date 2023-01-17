@@ -2,21 +2,40 @@ use crate::warn_or_panic;
 
 use super::v5;
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use super::{Migrate, PhantomData};
+use crate::Address;
+use crate::AddressId;
+use crate::AskOrder;
+use crate::AskOrderId;
+use crate::AskTerms;
+use crate::BidOrder;
+use crate::BidOrderId;
+use crate::BidTerms;
+use crate::Blockchain;
 use crate::Config;
+use crate::Currency;
+use crate::CurrencyId;
+use crate::DealOrder;
 use crate::EvmCurrencyType;
 use crate::EvmInfo;
 use crate::EvmSupportedTransferKinds;
 use crate::EvmTransferKind;
 use crate::Id;
+use crate::LegacyTransferKind;
+use crate::LoanTerms;
+use crate::Task;
+use crate::TaskId;
+use crate::Transfer;
+use crate::TransferId;
+use crate::TransferKind;
+use crate::UnverifiedCollectedCoins;
+use crate::UnverifiedTransfer;
 use core::convert::TryFrom;
 use frame_support::pallet_prelude::*;
 use frame_support::storage_alias;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::prelude::*;
-
-pub use v5::*;
-
 pub use v5::Address as OldAddress;
 pub use v5::AskOrder as OldAskOrder;
 pub use v5::AskTerms as OldAskTerms;
@@ -31,28 +50,7 @@ pub use v5::Transfer as OldTransfer;
 pub use v5::TransferKind as OldTransferKind;
 pub use v5::UnverifiedCollectedCoinsStruct as OldUnverifiedCollectedCoins;
 pub use v5::UnverifiedTransfer as OldUnverifiedTransfer;
-
-use crate::Address;
-use crate::AddressId;
-use crate::AskOrder;
-use crate::AskOrderId;
-use crate::AskTerms;
-use crate::BidOrder;
-use crate::BidOrderId;
-use crate::BidTerms;
-use crate::Blockchain;
-use crate::Currency;
-use crate::CurrencyId;
-use crate::DealOrder;
-use crate::LegacyTransferKind;
-use crate::LoanTerms;
-use crate::Task;
-use crate::TaskId;
-use crate::Transfer;
-use crate::TransferId;
-use crate::TransferKind;
-use crate::UnverifiedCollectedCoins;
-use crate::UnverifiedTransfer;
+pub use v5::*;
 
 fn translate_blockchain(old: OldBlockchain) -> Option<Blockchain> {
 	match old {
@@ -235,68 +233,80 @@ type DealOrders<T: crate::Config> = StorageDoubleMap<
 	DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = Weight::zero();
-	let weight_each = T::DbWeight::get().reads_writes(1, 1);
-	let write = T::DbWeight::get().writes(1);
-	let read = T::DbWeight::get().reads(1);
+pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
 
-	let mut reconstructed_currency_ask = BTreeMap::new();
-	let mut reconstructed_currency_bid = BTreeMap::new();
-	let mut currencies = BTreeSet::new();
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData::<Runtime>)
+	}
+}
 
-	DealOrders::<T>::translate::<
-		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_exp, _hash, deal_order| {
-		weight = weight.saturating_add(weight_each);
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) {}
 
-		let currency = reconstruct_currency_from_deal::<T>(&deal_order);
-		let currency_id = if let Some(currency) = currency.as_ref() {
-			currency.to_id::<T>()
-		} else {
-			CurrencyId::placeholder()
-		};
+	fn migrate(&self) -> Weight {
+		let mut weight: Weight = Weight::zero();
+		let weight_each = T::DbWeight::get().reads_writes(1, 1);
+		let write = T::DbWeight::get().writes(1);
+		let read = T::DbWeight::get().reads(1);
 
-		weight = weight.saturating_add(read);
-		let offer = if let Some(offer) =
-			crate::Offers::<T>::get(deal_order.offer_id.expiration(), deal_order.offer_id.hash())
-		{
-			offer
-		} else {
-			warn_or_panic!("deal order has a non-existent offer: {:?}", deal_order.offer_id);
-			return None;
-		};
+		let mut reconstructed_currency_ask = BTreeMap::new();
+		let mut reconstructed_currency_bid = BTreeMap::new();
+		let mut currencies = BTreeSet::new();
 
-		if let Some(currency) = currency {
-			reconstructed_currency_ask.insert(offer.ask_id, currency_id.clone());
-			reconstructed_currency_bid.insert(offer.bid_id, currency_id.clone());
-			currencies.insert((currency_id.clone(), currency));
-		}
-
-		Some(DealOrder {
-			offer_id: deal_order.offer_id,
-			lender_address_id: deal_order.lender_address_id,
-			borrower_address_id: deal_order.borrower_address_id,
-			terms: translate_loan_terms::<T>(deal_order.terms, currency_id),
-			expiration_block: deal_order.expiration_block,
-			timestamp: deal_order.timestamp,
-			block: deal_order.block,
-			funding_transfer_id: deal_order.funding_transfer_id,
-			repayment_transfer_id: deal_order.repayment_transfer_id,
-			lock: deal_order.lock,
-			borrower: deal_order.borrower,
-		})
-	});
-
-	AskOrders::<T>::translate::<OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
-		|exp, hash, ask_order| {
+		DealOrders::<T>::translate::<
+			OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_exp, _hash, deal_order| {
 			weight = weight.saturating_add(weight_each);
-			let ask_id = AskOrderId::with_expiration_hash::<T>(exp, hash);
-			let currency = reconstructed_currency_ask
-				.remove(&ask_id)
-				.unwrap_or_else(CurrencyId::placeholder);
-			Some(AskOrder {
+
+			let currency = reconstruct_currency_from_deal::<T>(&deal_order);
+			let currency_id = if let Some(currency) = currency.as_ref() {
+				currency.to_id::<T>()
+			} else {
+				CurrencyId::placeholder()
+			};
+
+			weight = weight.saturating_add(read);
+			let offer = if let Some(offer) = crate::Offers::<T>::get(
+				deal_order.offer_id.expiration(),
+				deal_order.offer_id.hash(),
+			) {
+				offer
+			} else {
+				warn_or_panic!("deal order has a non-existent offer: {:?}", deal_order.offer_id);
+				return None;
+			};
+
+			if let Some(currency) = currency {
+				reconstructed_currency_ask.insert(offer.ask_id, currency_id.clone());
+				reconstructed_currency_bid.insert(offer.bid_id, currency_id.clone());
+				currencies.insert((currency_id.clone(), currency));
+			}
+
+			Some(DealOrder {
+				offer_id: deal_order.offer_id,
+				lender_address_id: deal_order.lender_address_id,
+				borrower_address_id: deal_order.borrower_address_id,
+				terms: translate_loan_terms::<T>(deal_order.terms, currency_id),
+				expiration_block: deal_order.expiration_block,
+				timestamp: deal_order.timestamp,
+				block: deal_order.block,
+				funding_transfer_id: deal_order.funding_transfer_id,
+				repayment_transfer_id: deal_order.repayment_transfer_id,
+				lock: deal_order.lock,
+				borrower: deal_order.borrower,
+			})
+		});
+
+		AskOrders::<T>::translate::<OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
+			|exp, hash, ask_order| {
+				weight = weight.saturating_add(weight_each);
+				let ask_id = AskOrderId::with_expiration_hash::<T>(exp, hash);
+				let currency = reconstructed_currency_ask
+					.remove(&ask_id)
+					.unwrap_or_else(CurrencyId::placeholder);
+				Some(AskOrder {
 				lender_address_id: ask_order.lender_address_id,
 				terms: AskTerms::try_from(translate_loan_terms::<T>(
 					ask_order.terms.0,
@@ -306,91 +316,91 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				block: ask_order.block,
 				lender: ask_order.lender,
 			})
-		},
-	);
+			},
+		);
 
-	BidOrders::<T>::translate::<OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
-		|exp, hash, bid_order| {
-			weight = weight.saturating_add(weight_each);
-			let bid_id = BidOrderId::with_expiration_hash::<T>(exp, hash);
-			let currency = reconstructed_currency_bid
-				.remove(&bid_id)
-				.unwrap_or_else(CurrencyId::placeholder);
-			Some(BidOrder {
+		BidOrders::<T>::translate::<OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
+			|exp, hash, bid_order| {
+				weight = weight.saturating_add(weight_each);
+				let bid_id = BidOrderId::with_expiration_hash::<T>(exp, hash);
+				let currency = reconstructed_currency_bid
+					.remove(&bid_id)
+					.unwrap_or_else(CurrencyId::placeholder);
+				Some(BidOrder {
 				borrower_address_id: bid_order.borrower_address_id,
 				terms: BidTerms::try_from(translate_loan_terms::<T>(bid_order.terms.0, currency)).expect("terms are checked on creation so they must be valid on existing bid order; qed"),
 				expiration_block: bid_order.expiration_block,
 				block: bid_order.block,
 				borrower: bid_order.borrower,
 			})
-		},
-	);
-
-	Transfers::<T>::translate::<
-		OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_id, transfer| {
-		weight = weight.saturating_add(weight_each);
-		translate_transfer::<T>(transfer)
-	});
-
-	PendingTasks::<T>::translate::<
-		OldTask<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_exp, _id, task| {
-		weight = weight.saturating_add(weight_each);
-		Some(match task {
-			OldTask::VerifyTransfer(unverified_transfer) => {
-				let kind = unverified_transfer.transfer.kind.clone();
-				Task::VerifyTransfer(UnverifiedTransfer {
-					transfer: translate_transfer::<T>(unverified_transfer.transfer)?,
-					from_external: unverified_transfer.from_external,
-					to_external: unverified_transfer.to_external,
-					deadline: unverified_transfer.deadline,
-					currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
-						to_legacy_transfer_kind(kind),
-					),
-				})
 			},
-			OldTask::CollectCoins(collect_coins) => Task::CollectCoins(UnverifiedCollectedCoins {
-				to: collect_coins.to,
-				tx_id: collect_coins.tx_id,
-				contract: Default::default(),
-			}),
-		})
-	});
+		);
 
-	Addresses::<T>::translate::<OldAddress<AccountIdOf<T>>, _>(|_id, address| {
-		weight = weight.saturating_add(weight_each);
-		Some(Address {
-			blockchain: translate_blockchain(address.blockchain)?,
-			value: address.value,
-			owner: address.owner,
-		})
-	});
+		Transfers::<T>::translate::<
+			OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_id, transfer| {
+			weight = weight.saturating_add(weight_each);
+			translate_transfer::<T>(transfer)
+		});
 
-	for (currency_id, currency) in currencies {
-		weight = weight.saturating_add(write);
-		crate::Currencies::<T>::insert(currency_id, currency);
+		PendingTasks::<T>::translate::<
+			OldTask<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_exp, _id, task| {
+			weight = weight.saturating_add(weight_each);
+			Some(match task {
+				OldTask::VerifyTransfer(unverified_transfer) => {
+					let kind = unverified_transfer.transfer.kind.clone();
+					Task::VerifyTransfer(UnverifiedTransfer {
+						transfer: translate_transfer::<T>(unverified_transfer.transfer)?,
+						from_external: unverified_transfer.from_external,
+						to_external: unverified_transfer.to_external,
+						deadline: unverified_transfer.deadline,
+						currency_to_check: crate::CurrencyOrLegacyTransferKind::TransferKind(
+							to_legacy_transfer_kind(kind),
+						),
+					})
+				},
+				OldTask::CollectCoins(collect_coins) => {
+					Task::CollectCoins(UnverifiedCollectedCoins {
+						to: collect_coins.to,
+						tx_id: collect_coins.tx_id,
+						contract: Default::default(),
+					})
+				},
+			})
+		});
+
+		Addresses::<T>::translate::<OldAddress<AccountIdOf<T>>, _>(|_id, address| {
+			weight = weight.saturating_add(weight_each);
+			Some(Address {
+				blockchain: translate_blockchain(address.blockchain)?,
+				value: address.value,
+				owner: address.owner,
+			})
+		});
+
+		for (currency_id, currency) in currencies {
+			weight = weight.saturating_add(write);
+			crate::Currencies::<T>::insert(currency_id, currency);
+		}
+
+		weight
 	}
 
-	weight
-}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() {}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() {
-	assert_eq!(
-		StorageVersion::get::<crate::Pallet<T>>(),
-		6,
-		"expected storage version to be 6 after migrations complete"
-	);
+	fn post_upgrade(&self) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			6,
+			"expected storage version to be 6 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 mod tests {
+	use super::Migrate;
 	use super::*;
 	use crate::helpers::extensions::IntoBounded;
 	use crate::{
@@ -689,7 +699,7 @@ mod tests {
 			attach_transfer(transfer_id, &mut deal);
 			insert_deal(&deal_id, &deal);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_deal =
 				super::DealOrders::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
@@ -706,7 +716,7 @@ mod tests {
 			let (deal_id, deal) = old_deal_order(&test_info, None);
 			insert_deal(&deal_id, &deal);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_deal =
 				super::DealOrders::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
@@ -729,7 +739,7 @@ mod tests {
 
 			insert_transfer(&transfer_id, &transfer);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_transfer = super::Transfers::<Test>::get(&transfer_id).unwrap();
 
@@ -769,7 +779,7 @@ mod tests {
 
 			OldAddresses::insert(&address_id, &old_address);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_address = super::Addresses::<Test>::get(&address_id).unwrap();
 
@@ -808,7 +818,7 @@ mod tests {
 
 			insert_deal(&deal_id, &deal);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_ask =
 				super::AskOrders::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
@@ -839,7 +849,7 @@ mod tests {
 
 			insert_deal(&deal_id, &deal);
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let migrated_ask =
 				super::AskOrders::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
@@ -875,7 +885,7 @@ mod tests {
 
 			OldPendingTasks::insert(deadline, &id, OldTask::from(old_collect_coins));
 
-			migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			assert_eq!(
 				super::PendingTasks::<Test>::get(deadline, &id).unwrap(),
