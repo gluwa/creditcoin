@@ -1,14 +1,14 @@
 // `block` added to `DealOrder` and `timestamp` added to `Transfer`
 
-use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
-use crate::ExternalAddress;
-use crate::{AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, TransferId};
-use frame_support::{pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat};
-
 pub use super::v1::Blockchain;
 pub use super::v1::DealOrder as OldDealOrder;
 pub use super::v1::LoanTerms;
 pub use super::v1::{AskOrder, AskTerms, BidOrder, BidTerms, InterestRate};
+use super::Migrate;
+use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use crate::ExternalAddress;
+use crate::{AddressId, Config, DealOrderId, ExternalAmount, ExternalTxId, OfferId, TransferId};
+use frame_support::{pallet_prelude::*, Identity, RuntimeDebug, Twox64Concat};
 
 type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
@@ -97,57 +97,76 @@ type Transfers<T: crate::Config> = StorageMap<
 	Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = Weight::zero();
-	let weight_each = T::DbWeight::get().reads_writes(1, 1);
+pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
 
-	DealOrders::<T>::translate::<
-		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
-		_,
-	>(|_exp, _hash, deal| {
-		weight = weight.saturating_add(weight_each);
-		Some(DealOrder {
-			blockchain: deal.blockchain,
-			offer_id: deal.offer_id,
-			lender_address_id: deal.lender_address_id,
-			borrower_address_id: deal.borrower_address_id,
-			terms: deal.terms,
-			expiration_block: deal.expiration_block,
-			timestamp: deal.timestamp,
-			funding_transfer_id: deal.funding_transfer_id,
-			lock: deal.lock,
-			borrower: deal.borrower,
-			repayment_transfer_id: deal.repayment_transfer_id,
-			block: None,
-		})
-	});
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData::<Runtime>)
+	}
+}
 
-	Transfers::<T>::translate::<OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
-		|_id, transfer| {
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) {}
+
+	fn migrate(&self) -> Weight {
+		let mut weight: Weight = Weight::zero();
+		let weight_each = T::DbWeight::get().reads_writes(1, 1);
+
+		DealOrders::<T>::translate::<
+			OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_exp, _hash, deal| {
 			weight = weight.saturating_add(weight_each);
-			Some(Transfer {
-				blockchain: transfer.blockchain,
-				kind: transfer.kind,
-				from: transfer.from,
-				to: transfer.to,
-				order_id: transfer.order_id,
-				amount: transfer.amount,
-				tx_id: transfer.tx,
-				block: transfer.block,
-				is_processed: transfer.processed,
-				account_id: transfer.sighash,
-				timestamp: None,
+			Some(DealOrder {
+				blockchain: deal.blockchain,
+				offer_id: deal.offer_id,
+				lender_address_id: deal.lender_address_id,
+				borrower_address_id: deal.borrower_address_id,
+				terms: deal.terms,
+				expiration_block: deal.expiration_block,
+				timestamp: deal.timestamp,
+				funding_transfer_id: deal.funding_transfer_id,
+				lock: deal.lock,
+				borrower: deal.borrower,
+				repayment_transfer_id: deal.repayment_transfer_id,
+				block: None,
 			})
-		},
-	);
+		});
 
-	weight
+		Transfers::<T>::translate::<OldTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
+			|_id, transfer| {
+				weight = weight.saturating_add(weight_each);
+				Some(Transfer {
+					blockchain: transfer.blockchain,
+					kind: transfer.kind,
+					from: transfer.from,
+					to: transfer.to,
+					order_id: transfer.order_id,
+					amount: transfer.amount,
+					tx_id: transfer.tx,
+					block: transfer.block,
+					is_processed: transfer.processed,
+					account_id: transfer.sighash,
+					timestamp: None,
+				})
+			},
+		);
+
+		weight
+	}
+
+	fn post_upgrade(&self) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			2,
+			"expected storage version to be 2 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 mod test {
-	use core::convert::TryInto;
-
+	use super::Migrate;
 	use super::{
 		AccountIdOf, BlockNumberOf, Blockchain, DealOrder, HashOf, Identity, MomentOf,
 		OldDealOrder, OldTransfer, OrderId, Transfer, TransferKind, Twox64Concat,
@@ -157,6 +176,7 @@ mod test {
 		tests::TestInfo,
 		DealOrderId, DoubleMapExt, Duration, OfferId, TransferId,
 	};
+	use core::convert::TryInto;
 	use sp_runtime::traits::Hash;
 
 	impl<H> TransferId<H> {
@@ -227,7 +247,7 @@ mod test {
 
 			OldDealOrders::insert_id(&deal_id, &old_deal);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let deal = super::DealOrders::<Test>::try_get_id(&deal_id).unwrap();
 
@@ -272,7 +292,7 @@ mod test {
 
 			OldTransfers::insert(&transfer_id, &old_transfer);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let transfer = super::Transfers::<Test>::try_get(&transfer_id).unwrap();
 
@@ -294,16 +314,4 @@ mod test {
 			);
 		});
 	}
-}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn pre_upgrade<T: Config>() {}
-
-#[cfg(feature = "try-runtime")]
-pub(crate) fn post_upgrade<T: Config>() {
-	assert_eq!(
-		StorageVersion::get::<crate::Pallet<T>>(),
-		2,
-		"expected storage version to be 2 after migrations complete"
-	);
 }
