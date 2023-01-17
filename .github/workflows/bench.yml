@@ -28,63 +28,66 @@ jobs:
         run: |
           ./scripts/check-spec-increase.sh "remotes/origin/$GITHUB_BASE_REF" "HEAD"
 
-  build-benchmarks:
-    runs-on: ubuntu-20.04
-    needs: check-if-needed
-    if: needs.check-if-needed.outputs.needs-bench == 1
-    steps:
-      - uses: actions/checkout@v3
+  # build-benchmarks:
+  #   runs-on: ubuntu-20.04
+  #   needs: check-if-needed
+  #   if: needs.check-if-needed.outputs.needs-bench == 1
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Inspect benchmark CI config
-        run: |
-          # WARNING: Command below may differ depending on which workflow config file
-          # your job is defined in !!! Don't copy&paste it blindly !!!
-          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
+  #     - name: Inspect benchmark CI config
+  #       run: |
+  #         # WARNING: Command below may differ depending on which workflow config file
+  #         # your job is defined in !!! Don't copy&paste it blindly !!!
+  #         PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
 
-          PALLETS_IN_SOURCE=$(./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets)
-          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
-              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
-              echo "INFO: in source: '$PALLETS_IN_SOURCE'"
-              echo "INFO: CI config: '$PALLETS_IN_CI_CONFIG'"
-              exit 1
-          fi
+  #         PALLETS_IN_SOURCE=$(./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets)
+  #         if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+  #             echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+  #             echo "INFO: in source: '$PALLETS_IN_SOURCE'"
+  #             echo "INFO: CI config: '$PALLETS_IN_CI_CONFIG'"
+  #             exit 1
+  #         fi
 
-      - name: Set-Up
-        run: |
-          sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+  #     - name: Set-Up
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
-      - name: Configure rustc version
-        run: |
-          source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+  #     - name: Configure rustc version
+  #       run: |
+  #         source ci/env
+  #         echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ env.RUSTC_VERSION }}
-          target: wasm32-unknown-unknown
-          profile: minimal
-          override: true
-      - uses: Swatinem/rust-cache@v2
+  #     - name: Install Rust toolchain
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: ${{ env.RUSTC_VERSION }}
+  #         target: wasm32-unknown-unknown
+  #         profile: minimal
+  #         override: true
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: Build benchmarks
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --features runtime-benchmarks
+  #     - name: Build benchmarks
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: build
+  #         args: --release --features runtime-benchmarks
 
-      - name: Upload benchmark binary
-        uses: actions/upload-artifact@v3
-        with:
-          name: creditcoin-node
-          path: target/release/creditcoin-node
+  #     - name: Upload benchmark binary
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: creditcoin-node
+  #         path: target/release/creditcoin-node
 
   deploy-github-runner:
     runs-on: ubuntu-20.04
     needs: build-benchmarks
     outputs:
-      runner_vm_name: ${{ steps.runner-vm-name.outputs.runner_vm_name }}
+      runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
+      resource_group: ${{ steps.get-env.outputs.resource_group }}
+      az_location: ${{ steps.get-env.outputs.az_location }}
+
     steps:
       - uses: actions/checkout@v3
 
@@ -101,12 +104,14 @@ jobs:
           ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa
           cat ~/.ssh/id_rsa.pub >> .github/authorized_keys
 
-      - name: Evaluate runner VM name
-        id: runner-vm-name
+      - name: Evaluate env vars
+        id: get-env
         run: |
           # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
           # doesn't evaluate the $GITHUB_RUN_ID reference
           echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
+          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+          echo "az_location=${{ steps.get-env.outputs.az_location }}" >> $GITHUB_OUTPUT
 
       - name: Provision VM
         if: env.LC_GITHUB_REPO_ADMIN_TOKEN
@@ -120,13 +125,13 @@ jobs:
 
 
           # create resource group
-          echo "INFO: ${{env.RESOURCE_GROUP}}"
-          az group create -n "${{env.RESOURCE_GROUP}}" --location "${{env.AZ_LOCATION}}"
+          echo "INFO: ${{ steps.get-env.outputs.resource_group }}"
+          az group create -n "${{ steps.get-env.outputs.resource_group }}" --location "${{ steps.get-env.outputs.az_location }}"
 
           # RG Creditcoin-Test is in WestUS and the CPU quota is already full
           # that's why specify a different region here
-          az deployment group create -g "$RESOURCE_GROUP" -f .github/runner.bicep \
-              --parameters location="${{env.AZ_LOCATION}}" --parameters vmName=${{ env.RUNNER_VM_NAME }} > output.json
+          az deployment group create -g "${{ steps.get-env.outputs.resource_group }}" -f .github/runner.bicep \
+              --parameters location="${{ steps.get-env.outputs.az_location }}" --parameters vmName=${{ env.RUNNER_VM_NAME }} > output.json
 
           # provision the GitHub Runner binary on the VM
           # passing additional ENV values
@@ -139,87 +144,87 @@ jobs:
         env:
           LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
 
-  hardware-benchmarks:
-    # see https://gist.github.com/jonico/a94d03cac7a858e0613926d9f1bc7f2b
-    runs-on:
-      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
-    permissions: write-all
-    needs:
-      - deploy-github-runner
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 10
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+  # hardware-benchmarks:
+  #   # see https://gist.github.com/jonico/a94d03cac7a858e0613926d9f1bc7f2b
+  #   runs-on:
+  #     [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
+  #   permissions: write-all
+  #   needs:
+  #     - deploy-github-runner
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 10
+  #         repository: ${{ github.event.pull_request.head.repo.full_name }}
+  #         ref: ${{ github.event.pull_request.head.ref }}
+  #         token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
-      - name: Set env
-        run: |
-          echo "HOME=/home/actions" >> $GITHUB_ENV
+  #     - name: Set env
+  #       run: |
+  #         echo "HOME=/home/actions" >> $GITHUB_ENV
 
-      - name: Download benchmark binary
-        uses: actions/download-artifact@v3
-        with:
-          name: creditcoin-node
-          path: target/release
+  #     - name: Download benchmark binary
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: creditcoin-node
+  #         path: target/release
 
-      - name: Restore executable permissions
-        run: |
-          chmod a+x ./target/release/creditcoin-node
+  #     - name: Restore executable permissions
+  #       run: |
+  #         chmod a+x ./target/release/creditcoin-node
 
-      - name: Check if runner machine meets chain's requirements
-        continue-on-error: true
-        run: |
-          ./scripts/check-hardware.sh
+  #     - name: Check if runner machine meets chain's requirements
+  #       continue-on-error: true
+  #       run: |
+  #         ./scripts/check-hardware.sh
 
-      - name: Difficulty
-        shell: bash
-        continue-on-error: false
-        env:
-          PALLET: difficulty
-        run: |
-          ./scripts/bench.sh -p $PALLET -b
+  #     - name: Difficulty
+  #       shell: bash
+  #       continue-on-error: false
+  #       env:
+  #         PALLET: difficulty
+  #       run: |
+  #         ./scripts/bench.sh -p $PALLET -b
 
-      # Run creditcoin pallet with lesser steps
-      - name: Creditcoin
-        shell: bash
-        continue-on-error: false
-        env:
-          STEPS: 8
-          REPEAT: 8
-          PALLET: creditcoin
-        run: |
-          ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
+  #     # Run creditcoin pallet with lesser steps
+  #     - name: Creditcoin
+  #       shell: bash
+  #       continue-on-error: false
+  #       env:
+  #         STEPS: 8
+  #         REPEAT: 8
+  #         PALLET: creditcoin
+  #       run: |
+  #         ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
 
-      # - name: Commit changes to current branch
-      #   uses: EndBug/add-and-commit@v9
-      #   with:
-      #     author_name: gluwa-bot
-      #     author_email: creditcoin@gluwa.com
-      #     message: "Auto-update pallet weights"
+  # - name: Commit changes to current branch
+  #   uses: EndBug/add-and-commit@v9
+  #   with:
+  #     author_name: gluwa-bot
+  #     author_email: creditcoin@gluwa.com
+  #     message: "Auto-update pallet weights"
 
-      # - name: Prepare commit for PR against dev
-      #   run: |
-      #     LAST_COMMIT=$(git rev-parse HEAD)
-      #     BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
+  # - name: Prepare commit for PR against dev
+  #   run: |
+  #     LAST_COMMIT=$(git rev-parse HEAD)
+  #     BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
 
-      #     git checkout -b $BRANCH_NAME origin/dev
-      #     git cherry-pick $LAST_COMMIT
-      #     git push origin $BRANCH_NAME
+  #     git checkout -b $BRANCH_NAME origin/dev
+  #     git cherry-pick $LAST_COMMIT
+  #     git push origin $BRANCH_NAME
 
-      # - name: Open PR against dev
-      #   id: open_pr
-      #   uses: rematocorp/open-pull-request-action@v1
-      #   with:
-      #     github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
-      #     from-branch: auto-update-weights-for-dev-${{ github.sha }}
-      #     to-branch: dev
-      #     repository-owner: gluwa
-      #     repository: creditcoin
+  # - name: Open PR against dev
+  #   id: open_pr
+  #   uses: rematocorp/open-pull-request-action@v1
+  #   with:
+  #     github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+  #     from-branch: auto-update-weights-for-dev-${{ github.sha }}
+  #     to-branch: dev
+  #     repository-owner: gluwa
+  #     repository: creditcoin
 
-      # - name: PR number against dev
-      #   run: echo ${{ steps.open_pr.outputs.pull_number }}
+  # - name: PR number against dev
+  #   run: echo ${{ steps.open_pr.outputs.pull_number }}
 
   remove-github-runner:
     runs-on: ubuntu-20.04
@@ -240,7 +245,7 @@ jobs:
 
           az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
           az account set --subscription "Playground Subscription"
-          az group delete -n "${{env.RESOURCE_GROUP}}"
+          az group delete -n "${{ steps.get-env.outputs.resource_group }}"
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
