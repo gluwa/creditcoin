@@ -1,6 +1,13 @@
 use crate::{Config, Pallet};
+use core::marker::PhantomData;
 use frame_support::{traits::StorageVersion, weights::Weight};
-use std::collections::HashMap;
+use sp_runtime::traits::UniqueSaturatedInto;
+
+pub(crate) trait Migrate {
+	fn pre_upgrade(&self);
+	fn migrate(&self) -> Weight;
+	fn post_upgrade(&self);
+}
 
 mod v1;
 mod v2;
@@ -14,29 +21,26 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
 	let mut weight: Weight = Weight::zero();
 
-	let callbacks = HashMap::from([
-		(1, (v1::pre_upgrade::<T>, v1::migrate::<T>, v1::post_upgrade::<T>)),
-		(2, (v2::pre_upgrade::<T>, v2::migrate::<T>, v2::post_upgrade::<T>)),
-		(3, (v3::pre_upgrade::<T>, v3::migrate::<T>, v3::post_upgrade::<T>)),
-		(4, (v4::pre_upgrade::<T>, v4::migrate::<T>, v4::post_upgrade::<T>)),
-		(5, (v5::pre_upgrade::<T>, v5::migrate::<T>, v5::post_upgrade::<T>)),
-		(6, (v6::pre_upgrade::<T>, v6::migrate::<T>, v6::post_upgrade::<T>)),
-		(7, (v7::pre_upgrade::<T>, v7::migrate::<T>, v7::post_upgrade::<T>)),
-	]);
+	let callbacks: &[&dyn Migrate] = &[
+		&v1::Migration::<T>::new(),
+		&v2::Migration::<T>::new(),
+		&v3::Migration::<T>::new(),
+		&v4::Migration::<T>::new(),
+		&v5::Migration::<T>::new(),
+		&v6::Migration::<T>::new(),
+		&v7::Migration::<T>::new(),
+	];
 
-	for migration_number in 1 + version.into()..=callbacks.keys().len() {
-		let (pre_hook, migrate_hook, post_hook) = callbacks
-			.get(migration_number)
-			.expect("No callbacks found for version {version:?}");
-
-		#[cfg(feature = "try-runtime")]
-		pre_hook();
-
-		weight.saturating_accrue(migrate_hook());
-		StorageVersion::new(migration_number).put::<Pallet<T>>();
-
-		#[cfg(feature = "try-runtime")]
-		post_hook();
+	for (idx, &calls) in callbacks.iter().enumerate() {
+		let migration_idx = (idx + 1).unique_saturated_into();
+		if version < migration_idx {
+			#[cfg(feature = "try-runtime")]
+			calls.pre_upgrade();
+			weight.saturating_accrue(calls.migrate());
+			StorageVersion::new(migration_idx).put::<Pallet<T>>();
+			#[cfg(feature = "try-runtime")]
+			calls.post_upgrade();
+		}
 	}
 
 	weight
