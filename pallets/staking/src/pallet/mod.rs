@@ -21,7 +21,7 @@ mod pallet {
 	use pallet_staking_substrate::slashing;
 	use pallet_staking_substrate::EraPayout;
 	use pallet_staking_substrate::EraRewardPoints;
-	use pallet_staking_substrate::Forcing;
+	pub use pallet_staking_substrate::Forcing;
 	pub use pallet_staking_substrate::RewardDestination;
 	use pallet_staking_substrate::{ConfigOp, WeightInfo};
 	use sp_runtime::codec;

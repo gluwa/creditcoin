@@ -4351,6 +4351,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "test-runtime-utils",
 ]
 
 [[package]]

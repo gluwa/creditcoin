@@ -25,6 +25,9 @@ sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 sp-staking.workspace = true
 
+[dev-dependencies]
+runtime-utils = { workspace = true }
+
 [features]
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
