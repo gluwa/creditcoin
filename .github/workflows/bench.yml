@@ -139,7 +139,7 @@ jobs:
           echo "INFO: $SSH_USER_AT_HOSTNAME"
 
           export LC_RUNNER_VM_NAME="${{ env.RUNNER_VM_NAME }}"
-          cat ./scripts/provision-github-runner.sh | ssh \
+          cat ./scripts/provision-github-runner.sh | ssh -i ~/.ssh/id_rsa \
               -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME -o StrictHostKeyChecking=no $SSH_USER_AT_HOSTNAME
         env:
           LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
@@ -245,7 +245,7 @@ jobs:
 
           az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
           az account set --subscription "Playground Subscription"
-          az group delete -n "${{ steps.get-env.outputs.resource_group }}"
+          # az group delete -n "${{ steps.get-env.outputs.resource_group }} --yes"
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
