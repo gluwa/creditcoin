@@ -131,7 +131,9 @@ jobs:
           # RG Creditcoin-Test is in WestUS and the CPU quota is already full
           # that's why specify a different region here
           az deployment group create -g "${{ steps.get-env.outputs.resource_group }}" -f .github/runner.bicep \
-              --parameters location="${{ steps.get-env.outputs.az_location }}" --parameters vmName="${{ steps.get-env.outputs.runner_vm_name }}" > output.json
+              --parameters location="${{ steps.get-env.outputs.az_location }}" \
+              --parameters vmName="${{ steps.get-env.outputs.runner_vm_name }}" \
+              --parameters adminPasswordOrKey="$(cat ~/.ssh/id_rsa.pub)" > output.json
 
           # provision the GitHub Runner binary on the VM
           # passing additional ENV values
