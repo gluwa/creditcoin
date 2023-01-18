@@ -97,11 +97,11 @@ type Transfers<T: crate::Config> = StorageMap<
 	Transfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
+pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> Migration<Runtime> {
 	pub(super) fn new() -> Self {
-		Self(PhantomData::<Runtime>)
+		Self(PhantomData)
 	}
 }
 
@@ -176,7 +176,6 @@ mod test {
 		tests::TestInfo,
 		DealOrderId, DoubleMapExt, Duration, OfferId, TransferId,
 	};
-	use core::convert::TryInto;
 	use sp_runtime::traits::Hash;
 
 	impl<H> TransferId<H> {
