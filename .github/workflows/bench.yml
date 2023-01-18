@@ -86,7 +86,6 @@ jobs:
     outputs:
       runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
       resource_group: ${{ steps.get-env.outputs.resource_group }}
-      az_location: ${{ steps.get-env.outputs.az_location }}
 
     steps:
       - uses: actions/checkout@v3
@@ -113,7 +112,6 @@ jobs:
           # doesn't evaluate the $GITHUB_RUN_ID reference
           echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
           echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
-          echo "az_location=${{ env.AZ_LOCATION }}" >> $GITHUB_OUTPUT
 
       - name: Provision VM
         if: env.LC_GITHUB_REPO_ADMIN_TOKEN
@@ -128,12 +126,12 @@ jobs:
 
           # create resource group
           echo "INFO: ${{ steps.get-env.outputs.resource_group }}"
-          az group create -n "${{ steps.get-env.outputs.resource_group }}" --location "${{ steps.get-env.outputs.az_location }}"
+          az group create -n "${{ steps.get-env.outputs.resource_group }}" --location "${{ env.AZ_LOCATION }}"
 
           # RG Creditcoin-Test is in WestUS and the CPU quota is already full
           # that's why specify a different region here
           az deployment group create -g "${{ steps.get-env.outputs.resource_group }}" -f .github/runner.bicep \
-              --parameters location="${{ steps.get-env.outputs.az_location }}" \
+              --parameters location="${{ env.AZ_LOCATION }}" \
               --parameters vmName="${{ steps.get-env.outputs.runner_vm_name }}" \
               --parameters adminPasswordOrKey="${{ steps.set-ssh.outputs.pub_key}}" > output.json
 
