@@ -233,7 +233,7 @@ jobs:
   remove-github-runner:
     runs-on: ubuntu-20.04
     needs: hardware-benchmarks
-    if: always()
+    if: ${{ needs.hardware-benchmarks.result != 'skipped' }}
     outputs:
       runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
       resource_group: ${{ steps.get-env.outputs.resource_group }}
