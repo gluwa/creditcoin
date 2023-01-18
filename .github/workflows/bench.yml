@@ -234,10 +234,6 @@ jobs:
     runs-on: ubuntu-20.04
     needs: hardware-benchmarks
     if: ${{ needs.hardware-benchmarks.result != 'skipped' }}
-    outputs:
-      runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
-      resource_group: ${{ steps.get-env.outputs.resource_group }}
-      az_location: ${{ steps.get-env.outputs.az_location }}
 
     steps:
       - uses: actions/checkout@v3
@@ -247,9 +243,7 @@ jobs:
         run: |
           # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
           # doesn't evaluate the $GITHUB_RUN_ID reference
-          echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
           echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
-          echo "az_location=${{ env.AZ_LOCATION }}" >> $GITHUB_OUTPUT
 
       - name: Install azure-cli
         run: |
