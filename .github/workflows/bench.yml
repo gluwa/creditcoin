@@ -6,8 +6,8 @@ on:
     branches: [testnet]
 
 env:
-  RUNNER_VM_NAME: github-runner-$GITHUB_RUN_ID$GITHUB_RUN_ATTEMPT
-  RESOURCE_GROUP: "github-runner-$GITHUB_RUN_ID$GITHUB_RUN_ATTEMPT"
+  RUNNER_VM_NAME: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
+  RESOURCE_GROUP: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
   AZ_LOCATION: "westus3"
 
 jobs:
