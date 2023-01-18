@@ -182,11 +182,11 @@ type DealOrders<T: crate::Config> = StorageDoubleMap<
 	DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
 
-pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
+pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime: Config> Migration<Runtime> {
 	pub(super) fn new() -> Self {
-		Self(PhantomData::<Runtime>)
+		Self(PhantomData)
 	}
 }
 
