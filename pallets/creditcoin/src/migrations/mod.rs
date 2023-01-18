@@ -26,10 +26,7 @@ pub(crate) fn post_upgrade<T: Config>(version: StorageVersion) -> Result<(), &'s
 	Ok(())
 }
 
-pub(crate) use v6::{
-	migrate_partial, OldAddress, OldAddresses, OldAskOrderOf, OldAskOrders, OldBidOrderOf,
-	OldBidOrders, OldDealOrderOf, OldDealOrders, OldTransferOf, OldTransfers,
-};
+pub(crate) use v6::{migrate_partial, OldAskOrders, OldBidOrders, OldDealOrders};
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
