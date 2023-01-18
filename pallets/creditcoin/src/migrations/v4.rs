@@ -28,11 +28,11 @@ pub struct Address<AccountId> {
 type Addresses<T: Config> =
 	StorageMap<crate::Pallet<T>, Blake2_128Concat, AddressId<HashOf<T>>, Address<AccountIdOf<T>>>;
 
-pub(crate) struct Migration<Runtime>(pub PhantomData<Runtime>);
+pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> Migration<Runtime> {
 	pub(super) fn new() -> Self {
-		Self(PhantomData::<Runtime>)
+		Self(PhantomData)
 	}
 }
 
