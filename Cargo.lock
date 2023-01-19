@@ -1144,6 +1144,7 @@ dependencies = [
  "sp-version",
  "substrate-wasm-builder",
  "task-scheduler-runtime-api",
+ "test-runtime-utils",
 ]
 
 [[package]]
@@ -4341,13 +4342,16 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "pallet-balances",
  "pallet-staking 4.0.0-dev",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "sp-arithmetic",
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "test-runtime-utils",
 ]
 
 [[package]]
@@ -7824,6 +7828,7 @@ dependencies = [
 name = "test-runtime-utils"
 version = "2.211.2"
 dependencies = [
+ "extend",
  "frame-support",
  "frame-system",
  "parking_lot 0.12.1",
@@ -7831,7 +7836,9 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-keystore",
+ "sp-runtime",
  "sp-state-machine",
+ "sp-std",
  "sp-tracing",
 ]
 

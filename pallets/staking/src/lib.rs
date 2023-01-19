@@ -7,6 +7,8 @@ use sp_runtime::traits::Convert;
 pub use sp_staking::EraIndex;
 
 pub mod ledger;
+#[cfg(test)]
+mod mock;
 pub mod pallet;
 
 #[cfg(feature = "std")]

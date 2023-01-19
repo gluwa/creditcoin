@@ -45,7 +45,8 @@ pub struct StakingLedger<T: Config> {
 
 impl<T: Config> StakingLedger<T> {
 	/// Initializes the default object using the given `validator`.
-	pub fn _default_from(stash: T::AccountId) -> Self {
+	#[cfg(test)]
+	pub fn default_from(stash: T::AccountId) -> Self {
 		Self {
 			stash,
 			total: Zero::zero(),
@@ -57,13 +58,13 @@ impl<T: Config> StakingLedger<T> {
 
 	/// Remove entries from `unlocking` that are sufficiently old and reduce the
 	/// total by the sum of their balances.
-	pub(super) fn consolidate_unlocked(self, current_era: EraIndex) -> Self {
+	pub(super) fn consolidate_unlocked(self, at_era: EraIndex) -> Self {
 		let mut total = self.total;
 		let unlocking: BoundedVec<_, _> = self
 			.unlocking
 			.into_iter()
 			.filter(|chunk| {
-				if chunk.era > current_era {
+				if chunk.era > at_era {
 					true
 				} else {
 					total = total.saturating_sub(chunk.value);
@@ -253,5 +254,30 @@ impl<T: Config> StakingLedger<T> {
 
 		T::OnStakerSlash::on_slash(&self.stash, self.active, &slashed_unlocking);
 		pre_slash_total.saturating_sub(self.total)
+	}
+}
+
+#[cfg(test)]
+pub mod tests {
+	use super::*;
+	use crate::mock::runtime::Runtime;
+	use runtime_utils::ExtBuilder;
+
+	#[test]
+	fn total_stake_deducted_after_unlocking_chunks() {
+		ExtBuilder::<()>::default().build_sans_config().execute_with(|| {});
+		let stash = runtime_utils::generate_account("//stash");
+		let mut ledger = StakingLedger::<Runtime>::default_from(stash);
+		ledger.active += 500;
+		ledger.total = ledger.active;
+		let current_era = 1;
+		ledger.unlocking =
+			[UnlockChunk { era: 0, value: 500 }].to_vec().try_into().expect("short enough");
+		assert_eq!(ledger.total, 500);
+
+		ledger = ledger.consolidate_unlocked(current_era);
+
+		assert!(ledger.unlocking.is_empty());
+		assert_eq!(ledger.total, 0);
 	}
 }

@@ -53,6 +53,7 @@ substrate-wasm-builder = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 sp-io = { workspace = true }
+runtime-utils = { workspace = true }
 
 [features]
 default = ['std']

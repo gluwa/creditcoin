@@ -5,20 +5,9 @@ use frame_support::{assert_noop, assert_ok, traits::Hooks};
 use frame_system::EventRecord;
 use frame_system::RawOrigin;
 use pallet_scheduler::Event as SchedulerEvent;
-use sp_core::Pair;
-use sp_runtime::{
-	traits::{BadOrigin, IdentifyAccount},
-	AccountId32, MultiSigner,
-};
+use runtime_utils::generate_account;
+use sp_runtime::traits::BadOrigin;
 use std::default::Default;
-
-fn generate_account(seed: &str) -> AccountId32 {
-	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
-	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
-	let pkey = key_pair.public();
-	let signer: MultiSigner = pkey.into();
-	signer.into_account()
-}
 
 struct ExtBuilder;
 impl ExtBuilder {
