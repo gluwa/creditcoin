@@ -9,9 +9,9 @@ repository.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-frame-support = { workspace = true, features = ["std"] }
+frame-support = { workspace = true }
 parking_lot = "0.12.1"
-frame-system = { workspace = true, features = ["std"] }
+frame-system = { workspace = true }
 sp-io.workspace = true
 sp-keystore.workspace = true
 sp-core.workspace = true
