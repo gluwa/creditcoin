@@ -647,6 +647,9 @@ pub(crate) mod test {
 		currency: Currency : Currency::default(),
 		transfer_kind: TransferKind : TransferKind::Evm(EvmTransferKind::Erc20),
 		currency_id: CurrencyId<Hash> : CurrencyId::new::<mock::Test>(&Currency::default()),
+
+		//from ocw/tasks/collect_coins.rs
+		gcre_contract: GCreContract :  GCreContract::default(),
 	}
 
 	#[test]
