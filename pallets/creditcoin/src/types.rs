@@ -606,47 +606,47 @@ pub(crate) mod test {
 	}
 
 	trait_tests! {
-	address: Address<AccountId> : create_address(),
-	collected_coins: CollectedCoins<Hash, Balance> : create_collected_coins(),
-	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
-	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
-	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
-	offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().1,
-	ask_order: AskOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().1,
-	bid_order: BidOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().1,
-	deal_order: DealOrder<AccountId, BlockNum, Hash, Moment> : TestInfo::new_defaults().create_deal_order().1,
-	address_id: AddressId<Hash> : AddressId::new::<mock::Test>(&Blockchain::RINKEBY, b"0"),
-	ask_order_id: AskOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().0,
-	bid_order_id: BidOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().0,
-	deal_order_id: DealOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_deal_order().0,
-	offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
-	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::RINKEBY, b"0"),
-	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::RINKEBY, &[0]),
-	legacy_sighash: LegacySighash : LegacySighash::default(),
-	task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
-	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().0),
-	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
-		create_funding_transfer()
-	),
-	// from types/loan_terms.rs
-	duration: Duration : Duration::from_millis(100),
-	interest_type: InterestType : InterestType::Simple,
-	interest_rate: InterestRate : InterestRate::default(),
-	loan_terms: LoanTerms<Hash> : TestInfo::new_defaults().loan_terms,
-	ask_terms: AskTerms<Hash> : AskTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
-	bid_terms: BidTerms<Hash> : BidTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
+		address: Address<AccountId> : create_address(),
+		collected_coins: CollectedCoins<Hash, Balance> : create_collected_coins(),
+		transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
+		unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
+		unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
+		offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().1,
+		ask_order: AskOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().1,
+		bid_order: BidOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().1,
+		deal_order: DealOrder<AccountId, BlockNum, Hash, Moment> : TestInfo::new_defaults().create_deal_order().1,
+		address_id: AddressId<Hash> : AddressId::new::<mock::Test>(&Blockchain::RINKEBY, b"0"),
+		ask_order_id: AskOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().0,
+		bid_order_id: BidOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_bid_order().0,
+		deal_order_id: DealOrderId<BlockNum, Hash> : TestInfo::new_defaults().create_deal_order().0,
+		offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
+		transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::RINKEBY, b"0"),
+		collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::RINKEBY, &[0]),
+		legacy_sighash: LegacySighash : LegacySighash::default(),
+		task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
+		task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().0),
+		task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
+			create_funding_transfer()
+		),
+		// from types/loan_terms.rs
+		duration: Duration : Duration::from_millis(100),
+		interest_type: InterestType : InterestType::Simple,
+		interest_rate: InterestRate : InterestRate::default(),
+		loan_terms: LoanTerms<Hash> : TestInfo::new_defaults().loan_terms,
+		ask_terms: AskTerms<Hash> : AskTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
+		bid_terms: BidTerms<Hash> : BidTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
 
-	// from types/platform.rs
-	evm_chain_id: EvmChainId : EvmChainId::from(44),
-	evm_info: EvmInfo : EvmInfo { chain_id: 0.into() },
-	blockchain: Blockchain : Blockchain::Evm(EvmInfo { chain_id: 0.into() }),
-	evm_transfer_kind: EvmTransferKind : EvmTransferKind::Erc20,
-	evm_currency_type: EvmCurrencyType : match Currency::default() {
-		Currency::Evm(currency_type, _) => currency_type,
-	},
-	currency: Currency : Currency::default(),
-	transfer_kind: TransferKind : TransferKind::Evm(EvmTransferKind::Erc20),
-	currency_id: CurrencyId<Hash> : CurrencyId::new::<mock::Test>(&Currency::default()),
+		// from types/platform.rs
+		evm_chain_id: EvmChainId : EvmChainId::from(44),
+		evm_info: EvmInfo : EvmInfo { chain_id: 0.into() },
+		blockchain: Blockchain : Blockchain::Evm(EvmInfo { chain_id: 0.into() }),
+		evm_transfer_kind: EvmTransferKind : EvmTransferKind::Erc20,
+		evm_currency_type: EvmCurrencyType : match Currency::default() {
+			Currency::Evm(currency_type, _) => currency_type,
+		},
+		currency: Currency : Currency::default(),
+		transfer_kind: TransferKind : TransferKind::Evm(EvmTransferKind::Erc20),
+		currency_id: CurrencyId<Hash> : CurrencyId::new::<mock::Test>(&Currency::default()),
 	}
 
 	#[test]
