@@ -1,5 +1,6 @@
 pub mod pool;
 
+extern crate alloc;
 use frame_support::{
 	sp_runtime::Storage,
 	traits::{GenesisBuild, OffchainWorker, OnFinalize, OnInitialize},
@@ -14,8 +15,10 @@ pub(crate) use sp_core::offchain::{
 	testing::{OffchainState, TestOffchainExt},
 	OffchainDbExt, OffchainWorkerExt, TransactionPoolExt,
 };
+use sp_core::Pair;
 use sp_io::TestExternalities;
 use sp_keystore::{testing::KeyStore, KeystoreExt};
+use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
 use sp_state_machine::BasicExternalities;
 use std::marker::PhantomData;
 pub(crate) use std::sync::Arc;
@@ -134,4 +137,12 @@ where
 		Pallet::offchain_worker(now);
 		Pallet::on_finalize(now);
 	}
+}
+
+pub fn generate_account(seed: &str) -> AccountId32 {
+	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
+	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
+	let pkey = key_pair.public();
+	let signer: MultiSigner = pkey.into();
+	signer.into_account()
 }
