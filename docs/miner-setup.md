@@ -4,6 +4,14 @@
 
 - Working [Docker](https://www.docker.com) installation
 
+**Notes:**
+
+For testing runtime upgrade/migrations Gluwa is using a 4 vCPU, 32 GiB RAM,
+Memory optimized virtual machine in Azure. The size spec is `Standard_E4as_v4`.
+See the `vmSize` parameter in
+[.github/runner.bicep](https://github.com/gluwa/creditcoin/blob/dev/.github/runner.bicep)
+for reference.
+
 ## Setup Steps
 
 1) In order to receive mining rewards you will need an account on the Creditcoin network. Each account has an address and a balance associated with it. The account is backed by a keypair. You can use an existing ECDSA keypair (e.g. from pre-Creditcoin 2.0) or you can generate a new keypair. You can use [subkey](https://docs.substrate.io/v3/tools/subkey/) to retrieve the account address from an existing private key (e.g. from pre-Creditcoin 2.0) or to generate a new keypair.

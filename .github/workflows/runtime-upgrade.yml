@@ -134,6 +134,11 @@ jobs:
         run: |
           chmod a+x ./target/release/creditcoin-node
 
+      - name: Check if runner machine meets chain's requirements
+        continue-on-error: true
+        run: |
+          ./scripts/check-hardware.sh
+
       - name: Download try-runtime snapshots data for Creditcoin
         run: |
             echo "INFO: SNAPSHOT_URL=${{ env.SNAPSHOT_URL }}"
