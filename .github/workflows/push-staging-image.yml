@@ -1,0 +1,27 @@
+on:
+  push:
+    branches:
+      - "staging-environment"
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Figure out tag name
+        shell: bash
+        run: |
+          echo "TAG_NAME=staging" >> $GITHUB_ENV
+
+      - name: Build docker image
+        run: |
+          docker build -t gluwa/creditcoin:${{ env.TAG_NAME }} .
+
+          echo "${{ secrets.DOCKER_PUSH_PASSWORD }}" | docker login -u="${{ secrets.DOCKER_PUSH_USERNAME }}" --password-stdin
+          docker push gluwa/creditcoin:${{ env.TAG_NAME }}
+          docker logout
