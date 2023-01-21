@@ -19,6 +19,7 @@ use sp_runtime::traits::Saturating;
 use tracing as log;
 
 pub mod authority;
+pub mod authorship;
 pub mod benchmarking;
 pub mod mock;
 pub mod ocw;
@@ -59,10 +60,12 @@ pub mod crypto {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{
+		authorship::Authorship,
 		log,
 		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
+	use crate::ocw::RuntimePlubicOf;
 	use core::fmt::Debug;
 	use frame_support::dispatch::Dispatchable;
 	use frame_support::dispatch::Vec;
@@ -70,6 +73,7 @@ pub mod pallet {
 	use frame_system::offchain::CreateSignedTransaction;
 	use frame_system::pallet_prelude::*;
 	use scale_info::TypeInfo;
+	use sp_core::sr25519::Public;
 	use sp_runtime::codec::FullCodec;
 
 	#[pallet::config]
@@ -84,8 +88,9 @@ pub mod pallet {
 			+ Debug;
 		type UnverifiedTaskTimeout: Get<<Self as SystemConfig>::BlockNumber>;
 		type WeightInfo: WeightInfo;
-		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
 		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin> + Clone;
+		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
+		type Authorship: Authorship<RuntimePublic = RuntimePlubicOf<Self>>;
 	}
 
 	pub trait WeightInfo {
@@ -122,7 +127,8 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
 	where
-		<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic: Into<T::Public>,
+		<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic:
+			Into<T::Public> + AsRef<Public> + sp_std::fmt::Debug + Clone,
 	{
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
@@ -165,7 +171,9 @@ pub mod pallet {
 				use tasks::error::TaskError::*;
 				match task.forward_task(deadline) {
 					Ok(call) => {
-						match Self::submit_txn_with_synced_nonce(signer.clone(), |_| call.clone()) {
+						match Self::submit_txn_with_synced_nonce(signer.clone().into(), |_| {
+							call.clone()
+						}) {
 							Ok(_) => guard.forget(),
 							Err(e) => {
 								log::error!("Failed to send a dispatchable transaction: {:?}", e)

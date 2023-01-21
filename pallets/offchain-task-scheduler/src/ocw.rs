@@ -1,11 +1,12 @@
 pub(crate) mod nonce;
 
+use super::authorship::Authorship;
 use super::Error;
-use super::{log, Authorities, Config, Pallet};
+use super::{log, Config, Pallet};
 use alloc::vec;
 use frame_support::dispatch::Vec;
-use frame_system::offchain::AppCrypto;
 use frame_system::offchain::{Account, SendSignedTransaction, Signer};
+use frame_system::offchain::{AppCrypto, SigningTypes};
 use frame_system::Pallet as System;
 use nonce::lock_key;
 pub use nonce::nonce_key;
@@ -15,27 +16,25 @@ use sp_runtime::traits::One;
 use sp_runtime::traits::Saturating;
 use sp_runtime::RuntimeAppPublic;
 
+pub type RuntimePlubicOf<T> = <<T as Config>::AuthorityId as AppCrypto<
+	<T as SigningTypes>::Public,
+	<T as SigningTypes>::Signature,
+>>::RuntimeAppPublic;
+
+// the method is not idempotent, there is no guarantee that you will get the same key if multiple exist.
 impl<T: Config> Pallet<T> {
-	pub fn authority_pubkey() -> Option<T::Public>
+	pub fn authority_pubkey() -> Option<RuntimePlubicOf<T>>
 	where
-		<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic: Into<T::Public>,
+		RuntimePlubicOf<T>: sp_std::fmt::Debug,
 	{
-		let local_keys =
+		let local_keys: Vec<RuntimePlubicOf<T>> =
 			<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic::all()
 				.into_iter()
-				.map(|p| {
-					let pkey = p.into();
-					(pkey.clone(), pkey.into_account())
-				})
-				.collect::<Vec<(T::Public, T::AccountId)>>();
+				.collect();
 
 		log::trace!(target: "task", "local keys {local_keys:?}");
 
-		Authorities::<T>::iter_keys().find_map(|auth| {
-			local_keys
-				.iter()
-				.find_map(|(pkey, acc)| if auth == *acc { Some(pkey.clone()) } else { None })
-		})
+		T::Authorship::find_authorized(local_keys.iter())
 	}
 
 	pub fn offchain_signed_tx(

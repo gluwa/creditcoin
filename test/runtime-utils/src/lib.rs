@@ -21,7 +21,7 @@ use std::marker::PhantomData;
 pub(crate) use std::sync::Arc;
 
 #[derive(Default)]
-pub struct ExtBuilder<G> {
+pub struct ExtBuilder<G = ()> {
 	pub keystore: Option<KeyStore>,
 	pool: Option<TestTransactionPoolExt>,
 	pub offchain: Option<TestOffchainExt>,
