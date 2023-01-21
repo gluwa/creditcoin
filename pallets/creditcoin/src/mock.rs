@@ -123,6 +123,7 @@ impl pallet_offchain_task_scheduler::Config for Test {
 	type TaskCall = RuntimeCall;
 	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Self>;
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
+	type Authorship = TaskScheduler;
 }
 
 impl Test {
@@ -566,17 +567,6 @@ impl MockedRpcRequests {
 	pub(crate) fn mock_all(mut self, state: &mut OffchainState) {
 		self.mock_get_block_by_number(state);
 	}
-}
-
-#[test]
-#[tracing_test::traced_test]
-fn offchain_worker_should_log_when_authority_is_missing() {
-	ExtBuilder::default().build_offchain_and_execute(|| {
-		System::set_block_number(1);
-
-		TaskScheduler::offchain_worker(System::block_number());
-		assert!(logs_contain("Not an authority, skipping offchain work"));
-	});
 }
 
 #[test]
