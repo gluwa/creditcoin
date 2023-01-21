@@ -8,6 +8,7 @@ use frame_benchmarking::benchmarks;
 use frame_support::traits::Hooks;
 use frame_system::Config as SystemConfig;
 use pallet_timestamp::Pallet as Timestamp;
+use sp_core::sr25519::Public;
 use sp_core::Hasher;
 use sp_runtime::codec::Encode;
 use sp_runtime::traits::One;
@@ -19,7 +20,8 @@ pub trait TaskDefault<T: SystemConfig> {
 benchmarks! {
 	where_clause { where
 		T::Task: TaskDefault<T>,
-		<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic: Into<T::Public>,
+		<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic:
+			Into<T::Public> + AsRef<Public> + sp_std::fmt::Debug + Clone,
 	 }
 	on_initialize {
 		//insert t transfers
