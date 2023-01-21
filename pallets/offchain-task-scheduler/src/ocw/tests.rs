@@ -279,3 +279,16 @@ fn offchain_signed_tx_send_fails() {
 		})
 	});
 }
+
+#[test]
+#[tracing_test::traced_test]
+fn offchain_worker_should_log_when_authority_is_missing() {
+	ExtBuilder::<()>::default()
+		.with_keystore()
+		.build_sans_config()
+		.execute_with(|| {
+			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
+
+			assert!(logs_contain("Not an authority, skipping offchain work"));
+		});
+}

@@ -152,6 +152,7 @@ impl pallet_offchain_task_scheduler::Config for Runtime {
 	type TaskCall = RuntimeCall;
 	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
+	type Authorship = TaskScheduler;
 }
 
 impl pallet_scheduler::Config for Runtime {
