@@ -18,6 +18,7 @@ frame-benchmarking = { optional = true, workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
+pallet-offchain-task-scheduler = { workspace = true }
 pallet-session = { workspace = true }
 pallet-staking-substrate = { package = "pallet-staking", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
 parity-scale-codec = { workspace = true }
@@ -42,8 +43,10 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'frame-benchmarking/std',
+    'pallet-offchain-task-scheduler/std',
     'pallet-session/std',
     'pallet-staking-substrate/std',
+    'pallet-offchain-task-scheduler/std',
     'sp-std/std',
 ]
 try-runtime = ['frame-support/try-runtime']

@@ -1,4 +1,4 @@
-use super::{ocw::RuntimePlubicOf, pallet::Authorities, Config, Pallet};
+use super::{ocw::RuntimePlubicOf, Config, Pallet};
 use crate::authority::AuthorityController;
 use sp_runtime::traits::IdentifyAccount;
 
