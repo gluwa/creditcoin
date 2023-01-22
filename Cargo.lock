@@ -4344,6 +4344,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "pallet-offchain-task-scheduler",
  "pallet-session",
  "pallet-staking 4.0.0-dev",
  "parity-scale-codec",
