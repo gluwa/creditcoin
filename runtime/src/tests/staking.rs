@@ -133,6 +133,33 @@ fn force_new_era_should_work() {
 }
 
 #[test]
+fn force_new_era_always_should_be_signed() {
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_noop!(Staking::force_new_era_always(RuntimeOrigin::none()), BadOrigin);
+	})
+}
+
+#[test]
+fn force_new_era_always_should_be_signed_by_root() {
+	let controller = generate_account("not-root");
+
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_noop!(Staking::force_new_era_always(RuntimeOrigin::signed(controller)), BadOrigin);
+	})
+}
+
+#[test]
+fn force_new_era_always_should_work() {
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		// deliberately put a different value in storage
+		staking::ForceEra::<Runtime>::put(Forcing::ForceNone);
+
+		assert_ok!(Staking::force_new_era_always(RuntimeOrigin::root()));
+		assert_eq!(Staking::force_era(), Forcing::ForceAlways);
+	})
+}
+
+#[test]
 fn bond_should_be_signed() {
 	let controller = generate_account("controller");
 	let value = <Balances as Currency<AccountId>>::minimum_balance();
