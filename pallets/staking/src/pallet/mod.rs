@@ -1010,17 +1010,12 @@ mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
-			macro_rules! config_op_exp {
-				($storage:ty, $op:ident) => {
-					match $op {
-						ConfigOp::Noop => (),
-						ConfigOp::Set(v) => <$storage>::put(v),
-						ConfigOp::Remove => <$storage>::kill(),
-					}
-				};
+			match min_staker_bond {
+				ConfigOp::Noop => (),
+				ConfigOp::Set(v) => MinStakerBond::<T>::put(v),
+				ConfigOp::Remove => MinStakerBond::<T>::kill(),
 			}
 
-			config_op_exp!(MinStakerBond<T>, min_staker_bond);
 			Ok(())
 		}
 	}
