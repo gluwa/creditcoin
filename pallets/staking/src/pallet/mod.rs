@@ -23,7 +23,7 @@ mod pallet {
 	use pallet_staking_substrate::EraRewardPoints;
 	pub use pallet_staking_substrate::Forcing;
 	pub use pallet_staking_substrate::RewardDestination;
-	use pallet_staking_substrate::{ConfigOp, WeightInfo};
+	pub use pallet_staking_substrate::{ConfigOp, WeightInfo};
 	use sp_runtime::codec;
 	use sp_runtime::{
 		traits::{CheckedSub, SaturatedConversion, StaticLookup, Zero},

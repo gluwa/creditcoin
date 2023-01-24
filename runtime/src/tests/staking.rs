@@ -564,3 +564,62 @@ fn set_invulnerables_should_work() {
 		assert_eq!(Staking::invulnerables(), vec![charlie]);
 	})
 }
+
+#[test]
+fn set_staking_configs_should_be_signed() {
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_noop!(
+			Staking::set_staking_configs(RuntimeOrigin::none(), staking::ConfigOp::Noop),
+			BadOrigin
+		);
+	})
+}
+
+#[test]
+fn set_staking_configs_should_be_signed_by_root() {
+	let controller = generate_account("not-root");
+
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_noop!(
+			Staking::set_staking_configs(
+				RuntimeOrigin::signed(controller),
+				staking::ConfigOp::Noop
+			),
+			BadOrigin
+		);
+	})
+}
+
+#[test]
+fn set_staking_configs_works_with_noop() {
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_eq!(staking::MinStakerBond::<Runtime>::get(), 0);
+
+		assert_ok!(Staking::set_staking_configs(RuntimeOrigin::root(), staking::ConfigOp::Noop));
+
+		assert_eq!(staking::MinStakerBond::<Runtime>::get(), 0);
+	})
+}
+
+#[test]
+fn set_staking_configs_works_with_set() {
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_eq!(staking::MinStakerBond::<Runtime>::get(), 0);
+
+		assert_ok!(Staking::set_staking_configs(RuntimeOrigin::root(), staking::ConfigOp::Set(9)));
+
+		assert_eq!(staking::MinStakerBond::<Runtime>::get(), 9);
+	})
+}
+
+#[test]
+fn set_staking_configs_works_with_remove() {
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		// setup
+		staking::MinStakerBond::<Runtime>::put(8);
+
+		assert_ok!(Staking::set_staking_configs(RuntimeOrigin::root(), staking::ConfigOp::Remove));
+
+		assert_eq!(staking::MinStakerBond::<Runtime>::get(), 0);
+	})
+}
