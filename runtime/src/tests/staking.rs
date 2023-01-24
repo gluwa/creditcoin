@@ -531,9 +531,9 @@ fn set_invulnerables_should_work() {
 		));
 		assert_eq!(Staking::invulnerables(), vec![alex.clone(), bob.clone()]);
 
-		// making another call should update the list of invulnerable accounts
+		// making another will overwrite the list of invulnerable accounts
 		let charlie = generate_account("charlie");
 		assert_ok!(Staking::set_invulnerables(RuntimeOrigin::root(), vec![charlie.clone()]));
-		assert_eq!(Staking::invulnerables(), vec![alex, bob, charlie]);
+		assert_eq!(Staking::invulnerables(), vec![charlie]);
 	})
 }
