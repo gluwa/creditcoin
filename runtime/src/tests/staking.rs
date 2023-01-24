@@ -1,7 +1,7 @@
 use super::generate_account;
 use crate::mock::runtime::{
-	AccountId, Balances, BlocksPerEra, BondingDuration, Runtime, RuntimeOrigin, TaskVoting,
-	Timestamp,
+	AccountId, Balances, BlocksPerEra, BondingDuration, Runtime, RuntimeEvent, RuntimeOrigin,
+	TaskVoting, Timestamp,
 };
 use assert_matches::assert_matches;
 use frame_support::traits::Currency;
@@ -320,6 +320,105 @@ fn bond_should_fail_when_controller_has_already_paired_with_a_stash() {
 				RewardDestination::Stash,
 			),
 			Error::<Runtime>::AlreadyPaired
+		);
+	});
+}
+
+#[test]
+fn bond_extra_should_be_signed() {
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_noop!(Staking::bond_extra(RuntimeOrigin::none(), 1), BadOrigin);
+	});
+}
+
+#[test]
+fn bond_extra_should_fail_when_signed_by_a_stash_which_wasnt_previously_bonded() {
+	let stash = generate_account("stash");
+
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		assert_noop!(
+			Staking::bond_extra(RuntimeOrigin::signed(stash), 1),
+			Error::<Runtime>::NotStash
+		);
+	});
+}
+
+#[test]
+fn bond_extra_should_fail_when_controller_not_found_in_ledger() {
+	let stash = generate_account("stash");
+	let controller = generate_account("controller");
+	let value = <Balances as Currency<AccountId>>::minimum_balance();
+
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		let mut height = 1;
+		roll_to::<Trivial, Runtime, ()>(height);
+		Timestamp::set_timestamp(1);
+		//bypass defensive first era.
+		{
+			staking::ActiveEra::<Runtime>::set(Some(ActiveEraInfo { index: 0, start: Some(0) }));
+			staking::ErasStartSessionIndex::<Runtime>::set(0, Some(height));
+		}
+
+		height += BlocksPerEra::get();
+		assert_eq!(height, Staking::next_era_start(1));
+		roll_to::<Trivial, Runtime, TaskVoting>(height);
+
+		//prime balance with enough funds to prevent dusting
+		let _ = Balances::deposit_creating(&stash, 2 * value);
+		assert_ok!(Staking::bond(
+			RuntimeOrigin::signed(stash.clone()),
+			controller.clone().into(),
+			value,
+			RewardDestination::Stash,
+		));
+
+		// remove controller from ledger
+		staking::Ledger::<Runtime>::remove(&controller);
+		assert_noop!(
+			Staking::bond_extra(RuntimeOrigin::signed(stash), 1),
+			Error::<Runtime>::NotController
+		);
+	});
+}
+
+#[test]
+fn bond_extra_should_work() {
+	let stash_account = generate_account("stash");
+	let controller = generate_account("controller");
+	let value = <Balances as Currency<AccountId>>::minimum_balance();
+
+	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+		let mut height = 1;
+		roll_to::<Trivial, Runtime, ()>(height);
+		Timestamp::set_timestamp(1);
+		//bypass defensive first era.
+		{
+			staking::ActiveEra::<Runtime>::set(Some(ActiveEraInfo { index: 0, start: Some(0) }));
+			staking::ErasStartSessionIndex::<Runtime>::set(0, Some(height));
+		}
+
+		height += BlocksPerEra::get();
+		assert_eq!(height, Staking::next_era_start(1));
+		roll_to::<Trivial, Runtime, TaskVoting>(height);
+
+		//prime balance with enough funds to prevent dusting
+		let _ = Balances::deposit_creating(&stash_account, 2 * value);
+		assert_ok!(Staking::bond(
+			RuntimeOrigin::signed(stash_account.clone()),
+			controller.clone().into(),
+			value,
+			RewardDestination::Stash,
+		));
+
+		assert_ok!(Staking::bond_extra(RuntimeOrigin::signed(stash_account.clone()), 1));
+
+		let event = <frame_system::Pallet<Runtime>>::events().pop().expect("an event").event;
+		assert_matches!(
+			event,
+			RuntimeEvent::Staking(staking::Event::<Runtime>::Bonded{stash, amount}) => {
+				assert_eq!(stash, stash_account);
+				assert_eq!(amount, 1);
+			}
 		);
 	});
 }

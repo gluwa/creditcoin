@@ -1025,3 +1025,23 @@ mod pallet {
 fn is_sorted_and_unique(list: &[u32]) -> bool {
 	list.windows(2).all(|w| w[0] < w[1])
 }
+
+#[cfg(test)]
+mod test {
+	use crate::pallet::*;
+
+	#[test]
+	fn is_sorted_and_unique_works() {
+		// sorted & unique
+		let result = is_sorted_and_unique(&vec![1, 2, 3, 4, 5]);
+		assert!(result);
+
+		// unique but not sorted in the correct order
+		let result = is_sorted_and_unique(&vec![5, 4, 3, 2, 1]);
+		assert!(!result);
+
+		// sorted but not unique
+		let result = is_sorted_and_unique(&vec![1, 1, 2, 3, 4, 4]);
+		assert!(!result);
+	}
+}
