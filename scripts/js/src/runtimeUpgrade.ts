@@ -41,6 +41,7 @@ async function doRuntimeUpgrade(
     wasmBlobPath: string,
     sudoKeyUri: string,
     hasSubwasm = false,
+    scheduleDelay = 50,
 ): Promise<void> {
     // init the api client
     const { api } = await creditcoinApi(wsUrl);
@@ -83,8 +84,6 @@ async function doRuntimeUpgrade(
             return byteArray.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
         };
 
-        const scheduleDelay = 50;
-
         const hexBlob = u8aToHex(wasmBlob);
         // schedule the upgrade
         await new Promise<void>((resolve, reject) => {
@@ -121,8 +120,9 @@ if (process.argv.length < 5) {
 const inputWsUrl = process.argv[2];
 const inputWasmBlobPath = process.argv[3];
 const inputSudoKeyUri = process.argv[4];
+const explicitDelay = Number(process.argv[5] || 50);
 
-doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true).catch((reason) => {
+doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true, explicitDelay).catch((reason) => {
     console.error(reason);
     process.exit(1);
 });
