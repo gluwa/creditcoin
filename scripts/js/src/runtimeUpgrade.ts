@@ -85,10 +85,15 @@ async function doRuntimeUpgrade(
         };
 
         const hexBlob = u8aToHex(wasmBlob);
+        let callback = api.tx.system.setCode(hexBlob);
+        if (scheduleDelay > 0) {
+            callback = api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, callback);
+        }
+
         // schedule the upgrade
         await new Promise<void>((resolve, reject) => {
             const unsubscribe = api.tx.sudo
-                .sudo(api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, api.tx.system.setCode(hexBlob)))
+                .sudo(callback)
                 .signAndSend(keyring, { nonce: -1 }, (result) => {
                     const finish = (fn: () => void) => {
                         unsubscribe
