@@ -93,7 +93,7 @@ async function doRuntimeUpgrade(
         // schedule the upgrade
         await new Promise<void>((resolve, reject) => {
             const unsubscribe = api.tx.sudo
-                .sudo(callback)
+                .sudoUncheckedWeight(callback, { refTime: 1, proofSize: 0 })
                 .signAndSend(keyring, { nonce: -1 }, (result) => {
                     const finish = (fn: () => void) => {
                         unsubscribe
