@@ -162,8 +162,10 @@ jobs:
 
   remove-github-runner:
     runs-on: ubuntu-20.04
-    needs: test-migrations
-    if: ${{ needs.test-migrations.result != 'skipped' }}
+    needs:
+      - deploy-github-runner
+      - test-migrations
+    if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
 
     steps:
       - uses: actions/checkout@v3
