@@ -230,8 +230,10 @@ jobs:
 
   remove-github-runner:
     runs-on: ubuntu-20.04
-    needs: hardware-benchmarks
-    if: ${{ needs.hardware-benchmarks.result != 'skipped' }}
+    needs:
+      - deploy-github-runner
+      - hardware-benchmarks
+    if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
 
     steps:
       - uses: actions/checkout@v3
