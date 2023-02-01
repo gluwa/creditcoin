@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider, Wallet, Keyring, KeyringPair, CHAINS } from 'creditcoin-js';
+import { ApiPromise, WsProvider, Wallet, Keyring, KeyringPair, CHAINS, POINT_01_CTC } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { main as deployCtcContract } from './ctc-deploy';
 
@@ -33,6 +33,10 @@ const setup = async () => {
 
     if ((global as any).CREDITCOIN_API_URL === undefined) {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
+    }
+
+    if ((global as any).CREDITCOIN_MINIMUM_TXN_FEE === undefined) {
+        (global as any).CREDITCOIN_MINIMUM_TXN_FEE = POINT_01_CTC;
     }
 
     if ((global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL === undefined) {

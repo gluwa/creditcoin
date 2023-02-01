@@ -1,7 +1,7 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { creditcoinApi, Guid, LoanTerms, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, Guid, LoanTerms, KeyringPair } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
@@ -98,7 +98,7 @@ describe('RegisterDealOrder', () => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 120000);
 });
