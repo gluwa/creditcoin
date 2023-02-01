@@ -1,4 +1,4 @@
-import { creditcoinApi, BN, KeyringPair, TransferKind, Guid, Wallet, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, BN, KeyringPair, TransferKind, Guid, Wallet } from 'creditcoin-js';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
@@ -108,7 +108,7 @@ describe('RegisterFundingTransfer', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 300000);
 

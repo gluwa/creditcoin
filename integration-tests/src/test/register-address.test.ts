@@ -1,4 +1,4 @@
-import { Blockchain, KeyringPair, Wallet, POINT_01_CTC, creditcoinApi } from 'creditcoin-js';
+import { Blockchain, KeyringPair, Wallet, creditcoinApi } from 'creditcoin-js';
 import { createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
 import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
@@ -38,7 +38,7 @@ describe('RegisterAddress', () => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     });
 
