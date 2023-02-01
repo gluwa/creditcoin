@@ -1,4 +1,4 @@
-import { KeyringPair, POINT_01_CTC, creditcoinApi } from 'creditcoin-js';
+import { KeyringPair, creditcoinApi } from 'creditcoin-js';
 import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { addAskAndBidOrder, loanTermsWithCurrency, testData } from 'creditcoin-js/lib/testUtils';
@@ -60,7 +60,7 @@ describe('AddOffer', () => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 90000);
 });
