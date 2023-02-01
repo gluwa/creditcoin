@@ -1,4 +1,4 @@
-import { creditcoinApi, KeyringPair, LoanTerms, TransferKind, Guid, Wallet, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, KeyringPair, LoanTerms, TransferKind, Guid, Wallet } from 'creditcoin-js';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { TransferEvent } from 'creditcoin-js/lib/extrinsics/register-transfers';
@@ -138,7 +138,7 @@ describe('CloseDealOrder', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 600000);
 });
