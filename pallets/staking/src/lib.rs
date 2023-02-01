@@ -3,6 +3,7 @@
 use frame_election_provider_support::{
 	ElectionDataProvider, ElectionProvider, ElectionProviderBase, SortedListProvider, Supports,
 };
+use frame_support::defensive;
 use frame_support::{traits::Defensive, RuntimeDebug};
 #[cfg(feature = "std")]
 pub use pallet_staking_substrate::GenesisConfig;
@@ -47,17 +48,19 @@ impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
 	type Score = u64;
 
 	fn iter() -> Box<dyn Iterator<Item = T::AccountId>> {
+		defensive!();
 		Box::new(vec![].into_iter())
 	}
 
 	fn iter_from(
 		_start: &T::AccountId,
 	) -> Result<Box<dyn Iterator<Item = T::AccountId>>, Self::Error> {
+		defensive!();
 		Ok(Self::iter())
 	}
 
 	fn count() -> u32 {
-		logger!(debug, "Faking VoterList count");
+		logger!(debug, "Faking EmptyList count");
 		1
 	}
 
@@ -66,18 +69,22 @@ impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
 	}
 
 	fn on_insert(_id: T::AccountId, _score: Self::Score) -> Result<(), Self::Error> {
+		defensive!();
 		Ok(())
 	}
 
 	fn on_update(_id: &T::AccountId, _score: Self::Score) -> Result<(), Self::Error> {
+		defensive!();
 		Ok(())
 	}
 
 	fn get_score(_id: &T::AccountId) -> Result<Self::Score, Self::Error> {
+		defensive!();
 		Ok(Zero::zero())
 	}
 
 	fn on_remove(_id: &T::AccountId) -> Result<(), Self::Error> {
+		defensive!();
 		Ok(())
 	}
 
@@ -85,13 +92,24 @@ impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
 		_all: impl IntoIterator<Item = T::AccountId>,
 		_score_of: Box<dyn Fn(&T::AccountId) -> Self::Score>,
 	) -> u32 {
+		defensive!();
 		0
 	}
 
-	fn unsafe_clear() {}
+	fn unsafe_clear() {
+		defensive!();
+	}
 
 	fn try_state() -> Result<(), &'static str> {
+		defensive!();
 		Ok(())
+	}
+
+	/// If `who` changes by the returned amount they are guaranteed to have a worst case change
+	/// in their list position.
+	#[cfg(feature = "runtime-benchmarks")]
+	fn score_update_worst_case(_who: &T::AccountId, _is_increase: bool) -> Self::Score {
+		unreachable!()
 	}
 }
 
@@ -154,42 +172,56 @@ where
 	}
 
 	fn count() -> u32 {
-		logger!(debug, "Faking VoterList count");
+		logger!(debug, "Faking TargetList count");
 		1
 	}
 
 	fn contains(_id: &AccountId32) -> bool {
-		unreachable!()
+		defensive!();
+		false
 	}
 
 	fn on_insert(_id: AccountId32, _score: Self::Score) -> Result<(), Self::Error> {
-		unreachable!()
+		defensive!();
+		Ok(())
 	}
 
 	fn on_update(_id: &AccountId32, _score: Self::Score) -> Result<(), Self::Error> {
-		unreachable!()
+		defensive!();
+		Ok(())
 	}
 
 	fn get_score(_id: &AccountId32) -> Result<Self::Score, Self::Error> {
-		unreachable!()
+		defensive!();
+		Ok(Zero::zero())
 	}
 
 	fn on_remove(_id: &AccountId32) -> Result<(), Self::Error> {
-		unreachable!()
+		defensive!();
+		Ok(())
 	}
 
 	fn unsafe_regenerate(
 		_all: impl IntoIterator<Item = AccountId32>,
 		_score_of: Box<dyn Fn(&AccountId32) -> Self::Score>,
 	) -> u32 {
-		unreachable!()
+		defensive!();
+		0
 	}
 
 	fn unsafe_clear() {
-		unreachable!()
+		defensive!();
 	}
 
 	fn try_state() -> Result<(), &'static str> {
+		defensive!();
+		Ok(())
+	}
+
+	/// If `who` changes by the returned amount they are guaranteed to have a worst case change
+	/// in their list position.
+	#[cfg(feature = "runtime-benchmarks")]
+	fn score_update_worst_case(_who: &AccountId32, _is_increase: bool) -> Self::Score {
 		unreachable!()
 	}
 }
