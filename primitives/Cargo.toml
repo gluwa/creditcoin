@@ -22,7 +22,7 @@ sp-keystore = { workspace = true }
 sp-runtime-interface = { workspace = true }
 parity-scale-codec = { workspace = true }
 sp-externalities = { workspace = true }
-sp-consensus-vrf = { version = "0.11.0", default-features = false }
+sp-consensus-vrf = { version = "0.16.0", default-features = false }
 tracing.workspace = true
 
 [dev-dependencies]
