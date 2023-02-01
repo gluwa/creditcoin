@@ -1,4 +1,4 @@
-import { KeyringPair, Guid, POINT_01_CTC, Wallet, creditcoinApi } from 'creditcoin-js';
+import { KeyringPair, Guid, Wallet, creditcoinApi } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
@@ -95,7 +95,7 @@ describe('Exempt', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 60000);
 });
