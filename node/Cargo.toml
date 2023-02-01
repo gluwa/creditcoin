@@ -68,7 +68,7 @@ sp-keyring = { workspace = true }
 futures = "0.3.26"
 
 [dependencies.tokio]
-version = "1.23.1"
+version = "1.25.0"
 default-features = false
 features = ["time"]
 
