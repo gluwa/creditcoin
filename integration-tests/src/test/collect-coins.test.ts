@@ -2,7 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
 import { createCollectedCoinsId } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
 import { AddressRegistered, createAddressId } from 'creditcoin-js/lib/extrinsics/register-address';
-import { creditcoinApi, POINT_01_CTC, providers, Wallet } from 'creditcoin-js';
+import { creditcoinApi, providers, Wallet } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
@@ -73,7 +73,7 @@ describe('CollectCoins', (): void => {
             const { partialFee } = await api.tx.creditcoin
                 .requestCollectCoins(evmAddress, badHash)
                 .paymentInfo(authority, { nonce: -1 });
-            expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(partialFee.toBigInt()).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
 
         it('end-to-end', async (): Promise<void> => {
@@ -128,7 +128,7 @@ describe('CollectCoins', (): void => {
                 .failTask(1000, taskId, cause)
                 .paymentInfo(authority, { nonce: -1 });
 
-            expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(partialFee.toBigInt()).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     });
 
@@ -153,7 +153,7 @@ describe('CollectCoins', (): void => {
                     .persistTaskOutput(1000, taskOutput)
                     .paymentInfo(authority, { nonce: -1 });
                 /* eslint-enable */
-                expect(partialFee.toBigInt()).toBeGreaterThanOrEqual(POINT_01_CTC);
+                expect(partialFee.toBigInt()).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
             },
         );
     });
