@@ -7,8 +7,8 @@ use crate::{
 		runtime::{
 			AccountId, Extrinsic, Runtime, RuntimeCall, RuntimeOrigin, System, TaskScheduler,
 		},
-		task::MockTask,
 	},
+	mocked_task::MockTask,
 	ocw::StorageValueRef,
 	tasks::{storage_key, task_lock, TaskScheduler as TaskSchedulerT, TaskV2},
 	Pallet,
@@ -161,7 +161,7 @@ fn forget_task_guard_when_task_has_been_persisted() {
 		Runtime::insert(&deadline, &id, task);
 
 		//fake a task being in storage.
-		crate::mock::task::is_persisted_replace(true);
+		crate::mocked_task::is_persisted_replace(true);
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(lock_deadline.block_number + 1);
 
 		assert!(logs_contain("Already handled Task"));
@@ -173,7 +173,7 @@ fn forget_task_guard_when_task_has_been_persisted() {
 		assert!(guard.is_err());
 
 		//revert thread_local
-		crate::mock::task::is_persisted_replace(false);
+		crate::mocked_task::is_persisted_replace(false);
 	});
 }
 

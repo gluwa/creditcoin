@@ -22,6 +22,7 @@ pub mod authority;
 pub mod authorship;
 pub mod benchmarking;
 pub mod mock;
+pub mod mocked_task;
 pub mod ocw;
 pub mod tasks;
 #[allow(clippy::unnecessary_cast)]
