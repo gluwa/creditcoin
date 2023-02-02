@@ -3,7 +3,7 @@ pub mod pool;
 extern crate alloc;
 use frame_support::{
 	sp_runtime::Storage,
-	traits::{GenesisBuild, OffchainWorker, OnFinalize, OnInitialize},
+	traits::{OffchainWorker, OnFinalize, OnInitialize},
 };
 use frame_system as system;
 use frame_system::Config as SystemConfig;
@@ -17,21 +17,23 @@ pub(crate) use sp_core::offchain::{
 };
 use sp_core::Pair;
 use sp_io::TestExternalities;
+pub use sp_keystore::SyncCryptoStore;
 use sp_keystore::{testing::KeyStore, KeystoreExt};
-use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
+use sp_runtime::{traits::IdentifyAccount, AccountId32, BuildStorage, MultiSigner};
 use sp_state_machine::BasicExternalities;
 use std::marker::PhantomData;
 pub(crate) use std::sync::Arc;
 
 #[derive(Default)]
-pub struct ExtBuilder<G = ()> {
+pub struct ExtBuilder {
 	pub keystore: Option<KeyStore>,
 	pool: Option<TestTransactionPoolExt>,
 	pub offchain: Option<TestOffchainExt>,
-	pub genesis_config: G,
+	//instead of G, store assimilated storage.
+	pub storage: Storage,
 }
 
-impl<G> ExtBuilder<G> {
+impl ExtBuilder {
 	pub fn with_keystore(mut self) -> Self {
 		self.keystore = Some(KeyStore::new());
 		self
@@ -53,7 +55,9 @@ impl<G> ExtBuilder<G> {
 		system::GenesisConfig::default().build_storage::<Config>().unwrap()
 	}
 
-	fn add_capabilities(self, ext: &mut TestExternalities) {
+	fn add_capabilities(self) -> TestExternalities {
+		let mut ext: TestExternalities = self.storage.into();
+
 		if let Some(keystore) = self.keystore {
 			ext.register_extension(KeystoreExt(Arc::new(keystore)));
 		}
@@ -64,33 +68,27 @@ impl<G> ExtBuilder<G> {
 			ext.register_extension(OffchainDbExt::new(offchain.clone()));
 			ext.register_extension(OffchainWorkerExt::new(offchain));
 		}
+		ext
 	}
 
-	fn assimilate_pallet_storage<Config, Pallet>(&self, mut storage: Storage) -> Storage
-	where
-		G: GenesisBuild<Config, Pallet>,
-	{
-		self.genesis_config.assimilate_storage(&mut storage).unwrap();
-		storage
+	fn assimilate_storage(&mut self, mut storage: Storage) {
+		self.storage.assimilate_storage(&mut storage).unwrap();
+		self.storage = storage;
 	}
 
-	pub fn build<Config, Pallet>(self) -> TestExternalities
+	pub fn build<Config>(mut self) -> TestExternalities
 	where
-		G: GenesisBuild<Config, Pallet>,
 		Config: SystemConfig,
 	{
 		let storage = Self::system_storage::<Config>();
-		let storage = self.assimilate_pallet_storage(storage);
-		let mut ext: TestExternalities = storage.into();
-		self.add_capabilities(&mut ext);
-		ext
+		self.assimilate_storage(storage);
+		self.add_capabilities()
 	}
 
-	pub fn build_sans_config(self) -> TestExternalities {
+	pub fn build_sans_config(mut self) -> TestExternalities {
 		let ext = BasicExternalities::default();
-		let mut ext: TestExternalities = ext.into_storages().into();
-		self.add_capabilities(&mut ext);
-		ext
+		self.assimilate_storage(ext.into_storages());
+		self.add_capabilities()
 	}
 }
 
