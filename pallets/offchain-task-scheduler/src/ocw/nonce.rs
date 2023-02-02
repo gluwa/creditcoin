@@ -29,7 +29,7 @@ mod tests {
 	use crate::mock::runtime::Runtime;
 	use crate::mock::runtime::RuntimeCall;
 	use crate::mock::runtime::TaskScheduler;
-	use crate::mock::task::MockTask;
+	use crate::mocked_task::MockTask;
 	use crate::tasks::TaskScheduler as TaskSchedulerT;
 	use crate::tasks::TaskV2;
 	use crate::GenesisConfig;
