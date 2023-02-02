@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use crate::GenesisConfig;
 use crate::{
 	mock::{
 		generate_authority,
@@ -29,12 +28,12 @@ type GuardDeadline = <BlockAndTime<System> as Lockable>::Deadline;
 
 #[test]
 fn completed_oversubscribed_tasks_are_skipped() {
-	let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	let acct_pubkey = generate_authority(&mut ext_builder);
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	let acct_pubkey = generate_authority(&mut ext_builder, 0);
 	let pool = ext_builder.with_pool();
 	ext_builder.with_offchain();
 	let auth = AccountId::from(acct_pubkey.into_account().0);
-	ext_builder.build().execute_with(|| {
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		//register twice (oversubscribe) under different expiration (aka deadline).
@@ -82,8 +81,8 @@ fn completed_oversubscribed_tasks_are_skipped() {
 //tasks can be oversubscribed with different deadlines
 #[test]
 fn task_deadline_oversubscription() {
-	let ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	ext_builder.build().execute_with(|| {
+	let ext_builder = ExtBuilder::default().with_keystore();
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		//register twice under different expiration aka deadline
@@ -112,10 +111,10 @@ fn task_deadline_oversubscription() {
 #[test]
 #[tracing_test::traced_test]
 fn evaluation_error_is_retried() {
-	let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	generate_authority(&mut ext_builder);
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	generate_authority(&mut ext_builder, 0);
 	ext_builder.with_offchain();
-	ext_builder.build().execute_with(|| {
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
@@ -139,11 +138,11 @@ fn evaluation_error_is_retried() {
 #[test]
 #[tracing_test::traced_test]
 fn forget_task_guard_when_task_has_been_persisted() {
-	let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	generate_authority(&mut ext_builder);
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	generate_authority(&mut ext_builder, 0);
 	ext_builder.with_offchain();
 	ext_builder.with_pool();
-	ext_builder.build().execute_with(|| {
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
@@ -180,11 +179,11 @@ fn forget_task_guard_when_task_has_been_persisted() {
 #[test]
 #[tracing_test::traced_test]
 fn offchain_worker_logs_error_when_transfer_validation_errors() {
-	let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	generate_authority(&mut ext_builder);
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	generate_authority(&mut ext_builder, 0);
 	ext_builder.with_offchain();
 	ext_builder.with_pool();
-	ext_builder.build().execute_with(|| {
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
@@ -201,11 +200,11 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 
 #[test]
 fn effective_guard_lifetime_until_task_expiration() {
-	let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	generate_authority(&mut ext_builder);
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	generate_authority(&mut ext_builder, 0);
 	ext_builder.with_offchain();
 	let pool = ext_builder.with_pool();
-	ext_builder.build().execute_with(|| {
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
@@ -238,10 +237,10 @@ fn effective_guard_lifetime_until_task_expiration() {
 
 #[test]
 fn offchain_signed_tx_works() {
-	let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	let acct_pubkey = generate_authority(&mut ext_builder);
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	let acct_pubkey = generate_authority(&mut ext_builder, 0);
 	let pool = ext_builder.with_pool();
-	ext_builder.build().execute_with(|| {
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let call = RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
@@ -260,10 +259,10 @@ fn offchain_signed_tx_works() {
 
 #[test]
 fn offchain_signed_tx_send_fails() {
-	let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-	let acct_pubkey = generate_authority(&mut ext_builder);
+	let mut ext_builder = ExtBuilder::default().with_keystore();
+	let acct_pubkey = generate_authority(&mut ext_builder, 0);
 	ext_builder.with_pool();
-	ext_builder.build().execute_with(|| {
+	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let call = RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
@@ -283,12 +282,9 @@ fn offchain_signed_tx_send_fails() {
 #[test]
 #[tracing_test::traced_test]
 fn offchain_worker_should_log_when_authority_is_missing() {
-	ExtBuilder::<()>::default()
-		.with_keystore()
-		.build_sans_config()
-		.execute_with(|| {
-			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
+	ExtBuilder::default().with_keystore().build_sans_config().execute_with(|| {
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
 
-			assert!(logs_contain("Not an authority, skipping offchain work"));
-		});
+		assert!(logs_contain("Not an authority, skipping offchain work"));
+	});
 }

@@ -15,7 +15,7 @@ const BLOCKS_UNTIL_UNBONDED: u32 = BlocksPerEra::get() * BondingDuration::get();
 
 #[test]
 fn active_era_transitions() {
-	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+	ExtBuilder::default().build_sans_config().execute_with(|| {
 		assert!(Staking::active_era().is_none());
 		let mut height = 1;
 		Trivial::<Session, Runtime>::roll_to(height);
@@ -32,7 +32,7 @@ fn stake_and_unstake_with_a_controller_and_stash_as_payee() {
 	let controller = generate_account("controller");
 	let value = <Balances as Currency<AccountId>>::minimum_balance();
 
-	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+	ExtBuilder::default().build_sans_config().execute_with(|| {
 		let mut height = 1;
 		Trivial::<Session, Runtime>::roll_to(height);
 
