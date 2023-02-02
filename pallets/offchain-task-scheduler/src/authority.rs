@@ -26,12 +26,11 @@ impl<Runtime: Config> AuthorityController for Runtime {
 mod tests {
 	use crate::authority::AuthorityController;
 	use crate::mock::runtime::{AccountId, Runtime};
-	use crate::GenesisConfig;
 	use runtime_utils::ExtBuilder;
 
 	#[test]
 	fn insert_check_and_remove() {
-		ExtBuilder::<GenesisConfig<Runtime>>::default().build().execute_with(|| {
+		ExtBuilder::default().build::<Runtime>().execute_with(|| {
 			let account: AccountId = AccountId::new([0; 32]);
 
 			assert!(!Runtime::is_authority(&account));
