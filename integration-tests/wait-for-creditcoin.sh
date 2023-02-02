@@ -5,10 +5,10 @@ CURL_PARAMS="-H 'Content-Type: application/json' -d '{\"id\":\"1\", \"jsonrpc\":
 
 COUNTER=0
 # make sure there is a node running at TARGET_URL
-while [[ "$(eval curl -s -o /dev/null -w '%{http_code}' "$CURL_PARAMS")" != "200" && $COUNTER -lt 20 ]]; do
+while [[ "$(eval curl -s -o /dev/null -w '%{http_code}' "$CURL_PARAMS")" != "200" && $COUNTER -lt 50 ]]; do
     echo "INFO: $COUNTER - Not ready yet ....."
     (( COUNTER=COUNTER+1 ))
-    sleep 20
+    sleep 50
 done
 
 # fail if we still can't connect after 20 attempts
