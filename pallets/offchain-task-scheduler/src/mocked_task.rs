@@ -1,3 +1,4 @@
+#![cfg(feature = "mocked-task")]
 use crate::tasks::{error::TaskError, ForwardTask, TaskV2};
 use crate::Config;
 use core::cell::Cell;
@@ -9,6 +10,7 @@ use std::thread_local;
 
 thread_local! { static PERSISTED:Cell<bool> = Cell::new(false); }
 
+#[cfg(test)]
 pub(crate) fn is_persisted_replace(new: bool) -> bool {
 	tracing::warn!("forcing {new} is_persisted!");
 	PERSISTED.with(|cell| cell.replace(new))

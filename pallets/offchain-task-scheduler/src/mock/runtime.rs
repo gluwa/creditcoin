@@ -115,7 +115,7 @@ impl crate::Config for Runtime {
 	type AuthorityId = crate::crypto::AuthorityId;
 	type TaskCall = RuntimeCall;
 	type WeightInfo = crate::weights::WeightInfo<Self>;
-	type Task = super::task::MockTask<u32>;
+	type Task = crate::mocked_task::MockTask<u32>;
 	type Authorship = TaskScheduler;
 }
 
