@@ -32,7 +32,6 @@ mod tests {
 	use crate::mocked_task::MockTask;
 	use crate::tasks::TaskScheduler as TaskSchedulerT;
 	use crate::tasks::TaskV2;
-	use crate::GenesisConfig;
 	use core::sync::atomic::AtomicU64;
 	use frame_support::assert_ok;
 	use frame_system::Config as SystemConfig;
@@ -47,11 +46,11 @@ mod tests {
 
 	#[test]
 	fn increment_after_call() {
-		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-		let pkey = generate_authority(&mut ext_builder);
+		let mut ext_builder = ExtBuilder::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder, 0);
 		ext_builder.with_offchain();
 		ext_builder.with_pool();
-		let mut ext = ext_builder.build();
+		let mut ext = ext_builder.build::<Runtime>();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
 			Trivial::<TaskScheduler, Runtime>::roll_to(1);
@@ -74,10 +73,10 @@ mod tests {
 
 	#[test]
 	fn unique_per_account() {
-		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-		let pkey = generate_authority(&mut ext_builder);
+		let mut ext_builder = ExtBuilder::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder, 0);
 		let acct_1 = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
-		let pkey = generate_authority(&mut ext_builder);
+		let pkey = generate_authority(&mut ext_builder, 1);
 		let acct_2 = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		assert!(nonce_key(&acct_1) != nonce_key(&acct_2));
 		assert!(lock_key(&acct_1) != lock_key(&acct_2));
@@ -85,10 +84,10 @@ mod tests {
 
 	#[test]
 	fn not_incremented_on_evaluation_error() {
-		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-		let pkey = generate_authority(&mut ext_builder);
+		let mut ext_builder = ExtBuilder::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder, 0);
 		ext_builder.with_offchain();
-		let mut ext = ext_builder.build();
+		let mut ext = ext_builder.build::<Runtime>();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
 			Trivial::<TaskScheduler, Runtime>::roll_to(1);
@@ -111,10 +110,10 @@ mod tests {
 
 	#[test]
 	fn not_incremented_on_scheduler_error() {
-		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-		let pkey = generate_authority(&mut ext_builder);
+		let mut ext_builder = ExtBuilder::default().with_keystore();
+		let pkey = generate_authority(&mut ext_builder, 0);
 		ext_builder.with_offchain();
-		let mut ext = ext_builder.build();
+		let mut ext = ext_builder.build::<Runtime>();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
 			Trivial::<TaskScheduler, Runtime>::roll_to(1);
@@ -147,13 +146,12 @@ mod tests {
 			let nonces = nonces.clone();
 
 			std::thread::spawn(move || {
-				let mut ext_builder =
-					ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-				let acct_pubkey = generate_authority(&mut ext_builder);
+				let mut ext_builder = ExtBuilder::default().with_keystore();
+				let acct_pubkey = generate_authority(&mut ext_builder, 0);
 				let acct = <Runtime as SystemConfig>::AccountId::from(acct_pubkey.into_account().0);
 				ext_builder.offchain = Some(offchain);
 				ext_builder.with_pool();
-				let mut ext = ext_builder.build();
+				let mut ext = ext_builder.build::<Runtime>();
 
 				let execute = || {
 					Trivial::<TaskScheduler, Runtime>::roll_to(1);
@@ -179,9 +177,9 @@ mod tests {
 			h.join().expect("testing context is shared");
 		}
 
-		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default();
+		let mut ext_builder = ExtBuilder::default();
 		ext_builder.offchain = Some(offchain);
-		let mut ext = ext_builder.build();
+		let mut ext = ext_builder.build::<Runtime>();
 		ext.execute_with(|| {
 			let nonce_post_submition_sum = (THREADS * LOOP) * (THREADS * LOOP + 1) / 2;
 			assert_eq!(nonces.load(Ordering::Relaxed), nonce_post_submition_sum as u64);
@@ -189,6 +187,7 @@ mod tests {
 	}
 
 	#[test]
+	#[tracing_test::traced_test]
 	fn lock_works() {
 		let (offchain, _) = TestOffchainExt::new();
 		const THREADS: u32 = 2;
@@ -197,12 +196,11 @@ mod tests {
 			let offchain = offchain.clone();
 
 			std::thread::spawn(move || {
-				let mut ext_builder =
-					ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
-				let acct_pubkey = generate_authority(&mut ext_builder);
+				let mut ext_builder = ExtBuilder::default().with_keystore();
+				let acct_pubkey = generate_authority(&mut ext_builder, 0);
 				let acct = <Runtime as SystemConfig>::AccountId::from(acct_pubkey.into_account().0);
 				ext_builder.offchain = Some(offchain);
-				let mut ext = ext_builder.build();
+				let mut ext = ext_builder.build::<Runtime>();
 
 				let execute = || {
 					Trivial::<TaskScheduler, Runtime>::roll_to(1);
@@ -229,9 +227,9 @@ mod tests {
 
 	#[test]
 	fn nonce_lock_expires() {
-		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
+		let mut ext_builder = ExtBuilder::default().with_keystore();
 		ext_builder.with_offchain();
-		ext_builder.build().execute_with(|| {
+		ext_builder.build::<Runtime>().execute_with(|| {
 			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 			let key = &b"lock_key"[..];

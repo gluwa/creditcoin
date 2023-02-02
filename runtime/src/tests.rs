@@ -15,7 +15,7 @@ mod staking;
 
 #[test]
 fn pallet_scheduler_works() {
-	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+	ExtBuilder::default().build_sans_config().execute_with(|| {
 		Trivial::<Scheduler, Runtime>::roll_to(1);
 		let call =
 			Call::System(frame_system::Call::remark_with_event { remark: b"dummy".to_vec() });
@@ -46,7 +46,7 @@ fn pallet_scheduler_works() {
 
 #[test]
 fn must_be_root_to_schedule() {
-	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
+	ExtBuilder::default().build_sans_config().execute_with(|| {
 		Trivial::<Scheduler, Runtime>::roll_to(1);
 		let call =
 			Call::System(frame_system::Call::remark_with_event { remark: b"dummy".to_vec() });

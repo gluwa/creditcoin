@@ -364,11 +364,7 @@ mod tests {
 		PublicData { key_type_id, pre_hash, epoch, task_id }
 	}
 
-	fn add_testing_key(
-		key_type_id: KeyTypeId,
-		builder: &ExtBuilder<()>,
-		seed_phrase: &str,
-	) -> Public {
+	fn add_testing_key(key_type_id: KeyTypeId, builder: &ExtBuilder, seed_phrase: &str) -> Public {
 		builder
 			.keystore
 			.as_ref()
@@ -381,7 +377,7 @@ mod tests {
 	fn generate_vrf_output_should_be_different_for_different_pre_hash() {
 		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
-		let builder = ExtBuilder::<()>::default().with_keystore();
+		let builder = ExtBuilder::default().with_keystore();
 		let pubkey_struct = add_testing_key(keyring_id, &builder, "//fixed");
 
 		builder.build_sans_config().execute_with(|| {
@@ -406,7 +402,7 @@ mod tests {
 	fn generate_vrf_output_should_be_different_between_signers_for_the_same_input() {
 		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
-		let builder = ExtBuilder::<()>::default().with_keystore();
+		let builder = ExtBuilder::default().with_keystore();
 		// two different signers will be signing the same public data
 		let pubkey_struct_alice = add_testing_key(keyring_id, &builder, "//Alice");
 		let pubkey_struct_bob = add_testing_key(keyring_id, &builder, "//Bob");
@@ -426,7 +422,7 @@ mod tests {
 	fn prove_vrf_output() {
 		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
-		let builder = ExtBuilder::<()>::default().with_keystore();
+		let builder = ExtBuilder::default().with_keystore();
 		let pubkey = add_testing_key(keyring_id, &builder, "//fixed");
 
 		builder.build_sans_config().execute_with(|| {
