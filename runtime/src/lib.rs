@@ -325,7 +325,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type HashIntoNonce = Hash;
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
-	type TaskScheduler = Self;
+	type TaskScheduler = TaskScheduler;
 }
 
 impl pallet_difficulty::Config for Runtime {

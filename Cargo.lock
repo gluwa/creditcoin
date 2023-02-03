@@ -1142,11 +1142,13 @@ dependencies = [
  "sp-runtime",
  "sp-session",
  "sp-std",
+ "sp-tracing",
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
  "task-scheduler-runtime-api",
  "test-runtime-utils",
+ "tracing-test",
 ]
 
 [[package]]

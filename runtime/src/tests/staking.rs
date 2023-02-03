@@ -1,6 +1,6 @@
 use super::generate_account;
 use crate::mock::runtime::{
-	AccountId, Balances, BlocksPerEra, BondingDuration, Runtime, RuntimeOrigin, Session,
+	AccountId, Balances, BlocksPerEra, BondingDuration, Runtime, RuntimeOrigin, Session, Staking,
 };
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
@@ -8,8 +8,6 @@ use pallet_staking::RewardDestination;
 use pallet_staking::StakingInterface;
 use runtime_utils::{ExtBuilder, RollTo, Trivial};
 use std::default::Default;
-
-type Staking = pallet_staking::Pallet<Runtime>;
 
 const BLOCKS_UNTIL_UNBONDED: u32 = BlocksPerEra::get() * BondingDuration::get();
 

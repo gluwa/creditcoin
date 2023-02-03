@@ -222,7 +222,8 @@ mod tests {
 	use crate::mock::{
 		get_mock_amount, get_mock_contract, get_mock_nonce, get_mock_tx_block_num,
 		get_mock_tx_hash, roll_to_with_ocw, set_rpc_uri, with_failing_create_transaction,
-		Creditcoin, ExtBuilder, MockedRpcRequests, PendingRequestExt, Test, ETHLESS_RESPONSES,
+		Creditcoin, ExtBuilder, MockedRpcRequests, PendingRequestExt, TaskScheduler,
+		TaskSchedulerT, Test, ETHLESS_RESPONSES,
 	};
 	use crate::ocw::tasks::Task;
 	use crate::ocw::tasks::TaskV2;
@@ -231,7 +232,6 @@ mod tests {
 	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
 	use frame_support::assert_ok;
 	use frame_support::dispatch::Dispatchable;
-	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 	use sp_runtime::traits::IdentifyAccount;
 
 	#[test]
@@ -317,17 +317,18 @@ mod tests {
 			requests.mock_get_transaction(&mut state.write());
 
 			let id = TaskV2::<Test>::to_id(&unverified);
-			let deadline = Test::deadline();
+			let deadline = TaskScheduler::deadline();
 
-			Test::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
+			TaskScheduler::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
 
 			let call =
-				TaskV2::<Test>::persistence_call(&unverified, Test::deadline(), &id).unwrap();
+				TaskV2::<Test>::persistence_call(&unverified, TaskScheduler::deadline(), &id)
+					.unwrap();
 			assert!(matches!(call, crate::Call::fail_task { .. }));
 			let c = RuntimeCall::from(call);
 
 			assert_ok!(c.dispatch(Origin::signed(auth)));
-			assert!(!Test::is_scheduled(&Test::deadline(), &id));
+			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}
 
@@ -340,17 +341,18 @@ mod tests {
 			requests.mock_all(&mut state.write());
 
 			let id = TaskV2::<Test>::to_id(&unverified);
-			let deadline = Test::deadline();
+			let deadline = TaskScheduler::deadline();
 
-			Test::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
+			TaskScheduler::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
 
 			let call =
-				TaskV2::<Test>::persistence_call(&unverified, Test::deadline(), &id).unwrap();
+				TaskV2::<Test>::persistence_call(&unverified, TaskScheduler::deadline(), &id)
+					.unwrap();
 			assert!(matches!(call, crate::Call::persist_task_output { .. }));
 			let c = RuntimeCall::from(call);
 
 			assert_ok!(c.dispatch(Origin::signed(auth)));
-			assert!(!Test::is_scheduled(&Test::deadline(), &id));
+			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}
 }

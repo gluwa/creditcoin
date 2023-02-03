@@ -38,15 +38,15 @@ fn completed_oversubscribed_tasks_are_skipped() {
 
 		//register twice (oversubscribe) under different expiration (aka deadline).
 
-		let deadline = Runtime::deadline();
+		let deadline = TaskScheduler::deadline();
 		let task = MockTask::Remark(0);
 		let id = TaskV2::<Runtime>::to_id(&task);
-		Runtime::insert(&deadline, &id, task.clone());
+		TaskScheduler::insert(&deadline, &id, task.clone());
 
 		Trivial::<TaskScheduler, Runtime>::roll_to(2);
 
-		let deadline_2 = Runtime::deadline();
-		Runtime::insert(&deadline_2, &id, task);
+		let deadline_2 = TaskScheduler::deadline();
+		TaskScheduler::insert(&deadline_2, &id, task);
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(3);
 
@@ -86,22 +86,22 @@ fn task_deadline_oversubscription() {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		//register twice under different expiration aka deadline
-		let deadline = Runtime::deadline();
+		let deadline = TaskScheduler::deadline();
 		let task = MockTask::Remark(0);
 		let id = TaskV2::<Runtime>::to_id(&task);
-		Runtime::insert(&deadline, &id, task.clone());
+		TaskScheduler::insert(&deadline, &id, task.clone());
 
 		Trivial::<TaskScheduler, Runtime>::roll_to(2);
 
 		//register twice under different expiration aka deadline
-		let deadline_2 = Runtime::deadline();
-		Runtime::insert(&deadline_2, &id, task);
+		let deadline_2 = TaskScheduler::deadline();
+		TaskScheduler::insert(&deadline_2, &id, task);
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(3);
 
 		//insertion checks
-		assert!(Runtime::is_scheduled(&deadline, &id));
-		assert!(Runtime::is_scheduled(&deadline_2, &id));
+		assert!(TaskScheduler::is_scheduled(&deadline, &id));
+		assert!(TaskScheduler::is_scheduled(&deadline_2, &id));
 
 		assert!(TaskScheduler::pending_tasks(deadline, id).is_some());
 		assert!(TaskScheduler::pending_tasks(deadline_2, id).is_some());
@@ -117,15 +117,15 @@ fn evaluation_error_is_retried() {
 	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-		let deadline = Runtime::deadline();
+		let deadline = TaskScheduler::deadline();
 		let task = MockTask::Evaluation;
 		let id = TaskV2::<Runtime>::to_id(&task);
-		Runtime::insert(&deadline, &id, task);
+		TaskScheduler::insert(&deadline, &id, task);
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 		assert!(logs_contain("Failed to verify pending task Evaluation"));
 		// It failed Evaluation and remains scheduled.
-		assert!(Runtime::is_scheduled(&deadline, &id));
+		assert!(TaskScheduler::is_scheduled(&deadline, &id));
 
 		let key = storage_key(&id);
 		assert!(StorageValueRef::persistent(key.as_ref())
@@ -145,10 +145,10 @@ fn forget_task_guard_when_task_has_been_persisted() {
 	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-		let deadline = Runtime::deadline();
+		let deadline = TaskScheduler::deadline();
 		let task = MockTask::Remark(0);
 		let id = TaskV2::<Runtime>::to_id(&task);
-		Runtime::insert(&deadline, &id, task.clone());
+		TaskScheduler::insert(&deadline, &id, task.clone());
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 		let key = crate::tasks::storage_key(&id);
@@ -156,8 +156,8 @@ fn forget_task_guard_when_task_has_been_persisted() {
 		let lock_deadline = lock.try_lock().map(|_| ()).expect_err("deadline");
 		sleep_until(lock_deadline.timestamp.add(Duration::from_millis(1)));
 
-		let deadline = Runtime::deadline();
-		Runtime::insert(&deadline, &id, task);
+		let deadline = TaskScheduler::deadline();
+		TaskScheduler::insert(&deadline, &id, task);
 
 		//fake a task being in storage.
 		crate::mocked_task::is_persisted_replace(true);
@@ -186,11 +186,11 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-		let deadline = Runtime::deadline();
+		let deadline = TaskScheduler::deadline();
 		let task = MockTask::Scheduler;
 		let id = TaskV2::<Runtime>::to_id(&task);
 
-		Runtime::insert(&deadline, &id, task);
+		TaskScheduler::insert(&deadline, &id, task);
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
@@ -207,10 +207,10 @@ fn effective_guard_lifetime_until_task_expiration() {
 	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-		let deadline = Runtime::deadline();
+		let deadline = TaskScheduler::deadline();
 		let task = MockTask::Remark(0);
 		let id = TaskV2::<Runtime>::to_id(&task);
-		Runtime::insert(&deadline, &id, task);
+		TaskScheduler::insert(&deadline, &id, task);
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 

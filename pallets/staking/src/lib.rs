@@ -13,6 +13,8 @@ pub use pallet_staking_substrate::weights;
 #[cfg(feature = "std")]
 pub use pallet_staking_substrate::GenesisConfig;
 #[cfg(feature = "std")]
+pub use pallet_staking_substrate::StakerStatus;
+#[cfg(feature = "std")]
 pub use pallet_staking_substrate::TestBenchmarkingConfig;
 use pallet_staking_substrate::ValidatorPrefs;
 pub use pallet_staking_substrate::{
@@ -58,7 +60,7 @@ impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
 
 	fn count() -> u32 {
 		logger!(debug, "Faking EmptyList count");
-		1
+		pallet_staking_substrate::Validators::<T>::count()
 	}
 
 	fn contains(_id: &T::AccountId) -> bool {
@@ -170,7 +172,7 @@ where
 
 	fn count() -> u32 {
 		logger!(debug, "Faking TargetList count");
-		1
+		pallet_staking_substrate::Validators::<T>::count()
 	}
 
 	fn contains(_id: &AccountId32) -> bool {

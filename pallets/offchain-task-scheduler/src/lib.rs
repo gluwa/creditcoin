@@ -91,7 +91,10 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin> + Clone;
 		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
-		type Authorship: Authorship<RuntimePublic = RuntimePlubicOf<Self>>;
+		type Authorship: Authorship<
+			RuntimePublic = RuntimePlubicOf<Self>,
+			AccountId = Self::AccountId,
+		>;
 	}
 
 	pub trait WeightInfo {
@@ -222,9 +225,11 @@ pub mod pallet {
 type TaskFor<T> = <T as Config>::Task;
 type HashFor<T> = <T as SystemConfig>::Hash;
 
-impl<Runtime: Config>
-	tasks::TaskScheduler<BlockNumberFor<Runtime>, HashFor<Runtime>, TaskFor<Runtime>> for Runtime
-{
+impl<Runtime: Config> tasks::TaskScheduler for Pallet<Runtime> {
+	type BlockNumber = BlockNumberFor<Runtime>;
+	type Hash = HashFor<Runtime>;
+	type Task = TaskFor<Runtime>;
+
 	fn deadline() -> BlockNumberFor<Runtime> {
 		let offset = Runtime::UnverifiedTaskTimeout::get();
 		let block = frame_system::Pallet::<Runtime>::current_block_number();
@@ -236,7 +241,6 @@ impl<Runtime: Config>
 	fn insert(deadline: &BlockNumberFor<Runtime>, id: &HashFor<Runtime>, task: TaskFor<Runtime>) {
 		crate::pallet::PendingTasks::<Runtime>::insert(deadline, id, task);
 	}
-
 	fn remove(deadline: &BlockNumberFor<Runtime>, id: &HashFor<Runtime>) {
 		crate::pallet::PendingTasks::<Runtime>::remove(deadline, id);
 	}
