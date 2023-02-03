@@ -55,10 +55,10 @@ mod tests {
 		ext.execute_with(|| {
 			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-			let task_deadline = Runtime::deadline();
+			let task_deadline = TaskScheduler::deadline();
 			let task = MockTask::Remark(0);
 			let id = TaskV2::<Runtime>::to_id(&task);
-			Runtime::insert(&task_deadline, &id, task);
+			TaskScheduler::insert(&task_deadline, &id, task);
 
 			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
@@ -92,10 +92,10 @@ mod tests {
 		ext.execute_with(|| {
 			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-			let task_deadline = Runtime::deadline();
+			let task_deadline = TaskScheduler::deadline();
 			let task = MockTask::Evaluation;
 			let id = TaskV2::<Runtime>::to_id(&task);
-			Runtime::insert(&task_deadline, &id, task);
+			TaskScheduler::insert(&task_deadline, &id, task);
 
 			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
@@ -118,10 +118,10 @@ mod tests {
 		ext.execute_with(|| {
 			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-			let task_deadline = Runtime::deadline();
+			let task_deadline = TaskScheduler::deadline();
 			let task = MockTask::Scheduler;
 			let id = TaskV2::<Runtime>::to_id(&task);
-			Runtime::insert(&task_deadline, &id, task);
+			TaskScheduler::insert(&task_deadline, &id, task);
 
 			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
@@ -155,8 +155,10 @@ mod tests {
 
 				let execute = || {
 					Trivial::<TaskScheduler, Runtime>::roll_to(1);
-					let call: RuntimeCall =
-						MockTask::Remark(0).forward_task(Runtime::deadline()).expect("call").into();
+					let call: RuntimeCall = MockTask::Remark(0)
+						.forward_task(TaskScheduler::deadline())
+						.expect("call")
+						.into();
 
 					for _ in 0..LOOP {
 						assert_ok!(crate::Pallet::<Runtime>::submit_txn_with_synced_nonce(

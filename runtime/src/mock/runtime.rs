@@ -1,25 +1,39 @@
 pub use crate::AccountId;
 use crate::{
-	opaque, AccountIdLookup, Address, Balance, BlakeTwo256, BlockHashCount, BlockLength,
-	BlockNumber, BlockWeights, ExistentialDeposit, Hash, Index, MaxLocks, MinimumPeriod, Moment,
-	RocksDbWeight, SS58Prefix, Signature, SignedExtra, Version,
+	opaque, AccountIdLookup, Address, AuthorityId, Balance, BlakeTwo256, BlockHashCount,
+	BlockLength, BlockNumber, BlockWeights, ExistentialDeposit, Hash, Index, MaxLocks,
+	MinimumPeriod, Moment, RocksDbWeight, SS58Prefix, Signature, Version,
 };
 use frame_support::pallet_prelude::*;
 use frame_support::traits::U128CurrencyToVote;
 use frame_support::{construct_runtime, parameter_types};
 use frame_system::EnsureRoot;
 use pallet_session::PeriodicSessions;
-use pallet_staking::{DefaultElection, NoKeys};
+use pallet_staking::{DefaultElection, NoKeys, StakingAuthorship};
 use pallet_staking::{EmptyList, TrivialTargetList};
 use pallet_staking::{TestBenchmarkingConfig, TrivialSessionHandler};
 use sp_runtime::generic;
+use sp_runtime::traits::Verify;
+use sp_runtime::MultiAddress;
 use sp_runtime::Perbill;
+use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+pub type Signer = <Signature as Verify>::Signer;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
+pub type SignedExtra = (
+	frame_system::CheckNonZeroSender<Runtime>,
+	frame_system::CheckSpecVersion<Runtime>,
+	frame_system::CheckTxVersion<Runtime>,
+	frame_system::CheckGenesis<Runtime>,
+	frame_system::CheckEra<Runtime>,
+	frame_system::CheckNonce<Runtime>,
+	frame_system::CheckWeight<Runtime>,
+);
 
 construct_runtime!(
 	pub enum Runtime
@@ -33,6 +47,7 @@ construct_runtime!(
 		Balances: pallet_balances,
 		Staking: pallet_staking::pallet,
 		Session: pallet_session,
+		TaskScheduler: pallet_offchain_task_scheduler,
 	}
 );
 
@@ -135,4 +150,68 @@ impl pallet_session::Config for Runtime {
 	type SessionHandler = TrivialSessionHandler<Self>;
 	type Keys = NoKeys;
 	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_offchain_task_scheduler::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type UnverifiedTaskTimeout = ConstU32<60>;
+	type AuthorityId = AuthorityId;
+	type TaskCall = RuntimeCall;
+	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
+	type Task = pallet_offchain_task_scheduler::mocked_task::MockTask<u32>;
+	type Authorship = StakingAuthorship<Self>;
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+	type Public = Signer;
+	type Signature = Signature;
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+where
+	RuntimeCall: From<C>,
+{
+	type OverarchingCall = RuntimeCall;
+	type Extrinsic = UncheckedExtrinsic;
+}
+
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+where
+	RuntimeCall: From<LocalCall>,
+{
+	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+		call: RuntimeCall,
+		public: Self::Public,
+		account: AccountId,
+		nonce: Index,
+	) -> Option<(
+		RuntimeCall,
+		<UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
+	)> {
+		let period = BlockHashCount::get() as u64;
+		let current_block = System::block_number().saturated_into::<u64>().saturating_sub(1);
+
+		let extra: SignedExtra = (
+			frame_system::CheckNonZeroSender::<Runtime>::new(),
+			frame_system::CheckSpecVersion::<Runtime>::new(),
+			frame_system::CheckTxVersion::<Runtime>::new(),
+			frame_system::CheckGenesis::<Runtime>::new(),
+			frame_system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
+			frame_system::CheckNonce::<Runtime>::from(nonce),
+			frame_system::CheckWeight::<Runtime>::new(),
+		);
+
+		#[cfg_attr(not(feature = "std"), allow(unused_variables))]
+		let raw_payload = SignedPayload::new(call, extra)
+			.map_err(|e| {
+				frame_support::log::warn!("SignedPayload error: {:?}", e);
+			})
+			.ok()?;
+
+		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+
+		let address = MultiAddress::Id(account);
+		let (call, extra, _) = raw_payload.deconstruct();
+		Some((call, (address, signature, extra)))
+	}
 }

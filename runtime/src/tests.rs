@@ -12,6 +12,7 @@ use sp_runtime::traits::BadOrigin;
 use std::default::Default;
 
 mod staking;
+mod task_scheduling;
 
 #[test]
 fn pallet_scheduler_works() {
