@@ -75,9 +75,12 @@ pub trait TaskV2<Runtime: SystemConfig> {
 	}
 }
 
-pub trait TaskScheduler<BlockNumber, Hash, Task> {
-	fn deadline() -> BlockNumber;
-	fn is_scheduled(deadline: &BlockNumber, id: &Hash) -> bool;
-	fn insert(deadline: &BlockNumber, id: &Hash, task: Task);
-	fn remove(deadline: &BlockNumber, id: &Hash);
+pub trait TaskScheduler {
+	type BlockNumber;
+	type Hash;
+	type Task;
+	fn deadline() -> Self::BlockNumber;
+	fn is_scheduled(deadline: &Self::BlockNumber, id: &Self::Hash) -> bool;
+	fn insert(deadline: &Self::BlockNumber, id: &Self::Hash, task: Self::Task);
+	fn remove(deadline: &Self::BlockNumber, id: &Self::Hash);
 }

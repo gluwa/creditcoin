@@ -99,9 +99,9 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		type TaskScheduler: TaskScheduler<
-				Self::BlockNumber,
-				Self::Hash,
-				Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
+				BlockNumber = Self::BlockNumber,
+				Hash = Self::Hash,
+				Task = Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
 			> + AuthorityController<AccountId = Self::AccountId>;
 	}
 

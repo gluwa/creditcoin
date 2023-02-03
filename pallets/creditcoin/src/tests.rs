@@ -5,8 +5,8 @@ use crate::{
 	},
 	mock::{RuntimeOrigin as Origin, *},
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Config, Currencies,
-	Currency, CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currencies, Currency,
+	CurrencyId, DealOrder, DealOrderId, DealOrders, Duration, EvmCurrencyType, EvmInfo,
 	EvmTransferKind, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LegacyTransferKind,
 	LoanTerms, Offer, OfferId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
@@ -3211,11 +3211,11 @@ fn add_and_remove_authority_works_for_root() {
 		let root = RawOrigin::Root;
 		let account: AccountId = AccountId::new([0; 32]);
 
-		assert!(!<Test as Config>::TaskScheduler::is_authority(&account));
-		<Test as Config>::TaskScheduler::insert_authority(&account);
-		assert!(<Test as Config>::TaskScheduler::is_authority(&account));
+		assert!(!TaskScheduler::is_authority(&account));
+		TaskScheduler::insert_authority(&account);
+		assert!(TaskScheduler::is_authority(&account));
 
 		assert_ok!(Creditcoin::remove_authority(Origin::from(root), account.clone()));
-		assert!(!<Test as Config>::TaskScheduler::is_authority(&account));
+		assert!(!TaskScheduler::is_authority(&account));
 	});
 }
