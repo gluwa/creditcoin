@@ -31,6 +31,6 @@ where
 	type Public = T::Public;
 
 	fn is_authorized(who: &Self::AccountId) -> bool {
-		T::is_authority(who)
+		Self::is_authority(who)
 	}
 }

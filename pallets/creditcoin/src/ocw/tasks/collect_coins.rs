@@ -217,7 +217,7 @@ pub(crate) mod tests {
 	use crate::helpers::non_paying_error;
 	use crate::mock::{
 		roll_by_with_ocw, set_rpc_uri, AccountId, Balances, ExtBuilder, MockedRpcRequests,
-		OffchainState, RuntimeOrigin, RwLock, Test,
+		OffchainState, RuntimeOrigin, RwLock, TaskScheduler, Test,
 	};
 	use crate::ocw::tasks::TaskV2;
 	use crate::ocw::{
@@ -235,7 +235,7 @@ pub(crate) mod tests {
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
 	use frame_system::RawOrigin;
-	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
+	use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 	use pallet_offchain_task_scheduler::Pallet as TaskSchedulerPallet;
 	use parity_scale_codec::Decode;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
@@ -717,7 +717,7 @@ pub(crate) mod tests {
 					assert_eq!(collect_coins_id, collected_coins_id);
 
 					let id = TaskV2::<Test>::to_id(&pending);
-					assert!( <Test>::is_scheduled( &Test::unverified_transfer_deadline(), &id));
+					assert!( TaskScheduler::is_scheduled( &Test::unverified_transfer_deadline(), &id));
 
 					let UnverifiedCollectedCoins { to, tx_id, .. } = pending;
 					assert_eq!(to, addr);
@@ -921,7 +921,7 @@ pub(crate) mod tests {
 
 			roll_by_with_ocw(1);
 
-			assert!(!Test::is_scheduled(&deadline, &collected_coins_id));
+			assert!(!TaskScheduler::is_scheduled(&deadline, &collected_coins_id));
 		});
 	}
 
@@ -1104,16 +1104,17 @@ pub(crate) mod tests {
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);
-			let deadline = Test::deadline();
+			let deadline = TaskScheduler::deadline();
 
-			Test::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
+			TaskScheduler::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
 
-			let call = TaskV2::<Test>::persistence_call(&cc, Test::deadline(), &id).unwrap();
+			let call =
+				TaskV2::<Test>::persistence_call(&cc, TaskScheduler::deadline(), &id).unwrap();
 			assert!(matches!(call, crate::Call::fail_task { .. }));
 			let c = RuntimeCall::from(call);
 
 			assert_ok!(c.dispatch(RuntimeOrigin::signed(auth)));
-			assert!(!Test::is_scheduled(&Test::deadline(), &id));
+			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}
 
@@ -1141,16 +1142,17 @@ pub(crate) mod tests {
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);
-			let deadline = Test::deadline();
+			let deadline = TaskScheduler::deadline();
 
-			Test::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
+			TaskScheduler::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
 
-			let call = TaskV2::<Test>::persistence_call(&cc, Test::deadline(), &id).unwrap();
+			let call =
+				TaskV2::<Test>::persistence_call(&cc, TaskScheduler::deadline(), &id).unwrap();
 			assert!(matches!(call, crate::Call::persist_task_output { .. }));
 			let c = RuntimeCall::from(call);
 
 			assert_ok!(c.dispatch(RuntimeOrigin::signed(auth)));
-			assert!(!Test::is_scheduled(&Test::deadline(), &id));
+			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}
 }

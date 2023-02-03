@@ -113,7 +113,7 @@ impl pallet_creditcoin::Config for Test {
 
 	type WeightInfo = super::weights::WeightInfo<Test>;
 
-	type TaskScheduler = Self;
+	type TaskScheduler = TaskScheduler;
 }
 
 impl pallet_offchain_task_scheduler::Config for Test {
@@ -128,7 +128,7 @@ impl pallet_offchain_task_scheduler::Config for Test {
 
 impl Test {
 	pub(crate) fn unverified_transfer_deadline() -> u64 {
-		Test::deadline()
+		TaskScheduler::deadline()
 	}
 }
 

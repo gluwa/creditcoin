@@ -1,4 +1,4 @@
-use super::pallet;
+use super::pallet::{Authorities, Pallet};
 use super::Config;
 
 pub trait AuthorityController {
@@ -8,24 +8,24 @@ pub trait AuthorityController {
 	fn is_authority(authority: &Self::AccountId) -> bool;
 }
 
-impl<Runtime: Config> AuthorityController for Runtime {
+impl<Runtime: Config> AuthorityController for Pallet<Runtime> {
 	type AccountId = Runtime::AccountId;
 
 	fn insert_authority(authority: &Self::AccountId) {
-		pallet::Authorities::<Runtime>::insert(authority, ());
+		Authorities::<Runtime>::insert(authority, ());
 	}
 	fn remove_authority(authority: &Self::AccountId) {
-		pallet::Authorities::<Runtime>::remove(authority);
+		Authorities::<Runtime>::remove(authority);
 	}
 	fn is_authority(authority: &Self::AccountId) -> bool {
-		pallet::Authorities::<Runtime>::contains_key(authority)
+		Authorities::<Runtime>::contains_key(authority)
 	}
 }
 
 #[cfg(test)]
 mod tests {
 	use crate::authority::AuthorityController;
-	use crate::mock::runtime::{AccountId, Runtime};
+	use crate::mock::runtime::{AccountId, Runtime, TaskScheduler};
 	use runtime_utils::ExtBuilder;
 
 	#[test]
@@ -33,17 +33,17 @@ mod tests {
 		ExtBuilder::default().build::<Runtime>().execute_with(|| {
 			let account: AccountId = AccountId::new([0; 32]);
 
-			assert!(!Runtime::is_authority(&account));
+			assert!(!TaskScheduler::is_authority(&account));
 
-			Runtime::insert_authority(&account);
+			TaskScheduler::insert_authority(&account);
 
-			let value = crate::Pallet::<Runtime>::authorities(&account);
+			let value = TaskScheduler::authorities(&account);
 			assert_eq!(value, Some(()));
 
-			assert!(Runtime::is_authority(&account));
+			assert!(TaskScheduler::is_authority(&account));
 
-			Runtime::remove_authority(&account);
-			let value = crate::Pallet::<Runtime>::authorities(&account);
+			TaskScheduler::remove_authority(&account);
+			let value = TaskScheduler::authorities(&account);
 			assert_eq!(value, None)
 		});
 	}
