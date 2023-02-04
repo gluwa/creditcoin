@@ -141,10 +141,6 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	#[pallet::getter(fn authorities)]
-	pub type Authorities<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, ()>;
-
-	#[pallet::storage]
 	pub type LegacyWallets<T: Config> = StorageMap<_, Twox128, LegacySighash, T::Balance>;
 
 	#[pallet::storage]
@@ -514,7 +510,6 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub authorities: Vec<T::AccountId>,
 		pub legacy_wallets: Vec<(LegacySighash, T::Balance)>,
 		pub legacy_balance_keeper: Option<T::AccountId>,
 	}
@@ -522,20 +517,13 @@ pub mod pallet {
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			Self {
-				authorities: Vec::new(),
-				legacy_wallets: Vec::new(),
-				legacy_balance_keeper: None,
-			}
+			Self { legacy_wallets: Vec::new(), legacy_balance_keeper: None }
 		}
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			for authority in &self.authorities {
-				Authorities::<T>::insert(authority.clone(), ());
-			}
 			for (sighash, balance) in &self.legacy_wallets {
 				LegacyWallets::<T>::insert(sighash, balance);
 			}
