@@ -31,7 +31,7 @@ construct_runtime!(
 		System: frame_system,
 		Timestamp: pallet_timestamp,
 		Balances: pallet_balances,
-		Staking: pallet_staking,
+		Staking: pallet_staking::pallet,
 		Session: pallet_session,
 	}
 );
