@@ -1,11 +1,11 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-
 use crate::benchmarking::alloc::format;
 use crate::helpers::{
 	extensions::{HexToAddress, IntoBounded},
 	EVMAddress, PublicToAddress,
 };
+use crate::migrations::Migrate;
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::types::Blockchain;
@@ -42,9 +42,6 @@ benchmarks! {
 	migration_v7 {
 		let t in 0..1024;
 
-		use frame_support::traits::StorageVersion;
-		StorageVersion::new(6).put::<Pallet<T>>();
-
 		let pending = types::UnverifiedCollectedCoins {
 			to: [0u8; 256].into_bounded(),
 			tx_id: [0u8; 256].into_bounded(),
@@ -59,7 +56,21 @@ benchmarks! {
 			);
 		}
 
-	 }: {Creditcoin::<T>::on_runtime_upgrade()}
+		let m = crate::migrations::v7::Migration::<T>::new();
+
+	 }: {m.migrate()}
+
+	migration_v8 {
+		let t in 0..1024;
+
+		for t in 0..t {
+			let account:T::AccountId = account("Authority",1,t);
+			Authorities::<T>::insert(account,());
+		}
+
+		let m = crate::migrations::v8::Migration::<T>::new();
+
+	 }: {m.migrate()}
 
 	on_initialize {
 		//insert a askorders
