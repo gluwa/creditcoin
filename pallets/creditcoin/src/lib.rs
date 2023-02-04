@@ -30,7 +30,7 @@ mod tests;
 
 #[macro_use]
 mod helpers;
-mod migrations;
+pub mod migrations;
 pub mod ocw;
 mod types;
 
@@ -107,6 +107,7 @@ pub mod pallet {
 
 	pub trait WeightInfo {
 		fn migration_v7(t: u32) -> Weight;
+		fn migration_v8(t: u32) -> Weight;
 		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;

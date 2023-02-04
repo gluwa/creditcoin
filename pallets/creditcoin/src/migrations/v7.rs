@@ -8,10 +8,10 @@ use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
 use sp_runtime::traits::UniqueSaturatedInto;
 
-pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
+pub(crate) struct Migration<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> Migration<Runtime> {
-	pub(super) fn new() -> Self {
+	pub(crate) fn new() -> Self {
 		Self(PhantomData)
 	}
 }
