@@ -255,7 +255,6 @@ impl ExtBuilder {
 		.unwrap();
 
 		let _ = crate::GenesisConfig::<Test> {
-			authorities: vec![],
 			legacy_wallets: self.legacy_wallets,
 			legacy_balance_keeper: self.legacy_keeper,
 		}
@@ -585,7 +584,6 @@ fn default_works() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
 		let defaults = crate::GenesisConfig::<Test>::default();
 
-		assert_eq!(defaults.authorities.len(), 0);
 		assert_eq!(defaults.legacy_wallets.len(), 0);
 		assert_eq!(defaults.legacy_balance_keeper, None);
 	});
