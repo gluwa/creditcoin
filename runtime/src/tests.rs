@@ -1,9 +1,11 @@
 use super::*;
 use crate::{Runtime, RuntimeCall as Call, RuntimeEvent as Event, System};
 use assert_matches::assert_matches;
+use frame_support::traits::PalletInfoAccess;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::EventRecord;
 use frame_system::RawOrigin;
+use pallet_creditcoin::migrations;
 use pallet_scheduler::Event as SchedulerEvent;
 use runtime_utils::{ExtBuilder, RollTo, Trivial};
 use sp_core::Pair;
@@ -67,4 +69,11 @@ fn must_be_root_to_schedule() {
 		let boxed = Box::new(call);
 		assert_noop!(Scheduler::schedule(RawOrigin::None.into(), 4, None, 0, boxed), BadOrigin);
 	});
+}
+
+#[test]
+fn scheduler_pallet_prefix_matches() {
+	use migrations::v8::SCHEDULER_PREFIX;
+	let scheduler_prefix = <TaskScheduler as PalletInfoAccess>::name();
+	assert_eq!(SCHEDULER_PREFIX, scheduler_prefix);
 }

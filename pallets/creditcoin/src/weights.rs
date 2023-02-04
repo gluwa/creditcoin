@@ -34,17 +34,30 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `crate`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
-	// Storage: unknown [0xd766358cca00233e6155d7c14e2c085f4e7b9012096b41c4eb3aaf947f6ea429] (r:1 w:1)
 	// Storage: Creditcoin PendingTasks (r:1 w:0)
 	// Storage: TaskScheduler PendingTasks (r:0 w:1)
+	/// The range of component `t` is `[0, 1024]`.
 	fn migration_v7(t: u32, ) -> Weight {
-		Weight::from_ref_time(0 as u64)
-			// Standard Error: 237_000
-			.saturating_add(Weight::from_ref_time(17_901_000 as u64).saturating_mul(t as u64))
-			.saturating_add(T::DbWeight::get().reads(2 as u64))
+		// Minimum execution time: 5_300 nanoseconds.
+		Weight::from_ref_time(5_300_000 as u64)
+			// Standard Error: 22_048
+			.saturating_add(Weight::from_ref_time(7_932_888 as u64).saturating_mul(t as u64))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(t as u64)))
-			.saturating_add(T::DbWeight::get().writes(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(t as u64)))
+	}
+	// Storage: Creditcoin Authorities (r:1 w:0)
+	// Storage: TaskScheduler Authorities (r:0 w:20)
+	/// The range of component `t` is `[0, 1024]`.
+	fn migration_v8(t: u32, ) -> Weight {
+		// Minimum execution time: 10_039 nanoseconds.
+		Weight::from_ref_time(10_039_000 as u64)
+			// Standard Error: 20_773
+			.saturating_add(Weight::from_ref_time(9_004_065 as u64).saturating_mul(t as u64))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(t as u64)))
+			.saturating_add(T::DbWeight::get().writes((2 as u64).saturating_mul(t as u64)))
 	}
 	// Storage: Creditcoin DealOrders (r:511 w:510)
 	// Storage: Creditcoin BidOrders (r:0 w:255)
