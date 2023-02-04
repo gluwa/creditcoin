@@ -5,6 +5,8 @@ use frame_election_provider_support::{
 };
 use frame_support::defensive;
 use frame_support::{traits::Defensive, RuntimeDebug};
+pub use pallet_staking_substrate as pallet;
+pub use pallet_staking_substrate::weights;
 #[cfg(feature = "std")]
 pub use pallet_staking_substrate::GenesisConfig;
 #[cfg(feature = "std")]
@@ -13,10 +15,6 @@ use pallet_staking_substrate::ValidatorPrefs;
 pub use pallet_staking_substrate::{
 	ActiveEra, ActiveEraInfo, Config, ErasStartSessionIndex, Error, Event, ForceEra, Forcing,
 	Pallet, RewardDestination, UseValidatorsMap,
-};
-pub use pallet_staking_substrate::{
-	__InherentHiddenInstance, __substrate_call_check, __substrate_event_check,
-	__substrate_genesis_config_check, tt_default_parts, tt_error_token,
 };
 use parity_scale_codec::{Decode, Encode, EncodeLike};
 use scale_info::TypeInfo;
@@ -37,10 +35,6 @@ macro_rules! logger {
 	};
 }
 pub(crate) use logger;
-
-pub mod weights {
-	pub use pallet_staking_substrate::weights::*;
-}
 
 pub struct EmptyList<T>(PhantomData<T>);
 impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
