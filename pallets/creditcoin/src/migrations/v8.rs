@@ -16,7 +16,7 @@ pub static SCHEDULER_PREFIX: &str = "TaskScheduler";
 use sp_std::marker::PhantomData;
 
 #[storage_alias]
-type Authorities<T: CreditcoinConfig> =
+pub(crate) type Authorities<T: CreditcoinConfig> =
 	StorageMap<crate::Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
 
 pub(crate) struct Migration<Runtime>(PhantomData<Runtime>);
