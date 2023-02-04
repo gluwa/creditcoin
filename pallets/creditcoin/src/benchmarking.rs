@@ -65,7 +65,7 @@ benchmarks! {
 
 		for t in 0..t {
 			let account:T::AccountId = account("Authority",1,t);
-			Authorities::<T>::insert(account,());
+			crate::migrations::v8::Authorities::<T>::insert(account,());
 		}
 
 		let m = crate::migrations::v8::Migration::<T>::new();
