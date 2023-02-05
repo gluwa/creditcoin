@@ -23,7 +23,7 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
         console.log('no auth key!');
         await api.rpc.author.insertKey('gots', AUTHORITY_SURI, AUTHORITY_PUBKEY);
     }
-    const auth = await api.query.creditcoin.authorities<Option<Null>>(AUTHORITY_ACCOUNTID);
+    const auth = await api.query.taskScheduler.authorities<Option<Null>>(AUTHORITY_ACCOUNTID);
     if (auth.isNone) {
         console.log('adding authority');
         await addAuthorityAsync(api, AUTHORITY_ACCOUNTID, sudoSigner);
