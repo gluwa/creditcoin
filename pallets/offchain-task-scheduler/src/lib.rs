@@ -156,7 +156,7 @@ pub mod pallet {
 			let signer = match Self::authority_pubkey() {
 				Some(pubkey) => pubkey,
 				None => {
-					log::debug!(target: "task", "Not an authority, skipping offchain work");
+					log::debug!(target: "runtime::task", "Not an authority, skipping offchain work");
 					return;
 				},
 			};
@@ -170,7 +170,7 @@ pub mod pallet {
 					Err(_) => continue,
 				};
 
-				log::trace!(target: "task", "@{block_number:?} Task {:8?}", id);
+				log::trace!(target: "runtime::task", "@{block_number:?} Task {:8?}", id);
 
 				use tasks::error::TaskError::*;
 				match task.forward_task(deadline) {

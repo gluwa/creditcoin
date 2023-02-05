@@ -32,7 +32,7 @@ impl<T: Config> Pallet<T> {
 				.into_iter()
 				.collect();
 
-		log::trace!(target: "task", "local keys {local_keys:?}");
+		log::trace!(target: "runtime::task ", "local keys {local_keys:?}");
 
 		T::Authorship::find_authorized(local_keys.iter())
 	}
@@ -73,7 +73,7 @@ impl<T: Config> Pallet<T> {
 		let synced_nonce = synced_nonce_storage.get::<T::Index>().ok().flatten();
 
 		let n = System::<T>::block_number();
-		log::trace!(target: "task", "@{n:?} Offnonce {synced_nonce:?} Onnonce {:?}", account_data.nonce);
+		log::trace!(target: "runtime::task", "@{n:?} Offnonce {synced_nonce:?} Onnonce {:?}", account_data.nonce);
 
 		if let Some(nonce) = synced_nonce {
 			if nonce > account_data.nonce {
