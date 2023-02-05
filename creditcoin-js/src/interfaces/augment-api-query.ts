@@ -127,12 +127,6 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
-            authorities: AugmentedQuery<
-                ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Option<Null>>,
-                [AccountId32]
-            > &
-                QueryableStorageEntry<ApiType, [AccountId32]>;
             bidOrders: AugmentedQuery<
                 ApiType,
                 (
