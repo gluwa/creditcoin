@@ -53,8 +53,10 @@ jobs:
           path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
 
   fork-creditcoin:
-    runs-on: ubuntu-20.04
-    needs: setup
+    needs:
+      - setup
+      - deploy-github-runner
+    runs-on: [ self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}" ]
 
     steps:
       - name: Testnet ENV
@@ -102,8 +104,10 @@ jobs:
           path: creditcoin-fork.json
 
   execute-integration-tests:
-    needs: fork-creditcoin
-    runs-on: ubuntu-20.04
+    needs:
+      - fork-creditcoin
+      - deploy-github-runner
+    runs-on: [ self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}" ]
     steps:
       - uses: actions/checkout@v3
 
@@ -300,6 +304,7 @@ jobs:
     needs:
       - deploy-github-runner
       - test-migrations
+      - execute-integration-tests
     if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
 
     steps:
