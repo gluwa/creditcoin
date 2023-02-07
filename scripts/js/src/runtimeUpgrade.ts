@@ -34,15 +34,15 @@ type Weight = OldWeight | NewWeight;
 
 function createOverrideWeight(api: ApiPromise): Weight {
     const sudoCallTypeId = api.runtimeMetadata.registry.metadata.pallets
-        .find((v) => v.name.toString() == 'Sudo')
+        .find((v) => v.name.toString() === 'Sudo')
         .calls.unwrap().type;
     const sudoCallTypeDef = api.runtimeMetadata.registry.lookup.getTypeDef(sudoCallTypeId);
     if (Array.isArray(sudoCallTypeDef.sub)) {
-        const sudoUncheckedWeightType = sudoCallTypeDef.sub.find((def) => def.name == 'sudo_unchecked_weight');
+        const sudoUncheckedWeightType = sudoCallTypeDef.sub.find((def) => def.name === 'sudo_unchecked_weight');
         if (Array.isArray(sudoUncheckedWeightType.sub)) {
             // the weight is the second argument to sudo_unchecked_weight
             const weightType = sudoUncheckedWeightType.sub[1];
-            if (weightType.type == 'u64') {
+            if (weightType.type === 'u64') {
                 // old weight (simple u64)
                 return new BN(1);
             } else {
