@@ -11,6 +11,7 @@ sudo apt install -y jq
 
 OWNER_REPO_SLUG="gluwa/creditcoin"
 REPOSITORY_URL="https://github.com/$OWNER_REPO_SLUG"
+EPHEMERAL=${LC_RUNNER_EPHEMERAL:-true}
 
 # we need a temporary registration token first
 REGISTRATION_TOKEN=$(curl --silent -X POST \
@@ -21,5 +22,5 @@ REGISTRATION_TOKEN=$(curl --silent -X POST \
 
 # Important: ephemeral runners are removed after a single job is executed on them
 # which is inline with the VM lifecycle
-./config.sh --unattended --ephemeral --url "$REPOSITORY_URL" --token "$REGISTRATION_TOKEN" --labels "$LC_RUNNER_VM_NAME"
+./config.sh --unattended --ephemeral "$EPHEMERAL" --url "$REPOSITORY_URL" --token "$REGISTRATION_TOKEN" --labels "$LC_RUNNER_VM_NAME"
 nohup ./run.sh >/dev/null 2>&1 </dev/null &
