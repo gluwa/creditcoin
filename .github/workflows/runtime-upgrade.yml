@@ -245,6 +245,7 @@ jobs:
               -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME -o StrictHostKeyChecking=no $SSH_USER_AT_HOSTNAME
         env:
           LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+          LC_RUNNER_EPHEMERAL: false
 
   test-migrations:
     env:
