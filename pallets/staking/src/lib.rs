@@ -31,6 +31,8 @@ use sp_runtime::AccountId32;
 pub use sp_staking::{EraIndex, StakingInterface};
 use sp_std::{boxed::Box, fmt::Debug, marker::PhantomData, vec};
 
+pub mod sampling;
+
 pub(crate) const LOG_TARGET: &str = "runtime::staking";
 
 macro_rules! logger {

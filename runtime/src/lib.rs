@@ -13,7 +13,7 @@ use frame_support::{
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
 use pallet_difficulty::Difficulty as DifficultyT;
-use pallet_offchain_task_scheduler::crypto::AuthorityId;
+use pallet_offchain_task_scheduler::{crypto::AuthorityId, ocw::sampling::AlwaysSampled};
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, Encode, OpaqueMetadata};
 use sp_runtime::{
@@ -159,6 +159,7 @@ impl pallet_offchain_task_scheduler::Config for Runtime {
 	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 	type Authorship = TaskScheduler;
+	type Sampling = AlwaysSampled<Self>;
 }
 
 impl pallet_scheduler::Config for Runtime {

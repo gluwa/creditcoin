@@ -67,6 +67,7 @@ pub mod pallet {
 		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
+	use crate::ocw::sampling::Sampling;
 	use crate::ocw::RuntimePublicOf;
 	use crate::tasks::TaskScheduler as TaskSchedulerT;
 	use core::fmt::Debug;
@@ -104,6 +105,7 @@ pub mod pallet {
 			RuntimePublic = RuntimePublicOf<Self>,
 			AccountId = Self::AccountId,
 		>;
+		type Sampling: Sampling<Id = Self::Hash, AccountId = Self::AccountId>;
 	}
 
 	pub trait WeightInfo {
@@ -188,27 +190,48 @@ pub mod pallet {
 				use tasks::error::TaskError::*;
 				match task.forward_task() {
 					Ok(call) => {
-						match Self::submit_txn_with_synced_nonce(signer.clone().into(), |_| {
-							Call::<T>::submit_output {
-								deadline,
-								task_id: id,
-								call: Box::new(call.clone()),
+						if let Some(sampled) = T::Sampling::sample(&id, &signer) {
+							match sampled {
+								//first time visiting the task, submit.
+								Ok(proof) => {
+									match Self::submit_txn_with_synced_nonce(
+										signer.clone().into(),
+										|_| {
+											Call::<T>::submit_output {
+												deadline,
+												task_id: id,
+												call: Box::new(call.clone()),
+												proof: proof.clone(),
+											}
+											.into()
+										},
+									) {
+										Ok(_) => {
+											guard.forget();
+										},
+										// release the lock and try again later.
+										Err(e) => {
+											log::error!(
+												target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {:?}",
+												e
+											);
+										},
+									}
+								},
+								//You weren't sampled, try disputing or wait until disputing is available.
+								Err(_proof) => {
+									guard.forget();
+								},
 							}
-							.into()
-						}) {
-							Ok(_) => guard.forget(),
-							Err(e) => {
-								log::error!(
-									target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {:?}",
-									e
-								);
-							},
+
+							continue;
+						} else {
+							guard.forget()
 						}
 					},
 					Err(FinishedTask) => {
 						log::debug!("Already handled Task ({:?}, {:?}) {task:?}", deadline, id);
 						guard.forget();
-						continue;
 					},
 					Err(Evaluation(cause)) => {
 						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
@@ -251,18 +274,32 @@ pub mod pallet {
 			deadline: T::BlockNumber,
 			task_id: T::Hash,
 			call: Box<T::TaskCall>,
+			proof: <T::Sampling as Sampling>::Proof,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
 			ensure!(T::Authorship::is_authorized(&who), Error::<T>::UnauthorizedSubmission);
 
+			//check if submitter or disputer
+			//idempotency checks for voting, add an index.
+			if T::Sampling::prove_sampled(&task_id, &who, proof)
+				.ok_or(Error::<T>::ProvingSamplingFailed)?
+			{
+				//sampled
+			} else {
+				//disputing
+			}
+
+			// not this call, one from the voting interface.
 			let underlying_result =
 				call.dispatch(RawOrigin::Root.into()).map(|_| ()).map_err(|e| e.error);
 
 			Self::deposit_event(Event::TaskCompleted { task_id, result: underlying_result });
 
+			// remove pending tasks within the voting pallet.
 			Self::remove(&deadline, &task_id);
 
+			//add weight from the call
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 	}

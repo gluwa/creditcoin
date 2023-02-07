@@ -10,8 +10,8 @@ use frame_support::{
 	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
 };
 use frame_system as system;
-use pallet_offchain_task_scheduler::crypto::AuthorityId;
 pub(crate) use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
+use pallet_offchain_task_scheduler::{crypto::AuthorityId, ocw::sampling::AlwaysSampled};
 pub(crate) use parking_lot::RwLock;
 use serde_json::Value;
 use sp_core::H256;
@@ -124,6 +124,7 @@ impl pallet_offchain_task_scheduler::Config for Test {
 	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Self>;
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 	type Authorship = TaskScheduler;
+	type Sampling = AlwaysSampled<Self>;
 }
 
 impl Test {

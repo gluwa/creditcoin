@@ -330,7 +330,8 @@ mod tests {
 				RuntimeOrigin::signed(auth),
 				deadline,
 				id,
-				Box::new(call)
+				Box::new(call),
+				()
 			));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
@@ -359,7 +360,8 @@ mod tests {
 				RuntimeOrigin::signed(auth),
 				deadline,
 				id,
-				Box::new(call)
+				Box::new(call),
+				()
 			));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
@@ -389,7 +391,8 @@ mod tests {
 					Origin::signed(test_info.lender.account_id),
 					deadline,
 					transfer_id.into_inner(),
-					Box::new(call.into())
+					Box::new(call.into()),
+					()
 				),
 				TaskSchedulerError::<Test>::UnauthorizedSubmission
 			);
@@ -412,7 +415,8 @@ mod tests {
 					Origin::signed(test_info.lender.account_id),
 					deadline,
 					id.into_inner(),
-					Box::new(call.into())
+					Box::new(call.into()),
+					(),
 				),
 				TaskSchedulerError::<Test>::UnauthorizedSubmission
 			);

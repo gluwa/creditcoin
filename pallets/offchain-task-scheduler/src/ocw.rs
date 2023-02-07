@@ -1,4 +1,5 @@
 pub(crate) mod nonce;
+pub mod sampling;
 
 use super::authorship::Authorship;
 use super::Error;

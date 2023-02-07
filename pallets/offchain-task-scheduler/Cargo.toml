@@ -11,6 +11,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 pallet-timestamp = { workspace = true }
 parity-scale-codec = { workspace = true }
+primitives = { workspace = true }
 scale-info = { workspace = true }
 serde = { version = "1.0.152", features = ["derive"], default-features = false }
 serde_json = { version = "1.0.93", features = [
@@ -31,6 +32,7 @@ std = [
     'serde/std',
     "pallet-timestamp/std",
     "frame-benchmarking/std",
+    "primitives/std",
 ]
 try-runtime = ["frame-support/try-runtime"]
 mocked-task = ['std']

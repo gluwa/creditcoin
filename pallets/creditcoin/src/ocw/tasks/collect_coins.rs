@@ -418,7 +418,8 @@ pub(crate) mod tests {
 					RuntimeOrigin::signed(molly),
 					deadline,
 					expected_collected_coins_id.into_inner(),
-					Box::new(call.into())
+					Box::new(call.into()),
+					(),
 				),
 				TaskSchedulerError::<Test>::UnauthorizedSubmission
 			);
@@ -786,7 +787,8 @@ pub(crate) mod tests {
 					RuntimeOrigin::signed(molly),
 					deadline,
 					collected_coins_id.into_inner(),
-					Box::new(call.into())
+					Box::new(call.into()),
+					()
 				),
 				TaskSchedulerError::<Test>::UnauthorizedSubmission
 			);
@@ -1095,7 +1097,8 @@ pub(crate) mod tests {
 				RuntimeOrigin::signed(auth),
 				deadline,
 				id,
-				Box::new(call)
+				Box::new(call),
+				()
 			));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
@@ -1137,7 +1140,8 @@ pub(crate) mod tests {
 				RuntimeOrigin::signed(auth),
 				deadline,
 				id,
-				Box::new(call)
+				Box::new(call),
+				()
 			));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});

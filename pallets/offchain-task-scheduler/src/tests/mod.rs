@@ -30,8 +30,8 @@ fn submit_output_yields_an_event() {
 			deadline,
 			task_id,
 			Box::new(call),
+			()
 		));
-
 		let mut events = System::events();
 
 		assert_matches!(events.pop(), Some(event) => {
@@ -59,7 +59,8 @@ fn submit_output_removes_the_completed_task() {
 			RuntimeOrigin::signed(auth.into()),
 			deadline,
 			task_id,
-			Box::new(call)
+			Box::new(call),
+			()
 		));
 
 		assert!(!TaskScheduler::is_scheduled(&deadline, &task_id));
@@ -84,7 +85,8 @@ fn submit_output_is_authorized() {
 				RuntimeOrigin::signed(auth),
 				deadline,
 				task_id,
-				Box::new(call)
+				Box::new(call),
+				()
 			),
 			Error::<Runtime>::UnauthorizedSubmission
 		);
