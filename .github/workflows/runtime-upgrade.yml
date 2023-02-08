@@ -161,6 +161,19 @@ jobs:
 
           popd
 
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          sudo apt install -y gcc
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          profile: minimal
+          override: true
+
       - name: Install Subwasm
         uses: actions-rs/cargo@v1
         with:
