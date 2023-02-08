@@ -124,6 +124,10 @@ jobs:
       - name: Start a local creditcoin-node from the fork
         run: |
           chmod a+x ./creditcoin-node
+          echo "DEBUG: **** free memory before running creditcoin-node ****"
+          free -m
+          ps aux --sort=-%mem | head -n 20
+          echo "DEBUG: *********************"
           ./creditcoin-node --chain ./creditcoin-fork.json --validator \
                             --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
                             --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
@@ -189,11 +193,19 @@ jobs:
       - name: Upgrade WASM
         run: |
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
+          echo "DEBUG: **** free memory before runtimeUpgrade ****"
+          free -m
+          ps aux --sort=-%mem | head -n 20
+          echo "DEBUG: *********************"
           yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm //Alice 0
 
       # TODO: wait & confirm wasm upgrade has finished, incl. migrations
       - name: Execute integration tests
         run: |
+          echo "DEBUG: **** free memory before running integration tests ****"
+          free -m
+          ps aux --sort=-%mem | head -n 20
+          echo "DEBUG: *********************"
           yarn --cwd ./integration-tests/ test --config creditcoin-fork.config.ts
 
       - name: Upload logs
