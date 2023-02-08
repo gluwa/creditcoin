@@ -191,6 +191,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::storage_prefix = "DealOrdersNew"]
 	#[pallet::getter(fn deal_orders)]
 	pub type DealOrders<T: Config> = StorageDoubleMap<
 		_,
@@ -202,6 +203,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::storage_prefix = "AddressesNew"]
 	#[pallet::getter(fn addresses)]
 	pub type Addresses<T: Config> =
 		StorageMap<_, Blake2_128Concat, AddressId<T::Hash>, Address<T::AccountId>>;
@@ -211,6 +213,7 @@ pub mod pallet {
 	pub type UsedGuids<T: Config> = StorageMap<_, Blake2_128Concat, Guid, ()>;
 
 	#[pallet::storage]
+	#[pallet::storage_prefix = "AskOrdersNew"]
 	#[pallet::getter(fn ask_orders)]
 	pub type AskOrders<T: Config> = StorageDoubleMap<
 		_,
@@ -222,6 +225,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::storage_prefix = "BidOrdersNew"]
 	#[pallet::getter(fn bid_orders)]
 	pub type BidOrders<T: Config> = StorageDoubleMap<
 		_,
@@ -233,6 +237,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::storage_prefix = "OffersNew"]
 	#[pallet::getter(fn offers)]
 	pub type Offers<T: Config> = StorageDoubleMap<
 		_,
@@ -244,6 +249,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::storage_prefix = "TransfersNew"]
 	#[pallet::getter(fn transfers)]
 	pub type Transfers<T: Config> = StorageMap<
 		_,
@@ -253,6 +259,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::storage_prefix = "CollectedCoinsNew"]
 	#[pallet::getter(fn collected_coins)]
 	pub type CollectedCoins<T: Config> = StorageMap<
 		_,

@@ -7,9 +7,7 @@ use crate::EvmSupportedTransferKinds;
 use crate::EvmTransferKind;
 use crate::Id;
 use core::convert::TryFrom;
-use frame_support::migration::move_prefix;
 use frame_support::pallet_prelude::*;
-use frame_support::storage::storage_prefix;
 use frame_support::storage_alias;
 use sp_std::prelude::*;
 
@@ -126,7 +124,7 @@ fn reconstruct_currency_from_deal<T: Config>(
 	deal_order: &OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 ) -> Option<Currency> {
 	let transfer_id = deal_order.funding_transfer_id.as_ref()?;
-	let transfer = OldTransfers::<T>::get(transfer_id)?;
+	let transfer = Transfers::<T>::get(transfer_id)?;
 	let currency = reconstruct_currency(&deal_order.blockchain, &transfer.kind)?;
 	Some(currency)
 }
@@ -215,7 +213,7 @@ fn to_legacy_transfer_kind(transfer_kind: OldTransferKind) -> LegacyTransferKind
 }
 
 #[storage_alias]
-type Transfers<T: Config> = StorageMap<
+type TransfersNew<T: Config> = StorageMap<
 	crate::Pallet<T>,
 	Identity,
 	TransferId<HashOf<T>>,
@@ -223,7 +221,7 @@ type Transfers<T: Config> = StorageMap<
 >;
 
 #[storage_alias]
-pub(crate) type OldTransfers<T: Config> = StorageMap<
+pub(crate) type Transfers<T: Config> = StorageMap<
 	crate::Pallet<T>,
 	Identity,
 	TransferId<HashOf<T>>,
@@ -231,11 +229,11 @@ pub(crate) type OldTransfers<T: Config> = StorageMap<
 >;
 
 #[storage_alias]
-type Addresses<T: Config> =
+type AddressesNew<T: Config> =
 	StorageMap<crate::Pallet<T>, Blake2_128Concat, AddressId<HashOf<T>>, Address<AccountIdOf<T>>>;
 
 #[storage_alias]
-pub(crate) type OldAddresses<T: Config> = StorageMap<
+pub(crate) type Addresses<T: Config> = StorageMap<
 	crate::Pallet<T>,
 	Blake2_128Concat,
 	AddressId<HashOf<T>>,
@@ -253,7 +251,7 @@ type PendingTasks<T: Config> = StorageDoubleMap<
 >;
 
 #[frame_support::storage_alias]
-type AskOrders<T: crate::Config> = StorageDoubleMap<
+type AskOrdersNew<T: crate::Config> = StorageDoubleMap<
 	crate::Pallet<T>,
 	Twox64Concat,
 	BlockNumberOf<T>,
@@ -263,7 +261,7 @@ type AskOrders<T: crate::Config> = StorageDoubleMap<
 >;
 
 #[frame_support::storage_alias]
-pub(crate) type OldAskOrders<T: crate::Config> = StorageDoubleMap<
+pub(crate) type AskOrders<T: crate::Config> = StorageDoubleMap<
 	crate::Pallet<T>,
 	Twox64Concat,
 	BlockNumberOf<T>,
@@ -273,7 +271,7 @@ pub(crate) type OldAskOrders<T: crate::Config> = StorageDoubleMap<
 >;
 
 #[frame_support::storage_alias]
-type BidOrders<T: crate::Config> = StorageDoubleMap<
+type BidOrdersNew<T: crate::Config> = StorageDoubleMap<
 	crate::Pallet<T>,
 	Twox64Concat,
 	BlockNumberOf<T>,
@@ -283,7 +281,7 @@ type BidOrders<T: crate::Config> = StorageDoubleMap<
 >;
 
 #[frame_support::storage_alias]
-pub(crate) type OldBidOrders<T: crate::Config> = StorageDoubleMap<
+pub(crate) type BidOrders<T: crate::Config> = StorageDoubleMap<
 	crate::Pallet<T>,
 	Twox64Concat,
 	BlockNumberOf<T>,
@@ -293,7 +291,7 @@ pub(crate) type OldBidOrders<T: crate::Config> = StorageDoubleMap<
 >;
 
 #[frame_support::storage_alias]
-type DealOrders<T: crate::Config> = StorageDoubleMap<
+type DealOrdersNew<T: crate::Config> = StorageDoubleMap<
 	crate::Pallet<T>,
 	Twox64Concat,
 	BlockNumberOf<T>,
@@ -303,7 +301,7 @@ type DealOrders<T: crate::Config> = StorageDoubleMap<
 >;
 
 #[frame_support::storage_alias]
-pub(crate) type OldDealOrders<T: crate::Config> = StorageDoubleMap<
+pub(crate) type DealOrders<T: crate::Config> = StorageDoubleMap<
 	crate::Pallet<T>,
 	Twox64Concat,
 	BlockNumberOf<T>,
@@ -325,20 +323,13 @@ pub(super) fn migrate<T: Config>() -> Weight {
 	let weight_each = T::DbWeight::get().reads_writes(1, 1);
 	let mut weight = Weight::zero();
 
-	let storage = |item: &[u8]| storage_prefix(crate::Pallet::<T>::name().as_bytes(), item);
-
 	log::info!("Moving prefixes!");
 
-	move_prefix(&storage(b"DealOrders"), &storage(b"OldDealOrders"));
-	log::info!("Moved DealOrders!");
-	move_prefix(&storage(b"AskOrders"), &storage(b"OldAskOrders"));
-	log::info!("Moved AskOrders!");
-	move_prefix(&storage(b"BidOrders"), &storage(b"OldBidOrders"));
-	log::info!("Moved BidOrders!");
-	move_prefix(&storage(b"Addresses"), &storage(b"OldAddresses"));
-	log::info!("Moved Addresses!");
-	move_prefix(&storage(b"Transfers"), &storage(b"OldTransfers"));
-	log::info!("Moved Transfers!");
+	log::info!("Moved DealOrdersNew!");
+	log::info!("Moved AskOrdersNew!");
+	log::info!("Moved BidOrdersNew!");
+	log::info!("Moved AddressesNew!");
+	log::info!("Moved TransfersNew!");
 
 	log::info!("Now migrating pending tasks");
 
@@ -394,7 +385,7 @@ pub(crate) fn migrate_address<T: Config>(
 		return Err(crate::Error::LazyMigrationFailed);
 	};
 	let address = Address { blockchain, value: old_address.value, owner: old_address.owner };
-	Addresses::<T>::insert(address_id, &address);
+	AddressesNew::<T>::insert(address_id, &address);
 
 	Ok(address)
 }
@@ -407,7 +398,7 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	let read = T::DbWeight::get().reads(1);
 
 	log::info!("Migrating old deal orders, consumed so far {}!", weight_dbg(weight));
-	for (id, address) in OldAddresses::<T>::drain() {
+	for (id, address) in Addresses::<T>::drain() {
 		weight.saturating_accrue(weight_each); // read + delete
 
 		weight.saturating_accrue(write);
@@ -421,7 +412,7 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	}
 
 	log::info!("Migrating old deal orders, consumed so far {}!", weight_dbg(weight));
-	for (exp, hash, deal_order) in OldDealOrders::<T>::drain() {
+	for (exp, hash, deal_order) in DealOrders::<T>::drain() {
 		weight = weight.saturating_add(weight_each); // read + write old deal
 
 		weight.saturating_accrue(read); // read transfer from storage in `reconstruct_currency_from_deal`
@@ -443,19 +434,19 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		};
 
 		weight.saturating_accrue(weight_each); // read then write to delete old ask
-		if let Some(ask) = OldAskOrders::<T>::take(offer.ask_id.expiration(), offer.ask_id.hash()) {
+		if let Some(ask) = AskOrders::<T>::take(offer.ask_id.expiration(), offer.ask_id.hash()) {
 			let ask_id = offer.ask_id;
 			let ask = translate_ask_order::<T>(ask, currency_id.clone());
 			weight = weight.saturating_add(write); // write migrated ask order to storage
-			AskOrders::<T>::insert(ask_id.expiration(), ask_id.hash(), ask);
+			AskOrdersNew::<T>::insert(ask_id.expiration(), ask_id.hash(), ask);
 		}
 
 		weight.saturating_accrue(weight_each); // read + write to delete old bid
-		if let Some(bid) = OldBidOrders::<T>::take(offer.bid_id.expiration(), offer.bid_id.hash()) {
+		if let Some(bid) = BidOrders::<T>::take(offer.bid_id.expiration(), offer.bid_id.hash()) {
 			let bid_id = offer.bid_id;
 			let bid = translate_bid_order::<T>(bid, currency_id.clone());
 			weight = weight.saturating_add(write); // write migrated bid order to storage
-			BidOrders::<T>::insert(bid_id.expiration(), bid_id.hash(), bid);
+			BidOrdersNew::<T>::insert(bid_id.expiration(), bid_id.hash(), bid);
 		}
 
 		if let Some(currency) = currency {
@@ -464,7 +455,7 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 		}
 
 		weight.saturating_accrue(write); // insert migrated deal
-		DealOrders::<T>::insert(exp, hash, translate_deal_order::<T>(deal_order, currency_id));
+		DealOrdersNew::<T>::insert(exp, hash, translate_deal_order::<T>(deal_order, currency_id));
 
 		if weight.any_gte(cutoff) {
 			return weight;
@@ -472,12 +463,12 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	}
 
 	log::info!("Migrating old ask orders, consumed so far {}!", weight_dbg(weight));
-	for (exp, hash, ask_order) in OldAskOrders::<T>::drain() {
+	for (exp, hash, ask_order) in AskOrders::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		let currency = CurrencyId::placeholder();
 		let ask = translate_ask_order::<T>(ask_order, currency);
 		weight.saturating_accrue(write);
-		AskOrders::<T>::insert(exp, hash, ask);
+		AskOrdersNew::<T>::insert(exp, hash, ask);
 
 		if weight.any_gte(cutoff) {
 			return weight;
@@ -485,12 +476,12 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	}
 
 	log::info!("Migrating old bid orders, consumed so far {}!", weight_dbg(weight));
-	for (exp, hash, bid_order) in OldBidOrders::<T>::drain() {
+	for (exp, hash, bid_order) in BidOrders::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		let currency = CurrencyId::placeholder();
 		let bid = translate_bid_order::<T>(bid_order, currency);
 		weight.saturating_accrue(write);
-		BidOrders::<T>::insert(exp, hash, bid);
+		BidOrdersNew::<T>::insert(exp, hash, bid);
 
 		if weight.any_gte(cutoff) {
 			return weight;
@@ -498,11 +489,11 @@ pub(crate) fn migrate_partial<T: Config>(cutoff: Weight) -> Weight {
 	}
 
 	log::info!("Migrating old transfers, consumed so far {}!", weight_dbg(weight));
-	for (id, transfer) in OldTransfers::<T>::drain() {
+	for (id, transfer) in Transfers::<T>::drain() {
 		weight.saturating_accrue(weight_each);
 		if let Some(transfer) = translate_transfer::<T>(transfer) {
 			weight.saturating_accrue(write);
-			Transfers::<T>::insert(id, transfer);
+			TransfersNew::<T>::insert(id, transfer);
 		}
 
 		if weight.any_gte(cutoff) {
@@ -549,10 +540,10 @@ mod tests {
 	use frame_support::Blake2_128Concat;
 	use sp_runtime::traits::Hash as _;
 
-	type OldAddresses = Addresses<Test>;
+	type Addresses = AddressesNew<Test>;
 
 	#[frame_support::storage_alias]
-	type DealOrders<T: crate::Config> = StorageDoubleMap<
+	type DealOrdersNew<T: crate::Config> = StorageDoubleMap<
 		crate::Pallet<T>,
 		Twox64Concat,
 		BlockNumberOf<T>,
@@ -561,10 +552,10 @@ mod tests {
 		super::OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 	>;
 
-	type OldDealOrders = DealOrders<Test>;
+	type DealOrders = DealOrdersNew<Test>;
 
 	#[frame_support::storage_alias]
-	type AskOrders<T: crate::Config> = StorageDoubleMap<
+	type AskOrdersNew<T: crate::Config> = StorageDoubleMap<
 		crate::Pallet<T>,
 		Twox64Concat,
 		BlockNumberOf<T>,
@@ -572,10 +563,10 @@ mod tests {
 		HashOf<T>,
 		super::OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
 	>;
-	type OldAskOrders = AskOrders<Test>;
+	type AskOrders = AskOrdersNew<Test>;
 
 	#[frame_support::storage_alias]
-	type BidOrders<T: crate::Config> = StorageDoubleMap<
+	type BidOrdersNew<T: crate::Config> = StorageDoubleMap<
 		crate::Pallet<T>,
 		Twox64Concat,
 		BlockNumberOf<T>,
@@ -583,10 +574,10 @@ mod tests {
 		HashOf<T>,
 		super::OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
 	>;
-	type OldBidOrders = BidOrders<Test>;
+	type BidOrders = BidOrdersNew<Test>;
 
 	#[storage_alias]
-	type Addresses<T: Config> = StorageMap<
+	type AddressesNew<T: Config> = StorageMap<
 		crate::Pallet<T>,
 		Blake2_128Concat,
 		AddressId<HashOf<T>>,
@@ -605,7 +596,7 @@ mod tests {
 
 	type OldPendingTasks = PendingTasks<Test>;
 
-	type OldTransfers = super::OldTransfers<Test>;
+	type Transfers = super::Transfers<Test>;
 
 	fn hash(val: &[u8]) -> <Test as frame_system::Config>::Hash {
 		<Test as frame_system::Config>::Hashing::hash(val)
@@ -809,11 +800,11 @@ mod tests {
 	}
 
 	fn insert_deal(id: &DealOrderId, deal: &OldDealOrder) {
-		OldDealOrders::insert(id.expiration(), id.hash(), deal);
+		DealOrders::insert(id.expiration(), id.hash(), deal);
 	}
 
 	fn insert_transfer(id: &TransferId<Hash>, transfer: &OldTransfer) {
-		OldTransfers::insert(id, transfer);
+		Transfers::insert(id, transfer);
 	}
 
 	const CONTRACT: &str = "0xaaaa";
@@ -838,7 +829,7 @@ mod tests {
 			migrate::<Test>();
 
 			let migrated_deal =
-				super::DealOrders::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
+				super::DealOrdersNew::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
 
 			assert_eq!(migrated_deal, old_to_new_deal(deal, Some(ethless_currency(CONTRACT))));
 		});
@@ -855,7 +846,7 @@ mod tests {
 			migrate::<Test>();
 
 			let migrated_deal =
-				super::DealOrders::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
+				super::DealOrdersNew::<Test>::get(deal_id.expiration(), deal_id.hash()).unwrap();
 
 			assert_eq!(migrated_deal, old_to_new_deal(deal, None));
 		});
@@ -877,7 +868,7 @@ mod tests {
 
 			migrate::<Test>();
 
-			let migrated_transfer = super::Transfers::<Test>::get(&transfer_id).unwrap();
+			let migrated_transfer = super::TransfersNew::<Test>::get(&transfer_id).unwrap();
 
 			assert_eq!(
 				migrated_transfer,
@@ -913,11 +904,11 @@ mod tests {
 				&*old_address.value
 			)));
 
-			OldAddresses::insert(&address_id, &old_address);
+			Addresses::insert(&address_id, &old_address);
 
 			migrate::<Test>();
 
-			let migrated_address = super::Addresses::<Test>::get(&address_id).unwrap();
+			let migrated_address = super::AddressesNew::<Test>::get(&address_id).unwrap();
 
 			assert_eq!(
 				migrated_address,
@@ -937,8 +928,8 @@ mod tests {
 
 			let ((ask_id, ask), (bid_id, bid), (offer_id, offer)) = old_ask_bid_offer(&test_info);
 
-			OldAskOrders::insert(ask_id.expiration(), ask_id.hash(), &ask);
-			OldBidOrders::insert(bid_id.expiration(), bid_id.hash(), &bid);
+			AskOrders::insert(ask_id.expiration(), ask_id.hash(), &ask);
+			BidOrders::insert(bid_id.expiration(), bid_id.hash(), &bid);
 			crate::Offers::<Test>::insert(offer_id.expiration(), offer_id.hash(), &offer);
 
 			let (deal_id, mut deal) = old_deal_order(&test_info, Some((offer, offer_id)));
@@ -957,10 +948,10 @@ mod tests {
 			migrate::<Test>();
 
 			let migrated_ask =
-				super::AskOrders::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
+				super::AskOrdersNew::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
 
 			let migrated_bid =
-				super::BidOrders::<Test>::get(bid_id.expiration(), bid_id.hash()).unwrap();
+				super::BidOrdersNew::<Test>::get(bid_id.expiration(), bid_id.hash()).unwrap();
 
 			let currency = ethless_currency(CONTRACT);
 
@@ -977,8 +968,8 @@ mod tests {
 
 			let ((ask_id, ask), (bid_id, bid), (offer_id, offer)) = old_ask_bid_offer(&test_info);
 
-			OldAskOrders::insert(ask_id.expiration(), ask_id.hash(), &ask);
-			OldBidOrders::insert(bid_id.expiration(), bid_id.hash(), &bid);
+			AskOrders::insert(ask_id.expiration(), ask_id.hash(), &ask);
+			BidOrders::insert(bid_id.expiration(), bid_id.hash(), &bid);
 			crate::Offers::<Test>::insert(offer_id.expiration(), offer_id.hash(), &offer);
 
 			let (deal_id, deal) = old_deal_order(&test_info, Some((offer, offer_id)));
@@ -988,10 +979,10 @@ mod tests {
 			migrate::<Test>();
 
 			let migrated_ask =
-				super::AskOrders::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
+				super::AskOrdersNew::<Test>::get(ask_id.expiration(), ask_id.hash()).unwrap();
 
 			let migrated_bid =
-				super::BidOrders::<Test>::get(bid_id.expiration(), bid_id.hash()).unwrap();
+				super::BidOrdersNew::<Test>::get(bid_id.expiration(), bid_id.hash()).unwrap();
 
 			assert_eq!(migrated_ask, old_to_new_ask(ask, None));
 
