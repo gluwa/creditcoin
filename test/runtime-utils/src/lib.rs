@@ -5,6 +5,8 @@ use frame_support::{
 	traits::{GenesisBuild, OffchainWorker, OnFinalize, OnInitialize},
 };
 use frame_system as system;
+use frame_system::Config as SystemConfig;
+use frame_system::Pallet as System;
 pub(crate) use parking_lot::RwLock;
 use pool::{PoolState, TestTransactionPoolExt};
 use sp_arithmetic::traits::One;
@@ -15,6 +17,7 @@ pub(crate) use sp_core::offchain::{
 use sp_io::TestExternalities;
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_state_machine::BasicExternalities;
+use std::marker::PhantomData;
 pub(crate) use std::sync::Arc;
 
 #[derive(Default)]
@@ -88,10 +91,6 @@ impl<G> ExtBuilder<G> {
 	}
 }
 
-use frame_system::Config as SystemConfig;
-use frame_system::Pallet as System;
-use std::marker::PhantomData;
-
 pub trait RollTo<R: SystemConfig> {
 	type Pallet;
 
@@ -106,9 +105,9 @@ pub trait RollTo<R: SystemConfig> {
 	}
 }
 
-pub struct Trivial<P>(PhantomData<P>);
+pub struct Trivial<P, R>(PhantomData<(P, R)>);
 
-impl<Pallet, R: SystemConfig> RollTo<R> for Trivial<(Pallet, R)>
+impl<Pallet, R: SystemConfig> RollTo<R> for Trivial<Pallet, R>
 where
 	Pallet: OnInitialize<R::BlockNumber> + OnFinalize<R::BlockNumber>,
 {
@@ -121,9 +120,9 @@ where
 	}
 }
 
-pub struct WithWorkerHook<P>(PhantomData<P>);
+pub struct WithWorkerHook<P, R>(PhantomData<(P, R)>);
 
-impl<Pallet, R: SystemConfig> RollTo<R> for WithWorkerHook<(Pallet, R)>
+impl<Pallet, R: SystemConfig> RollTo<R> for WithWorkerHook<Pallet, R>
 where
 	Pallet:
 		OnInitialize<R::BlockNumber> + OnFinalize<R::BlockNumber> + OffchainWorker<R::BlockNumber>,
