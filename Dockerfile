@@ -1,8 +1,14 @@
-FROM gluwa/ci-linux:production AS builder
+FROM ubuntu:20.04 as builder
 ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+RUN useradd --home-dir /creditcoin-node --create-home creditcoin
+USER creditcoin
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | /bin/sh -s -- -y
 
 WORKDIR /creditcoin-node
 COPY ci/env .
+SHELL ["/bin/bash", "-c"]
 RUN source ~/.cargo/env && \
     source ./env && \
     rustup default $RUSTC_VERSION && \
@@ -18,16 +24,18 @@ COPY runtime /creditcoin-node/runtime
 COPY sha3pow /creditcoin-node/sha3pow
 COPY chainspecs /creditcoin-node/chainspecs
 COPY test /creditcoin-node/test
-RUN apt-get update && apt-get install -y protobuf-compiler
 RUN source ~/.cargo/env && cargo build --release
 
 FROM ubuntu:20.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN useradd --home-dir /creditcoin-node --create-home creditcoin
+USER creditcoin
+
 EXPOSE 30333/tcp
 EXPOSE 30333/udp
 EXPOSE 9944 9933 9615
-ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
 COPY chainspecs .
 ENTRYPOINT [ "/bin/creditcoin-node" ]
