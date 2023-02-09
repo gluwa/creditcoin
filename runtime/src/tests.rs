@@ -24,14 +24,14 @@ fn generate_account(seed: &str) -> AccountId32 {
 #[test]
 fn pallet_scheduler_works() {
 	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
-		Trivial::<(Scheduler, Runtime)>::roll_to(1);
+		Trivial::<Scheduler, Runtime>::roll_to(1);
 		let call =
 			Call::System(frame_system::Call::remark_with_event { remark: b"dummy".to_vec() });
 		{
 			let boxed = Box::new(call);
 			assert_ok!(Scheduler::schedule(RawOrigin::Root.into(), 4, None, 0, boxed));
 		}
-		Trivial::<(Scheduler, Runtime)>::roll_to(3);
+		Trivial::<Scheduler, Runtime>::roll_to(3);
 		assert_matches!(
 			System::events().pop().expect("Scheduled Event"),
 			EventRecord {
@@ -39,7 +39,7 @@ fn pallet_scheduler_works() {
 				..
 			}
 		);
-		Trivial::<(Scheduler, Runtime)>::roll_to(4);
+		Trivial::<Scheduler, Runtime>::roll_to(4);
 		assert_matches!(
 			System::events().pop().expect("Dispatched Event"),
 			EventRecord {
@@ -47,7 +47,7 @@ fn pallet_scheduler_works() {
 				..
 			}
 		);
-		Trivial::<(Scheduler, Runtime)>::roll_to(5);
+		Trivial::<Scheduler, Runtime>::roll_to(5);
 		assert_eq!(System::events().len(), 2);
 	});
 }
@@ -55,7 +55,7 @@ fn pallet_scheduler_works() {
 #[test]
 fn must_be_root_to_schedule() {
 	ExtBuilder::<()>::default().build_sans_config().execute_with(|| {
-		Trivial::<(Scheduler, Runtime)>::roll_to(1);
+		Trivial::<Scheduler, Runtime>::roll_to(1);
 		let call =
 			Call::System(frame_system::Call::remark_with_event { remark: b"dummy".to_vec() });
 		let boxed = Box::new(call.clone());
