@@ -1,3 +1,4 @@
+use super::{vec, Vec};
 use super::{Migrate, PhantomData};
 use crate::pallet::WeightInfo;
 use crate::types::Task;
@@ -17,7 +18,9 @@ impl<Runtime> Migration<Runtime> {
 }
 
 impl<T: Config> Migrate for Migration<T> {
-	fn pre_upgrade(&self) {}
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
+	}
 
 	fn migrate(&self) -> Weight {
 		let mut n = 0u32;
@@ -32,7 +35,7 @@ impl<T: Config> Migrate for Migration<T> {
 		}
 		crate::weights::WeightInfo::<T>::migration_v7(n)
 	}
-	fn post_upgrade(&self) {
+	fn post_upgrade(&self, _ctx: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
 			7,

@@ -1,6 +1,7 @@
 // task storage moved from UnverifiedTransfers + UnverifiedCollectedCoins to PendingTasks
 pub use super::v4::Transfer;
 pub use super::v4::*;
+use super::{vec, Vec};
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use super::{Migrate, PhantomData};
 use crate::{
@@ -107,7 +108,9 @@ impl<Runtime> Migration<Runtime> {
 }
 
 impl<T: Config> Migrate for Migration<T> {
-	fn pre_upgrade(&self) {}
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
+	}
 
 	fn migrate(&self) -> Weight {
 		let mut weight: Weight = Weight::zero();
@@ -130,7 +133,7 @@ impl<T: Config> Migrate for Migration<T> {
 		weight
 	}
 
-	fn post_upgrade(&self) {
+	fn post_upgrade(&self, _ctx: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
 			5,
