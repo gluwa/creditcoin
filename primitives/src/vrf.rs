@@ -10,12 +10,16 @@ use sp_core::sr25519::Public;
 use sp_core::H256;
 #[cfg(feature = "std")]
 use sp_externalities::ExternalitiesExt;
-pub use sp_keystore::vrf::{make_transcript, VRFSignature, VRFTranscriptData, VRFTranscriptValue};
+#[cfg(feature = "std")]
+use sp_keystore::vrf::{VRFSignature, VRFTranscriptData, VRFTranscriptValue};
 #[cfg(feature = "std")]
 use sp_keystore::{KeystoreExt, SyncCryptoStore};
 use sp_runtime_interface::pass_by::PassByCodec;
 use sp_runtime_interface::runtime_interface;
+use sp_std::vec;
 use tracing as log;
+
+const ENGINE_ID: &[u8; 4] = b"COTS";
 
 mod model {
 	use super::*;
@@ -251,15 +255,26 @@ pub mod sortition {
 	}
 }
 
-const ENGINE_ID: &[u8; 4] = b"COTS";
+pub fn make_transcript(epoch: u64, pre_hash: impl Encode, task_id: impl Encode) -> Transcript {
+	let mut transcript = Transcript::new(ENGINE_ID);
+	transcript.append_u64(b"epoch", epoch);
+	transcript.append_message(b"task id", task_id.encode().as_slice());
+	transcript.append_message(b"predecessor hash", pre_hash.encode().as_slice());
+	transcript
+}
 
-pub(super) fn transcript_data(pre_hash: H256, epoch: u64, task_id: H256) -> VRFTranscriptData {
+#[cfg(feature = "std")]
+pub fn transcript_data(
+	epoch: u64,
+	pre_hash: impl Encode,
+	task_id: impl Encode,
+) -> VRFTranscriptData {
 	VRFTranscriptData {
 		label: ENGINE_ID,
 		items: vec![
 			("epoch", VRFTranscriptValue::U64(epoch)),
 			("task id", VRFTranscriptValue::Bytes(task_id.encode())),
-			("pre hash", VRFTranscriptValue::Bytes(pre_hash.encode())),
+			("predecessor hash", VRFTranscriptValue::Bytes(pre_hash.encode())),
 		],
 	}
 }
@@ -272,7 +287,7 @@ pub fn prove_vrf(
 	output: VRFOutput,
 	proof: VRFProof,
 ) -> Result<VRFInOut, SignatureError> {
-	let transcript = make_transcript(transcript_data(pre_hash, epoch, task_id));
+	let transcript = make_transcript(epoch, pre_hash, task_id);
 	pubkey
 		.vrf_verify(transcript, &output, &proof)
 		.map(|(inout, _proofbatchable)| inout)
@@ -308,7 +323,7 @@ pub trait Vrf {
 		let keystore = &***self
 			.extension::<KeystoreExt>()
 			.expect("No `keystore` associated for the current context!");
-		let public_data = transcript_data(pre_hash, epoch, task_id);
+		let public_data = transcript_data(epoch, pre_hash, task_id);
 		match SyncCryptoStore::sr25519_vrf_sign(keystore, key_type_id, pubkey, public_data) {
 			Ok(Some(signature)) => {
 				let VRFSignature { output, proof } = signature;
@@ -394,7 +409,7 @@ mod tests {
 
 			let pubkey = PublicKey::from_bytes(&pubkey.0).unwrap();
 
-			let transcript = make_transcript(transcript_data(pre_hash, epoch, task_id));
+			let transcript = make_transcript(epoch, pre_hash, task_id);
 
 			let seed = finalize_randomness(&pubkey, transcript, &public_seed).unwrap();
 
