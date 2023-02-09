@@ -1,6 +1,9 @@
 // address registration now verifies ownership, so removed existing addresses
 use super::{v3, AccountIdOf, HashOf};
+use super::{vec, Vec};
 use super::{Migrate, PhantomData};
+use crate::AddressId;
+use crate::{Config, ExternalAddress};
 use frame_support::{
 	dispatch::Weight,
 	storage_alias,
@@ -9,12 +12,8 @@ use frame_support::{
 };
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::SaturatedConversion;
-
-use crate::{Config, ExternalAddress};
-pub use v3::*;
-
-use crate::AddressId;
 use v3::Blockchain as OldBlockchain;
+pub use v3::*;
 
 #[derive(Encode, Decode)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -37,7 +36,9 @@ impl<Runtime> Migration<Runtime> {
 }
 
 impl<T: Config> Migrate for Migration<T> {
-	fn pre_upgrade(&self) {}
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
+	}
 
 	fn migrate(&self) -> Weight {
 		let sp_io::MultiRemovalResults { unique: count_removed, .. } =
@@ -46,7 +47,7 @@ impl<T: Config> Migrate for Migration<T> {
 		T::DbWeight::get().writes(count_removed.saturated_into())
 	}
 
-	fn post_upgrade(&self) {
+	fn post_upgrade(&self, _ctx: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
 			4,

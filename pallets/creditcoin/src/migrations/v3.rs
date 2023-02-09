@@ -1,6 +1,7 @@
 // `interest_type` added to `LoanTerms`
 
 use super::{v2, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use super::{vec, Vec};
 use super::{Migrate, PhantomData};
 use crate::{AddressId, Config, Duration, ExternalAmount, OfferId, TransferId};
 use frame_support::{
@@ -158,7 +159,9 @@ impl<Runtime> Migration<Runtime> {
 }
 
 impl<T: Config> Migrate for Migration<T> {
-	fn pre_upgrade(&self) {}
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
+	}
 
 	fn migrate(&self) -> Weight {
 		let mut weight: Weight = Weight::zero();
@@ -216,7 +219,7 @@ impl<T: Config> Migrate for Migration<T> {
 		weight
 	}
 
-	fn post_upgrade(&self) {
+	fn post_upgrade(&self, _ctx: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
 			3,
