@@ -18,3 +18,17 @@ sp-core.workspace = true
 tracing.workspace = true
 sp-arithmetic.workspace = true
 sp-state-machine.workspace = true
+sp-runtime.workspace = true
+
+[features]
+default = ["std"]
+std = [
+    "frame-support/std",
+    "frame-system/std",
+    "sp-keystore/std",
+    "sp-io/std",
+    "sp-core/std",
+    "sp-runtime/std",
+    "sp-arithmetic/std",
+    "sp-state-machine/std",
+]

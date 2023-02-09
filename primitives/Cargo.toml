@@ -16,20 +16,21 @@ num = { version = "0.4.0", default-features = false, features = [
     "num-bigint",
     "alloc",
 ] }
-schnorrkel = { version = "0.9", features = ["u64_backend"] }
-sp-arithmetic = { workspace = true }
-sp-keystore = { workspace = true }
-sp-runtime-interface = { workspace = true }
 parity-scale-codec = { workspace = true }
+schnorrkel = { version = "0.9", default-features = false }
+sp-arithmetic = { workspace = true }
+sp-consensus-vrf = { branch = "polkadot-v0.9.32", default-features = false, git = "https://github.com/paritytech/substrate.git" }
 sp-externalities = { workspace = true }
-sp-consensus-vrf = { version = "0.16.0", default-features = false }
+sp-keystore = { workspace = true, optional = true }
+sp-runtime-interface = { workspace = true }
+sp-std = { workspace = true }
 tracing.workspace = true
 
 [dev-dependencies]
 tracing = { workspace = true }
 proptest = "1.0.0"
 rand = "0.8.5"
-runtime-utils.workspace = true
+runtime-utils = { workspace = true, features = ["std"] }
 tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
 
 [features]
@@ -42,5 +43,7 @@ std = [
     "schnorrkel/std",
     "sp-externalities/std",
     "sp-consensus-vrf/std",
+    "sp-std/std",
+    "sp-runtime-interface/std",
 ]
 prometheus = ["substrate-prometheus-endpoint"]
