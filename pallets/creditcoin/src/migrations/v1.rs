@@ -2,6 +2,7 @@
 // and `InterestRate` changed from a type alias = u64 to a new struct `InterestRate`
 
 use super::Migrate;
+use super::{vec, Vec};
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::{
 	loan_terms::{Decimals, Duration},
@@ -191,8 +192,11 @@ impl<Runtime: Config> Migration<Runtime> {
 }
 
 impl<T: Config> Migrate for Migration<T> {
-	fn pre_upgrade(&self) {}
-	fn post_upgrade(&self) {
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
+	}
+
+	fn post_upgrade(&self, _blob: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
 			1,
