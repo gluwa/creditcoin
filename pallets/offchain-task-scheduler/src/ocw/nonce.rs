@@ -54,14 +54,14 @@ mod tests {
 		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Remark(0);
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
+			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -91,14 +91,14 @@ mod tests {
 		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Evaluation;
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
+			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -117,14 +117,14 @@ mod tests {
 		let mut ext = ext_builder.build();
 		let acct = <Runtime as SystemConfig>::AccountId::from(pkey.into_account().0);
 		ext.execute_with(|| {
-			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 			let task_deadline = Runtime::deadline();
 			let task = MockTask::Scheduler;
 			let id = TaskV2::<Runtime>::to_id(&task);
 			Runtime::insert(&task_deadline, &id, task);
 
-			WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
+			WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
 			let key = &nonce_key(&acct);
 			let synced_nonce = StorageValueRef::persistent(key);
@@ -156,7 +156,7 @@ mod tests {
 				let mut ext = ext_builder.build();
 
 				let execute = || {
-					Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+					Trivial::<TaskScheduler, Runtime>::roll_to(1);
 					let call: RuntimeCall =
 						MockTask::Remark(0).forward_task(Runtime::deadline()).expect("call").into();
 
@@ -205,7 +205,7 @@ mod tests {
 				let mut ext = ext_builder.build();
 
 				let execute = || {
-					Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+					Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 					let key = lock_key(&acct);
 					let mut lock = crate::Pallet::<Runtime>::nonce_lock_new(&key);
@@ -232,7 +232,7 @@ mod tests {
 		let mut ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
 		ext_builder.with_offchain();
 		ext_builder.build().execute_with(|| {
-			Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+			Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 			let key = &b"lock_key"[..];
 			let mut lock = Pallet::<Runtime>::nonce_lock_new(key);

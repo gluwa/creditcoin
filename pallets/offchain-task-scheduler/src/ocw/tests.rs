@@ -35,7 +35,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 	ext_builder.with_offchain();
 	let auth = AccountId::from(acct_pubkey.into_account().0);
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		//register twice (oversubscribe) under different expiration (aka deadline).
 
@@ -44,12 +44,12 @@ fn completed_oversubscribed_tasks_are_skipped() {
 		let id = TaskV2::<Runtime>::to_id(&task);
 		Runtime::insert(&deadline, &id, task.clone());
 
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(2);
+		Trivial::<TaskScheduler, Runtime>::roll_to(2);
 
 		let deadline_2 = Runtime::deadline();
 		Runtime::insert(&deadline_2, &id, task);
 
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(3);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(3);
 
 		//We now have 2 enqueued tasks.
 		let tx = pool.write().transactions.pop().expect("A single task");
@@ -65,7 +65,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 
 		assert_ok!(tx.call.dispatch(RuntimeOrigin::signed(auth)));
 
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(deadline_2);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(deadline_2);
 
 		//task expires without yielding txns.
 		assert!(pool.read().transactions.is_empty());
@@ -84,7 +84,7 @@ fn completed_oversubscribed_tasks_are_skipped() {
 fn task_deadline_oversubscription() {
 	let ext_builder = ExtBuilder::<GenesisConfig<Runtime>>::default().with_keystore();
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		//register twice under different expiration aka deadline
 		let deadline = Runtime::deadline();
@@ -92,13 +92,13 @@ fn task_deadline_oversubscription() {
 		let id = TaskV2::<Runtime>::to_id(&task);
 		Runtime::insert(&deadline, &id, task.clone());
 
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(2);
+		Trivial::<TaskScheduler, Runtime>::roll_to(2);
 
 		//register twice under different expiration aka deadline
 		let deadline_2 = Runtime::deadline();
 		Runtime::insert(&deadline_2, &id, task);
 
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(3);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(3);
 
 		//insertion checks
 		assert!(Runtime::is_scheduled(&deadline, &id));
@@ -116,14 +116,14 @@ fn evaluation_error_is_retried() {
 	generate_authority(&mut ext_builder);
 	ext_builder.with_offchain();
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
 		let task = MockTask::Evaluation;
 		let id = TaskV2::<Runtime>::to_id(&task);
 		Runtime::insert(&deadline, &id, task);
 
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 		assert!(logs_contain("Failed to verify pending task Evaluation"));
 		// It failed Evaluation and remains scheduled.
 		assert!(Runtime::is_scheduled(&deadline, &id));
@@ -144,14 +144,14 @@ fn forget_task_guard_when_task_has_been_persisted() {
 	ext_builder.with_offchain();
 	ext_builder.with_pool();
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
 		let task = MockTask::Remark(0);
 		let id = TaskV2::<Runtime>::to_id(&task);
 		Runtime::insert(&deadline, &id, task.clone());
 
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 		let key = crate::tasks::storage_key(&id);
 		let mut lock = crate::tasks::task_lock::<Runtime>(&key);
 		let lock_deadline = lock.try_lock().map(|_| ()).expect_err("deadline");
@@ -162,7 +162,7 @@ fn forget_task_guard_when_task_has_been_persisted() {
 
 		//fake a task being in storage.
 		crate::mock::task::is_persisted_replace(true);
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(lock_deadline.block_number + 1);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(lock_deadline.block_number + 1);
 
 		assert!(logs_contain("Already handled Task"));
 
@@ -185,7 +185,7 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 	ext_builder.with_offchain();
 	ext_builder.with_pool();
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
 		let task = MockTask::Scheduler;
@@ -193,7 +193,7 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 
 		Runtime::insert(&deadline, &id, task);
 
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
 		assert!(logs_contain("Task verification encountered a processing error"));
 	});
@@ -206,14 +206,14 @@ fn effective_guard_lifetime_until_task_expiration() {
 	ext_builder.with_offchain();
 	let pool = ext_builder.with_pool();
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let deadline = Runtime::deadline();
 		let task = MockTask::Remark(0);
 		let id = TaskV2::<Runtime>::to_id(&task);
 		Runtime::insert(&deadline, &id, task);
 
-		WithWorkerHook::<(TaskScheduler, Runtime)>::roll_to(2);
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
 		let tx = pool.write().transactions.pop().expect("Remark");
 		assert!(pool.read().transactions.is_empty());
@@ -242,14 +242,14 @@ fn offchain_signed_tx_works() {
 	let acct_pubkey = generate_authority(&mut ext_builder);
 	let pool = ext_builder.with_pool();
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let call = RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
 			remark: 0.encode(),
 		});
 
 		assert_ok!(Pallet::<Runtime>::offchain_signed_tx(acct_pubkey.into(), |_| call.clone()));
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(2);
+		Trivial::<TaskScheduler, Runtime>::roll_to(2);
 
 		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
 			let tx = Extrinsic::decode(&mut &*tx).unwrap();
@@ -264,7 +264,7 @@ fn offchain_signed_tx_send_fails() {
 	let acct_pubkey = generate_authority(&mut ext_builder);
 	ext_builder.with_pool();
 	ext_builder.build().execute_with(|| {
-		Trivial::<(TaskScheduler, Runtime)>::roll_to(1);
+		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
 		let call = RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
 			remark: 0.encode(),
