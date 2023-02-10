@@ -12,8 +12,8 @@ var authenticationType = 'sshPublicKey'
 param adminPasswordOrKey string
 
 @description('The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version.')
-param ubuntuOSVersion string = '20_04-lts'
-param ubuntuOffer string = '0001-com-ubuntu-server-focal'
+param ubuntuOSVersion string = '22_04-lts'
+param ubuntuOffer string = '0001-com-ubuntu-server-jammy'
 
 @description('Location for all resources.')
 param location string = resourceGroup().location
