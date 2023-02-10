@@ -10,7 +10,7 @@ use frame_support::{
 };
 use sp_io::hashing::twox_128;
 use sp_runtime::traits::SaturatedConversion;
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec};
 
 pub static SCHEDULER_PREFIX: &str = "TaskScheduler";
 
@@ -40,6 +40,7 @@ impl<T: Config> Migrate for Migration<T> {
 				target: "runtime::Creditcoin",
 				"pre-migrate V8, nothing to do.",
 			);
+			return vec![];
 		}
 
 		let storage_prefix = Authorities::<T>::storage_prefix();
@@ -53,7 +54,10 @@ impl<T: Config> Migrate for Migration<T> {
 			|key| Ok(key.to_vec()),
 		);
 
-		assert!(new_pallet_prefix_iter.count() == 0, "Authorities not empty");
+		assert!(
+			new_pallet_prefix_iter.count() == 0,
+			"Expected new authorities storage to be empty"
+		);
 
 		assert!(<crate::Pallet<T> as GetStorageVersion>::on_chain_storage_version() < 8);
 
