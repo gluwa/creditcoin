@@ -1,6 +1,6 @@
 # hadolint global ignore=DL3008,DL4006,SC2086
 
-FROM ubuntu:20.04 as builder
+FROM ubuntu:22.04 as builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -32,7 +32,7 @@ COPY chainspecs /creditcoin-node/chainspecs
 COPY test /creditcoin-node/test
 RUN source ~/.cargo/env && cargo build --release
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates && \

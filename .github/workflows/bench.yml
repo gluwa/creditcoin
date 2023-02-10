@@ -15,7 +15,7 @@ jobs:
     # To avoid endless loop in CI skip this job on the commit which
     # auto-updates the weights and is generated further below.
     if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'notaturkey' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       needs-bench: ${{ steps.version-check.outputs.needs_bench }}
     steps:
@@ -29,7 +29,7 @@ jobs:
           ./scripts/check-spec-increase.sh "remotes/origin/$GITHUB_BASE_REF" "HEAD"
 
   build-benchmarks:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: check-if-needed
     if: needs.check-if-needed.outputs.needs-bench == 1
     steps:
@@ -81,7 +81,7 @@ jobs:
           path: target/release/creditcoin-node
 
   deploy-github-runner:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build-benchmarks
     outputs:
       runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
@@ -229,7 +229,7 @@ jobs:
         run: echo ${{ steps.open_pr.outputs.pull_number }}
 
   remove-github-runner:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - deploy-github-runner
       - hardware-benchmarks
