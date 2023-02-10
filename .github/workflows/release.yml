@@ -9,7 +9,7 @@ jobs:
   build-native-runtime:
       strategy:
         matrix:
-          operating-system: [ubuntu-20.04, windows-2022, macos-11]
+          operating-system: [ubuntu-22.04, windows-2022, macos-11]
       runs-on: ${{ matrix.operating-system }}
 
       steps:
@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set-up Linux
-        if: matrix.operating-system == 'ubuntu-20.04'
+        if: matrix.operating-system == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
