@@ -11,7 +11,7 @@ env:
 
 jobs:
   setup:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
@@ -223,7 +223,7 @@ jobs:
           killall -9 creditcoin-node
 
   deploy-github-runner:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: setup
     outputs:
       runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
@@ -338,7 +338,7 @@ jobs:
                 snap --snapshot-path ${{ env.SNAPSHOT_DIR }}/creditcoin.
 
   remove-github-runner:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - deploy-github-runner
       - test-migrations
