@@ -3,6 +3,7 @@
 FROM ubuntu:22.04 as builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     ca-certificates cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler && \
     update-ca-certificates
@@ -35,6 +36,7 @@ RUN source ~/.cargo/env && cargo build --release
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends ca-certificates && \
     update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
