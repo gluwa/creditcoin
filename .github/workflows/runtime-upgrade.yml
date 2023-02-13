@@ -301,7 +301,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Download benchmark binary
+      - name: Download creditcoin-node binary
         uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
