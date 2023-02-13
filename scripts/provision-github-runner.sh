@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export DEBIAN_FRONTEND=noninteractive
 mkdir actions-runner
 pushd actions-runner || exit 1
 
