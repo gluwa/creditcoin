@@ -446,6 +446,7 @@ mod benches {
 		[pallet_creditcoin, Creditcoin]
 		[pallet_rewards, Rewards]
 		[pallet_difficulty, Difficulty]
+		[pallet_offchain_task_scheduler, TaskScheduler]
 	);
 }
 
