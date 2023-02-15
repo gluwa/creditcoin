@@ -27,7 +27,7 @@ while getopts "fcbp:r:s:" opt;do
 done
 
 
-OUTPUT="./pallets/$PALLET/src/weights.rs"
+OUTPUT="./pallets/${PALLET//_/-}/src/weights.rs"
 mkdir -p "pallets/$PALLET/src"
 
 if [[ $BUILD -eq 0 ]]
