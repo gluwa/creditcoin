@@ -77,7 +77,7 @@ fn authority_migration_parity_checks() {
 	use pallet_offchain_task_scheduler::Authorities as AT;
 
 	//Pallet prefix
-	let scheduler_prefix = <TaskScheduler as PalletInfoAccess>::name();
+	let scheduler_prefix = TaskScheduler::name();
 	assert_eq!(SCHEDULER_PREFIX, scheduler_prefix);
 
 	//Storage Prefix
