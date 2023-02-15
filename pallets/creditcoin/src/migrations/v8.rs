@@ -2,10 +2,11 @@ use super::Vec;
 use super::WeightInfo;
 use super::{AccountIdOf, Config};
 use super::{Migrate, StorageVersion, Weight};
+use crate::Pallet as TaskScheduler;
 use frame_support::{
 	storage::migration::move_storage_from_pallet,
 	storage_alias,
-	traits::{GetStorageVersion, PalletInfoAccess, StorageInstance},
+	traits::{GetStorageVersion, PalletInfoAccess},
 	Blake2_128Concat, StoragePrefixedMap,
 };
 use sp_io::hashing::twox_128;
@@ -32,7 +33,7 @@ impl<T: Config> Migrate for Migration<T> {
 
 		assert!(count != 0, "Authorities not found during migration");
 
-		let old_pallet = <crate::Pallet<T> as PalletInfoAccess>::name();
+		let old_pallet = TaskScheduler::<T>::name();
 		let new_pallet = SCHEDULER_PREFIX;
 
 		if old_pallet == new_pallet {
@@ -67,10 +68,10 @@ impl<T: Config> Migrate for Migration<T> {
 	fn migrate(&self) -> Weight {
 		let count: u32 = Authorities::<T>::iter().count().saturated_into();
 
-		let creditcoin = <crate::Pallet<T> as PalletInfoAccess>::name();
+		let creditcoin = TaskScheduler::<T>::name();
 
 		move_storage_from_pallet(
-			Authorities_Storage_Instance::<T>::STORAGE_PREFIX.as_bytes(),
+			Authorities::<T>::storage_prefix(),
 			creditcoin.as_bytes(),
 			SCHEDULER_PREFIX.as_bytes(),
 		);
