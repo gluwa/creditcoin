@@ -21,6 +21,33 @@ jobs:
         run: |
           docker build -t gluwa/creditcoin .
 
+      - name: Start a container from image
+        run: |
+            # see https://opensource.com/article/18/5/how-find-ip-address-linux
+            IP_ADDRESS=$(curl https://ifconfig.me)
+            echo "INFO: IP_ADDRESS=$IP_ADDRESS"
+
+            docker run -d -p 9933:9933 -p 30333:30333 -v $(pwd)/test-data:/data gluwa/creditcoin   \
+                --validator --chain mainnet                                   \
+                --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+                --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+                --public-addr "/dns4/$IP_ADDRESS/tcp/30333" \
+                --prometheus-external \
+                --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+                --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+                --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWSQye3uN3bZQRRC4oZbpiAZXkP2o5UZh6S8pqyh24bF3k" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWFrsEZ2aSfiigAxs6ir2kU6en4BewotyCXPhrJ7T1AzjN" \
+                --port 30333 --unsafe-rpc-external
+
+      - name: Healtcheck
+        run: |
+            sleep 60
+            ./scripts/check-health.sh
+
+      - name: Kill the container
+        run: |
+          # this will also kill the parent container
+          sudo killall -9 creditcoin-node
+
   sanity-tests:
     runs-on: ubuntu-latest
     steps:
