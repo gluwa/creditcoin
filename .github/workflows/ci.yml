@@ -217,15 +217,7 @@ jobs:
 
       - name: Start SUT
         run: |
-          MINING_KEY=$(docker run docker.io/parity/subkey:latest generate | grep "SS58 Address" | tr -d ' ' | cut -f2 -d':')
-
-          if [ -z "$MINING_KEY" ]; then
-            echo "ERROR: Problem generating mining key"
-            exit 1
-          fi
-
-          echo "INFO: MINING_KEY=$MINING_KEY"
-          cargo run --release -- --dev --mining-key $MINING_KEY --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          cargo run --release -- --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
