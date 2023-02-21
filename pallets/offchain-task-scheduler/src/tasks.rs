@@ -79,4 +79,5 @@ pub trait TaskScheduler<BlockNumber, Hash, Task> {
 	fn deadline() -> BlockNumber;
 	fn is_scheduled(deadline: &BlockNumber, id: &Hash) -> bool;
 	fn insert(deadline: &BlockNumber, id: &Hash, task: Task);
+	fn remove(deadline: &BlockNumber, id: &Hash);
 }
