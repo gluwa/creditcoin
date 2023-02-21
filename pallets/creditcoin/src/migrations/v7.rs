@@ -1,3 +1,4 @@
+use super::v6::PendingTasks;
 use super::{vec, Vec};
 use super::{Migrate, PhantomData};
 use crate::pallet::WeightInfo;
@@ -24,7 +25,7 @@ impl<T: Config> Migrate for Migration<T> {
 
 	fn migrate(&self) -> Weight {
 		let mut n = 0u32;
-		for (i, (k1, _, v)) in crate::PendingTasks::<T>::drain().enumerate() {
+		for (i, (k1, _, v)) in PendingTasks::<T>::drain().enumerate() {
 			n = i.unique_saturated_into();
 			let id: T::Hash = match &v {
 				Task::CollectCoins(pending) => TaskV2::<T>::to_id(pending),
@@ -66,7 +67,7 @@ pub mod tests {
 			};
 			let id = TaskV2::<Test>::to_id(&pending);
 
-			crate::PendingTasks::<Test>::insert(
+			PendingTasks::<Test>::insert(
 				1u64,
 				crate::TaskId::from(CollectedCoinsId::from(id)),
 				Task::from(pending.clone()),
@@ -95,7 +96,7 @@ pub mod tests {
 
 			let id = TaskV2::<Test>::to_id(&pending);
 
-			crate::PendingTasks::<Test>::insert(
+			PendingTasks::<Test>::insert(
 				1u64,
 				crate::TaskId::from(TransferId::from(id)),
 				Task::from(pending.clone()),

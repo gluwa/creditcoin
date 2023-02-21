@@ -24,6 +24,7 @@ use frame_system::Config as SystemConfig;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use pallet_balances::Pallet as Balances;
+use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_timestamp::Config as TimestampConfig;
 use pallet_timestamp::Pallet as Timestamp;
 use sp_core::ecdsa;
@@ -49,9 +50,9 @@ benchmarks! {
 		};
 		for t in 0..t {
 			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
-			crate::PendingTasks::<T>::insert(
-				T::BlockNumber::one(),
-				crate::TaskId::from(collected_coins_id),
+			T::TaskScheduler::insert(
+				&T::BlockNumber::one(),
+				&collected_coins_id.into_inner(),
 				crate::Task::from(pending.clone()),
 			);
 		}
