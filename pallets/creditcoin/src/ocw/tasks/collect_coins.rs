@@ -148,8 +148,7 @@ pub(crate) mod testing_constants {
 pub(crate) mod tests {
 
 	use super::*;
-	use crate::mock::PendingRequestExt;
-	use crate::TaskId;
+	use crate::mock::{PendingRequestExt, RuntimeCall};
 	use std::collections::HashMap;
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
@@ -213,6 +212,7 @@ pub(crate) mod tests {
 		}
 	});
 
+	use super::testing_constants::CHAIN;
 	use crate::helpers::extensions::HexToAddress;
 	use crate::helpers::non_paying_error;
 	use crate::mock::{
@@ -227,10 +227,11 @@ pub(crate) mod tests {
 	};
 	use crate::tests::generate_address_with_proof;
 	use crate::types::{AddressId, CollectedCoins, CollectedCoinsId};
-	use crate::Pallet as Creditcoin;
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
+	use crate::{Pallet as Creditcoin, Task};
 	use alloc::sync::Arc;
 	use assert_matches::assert_matches;
+	use frame_support::dispatch::Dispatchable;
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
 	use frame_system::RawOrigin;
@@ -239,10 +240,7 @@ pub(crate) mod tests {
 	use parity_scale_codec::Decode;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 	use sp_runtime::{ArithmeticError, TokenError};
-
 	use std::convert::TryFrom;
-
-	use super::testing_constants::CHAIN;
 
 	fn prepare_rpc_mocks() -> MockedRpcRequests {
 		let dummy_url = "dummy";
@@ -918,12 +916,12 @@ pub(crate) mod tests {
 			roll_by_with_ocw(deadline);
 
 			let collected_coins_id =
-				CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice());
+				CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice())
+					.into_inner();
 
 			roll_by_with_ocw(1);
 
-			assert!(Creditcoin::<Test>::pending_tasks(deadline, TaskId::from(collected_coins_id))
-				.is_none());
+			assert!(!Test::is_scheduled(&deadline, &collected_coins_id));
 		});
 	}
 
@@ -1084,6 +1082,75 @@ pub(crate) mod tests {
 				Creditcoin::<Test>::verify_collect_coins_ocw(&cc),
 				Err(OffchainError::InvalidTask(VerificationFailureCause::TransactionNotFound))
 			);
+		});
+	}
+
+	#[test]
+	fn unverified_collect_coins_is_removed_after_failing_the_task() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let mut rpcs = prepare_rpc_mocks();
+			rpcs.get_transaction.set_empty_response();
+			rpcs.mock_get_transaction(&mut state.write());
+
+			let (_, addr, _, _) = generate_address_with_proof("collector");
+
+			let cc = UnverifiedCollectedCoins {
+				to: addr,
+				tx_id: TX_HASH.hex_to_address(),
+				contract: GCreContract::default(),
+			};
+
+			let id = TaskV2::<Test>::to_id(&cc);
+			let deadline = Test::deadline();
+
+			Test::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
+
+			let call = TaskV2::<Test>::persistence_call(&cc, Test::deadline(), &id).unwrap();
+			assert!(matches!(call, crate::Call::fail_task { .. }));
+			let c = RuntimeCall::from(call);
+
+			assert_ok!(c.dispatch(RuntimeOrigin::signed(auth)));
+			assert!(!Test::is_scheduled(&Test::deadline(), &id));
+		});
+	}
+
+	#[test]
+	fn unverified_collect_coins_is_removed_after_persisting_the_task() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			mock_rpc_for_collect_coins(&state);
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				RuntimeOrigin::signed(acc),
+				CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			let cc = UnverifiedCollectedCoins {
+				to: addr,
+				tx_id: TX_HASH.hex_to_address(),
+				contract: GCreContract::default(),
+			};
+
+			let id = TaskV2::<Test>::to_id(&cc);
+			let deadline = Test::deadline();
+
+			Test::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
+
+			let call = TaskV2::<Test>::persistence_call(&cc, Test::deadline(), &id).unwrap();
+			assert!(matches!(call, crate::Call::persist_task_output { .. }));
+			let c = RuntimeCall::from(call);
+
+			assert_ok!(c.dispatch(RuntimeOrigin::signed(auth)));
+			assert!(!Test::is_scheduled(&Test::deadline(), &id));
 		});
 	}
 }

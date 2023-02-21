@@ -47,6 +47,10 @@ impl<H> CollectedCoinsId<H> {
 		let hash = Self::inner_hash::<C::Hashing>(contract_chain, blockchain_tx_id);
 		CollectedCoinsId(hash)
 	}
+
+	pub fn into_inner(self) -> H {
+		self.0
+	}
 }
 
 impl<H> From<H> for CollectedCoinsId<H> {
