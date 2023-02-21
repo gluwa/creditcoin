@@ -60,7 +60,7 @@ substrate-prometheus-endpoint = { workspace = true }
 task-scheduler-runtime-api = { workspace = true }
 thiserror = "1.0.38"
 try-runtime-cli = { workspace = true, optional = true }
-jsonrpsee = { version = "0.15.1", features = ["server"] }
+jsonrpsee = { version = "0.16.2", features = ["server"] }
 serde_json = "1.0.91"
 frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
