@@ -469,7 +469,7 @@ fn verify_transfer_ocw_returns_err() {
 	});
 }
 
-fn set_up_verify_transfer_env(
+pub(crate) fn set_up_verify_transfer_env(
 	register_transfer: bool,
 ) -> (MockUnverifiedTransfer, MockedRpcRequests) {
 	let rpc_uri = "http://localhost:8545";

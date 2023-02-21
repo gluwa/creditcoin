@@ -78,6 +78,10 @@ impl<H> TransferId<H> {
 		let hash = Self::inner_hash::<C::Hashing>(blockchain, blockchain_tx_id);
 		TransferId(hash)
 	}
+
+	pub fn into_inner(self) -> H {
+		self.0
+	}
 }
 
 impl<H> From<H> for TransferId<H> {
