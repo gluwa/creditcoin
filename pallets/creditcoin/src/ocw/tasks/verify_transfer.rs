@@ -216,15 +216,23 @@ impl<T: Config> crate::Pallet<T> {
 #[cfg(test)]
 mod tests {
 	use crate::helpers::extensions::HexToAddress;
+	use crate::mock::AccountId;
+	use crate::mock::RuntimeCall;
 	use crate::mock::RuntimeOrigin as Origin;
 	use crate::mock::{
 		get_mock_amount, get_mock_contract, get_mock_nonce, get_mock_tx_block_num,
 		get_mock_tx_hash, roll_to_with_ocw, set_rpc_uri, with_failing_create_transaction,
-		Creditcoin, ExtBuilder, MockedRpcRequests, Test, ETHLESS_RESPONSES,
+		Creditcoin, ExtBuilder, MockedRpcRequests, PendingRequestExt, Test, ETHLESS_RESPONSES,
 	};
+	use crate::ocw::tasks::Task;
+	use crate::ocw::tasks::TaskV2;
+	use crate::ocw::tests::set_up_verify_transfer_env;
 	use crate::tests::{adjust_deal_order_to_nonce, ethless_currency, TestInfo};
 	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
 	use frame_support::assert_ok;
+	use frame_support::dispatch::Dispatchable;
+	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
+	use sp_runtime::traits::IdentifyAccount;
 
 	#[test]
 	#[tracing_test::traced_test]
@@ -296,6 +304,53 @@ mod tests {
 				roll_to_with_ocw(2);
 				assert!(logs_contain("Failed to send a dispatchable transaction"));
 			});
+		});
+	}
+
+	#[test]
+	fn unverified_transfer_is_removed_after_failing_the_task() {
+		let mut ext = ExtBuilder::default();
+		let auth = AccountId::from(ext.generate_authority().into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let (unverified, mut requests) = set_up_verify_transfer_env(false);
+			requests.get_transaction.set_empty_response();
+			requests.mock_get_transaction(&mut state.write());
+
+			let id = TaskV2::<Test>::to_id(&unverified);
+			let deadline = Test::deadline();
+
+			Test::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
+
+			let call =
+				TaskV2::<Test>::persistence_call(&unverified, Test::deadline(), &id).unwrap();
+			assert!(matches!(call, crate::Call::fail_task { .. }));
+			let c = RuntimeCall::from(call);
+
+			assert_ok!(c.dispatch(Origin::signed(auth)));
+			assert!(!Test::is_scheduled(&Test::deadline(), &id));
+		});
+	}
+
+	#[test]
+	fn unverified_transfer_is_removed_after_persisting_the_task() {
+		let mut ext = ExtBuilder::default();
+		let auth = AccountId::from(ext.generate_authority().into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let (unverified, requests) = set_up_verify_transfer_env(false);
+			requests.mock_all(&mut state.write());
+
+			let id = TaskV2::<Test>::to_id(&unverified);
+			let deadline = Test::deadline();
+
+			Test::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
+
+			let call =
+				TaskV2::<Test>::persistence_call(&unverified, Test::deadline(), &id).unwrap();
+			assert!(matches!(call, crate::Call::persist_task_output { .. }));
+			let c = RuntimeCall::from(call);
+
+			assert_ok!(c.dispatch(Origin::signed(auth)));
+			assert!(!Test::is_scheduled(&Test::deadline(), &id));
 		});
 	}
 }
