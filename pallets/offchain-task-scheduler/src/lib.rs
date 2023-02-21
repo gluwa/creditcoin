@@ -227,4 +227,8 @@ impl<Runtime: Config>
 	fn insert(deadline: &BlockNumberFor<Runtime>, id: &HashFor<Runtime>, task: TaskFor<Runtime>) {
 		crate::pallet::PendingTasks::<Runtime>::insert(deadline, id, task);
 	}
+
+	fn remove(deadline: &BlockNumberFor<Runtime>, id: &HashFor<Runtime>) {
+		crate::pallet::PendingTasks::<Runtime>::remove(deadline, id);
+	}
 }

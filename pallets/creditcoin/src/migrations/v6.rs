@@ -194,7 +194,7 @@ type Addresses<T: Config> =
 	StorageMap<crate::Pallet<T>, Blake2_128Concat, AddressId<HashOf<T>>, Address<AccountIdOf<T>>>;
 
 #[storage_alias]
-type PendingTasks<T: Config> = StorageDoubleMap<
+pub type PendingTasks<T: Config> = StorageDoubleMap<
 	crate::Pallet<T>,
 	Identity,
 	BlockNumberOf<T>,
