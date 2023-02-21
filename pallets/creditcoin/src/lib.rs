@@ -147,17 +147,6 @@ pub mod pallet {
 	pub type LegacyBalanceKeeper<T: Config> = StorageValue<_, T::AccountId>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn pending_tasks)]
-	pub type PendingTasks<T: Config> = StorageDoubleMap<
-		_,
-		Identity,
-		T::BlockNumber,
-		Identity,
-		TaskId<T::Hash>,
-		Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-	>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn deal_orders)]
 	pub type DealOrders<T: Config> = StorageDoubleMap<
 		_,
@@ -1299,7 +1288,7 @@ pub mod pallet {
 					transfer.block = frame_system::Pallet::<T>::block_number();
 
 					Transfers::<T>::insert(&id, transfer);
-					(TaskId::from(id.clone()), Event::<T>::TransferVerified(id))
+					(id.clone().into_inner(), Event::<T>::TransferVerified(id))
 				},
 				TaskOutput::CollectCoins(id, collected_coins) => {
 					ensure!(
@@ -1316,14 +1305,10 @@ pub mod pallet {
 					)?;
 
 					CollectedCoins::<T>::insert(&id, collected_coins.clone());
-					(
-						TaskId::from(id.clone()),
-						Event::<T>::CollectedCoinsMinted(id, collected_coins),
-					)
+					(id.clone().into_inner(), Event::<T>::CollectedCoinsMinted(id, collected_coins))
 				},
 			};
-
-			PendingTasks::<T>::remove(deadline, task_id);
+			T::TaskScheduler::remove(&deadline, &task_id);
 
 			Self::deposit_event(event);
 
@@ -1344,23 +1329,29 @@ pub mod pallet {
 
 			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
 
-			let event = match &task_id {
+			let (task_id, event) = match task_id {
 				TaskId::VerifyTransfer(transfer_id) => {
 					ensure!(
-						!Transfers::<T>::contains_key(transfer_id),
+						!Transfers::<T>::contains_key(&transfer_id),
 						Error::<T>::TransferAlreadyRegistered
 					);
-					Event::<T>::TransferFailedVerification(transfer_id.clone(), cause)
+					(
+						transfer_id.clone().into_inner(),
+						Event::<T>::TransferFailedVerification(transfer_id, cause),
+					)
 				},
 				TaskId::CollectCoins(collected_coins_id) => {
 					ensure!(
-						!CollectedCoins::<T>::contains_key(collected_coins_id),
+						!CollectedCoins::<T>::contains_key(&collected_coins_id),
 						Error::<T>::CollectCoinsAlreadyRegistered
 					);
-					Event::<T>::CollectCoinsFailedVerification(collected_coins_id.clone(), cause)
+					(
+						collected_coins_id.clone().into_inner(),
+						Event::<T>::CollectCoinsFailedVerification(collected_coins_id, cause),
+					)
 				},
 			};
-			PendingTasks::<T>::remove(deadline, &task_id);
+			T::TaskScheduler::remove(&deadline, &task_id);
 			Self::deposit_event(event);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
