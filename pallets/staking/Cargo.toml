@@ -19,7 +19,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
 pallet-session = { workspace = true }
-pallet-staking-substrate = { package = "pallet-staking", default-features = false, branch = "polkadot-v0.9.32", git = "https://github.com/paritytech/substrate.git" }
+pallet-staking-substrate = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde.workspace = true
 scale-info = { workspace = true }
