@@ -1949,10 +1949,10 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "scale-info",
- "sp-arithmetic 5.0.0",
+ "sp-arithmetic",
  "sp-npos-elections",
- "sp-runtime 6.0.0",
- "sp-std 4.0.0",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4165,8 +4165,8 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-authorship",
- "sp-runtime 6.0.0",
- "sp-std 4.0.0",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4326,13 +4326,13 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
- "sp-core 6.0.0",
- "sp-io 6.0.0",
- "sp-runtime 6.0.0",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
  "sp-session",
  "sp-staking",
- "sp-std 4.0.0",
- "sp-trie 6.0.0",
+ "sp-std",
+ "sp-trie",
 ]
 
 [[package]]
@@ -4349,10 +4349,10 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-arithmetic 5.0.0",
- "sp-runtime 6.0.0",
+ "sp-arithmetic",
+ "sp-runtime",
  "sp-staking",
- "sp-std 4.0.0",
+ "sp-std",
 ]
 
 [[package]]
@@ -4371,11 +4371,11 @@ dependencies = [
  "rand_chacha 0.2.2",
  "scale-info",
  "serde",
- "sp-application-crypto 6.0.0",
- "sp-io 6.0.0",
- "sp-runtime 6.0.0",
+ "sp-application-crypto",
+ "sp-io",
+ "sp-runtime",
  "sp-staking",
- "sp-std 4.0.0",
+ "sp-std",
 ]
 
 [[package]]
@@ -6914,8 +6914,8 @@ dependencies = [
  "async-trait",
  "parity-scale-codec",
  "sp-inherents",
- "sp-runtime 6.0.0",
- "sp-std 4.0.0",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -7196,10 +7196,10 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-arithmetic 5.0.0",
- "sp-core 6.0.0",
- "sp-runtime 6.0.0",
- "sp-std 4.0.0",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
