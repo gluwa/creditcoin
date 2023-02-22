@@ -17,7 +17,7 @@ num = { version = "0.4.0", default-features = false, features = [
     "alloc",
 ] }
 parity-scale-codec = { workspace = true }
-schnorrkel = { version = "0.9", default-features = false }
+schnorrkel = { version = "0.10", default-features = false }
 sp-arithmetic = { workspace = true }
 sp-consensus-vrf = { branch = "polkadot-v0.9.32", default-features = false, git = "https://github.com/paritytech/substrate.git" }
 sp-externalities = { workspace = true }
