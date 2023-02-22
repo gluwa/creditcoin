@@ -374,7 +374,7 @@ mod tests {
 	}
 
 	#[test]
-	fn generate_vrf_output_should_be_different_for_different_private_data() {
+	fn generate_vrf_output_should_be_different_for_different_pre_hash() {
 		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
 		let builder = ExtBuilder::<()>::default().with_keystore();
@@ -385,6 +385,8 @@ mod tests {
 				generate_vrf(keyring_id, &pubkey_struct, pre_hash, epoch, task_id).unwrap();
 
 			for i in 0..=1_000u32 {
+				// pre_hash is part of "public data".
+				// Different values should yield different results
 				let pre_hash = blake2_256(&i.to_be_bytes()).into();
 
 				let (public_seed, _proof) =
