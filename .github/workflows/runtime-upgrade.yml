@@ -245,7 +245,7 @@ jobs:
           mkdir -p ~/.ssh/
           ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa
           cat ~/.ssh/id_rsa.pub >> .github/authorized_keys
-          echo "pub_key=$(cat ~/.ssh/id_rsa.pub )" >> $GITHUB_OUTPUT
+          echo "pub_key=$(cat .github/authorized_keys )" >> $GITHUB_OUTPUT
 
       - name: Evaluate env vars
         id: get-env
