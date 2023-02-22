@@ -364,12 +364,16 @@ mod tests {
 		PublicData { key_type_id, pre_hash, epoch, task_id }
 	}
 
-	fn add_testing_key(key_type_id: KeyTypeId, builder: &ExtBuilder<()>) -> Public {
+	fn add_testing_key(
+		key_type_id: KeyTypeId,
+		builder: &ExtBuilder<()>,
+		seed_phrase: &str,
+	) -> Public {
 		builder
 			.keystore
 			.as_ref()
 			.expect("A keystore")
-			.sr25519_generate_new(key_type_id, Some("//fixed"))
+			.sr25519_generate_new(key_type_id, Some(seed_phrase))
 			.unwrap()
 	}
 
@@ -378,7 +382,7 @@ mod tests {
 		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
 		let builder = ExtBuilder::<()>::default().with_keystore();
-		let pubkey_struct = add_testing_key(keyring_id, &builder);
+		let pubkey_struct = add_testing_key(keyring_id, &builder, "//fixed");
 
 		builder.build_sans_config().execute_with(|| {
 			let (mut previous, _proof) =
@@ -399,11 +403,31 @@ mod tests {
 	}
 
 	#[test]
+	fn generate_vrf_output_should_be_different_between_signers_for_the_same_input() {
+		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
+
+		let builder = ExtBuilder::<()>::default().with_keystore();
+		// two different signers will be signing the same public data
+		let pubkey_struct_alice = add_testing_key(keyring_id, &builder, "//Alice");
+		let pubkey_struct_bob = add_testing_key(keyring_id, &builder, "//Bob");
+
+		builder.build_sans_config().execute_with(|| {
+			let (alices_seed, _proof) =
+				generate_vrf(keyring_id, &pubkey_struct_alice, pre_hash, epoch, task_id).unwrap();
+
+			let (bobs_seed, _proof) =
+				generate_vrf(keyring_id, &pubkey_struct_bob, pre_hash, epoch, task_id).unwrap();
+
+			assert_ne!(alices_seed, bobs_seed);
+		})
+	}
+
+	#[test]
 	fn prove_vrf_output() {
 		let PublicData { key_type_id: keyring_id, pre_hash, epoch, task_id } = mocked_public_data();
 
 		let builder = ExtBuilder::<()>::default().with_keystore();
-		let pubkey = add_testing_key(keyring_id, &builder);
+		let pubkey = add_testing_key(keyring_id, &builder, "//fixed");
 
 		builder.build_sans_config().execute_with(|| {
 			let (public_seed, proof) =
