@@ -13,7 +13,7 @@ import type {
 } from '@polkadot/api-base/types';
 import type { Bytes, Compact, Option, U256, U8aFixed, Vec, bool, i64, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, Call, H256, MultiAddress, Perbill } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, Call, H256, MultiAddress } from '@polkadot/types/interfaces/runtime';
 import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
@@ -686,13 +686,6 @@ declare module '@polkadot/api-base/types/submittable' {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         system: {
-            /**
-             * A dispatch that will fill the block weight up to the given ratio.
-             **/
-            fillBlock: AugmentedSubmittable<
-                (ratio: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Perbill]
-            >;
             /**
              * Kill all storage items with a key that starts with the given prefix.
              *
