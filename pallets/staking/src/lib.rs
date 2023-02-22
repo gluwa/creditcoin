@@ -1,6 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_election_provider_support::{BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ElectionProviderBase, SortedListProvider};
+use frame_election_provider_support::{
+	BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ElectionProviderBase,
+	SortedListProvider,
+};
 use frame_support::{defensive, traits::Defensive, traits::DefensiveTruncateFrom, RuntimeDebug};
 pub use pallet_staking_substrate as pallet;
 pub use pallet_staking_substrate::weights;
@@ -256,7 +259,7 @@ where
 					accounts
 						.iter()
 						.map(|acc| (acc.clone(), Default::default()))
-						.collect::<Vec<_>>()
+						.collect::<Vec<_>>(),
 				)
 			})
 	}
