@@ -1,10 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_election_provider_support::{
-	ElectionDataProvider, ElectionProvider, ElectionProviderBase, SortedListProvider, Supports,
-};
-use frame_support::defensive;
-use frame_support::{traits::Defensive, RuntimeDebug};
+use frame_election_provider_support::{BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ElectionProviderBase, SortedListProvider};
+use frame_support::{defensive, traits::Defensive, traits::DefensiveTruncateFrom, RuntimeDebug};
 pub use pallet_staking_substrate as pallet;
 pub use pallet_staking_substrate::weights;
 #[cfg(feature = "std")]
@@ -20,7 +17,7 @@ use parity_scale_codec::{Decode, Encode, EncodeLike};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{OpaqueKeys, Zero};
-use sp_runtime::AccountId32;
+use sp_runtime::{AccountId32, BoundedVec};
 pub use sp_staking::{EraIndex, StakingInterface};
 use sp_std::{boxed::Box, fmt::Debug, marker::PhantomData, vec, vec::Vec};
 
@@ -230,10 +227,11 @@ where
 	type AccountId = AccountId;
 	type BlockNumber = BlockNumber;
 	type Error = &'static str;
+	type MaxWinners = (); //TODO
 	type DataProvider = DataProvider;
 
-	fn ongoing() -> bool {
-		false
+	fn desired_targets_checked() -> frame_election_provider_support::data_provider::Result<u32> {
+		todo!()
 	}
 }
 
@@ -243,13 +241,23 @@ where
 	DataProvider: ElectionDataProvider<AccountId = AccountId, BlockNumber = BlockNumber>,
 	AccountId: Clone + Debug,
 {
-	fn elect() -> Result<Supports<AccountId>, Self::Error> {
-		let candidates: Result<Supports<AccountId>, Self::Error> =
-			DataProvider::electable_targets(Some(1))
-				.defensive_proof("Trivial 0 AccountId")
-				.map(|accounts| {
-					accounts.iter().map(|acc| (acc.clone(), Default::default())).collect::<Vec<_>>()
-				});
-		candidates
+	fn ongoing() -> bool {
+		false
+	}
+
+	fn elect() -> Result<BoundedSupportsOf<Self>, Self::Error> {
+		DataProvider::electable_targets(Some(1))
+			.defensive_proof("Trivial 0 AccountId")
+			.map_err(|_| "failed to elect")
+			.map(|accounts| {
+				// Attempt to fit the resulting accounts into a bounded vec,
+				// If they don't fit print a warning and return what we can
+				BoundedVec::defensive_truncate_from(
+					accounts
+						.iter()
+						.map(|acc| (acc.clone(), Default::default()))
+						.collect::<Vec<_>>()
+				)
+			})
 	}
 }
