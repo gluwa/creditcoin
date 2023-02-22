@@ -11,7 +11,7 @@ repository.workspace = true
 [dependencies]
 sp-core = { workspace = true }
 substrate-prometheus-endpoint = { optional = true, workspace = true }
-merlin = { version = "2.0.1", default-features = false }
+merlin = { version = "3.0.0", default-features = false }
 num = { version = "0.4.0", default-features = false, features = [
     "num-bigint",
     "alloc",
