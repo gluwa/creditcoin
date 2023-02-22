@@ -39,7 +39,6 @@ import type {
     PalletBalancesError,
     PalletBalancesEvent,
     PalletBalancesReasons,
-    PalletBalancesReleases,
     PalletBalancesReserveData,
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
@@ -95,6 +94,7 @@ import type {
     PalletTransactionPaymentChargeTransactionPayment,
     PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
+    SpArithmeticArithmeticError,
     SpCoreEcdsaPublic,
     SpCoreEcdsaSignature,
     SpCoreEd25519Public,
@@ -102,7 +102,6 @@ import type {
     SpCoreSr25519Public,
     SpCoreSr25519Signature,
     SpCoreVoid,
-    SpRuntimeArithmeticError,
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
@@ -151,7 +150,6 @@ declare module '@polkadot/types/types/registry' {
         PalletBalancesError: PalletBalancesError;
         PalletBalancesEvent: PalletBalancesEvent;
         PalletBalancesReasons: PalletBalancesReasons;
-        PalletBalancesReleases: PalletBalancesReleases;
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletCreditcoinAddress: PalletCreditcoinAddress;
         PalletCreditcoinAskOrder: PalletCreditcoinAskOrder;
@@ -207,6 +205,7 @@ declare module '@polkadot/types/types/registry' {
         PalletTransactionPaymentChargeTransactionPayment: PalletTransactionPaymentChargeTransactionPayment;
         PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
+        SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpCoreEcdsaPublic: SpCoreEcdsaPublic;
         SpCoreEcdsaSignature: SpCoreEcdsaSignature;
         SpCoreEd25519Public: SpCoreEd25519Public;
@@ -214,7 +213,6 @@ declare module '@polkadot/types/types/registry' {
         SpCoreSr25519Public: SpCoreSr25519Public;
         SpCoreSr25519Signature: SpCoreSr25519Signature;
         SpCoreVoid: SpCoreVoid;
-        SpRuntimeArithmeticError: SpRuntimeArithmeticError;
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;

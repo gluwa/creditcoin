@@ -17,7 +17,6 @@ import type {
     FrameSystemPhase,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
-    PalletBalancesReleases,
     PalletBalancesReserveData,
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
@@ -77,6 +76,10 @@ declare module '@polkadot/api-base/types/storage' {
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
+             * The total units of outstanding deactivated balance in the system.
+             **/
+            inactiveIssuance: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
              * Any liquidity locks on some account balances.
              * NOTE: Should only be accessed when setting, changing and freeing a lock.
              **/
@@ -95,13 +98,6 @@ declare module '@polkadot/api-base/types/storage' {
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
-            /**
-             * Storage version of the pallet.
-             *
-             * This is set to v2.0.0 for new networks.
-             **/
-            storageVersion: AugmentedQuery<ApiType, () => Observable<PalletBalancesReleases>, []> &
-                QueryableStorageEntry<ApiType, []>;
             /**
              * The total units issued in the system.
              **/
