@@ -98,12 +98,10 @@ jobs:
           az version
 
       - name: Authorize hosted-runner
-        id: set-ssh
         run: |
           mkdir -p ~/.ssh/
           ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa
           cat ~/.ssh/id_rsa.pub >> .github/authorized_keys
-          echo "pub_key=$(cat .github/authorized_keys )" >> $GITHUB_OUTPUT
 
       - name: Evaluate env vars
         id: get-env
@@ -133,7 +131,7 @@ jobs:
           az deployment group create -g "${{ steps.get-env.outputs.resource_group }}" -f .github/runner.bicep \
               --parameters location="${{ env.AZ_LOCATION }}" \
               --parameters vmName="${{ steps.get-env.outputs.runner_vm_name }}" \
-              --parameters adminPasswordOrKey="${{ steps.set-ssh.outputs.pub_key}}" > output.json
+              --parameters adminPasswordOrKey="$(cat .github/authorized_keys)" > output.json
 
           # provision the GitHub Runner binary on the VM
           # passing additional ENV values
