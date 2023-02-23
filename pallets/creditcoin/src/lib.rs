@@ -576,7 +576,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Claims legacy wallet and transfers the balance to the sender's account.
-		#[pallet::call_index(0)]
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::claim_legacy_wallet())]
 		pub fn claim_legacy_wallet(
 			origin: OriginFor<T>,
@@ -607,7 +607,7 @@ pub mod pallet {
 		}
 
 		/// Registers an external address on `blockchain` and `network` with value `address`
-		#[pallet::call_index(1)]
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_address())]
 		pub fn register_address(
 			origin: OriginFor<T>,
@@ -650,7 +650,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(2)]
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_ask_order())]
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
@@ -692,7 +692,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(3)]
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_bid_order())]
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
@@ -734,7 +734,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(4)]
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_offer())]
 		pub fn add_offer(
 			origin: OriginFor<T>,
@@ -786,7 +786,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(5)]
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_deal_order())]
 		pub fn add_deal_order(
 			origin: OriginFor<T>,
@@ -838,7 +838,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(6)]
+		#[pallet::call_index(7)]
 		#[pallet::weight(<T as Config>::WeightInfo::lock_deal_order())]
 		pub fn lock_deal_order(
 			origin: OriginFor<T>,
@@ -865,7 +865,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(7)]
+		#[pallet::call_index(8)]
 		#[pallet::weight(<T as Config>::WeightInfo::fund_deal_order())]
 		pub fn fund_deal_order(
 			origin: OriginFor<T>,
@@ -918,7 +918,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(8)]
+		#[pallet::call_index(9)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_deal_order())]
 		pub fn register_deal_order(
 			origin: OriginFor<T>,
@@ -1029,7 +1029,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(9)]
+		#[pallet::call_index(10)]
 		#[pallet::weight(<T as Config>::WeightInfo::close_deal_order())]
 		pub fn close_deal_order(
 			origin: OriginFor<T>,
@@ -1083,7 +1083,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
+		#[pallet::call_index(11)]
 		#[pallet::weight(<T as Config>::WeightInfo::request_collect_coins())]
 		pub fn request_collect_coins(
 			origin: OriginFor<T>,
@@ -1125,7 +1125,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(11)]
+		#[pallet::call_index(12)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer_legacy())]
 		pub fn register_funding_transfer_legacy(
 			origin: OriginFor<T>,
@@ -1154,7 +1154,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(12)]
+		#[pallet::call_index(13)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer_legacy())]
 		pub fn register_repayment_transfer_legacy(
 			origin: OriginFor<T>,
@@ -1184,7 +1184,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(13)]
+		#[pallet::call_index(14)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
@@ -1212,7 +1212,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(15)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer())]
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
@@ -1240,7 +1240,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(15)]
+		#[pallet::call_index(16)]
 		#[pallet::weight(<T as Config>::WeightInfo::exempt())]
 		pub fn exempt(
 			origin: OriginFor<T>,
@@ -1291,7 +1291,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(17)]
 		#[pallet::weight(match &task_output {
 			crate::TaskOutput::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
 			crate::TaskOutput::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
@@ -1347,7 +1347,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::call_index(17)]
+		#[pallet::call_index(18)]
 		#[pallet::weight(match &task_id {
 			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::fail_transfer(),
 			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::fail_collect_coins(),
@@ -1384,7 +1384,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::call_index(18)]
+		#[pallet::call_index(19)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_authority())]
 		pub fn add_authority(
 			origin: OriginFor<T>,
@@ -1399,7 +1399,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::call_index(19)]
+		#[pallet::call_index(20)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_currency())]
 		pub fn register_currency(origin: OriginFor<T>, currency: Currency) -> DispatchResult {
 			ensure_root(origin)?;
@@ -1415,7 +1415,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(20)]
+		#[pallet::call_index(21)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_collect_coins_contract())]
 		pub fn set_collect_coins_contract(
 			origin: OriginFor<T>,
@@ -1427,7 +1427,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(21)]
+		#[pallet::call_index(22)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_authority())]
 		pub fn remove_authority(
 			origin: OriginFor<T>,

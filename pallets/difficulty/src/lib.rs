@@ -115,7 +115,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::call_index(0)]
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_target_block_time())]
 		pub fn set_target_block_time(
 			origin: OriginFor<T>,
@@ -129,7 +129,7 @@ pub mod pallet {
 
 			Ok(())
 		}
-		#[pallet::call_index(1)]
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_adjustment_period())]
 		pub fn set_adjustment_period(origin: OriginFor<T>, period: i64) -> DispatchResult {
 			ensure_root(origin)?;

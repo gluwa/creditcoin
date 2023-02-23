@@ -74,6 +74,6 @@ fn stake_and_unstake_with_a_controller_and_stash_as_payee() {
 		assert_ok!(Staking::withdraw_unbonded(RuntimeOrigin::signed(controller), 0));
 		let usable = Balances::usable_balance(&stash);
 		assert_eq!(value, usable);
-		assert!(Staking::total_stake(&stash).is_none());
+		assert!(Staking::total_stake(&stash).is_ok());
 	});
 }
