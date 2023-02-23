@@ -779,6 +779,7 @@ export default {
      **/
     PalletCreditcoinCall: {
         _enum: {
+            __Unused0: 'Null',
             claim_legacy_wallet: {
                 publicKey: 'SpCoreEcdsaPublic',
             },
@@ -959,6 +960,7 @@ export default {
      **/
     PalletDifficultyCall: {
         _enum: {
+            __Unused0: 'Null',
             set_target_block_time: {
                 targetTime: 'u64',
             },
