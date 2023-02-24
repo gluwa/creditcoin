@@ -4,6 +4,7 @@ use crate::mock::runtime::{
 };
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
+use pallet_staking::Error;
 use pallet_staking::RewardDestination;
 use pallet_staking::StakingInterface;
 use runtime_utils::{ExtBuilder, RollTo, Trivial};
@@ -50,19 +51,21 @@ fn stake_and_unstake_with_a_controller_and_stash_as_payee() {
 		));
 
 		// stake is found and usable balance dropped
-		assert_eq!(value, Staking::total_stake(&controller).unwrap());
+		assert_eq!(value, Staking::active_stake(&stash).unwrap());
 		let usable = Balances::usable_balance(&stash);
 		assert_eq!(0, usable);
 
 		// unbond, efective after BondingPeriod has passed
 		assert_ok!(Staking::unbond(RuntimeOrigin::signed(controller.clone()), value));
-		assert_eq!(value, Staking::total_stake(&controller).unwrap());
+		assert_eq!(value, Staking::total_stake(&stash).unwrap());
+		assert_eq!(0, Staking::active_stake(&stash).unwrap());
 		let usable = Balances::usable_balance(&stash);
 		assert_eq!(0, usable);
 
 		// Cant withdraw before minimum staking period has elapsed; NOOPs
 		assert_ok!(Staking::withdraw_unbonded(RuntimeOrigin::signed(controller.clone()), 0));
-		assert_eq!(value, Staking::total_stake(&controller).unwrap());
+		assert_eq!(value, Staking::total_stake(&stash).unwrap());
+		assert_eq!(0, Staking::active_stake(&stash).unwrap());
 		let usable = Balances::usable_balance(&stash);
 		assert_eq!(0, usable);
 
@@ -72,8 +75,9 @@ fn stake_and_unstake_with_a_controller_and_stash_as_payee() {
 		Trivial::<Session, Runtime>::roll_to(height);
 
 		assert_ok!(Staking::withdraw_unbonded(RuntimeOrigin::signed(controller), 0));
+		assert_eq!(Staking::total_stake(&stash).unwrap_err(), Error::<Runtime>::NotStash.into());
+		assert_eq!(Staking::active_stake(&stash).unwrap_err(), Error::<Runtime>::NotStash.into());
 		let usable = Balances::usable_balance(&stash);
 		assert_eq!(value, usable);
-		assert!(Staking::total_stake(&stash).is_ok());
 	});
 }

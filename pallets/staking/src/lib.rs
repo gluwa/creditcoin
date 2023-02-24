@@ -1,7 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_election_provider_support::{BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ElectionProviderBase, SortedListProvider, Support};
-use frame_support::{defensive, traits::Defensive, traits::DefensiveTruncateFrom, RuntimeDebug, BoundedVec};
+use frame_election_provider_support::{
+	BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ElectionProviderBase,
+	SortedListProvider, Support,
+};
+use frame_support::traits::ConstU32;
+use frame_support::{
+	defensive, traits::Defensive, traits::DefensiveTruncateFrom, BoundedVec, RuntimeDebug,
+};
 pub use pallet_staking_substrate as pallet;
 pub use pallet_staking_substrate::weights;
 #[cfg(feature = "std")]
@@ -16,10 +22,10 @@ pub use pallet_staking_substrate::{
 use parity_scale_codec::{Decode, Encode, EncodeLike};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
-use sp_runtime::traits::{ConstU32, OpaqueKeys, Zero};
+use sp_runtime::traits::{OpaqueKeys, Zero};
 use sp_runtime::AccountId32;
 pub use sp_staking::{EraIndex, StakingInterface};
-use sp_std::{boxed::Box, fmt::Debug, marker::PhantomData, vec, vec::Vec};
+use sp_std::{boxed::Box, fmt::Debug, marker::PhantomData, vec};
 
 pub(crate) const LOG_TARGET: &str = "runtime::staking";
 
@@ -227,25 +233,8 @@ where
 	type AccountId = AccountId;
 	type BlockNumber = BlockNumber;
 	type Error = &'static str;
-	type MaxWinners = ConstU32<10>; //TODO
+	type MaxWinners = ConstU32<1>;
 	type DataProvider = DataProvider;
-
-	fn desired_targets_checked() -> frame_election_provider_support::data_provider::Result<u32> {
-		todo!()
-	}
-}
-
-macro_rules! bounded_vec {
-	($ ($values:expr),* $(,)?) => {
-		{
-			sp_std::vec![$($values),*].try_into().unwrap()
-		}
-	};
-	( $value:expr ; $repetition:expr ) => {
-		{
-			sp_std::vec![$value ; $repetition].try_into().unwrap()
-		}
-	}
 }
 
 impl<AccountId, BlockNumber, DataProvider> ElectionProvider
@@ -258,25 +247,44 @@ where
 		false
 	}
 
+	/** Based on substrate example
+	 ```ignore
+		macro_rules! bounded_vec {
+			($ ($values:expr),* $(,)?) => {
+				{
+					sp_std::vec![$($values),*].try_into().unwrap()
+				}
+			};
+			( $value:expr ; $repetition:expr ) => {
+				{
+					sp_std::vec![$value ; $repetition].try_into().unwrap()
+				}
+			}
+		}
+		DataProvider::electable_targets(None)
+			.defensive_proof("Trivial 0 AccountId") // Wrap in defensive
+			.map_err(|_| "failed to elect")
+			.map(|t| bounded_vec![(t[0].clone(), Default::default())])
+	 ```
+	*/
+	/// Based on previous implementation
 	fn elect() -> Result<BoundedSupportsOf<Self>, Self::Error> {
-
-		/** Based on substrate example **/
-		// DataProvider::electable_targets(None)
-		// 	.defensive_proof("Trivial 0 AccountId") // Wrap in defensive
-		// 	.map_err(|_| "failed to elect")
-		// 	.map(|t| bounded_vec![(t[0].clone(), Default::default())])
-
-		/** Based on previous implementation **/
-		let candidates: Result<BoundedSupportsOf<Self>, Self::Error> =
-			DataProvider::electable_targets(Some(1)) // Get electable targets
-				.defensive_proof("Trivial 0 AccountId") // Wrap in defensive
-				.map(|accounts| { // Map resulting vector of vectors
-					BoundedVec::truncate_from( // Wrap resulting Vec into a BoundedVec via truncation
-						accounts.iter() // Turn given vector into an iterator
-							.map(|acc| (acc.clone(), Support::default())) // Map to a tuple
-							.collect() // Collect as a Vec
-					)
-				});
-		candidates
+		// Get electable targets
+		DataProvider::electable_targets(None)
+			// Wrap in defensive
+			.defensive_proof("Trivial 0 AccountId")
+			// Map resulting vector of vectors
+			.map(|accounts| {
+				// Wrap resulting Vec into a BoundedVec via truncation
+				BoundedVec::defensive_truncate_from(
+					accounts
+						// Turn given vector into an iterator
+						.iter()
+						// Map to a tuple
+						.map(|acc| (acc.clone(), Support::default()))
+						// Collect as a Vec
+						.collect(),
+				)
+			})
 	}
 }
