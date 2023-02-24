@@ -29,7 +29,6 @@ import type {
     PalletCreditcoinOffer,
     PalletCreditcoinPlatformCurrency,
     PalletCreditcoinTask,
-    PalletCreditcoinTaskId,
     PalletCreditcoinTransfer,
     PalletDifficultyDifficultyAndTimestamp,
     PalletSchedulerScheduled,
@@ -180,20 +179,6 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
-            pendingTasks: AugmentedQuery<
-                ApiType,
-                (
-                    arg1: u32 | AnyNumber | Uint8Array,
-                    arg2:
-                        | PalletCreditcoinTaskId
-                        | { VerifyTransfer: any }
-                        | { CollectCoins: any }
-                        | string
-                        | Uint8Array,
-                ) => Observable<Option<PalletCreditcoinTask>>,
-                [u32, PalletCreditcoinTaskId]
-            > &
-                QueryableStorageEntry<ApiType, [u32, PalletCreditcoinTaskId]>;
             transfers: AugmentedQuery<
                 ApiType,
                 (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinTransfer>>,
