@@ -1,4 +1,5 @@
 use crate::mock::runtime::{Balances, Runtime, RuntimeOrigin, Staking, TaskScheduler};
+use crate::KeyTypeId;
 use frame_support::{
 	assert_ok,
 	traits::{tokens::currency::Currency, GenesisBuild},
@@ -36,6 +37,29 @@ fn generate_bonded_stash(
 	genesis_config.assimilate_storage(&mut builder.storage).unwrap();
 
 	(stash_pubkey, controller_pubkey)
+}
+
+#[test]
+#[tracing_test::traced_test]
+fn scheduler_doesnt_run_if_pubkey_cant_sign() {
+	// for example see
+	// https://github.com/gluwa/creditcoin-authority-manager/blob/43c61aa177146e4ecfde944678db851b941d4ae6/src/main.rs#L245-L265
+	let builder = ExtBuilder::default().with_keystore();
+
+	let _pubkey = builder
+		.keystore
+		.as_ref()
+		.expect("A keystore")
+		// keys where KeyID is not "gots" can't be used for OTS tasks
+		.sr25519_generate_new(KeyTypeId(*b"ctcs"), Some("//CanNotSign"))
+		.unwrap();
+
+	builder.build_sans_config().execute_with(|| {
+		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
+
+		assert!(logs_contain("local keys []"));
+		assert!(logs_contain("Not an authority, skipping offchain work"));
+	});
 }
 
 #[test]
