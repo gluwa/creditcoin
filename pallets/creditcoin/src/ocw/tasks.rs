@@ -41,5 +41,3 @@ where
 		}
 	}
 }
-
-mod tests;
