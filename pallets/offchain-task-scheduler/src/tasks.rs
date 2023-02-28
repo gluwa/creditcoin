@@ -84,3 +84,5 @@ pub trait TaskScheduler {
 	fn insert(deadline: &Self::BlockNumber, id: &Self::Hash, task: Self::Task);
 	fn remove(deadline: &Self::BlockNumber, id: &Self::Hash);
 }
+
+mod tests;
