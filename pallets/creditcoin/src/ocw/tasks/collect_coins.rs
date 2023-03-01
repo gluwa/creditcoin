@@ -232,7 +232,6 @@ pub(crate) mod tests {
 	use crate::{Call, Pallet as Creditcoin, Task};
 	use alloc::sync::Arc;
 	use assert_matches::assert_matches;
-	use frame_support::dispatch::Dispatchable;
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
 	use frame_system::Pallet as System;
 	use frame_system::RawOrigin;
@@ -781,7 +780,7 @@ pub(crate) mod tests {
 	}
 
 	#[test]
-	fn persist_not_authorized() {
+	fn persist_should_error_when_not_authorized() {
 		let ext = ExtBuilder::default();
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let (molly, addr, _, _) = generate_address_with_proof("malicious");
@@ -1091,7 +1090,9 @@ pub(crate) mod tests {
 
 	#[test]
 	fn unverified_collect_coins_is_removed_after_failing_the_task() {
-		let ext = ExtBuilder::default();
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
 		ext.build_offchain_and_execute_with_state(|state, _| {
 			let mut rpcs = prepare_rpc_mocks();
 			rpcs.get_transaction.set_empty_response();
@@ -1113,16 +1114,23 @@ pub(crate) mod tests {
 			let call =
 				TaskV2::<Test>::persistence_call(&cc, TaskScheduler::deadline(), &id).unwrap();
 			assert!(matches!(call, crate::Call::fail_task { .. }));
-			let c = RuntimeCall::from(call);
+			let call = RuntimeCall::from(call);
 
-			assert_ok!(c.dispatch(RuntimeOrigin::root()));
+			assert_ok!(TaskScheduler::submit_output(
+				RuntimeOrigin::signed(auth),
+				deadline,
+				id,
+				Box::new(call)
+			));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}
 
 	#[test]
 	fn unverified_collect_coins_is_removed_after_persisting_the_task() {
-		let ext = ExtBuilder::default();
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
 		ext.build_offchain_and_execute_with_state(|state, _| {
 			mock_rpc_for_collect_coins(&state);
 
@@ -1149,9 +1157,14 @@ pub(crate) mod tests {
 			let call =
 				TaskV2::<Test>::persistence_call(&cc, TaskScheduler::deadline(), &id).unwrap();
 			assert!(matches!(call, crate::Call::persist_task_output { .. }));
-			let c = RuntimeCall::from(call);
+			let call = RuntimeCall::from(call);
 
-			assert_ok!(c.dispatch(RuntimeOrigin::root()));
+			assert_ok!(TaskScheduler::submit_output(
+				RuntimeOrigin::signed(auth),
+				deadline,
+				id,
+				Box::new(call)
+			));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}

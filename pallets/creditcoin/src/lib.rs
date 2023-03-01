@@ -1287,12 +1287,12 @@ pub mod pallet {
 		})]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
-			deadline: T::BlockNumber,
+			_deadline: T::BlockNumber,
 			task_output: TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			let (task_id, event) = match task_output {
+			let (_task_id, event) = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
 					ensure!(
 						!Transfers::<T>::contains_key(&id),
@@ -1323,7 +1323,6 @@ pub mod pallet {
 					(id.clone().into_inner(), Event::<T>::CollectedCoinsMinted(id, collected_coins))
 				},
 			};
-			T::TaskScheduler::remove(&deadline, &task_id);
 
 			Self::deposit_event(event);
 
@@ -1337,13 +1336,13 @@ pub mod pallet {
 		})]
 		pub fn fail_task(
 			origin: OriginFor<T>,
-			deadline: T::BlockNumber,
+			_deadline: T::BlockNumber,
 			task_id: TaskId<T::Hash>,
 			cause: VerificationFailureCause,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			let (task_id, event) = match task_id {
+			let (_task_id, event) = match task_id {
 				TaskId::VerifyTransfer(transfer_id) => {
 					ensure!(
 						!Transfers::<T>::contains_key(&transfer_id),
@@ -1365,7 +1364,6 @@ pub mod pallet {
 					)
 				},
 			};
-			T::TaskScheduler::remove(&deadline, &task_id);
 			Self::deposit_event(event);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
