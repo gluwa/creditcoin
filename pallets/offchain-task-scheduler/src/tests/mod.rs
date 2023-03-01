@@ -23,7 +23,7 @@ fn submit_output_yields_an_event() {
 		let task = MockTask::Remark(0);
 		let task_id = TaskV2::<Runtime>::to_id(&task);
 		let deadline = TaskScheduler::deadline();
-		let call: RuntimeCall = task.persistence_call(deadline, &task_id).unwrap().into();
+		let call: RuntimeCall = task.persistence_call(&task_id).unwrap().into();
 
 		assert_ok!(TaskScheduler::submit_output(
 			RuntimeOrigin::signed(auth.into()),
@@ -53,7 +53,7 @@ fn submit_output_removes_the_completed_task() {
 		let task = MockTask::Remark(0);
 		let task_id = TaskV2::<Runtime>::to_id(&task);
 		let deadline = TaskScheduler::deadline();
-		let call: RuntimeCall = task.forward_task(deadline).unwrap().into();
+		let call: RuntimeCall = task.forward_task().unwrap().into();
 
 		assert_ok!(TaskScheduler::submit_output(
 			RuntimeOrigin::signed(auth.into()),
@@ -77,7 +77,7 @@ fn submit_output_is_authorized() {
 		let task = MockTask::Remark(0);
 		let task_id = TaskV2::<Runtime>::to_id(&task);
 		let deadline = TaskScheduler::deadline();
-		let call: RuntimeCall = task.forward_task(deadline).unwrap().into();
+		let call: RuntimeCall = task.forward_task().unwrap().into();
 
 		assert_noop!(
 			TaskScheduler::submit_output(

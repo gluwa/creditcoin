@@ -1287,12 +1287,11 @@ pub mod pallet {
 		})]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
-			_deadline: T::BlockNumber,
 			task_output: TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			let (_task_id, event) = match task_output {
+			let event = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
 					ensure!(
 						!Transfers::<T>::contains_key(&id),
@@ -1303,7 +1302,7 @@ pub mod pallet {
 					transfer.block = frame_system::Pallet::<T>::block_number();
 
 					Transfers::<T>::insert(&id, transfer);
-					(id.clone().into_inner(), Event::<T>::TransferVerified(id))
+					Event::<T>::TransferVerified(id)
 				},
 				TaskOutput::CollectCoins(id, collected_coins) => {
 					ensure!(
@@ -1320,7 +1319,7 @@ pub mod pallet {
 					)?;
 
 					CollectedCoins::<T>::insert(&id, collected_coins.clone());
-					(id.clone().into_inner(), Event::<T>::CollectedCoinsMinted(id, collected_coins))
+					Event::<T>::CollectedCoinsMinted(id, collected_coins)
 				},
 			};
 
@@ -1336,32 +1335,25 @@ pub mod pallet {
 		})]
 		pub fn fail_task(
 			origin: OriginFor<T>,
-			_deadline: T::BlockNumber,
 			task_id: TaskId<T::Hash>,
 			cause: VerificationFailureCause,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			let (_task_id, event) = match task_id {
+			let event = match task_id {
 				TaskId::VerifyTransfer(transfer_id) => {
 					ensure!(
 						!Transfers::<T>::contains_key(&transfer_id),
 						Error::<T>::TransferAlreadyRegistered
 					);
-					(
-						transfer_id.clone().into_inner(),
-						Event::<T>::TransferFailedVerification(transfer_id, cause),
-					)
+					Event::<T>::TransferFailedVerification(transfer_id, cause)
 				},
 				TaskId::CollectCoins(collected_coins_id) => {
 					ensure!(
 						!CollectedCoins::<T>::contains_key(&collected_coins_id),
 						Error::<T>::CollectCoinsAlreadyRegistered
 					);
-					(
-						collected_coins_id.clone().into_inner(),
-						Event::<T>::CollectCoinsFailedVerification(collected_coins_id, cause),
-					)
+					Event::<T>::CollectCoinsFailedVerification(collected_coins_id, cause)
 				},
 			};
 			Self::deposit_event(event);

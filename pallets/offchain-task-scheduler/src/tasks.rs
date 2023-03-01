@@ -42,7 +42,6 @@ pub trait ForwardTask<Runtime: SystemConfig> {
 	type SchedulerError: Debug;
 	fn forward_task(
 		&self,
-		deadline: Runtime::BlockNumber,
 	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>>;
 }
 
@@ -59,19 +58,17 @@ pub trait TaskV2<Runtime: SystemConfig> {
 	/// This does not mean that the task result was successful. A succesful task's result may be a failure that needs state persistance.
 	fn persistence_call(
 		&self,
-		deadline: Runtime::BlockNumber,
 		id: &Runtime::Hash,
 	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>>;
 	/// complete task verification flow.
 	fn forward_task(
 		&self,
-		deadline: Runtime::BlockNumber,
 	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
 		let id = self.to_id();
 		if Self::is_persisted(&id) {
 			return Err(TaskError::FinishedTask);
 		}
-		self.persistence_call(deadline, &id)
+		self.persistence_call(&id)
 	}
 }
 

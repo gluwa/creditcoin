@@ -28,15 +28,14 @@ where
 	type SchedulerError = SchedulerError;
 	fn forward_task(
 		&self,
-		deadline: T::BlockNumber,
 	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
 		use Task::*;
 		match self {
 			VerifyTransfer(unverified) => {
-				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
+				unverified.forward_task().map(|c: crate::pallet::Call<T>| c.into())
 			},
 			CollectCoins(unverified) => {
-				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
+				unverified.forward_task().map(|c: crate::pallet::Call<T>| c.into())
 			},
 		}
 	}

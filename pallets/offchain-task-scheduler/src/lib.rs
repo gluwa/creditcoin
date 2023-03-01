@@ -190,7 +190,7 @@ pub mod pallet {
 				log::trace!(target: "runtime::task", "@{block_number:?} Task {:8?}", id);
 
 				use tasks::error::TaskError::*;
-				match task.forward_task(deadline) {
+				match task.forward_task() {
 					Ok(call) => {
 						match Self::submit_txn_with_synced_nonce(signer.clone().into(), |_| {
 							Call::<T>::submit_output {

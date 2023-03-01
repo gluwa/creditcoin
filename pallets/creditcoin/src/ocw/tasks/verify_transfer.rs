@@ -322,9 +322,7 @@ mod tests {
 
 			TaskScheduler::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
 
-			let call =
-				TaskV2::<Test>::persistence_call(&unverified, TaskScheduler::deadline(), &id)
-					.unwrap();
+			let call = TaskV2::<Test>::persistence_call(&unverified, &id).unwrap();
 			assert!(matches!(call, crate::Call::fail_task { .. }));
 			let call = RuntimeCall::from(call);
 
@@ -353,9 +351,7 @@ mod tests {
 
 			TaskScheduler::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
 
-			let call =
-				TaskV2::<Test>::persistence_call(&unverified, TaskScheduler::deadline(), &id)
-					.unwrap();
+			let call = TaskV2::<Test>::persistence_call(&unverified, &id).unwrap();
 			assert!(matches!(call, crate::Call::persist_task_output { .. }));
 			let call = RuntimeCall::from(call);
 
@@ -384,7 +380,6 @@ mod tests {
 			let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 			let deadline = Test::unverified_transfer_deadline();
 			let call = Call::<Test>::fail_task {
-				deadline,
 				task_id: transfer_id.clone().into(),
 				cause: failure_cause,
 			};
@@ -409,10 +404,8 @@ mod tests {
 			let (id, transfer) = test_info.create_funding_transfer(&deal_order_id);
 
 			let deadline = TaskScheduler::deadline();
-			let call = Call::<Test>::persist_task_output {
-				deadline,
-				task_output: (id.clone(), transfer).into(),
-			};
+			let call =
+				Call::<Test>::persist_task_output { task_output: (id.clone(), transfer).into() };
 
 			assert_noop!(
 				TaskScheduler::submit_output(

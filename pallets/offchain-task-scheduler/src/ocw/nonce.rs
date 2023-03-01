@@ -155,10 +155,8 @@ mod tests {
 
 				let execute = || {
 					Trivial::<TaskScheduler, Runtime>::roll_to(1);
-					let call: RuntimeCall = MockTask::Remark(0)
-						.forward_task(TaskScheduler::deadline())
-						.expect("call")
-						.into();
+					let call: RuntimeCall =
+						MockTask::Remark(0).forward_task().expect("call").into();
 
 					for _ in 0..LOOP {
 						assert_ok!(crate::Pallet::<Runtime>::submit_txn_with_synced_nonce(

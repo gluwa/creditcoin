@@ -92,7 +92,6 @@ where
 
 	fn persistence_call(
 		&self,
-		deadline: T::BlockNumber,
 		id: &T::Hash,
 	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
 		use crate::ocw::OffchainError::*;
@@ -100,15 +99,12 @@ where
 			Ok(amount) => {
 				let coins = self.clone().into_output::<T>(amount.into());
 				let id = CollectedCoinsId::from(*id);
-				Ok(Self::Call::persist_task_output {
-					deadline,
-					task_output: TaskOutput::from((id, coins)),
-				})
+				Ok(Self::Call::persist_task_output { task_output: TaskOutput::from((id, coins)) })
 			},
 			Err(InvalidTask(cause)) if cause.is_fatal() => {
 				log::warn!("Failed to verify pending task {:?} : {:?}", self, cause);
 				let id = CollectedCoinsId::from(*id);
-				Ok(Self::Call::fail_task { deadline, task_id: id.into(), cause })
+				Ok(Self::Call::fail_task { task_id: id.into(), cause })
 			},
 			Err(InvalidTask(e)) => Err(TaskError::Evaluation(e)),
 			Err(NoRpcUrl(e)) => Err(TaskError::Scheduler(e.into())),

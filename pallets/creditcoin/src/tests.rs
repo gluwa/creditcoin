@@ -2536,13 +2536,8 @@ fn verify_transfer_should_error_when_not_signed() {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, _) = test_info.create_deal_order();
 		let (transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
-		let deadline = Test::unverified_transfer_deadline();
 		assert_noop!(
-			Creditcoin::persist_task_output(
-				Origin::none(),
-				deadline,
-				(transfer_id, transfer).into()
-			),
+			Creditcoin::persist_task_output(Origin::none(), (transfer_id, transfer).into()),
 			BadOrigin
 		);
 	});
@@ -2562,14 +2557,9 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 
 		let (deal_order_id, _) = test_info.create_deal_order();
 		let (transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
-		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::persist_task_output(
-				Origin::root(),
-				deadline,
-				(transfer_id, transfer).into(),
-			),
+			Creditcoin::persist_task_output(Origin::root(), (transfer_id, transfer).into(),),
 			non_paying_error(TestError::TransferAlreadyRegistered),
 		);
 	});
@@ -2607,11 +2597,9 @@ fn verify_transfer_should_work() {
 			account_id: test_info.lender.account_id,
 			timestamp: None,
 		};
-		let deadline = Test::unverified_transfer_deadline();
 
 		assert_ok!(Creditcoin::persist_task_output(
 			Origin::root(),
-			deadline,
 			(transfer_id.clone(), transfer.clone()).into(),
 		));
 
@@ -2648,11 +2636,9 @@ fn fail_transfer_should_work() {
 		let transfer_id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
 
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
-		let deadline = Test::unverified_transfer_deadline();
 
 		assert_ok!(Creditcoin::fail_task(
 			RuntimeOrigin::root(),
-			deadline,
 			transfer_id.clone().into(),
 			failure_cause
 		));
@@ -2682,10 +2668,9 @@ fn fail_transfer_should_error_when_not_signed() {
 		let transfer_id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
 
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
-		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::fail_task(Origin::none(), deadline, transfer_id.into(), failure_cause),
+			Creditcoin::fail_task(Origin::none(), transfer_id.into(), failure_cause),
 			BadOrigin
 		);
 	})
@@ -2709,15 +2694,9 @@ fn fail_transfer_should_error_when_transfer_registered() {
 		));
 
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
-		let deadline = Test::unverified_transfer_deadline();
 
 		assert_noop!(
-			Creditcoin::fail_task(
-				RuntimeOrigin::root(),
-				deadline,
-				transfer_id.into(),
-				failure_cause
-			),
+			Creditcoin::fail_task(RuntimeOrigin::root(), transfer_id.into(), failure_cause),
 			TestError::TransferAlreadyRegistered
 		);
 	})

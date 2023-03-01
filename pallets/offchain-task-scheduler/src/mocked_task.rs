@@ -33,9 +33,8 @@ where
 	type SchedulerError = ();
 	fn forward_task(
 		&self,
-		deadline: T::BlockNumber,
 	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
-		TaskV2::<T>::forward_task(self, deadline).map(|c| c.into())
+		TaskV2::<T>::forward_task(self).map(|c| c.into())
 	}
 }
 
@@ -53,7 +52,6 @@ impl<Runtime: Config, Nonce: Encode> TaskV2<Runtime> for MockTask<Nonce> {
 	}
 	fn persistence_call(
 		&self,
-		_deadline: Runtime::BlockNumber,
 		_id: &Runtime::Hash,
 	) -> Result<SystemCall<Runtime>, TaskError<(), ()>> {
 		match self {
