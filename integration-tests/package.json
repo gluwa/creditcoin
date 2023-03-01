@@ -14,7 +14,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "@polkadot/keyring": "10.2.1",
+        "@polkadot/keyring": "10.4.2",
         "@types/ws": "^8.5.3",
         "axios": "^1.0.0",
         "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.8.0.tgz",
