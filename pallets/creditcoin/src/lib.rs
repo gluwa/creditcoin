@@ -1290,9 +1290,7 @@ pub mod pallet {
 			deadline: T::BlockNumber,
 			task_output: TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-
-			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
+			ensure_root(origin)?;
 
 			let (task_id, event) = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
@@ -1343,9 +1341,7 @@ pub mod pallet {
 			task_id: TaskId<T::Hash>,
 			cause: VerificationFailureCause,
 		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-
-			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
+			ensure_root(origin)?;
 
 			let (task_id, event) = match task_id {
 				TaskId::VerifyTransfer(transfer_id) => {

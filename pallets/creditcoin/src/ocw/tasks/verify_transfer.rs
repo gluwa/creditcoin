@@ -216,7 +216,6 @@ impl<T: Config> crate::Pallet<T> {
 #[cfg(test)]
 mod tests {
 	use crate::helpers::extensions::HexToAddress;
-	use crate::mock::AccountId;
 	use crate::mock::RuntimeCall;
 	use crate::mock::RuntimeOrigin as Origin;
 	use crate::mock::{
@@ -232,7 +231,6 @@ mod tests {
 	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
 	use frame_support::assert_ok;
 	use frame_support::dispatch::Dispatchable;
-	use sp_runtime::traits::IdentifyAccount;
 
 	#[test]
 	#[tracing_test::traced_test]
@@ -309,8 +307,7 @@ mod tests {
 
 	#[test]
 	fn unverified_transfer_is_removed_after_failing_the_task() {
-		let mut ext = ExtBuilder::default();
-		let auth = AccountId::from(ext.generate_authority().into_account().0);
+		let ext = ExtBuilder::default();
 		ext.build_offchain_and_execute_with_state(|state, _| {
 			let (unverified, mut requests) = set_up_verify_transfer_env(false);
 			requests.get_transaction.set_empty_response();
@@ -327,15 +324,14 @@ mod tests {
 			assert!(matches!(call, crate::Call::fail_task { .. }));
 			let c = RuntimeCall::from(call);
 
-			assert_ok!(c.dispatch(Origin::signed(auth)));
+			assert_ok!(c.dispatch(Origin::root()));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}
 
 	#[test]
 	fn unverified_transfer_is_removed_after_persisting_the_task() {
-		let mut ext = ExtBuilder::default();
-		let auth = AccountId::from(ext.generate_authority().into_account().0);
+		let ext = ExtBuilder::default();
 		ext.build_offchain_and_execute_with_state(|state, _| {
 			let (unverified, requests) = set_up_verify_transfer_env(false);
 			requests.mock_all(&mut state.write());
@@ -351,7 +347,7 @@ mod tests {
 			assert!(matches!(call, crate::Call::persist_task_output { .. }));
 			let c = RuntimeCall::from(call);
 
-			assert_ok!(c.dispatch(Origin::signed(auth)));
+			assert_ok!(c.dispatch(Origin::root()));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
 	}

@@ -67,15 +67,17 @@ pub mod pallet {
 		AppCrypto, Saturating, SystemConfig,
 	};
 	use crate::ocw::RuntimePublicOf;
+	use crate::tasks::TaskScheduler as TaskSchedulerT;
 	use core::fmt::Debug;
-	use frame_support::dispatch::Dispatchable;
 	use frame_support::dispatch::Vec;
+	use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 	use frame_support::pallet_prelude::*;
-	use frame_system::offchain::CreateSignedTransaction;
 	use frame_system::pallet_prelude::*;
+	use frame_system::{offchain::CreateSignedTransaction, RawOrigin};
 	use scale_info::TypeInfo;
 	use sp_core::sr25519::Public;
 	use sp_runtime::codec::FullCodec;
+	use sp_std::boxed::Box;
 
 	#[pallet::config]
 	pub trait Config:
@@ -89,7 +91,12 @@ pub mod pallet {
 			+ Debug;
 		type UnverifiedTaskTimeout: Get<<Self as SystemConfig>::BlockNumber>;
 		type WeightInfo: WeightInfo;
-		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin> + Clone;
+		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin>
+			+ Clone
+			+ Encode
+			+ Decode
+			+ Parameter
+			+ GetDispatchInfo;
 		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
 		type Authorship: Authorship<
 			RuntimePublic = RuntimePublicOf<Self>,
@@ -102,7 +109,11 @@ pub mod pallet {
 	}
 
 	#[pallet::event]
-	pub enum Event<T: Config> {}
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		/// A task is finished. [id, result]
+		TaskComplete { task_id: T::Hash, result: DispatchResult },
+	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -126,6 +137,10 @@ pub mod pallet {
 		/// The node is an authority but there is no account to create a
 		/// callback transaction. This is likely an internal error.
 		NoLocalAcctForSignedTx,
+		/// The caller does not have authority to submit or process tasks.
+		UnauthorizedSubmission,
+		///Could not finish proving sample.
+		ProvingSamplingFailed,
 	}
 
 	#[pallet::hooks]
@@ -218,6 +233,31 @@ pub mod pallet {
 			for authority in &self.authorities {
 				Authorities::<T>::insert(authority.clone(), ());
 			}
+		}
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::call_index(0)]
+		#[pallet::weight({ let dispatch_info = call.get_dispatch_info(); (dispatch_info.weight, dispatch_info.class) })]
+		pub fn submit_output(
+			origin: OriginFor<T>,
+			deadline: T::BlockNumber,
+			task_id: T::Hash,
+			call: Box<T::TaskCall>,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			ensure!(T::Authorship::is_authorized(&who), Error::<T>::UnauthorizedSubmission);
+
+			let underlying_result =
+				call.dispatch(RawOrigin::Root.into()).map(|_| ()).map_err(|e| e.error);
+
+			Self::deposit_event(Event::TaskComplete { task_id, result: underlying_result });
+
+			Self::remove(&deadline, &task_id);
+
+			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 	}
 }
