@@ -19,7 +19,7 @@ use crate::{
 		get_mock_nonce, get_mock_timestamp, get_mock_to_address, get_mock_tx_block_num,
 		get_mock_tx_hash, roll_to, roll_to_with_ocw, set_rpc_uri, ExtBuilder, Extrinsic,
 		MockedRpcRequests, PendingRequestExt, RuntimeCall, RuntimeOrigin as Origin, RwLock,
-		TaskScheduler, TaskSchedulerT, Test, ETHLESS_RESPONSES,
+		TaskScheduler, Test, ETHLESS_RESPONSES,
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcResponse},
 	tests::TestInfo,
@@ -727,7 +727,7 @@ fn unconfirmed_verify_transfer_retries() {
 		let id = TransferId::leaked_inner_hash::<Test>(&blockchain, &tx_hash.hex_to_address());
 		let task = TaskScheduler::pending_tasks(deadline, id).unwrap();
 
-		let err = ForwardTask::<Test>::forward_task(&task, deadline).expect_err("TaskUnconfirmed");
+		let err = ForwardTask::<Test>::forward_task(&task).expect_err("TaskUnconfirmed");
 		assert_matches!(err, TaskError::Evaluation(_));
 	});
 }
@@ -784,7 +784,7 @@ fn luniverse_succeeds_with_fake_nonce() {
 		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
 		assert_matches!(fail_tx.call, RuntimeCall::TaskScheduler(TaskSchedulerCall::<Test>::submit_output{call,..})=>{
 			let task_id:TaskId<_> = transfer_id.clone().into();
-			assert_eq!(*call,RuntimeCall::Creditcoin(crate::Call::fail_task { task_id, deadline, cause: VerificationFailureCause::IncorrectNonce }));
+			assert_eq!(*call,RuntimeCall::Creditcoin(crate::Call::fail_task { task_id, cause: VerificationFailureCause::IncorrectNonce }));
 		});
 
 		// test for successful verification
@@ -801,8 +801,6 @@ fn luniverse_succeeds_with_fake_nonce() {
 			fake_deal_order_id.clone(),
 			tx_hash.hex_to_address(),
 		));
-
-		let deadline_2 = Test::unverified_transfer_deadline();
 
 		let expected_transfer = crate::Transfer {
 			blockchain: test_info.blockchain.clone(),
@@ -833,7 +831,6 @@ fn luniverse_succeeds_with_fake_nonce() {
 			assert_eq!(*call, RuntimeCall::Creditcoin(
 				crate::Call::persist_task_output {
 				task_output: (transfer_id, expected_transfer).into(),
-				deadline: deadline_2
 			}
 			));
 		});
@@ -903,13 +900,12 @@ fn parallel_worker_trivial() {
 fn persist_task_output_origin_must_be_root() {
 	let ext = ExtBuilder::default();
 	ext.build_offchain_and_execute_with_state(|state, _| {
-		let deadline = TaskScheduler::deadline();
 		let call: RuntimeCall = {
 			let (unverified, requests) = set_up_verify_transfer_env(false);
 			requests.mock_all(&mut state.write());
 
 			let id = TaskV2::<Test>::to_id(&unverified);
-			let call = unverified.persistence_call(deadline, &id).unwrap();
+			let call = unverified.persistence_call(&id).unwrap();
 			assert_matches!(call, Call::<Test>::persist_task_output { .. });
 			call.into()
 		};
@@ -922,7 +918,6 @@ fn persist_task_output_origin_must_be_root() {
 fn fail_task_origin_must_be_root() {
 	let ext = ExtBuilder::default();
 	ext.build_offchain_and_execute_with_state(|_, _| {
-		let deadline = TaskScheduler::deadline();
 		let task_id = {
 			let (unverified, _) = set_up_verify_transfer_env(false);
 			let transfer_id: TransferId<_> = TaskV2::<Test>::to_id(&unverified).into();
@@ -930,6 +925,6 @@ fn fail_task_origin_must_be_root() {
 		};
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 
-		assert_ok!(Creditcoin::<Test>::fail_task(Origin::root(), deadline, task_id, failure_cause));
+		assert_ok!(Creditcoin::<Test>::fail_task(Origin::root(), task_id, failure_cause));
 	});
 }

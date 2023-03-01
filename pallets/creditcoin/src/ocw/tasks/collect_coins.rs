@@ -392,7 +392,6 @@ pub(crate) mod tests {
 			assert_noop!(
 				Creditcoin::<Test>::fail_task(
 					RuntimeOrigin::none(),
-					Test::unverified_transfer_deadline(),
 					expected_collected_coins_id.clone().into(),
 					Cause::AbiMismatch,
 				),
@@ -410,7 +409,6 @@ pub(crate) mod tests {
 		ext.build_offchain_and_execute_with_state(|_state, _pool| {
 			let deadline = Test::unverified_transfer_deadline();
 			let call = Call::<Test>::fail_task {
-				deadline,
 				task_id: expected_collected_coins_id.clone().into(),
 				cause: Cause::AbiMismatch,
 			};
@@ -442,8 +440,6 @@ pub(crate) mod tests {
 				sign
 			));
 
-			let deadline = Test::unverified_transfer_deadline();
-
 			let pcc = PassingCollectCoins::default();
 
 			let collected_coins = CollectedCoins {
@@ -456,14 +452,12 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				RuntimeOrigin::root(),
-				deadline,
 				(collected_coins_id.clone(), collected_coins).into(),
 			));
 
 			assert_noop!(
 				Creditcoin::<Test>::fail_task(
 					RuntimeOrigin::root(),
-					Test::unverified_transfer_deadline(),
 					collected_coins_id.into(),
 					Cause::AbiMismatch,
 				),
@@ -483,7 +477,6 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::fail_task(
 				RuntimeOrigin::root(),
-				Test::unverified_transfer_deadline(),
 				expected_collected_coins_id.clone().into(),
 				Cause::AbiMismatch,
 			));
@@ -510,7 +503,6 @@ pub(crate) mod tests {
 			let call = crate::Call::<Test>::fail_task {
 				task_id: expected_collected_coins_id.into(),
 				cause: Cause::AbiMismatch,
-				deadline: Test::unverified_transfer_deadline(),
 			};
 			assert_ok!(TaskSchedulerPallet::<Test>::offchain_signed_tx(acct_pubkey.into(), |_| {
 				call.clone().into()
@@ -541,8 +533,6 @@ pub(crate) mod tests {
 				sign
 			));
 
-			let deadline = Test::unverified_transfer_deadline();
-
 			let pcc = PassingCollectCoins::default();
 
 			let collected_coins = CollectedCoins {
@@ -560,7 +550,6 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				RuntimeOrigin::root(),
-				deadline,
 				(collected_coins_id.clone(), collected_coins.clone()).into(),
 			));
 
@@ -593,12 +582,9 @@ pub(crate) mod tests {
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
-			let deadline = Test::unverified_transfer_deadline();
-
 			assert_noop!(
 				Creditcoin::<Test>::persist_task_output(
 					RuntimeOrigin::root(),
-					deadline,
 					(collected_coins_id, collected_coins).into(),
 				),
 				crate::Error::<Test>::NonExistentAddress
@@ -637,7 +623,6 @@ pub(crate) mod tests {
 			assert_noop!(
 				Creditcoin::<Test>::persist_task_output(
 					RuntimeOrigin::root(),
-					Test::unverified_transfer_deadline(),
 					(collected_coins_id, collected_coins).into(),
 				),
 				ArithmeticError::Overflow
@@ -667,7 +652,6 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				RuntimeOrigin::root(),
-				Test::unverified_transfer_deadline(),
 				(collected_coins_id, collected_coins).into(),
 			));
 
@@ -794,14 +778,13 @@ pub(crate) mod tests {
 			let deadline = Test::unverified_transfer_deadline();
 
 			let call = Call::<Test>::persist_task_output {
-				deadline,
 				task_output: (collected_coins_id.clone(), collected_coins).into(),
 			};
 
 			assert_noop!(
 				TaskScheduler::submit_output(
 					RuntimeOrigin::signed(molly),
-					Test::unverified_transfer_deadline(),
+					deadline,
 					collected_coins_id.into_inner(),
 					Box::new(call.into())
 				),
@@ -832,8 +815,6 @@ pub(crate) mod tests {
 				TX_HASH.hex_to_address()
 			));
 
-			let deadline = Test::unverified_transfer_deadline();
-
 			roll_by_with_ocw(1);
 
 			assert!(!pool.read().transactions.is_empty());
@@ -851,7 +832,6 @@ pub(crate) mod tests {
 				assert_matches!(tx.call, RuntimeCall::TaskScheduler(TaskSchedulerCall::<Test>::submit_output {call, ..}) => {
 					let expected_call = crate::Call::<crate::mock::Test>::persist_task_output {
 						task_output: (collected_coins_id, collected_coins).into(),
-						deadline,
 					};
 						assert_eq!(*call, RuntimeCall::Creditcoin(expected_call));
 					});
@@ -882,14 +862,12 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				RuntimeOrigin::root(),
-				Test::unverified_transfer_deadline(),
 				(collected_coins_id.clone(), collected_coins.clone()).into(),
 			));
 
 			assert_noop!(
 				Creditcoin::<Test>::persist_task_output(
 					RuntimeOrigin::root(),
-					Test::unverified_transfer_deadline(),
 					(collected_coins_id, collected_coins).into(),
 				),
 				non_paying_error(crate::Error::<Test>::CollectCoinsAlreadyRegistered)
@@ -954,7 +932,6 @@ pub(crate) mod tests {
 
 			assert_ok!(Creditcoin::<Test>::persist_task_output(
 				RuntimeOrigin::root(),
-				Test::unverified_transfer_deadline(),
 				(collected_coins_id, collected_coins.clone()).into(),
 			));
 
@@ -1060,7 +1037,6 @@ pub(crate) mod tests {
 			assert_noop!(
 				Creditcoin::<Test>::persist_task_output(
 					RuntimeOrigin::root(),
-					Test::unverified_transfer_deadline(),
 					(collected_coins_id, collected_coins).into(),
 				),
 				TokenError::BelowMinimum
@@ -1111,8 +1087,7 @@ pub(crate) mod tests {
 
 			TaskScheduler::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
 
-			let call =
-				TaskV2::<Test>::persistence_call(&cc, TaskScheduler::deadline(), &id).unwrap();
+			let call = TaskV2::<Test>::persistence_call(&cc, &id).unwrap();
 			assert!(matches!(call, crate::Call::fail_task { .. }));
 			let call = RuntimeCall::from(call);
 
@@ -1154,8 +1129,7 @@ pub(crate) mod tests {
 
 			TaskScheduler::insert(&deadline, &id, Task::CollectCoins(cc.clone()));
 
-			let call =
-				TaskV2::<Test>::persistence_call(&cc, TaskScheduler::deadline(), &id).unwrap();
+			let call = TaskV2::<Test>::persistence_call(&cc, &id).unwrap();
 			assert!(matches!(call, crate::Call::persist_task_output { .. }));
 			let call = RuntimeCall::from(call);
 

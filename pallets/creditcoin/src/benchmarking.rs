@@ -209,7 +209,7 @@ benchmarks! {
 		// pending task does not matter
 		let transfer = generate_transfer::<T>(deal_id,false,false,0u8);
 		let task_output = crate::TaskOutput::from(transfer);
-	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
+	}: persist_task_output(RawOrigin::Signed(authority), task_output)
 
 	fail_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -220,7 +220,7 @@ benchmarks! {
 		let cause = crate::ocw::VerificationFailureCause::TaskFailed;
 		let deadline = T::BlockNumber::one();
 		let task_id = crate::TaskId::from(transfer_id);
-	}: fail_task(RawOrigin::Signed(authority), deadline, task_id, cause)
+	}: fail_task(RawOrigin::Signed(authority), task_id, cause)
 
 	fund_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -330,7 +330,7 @@ benchmarks! {
 		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, tx_id);
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_id = crate::TaskId::from(collected_coins_id);
-	}: fail_task(RawOrigin::Signed(authority), deadline, task_id, Cause::AbiMismatch)
+	}: fail_task(RawOrigin::Signed(authority), task_id, Cause::AbiMismatch)
 
 	persist_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -347,7 +347,7 @@ benchmarks! {
 			crate::types::CollectedCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
-	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
+	}: persist_task_output(RawOrigin::Signed(authority), task_output)
 
 	remove_authority {
 		let root = RawOrigin::Root;
