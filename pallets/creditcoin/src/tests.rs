@@ -1,3 +1,4 @@
+use crate::Call;
 use crate::{
 	helpers::{
 		extensions::{HexToAddress, IntoBounded},
@@ -15,7 +16,7 @@ use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
-use pallet_offchain_task_scheduler::authority::AuthorityController;
+use pallet_offchain_task_scheduler::{authority::AuthorityController, Error as TaskSchedulerError};
 use parity_scale_codec::Encode;
 use sp_core::Pair;
 use sp_runtime::{
@@ -23,6 +24,7 @@ use sp_runtime::{
 	traits::{BadOrigin, IdentifyAccount},
 	MultiSigner,
 };
+use sp_std::boxed::Box;
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -2550,18 +2552,25 @@ fn verify_transfer_should_error_when_not_signed() {
 
 #[test]
 fn verify_transfer_should_error_when_signer_not_authorized() {
-	ExtBuilder::default().build_and_execute(|| {
+	ExtBuilder::default().build_offchain_and_execute_with_state(|_, _| {
 		let test_info = TestInfo::new_defaults();
 		let (deal_order_id, _) = test_info.create_deal_order();
-		let (transfer_id, transfer) = test_info.create_funding_transfer(&deal_order_id);
-		let deadline = Test::unverified_transfer_deadline();
+		let (id, transfer) = test_info.create_funding_transfer(&deal_order_id);
+
+		let deadline = TaskScheduler::deadline();
+		let call = Call::<Test>::persist_task_output {
+			deadline,
+			task_output: (id.clone(), transfer).into(),
+		};
+
 		assert_noop!(
-			Creditcoin::persist_task_output(
+			TaskScheduler::submit_output(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				(transfer_id, transfer).into(),
+				id.into_inner(),
+				Box::new(call.into())
 			),
-			TestError::InsufficientAuthority,
+			TaskSchedulerError::<Test>::UnauthorizedSubmission
 		);
 	});
 }
@@ -2584,7 +2593,7 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 
 		assert_noop!(
 			Creditcoin::persist_task_output(
-				Origin::signed(test_info.lender.account_id),
+				Origin::root(),
 				deadline,
 				(transfer_id, transfer).into(),
 			),
@@ -2622,13 +2631,13 @@ fn verify_transfer_should_work() {
 			tx_id: tx,
 			block: System::block_number(),
 			is_processed: false,
-			account_id: test_info.lender.account_id.clone(),
+			account_id: test_info.lender.account_id,
 			timestamp: None,
 		};
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_ok!(Creditcoin::persist_task_output(
-			Origin::signed(test_info.lender.account_id),
+			Origin::root(),
 			deadline,
 			(transfer_id.clone(), transfer.clone()).into(),
 		));
@@ -2655,9 +2664,8 @@ fn fail_transfer_should_work() {
 
 		let test_info = TestInfo::new_defaults();
 
-		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::RuntimeOrigin::from(root),
+			RuntimeOrigin::root(),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2670,7 +2678,7 @@ fn fail_transfer_should_work() {
 		let deadline = Test::unverified_transfer_deadline();
 
 		assert_ok!(Creditcoin::fail_task(
-			Origin::signed(test_info.lender.account_id),
+			RuntimeOrigin::root(),
 			deadline,
 			transfer_id.clone().into(),
 			failure_cause
@@ -2711,28 +2719,33 @@ fn fail_transfer_should_error_when_not_signed() {
 }
 
 #[test]
-fn fail_transfer_should_error_when_not_authority() {
+fn fail_transfer_should_error_when_not_authorized() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
 		let test_info = TestInfo::new_defaults();
 
-		let _ = test_info.create_deal_order();
-
-		let tx = "0xafafaf".hex_to_address();
-		let transfer_id = TransferId::new::<Test>(&Blockchain::RINKEBY, &tx);
-
+		let transfer_id = {
+			let _ = test_info.create_deal_order();
+			let tx = "0xafafaf".hex_to_address();
+			TransferId::new::<Test>(&Blockchain::RINKEBY, &tx)
+		};
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
 		let deadline = Test::unverified_transfer_deadline();
+		let call = Call::<Test>::fail_task {
+			deadline,
+			task_id: transfer_id.clone().into(),
+			cause: failure_cause,
+		};
 
 		assert_noop!(
-			Creditcoin::fail_task(
+			TaskScheduler::submit_output(
 				Origin::signed(test_info.lender.account_id),
 				deadline,
-				transfer_id.into(),
-				failure_cause
+				transfer_id.into_inner(),
+				Box::new(call.into())
 			),
-			TestError::InsufficientAuthority
+			TaskSchedulerError::<Test>::UnauthorizedSubmission
 		);
 	})
 }
@@ -2751,7 +2764,7 @@ fn fail_transfer_should_error_when_transfer_registered() {
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
 			crate::mock::RuntimeOrigin::from(root),
-			test_info.lender.account_id.clone(),
+			test_info.lender.account_id,
 		));
 
 		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
@@ -2759,7 +2772,7 @@ fn fail_transfer_should_error_when_transfer_registered() {
 
 		assert_noop!(
 			Creditcoin::fail_task(
-				Origin::signed(test_info.lender.account_id),
+				RuntimeOrigin::root(),
 				deadline,
 				transfer_id.into(),
 				failure_cause
