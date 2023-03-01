@@ -1,4 +1,3 @@
-use crate::Call;
 use crate::{
 	helpers::{
 		extensions::{HexToAddress, IntoBounded},
@@ -16,7 +15,7 @@ use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
-use pallet_offchain_task_scheduler::{authority::AuthorityController, Error as TaskSchedulerError};
+use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
 use sp_core::Pair;
 use sp_runtime::{
@@ -24,7 +23,6 @@ use sp_runtime::{
 	traits::{BadOrigin, IdentifyAccount},
 	MultiSigner,
 };
-use sp_std::boxed::Box;
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -2546,31 +2544,6 @@ fn verify_transfer_should_error_when_not_signed() {
 				(transfer_id, transfer).into()
 			),
 			BadOrigin
-		);
-	});
-}
-
-#[test]
-fn verify_transfer_should_error_when_signer_not_authorized() {
-	ExtBuilder::default().build_offchain_and_execute_with_state(|_, _| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, _) = test_info.create_deal_order();
-		let (id, transfer) = test_info.create_funding_transfer(&deal_order_id);
-
-		let deadline = TaskScheduler::deadline();
-		let call = Call::<Test>::persist_task_output {
-			deadline,
-			task_output: (id.clone(), transfer).into(),
-		};
-
-		assert_noop!(
-			TaskScheduler::submit_output(
-				Origin::signed(test_info.lender.account_id),
-				deadline,
-				id.into_inner(),
-				Box::new(call.into())
-			),
-			TaskSchedulerError::<Test>::UnauthorizedSubmission
 		);
 	});
 }
