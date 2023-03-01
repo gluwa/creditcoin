@@ -37,7 +37,7 @@ parity-scale-codec = { workspace = true }
 paste = "1.0.11"
 scale-info = { workspace = true }
 serde = { workspace = true }
-serde_json = { version = "1.0.91", features = [
+serde_json = { version = "1.0.93", features = [
     "alloc",
 ], default-features = false }
 sha2 = { version = "0.10.6", default-features = false }
