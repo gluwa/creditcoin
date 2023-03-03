@@ -19,7 +19,7 @@ use crate::{
 		get_mock_nonce, get_mock_timestamp, get_mock_to_address, get_mock_tx_block_num,
 		get_mock_tx_hash, roll_to, roll_to_with_ocw, set_rpc_uri, ExtBuilder, Extrinsic,
 		MockedRpcRequests, PendingRequestExt, RuntimeCall as Call, RuntimeOrigin as Origin, RwLock,
-		TaskScheduler, Test, ETHLESS_RESPONSES,
+		TaskScheduler, TaskSchedulerT, Test, ETHLESS_RESPONSES,
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcResponse},
 	tests::TestInfo,
@@ -32,7 +32,7 @@ use assert_matches::assert_matches;
 use core::fmt::Debug;
 use ethabi::Token;
 use ethereum_types::{BigEndianHash, H160, U256, U64};
-use frame_support::{assert_ok, once_cell::sync::Lazy, traits::Get, BoundedVec};
+use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Get, BoundedVec};
 use frame_system::Pallet as System;
 use pallet_offchain_task_scheduler::tasks::error::TaskError;
 use pallet_offchain_task_scheduler::tasks::ForwardTask;
@@ -41,10 +41,13 @@ use sp_core::H256;
 use sp_io::offchain;
 use sp_runtime::offchain::storage::MutateStorageError;
 use sp_runtime::offchain::testing::TestOffchainExt;
-use sp_runtime::offchain::{
-	storage::{StorageRetrievalError, StorageValueRef},
-	testing::OffchainState,
-	Duration,
+use sp_runtime::{
+	offchain::{
+		storage::{StorageRetrievalError, StorageValueRef},
+		testing::OffchainState,
+		Duration,
+	},
+	traits::BadOrigin,
 };
 use std::{convert::TryFrom, str::FromStr};
 
@@ -894,5 +897,42 @@ fn parallel_worker_trivial() {
 	ext.execute_with(|| {
 		let val = StorageValueRef::persistent(STORAGE_KEY).get::<u32>().unwrap().unwrap();
 		assert_eq!(val, TOTAL);
+	});
+}
+
+#[test]
+fn persist_task_output_origin_doesnt_allow_root() {
+	let ext = ExtBuilder::default();
+	ext.build_offchain_and_execute_with_state(|_, _| {
+		let deadline = TaskScheduler::deadline();
+		let task_output = {
+			let test_info = TestInfo::new_defaults();
+			let (deal_order_id, _) = test_info.create_deal_order();
+			test_info.create_funding_transfer(&deal_order_id).into()
+		};
+
+		assert_noop!(
+			Creditcoin::<Test>::persist_task_output(Origin::root(), deadline, task_output,),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn fail_task_origin_doesnt_allow_root() {
+	let ext = ExtBuilder::default();
+	ext.build_offchain_and_execute_with_state(|_, _| {
+		let deadline = TaskScheduler::deadline();
+		let task_id = {
+			let test_info = TestInfo::new_defaults();
+			let (deal_order_id, _) = test_info.create_deal_order();
+			test_info.create_funding_transfer(&deal_order_id).0.into()
+		};
+		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
+
+		assert_noop!(
+			Creditcoin::<Test>::fail_task(Origin::root(), deadline, task_id, failure_cause),
+			BadOrigin
+		);
 	});
 }
