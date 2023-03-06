@@ -149,6 +149,7 @@ pub(crate) mod tests {
 
 	use super::*;
 	use crate::mock::{PendingRequestExt, RuntimeCall};
+	use pallet_offchain_task_scheduler::pallet::Call as TaskSchedulerCall;
 	use std::collections::HashMap;
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
@@ -845,14 +846,17 @@ pub(crate) mod tests {
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
-			let call = crate::Call::<crate::mock::Test>::persist_task_output {
-				task_output: (collected_coins_id, collected_coins).into(),
-				deadline,
-			};
-
 			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
 				let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
-				assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
+
+				assert_matches!(tx.call, RuntimeCall::TaskScheduler(TaskSchedulerCall::<Test>::submit_output {call, ..}) => {
+					let expected_call = crate::Call::<crate::mock::Test>::persist_task_output {
+						task_output: (collected_coins_id, collected_coins).into(),
+						deadline,
+					};
+						assert_eq!(*call, RuntimeCall::Creditcoin(expected_call));
+					});
+
 			});
 		});
 	}

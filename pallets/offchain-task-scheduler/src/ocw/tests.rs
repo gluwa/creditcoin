@@ -9,7 +9,8 @@ use crate::{
 	},
 	mocked_task::MockTask,
 	ocw::StorageValueRef,
-	tasks::{storage_key, task_lock, TaskScheduler as TaskSchedulerT, TaskV2},
+	pallet::Call,
+	tasks::{lock_key, task_lock, TaskScheduler as TaskSchedulerT, TaskV2},
 	Pallet,
 };
 use assert_matches::assert_matches;
@@ -51,25 +52,28 @@ fn completed_oversubscribed_tasks_are_skipped() {
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(3);
 
 		//We now have 2 enqueued tasks.
-		let tx = pool.write().transactions.pop().expect("A single task");
-		// No more tasks
-		assert!(pool.read().transactions.is_empty());
-		let tx = Extrinsic::decode(&mut &*tx).unwrap();
-		assert_eq!(
-			tx.call,
-			RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
-				remark: 0.encode()
-			})
-		);
+		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+			let tx = Extrinsic::decode(&mut &*tx).unwrap();
+			assert_matches!(tx.call.clone(), RuntimeCall::TaskScheduler(Call::<Runtime>::submit_output {call, ..}) => {
+				assert_eq!(*call,
+					RuntimeCall::System(frame_system::pallet::Call::remark {
+						remark: 0.encode()
+					}
+				));
+			});
 
-		assert_ok!(tx.call.dispatch(RuntimeOrigin::signed(auth)));
+			assert_ok!(tx.call.dispatch(RuntimeOrigin::signed(auth)));
+
+		});
+
+		assert!(pool.read().transactions.is_empty());
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(deadline_2);
 
 		//task expires without yielding txns.
 		assert!(pool.read().transactions.is_empty());
 
-		let key = storage_key(&id);
+		let key = lock_key(&id);
 		//lock set
 		assert!(StorageValueRef::persistent(key.as_ref())
 			.get::<GuardDeadline>()
@@ -127,7 +131,7 @@ fn evaluation_error_is_retried() {
 		// It failed Evaluation and remains scheduled.
 		assert!(TaskScheduler::is_scheduled(&deadline, &id));
 
-		let key = storage_key(&id);
+		let key = lock_key(&id);
 		assert!(StorageValueRef::persistent(key.as_ref())
 			.get::<GuardDeadline>()
 			.expect("decoded")
@@ -151,7 +155,7 @@ fn forget_task_guard_when_task_has_been_persisted() {
 		TaskScheduler::insert(&deadline, &id, task.clone());
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
-		let key = crate::tasks::storage_key(&id);
+		let key = crate::tasks::lock_key(&id);
 		let mut lock = crate::tasks::task_lock::<Runtime>(&key);
 		let lock_deadline = lock.try_lock().map(|_| ()).expect_err("deadline");
 		sleep_until(lock_deadline.timestamp.add(Duration::from_millis(1)));
@@ -165,7 +169,7 @@ fn forget_task_guard_when_task_has_been_persisted() {
 
 		assert!(logs_contain("Already handled Task"));
 
-		let key = storage_key(&id);
+		let key = lock_key(&id);
 		let mut lock = task_lock::<Runtime>(&key);
 
 		let guard = lock.try_lock();
@@ -214,18 +218,21 @@ fn effective_guard_lifetime_until_task_expiration() {
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
-		let tx = pool.write().transactions.pop().expect("Remark");
+		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+			let tx = Extrinsic::decode(&mut &*tx).unwrap();
+			assert_matches!(tx.call, RuntimeCall::TaskScheduler(Call::<Runtime>::submit_output {call, ..}) => {
+				assert_eq!(*call,
+					RuntimeCall::System(frame_system::pallet::Call::remark {
+						remark: 0.encode()
+					}
+				));
+			});
+		});
+
+		// No more tasks
 		assert!(pool.read().transactions.is_empty());
-		let tx = Extrinsic::decode(&mut &*tx).unwrap();
 
-		assert_eq!(
-			tx.call,
-			RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
-				remark: 0.encode()
-			})
-		);
-
-		let key = storage_key(&id);
+		let key = lock_key(&id);
 
 		let mut lock = crate::tasks::task_lock::<Runtime>(&key);
 		let lock_deadline = lock.try_lock().map(|_| ()).expect_err("deadline");
@@ -243,9 +250,7 @@ fn offchain_signed_tx_works() {
 	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-		let call = RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
-			remark: 0.encode(),
-		});
+		let call = RuntimeCall::System(frame_system::pallet::Call::remark { remark: 0.encode() });
 
 		assert_ok!(Pallet::<Runtime>::offchain_signed_tx(acct_pubkey.into(), |_| call.clone()));
 		Trivial::<TaskScheduler, Runtime>::roll_to(2);
@@ -265,9 +270,7 @@ fn offchain_signed_tx_send_fails() {
 	ext_builder.build::<Runtime>().execute_with(|| {
 		Trivial::<TaskScheduler, Runtime>::roll_to(1);
 
-		let call = RuntimeCall::System(frame_system::pallet::Call::remark_with_event {
-			remark: 0.encode(),
-		});
+		let call = RuntimeCall::System(frame_system::pallet::Call::remark { remark: 0.encode() });
 
 		use frame_support::assert_err;
 		with_failing_submit_transaction(|| {

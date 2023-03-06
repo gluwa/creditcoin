@@ -8,7 +8,7 @@ use frame_system::Config as SystemConfig;
 pub use ocw::nonce::nonce_key;
 #[cfg(feature = "std")]
 pub use pallet::GenesisConfig;
-pub use pallet::{Authorities, Config, Error, Event, Pallet, WeightInfo};
+pub use pallet::{Authorities, Call, Config, Error, Event, Pallet, WeightInfo};
 pub use pallet::{
 	__InherentHiddenInstance, __substrate_call_check, __substrate_event_check,
 	__substrate_genesis_config_check, tt_default_parts, tt_error_token,
@@ -25,6 +25,7 @@ pub mod mock;
 pub mod mocked_task;
 pub mod ocw;
 pub mod tasks;
+pub mod tests;
 #[allow(clippy::unnecessary_cast)]
 pub mod weights;
 
@@ -92,6 +93,7 @@ pub mod pallet {
 		type UnverifiedTaskTimeout: Get<<Self as SystemConfig>::BlockNumber>;
 		type WeightInfo: WeightInfo;
 		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin>
+			+ From<Call<Self>>
 			+ Clone
 			+ Encode
 			+ Decode
@@ -177,7 +179,7 @@ pub mod pallet {
 			};
 
 			for (deadline, id, task) in PendingTasks::<T>::iter() {
-				let storage_key = tasks::storage_key(&id);
+				let storage_key = tasks::lock_key(&id);
 				let mut lock = tasks::task_lock::<T>(&storage_key);
 
 				let guard = match lock.try_lock() {
@@ -191,11 +193,19 @@ pub mod pallet {
 				match task.forward_task(deadline) {
 					Ok(call) => {
 						match Self::submit_txn_with_synced_nonce(signer.clone().into(), |_| {
-							call.clone()
+							Call::<T>::submit_output {
+								deadline,
+								task_id: id,
+								call: Box::new(call.clone()),
+							}
+							.into()
 						}) {
 							Ok(_) => guard.forget(),
 							Err(e) => {
-								log::error!("Failed to send a dispatchable transaction: {:?}", e)
+								log::error!(
+									target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {:?}",
+									e
+								);
 							},
 						}
 					},

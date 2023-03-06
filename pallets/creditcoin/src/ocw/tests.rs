@@ -23,7 +23,7 @@ use crate::{
 	},
 	ocw::rpc::{errors::RpcError, JsonRpcResponse},
 	tests::TestInfo,
-	types::{DoubleMapExt, TransferId},
+	types::{DoubleMapExt, TaskId, TransferId},
 	Blockchain, Call, CurrencyOrLegacyTransferKind, ExternalAddress, Id, LegacyTransferKind,
 	LoanTerms, TransferKind,
 };
@@ -36,8 +36,10 @@ use frame_support::{
 	assert_ok, dispatch::Dispatchable, once_cell::sync::Lazy, traits::Get, BoundedVec,
 };
 use frame_system::Pallet as System;
-use pallet_offchain_task_scheduler::tasks::ForwardTask;
-use pallet_offchain_task_scheduler::tasks::{error::TaskError, TaskV2};
+use pallet_offchain_task_scheduler::{
+	pallet::Call as TaskSchedulerCall,
+	tasks::{error::TaskError, ForwardTask, TaskV2},
+};
 use parity_scale_codec::Decode;
 use sp_core::H256;
 use sp_io::offchain;
@@ -780,14 +782,10 @@ fn luniverse_succeeds_with_fake_nonce() {
 		let tx = pool.write().transactions.pop().expect("fail transfer");
 		assert!(pool.read().transactions.is_empty());
 		let fail_tx = Extrinsic::decode(&mut &*tx).unwrap();
-		assert_eq!(
-			fail_tx.call,
-			RuntimeCall::Creditcoin(crate::Call::fail_task {
-				task_id: transfer_id.clone().into(),
-				deadline,
-				cause: VerificationFailureCause::IncorrectNonce
-			})
-		);
+		assert_matches!(fail_tx.call, RuntimeCall::TaskScheduler(TaskSchedulerCall::<Test>::submit_output{call,..})=>{
+			let task_id:TaskId<_> = transfer_id.clone().into();
+			assert_eq!(*call,RuntimeCall::Creditcoin(crate::Call::fail_task { task_id, deadline, cause: VerificationFailureCause::IncorrectNonce }));
+		});
 
 		// test for successful verification
 
@@ -830,13 +828,15 @@ fn luniverse_succeeds_with_fake_nonce() {
 		let tx = pool.write().transactions.pop().expect("verify transfer");
 		assert!(pool.read().transactions.is_empty());
 		let verify_tx = Extrinsic::decode(&mut &*tx).unwrap();
-		assert_eq!(
-			verify_tx.call,
-			RuntimeCall::Creditcoin(crate::Call::persist_task_output {
+
+		assert_matches!(verify_tx.call, RuntimeCall::TaskScheduler(TaskSchedulerCall::<Test>::submit_output{call,..})=>{
+			assert_eq!(*call, RuntimeCall::Creditcoin(
+				crate::Call::persist_task_output {
 				task_output: (transfer_id, expected_transfer).into(),
 				deadline: deadline_2
-			})
-		);
+			}
+			));
+		});
 	});
 }
 

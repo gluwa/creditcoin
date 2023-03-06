@@ -58,7 +58,7 @@ impl<Runtime: Config, Nonce: Encode> TaskV2<Runtime> for MockTask<Nonce> {
 	) -> Result<SystemCall<Runtime>, TaskError<(), ()>> {
 		match self {
 			MockTask::Remark(nonce) => {
-				Ok(frame_system::pallet::Call::remark_with_event { remark: nonce.encode() })
+				Ok(frame_system::pallet::Call::remark { remark: nonce.encode() })
 			},
 			MockTask::Evaluation => Err(TaskError::Evaluation(())),
 			MockTask::Scheduler => Err(TaskError::Scheduler(())),

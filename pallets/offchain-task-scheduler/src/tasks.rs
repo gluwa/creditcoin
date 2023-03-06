@@ -15,7 +15,7 @@ use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::SaturatedConversion;
 
 #[inline]
-pub(crate) fn storage_key<Id: Encode>(id: &Id) -> Vec<u8> {
+pub(crate) fn lock_key<Id: Encode>(id: &Id) -> Vec<u8> {
 	const TASK_GUARD: &[u8] = b"task-scheduler/task/guard/";
 	id.using_encoded(|encoded_id| TASK_GUARD.iter().chain(encoded_id).copied().collect())
 }
