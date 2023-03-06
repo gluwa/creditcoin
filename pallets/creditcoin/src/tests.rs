@@ -2719,38 +2719,6 @@ fn fail_transfer_should_error_when_not_signed() {
 }
 
 #[test]
-fn fail_transfer_should_error_when_not_authorized() {
-	ExtBuilder::default().build_and_execute(|| {
-		System::set_block_number(1);
-
-		let test_info = TestInfo::new_defaults();
-
-		let transfer_id = {
-			let _ = test_info.create_deal_order();
-			let tx = "0xafafaf".hex_to_address();
-			TransferId::new::<Test>(&Blockchain::RINKEBY, &tx)
-		};
-		let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
-		let deadline = Test::unverified_transfer_deadline();
-		let call = Call::<Test>::fail_task {
-			deadline,
-			task_id: transfer_id.clone().into(),
-			cause: failure_cause,
-		};
-
-		assert_noop!(
-			TaskScheduler::submit_output(
-				Origin::signed(test_info.lender.account_id),
-				deadline,
-				transfer_id.into_inner(),
-				Box::new(call.into())
-			),
-			TaskSchedulerError::<Test>::UnauthorizedSubmission
-		);
-	})
-}
-
-#[test]
 fn fail_transfer_should_error_when_transfer_registered() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);

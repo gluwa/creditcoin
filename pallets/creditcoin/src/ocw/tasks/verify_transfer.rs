@@ -1,12 +1,3 @@
-use ethabi::{Function, Param, ParamType, StateMutability, Token};
-use ethereum_types::U64;
-use frame_support::ensure;
-use frame_system::pallet_prelude::BlockNumberFor;
-use sp_core::U256;
-use sp_runtime::traits::UniqueSaturatedFrom;
-#[cfg(not(feature = "std"))]
-use sp_std::prelude::*;
-
 use crate::{
 	ocw::{
 		self, parse_eth_address,
@@ -17,6 +8,14 @@ use crate::{
 	Blockchain, Config, Currency, DealOrderId, EvmChainId, EvmInfo, ExternalAddress,
 	ExternalAmount, ExternalTxId, Id, LegacyTransferKind, Transfer, UnverifiedTransfer,
 };
+use ethabi::{Function, Param, ParamType, StateMutability, Token};
+use ethereum_types::U64;
+use frame_support::ensure;
+use frame_system::pallet_prelude::BlockNumberFor;
+use sp_core::U256;
+use sp_runtime::traits::UniqueSaturatedFrom;
+#[cfg(not(feature = "std"))]
+use sp_std::prelude::*;
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
 	#[allow(deprecated)]
@@ -218,6 +217,7 @@ mod tests {
 	use crate::helpers::extensions::HexToAddress;
 	use crate::mock::RuntimeCall;
 	use crate::mock::RuntimeOrigin as Origin;
+	use crate::mock::System;
 	use crate::mock::{
 		get_mock_amount, get_mock_contract, get_mock_nonce, get_mock_tx_block_num,
 		get_mock_tx_hash, roll_to_with_ocw, set_rpc_uri, with_failing_create_transaction,
@@ -228,9 +228,12 @@ mod tests {
 	use crate::ocw::tasks::TaskV2;
 	use crate::ocw::tests::set_up_verify_transfer_env;
 	use crate::tests::{adjust_deal_order_to_nonce, ethless_currency, TestInfo};
-	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
+	use crate::Call;
+	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms, TransferId};
+	use frame_support::assert_noop;
 	use frame_support::assert_ok;
 	use frame_support::dispatch::Dispatchable;
+	use pallet_offchain_task_scheduler::pallet::{Error as TaskSchedulerError, PendingTasks};
 
 	#[test]
 	#[tracing_test::traced_test]
@@ -285,8 +288,7 @@ mod tests {
 				assert!(logs_contain("Failed to send a dispatchable transaction"));
 			});
 
-			let _ =
-				pallet_offchain_task_scheduler::pallet::PendingTasks::<Test>::clear(u32::MAX, None);
+			let _ = PendingTasks::<Test>::clear(u32::MAX, None);
 
 			let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
 
@@ -350,5 +352,37 @@ mod tests {
 			assert_ok!(c.dispatch(Origin::root()));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
+	}
+
+	#[test]
+	fn fail_transfer_should_error_when_not_authorized() {
+		ExtBuilder::default().build_and_execute(|| {
+			System::set_block_number(1);
+
+			let test_info = TestInfo::new_defaults();
+
+			let transfer_id = {
+				let _ = test_info.create_deal_order();
+				let tx = "0xafafaf".hex_to_address();
+				TransferId::new::<Test>(&Blockchain::RINKEBY, &tx)
+			};
+			let failure_cause = crate::ocw::errors::VerificationFailureCause::TaskFailed;
+			let deadline = Test::unverified_transfer_deadline();
+			let call = Call::<Test>::fail_task {
+				deadline,
+				task_id: transfer_id.clone().into(),
+				cause: failure_cause,
+			};
+
+			assert_noop!(
+				TaskScheduler::submit_output(
+					Origin::signed(test_info.lender.account_id),
+					deadline,
+					transfer_id.into_inner(),
+					Box::new(call.into())
+				),
+				TaskSchedulerError::<Test>::UnauthorizedSubmission
+			);
+		})
 	}
 }
