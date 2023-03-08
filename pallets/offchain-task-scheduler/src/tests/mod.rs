@@ -36,7 +36,7 @@ fn submit_output_yields_an_event() {
 
 		assert_matches!(events.pop(), Some(event) => {
 			assert_eq!(event.event,
-				RuntimeEvent::TaskScheduler(Event::<Runtime>::TaskComplete { task_id, result: Ok(()) })
+				RuntimeEvent::TaskScheduler(Event::<Runtime>::TaskCompleted { task_id, result: Ok(()) })
 			);
 		});
 	});

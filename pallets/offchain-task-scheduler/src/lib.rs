@@ -114,7 +114,9 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A task is finished. [id, result]
-		TaskComplete { task_id: T::Hash, result: DispatchResult },
+		TaskCompleted { task_id: T::Hash, result: DispatchResult },
+		/// A task expired. [id]
+		TaskExpired { task_id: T::Hash },
 	}
 
 	#[pallet::pallet]
@@ -155,15 +157,9 @@ pub mod pallet {
 			log::debug!("Cleaning up expired entries");
 
 			let mut unverified_task_count = 0u32;
-			let mut cursor: Option<Vec<u8>> = None;
-			loop {
-				let result =
-					PendingTasks::<T>::clear_prefix(block_number, u32::MAX, cursor.as_deref());
-				unverified_task_count.saturating_accrue(result.backend);
-				cursor = result.maybe_cursor;
-				if cursor.is_none() {
-					break;
-				}
+			for (task_id, _) in PendingTasks::<T>::drain_prefix(block_number) {
+				unverified_task_count.saturating_accrue(1);
+				Self::deposit_event(Event::TaskExpired { task_id });
 			}
 
 			<T as Config>::WeightInfo::on_initialize(unverified_task_count)
@@ -263,7 +259,7 @@ pub mod pallet {
 			let underlying_result =
 				call.dispatch(RawOrigin::Root.into()).map(|_| ()).map_err(|e| e.error);
 
-			Self::deposit_event(Event::TaskComplete { task_id, result: underlying_result });
+			Self::deposit_event(Event::TaskCompleted { task_id, result: underlying_result });
 
 			Self::remove(&deadline, &task_id);
 
