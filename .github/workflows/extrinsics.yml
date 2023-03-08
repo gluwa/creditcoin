@@ -30,7 +30,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1

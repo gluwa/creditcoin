@@ -57,7 +57,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -108,8 +108,8 @@ jobs:
         run: |
           # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
           # doesn't evaluate the $GITHUB_RUN_ID reference
-          echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
-          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+          echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> "$GITHUB_OUTPUT"
+          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> "$GITHUB_OUTPUT"
 
       - name: Provision VM
         if: env.LC_GITHUB_REPO_ADMIN_TOKEN
@@ -135,12 +135,13 @@ jobs:
 
           # provision the GitHub Runner binary on the VM
           # passing additional ENV values
-          SSH_USER_AT_HOSTNAME=$(cat output.json | jq -r '.properties.outputs.sshUserAtHostname.value')
+          SSH_USER_AT_HOSTNAME=$(jq -r '.properties.outputs.sshUserAtHostname.value' < output.json)
           echo "INFO: $SSH_USER_AT_HOSTNAME"
 
           export LC_RUNNER_VM_NAME="${{ env.RUNNER_VM_NAME }}"
-          cat ./scripts/provision-github-runner.sh | ssh -i ~/.ssh/id_rsa \
-              -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME -o StrictHostKeyChecking=no $SSH_USER_AT_HOSTNAME
+          ssh -i ~/.ssh/id_rsa \
+              -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME \
+              -o StrictHostKeyChecking=no "$SSH_USER_AT_HOSTNAME" < ./scripts/provision-github-runner.sh
         env:
           LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
 
@@ -162,7 +163,7 @@ jobs:
 
       - name: Set env
         run: |
-          echo "HOME=/home/actions" >> $GITHUB_ENV
+          echo "HOME=/home/actions" >> "$GITHUB_ENV"
 
       - name: Download benchmark binary
         uses: actions/download-artifact@v3
@@ -188,7 +189,7 @@ jobs:
           REPEAT: 8
           PALLET: creditcoin
         run: |
-          ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
+          ./scripts/bench.sh -p "$PALLET" -b -r "$REPEAT" -s "$STEPS"
 
       - name: Difficulty
         shell: bash
@@ -196,7 +197,7 @@ jobs:
         env:
           PALLET: difficulty
         run: |
-          ./scripts/bench.sh -p $PALLET -b
+          ./scripts/bench.sh -p "$PALLET" -b
 
       - name: Offchain Task Scheduler
         shell: bash
@@ -204,7 +205,7 @@ jobs:
         env:
           PALLET: offchain_task_scheduler
         run: |
-          ./scripts/bench.sh -p $PALLET -b
+          ./scripts/bench.sh -p "$PALLET" -b
 
       - name: Rewards
         shell: bash
@@ -212,7 +213,7 @@ jobs:
         env:
           PALLET: rewards
         run: |
-          ./scripts/bench.sh -p $PALLET -b
+          ./scripts/bench.sh -p "$PALLET" -b
 
       - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
@@ -226,9 +227,9 @@ jobs:
           LAST_COMMIT=$(git rev-parse HEAD)
           BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
 
-          git checkout -b $BRANCH_NAME origin/dev
-          git cherry-pick $LAST_COMMIT
-          git push origin $BRANCH_NAME
+          git checkout -b "$BRANCH_NAME" origin/dev
+          git cherry-pick "$LAST_COMMIT"
+          git push origin "$BRANCH_NAME"
 
       - name: Open PR against dev
         id: open_pr
@@ -258,7 +259,7 @@ jobs:
         run: |
           # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
           # doesn't evaluate the $GITHUB_RUN_ID reference
-          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> "$GITHUB_OUTPUT"
 
       - name: Install azure-cli
         run: |

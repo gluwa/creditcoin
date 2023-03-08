@@ -23,7 +23,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -63,15 +63,15 @@ jobs:
         id: testnet-env
         if: github.base_ref == 'testnet'
         run: |
-          echo "target_chain=test" >> $GITHUB_OUTPUT
-          echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> $GITHUB_OUTPUT
+          echo "target_chain=test" >> "$GITHUB_OUTPUT"
+          echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
 
       - name: Mainnet ENV
         id: mainnet-env
         if: github.base_ref == 'main'
         run: |
-          echo "target_chain=main" >> $GITHUB_OUTPUT
-          echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> $GITHUB_OUTPUT
+          echo "target_chain=main" >> "$GITHUB_OUTPUT"
+          echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
 
       - name: Download creditcoin-node
         id: download-creditcoin-node
@@ -168,7 +168,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
           sudo apt install -y gcc
 
       - name: Install Rust toolchain
@@ -250,8 +250,8 @@ jobs:
         run: |
           # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
           # doesn't evaluate the $GITHUB_RUN_ID reference
-          echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> $GITHUB_OUTPUT
-          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+          echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> "$GITHUB_OUTPUT"
+          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> "$GITHUB_OUTPUT"
 
       - name: Provision VM
         if: env.LC_GITHUB_REPO_ADMIN_TOKEN
@@ -277,12 +277,13 @@ jobs:
 
           # provision the GitHub Runner binary on the VM
           # passing additional ENV values
-          SSH_USER_AT_HOSTNAME=$(cat output.json | jq -r '.properties.outputs.sshUserAtHostname.value')
+          SSH_USER_AT_HOSTNAME=$(jq -r '.properties.outputs.sshUserAtHostname.value' < output.json)
           echo "INFO: $SSH_USER_AT_HOSTNAME"
 
           export LC_RUNNER_VM_NAME="${{ env.RUNNER_VM_NAME }}"
-          cat ./scripts/provision-github-runner.sh | ssh -i ~/.ssh/id_rsa \
-              -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME -o StrictHostKeyChecking=no $SSH_USER_AT_HOSTNAME
+          ssh -i ~/.ssh/id_rsa \
+              -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME \
+              -o StrictHostKeyChecking=no "$SSH_USER_AT_HOSTNAME" < ./scripts/provision-github-runner.sh
         env:
           LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
           LC_RUNNER_EPHEMERAL: false
@@ -351,7 +352,7 @@ jobs:
         run: |
           # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
           # doesn't evaluate the $GITHUB_RUN_ID reference
-          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> "$GITHUB_OUTPUT"
 
       - name: Install azure-cli
         run: |
