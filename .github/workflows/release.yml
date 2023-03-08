@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -51,14 +51,14 @@ jobs:
       - name: Figure out platform
         shell: bash
         run: |
-          PLATFORM="$(rustup target list --installed | grep $(uname -m))"
-          echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
+          PLATFORM=$(rustup target list --installed | grep "$(uname -m)")
+          echo "PLATFORM=$PLATFORM" >> "$GITHUB_ENV"
 
       - name: Figure out tag name
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: DEBUG
         shell: bash
@@ -114,7 +114,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Build WASM runtime
         id: srtool_build
@@ -152,7 +152,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Build docker image
         run: |
@@ -181,7 +181,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Build creditcoin-js package
         run: |
@@ -216,7 +216,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Download binaries
         uses: actions/download-artifact@v3

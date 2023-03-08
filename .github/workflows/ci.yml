@@ -27,7 +27,7 @@ jobs:
             IP_ADDRESS=$(curl https://ifconfig.me)
             echo "INFO: IP_ADDRESS=$IP_ADDRESS"
 
-            docker run -d -p 9933:9933 -p 30333:30333 -v $(pwd)/test-data:/data gluwa/creditcoin   \
+            docker run -d -p 9933:9933 -p 30333:30333 -v "$(pwd)"/test-data:/data gluwa/creditcoin   \
                 --validator --chain mainnet                                   \
                 --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
                 --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
@@ -82,7 +82,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -100,7 +100,7 @@ jobs:
       - name: Run cargo audit
         run: |
           cargo audit --ignore RUSTSEC-2020-0071
-          CC_MATCH=$(cargo audit --ignore RUSTSEC-2020-0071 --color never | egrep "^.── creditcoin" || true)
+          CC_MATCH=$(cargo audit --ignore RUSTSEC-2020-0071 --color never | grep -E "^.── creditcoin" || true)
 
           # fail for anything which is a 1st level dependency of Creditcoin
           if [ -n "$CC_MATCH" ]; then
@@ -121,7 +121,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -151,7 +151,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -186,7 +186,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -218,7 +218,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -231,9 +231,10 @@ jobs:
 
       - name: Configure flags for collecting coverage
         run: |
-          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
-          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
+          # shellcheck disable=SC2129
+          echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
+          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
 
       - name: Run tests
         uses: actions-rs/cargo@v1
@@ -274,7 +275,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -331,7 +332,7 @@ jobs:
 
           if [ -n "$(git status --short)" ]; then
               git diff
-              echo "git_diff=true" >> $GITHUB_OUTPUT
+              echo "git_diff=true" >> "$GITHUB_OUTPUT"
           fi
 
           popd
@@ -479,7 +480,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1

@@ -14,4 +14,4 @@ jobs:
 
       - name: Check if version.rs was modified
         run: |
-          ./scripts/check-version.sh remotes/origin/$GITHUB_BASE_REF $GITHUB_SHA
+          ./scripts/check-version.sh "remotes/origin/$GITHUB_BASE_REF" "$GITHUB_SHA"
