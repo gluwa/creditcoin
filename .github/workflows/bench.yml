@@ -148,6 +148,7 @@ jobs:
     # see https://gist.github.com/jonico/a94d03cac7a858e0613926d9f1bc7f2b
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
+    # checkov:skip=CKV2_GHA_1:We need this for weights auto-update
     permissions: write-all
     needs:
       - deploy-github-runner
