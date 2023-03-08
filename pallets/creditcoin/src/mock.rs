@@ -11,7 +11,10 @@ use frame_support::{
 };
 use frame_system as system;
 pub(crate) use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
-use pallet_offchain_task_scheduler::{crypto::AuthorityId, ocw::sampling::AlwaysSampled};
+use pallet_offchain_task_scheduler::{
+	crypto::AuthorityId,
+	ocw::{caching::NoCache, sampling::AlwaysSampled},
+};
 pub(crate) use parking_lot::RwLock;
 use serde_json::Value;
 use sp_core::H256;
@@ -125,6 +128,7 @@ impl pallet_offchain_task_scheduler::Config for Test {
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 	type Authorship = TaskScheduler;
 	type Sampling = AlwaysSampled<Self>;
+	type OutputCache = NoCache<Self>;
 }
 
 impl Test {

@@ -1,3 +1,4 @@
+use crate::ocw::caching::BlockNumberCache;
 use crate::ocw::sampling::AlwaysSampled;
 use frame_support::{
 	self as support, parameter_types,
@@ -119,6 +120,7 @@ impl crate::Config for Runtime {
 	type Task = crate::mocked_task::MockTask<u32>;
 	type Authorship = TaskScheduler;
 	type Sampling = AlwaysSampled<Self>;
+	type OutputCache = BlockNumberCache<Self::TaskCall, Self::BlockNumber, Self>;
 }
 
 // Configure a mock runtime to test the pallet.

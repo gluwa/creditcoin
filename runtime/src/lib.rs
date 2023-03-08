@@ -45,6 +45,7 @@ use frame_support::traits::UpgradeCheckSelect;
 
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
+use pallet_offchain_task_scheduler::ocw::caching::NoCache;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
 #[cfg(any(feature = "std", test))]
@@ -160,6 +161,7 @@ impl pallet_offchain_task_scheduler::Config for Runtime {
 	type Task = pallet_creditcoin::Task<AccountId, BlockNumber, Hash, Moment>;
 	type Authorship = TaskScheduler;
 	type Sampling = AlwaysSampled<Self>;
+	type OutputCache = NoCache<Self>;
 }
 
 impl pallet_scheduler::Config for Runtime {

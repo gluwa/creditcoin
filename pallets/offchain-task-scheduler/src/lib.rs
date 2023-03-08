@@ -64,6 +64,7 @@ pub mod pallet {
 	use super::{
 		authorship::Authorship,
 		log,
+		ocw::caching::OutputCache,
 		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
@@ -106,6 +107,7 @@ pub mod pallet {
 			AccountId = Self::AccountId,
 		>;
 		type Sampling: Sampling<Id = Self::Hash, AccountId = Self::AccountId>;
+		type OutputCache: OutputCache<Id = Self::Hash, Output = Self::TaskCall>;
 	}
 
 	pub trait WeightInfo {
@@ -187,11 +189,30 @@ pub mod pallet {
 
 				log::trace!(target: "runtime::task", "@{block_number:?} Task {:8?}", id);
 
+				let mut cache_hit = false;
+				let result = match T::OutputCache::get(&id) {
+					Ok(None) => task.forward_task(),
+					Ok(Some(o)) => {
+						cache_hit = true;
+						Ok(o)
+					},
+					Err(e) => {
+						log::info!(target: "runtime::task", "@{block_number:?} Task {id:8?} Cache get op errored {e:?}, recomputing the task.");
+						task.forward_task()
+					},
+				};
+
 				use tasks::error::TaskError::*;
-				match task.forward_task() {
+				match result {
 					Ok(call) => {
+						if !cache_hit {
+							T::OutputCache::set(&id, &call);
+						}
+
 						if let Some(sampled) = T::Sampling::sample(&id, &signer) {
 							match sampled {
+								//submitted already, the task is ready to be disputed or spurious unlock.
+								Ok(_proof) if cache_hit => guard.forget(),
 								//first time visiting the task, submit.
 								Ok(proof) => {
 									match Self::submit_txn_with_synced_nonce(
@@ -212,9 +233,9 @@ pub mod pallet {
 										// release the lock and try again later.
 										Err(e) => {
 											log::error!(
-												target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {:?}",
-												e
+												target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {e:?}",
 											);
+											T::OutputCache::clear(&id);
 										},
 									}
 								},
@@ -224,22 +245,26 @@ pub mod pallet {
 								},
 							}
 
+							//clear the cache otherwise.
 							continue;
 						} else {
-							guard.forget()
+							log::debug!( target: "runtime::task", "@{block_number:?} Failed to sample {signer:?}: {deadline:?}, {id:?} {task:?}");
+							guard.forget();
 						}
 					},
 					Err(FinishedTask) => {
-						log::debug!("Already handled Task ({:?}, {:?}) {task:?}", deadline, id);
+						log::debug!( target: "runtime::task", "@{block_number:?} Already handled Task ({deadline:?}, {id:?}) {task:?}");
 						guard.forget();
 					},
 					Err(Evaluation(cause)) => {
-						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
+						log::warn!(target: "runtime::task", "@{block_number:?} Failed to verify pending task {task:?} : {cause:?}",);
 					},
 					Err(Scheduler(error)) => {
-						log::error!("Task verification encountered a processing error {:?}", error)
+						log::error!( target: "runtime::task", "@{block_number:?} Task verification encountered a processing error {error:?}",);
 					},
 				}
+
+				T::OutputCache::clear(&id);
 			}
 		}
 	}

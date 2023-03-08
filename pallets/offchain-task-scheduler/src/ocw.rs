@@ -1,3 +1,4 @@
+pub mod caching;
 pub(crate) mod nonce;
 pub mod sampling;
 
