@@ -257,6 +257,7 @@ jobs:
 
   integration-test:
     runs-on: ubuntu-22.04
+    # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
     permissions: write-all
     steps:
       - uses: actions/checkout@v3
