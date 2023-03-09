@@ -66,7 +66,7 @@ pub mod pallet {
 		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
-	use crate::ocw::RuntimePlubicOf;
+	use crate::ocw::RuntimePublicOf;
 	use core::fmt::Debug;
 	use frame_support::dispatch::Dispatchable;
 	use frame_support::dispatch::Vec;
@@ -92,7 +92,7 @@ pub mod pallet {
 		type TaskCall: Dispatchable<RuntimeOrigin = Self::RuntimeOrigin> + Clone;
 		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
 		type Authorship: Authorship<
-			RuntimePublic = RuntimePlubicOf<Self>,
+			RuntimePublic = RuntimePublicOf<Self>,
 			AccountId = Self::AccountId,
 		>;
 	}
