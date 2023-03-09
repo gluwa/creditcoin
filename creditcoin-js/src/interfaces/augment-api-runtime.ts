@@ -6,12 +6,13 @@
 import '@polkadot/api-base/types/calls';
 
 import type { ApiTypes, AugmentedCall, DecoratedCallBase } from '@polkadot/api-base/types';
-import type { Bytes, Null, Option, Raw, Vec } from '@polkadot/types-codec';
-import type { ITuple } from '@polkadot/types-codec/types';
+import type { Bytes, Null, Option, Raw, Vec, u32 } from '@polkadot/types-codec';
+import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { CheckInherentsResult, InherentData } from '@polkadot/types/interfaces/blockbuilder';
 import type { BlockHash } from '@polkadot/types/interfaces/chain';
 import type { Extrinsic } from '@polkadot/types/interfaces/extrinsics';
 import type { OpaqueMetadata } from '@polkadot/types/interfaces/metadata';
+import type { FeeDetails, RuntimeDispatchInfo } from '@polkadot/types/interfaces/payment';
 import type { AccountId, Block, Header, Index, KeyTypeId, Moment } from '@polkadot/types/interfaces/runtime';
 import type { RuntimeVersion } from '@polkadot/types/interfaces/state';
 import type { ApplyExtrinsicResult } from '@polkadot/types/interfaces/system';
@@ -187,6 +188,33 @@ declare module '@polkadot/api-base/types/calls' {
              * API necessary for timestamp-based difficulty adjustment algorithms.
              **/
             timestamp: AugmentedCall<ApiType, () => Observable<Moment>>;
+            /**
+             * Generic call
+             **/
+            [key: string]: DecoratedCallBase<ApiType>;
+        };
+        /** 0x37c8bb1350a9a2a8/2 */
+        transactionPaymentApi: {
+            /**
+             * The transaction fee details
+             **/
+            queryFeeDetails: AugmentedCall<
+                ApiType,
+                (
+                    uxt: Extrinsic | IExtrinsic | string | Uint8Array,
+                    len: u32 | AnyNumber | Uint8Array,
+                ) => Observable<FeeDetails>
+            >;
+            /**
+             * The transaction info
+             **/
+            queryInfo: AugmentedCall<
+                ApiType,
+                (
+                    uxt: Extrinsic | IExtrinsic | string | Uint8Array,
+                    len: u32 | AnyNumber | Uint8Array,
+                ) => Observable<RuntimeDispatchInfo>
+            >;
             /**
              * Generic call
              **/
