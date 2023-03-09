@@ -6,7 +6,7 @@ use frame_election_provider_support::{
 use frame_support::defensive;
 use frame_support::{traits::Defensive, RuntimeDebug};
 use frame_system::offchain::SigningTypes;
-use pallet_offchain_task_scheduler::ocw::RuntimePlubicOf;
+use pallet_offchain_task_scheduler::ocw::RuntimePublicOf;
 use pallet_offchain_task_scheduler::{authorship::Authorship, Config as TaskSchedulerConfig};
 pub use pallet_staking_substrate as pallet;
 pub use pallet_staking_substrate::weights;
@@ -263,10 +263,10 @@ pub struct StakingAuthorship<T: Config + SigningTypes>(PhantomData<T>);
 
 impl<T: Config + SigningTypes + TaskSchedulerConfig> Authorship for StakingAuthorship<T>
 where
-	RuntimePlubicOf<T>: Clone,
-	T::Public: From<RuntimePlubicOf<T>>,
+	RuntimePublicOf<T>: Clone,
+	T::Public: From<RuntimePublicOf<T>>,
 {
-	type RuntimePublic = RuntimePlubicOf<T>;
+	type RuntimePublic = RuntimePublicOf<T>;
 	type Public = T::Public;
 	type AccountId = T::AccountId;
 

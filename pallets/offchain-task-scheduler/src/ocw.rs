@@ -16,18 +16,18 @@ use sp_runtime::traits::One;
 use sp_runtime::traits::Saturating;
 use sp_runtime::RuntimeAppPublic;
 
-pub type RuntimePlubicOf<T> = <<T as Config>::AuthorityId as AppCrypto<
+pub type RuntimePublicOf<T> = <<T as Config>::AuthorityId as AppCrypto<
 	<T as SigningTypes>::Public,
 	<T as SigningTypes>::Signature,
 >>::RuntimeAppPublic;
 
 // the method is not idempotent, there is no guarantee that you will get the same key if multiple exist.
 impl<T: Config> Pallet<T> {
-	pub fn authority_pubkey() -> Option<RuntimePlubicOf<T>>
+	pub fn authority_pubkey() -> Option<RuntimePublicOf<T>>
 	where
-		RuntimePlubicOf<T>: sp_std::fmt::Debug,
+		RuntimePublicOf<T>: sp_std::fmt::Debug,
 	{
-		let local_keys: Vec<RuntimePlubicOf<T>> =
+		let local_keys: Vec<RuntimePublicOf<T>> =
 			<T::AuthorityId as AppCrypto<T::Public, T::Signature>>::RuntimeAppPublic::all()
 				.into_iter()
 				.collect();

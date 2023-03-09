@@ -1,4 +1,4 @@
-use super::{ocw::RuntimePlubicOf, Config, Pallet};
+use super::{ocw::RuntimePublicOf, Config, Pallet};
 use crate::authority::AuthorityController;
 use sp_runtime::traits::IdentifyAccount;
 
@@ -23,10 +23,10 @@ pub trait Authorship {
 
 impl<T: Config> Authorship for Pallet<T>
 where
-	RuntimePlubicOf<T>: Clone,
-	T::Public: From<RuntimePlubicOf<T>>,
+	RuntimePublicOf<T>: Clone,
+	T::Public: From<RuntimePublicOf<T>>,
 {
-	type RuntimePublic = RuntimePlubicOf<T>;
+	type RuntimePublic = RuntimePublicOf<T>;
 	type AccountId = T::AccountId;
 	type Public = T::Public;
 
