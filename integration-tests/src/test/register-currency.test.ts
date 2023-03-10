@@ -30,9 +30,7 @@ describe('RegisterCurrency', (): void => {
 
         /* eslint-disable @typescript-eslint/naming-convention */
         const currency = api.createType('PalletCreditcoinPlatformCurrency', {
-            Evm: api.createType('PalletCreditcoinPlatformEvmCurrencyType', {
-                SmartContract: ['0x0000000000000000000000000000000000000000', ['Ethless']],
-            }),
+            Evm: [{ SmartContract: ['0x0000000000000000000000000000000000000000', ['Ethless']] }],
         });
 
         return new Promise((resolve, reject): void => {
