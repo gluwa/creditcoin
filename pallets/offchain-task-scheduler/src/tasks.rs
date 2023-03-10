@@ -7,6 +7,7 @@ use alloc::fmt::Debug;
 use error::TaskError;
 use frame_support::dispatch::Vec;
 use frame_support::traits::Get;
+use frame_system::Pallet as System;
 use sp_core::offchain::Duration;
 use sp_core::Encode;
 use sp_runtime::offchain::storage_lock::BlockAndTime;
@@ -25,7 +26,7 @@ type Lock<'a, BlockNumberProvider> = StorageLock<'a, BlockAndTime<BlockNumberPro
 pub(super) type LockGuard<'a, 'b, BlockNumberProvider> =
 	StorageLockGuard<'a, 'b, BlockAndTime<BlockNumberProvider>>;
 
-pub(crate) fn task_lock<Runtime: Config>(storage_key: &[u8]) -> Lock<frame_system::Pallet<Runtime>>
+pub(crate) fn task_lock<Runtime: Config>(storage_key: &[u8]) -> Lock<System<Runtime>>
 where
 	frame_system::Pallet<Runtime>: BlockNumberProvider,
 {

@@ -72,9 +72,9 @@ pub mod pallet {
 	use crate::ocw::{disputing::Disputable, sampling::Sampling};
 	use crate::tasks::TaskScheduler as TaskSchedulerT;
 	use core::fmt::Debug;
-	use frame_support::dispatch::Vec;
 	use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 	use frame_support::pallet_prelude::*;
+	use frame_support::transactional;
 	use frame_system::pallet_prelude::*;
 	use frame_system::{offchain::CreateSignedTransaction, RawOrigin};
 	use scale_info::TypeInfo;
@@ -213,7 +213,6 @@ pub mod pallet {
 
 						if let Some(sampled) = T::Sampling::sample(&id, &signer) {
 							match sampled {
-								//submitted already, the task is ready to be disputed or spurious unlock.
 								Ok(_proof) if cache_hit => guard.forget(),
 								Ok(proof) => Self::try_submit(
 									block_number,
@@ -239,13 +238,11 @@ pub mod pallet {
 										guard.forget();
 									}
 								},
-								//You weren't sampled, try disputing or wait until disputing is available.
-								Err(_proof) => {
-									guard.forget();
-								},
+								Err(_) if !cache_hit => guard.forget(),
+								Err(_) => drop(guard),
 							}
 
-							//clear the cache otherwise.
+							// Clear the cache otherwise.
 							continue;
 						} else {
 							log::debug!( target: "runtime::task", "@{block_number:?} Failed to sample {signer:?}: {deadline:?}, {id:?} {task:?}");
@@ -293,6 +290,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
+		#[transactional]
 		#[pallet::weight({ let dispatch_info = call.get_dispatch_info(); (dispatch_info.weight, dispatch_info.class) })]
 		pub fn submit_output(
 			origin: OriginFor<T>,

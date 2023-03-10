@@ -2,6 +2,7 @@ pub mod caching;
 pub mod disputing;
 pub(crate) mod nonce;
 pub mod sampling;
+pub mod voting;
 
 use super::authorship::Authorship;
 use super::Error;
