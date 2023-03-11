@@ -13,7 +13,7 @@ use frame_system as system;
 pub(crate) use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 use pallet_offchain_task_scheduler::{
 	crypto::AuthorityId,
-	ocw::{caching::NoCache, sampling::AlwaysSampled},
+	ocw::{caching::NoCache, disputing::NeverDisputable, sampling::AlwaysSampled},
 };
 pub(crate) use parking_lot::RwLock;
 use serde_json::Value;
@@ -129,6 +129,7 @@ impl pallet_offchain_task_scheduler::Config for Test {
 	type Authorship = TaskScheduler;
 	type Sampling = AlwaysSampled<Self>;
 	type OutputCache = NoCache<Self>;
+	type Dispute = NeverDisputable<Self>;
 }
 
 impl Test {

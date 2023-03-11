@@ -1,27 +1,67 @@
 pub mod caching;
+pub mod disputing;
 pub(crate) mod nonce;
 pub mod sampling;
 
 use super::authorship::Authorship;
 use super::Error;
 use super::{log, Config, Pallet};
+use crate::tasks::LockGuard;
+use crate::Call;
 use alloc::vec;
+use caching::OutputCache;
 use frame_support::dispatch::Vec;
 use frame_system::offchain::{Account, SendSignedTransaction, Signer};
 use frame_system::offchain::{AppCrypto, SigningTypes};
 use frame_system::Pallet as System;
 use nonce::lock_key;
 pub use nonce::nonce_key;
+use sampling::Sampling;
+use sp_core::sr25519::Public;
 use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::One;
 use sp_runtime::traits::Saturating;
 use sp_runtime::RuntimeAppPublic;
+use sp_std::boxed::Box;
+use sp_std::fmt::Debug;
 
+type SamplingProofOf<T> = <<T as Config>::Sampling as Sampling>::Proof;
 pub type RuntimePublicOf<T> = <<T as Config>::AuthorityId as AppCrypto<
 	<T as SigningTypes>::Public,
 	<T as SigningTypes>::Signature,
 >>::RuntimeAppPublic;
+
+impl<T: Config> Pallet<T>
+where
+	RuntimePublicOf<T>: Into<T::Public> + AsRef<Public> + Debug + Clone,
+{
+	pub(crate) fn try_submit(
+		block_number: T::BlockNumber,
+		deadline: T::BlockNumber,
+		task_id: T::Hash,
+		signer: RuntimePublicOf<T>,
+		call: Box<T::TaskCall>,
+		guard: LockGuard<'_, '_, System<T>>,
+		proof: SamplingProofOf<T>,
+	) {
+		match Self::submit_txn_with_synced_nonce(signer.into(), |_| {
+			Call::<T>::submit_output { deadline, task_id, call: call.clone(), proof: proof.clone() }
+				.into()
+		}) {
+			Ok(_) => {
+				guard.forget();
+			},
+			// release the lock and try again later.
+			Err(e) => {
+				log::error!(
+					target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {e:?}",
+				);
+				T::OutputCache::clear(&task_id);
+			},
+		}
+	}
+}
 
 // the method is not idempotent, there is no guarantee that you will get the same key if multiple exist.
 impl<T: Config> Pallet<T> {
@@ -35,7 +75,6 @@ impl<T: Config> Pallet<T> {
 				.collect();
 
 		log::trace!(target: "runtime::task ", "local keys {local_keys:?}");
-
 		T::Authorship::find_authorized(local_keys.iter())
 	}
 

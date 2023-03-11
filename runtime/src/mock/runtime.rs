@@ -9,6 +9,7 @@ use frame_support::traits::U128CurrencyToVote;
 use frame_support::{construct_runtime, parameter_types};
 use frame_system::EnsureRoot;
 use pallet_offchain_task_scheduler::ocw::caching::NoCache;
+use pallet_offchain_task_scheduler::ocw::disputing::NeverDisputable;
 use pallet_offchain_task_scheduler::ocw::sampling::AlwaysSampled;
 use pallet_session::PeriodicSessions;
 use pallet_staking::{DefaultElection, NoKeys, StakingAuthorship};
@@ -164,6 +165,7 @@ impl pallet_offchain_task_scheduler::Config for Runtime {
 	type Authorship = StakingAuthorship<Self>;
 	type Sampling = AlwaysSampled<Self>;
 	type OutputCache = NoCache<Self>;
+	type Dispute = NeverDisputable<Self>;
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {

@@ -68,8 +68,8 @@ pub mod pallet {
 		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
-	use crate::ocw::sampling::Sampling;
 	use crate::ocw::RuntimePublicOf;
+	use crate::ocw::{disputing::Disputable, sampling::Sampling};
 	use crate::tasks::TaskScheduler as TaskSchedulerT;
 	use core::fmt::Debug;
 	use frame_support::dispatch::Vec;
@@ -108,6 +108,7 @@ pub mod pallet {
 		>;
 		type Sampling: Sampling<Id = Self::Hash, AccountId = Self::AccountId>;
 		type OutputCache: OutputCache<Id = Self::Hash, Output = Self::TaskCall>;
+		type Dispute: Disputable<ItemId = Self::Hash, Item = Self::TaskCall, Who = Self::AccountId>;
 	}
 
 	pub trait WeightInfo {
@@ -163,6 +164,7 @@ pub mod pallet {
 			let mut unverified_task_count = 0u32;
 			for (task_id, _) in PendingTasks::<T>::drain_prefix(block_number) {
 				unverified_task_count.saturating_accrue(1);
+				T::Dispute::clear(&task_id);
 				Self::deposit_event(Event::TaskExpired { task_id });
 			}
 
@@ -213,30 +215,28 @@ pub mod pallet {
 							match sampled {
 								//submitted already, the task is ready to be disputed or spurious unlock.
 								Ok(_proof) if cache_hit => guard.forget(),
-								//first time visiting the task, submit.
-								Ok(proof) => {
-									match Self::submit_txn_with_synced_nonce(
-										signer.clone().into(),
-										|_| {
-											Call::<T>::submit_output {
-												deadline,
-												task_id: id,
-												call: Box::new(call.clone()),
-												proof: proof.clone(),
-											}
-											.into()
-										},
-									) {
-										Ok(_) => {
-											guard.forget();
-										},
-										// release the lock and try again later.
-										Err(e) => {
-											log::error!(
-												target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {e:?}",
-											);
-											T::OutputCache::clear(&id);
-										},
+								Ok(proof) => Self::try_submit(
+									block_number,
+									deadline,
+									id,
+									signer.clone(),
+									Box::new(call),
+									guard,
+									proof,
+								),
+								Err(proof) if T::Dispute::disputable(&id) => {
+									if T::Dispute::disagree(&id, &call) {
+										Self::try_submit(
+											block_number,
+											deadline,
+											id,
+											signer.clone(),
+											Box::new(call),
+											guard,
+											proof,
+										)
+									} else {
+										guard.forget();
 									}
 								},
 								//You weren't sampled, try disputing or wait until disputing is available.
@@ -305,26 +305,22 @@ pub mod pallet {
 
 			ensure!(T::Authorship::is_authorized(&who), Error::<T>::UnauthorizedSubmission);
 
+			T::Sampling::prove_sampled(&task_id, &who, proof)
+				.ok_or(Error::<T>::ProvingSamplingFailed)?;
 			//check if submitter or disputer
 			//idempotency checks for voting, add an index.
-			if T::Sampling::prove_sampled(&task_id, &who, proof)
-				.ok_or(Error::<T>::ProvingSamplingFailed)?
-			{
-				//sampled
-			} else {
-				//disputing
-			}
+			if let Some(output) = T::Dispute::vote_on(&who, &task_id, &call)? {
+				Self::deposit_event(Event::TaskCompleted {
+					task_id,
+					result: output
+						.dispatch(RawOrigin::Root.into())
+						.map(|_| ())
+						.map_err(|e| e.error),
+				});
+				Self::remove(&deadline, &task_id);
+			};
 
-			// not this call, one from the voting interface.
-			let underlying_result =
-				call.dispatch(RawOrigin::Root.into()).map(|_| ()).map_err(|e| e.error);
-
-			Self::deposit_event(Event::TaskCompleted { task_id, result: underlying_result });
-
-			// remove pending tasks within the voting pallet.
-			Self::remove(&deadline, &task_id);
-
-			//add weight from the call
+			//FIXIT, accurate weights.
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 	}

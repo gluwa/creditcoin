@@ -11,6 +11,7 @@ use sp_core::offchain::Duration;
 use sp_core::Encode;
 use sp_runtime::offchain::storage_lock::BlockAndTime;
 use sp_runtime::offchain::storage_lock::StorageLock;
+use sp_runtime::offchain::storage_lock::StorageLockGuard;
 use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::SaturatedConversion;
 
@@ -21,6 +22,8 @@ pub(crate) fn lock_key<Id: Encode>(id: &Id) -> Vec<u8> {
 }
 
 type Lock<'a, BlockNumberProvider> = StorageLock<'a, BlockAndTime<BlockNumberProvider>>;
+pub(super) type LockGuard<'a, 'b, BlockNumberProvider> =
+	StorageLockGuard<'a, 'b, BlockAndTime<BlockNumberProvider>>;
 
 pub(crate) fn task_lock<Runtime: Config>(storage_key: &[u8]) -> Lock<frame_system::Pallet<Runtime>>
 where
