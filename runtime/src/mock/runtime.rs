@@ -122,7 +122,6 @@ impl pallet_staking::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Slash = ();
 	type SlashDeferDuration = SlashDeferDuration;
-	type SlashCancelOrigin = EnsureRoot<AccountId>;
 	type UnixTime = Timestamp;
 	type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
 	type BenchmarkingConfig = TestBenchmarkingConfig;
@@ -138,6 +137,7 @@ impl pallet_staking::Config for Runtime {
 	type TargetList = TrivialTargetList<Self>;
 	type SessionInterface = ();
 	type NextNewSession = Session;
+	type AdminOrigin = EnsureRoot<AccountId>;
 }
 
 impl pallet_session::Config for Runtime {

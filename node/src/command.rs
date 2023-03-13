@@ -5,6 +5,7 @@ use crate::{
 	service,
 };
 use creditcoin_node_runtime::{Block, ExistentialDeposit};
+use frame_benchmarking::frame_support;
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
@@ -112,6 +113,8 @@ pub fn run() -> sc_cli::Result<()> {
 		},
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
+			use frame_support::sp_io::SubstrateHostFunctions;
+			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
 				// we don't need any of the components of new_partial, just a runtime, or a task
@@ -120,7 +123,13 @@ pub fn run() -> sc_cli::Result<()> {
 				let task_manager =
 					sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
 						.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
-				Ok((cmd.run::<Block, service::ExecutorDispatch>(config), task_manager))
+				Ok((
+					cmd.run::<Block, ExtendedHostFunctions<
+						SubstrateHostFunctions,
+						<service::ExecutorDispatch as NativeExecutionDispatch>::ExtendHostFunctions,
+					>>(),
+					task_manager,
+				))
 			})
 		},
 		#[cfg(not(feature = "try-runtime"))]
