@@ -20,10 +20,9 @@
 //!
 //! Should only be used for benchmarking as it may break in other contexts.
 
-use crate::service::FullClient;
+use std::{sync::Arc, time::Duration};
 
-use creditcoin_node_runtime as runtime;
-use runtime::{AccountId, Balance, BalancesCall, SystemCall};
+use futures::{executor, TryFutureExt};
 use sc_cli::Result;
 use sc_client_api::BlockBackend;
 use sp_core::{Encode, Pair};
@@ -31,7 +30,10 @@ use sp_inherents::{InherentData, InherentDataProvider};
 use sp_keyring::Sr25519Keyring;
 use sp_runtime::{OpaqueExtrinsic, SaturatedConversion};
 
-use std::{sync::Arc, time::Duration};
+use creditcoin_node_runtime as runtime;
+use runtime::{AccountId, Balance, BalancesCall, SystemCall};
+
+use crate::service::FullClient;
 
 /// Generates extrinsics for the `benchmark overhead` command.
 ///
@@ -173,8 +175,11 @@ pub fn inherent_benchmark_data() -> Result<InherentData> {
 	let d = Duration::from_millis(0);
 	let timestamp = sp_timestamp::InherentDataProvider::new(d.into());
 
-	timestamp
-		.provide_inherent_data(&mut inherent_data)
-		.map_err(|e| format!("creating inherent data: {e:?}"))?;
+	executor::block_on(
+		timestamp
+			.provide_inherent_data(&mut inherent_data)
+			.map_err(|e| format!("creating inherent data: {e:?}")),
+	)?;
+
 	Ok(inherent_data)
 }
