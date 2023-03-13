@@ -1,9 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_election_provider_support::{
-	ElectionDataProvider, ElectionProvider, ElectionProviderBase, SortedListProvider, Supports,
+	BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ElectionProviderBase,
+	SortedListProvider, Support,
 };
-use frame_support::defensive;
+use frame_support::traits::{ConstU32, DefensiveTruncateFrom, TypedGet};
+use frame_support::{defensive, BoundedVec};
 use frame_support::{traits::Defensive, RuntimeDebug};
 use frame_system::offchain::SigningTypes;
 use pallet_offchain_task_scheduler::ocw::RuntimePublicOf;
@@ -27,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{OpaqueKeys, Zero};
 use sp_runtime::AccountId32;
 pub use sp_staking::{EraIndex, StakingInterface};
-use sp_std::{boxed::Box, fmt::Debug, marker::PhantomData, vec, vec::Vec};
+use sp_std::{boxed::Box, fmt::Debug, marker::PhantomData, vec};
 
 pub(crate) const LOG_TARGET: &str = "runtime::staking";
 
@@ -60,7 +62,7 @@ impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
 
 	fn count() -> u32 {
 		logger!(debug, "Faking EmptyList count");
-		pallet_staking_substrate::Validators::<T>::count()
+		1
 	}
 
 	fn contains(_id: &T::AccountId) -> bool {
@@ -172,7 +174,7 @@ where
 
 	fn count() -> u32 {
 		logger!(debug, "Faking TargetList count");
-		pallet_staking_substrate::Validators::<T>::count()
+		1
 	}
 
 	fn contains(_id: &AccountId32) -> bool {
@@ -235,10 +237,17 @@ where
 	type AccountId = AccountId;
 	type BlockNumber = BlockNumber;
 	type Error = &'static str;
+	type MaxWinners = ConstU32<1>;
 	type DataProvider = DataProvider;
 
-	fn ongoing() -> bool {
-		false
+	fn desired_targets_checked() -> frame_election_provider_support::data_provider::Result<u32> {
+		DataProvider::desired_targets().and_then(|desired_targets| {
+			if desired_targets <= Self::MaxWinners::get() {
+				Ok(desired_targets)
+			} else {
+				Err("desired_targets must not be greater than MaxWinners.")
+			}
+		})
 	}
 }
 
@@ -248,14 +257,28 @@ where
 	DataProvider: ElectionDataProvider<AccountId = AccountId, BlockNumber = BlockNumber>,
 	AccountId: Clone + Debug,
 {
-	fn elect() -> Result<Supports<AccountId>, Self::Error> {
-		let candidates: Result<Supports<AccountId>, Self::Error> =
-			DataProvider::electable_targets(Some(1))
-				.defensive_proof("Trivial 0 AccountId")
-				.map(|accounts| {
-					accounts.iter().map(|acc| (acc.clone(), Default::default())).collect::<Vec<_>>()
-				});
-		candidates
+	fn ongoing() -> bool {
+		false
+	}
+
+	fn elect() -> Result<BoundedSupportsOf<Self>, Self::Error> {
+		// Get electable targets
+		DataProvider::electable_targets(None)
+			// Wrap in defensive
+			.defensive_proof("Trivial 0 AccountId")
+			// Map resulting vector of vectors
+			.map(|accounts| {
+				// Wrap resulting Vec into a BoundedVec via truncation
+				BoundedVec::defensive_truncate_from(
+					accounts
+						// Turn given vector into an iterator
+						.iter()
+						// Map to a tuple
+						.map(|acc| (acc.clone(), Support::default()))
+						// Collect as a Vec
+						.collect(),
+				)
+			})
 	}
 }
 
@@ -271,7 +294,7 @@ where
 	type AccountId = T::AccountId;
 
 	fn is_authorized(who: &Self::AccountId) -> bool {
-		let res = matches!(Pallet::<T>::active_stake(who), Some(active_stake) if active_stake > Zero::zero());
+		let res = matches!(Pallet::<T>::active_stake(who), Ok(active_stake) if active_stake > Zero::zero());
 		logger!(trace, "{:?} authorship: {}", who, res);
 		res
 	}
