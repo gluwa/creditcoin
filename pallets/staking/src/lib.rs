@@ -4,7 +4,7 @@ use frame_election_provider_support::{
 	BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ElectionProviderBase,
 	SortedListProvider, Support,
 };
-use frame_support::traits::{ConstU32, DefensiveTruncateFrom, TypedGet};
+use frame_support::traits::{ConstU32, DefensiveTruncateFrom};
 use frame_support::{defensive, BoundedVec};
 use frame_support::{traits::Defensive, RuntimeDebug};
 use frame_system::offchain::SigningTypes;
@@ -62,7 +62,7 @@ impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
 
 	fn count() -> u32 {
 		logger!(debug, "Faking EmptyList count");
-		1
+		pallet_staking_substrate::Validators::<T>::count()
 	}
 
 	fn contains(_id: &T::AccountId) -> bool {
@@ -174,7 +174,7 @@ where
 
 	fn count() -> u32 {
 		logger!(debug, "Faking TargetList count");
-		1
+		pallet_staking_substrate::Validators::<T>::count()
 	}
 
 	fn contains(_id: &AccountId32) -> bool {
@@ -239,16 +239,6 @@ where
 	type Error = &'static str;
 	type MaxWinners = ConstU32<1>;
 	type DataProvider = DataProvider;
-
-	fn desired_targets_checked() -> frame_election_provider_support::data_provider::Result<u32> {
-		DataProvider::desired_targets().and_then(|desired_targets| {
-			if desired_targets <= Self::MaxWinners::get() {
-				Ok(desired_targets)
-			} else {
-				Err("desired_targets must not be greater than MaxWinners.")
-			}
-		})
-	}
 }
 
 impl<AccountId, BlockNumber, DataProvider> ElectionProvider
@@ -263,7 +253,7 @@ where
 
 	fn elect() -> Result<BoundedSupportsOf<Self>, Self::Error> {
 		// Get electable targets
-		DataProvider::electable_targets(None)
+		DataProvider::electable_targets(Some(1))
 			// Wrap in defensive
 			.defensive_proof("Trivial 0 AccountId")
 			// Map resulting vector of vectors

@@ -94,10 +94,10 @@ fn scheduler_doesnt_run_without_active_stake() {
 	let mut builder = ExtBuilder::default().with_keystore();
 
 	//Can sign and is a staked controller; proceed
-	let (_, controller) = generate_bonded_stash(&mut builder);
+	let (stash, controller) = generate_bonded_stash(&mut builder);
 
 	builder.build::<Runtime>().execute_with(|| {
-		assert_eq!(Staking::active_stake(&controller.into()).unwrap(), Balances::minimum_balance());
+		assert_eq!(Staking::active_stake(&stash.into()).unwrap(), Balances::minimum_balance());
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
 
