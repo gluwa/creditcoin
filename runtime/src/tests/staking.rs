@@ -51,6 +51,7 @@ fn stake_and_unstake_with_a_controller_and_stash_as_payee() {
 		));
 
 		// stake is found and usable balance dropped
+		assert_eq!(value, Staking::total_stake(&stash).unwrap());
 		assert_eq!(value, Staking::active_stake(&stash).unwrap());
 		let usable = Balances::usable_balance(&stash);
 		assert_eq!(0, usable);
