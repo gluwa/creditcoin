@@ -68,7 +68,7 @@ def do_work(difficulty: U256, pre_hash: H256, nonce: H256) -> H256:
 
 def is_solution(work: H256, nonce: H256, difficulty: U256, pre_hash: H256) -> bool:
     calculated = do_work(difficulty)
-    
+
     // U256.MAX is the maximum value for an unsigned 256-bit integer, i.e.  2^256 - 1
 
     return work == calculated and U256(work) * difficulty <= U256.MAX
