@@ -13,7 +13,16 @@ import type { BlockHash } from '@polkadot/types/interfaces/chain';
 import type { Extrinsic } from '@polkadot/types/interfaces/extrinsics';
 import type { OpaqueMetadata } from '@polkadot/types/interfaces/metadata';
 import type { FeeDetails, RuntimeDispatchInfo } from '@polkadot/types/interfaces/payment';
-import type { AccountId, Block, Header, Index, KeyTypeId, Moment } from '@polkadot/types/interfaces/runtime';
+import type {
+    AccountId,
+    Balance,
+    Block,
+    Header,
+    Index,
+    KeyTypeId,
+    Moment,
+    Weight,
+} from '@polkadot/types/interfaces/runtime';
 import type { RuntimeVersion } from '@polkadot/types/interfaces/state';
 import type { ApplyExtrinsicResult } from '@polkadot/types/interfaces/system';
 import type { TransactionSource, TransactionValidity } from '@polkadot/types/interfaces/txqueue';
@@ -193,7 +202,7 @@ declare module '@polkadot/api-base/types/calls' {
              **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
-        /** 0x37c8bb1350a9a2a8/2 */
+        /** 0x37c8bb1350a9a2a8/3 */
         transactionPaymentApi: {
             /**
              * The transaction fee details
@@ -214,6 +223,17 @@ declare module '@polkadot/api-base/types/calls' {
                     uxt: Extrinsic | IExtrinsic | string | Uint8Array,
                     len: u32 | AnyNumber | Uint8Array,
                 ) => Observable<RuntimeDispatchInfo>
+            >;
+            /**
+             * Query the output of the current LengthToFee given some input
+             **/
+            queryLengthToFee: AugmentedCall<ApiType, (length: u32 | AnyNumber | Uint8Array) => Observable<Balance>>;
+            /**
+             * Query the output of the current WeightToFee given some input
+             **/
+            queryWeightToFee: AugmentedCall<
+                ApiType,
+                (weight: Weight | { refTime?: any; proofSize?: any } | string | Uint8Array) => Observable<Balance>
             >;
             /**
              * Generic call

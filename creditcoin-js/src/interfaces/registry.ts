@@ -94,7 +94,7 @@ import type {
     PalletTransactionPaymentChargeTransactionPayment,
     PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
-    SpRuntimeArithmeticError,
+    SpArithmeticArithmeticError,
     SpCoreEcdsaPublic,
     SpCoreEcdsaSignature,
     SpCoreEd25519Public,
@@ -205,7 +205,7 @@ declare module '@polkadot/types/types/registry' {
         PalletTransactionPaymentChargeTransactionPayment: PalletTransactionPaymentChargeTransactionPayment;
         PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
-        SpRuntimeArithmeticError: SpRuntimeArithmeticError;
+        SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpCoreEcdsaPublic: SpCoreEcdsaPublic;
         SpCoreEcdsaSignature: SpCoreEcdsaSignature;
         SpCoreEd25519Public: SpCoreEd25519Public;
