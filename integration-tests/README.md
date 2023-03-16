@@ -7,6 +7,8 @@ sudo npm install -g yarn
 
 **WARNING:** Node.js 14.x || 16.x is required
 
+This test suite is built with creditcoin-js, Polkadot.js and Jest!
+
 ## Getting Started
 
 0. Start the software under test, see **Single-Node Development Chain** in `../README.md`
@@ -22,17 +24,47 @@ cargo run --release -- --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFt
 docker run --rm -it -p 8545:8545 gluwa/hardhat-dev
 ```
 
-2. Install dependencies:
+2. Update creditcoin-js type definitions
 
 ```bash
-pushd ../creditcoin-js/ && yarn install && yarn pack && popd
-yarn install
+    pushd creditcoin-js/
+
+    ./get-metadata.sh
+    yarn build:types
+    yarn format
 ```
 
-3. Execute the test suite:
+**Important:**
+
+These are updated automatically in CI. If you are not sure that your
+branch is up-to-date or if you are modifying Creditcoin types then execute
+this step!
+
+**Warning:** don't forget to commit changed definitions to git!
+
+3. Install dependencies:
+
+```bash
+./yarn-install-and-wait-for-creditcoin.sh
+```
+
+4. Execute the test suite:
 
 ```bash
 yarn test
+```
+
+To execute individual tests use something like:
+
+```bash
+yarn test src/test/collect-coins.test.ts
+```
+
+To produce a more verbose test output and/or specify other command line
+options replace `test` with `jest`. For example:
+
+```bash
+yarn jest src/test/collect-coins.test.ts
 ```
 
 ## Testing against Testnet
