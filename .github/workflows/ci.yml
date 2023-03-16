@@ -96,6 +96,17 @@ jobs:
       - name: Run cargo audit
         run: |
           cargo audit --ignore RUSTSEC-2020-0071
+          CC_MATCH=$(cargo audit --ignore RUSTSEC-2020-0071 --color never | egrep "^.── creditcoin" || true)
+
+          # fail for anything which is a 1st level dependency of Creditcoin
+          if [ -n "$CC_MATCH" ]; then
+              echo "FAIL: Direct dependencies of Creditcoin found in audit report"
+              echo "INFO: Inspect the output above for more information"
+              exit 1
+          else
+              echo "INFO: No direct dependencies of Creditcoin found in audit report"
+              exit 0
+          fi
 
   fmt:
     name: Rustfmt
