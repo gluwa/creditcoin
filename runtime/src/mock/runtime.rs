@@ -2,7 +2,7 @@ pub use crate::AccountId;
 use crate::{
 	opaque, AccountIdLookup, Address, AuthorityId, Balance, BlakeTwo256, BlockHashCount,
 	BlockLength, BlockNumber, BlockWeights, ExistentialDeposit, Hash, Index, MaxLocks,
-	MinimumPeriod, Moment, RocksDbWeight, SS58Prefix, Signature, Version,
+	MinimumPeriod, Moment, ParityDbWeight, SS58Prefix, Signature, Version,
 };
 use frame_support::pallet_prelude::*;
 use frame_support::traits::U128CurrencyToVote;
@@ -66,7 +66,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 	type BlockHashCount = BlockHashCount;
-	type DbWeight = RocksDbWeight;
+	type DbWeight = ParityDbWeight;
 	type Version = Version;
 	type PalletInfo = PalletInfo;
 	type OnNewAccount = ();
