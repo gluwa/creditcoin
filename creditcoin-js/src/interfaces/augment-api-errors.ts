@@ -366,6 +366,14 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             OffchainSignedTxFailed: AugmentedError<ApiType>;
             /**
+             * Could not finish proving sample.
+             **/
+            ProvingSamplingFailed: AugmentedError<ApiType>;
+            /**
+             * The caller does not have authority to submit or process tasks.
+             **/
+            UnauthorizedSubmission: AugmentedError<ApiType>;
+            /**
              * Generic error
              **/
             [key: string]: AugmentedError<ApiType>;

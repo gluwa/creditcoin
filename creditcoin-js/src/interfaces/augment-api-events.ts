@@ -347,6 +347,18 @@ declare module '@polkadot/api-base/types/events' {
         };
         taskScheduler: {
             /**
+             * A task is finished. [id, result]
+             **/
+            TaskCompleted: AugmentedEvent<
+                ApiType,
+                [taskId: H256, result: Result<Null, SpRuntimeDispatchError>],
+                { taskId: H256; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * A task expired. [id]
+             **/
+            TaskExpired: AugmentedEvent<ApiType, [taskId: H256], { taskId: H256 }>;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;

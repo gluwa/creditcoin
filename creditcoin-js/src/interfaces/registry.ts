@@ -80,6 +80,7 @@ import type {
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
     PalletDifficultyError,
+    PalletOffchainTaskSchedulerCall,
     PalletOffchainTaskSchedulerError,
     PalletOffchainTaskSchedulerEvent,
     PalletRewardsEvent,
@@ -191,6 +192,7 @@ declare module '@polkadot/types/types/registry' {
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;
         PalletDifficultyError: PalletDifficultyError;
+        PalletOffchainTaskSchedulerCall: PalletOffchainTaskSchedulerCall;
         PalletOffchainTaskSchedulerError: PalletOffchainTaskSchedulerError;
         PalletOffchainTaskSchedulerEvent: PalletOffchainTaskSchedulerEvent;
         PalletRewardsEvent: PalletRewardsEvent;

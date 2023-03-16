@@ -290,7 +290,6 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             failTask: AugmentedSubmittable<
                 (
-                    deadline: u32 | AnyNumber | Uint8Array,
                     taskId:
                         | PalletCreditcoinTaskId
                         | { VerifyTransfer: any }
@@ -321,7 +320,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, PalletCreditcoinTaskId, PalletCreditcoinOcwErrorsVerificationFailureCause]
+                [PalletCreditcoinTaskId, PalletCreditcoinOcwErrorsVerificationFailureCause]
             >;
             fundDealOrder: AugmentedSubmittable<
                 (
@@ -336,7 +335,6 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             persistTaskOutput: AugmentedSubmittable<
                 (
-                    deadline: u32 | AnyNumber | Uint8Array,
                     taskOutput:
                         | PalletCreditcoinTaskOutput
                         | { VerifyTransfer: any }
@@ -344,7 +342,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, PalletCreditcoinTaskOutput]
+                [PalletCreditcoinTaskOutput]
             >;
             /**
              * Registers an external address on `blockchain` and `network` with value `address`
@@ -772,6 +770,20 @@ declare module '@polkadot/api-base/types/submittable' {
                     items: Vec<ITuple<[Bytes, Bytes]>> | [Bytes | string | Uint8Array, Bytes | string | Uint8Array][],
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[Bytes, Bytes]>>]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        taskScheduler: {
+            submitOutput: AugmentedSubmittable<
+                (
+                    deadline: u32 | AnyNumber | Uint8Array,
+                    taskId: H256 | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, H256, Call]
             >;
             /**
              * Generic tx
