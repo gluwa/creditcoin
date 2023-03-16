@@ -6,7 +6,7 @@ use crate::{
 };
 use creditcoin_node_runtime::{Block, ExistentialDeposit};
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
-use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
+use sc_cli::{ChainSpec, Database, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
 
@@ -58,9 +58,31 @@ impl SubstrateCli for Cli {
 	}
 }
 
+///Use ParityDB unless the user specified otherwise
+fn maybe_set_db(cli: Cli) -> Option<Database> {
+	let out = match cli.run.import_params.database_params.database {
+		None => {
+			return Some(Database::ParityDb)
+		}
+		userDefined => {
+			return userDefined
+		}
+	};
+	out
+}
+
 /// Parse and run command line arguments
 pub fn run() -> sc_cli::Result<()> {
-	let cli = Cli::from_args();
+	let mut cli = Cli::from_args();
+
+	//Set the DB to ParityDB if needed
+	match &mut cli.run.import_params.database_params.database {
+		Some(_) => {}, // the user specified a database, so we don't override it
+		db => {
+			// they didn't pass a database, so default to paritydb
+			*db = Some(Database::ParityDb);
+		},
+	}
 
 	match &cli.subcommand {
 		Some(Subcommand::Key(cmd)) => cmd.run(&cli),
