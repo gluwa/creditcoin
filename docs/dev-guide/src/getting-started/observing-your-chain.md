@@ -3,7 +3,7 @@
 With a node up and running, it's often useful to inspect the status of the development chain. The Polkadot explorer is
 the easiest way to take a look at a live chain.
 
-In your browser, open up [the Polkadot explorer](https://polkadotjs.org/apps). Now you'll want to point the explorer at your running
+In your browser, open up [the Polkadot explorer](https://polkadot.js.org/apps). Now you'll want to point the explorer at your running
 development node. In the top left corner, there's a menu accessible by clocking the name of the current chain:
 
 ![Chain selection menu](../img/explorer-chain-dropdown.png)
