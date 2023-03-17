@@ -203,24 +203,24 @@ benchmarks! {
 	persist_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
-		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let deadline = T::BlockNumber::one();
 		// pending task does not matter
 		let transfer = generate_transfer::<T>(deal_id,false,false,0u8);
 		let task_output = crate::TaskOutput::from(transfer);
-	}: persist_task_output(RawOrigin::Signed(authority), task_output)
+	}: persist_task_output(RawOrigin::Root, task_output)
 
 	fail_transfer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
-		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
 		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,false,0u8);
 		let cause = crate::ocw::VerificationFailureCause::TaskFailed;
 		let deadline = T::BlockNumber::one();
 		let task_id = crate::TaskId::from(transfer_id);
-	}: fail_task(RawOrigin::Signed(authority), task_id, cause)
+	}: fail_task(RawOrigin::Root, task_id, cause)
 
 	fund_deal_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
@@ -325,17 +325,17 @@ benchmarks! {
 	fail_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
-		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority).unwrap();
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab".as_bytes();
 		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, tx_id);
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_id = crate::TaskId::from(collected_coins_id);
-	}: fail_task(RawOrigin::Signed(authority), task_id, Cause::AbiMismatch)
+	}: fail_task(RawOrigin::Root, task_id, Cause::AbiMismatch)
 
 	persist_collect_coins {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let authority = authority_account::<T>(true);
-		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
+		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority).unwrap();
 		let collector: T::AccountId = lender_account::<T>(true);
 		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
 		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
@@ -347,7 +347,7 @@ benchmarks! {
 			crate::types::CollectedCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
-	}: persist_task_output(RawOrigin::Signed(authority), task_output)
+	}: persist_task_output(RawOrigin::Root, task_output)
 
 	remove_authority {
 		let root = RawOrigin::Root;

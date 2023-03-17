@@ -108,6 +108,7 @@ pub mod pallet {
 
 	pub trait WeightInfo {
 		fn on_initialize(p: u32) -> Weight;
+		fn submit_output() -> Weight;
 	}
 
 	#[pallet::event]
@@ -245,7 +246,15 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
-		#[pallet::weight({ let dispatch_info = call.get_dispatch_info(); (dispatch_info.weight, dispatch_info.class) })]
+		#[pallet::weight({
+			let dispatch_info = call.get_dispatch_info();
+			(
+				dispatch_info
+					.weight
+					.saturating_add(<<T as Config>::WeightInfo as WeightInfo>::submit_output()),
+				dispatch_info.class,
+			)
+		})]
 		pub fn submit_output(
 			origin: OriginFor<T>,
 			deadline: T::BlockNumber,

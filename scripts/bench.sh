@@ -28,7 +28,7 @@ done
 
 
 OUTPUT="./pallets/${PALLET//_/-}/src/weights.rs"
-mkdir -p "pallets/$PALLET/src"
+mkdir -p "pallets/${PALLET//_/-}/src"
 
 if [[ $BUILD -eq 0 ]]
 then
