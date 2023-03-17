@@ -64,6 +64,7 @@ jsonrpsee = { workspace = true, features = ["server"] }
 serde_json = "1.0.93"
 frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
+sp-io = { workspace = true, optional = true }
 sp-keyring = { workspace = true }
 futures = "0.3.26"
 
@@ -80,4 +81,8 @@ runtime-benchmarks = [
     'frame-benchmarking-cli/runtime-benchmarks',
 ]
 std = ['sp-api/std', 'sp-block-builder/std', 'task-scheduler-runtime-api/std']
-try-runtime = ["creditcoin-node-runtime/try-runtime", "try-runtime-cli/try-runtime"]
+try-runtime = [
+    "creditcoin-node-runtime/try-runtime",
+    "try-runtime-cli/try-runtime",
+    "sp-io",
+]
