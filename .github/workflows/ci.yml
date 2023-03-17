@@ -456,6 +456,8 @@ jobs:
         run: |
           ./scripts/bench.sh -p creditcoin -b -r 1 -s 2
           ./scripts/bench.sh -p difficulty -b -r 1 -s 2
+          ./scripts/bench.sh -p offchain_task_scheduler -b -r 1 -s 2
+          ./scripts/bench.sh -p rewards -b -r 1 -s 2
 
       # check if automatically generated weights compile
       - name: Rebuild SUT with newly generated weights
