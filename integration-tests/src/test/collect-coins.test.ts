@@ -118,14 +118,13 @@ describe('CollectCoins', (): void => {
     describe('fail', (): void => {
         testIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'fee is min 0.01 CTC', async (): Promise<void> => {
             const { api } = ccApi;
-            const collectedCoinsId = createCollectedCoinsId(evmAddress);
+            const taskId = createCollectedCoinsId(evmAddress);
             const cause = api.createType('PalletCreditcoinOcwErrorsVerificationFailureCause', 'TaskFailed');
 
-            // eslint-disable-next-line @typescript-eslint/naming-convention
-            const taskId = api.createType('PalletCreditcoinTaskId', { CollectCoins: collectedCoinsId });
+            const call = api.tx.creditcoin.failTask({ CollectCoins: taskId }, cause);
 
-            const { partialFee } = await api.tx.creditcoin
-                .failTask(1000, taskId, cause)
+            const { partialFee } = await api.tx.taskScheduler
+                .submitOutput(1000, taskId, call)
                 .paymentInfo(authority, { nonce: -1 });
 
             expect(partialFee.toBigInt()).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
@@ -149,8 +148,10 @@ describe('CollectCoins', (): void => {
                     CollectCoins: [collectedCoinsId, collectedCoins],
                 });
 
-                const { partialFee } = await api.tx.creditcoin
-                    .persistTaskOutput(1000, taskOutput)
+                const call = api.tx.creditcoin.persistTaskOutput(taskOutput);
+
+                const { partialFee } = await api.tx.taskScheduler
+                    .submitOutput(1000, collectedCoinsId, call)
                     .paymentInfo(authority, { nonce: -1 });
                 /* eslint-enable */
                 expect(partialFee.toBigInt()).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);

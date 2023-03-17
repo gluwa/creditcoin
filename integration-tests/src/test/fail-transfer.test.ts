@@ -35,9 +35,11 @@ describe('FailTransfer', (): void => {
         // eslint-disable-next-line @typescript-eslint/naming-convention
         const taskId = api.createType('PalletCreditcoinTaskId', { VerifyTransfer: transferId });
 
+        const call = api.tx.creditcoin.failTask(taskId, cause);
+
         return new Promise((resolve, reject): void => {
-            const unsubscribe = api.tx.creditcoin
-                .failTask(1000, taskId, cause)
+            const unsubscribe = api.tx.taskScheduler
+                .submitOutput(1000, transferId, call)
                 .signAndSend(authority, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
