@@ -6,7 +6,7 @@ FILES_WITH_EXTRINSICS=$(grep "pallet::call" pallets/* -R | cut -f1 -d: | sort | 
 PALLETS=$(echo "$FILES_WITH_EXTRINSICS" | cut -f2 -d/ | sort | uniq | xargs)
 
 if [ "$1" == "--show-pallets" ]; then
-    echo "$PALLETS"
+    echo "${PALLETS//-/_}"
     exit 0
 fi
 
