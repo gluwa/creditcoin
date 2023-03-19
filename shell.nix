@@ -30,6 +30,6 @@ with nixpkgs; pkgs.mkShell {
   LIBCLANG_PATH = "${llvmPackages.libclang}/lib";
   PROTOC = "${protobuf}/bin/protoc";
   RUST_SRC_PATH = "${toolchain.rust-src}/lib/rustlib/src/rust/library/";
-  #ROCKSDB_LIB_DIR = "${rocksdb}/lib";
+  ROCKSDB_LIB_DIR = "${rocksdb}/lib";
 
 }
