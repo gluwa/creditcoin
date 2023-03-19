@@ -9,6 +9,7 @@ use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE
 use sc_cli::{ChainSpec, Database, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
+use std::borrow::BorrowMut;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -58,17 +59,50 @@ impl SubstrateCli for Cli {
 	}
 }
 
+#[cfg(test)]
+pub mod set_db_tests {
+	use crate::cli::Cli;
+	use crate::command::maybe_set_db;
+	use sc_cli::{Database, SubstrateCli};
+	use std::borrow::BorrowMut;
+
+	#[test]
+	fn maybe_set_db_changes_config_when_no_db_is_set() {
+		let mut cli = Cli::from_args();
+
+		// Start with no value set
+		assert_eq!(cli.run.import_params.database_params.database, None);
+		maybe_set_db(cli.borrow_mut());
+
+		// Expect it is now set to ParityDB
+		assert_eq!(cli.run.import_params.database_params.database, Some(Database::ParityDb));
+	}
+
+	#[test]
+	fn maybe_set_db_does_nothing_when_db_already_set() {
+		let mut cli = Cli::from_args();
+
+		// Set the value to something besides ParityDB
+		cli.run.import_params.database_params.database = Some(Database::RocksDb);
+		assert_eq!(cli.run.import_params.database_params.database, Some(Database::RocksDb));
+
+		maybe_set_db(cli.borrow_mut());
+
+		// Expect that the value is unchanged
+		assert_eq!(cli.run.import_params.database_params.database, Some(Database::RocksDb));
+	}
+}
+
 ///Use ParityDB unless the user specified otherwise
-fn maybe_set_db(cli: Cli) -> Option<Database> {
-	let out = match cli.run.import_params.database_params.database {
-		None => {
-			return Some(Database::ParityDb)
-		}
-		userDefined => {
-			return userDefined
-		}
+fn maybe_set_db(cli: &mut Cli) {
+	//Set the DB to ParityDB if needed
+	match &mut cli.run.import_params.database_params.database {
+		Some(_) => {}, // The user specified a database, so do nothing
+		db => {
+			// No Database set, default to ParityDB
+			*db = Some(Database::ParityDb);
+		},
 	};
-	out
 }
 
 /// Parse and run command line arguments
@@ -76,13 +110,7 @@ pub fn run() -> sc_cli::Result<()> {
 	let mut cli = Cli::from_args();
 
 	//Set the DB to ParityDB if needed
-	match &mut cli.run.import_params.database_params.database {
-		Some(_) => {}, // the user specified a database, so we don't override it
-		db => {
-			// they didn't pass a database, so default to paritydb
-			*db = Some(Database::ParityDb);
-		},
-	}
+	maybe_set_db(cli.borrow_mut());
 
 	match &cli.subcommand {
 		Some(Subcommand::Key(cmd)) => cmd.run(&cli),
