@@ -5,7 +5,8 @@ mod nonce_monitor;
 use crate::cli::Cli;
 use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
 use parity_scale_codec::Encode;
-use sc_client_api::Backend;
+use sc_client_api::{Backend, BlockBackend};
+use sc_consensus_grandpa::SharedVoterState;
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;
 use sc_service::{
@@ -46,12 +47,18 @@ type PartialComponentsType<T> = sc_service::PartialComponents<
 	(
 		sc_consensus_pow::PowBlockImport<
 			Block,
-			Arc<FullClient>,
+			sc_consensus_grandpa::GrandpaBlockImport<
+				FullBackend,
+				Block,
+				FullClient,
+				FullSelectChain,
+			>,
 			FullClient,
 			FullSelectChain,
 			Sha3Algorithm<FullClient>,
 			T,
 		>,
+		sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
 		Option<Telemetry>,
 	),
 >;
@@ -122,8 +129,15 @@ pub fn new_partial(
 
 	let algorithm = Sha3Algorithm::new(client.clone());
 
-	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
+	let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
 		client.clone(),
+		&(client.clone() as Arc<_>),
+		select_chain.clone(),
+		telemetry.as_ref().map(|x| x.handle()),
+	)?;
+
+	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
+		grandpa_block_import,
 		client.clone(),
 		algorithm.clone(),
 		0,
@@ -150,7 +164,7 @@ pub fn new_partial(
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (pow_block_import, telemetry),
+		other: (pow_block_import, grandpa_link, telemetry),
 	})
 }
 
@@ -194,7 +208,7 @@ pub fn decode_mining_key(
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
+pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
 	let Cli {
 		rpc_mapping, mining_key, mining_threads, monitor_nonce: monitor_nonce_account, ..
 	} = cli;
@@ -207,7 +221,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 		mut keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (pow_block_import, mut telemetry),
+		other: (pow_block_import, grandpa_link, mut telemetry),
 	} = new_partial(&config)?;
 
 	if let Some(url) = &config.keystore_remote {
@@ -221,6 +235,22 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 		};
 	}
 
+	let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
+		&client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
+		&config.chain_spec,
+	);
+
+	config
+		.network
+		.extra_sets
+		.push(sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
+
+	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
+		backend.clone(),
+		grandpa_link.shared_authority_set().clone(),
+		Vec::default(),
+	));
+
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
@@ -229,7 +259,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 			spawn_handle: task_manager.spawn_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
-			warp_sync_params: None,
+			warp_sync_params: Some(sc_service::WarpSyncParams::WithProvider(warp_sync)),
 		})?;
 
 	if config.offchain_worker.enabled {
@@ -257,8 +287,8 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 	let role = config.role.clone();
 	let _force_authoring = config.force_authoring;
 	let _backoff_authoring_blocks: Option<()> = None;
-	let _name = config.network.node_name.clone();
-	let _enable_grandpa = !config.disable_grandpa;
+	let name = config.network.node_name.clone();
+	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
 	let mining_metrics = primitives::metrics::MiningMetrics::new(prometheus_registry.as_ref())?;
 
@@ -287,7 +317,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 		keystore: keystore_container.sync_keystore(),
 		transaction_pool: transaction_pool.clone(),
 		rpc_builder: rpc_extensions_builder,
-		network,
+		network: network.clone(),
 		system_rpc_tx,
 		tx_handler_controller,
 		sync_service: sync_service.clone(),
@@ -327,7 +357,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 			algorithm,
 			proposer_factory,
 			sync_service.clone(),
-			sync_service,
+			sync_service.clone(),
 			Some(mining_key.encode()),
 			move |_, ()| async move {
 				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
@@ -387,10 +417,49 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 		}
 	}
 
-	// if the node isn't actively participating in consensus then it doesn't
-	// need a keystore, regardless of which protocol we use below.
-	let _keystore =
-		if role.is_authority() { Some(keystore_container.sync_keystore()) } else { None };
+	if enable_grandpa {
+		// if the node isn't actively participating in consensus then it doesn't
+		// need a keystore, regardless of which protocol we use below.
+		let keystore =
+			if role.is_authority() { Some(keystore_container.sync_keystore()) } else { None };
+
+		let grandpa_config = sc_consensus_grandpa::Config {
+			// FIXME #1578 make this available through chainspec
+			gossip_duration: Duration::from_millis(333),
+			justification_period: 512,
+			name: Some(name),
+			observer_enabled: false,
+			keystore,
+			local_role: role,
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			protocol_name: grandpa_protocol_name,
+		};
+
+		// start the full GRANDPA voter
+		// NOTE: non-authorities could run the GRANDPA observer protocol, but at
+		// this point the full voter should provide better guarantees of block
+		// and vote data availability than the observer. The observer has not
+		// been tested extensively yet and having most nodes in a network run it
+		// could lead to finality stalls.
+		let grandpa_config = sc_consensus_grandpa::GrandpaParams {
+			config: grandpa_config,
+			link: grandpa_link,
+			network,
+			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
+			prometheus_registry,
+			shared_voter_state: SharedVoterState::empty(),
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			sync: sync_service,
+		};
+
+		// the GRANDPA voter task is considered infallible, i.e.
+		// if it fails we take down the service with it.
+		task_manager.spawn_essential_handle().spawn_blocking(
+			"grandpa-voter",
+			None,
+			sc_consensus_grandpa::run_grandpa_voter(grandpa_config)?,
+		);
+	}
 
 	network_starter.start_network();
 	Ok(task_manager)

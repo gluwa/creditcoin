@@ -127,3 +127,9 @@ sp-externalities = { branch = "polkadot-v0.9.40", git = "https://github.com/pari
 substrate-wasm-builder = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git" }
 try-runtime-cli = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git" }
 sp-keyring = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git" }
+sc-consensus-babe = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git" }
+sp-consensus-babe = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git", default-features = false }
+sc-consensus-grandpa = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git" }
+sp-consensus-grandpa = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git", default-features = false }
+pallet-babe = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git", default-features = false }
+pallet-grandpa = { branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git", default-features = false }
