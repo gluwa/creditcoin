@@ -68,9 +68,9 @@ pub mod pallet {
 		tasks::{self, ForwardTask},
 		AppCrypto, Saturating, SystemConfig,
 	};
-	use crate::ocw::RuntimePublicOf;
 	use crate::ocw::{disputing::Disputable, sampling::Sampling};
 	use crate::tasks::TaskScheduler as TaskSchedulerT;
+	use crate::{ocw::RuntimePublicOf, tasks::force_task_lock_clear};
 	use core::fmt::Debug;
 	use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 	use frame_support::pallet_prelude::*;
@@ -303,9 +303,9 @@ pub mod pallet {
 
 			ensure!(T::Authorship::is_authorized(&who), Error::<T>::UnauthorizedSubmission);
 
-			T::Sampling::prove_sampled(&task_id, &who, proof)
+			let signal_disputable = T::Sampling::prove_sampled(&task_id, &who, proof)
 				.ok_or(Error::<T>::ProvingSamplingFailed)?;
-			//check if submitter or disputer
+
 			//idempotency checks for voting, add an index.
 			if let Some(output) = T::Dispute::vote_on(&who, &task_id, &call)? {
 				Self::deposit_event(Event::TaskCompleted {
@@ -318,6 +318,9 @@ pub mod pallet {
 				Self::remove(&deadline, &task_id);
 			};
 
+			if signal_disputable {
+				force_task_lock_clear(&task_id);
+			}
 			//FIXIT, accurate weights.
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}

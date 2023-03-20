@@ -10,7 +10,6 @@ use super::{log, Config, Pallet};
 use crate::tasks::LockGuard;
 use crate::Call;
 use alloc::vec;
-use caching::OutputCache;
 use frame_support::dispatch::Vec;
 use frame_system::offchain::{Account, SendSignedTransaction, Signer};
 use frame_system::offchain::{AppCrypto, SigningTypes};
@@ -50,17 +49,14 @@ where
 			Call::<T>::submit_output { deadline, task_id, call: call.clone(), proof: proof.clone() }
 				.into()
 		}) {
-			Ok(_) => {
-				guard.forget();
-			},
-			// release the lock and try again later.
+			Ok(_) => {},
 			Err(e) => {
 				log::error!(
 					target: "runtime::task", "@{block_number:?} Failed to send a dispatchable transaction: {e:?}",
 				);
-				T::OutputCache::clear(&task_id);
 			},
 		}
+		guard.forget()
 	}
 }
 

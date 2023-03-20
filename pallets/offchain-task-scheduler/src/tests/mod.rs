@@ -94,3 +94,8 @@ fn submit_output_is_authorized() {
 		assert!(!TaskScheduler::is_scheduled(&deadline, &task_id));
 	});
 }
+
+#[test]
+fn submit_out_wakes_up_worker_when_sampled() {
+	todo!()
+}

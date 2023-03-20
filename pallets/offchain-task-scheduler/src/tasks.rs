@@ -10,6 +10,7 @@ use frame_support::traits::Get;
 use frame_system::Pallet as System;
 use sp_core::offchain::Duration;
 use sp_core::Encode;
+use sp_runtime::offchain::storage::StorageValueRef;
 use sp_runtime::offchain::storage_lock::BlockAndTime;
 use sp_runtime::offchain::storage_lock::StorageLock;
 use sp_runtime::offchain::storage_lock::StorageLockGuard;
@@ -38,6 +39,13 @@ where
 		offset,
 		Duration::from_millis(0),
 	)
+}
+
+// I KNOW WHAT I'M DOING. This will clear the local offchain lock, possibly breaking mutual exclusion.
+// This is meant to wake up threads waiting on a task's voting to be disputable.
+pub(crate) fn force_task_lock_clear<Id: Encode>(task_id: &Id) {
+	let storage_key = lock_key(task_id);
+	StorageValueRef::persistent(storage_key.as_ref()).clear();
 }
 
 pub trait ForwardTask<Runtime: SystemConfig> {

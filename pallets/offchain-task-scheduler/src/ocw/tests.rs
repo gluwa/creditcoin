@@ -291,3 +291,8 @@ fn offchain_worker_should_log_when_authority_is_missing() {
 		assert!(logs_contain("Not an authority, skipping offchain work"));
 	});
 }
+
+#[test]
+fn try_submit_does_not_clear_the_cache_on_error() {
+	todo!()
+}
