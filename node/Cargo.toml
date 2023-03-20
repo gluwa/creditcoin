@@ -67,6 +67,10 @@ pallet-transaction-payment = { workspace = true }
 sp-io = { workspace = true, optional = true }
 sp-keyring = { workspace = true }
 futures = "0.3.26"
+sc-consensus-babe = { workspace = true }
+sp-consensus-babe = { workspace = true }
+sp-consensus-grandpa = { workspace = true }
+sc-consensus-grandpa = { workspace = true }
 
 [dependencies.tokio]
 version = "1.27.0"

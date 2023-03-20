@@ -1,9 +1,11 @@
 use creditcoin_node_runtime::{
-	AccountId, BalancesConfig, CreditcoinConfig, DifficultyConfig, GenesisConfig, Signature,
-	SudoConfig, SystemConfig, TaskSchedulerConfig, TransactionPaymentConfig, WASM_BINARY,
+	AccountId, BalancesConfig, CreditcoinConfig, DifficultyConfig, GenesisConfig, GrandpaConfig,
+	Signature, SudoConfig, SystemConfig, TaskSchedulerConfig, TransactionPaymentConfig,
+	WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public, U256};
+use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
 	FixedU128,
@@ -32,6 +34,13 @@ where
 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
+pub fn get_authority_keys_from_seed(seed: &str) -> (GrandpaId,) {
+	(
+		get_from_seed::<GrandpaId>(seed),
+		// get_from_seed::<BabeId>(seed),
+	)
+}
+
 pub fn development_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
@@ -44,6 +53,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		move || {
 			testnet_genesis(
 				wasm_binary,
+				// Initial authorities
+				vec![get_authority_keys_from_seed("Alice")],
 				// Sudo account
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				// Pre-funded accounts
@@ -84,6 +95,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		move || {
 			testnet_genesis(
 				wasm_binary,
+				// Initial authorities
+				vec![get_authority_keys_from_seed("Alice")],
 				// Sudo account
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				// Pre-funded accounts
@@ -131,6 +144,7 @@ pub fn mainnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
 	wasm_binary: &[u8],
+	initial_authorities: Vec<(GrandpaId,)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	target_time: Option<u64>,
@@ -157,5 +171,8 @@ fn testnet_genesis(
 		creditcoin: CreditcoinConfig::default(),
 		transaction_payment: TransactionPaymentConfig { multiplier: FixedU128::from_float(1.0) },
 		task_scheduler: TaskSchedulerConfig::default(),
+		grandpa: GrandpaConfig {
+			authorities: initial_authorities.iter().map(|(g,)| (g.clone(), 1)).collect(),
+		},
 	}
 }
