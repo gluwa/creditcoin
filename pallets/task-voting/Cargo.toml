@@ -19,14 +19,21 @@ pallet-offchain-task-scheduler = { workspace = true }
 parity-scale-codec = { workspace = true }
 primitives = { workspace = true }
 scale-info = { workspace = true }
+sp-arithmetic = { workspace = true }
 sp-runtime = { workspace = true }
+extend = "*"
+
+[dev-dependencies]
+runtime-utils = { workspace = true }
 
 [features]
 default = ['std']
 std = [
     'frame-support/std',
     'frame-system/std',
+    'sp-arithmetic/std',
     'sp-runtime/std',
+    'pallet-offchain-task-scheduler/std',
     'primitives/std',
 ]
 try-runtime = ['frame-support/try-runtime']

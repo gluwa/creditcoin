@@ -1,23 +1,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+pub mod impls;
+pub mod pallet;
 pub mod sampling;
+pub mod types;
 
 pub use pallet::{Config, Pallet};
+use sp_arithmetic::traits::{Bounded, CheckedMul, One, Zero};
 
-#[frame_support::pallet]
-pub mod pallet {
+pub trait VotingPowerProvider {
+	type Unit: Clone + Zero + One + PartialOrd + CheckedMul + Bounded;
+	type Who;
+	type ItemId;
 
-	use crate::sampling::GetOne;
-	use frame_support::pallet_prelude::{ValueQuery, *};
-	use sp_runtime::Perquintill;
-
-	#[pallet::config]
-	pub trait Config: frame_system::Config {}
-
-	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(_);
-
-	#[pallet::storage]
-	#[pallet::getter(fn sample_size)]
-	pub type SampleSize<T: Config> = StorageValue<_, Perquintill, ValueQuery, GetOne>;
+	fn power(who: &Self::Who, task_id: &Self::ItemId) -> Self::Unit;
 }

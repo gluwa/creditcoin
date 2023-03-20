@@ -4881,13 +4881,16 @@ dependencies = [
 name = "pallet-task-voting"
 version = "2.211.2"
 dependencies = [
+ "extend",
  "frame-support",
  "frame-system",
  "pallet-offchain-task-scheduler",
  "parity-scale-codec",
  "primitives",
  "scale-info",
+ "sp-arithmetic",
  "sp-runtime",
+ "test-runtime-utils",
 ]
 
 [[package]]
