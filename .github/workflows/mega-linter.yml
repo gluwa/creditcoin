@@ -36,8 +36,8 @@ jobs:
         # More info at https://megalinter.io/flavors/
         uses: oxsecurity/megalinter/flavors/rust@v6
         env:
-          # All available variables are described in documentation
-          # https://megalinter.io/configuration/
+          # All available variables are described at https://megalinter.io/configuration/
+          # and configured in .mega-linter.yml
           VALIDATE_ALL_CODEBASE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
