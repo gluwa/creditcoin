@@ -6,6 +6,7 @@ use crate::cli::Cli;
 use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
 use parity_scale_codec::Encode;
 use sc_client_api::{Backend, BlockBackend};
+use sc_consensus_babe as babe;
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
@@ -15,7 +16,6 @@ use sc_service::{
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool::PoolLimit;
 use sha3pow::Sha3Algorithm;
-use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::{app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount};
 use std::{sync::Arc, thread, time::Duration};
 
@@ -38,27 +38,25 @@ pub(crate) type FullClient =
 	sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
-type PartialComponentsType<T> = sc_service::PartialComponents<
+type PartialComponentsType = sc_service::PartialComponents<
 	FullClient,
 	FullBackend,
 	FullSelectChain,
 	sc_consensus::DefaultImportQueue<Block, FullClient>,
 	sc_transaction_pool::FullPool<Block, FullClient>,
 	(
-		sc_consensus_pow::PowBlockImport<
+		babe::BabeBlockImport<
 			Block,
+			FullClient,
 			sc_finality_grandpa::GrandpaBlockImport<
 				FullBackend,
 				Block,
 				FullClient,
 				FullSelectChain,
 			>,
-			FullClient,
-			FullSelectChain,
-			Sha3Algorithm<FullClient>,
-			T,
 		>,
 		sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+		babe::BabeLink<Block>,
 		Option<Telemetry>,
 	),
 >;
@@ -78,9 +76,7 @@ fn create_transaction_pool_config(mut config: TransactionPoolOptions) -> Transac
 	config
 }
 
-pub fn new_partial(
-	config: &Configuration,
-) -> Result<PartialComponentsType<impl CreateInherentDataProviders<Block, ()>>, ServiceError> {
+pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, ServiceError> {
 	if config.keystore_remote.is_some() {
 		return Err(ServiceError::Other("Remote Keystores are not supported.".to_string()));
 	}
@@ -127,33 +123,39 @@ pub fn new_partial(
 		client.clone(),
 	);
 
-	let algorithm = Sha3Algorithm::new(client.clone());
-
 	let (grandpa_block_import, grandpa_link) = sc_finality_grandpa::block_import(
 		client.clone(),
 		&(client.clone() as Arc<_>),
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
+	let justification_import = grandpa_block_import.clone();
 
-	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
-		grandpa_block_import,
+	let babe_config = babe::configuration(&*client)?;
+	let (block_import, babe_link) =
+		babe::block_import(babe_config.clone(), grandpa_block_import, client.clone())?;
+
+	let slot_duration = babe_link.config().slot_duration();
+	let import_queue = babe::import_queue(
+		babe_link.clone(),
+		block_import.clone(),
+		Some(Box::new(justification_import)),
 		client.clone(),
-		algorithm.clone(),
-		0,
 		select_chain.clone(),
 		move |_, ()| async move {
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-			Ok(timestamp)
-		},
-	);
 
-	let import_queue = sc_consensus_pow::import_queue(
-		Box::new(pow_block_import.clone()),
-		None,
-		algorithm,
+			let slot =
+				sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+					*timestamp,
+					slot_duration,
+				);
+
+			Ok((slot, timestamp))
+		},
 		&task_manager.spawn_essential_handle(),
 		config.prometheus_registry(),
+		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
 	Ok(sc_service::PartialComponents {
@@ -164,7 +166,7 @@ pub fn new_partial(
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (pow_block_import, grandpa_link, telemetry),
+		other: (block_import, grandpa_link, babe_link, telemetry),
 	})
 }
 
@@ -221,7 +223,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		mut keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (pow_block_import, grandpa_link, mut telemetry),
+		other: (block_import, grandpa_link, babe_link, mut telemetry),
 	} = new_partial(&config)?;
 
 	if let Some(url) = &config.keystore_remote {
@@ -285,8 +287,8 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 	}
 
 	let role = config.role.clone();
-	let _force_authoring = config.force_authoring;
-	let _backoff_authoring_blocks: Option<()> = None;
+	let force_authoring = config.force_authoring;
+	let backoff_authoring_blocks: Option<()> = None;
 	let name = config.network.node_name.clone();
 	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
@@ -338,8 +340,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 	}
 
 	if role.is_authority() {
-		let mining_key = decode_mining_key(mining_key.as_deref())?;
-		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+		let proposer = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,
@@ -347,73 +348,36 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			telemetry.as_ref().map(|x| x.handle()),
 		);
 
-		let algorithm = Sha3Algorithm::new(client.clone());
-
-		let (worker, worker_task) = sc_consensus_pow::start_mining_worker(
-			Box::new(pow_block_import),
-			client.clone(),
+		let slot_duration = babe_link.config().slot_duration();
+		let babe_config = babe::BabeParams {
+			keystore: keystore_container.sync_keystore(),
+			client: client.clone(),
 			select_chain,
-			algorithm,
-			proposer_factory,
-			network.clone(),
-			network.clone(),
-			Some(mining_key.encode()),
-			move |_, ()| async move {
+			block_import,
+			env: proposer,
+			sync_oracle: network.clone(),
+			justification_sync_link: network.clone(),
+			create_inherent_data_providers: move |_parent, ()| async move {
 				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-				Ok(timestamp)
+
+				let slot =
+						sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+							*timestamp,
+							slot_duration,
+						);
+
+				Ok((slot, timestamp))
 			},
-			Duration::from_secs(10),
-			Duration::from_secs(10),
-		);
+			force_authoring,
+			backoff_authoring_blocks,
+			babe_link,
+			block_proposal_slot_portion: babe::SlotProportion::new(2f32 / 3f32),
+			max_block_proposal_slot_portion: None,
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+		};
 
-		task_manager
-			.spawn_essential_handle()
-			.spawn_blocking("pow", "pow_group", worker_task);
-
-		let threads = mining_threads.unwrap_or_else(num_cpus::get);
-		for _ in 0..threads {
-			if let Some(keystore) = keystore_container.local_keystore() {
-				let worker = worker.clone();
-				let client = client.clone();
-				let mining_metrics = mining_metrics.clone();
-				thread::spawn(move || {
-					let mut count = 0;
-					loop {
-						let metadata = worker.metadata();
-						let version = worker.version();
-						if let Some(metadata) = metadata {
-							loop {
-								match sha3pow::mine(
-									client.as_ref(),
-									&keystore,
-									&metadata.pre_hash,
-									metadata.pre_runtime.as_ref().map(|v| &v[..]),
-									metadata.difficulty,
-								) {
-									Ok(Some(seal)) => {
-										if version == worker.version() {
-											let _ =
-												futures_lite::future::block_on(worker.submit(seal));
-										}
-									},
-									Ok(None) => {
-										count += 1;
-									},
-									Err(e) => eprintln!("Mining error: {e}"),
-								}
-								if count >= 1_000_000 {
-									mining_metrics.add(count);
-									count = 0;
-								}
-								if version != worker.version() {
-									break;
-								}
-							}
-						}
-					}
-				});
-			}
-		}
+		let babe = babe::start_babe(babe_config)?;
+		task_manager.spawn_essential_handle().spawn_blocking("babe", None, babe);
 	}
 
 	if enable_grandpa {
