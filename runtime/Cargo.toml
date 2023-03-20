@@ -48,6 +48,9 @@ sp-session = { workspace = true }
 sp-std = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-version = { workspace = true }
+sp-consensus-babe = { workspace = true, default-features = false }
+pallet-babe = { workspace = true }
+pallet-grandpa = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
@@ -98,6 +101,9 @@ std = [
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
     'pallet-offchain-task-scheduler/std',
+    'pallet-grandpa/std',
+    'pallet-babe/std',
+    'sp-consensus-babe/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-core/std',
