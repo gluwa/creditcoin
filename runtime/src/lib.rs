@@ -10,6 +10,7 @@ use frame_support::{
 	traits::{ConstU32, ConstU8},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
+use pallet_babe::AuthorityId as BabeId;
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
 use pallet_difficulty::Difficulty as DifficultyT;
@@ -18,6 +19,7 @@ use pallet_grandpa::{
 };
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use sp_api::impl_runtime_apis;
+use sp_consensus_babe as babe_primitives;
 use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata};
 use sp_runtime::{
 	generic, impl_opaque_keys,
@@ -103,10 +105,12 @@ pub mod opaque {
 	/// Opaque block identifier type.
 	pub type BlockId = generic::BlockId<Block>;
 
+	pub type SessionHandlers = (Grandpa, Babe);
+
 	impl_opaque_keys! {
 		pub struct SessionKeys {
-			// pub babe: Babe,
 			pub grandpa: Grandpa,
+			pub babe: Babe,
 		}
 	}
 }
@@ -117,7 +121,7 @@ pub mod opaque {
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 60_000;
+pub const MILLISECS_PER_BLOCK: u64 = 6_000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -254,8 +258,52 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ConstU64<0>;
 }
 
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = 10 * MINUTES;
+
 parameter_types! {
-	pub const MinimumPeriod: u64 = 1000;
+	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64;
+	pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
+
+}
+
+// 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
+// The choice of is done in accordance to the slot duration and expected target
+// block time, for safely resisting network delays of maximum two seconds.
+// <https://research.web3.foundation/en/latest/polkadot/block-production/Babe.html#-6.-practical-results>
+pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
+
+pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
+	sp_consensus_babe::BabeEpochConfiguration {
+		c: PRIMARY_PROBABILITY,
+		allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryVRFSlots,
+	};
+
+impl pallet_babe::Config for Runtime {
+	type EpochDuration = EpochDuration;
+	type ExpectedBlockTime = ExpectedBlockTime;
+	type EpochChangeTrigger = pallet_babe::ExternalTrigger;
+	type KeyOwnerProof =
+		sp_core::Void;
+	type EquivocationReportSystem = (); // TODO: have an actual equivocation handler
+	type WeightInfo = ();
+	type MaxAuthorities = ConstU32<128>; // TODO: actually consider what to set this to, I just picked a number
+	type DisabledValidators = (); // TODO: Consider whether to use this (through the session pallet)
+}
+
+// impl pallet_session::Config for Runtime {
+// 	type RuntimeEvent = RuntimeEvent;
+// 	type ValidatorId = AccountId;
+// 	type ValidatorIdOf = pallet_staking_substrate::StashOf<Self>;
+// 	type ShouldEndSession = Babe;
+// 	type NextSessionRotation = Babe;
+// 	type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
+// 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+// 	type Keys = SessionKeys;
+// 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
+// }
+
+parameter_types! {
+	pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -424,6 +472,7 @@ construct_runtime!(
 	{
 		System: frame_system,
 		Timestamp: pallet_timestamp,
+		Babe: pallet_babe,
 		Grandpa: pallet_grandpa,
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
@@ -619,6 +668,51 @@ impl_runtime_apis! {
 			// defined our key owner proof type as a bottom type (i.e. a type
 			// with no values).
 			None
+		}
+	}
+
+	impl babe_primitives::BabeApi<Block> for Runtime {
+		fn configuration() -> babe_primitives::BabeConfiguration {
+			let epoch_config = Babe::epoch_config().unwrap_or(BABE_GENESIS_EPOCH_CONFIG);
+			babe_primitives::BabeConfiguration {
+				slot_duration: Babe::slot_duration(),
+				epoch_length: EpochDuration::get(),
+				c: epoch_config.c,
+				authorities: Babe::authorities().to_vec(),
+				randomness: Babe::randomness(),
+				allowed_slots: epoch_config.allowed_slots,
+			}
+		}
+
+		fn current_epoch_start() -> babe_primitives::Slot {
+			Babe::current_epoch_start()
+		}
+
+		fn current_epoch() -> babe_primitives::Epoch {
+			Babe::current_epoch()
+		}
+
+		fn next_epoch() -> babe_primitives::Epoch {
+			Babe::next_epoch()
+		}
+
+		fn generate_key_ownership_proof(
+			_slot: babe_primitives::Slot,
+			_authority_id: babe_primitives::AuthorityId,
+		) -> Option<babe_primitives::OpaqueKeyOwnershipProof> {
+			None
+		}
+
+		fn submit_report_equivocation_unsigned_extrinsic(
+			equivocation_proof: babe_primitives::EquivocationProof<<Block as BlockT>::Header>,
+			key_owner_proof: babe_primitives::OpaqueKeyOwnershipProof,
+		) -> Option<()> {
+			let key_owner_proof = key_owner_proof.decode()?;
+
+			Babe::submit_unsigned_equivocation_report(
+				equivocation_proof,
+				key_owner_proof,
+			)
 		}
 	}
 
