@@ -1,9 +1,10 @@
 use creditcoin_node_runtime::{
-	AccountId, BalancesConfig, CreditcoinConfig, DifficultyConfig, GenesisConfig, GrandpaConfig,
-	Signature, SudoConfig, SystemConfig, TaskSchedulerConfig, TransactionPaymentConfig,
-	WASM_BINARY,
+	AccountId, BabeConfig, BalancesConfig, CreditcoinConfig, DifficultyConfig, GenesisConfig,
+	GrandpaConfig, Signature, SudoConfig, SystemConfig, TaskSchedulerConfig,
+	TransactionPaymentConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
+use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public, U256};
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::{
@@ -34,11 +35,8 @@ where
 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-pub fn get_authority_keys_from_seed(seed: &str) -> (GrandpaId,) {
-	(
-		get_from_seed::<GrandpaId>(seed),
-		// get_from_seed::<BabeId>(seed),
-	)
+pub fn get_authority_keys_from_seed(seed: &str) -> (GrandpaId, BabeId) {
+	(get_from_seed::<GrandpaId>(seed), get_from_seed::<BabeId>(seed))
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -144,7 +142,7 @@ pub fn mainnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
 	wasm_binary: &[u8],
-	initial_authorities: Vec<(GrandpaId,)>,
+	initial_authorities: Vec<(GrandpaId, BabeId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	target_time: Option<u64>,
@@ -172,7 +170,11 @@ fn testnet_genesis(
 		transaction_payment: TransactionPaymentConfig { multiplier: FixedU128::from_float(1.0) },
 		task_scheduler: TaskSchedulerConfig::default(),
 		grandpa: GrandpaConfig {
-			authorities: initial_authorities.iter().map(|(g,)| (g.clone(), 1)).collect(),
+			authorities: initial_authorities.iter().map(|(g, _)| (g.clone(), 1)).collect(),
+		},
+		babe: BabeConfig {
+			authorities: initial_authorities.iter().map(|(_, b)| (b.clone(), 1)).collect(),
+			epoch_config: Some(creditcoin_node_runtime::BABE_GENESIS_EPOCH_CONFIG),
 		},
 	}
 }
