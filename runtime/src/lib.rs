@@ -38,7 +38,7 @@ use sp_runtime::{
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
-	SaturatedConversion,
+	SaturatedConversion, Saturating,
 };
 use sp_staking::SessionIndex;
 use sp_std::prelude::*;
@@ -395,7 +395,7 @@ impl pallet_staking_substrate::Config for Runtime {
 	type SlashDeferDuration = SlashDeferDuration;
 	type AdminOrigin = EnsureRoot<Self::AccountId>;
 	type SessionInterface = Self;
-	type EraPayout = ();
+	type EraPayout = EraPayout;
 	type NextNewSession = Session;
 	type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
 	type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
@@ -406,6 +406,41 @@ impl pallet_staking_substrate::Config for Runtime {
 	type BenchmarkingConfig = StakingBenchmarkingConfig;
 	type OnStakerSlash = ();
 	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub MinAnnualInflation : Perquintill = Perquintill::from_rational(25u64, 1000u64);
+}
+
+pub struct EraPayout;
+impl pallet_staking_substrate::EraPayout<Balance> for EraPayout {
+	fn era_payout(
+		total_staked: Balance,
+		total_issuance: Balance,
+		era_duration_millis: u64,
+	) -> (Balance, Balance) {
+		pub const MAX_ANNUAL_INFLATION: Perquintill = Perquintill::from_percent(10u64);
+		pub const IDEAL_STAKE: Perquintill = Perquintill::from_percent(50u64);
+		pub const FALLOFF: Perquintill = Perquintill::from_percent(10u64);
+		const MILLISECONDS_PER_YEAR: u64 = 1000 * 3600 * 24 * 36525 / 100;
+
+		let min_annual_inflation = Perquintill::from_rational(25u64, 1000u64);
+		let delta_annual_inflation = MAX_ANNUAL_INFLATION - min_annual_inflation;
+
+		let stake = Perquintill::from_rational(total_staked, total_issuance);
+
+		let adjustment = pallet_staking_reward_fn::compute_inflation(stake, IDEAL_STAKE, FALLOFF);
+		let staking_inflation =
+			min_annual_inflation.saturating_add(delta_annual_inflation * adjustment);
+
+		let period_fraction =
+			Perquintill::from_rational(era_duration_millis, MILLISECONDS_PER_YEAR);
+		let max_payout = period_fraction * MAX_ANNUAL_INFLATION * total_issuance;
+		let staking_payout = (period_fraction * staking_inflation) * total_issuance;
+		let rest = max_payout.saturating_sub(staking_payout);
+
+		(staking_payout, rest)
+	}
 }
 
 pub type OnChainAccuracy = sp_runtime::Perbill;
