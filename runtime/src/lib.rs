@@ -5,11 +5,16 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_election_provider_support::{
+	onchain::{self, OnChainExecution},
+	SequentialPhragmen,
+};
 pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
-	traits::{ConstU32, ConstU8},
+	traits::{ConstU32, ConstU8, U128CurrencyToVote},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
+use frame_system::EnsureRoot;
 use pallet_babe::AuthorityId as BabeId;
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
@@ -17,19 +22,25 @@ use pallet_difficulty::Difficulty as DifficultyT;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
+pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
+use pallet_session::historical as session_historical;
+use pallet_staking::UseValidatorsMap;
+pub use pallet_staking_substrate::{self, StakerStatus};
 use sp_api::impl_runtime_apis;
 use sp_consensus_babe as babe_primitives;
 use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata};
 use sp_runtime::{
 	generic, impl_opaque_keys,
 	traits::{
-		AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, NumberFor, Verify,
+		AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, NumberFor,
+		OpaqueKeys, Verify,
 	},
-	transaction_validity::{TransactionSource, TransactionValidity},
+	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
 	SaturatedConversion,
 };
+use sp_staking::SessionIndex;
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -89,6 +100,8 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
+pub use opaque::SessionKeys;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -111,6 +124,7 @@ pub mod opaque {
 		pub struct SessionKeys {
 			pub grandpa: Grandpa,
 			pub babe: Babe,
+			pub im_online: ImOnline,
 		}
 	}
 }
@@ -248,7 +262,7 @@ impl frame_system::Config for Runtime {
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
-	type KeyOwnerProofSystem = ();
+	type KeyOwnerProofSystem = Historical;
 
 	type KeyOwnerProof =
 		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
@@ -265,7 +279,7 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ConstU64<0>;
 }
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = 1 * MINUTES;
 
 parameter_types! {
 	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64;
@@ -289,7 +303,7 @@ impl pallet_babe::Config for Runtime {
 	type EpochDuration = EpochDuration;
 	type ExpectedBlockTime = ExpectedBlockTime;
 	type EpochChangeTrigger = pallet_babe::ExternalTrigger;
-	type KeyOwnerProofSystem = (); // TODO: Consider using historical session tracking
+	type KeyOwnerProofSystem = Historical;
 
 	type KeyOwnerProof =
 		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
@@ -303,17 +317,131 @@ impl pallet_babe::Config for Runtime {
 	type DisabledValidators = (); // TODO: Consider whether to use this (through the session pallet)
 }
 
-// impl pallet_session::Config for Runtime {
-// 	type RuntimeEvent = RuntimeEvent;
-// 	type ValidatorId = AccountId;
-// 	type ValidatorIdOf = pallet_staking_substrate::StashOf<Self>;
-// 	type ShouldEndSession = Babe;
-// 	type NextSessionRotation = Babe;
-// 	type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
-// 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-// 	type Keys = SessionKeys;
-// 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
-// }
+parameter_types! {
+	pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+	pub const MaxKeys: u32 = 10_000;
+	pub const MaxPeerInHeartbeats: u32 = 10_000;
+	pub const MaxPeerDataEncodingSize: u32 = 1_000;
+}
+
+impl pallet_im_online::Config for Runtime {
+	type AuthorityId = ImOnlineId;
+	type RuntimeEvent = RuntimeEvent;
+	type ValidatorSet = Historical;
+	type NextSessionRotation = Babe;
+	type ReportUnresponsiveness = ();
+	type UnsignedPriority = ImOnlineUnsignedPriority;
+	type WeightInfo = ();
+	type MaxKeys = MaxKeys;
+	type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
+	type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
+}
+
+impl pallet_authorship::Config for Runtime {
+	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
+	type EventHandler = (Staking, ImOnline);
+}
+
+impl pallet_session::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type ValidatorId = AccountId;
+	type ValidatorIdOf = pallet_staking_substrate::StashOf<Self>;
+	type ShouldEndSession = Babe;
+	type NextSessionRotation = Babe;
+	type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
+	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = opaque::SessionKeys;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	// Six sessions in an era (6 hours).
+	pub const SessionsPerEra: SessionIndex = 6;
+
+	// 28 eras for unbonding (7 days).
+	pub BondingDuration: sp_staking::EraIndex = 28;
+
+	// 27 eras in which slashes can be cancelled (slightly less than 7 days).
+	pub SlashDeferDuration: sp_staking::EraIndex = 27;
+
+	/// Setup election pallet to support maximum winners upto 2000. This will mean Staking Pallet
+	/// cannot have active validators higher than this count.
+	pub const MaxActiveValidators: u32 = 2000;
+
+	pub const MaxNominatorRewardedPerValidator: u32 = 512;
+	pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
+}
+
+pub struct StakingBenchmarkingConfig;
+impl pallet_staking_substrate::BenchmarkingConfig for StakingBenchmarkingConfig {
+	type MaxValidators = ConstU32<1000>;
+	type MaxNominators = ConstU32<1000>;
+}
+
+impl pallet_staking_substrate::Config for Runtime {
+	type MaxNominations = ConstU32<1000>;
+	type Currency = Balances;
+	type CurrencyBalance = Balance;
+	type UnixTime = Timestamp;
+	type CurrencyToVote = U128CurrencyToVote;
+	type ElectionProvider = OnChainExecution<OnChainSeqPhragmen>;
+	type GenesisElectionProvider = Self::ElectionProvider;
+	type RewardRemainder = (); // TODO: do something with this
+	type RuntimeEvent = RuntimeEvent;
+	type Slash = (); // TODO: do something with this
+	type Reward = (); // TODO: do something with this
+	type SessionsPerEra = SessionsPerEra;
+	type BondingDuration = BondingDuration;
+	type SlashDeferDuration = SlashDeferDuration;
+	type AdminOrigin = EnsureRoot<Self::AccountId>;
+	type SessionInterface = Self;
+	type EraPayout = ();
+	type NextNewSession = Session;
+	type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
+	type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
+	type VoterList = VoterList;
+	type TargetList = UseValidatorsMap<Self>;
+	type MaxUnlockingChunks = frame_support::traits::ConstU32<32>;
+	type HistoryDepth = frame_support::traits::ConstU32<84>;
+	type BenchmarkingConfig = StakingBenchmarkingConfig;
+	type OnStakerSlash = ();
+	type WeightInfo = ();
+}
+
+pub type OnChainAccuracy = sp_runtime::Perbill;
+
+parameter_types! {
+	/// We take the top 12500 nominators as electing voters..
+	pub const MaxElectingVoters: u32 = 12_500;
+	/// ... and all of the validators as electable targets. Whilst this is the case, we cannot and
+	/// shall not increase the size of the validator intentions.
+	pub const MaxElectableTargets: u16 = u16::MAX;
+}
+
+pub struct OnChainSeqPhragmen;
+impl onchain::Config for OnChainSeqPhragmen {
+	type System = Runtime;
+	type Solver = SequentialPhragmen<AccountId, OnChainAccuracy>;
+	type DataProvider = Staking;
+	type WeightInfo = ();
+	type MaxWinners = MaxActiveValidators;
+	type VotersBound = MaxElectingVoters;
+	type TargetsBound = MaxElectableTargets;
+}
+
+type VoterBagsListInstance = pallet_bags_list::Instance1;
+impl pallet_bags_list::Config<VoterBagsListInstance> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type ScoreProvider = Staking;
+	type WeightInfo = ();
+	type BagThresholds = ();
+	type Score = u64;
+}
+
+impl session_historical::Config for Runtime {
+	type FullIdentification = pallet_staking_substrate::Exposure<AccountId, Balance>;
+	type FullIdentificationOf = pallet_staking_substrate::ExposureOf<Runtime>;
+}
 
 parameter_types! {
 	pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
@@ -366,6 +494,8 @@ impl WeightToFeePolynomial for LengthToCtcFee {
 }
 
 pub const TARGET_FEE_CREDO: Balance = 10_000_000_000_000_000;
+
+pub const CTC: Balance = 1_000_000_000_000_000_000;
 
 pub struct WeightToCtcFee;
 
@@ -486,8 +616,14 @@ construct_runtime!(
 		System: frame_system,
 		Timestamp: pallet_timestamp,
 		Babe: pallet_babe,
-		Grandpa: pallet_grandpa,
 		Balances: pallet_balances,
+		Authorship: pallet_authorship,
+		Staking: pallet_staking_substrate,
+		Historical: session_historical,
+		Session: pallet_session,
+		Grandpa: pallet_grandpa,
+		ImOnline: pallet_im_online,
+		VoterList: pallet_bags_list::<Instance1>,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
 		Creditcoin: pallet_creditcoin,
@@ -664,23 +800,29 @@ impl_runtime_apis! {
 		}
 
 		fn submit_report_equivocation_unsigned_extrinsic(
-			_equivocation_proof: fg_primitives::EquivocationProof<
+			equivocation_proof: fg_primitives::EquivocationProof<
 				<Block as BlockT>::Hash,
 				NumberFor<Block>,
 			>,
-			_key_owner_proof: fg_primitives::OpaqueKeyOwnershipProof,
+			key_owner_proof: fg_primitives::OpaqueKeyOwnershipProof,
 		) -> Option<()> {
-			None
+			let key_owner_proof = key_owner_proof.decode()?;
+
+			Grandpa::submit_unsigned_equivocation_report(
+				equivocation_proof,
+				key_owner_proof,
+			)
 		}
 
 		fn generate_key_ownership_proof(
 			_set_id: fg_primitives::SetId,
-			_authority_id: GrandpaId,
+			authority_id: GrandpaId,
 		) -> Option<fg_primitives::OpaqueKeyOwnershipProof> {
-			// NOTE: this is the only implementation possible since we've
-			// defined our key owner proof type as a bottom type (i.e. a type
-			// with no values).
-			None
+			use parity_scale_codec::Encode;
+
+			Historical::prove((fg_primitives::KEY_TYPE, authority_id))
+				.map(|p| p.encode())
+				.map(fg_primitives::OpaqueKeyOwnershipProof::new)
 		}
 	}
 
@@ -711,9 +853,11 @@ impl_runtime_apis! {
 
 		fn generate_key_ownership_proof(
 			_slot: babe_primitives::Slot,
-			_authority_id: babe_primitives::AuthorityId,
+			authority_id: babe_primitives::AuthorityId,
 		) -> Option<babe_primitives::OpaqueKeyOwnershipProof> {
-			None
+			Historical::prove((babe_primitives::KEY_TYPE, authority_id))
+				.map(|p| p.encode())
+				.map(babe_primitives::OpaqueKeyOwnershipProof::new)
 		}
 
 		fn submit_report_equivocation_unsigned_extrinsic(

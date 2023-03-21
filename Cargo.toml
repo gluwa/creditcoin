@@ -130,3 +130,7 @@ sc-finality-grandpa = { branch = "polkadot-v0.9.38", git = "https://github.com/p
 sp-finality-grandpa = { branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git", default-features = false }
 pallet-babe = { branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git", default-features = false }
 pallet-grandpa = { branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git", default-features = false }
+pallet-election-provider-multi-phase = { branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git", default-features = false }
+pallet-im-online = { branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git", default-features = false }
+pallet-bags-list = { branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git", default-features = false }
+pallet-authorship = { branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git", default-features = false }

@@ -1,8 +1,9 @@
 use creditcoin_node_runtime::{
-	AccountId, BabeConfig, BalancesConfig, CreditcoinConfig, DifficultyConfig, GenesisConfig,
-	GrandpaConfig, Signature, SudoConfig, SystemConfig, TaskSchedulerConfig,
-	TransactionPaymentConfig, WASM_BINARY,
+	pallet_staking_substrate, AccountId, BabeConfig, BalancesConfig, CreditcoinConfig,
+	DifficultyConfig, GenesisConfig, ImOnlineId, Perbill, SessionConfig, Signature, StakingConfig,
+	SudoConfig, SystemConfig, TaskSchedulerConfig, TransactionPaymentConfig, CTC, WASM_BINARY,
 };
+
 use sc_service::ChainType;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public, U256};
@@ -35,8 +36,34 @@ where
 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-pub fn get_authority_keys_from_seed(seed: &str) -> (GrandpaId, BabeId) {
-	(get_from_seed::<GrandpaId>(seed), get_from_seed::<BabeId>(seed))
+type AuthorityKeys = (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId);
+
+pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
+	(
+		get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
+		get_account_id_from_seed::<sr25519::Public>(seed),
+		get_from_seed::<GrandpaId>(seed),
+		get_from_seed::<BabeId>(seed),
+		get_from_seed::<ImOnlineId>(seed),
+	)
+}
+
+fn make_session_keys(
+	grandpa: GrandpaId,
+	babe: BabeId,
+	im_online: ImOnlineId,
+) -> creditcoin_node_runtime::SessionKeys {
+	creditcoin_node_runtime::SessionKeys { grandpa, babe, im_online }
+}
+
+fn chain_properties() -> serde_json::Map<String, serde_json::Value> {
+	match serde_json::json! ({
+		"tokenDecimals": 18,
+		"tokenSymbol": "CTC",
+	}) {
+		serde_json::Value::Object(o) => o,
+		_ => unreachable!(),
+	}
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -75,7 +102,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Fork ID
 		None,
 		// Properties
-		None,
+		Some(chain_properties()),
 		// Extensions
 		None,
 	))
@@ -125,7 +152,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Fork ID
 		None,
 		// Properties
-		None,
+		Some(chain_properties()),
 		// Extensions
 		None,
 	))
@@ -142,20 +169,23 @@ pub fn mainnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
 	wasm_binary: &[u8],
-	initial_authorities: Vec<(GrandpaId, BabeId)>,
+	initial_authorities: Vec<AuthorityKeys>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	target_time: Option<u64>,
 	adjustment: Option<i64>,
 ) -> GenesisConfig {
+	const ENDOWMENT: u128 = 1_000_000 * CTC;
+	const STASH: u128 = 1_000_000 * CTC;
+
 	GenesisConfig {
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
 		},
 		balances: BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			// Configure endowed accounts with initial balance of ENDOWMENT.
+			balances: endowed_accounts.iter().cloned().map(|k| (k, ENDOWMENT)).collect(),
 		},
 		sudo: SudoConfig {
 			// Assign network admin rights.
@@ -169,12 +199,40 @@ fn testnet_genesis(
 		creditcoin: CreditcoinConfig::default(),
 		transaction_payment: TransactionPaymentConfig { multiplier: FixedU128::from_float(1.0) },
 		task_scheduler: TaskSchedulerConfig::default(),
-		grandpa: GrandpaConfig {
-			authorities: initial_authorities.iter().map(|(g, _)| (g.clone(), 1)).collect(),
-		},
+		grandpa: Default::default(),
 		babe: BabeConfig {
-			authorities: initial_authorities.iter().map(|(_, b)| (b.clone(), 1)).collect(),
+			authorities: Default::default(),
 			epoch_config: Some(creditcoin_node_runtime::BABE_GENESIS_EPOCH_CONFIG),
 		},
+		staking: StakingConfig {
+			validator_count: initial_authorities.len() as u32,
+			minimum_validator_count: 1,
+			stakers: initial_authorities
+				.iter()
+				.map(|x| {
+					(
+						x.0.clone(),
+						x.1.clone(),
+						STASH,
+						pallet_staking_substrate::StakerStatus::Validator,
+					)
+				})
+				.collect(),
+			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+			force_era: pallet_staking_substrate::Forcing::NotForcing,
+			slash_reward_fraction: Perbill::from_percent(10),
+			// min_validator_bond: 1000 * CTC,
+			..Default::default()
+		},
+		session: SessionConfig {
+			keys: initial_authorities
+				.iter()
+				.cloned()
+				.map(|(stash, _acct, grandpa, babe, im_online)| {
+					(stash.clone(), stash, make_session_keys(grandpa, babe, im_online))
+				})
+				.collect(),
+		},
+		im_online: Default::default(),
 	}
 }
