@@ -24,10 +24,8 @@ frame-try-runtime = { optional = true, workspace = true }
 task-scheduler-runtime-api = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-creditcoin = { workspace = true }
-pallet-difficulty = { workspace = true }
 pallet-offchain-task-scheduler = { workspace = true }
 pallet-randomness-collective-flip = { workspace = true }
-pallet-rewards = { workspace = true }
 pallet-scheduler = { workspace = true }
 pallet-session = { workspace = true }
 pallet-staking = { workspace = true }
@@ -39,7 +37,6 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 smallvec = "1.10.0"
 sp-block-builder = { workspace = true }
-sp-consensus-pow = { workspace = true }
 sp-core = { workspace = true }
 sp-inherents = { workspace = true }
 sp-offchain = { workspace = true }
@@ -53,7 +50,6 @@ pallet-babe = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-staking-substrate = { package = "pallet-staking", default-features = false, branch = "polkadot-v0.9.38", git = "https://github.com/paritytech/substrate.git" }
 frame-election-provider-support = { workspace = true }
-pallet-election-provider-multi-phase = { workspace = true }
 pallet-im-online = { workspace = true }
 pallet-bags-list = { workspace = true }
 pallet-authorship = { workspace = true }
@@ -82,8 +78,6 @@ runtime-benchmarks = [
     'frame-system/runtime-benchmarks',
     'pallet-creditcoin/runtime-benchmarks',
     'pallet-balances/runtime-benchmarks',
-    'pallet-rewards/runtime-benchmarks',
-    'pallet-difficulty/runtime-benchmarks',
     'pallet-staking/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'pallet-offchain-task-scheduler/runtime-benchmarks',
@@ -100,8 +94,6 @@ std = [
     'pallet-balances/std',
     'pallet-creditcoin/std',
     'pallet-sudo/std',
-    'pallet-rewards/std',
-    'pallet-difficulty/std',
     'pallet-scheduler/std',
     'pallet-session/std',
     'pallet-staking/std',
@@ -119,13 +111,11 @@ std = [
     'sp-offchain/std',
     'sp-runtime/std',
     'sp-session/std',
-    'sp-consensus-pow/std',
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
     'task-scheduler-runtime-api/std',
     'frame-election-provider-support/std',
-    'pallet-election-provider-multi-phase/std',
     'pallet-im-online/std',
     'pallet-bags-list/std',
     'pallet-authorship/std',
@@ -137,9 +127,7 @@ try-runtime = [
     "frame-support/try-runtime",
     "pallet-balances/try-runtime",
     "pallet-creditcoin/try-runtime",
-    "pallet-difficulty/try-runtime",
     "pallet-offchain-task-scheduler/try-runtime",
-    "pallet-rewards/try-runtime",
     "pallet-scheduler/try-runtime",
     "pallet-staking/try-runtime",
     "pallet-sudo/try-runtime",

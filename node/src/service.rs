@@ -15,9 +15,8 @@ use sc_service::{
 };
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool::PoolLimit;
-use sha3pow::Sha3Algorithm;
-use sp_runtime::{app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount};
-use std::{sync::Arc, thread, time::Duration};
+use sp_runtime::offchain::DbExternalities;
+use std::{sync::Arc, time::Duration};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -177,43 +176,9 @@ fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
 	Err("Remote Keystore not supported.")
 }
 
-pub fn decode_mining_key(
-	mining_key: Option<&str>,
-) -> Result<creditcoin_node_runtime::AccountId, String> {
-	if let Some(key) = mining_key {
-		// raw public key
-		if let Some(key_without_prefix) = key.strip_prefix("0x") {
-			let key_bytes = hex::decode(key_without_prefix)
-				.map_err(|e| format!("Invalid mining key, expected hex: {e}"))?;
-			Ok(creditcoin_node_runtime::Signer::from(
-				sp_core::ecdsa::Public::from_full(&key_bytes)
-					.map_err(|_| String::from("Invalid mining key, expected 33 bytes"))?,
-			)
-			.into_account())
-		} else {
-			// ss58 encoded key
-			match sp_core::ecdsa::Public::from_ss58check(key) {
-				Ok(key) => Ok(creditcoin_node_runtime::Signer::from(key).into_account()),
-				Err(err) => match creditcoin_node_runtime::AccountId::from_ss58check(key) {
-					Ok(account_id) => Ok(account_id),
-					Err(e) => {
-						let msg = format!("Invalid mining key, failed to interpret it as an ECDSA public key (error: {err}) and as an account ID (error: {e})");
-						log::error!("{}", msg);
-						Err(msg)
-					},
-				},
-			}
-		}
-	} else {
-		Err("The node is configured for mining but is missing a mining key".into())
-	}
-}
-
 /// Builds a new service for a full client.
 pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
-	let Cli {
-		rpc_mapping, mining_key, mining_threads, monitor_nonce: monitor_nonce_account, ..
-	} = cli;
+	let Cli { rpc_mapping, monitor_nonce: monitor_nonce_account, .. } = cli;
 
 	let sc_service::PartialComponents {
 		client,

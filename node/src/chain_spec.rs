@@ -1,12 +1,12 @@
 use creditcoin_node_runtime::{
 	pallet_staking_substrate, AccountId, BabeConfig, BalancesConfig, CreditcoinConfig,
-	DifficultyConfig, GenesisConfig, ImOnlineId, Perbill, SessionConfig, Signature, StakingConfig,
-	SudoConfig, SystemConfig, TaskSchedulerConfig, TransactionPaymentConfig, CTC, WASM_BINARY,
+	GenesisConfig, ImOnlineId, Perbill, SessionConfig, Signature, StakingConfig, SudoConfig,
+	SystemConfig, TaskSchedulerConfig, TransactionPaymentConfig, CTC, WASM_BINARY,
 };
 
 use sc_service::ChainType;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_core::{sr25519, Pair, Public, U256};
+use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
@@ -89,8 +89,6 @@ pub fn development_config() -> Result<ChainSpec, String> {
 					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 				],
-				Some(6000),
-				Some(128),
 			)
 		},
 		// Bootnodes
@@ -139,8 +137,6 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 				],
-				None,
-				None,
 			)
 		},
 		// Bootnodes
@@ -172,8 +168,6 @@ fn testnet_genesis(
 	initial_authorities: Vec<AuthorityKeys>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-	target_time: Option<u64>,
-	adjustment: Option<i64>,
 ) -> GenesisConfig {
 	const ENDOWMENT: u128 = 1_000_000 * CTC;
 	const STASH: u128 = 1_000_000 * CTC;
@@ -190,11 +184,6 @@ fn testnet_genesis(
 		sudo: SudoConfig {
 			// Assign network admin rights.
 			key: Some(root_key),
-		},
-		difficulty: DifficultyConfig {
-			initial_difficulty: U256::from(1_000_000u64),
-			target_time: target_time.unwrap_or(60 * 1000),
-			difficulty_adjustment_period: adjustment.unwrap_or(43),
 		},
 		creditcoin: CreditcoinConfig::default(),
 		transaction_payment: TransactionPaymentConfig { multiplier: FixedU128::from_float(1.0) },

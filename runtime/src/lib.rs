@@ -18,7 +18,6 @@ use frame_system::EnsureRoot;
 use pallet_babe::AuthorityId as BabeId;
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
-use pallet_difficulty::Difficulty as DifficultyT;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -485,7 +484,7 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = Moment;
-	type OnTimestampSet = Difficulty;
+	type OnTimestampSet = ();
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
@@ -585,17 +584,6 @@ impl pallet_creditcoin::Config for Runtime {
 	type TaskScheduler = TaskScheduler;
 }
 
-impl pallet_difficulty::Config for Runtime {
-	type Moment = Moment;
-	type WeightInfo = pallet_difficulty::weights::WeightInfo<Runtime>;
-}
-
-impl pallet_rewards::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type WeightInfo = pallet_rewards::weights::WeightInfo<Runtime>;
-}
-
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
@@ -662,8 +650,6 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
 		Creditcoin: pallet_creditcoin,
-		Difficulty: pallet_difficulty,
-		Rewards: pallet_rewards,
 		Scheduler: pallet_scheduler,
 		TaskScheduler: pallet_offchain_task_scheduler,
 	}
@@ -710,8 +696,6 @@ mod benches {
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
 		[pallet_creditcoin, Creditcoin]
-		[pallet_rewards, Rewards]
-		[pallet_difficulty, Difficulty]
 		[pallet_offchain_task_scheduler, TaskScheduler]
 	);
 }
@@ -810,18 +794,6 @@ impl_runtime_apis! {
 		}
 		fn query_length_to_fee(length: u32) -> Balance {
 			TransactionPayment::length_to_fee(length)
-		}
-	}
-
-	impl sp_consensus_pow::TimestampApi<Block, u64> for Runtime {
-		fn timestamp() -> u64 {
-			Timestamp::get()
-		}
-	}
-
-	impl sp_consensus_pow::DifficultyApi<Block, DifficultyT> for Runtime {
-		fn difficulty() -> DifficultyT {
-			Difficulty::difficulty()
 		}
 	}
 

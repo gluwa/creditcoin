@@ -36,7 +36,6 @@ sc-basic-authorship = { workspace = true }
 sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
-sc-consensus-pow = { workspace = true }
 sc-executor = { workspace = true }
 sc-keystore = { workspace = true }
 sc-offchain = { workspace = true }
@@ -45,7 +44,6 @@ sc-service = { workspace = true }
 sc-telemetry = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
-sha3pow = { path = '../sha3pow' }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
