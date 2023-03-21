@@ -15,10 +15,10 @@ use frame_support::{
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
 use frame_system::EnsureRoot;
-use pallet_babe::AuthorityId as BabeId;
+pub use pallet_babe::AuthorityId as BabeId;
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
-use pallet_grandpa::{
+pub use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;

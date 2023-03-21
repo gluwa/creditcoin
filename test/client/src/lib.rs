@@ -1,9 +1,13 @@
 use creditcoin_node_runtime::{
-	self as runtime, Block, GenesisConfig, SystemConfig as SystemGenesisConfig, WASM_BINARY,
+	self as runtime, AccountId, BabeId, Block, GenesisConfig, SystemConfig as SystemGenesisConfig,
+	BABE_GENESIS_EPOCH_CONFIG, WASM_BINARY,
 };
+use runtime::{BabeConfig, GrandpaId, ImOnlineId, SessionConfig};
 use sc_service::client;
-use sp_core::twox_128;
-use sp_runtime::traits::{Block as BlockT, Hash as HashT, Header as HeaderT};
+use sp_core::{sr25519, twox_128, Pair, Public};
+use sp_runtime::traits::{
+	Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount, Verify,
+};
 use sp_runtime::Storage;
 use std::collections::BTreeMap;
 
@@ -50,10 +54,43 @@ pub struct GenesisParameters {
 	wasm_code: Option<Vec<u8>>,
 }
 
+type AccountPublic = <runtime::Signature as Verify>::Signer;
+
+/// Generate an account ID from seed.
+pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
+where
+	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+{
+	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+}
+
+/// Generate a crypto pair from seed.
+pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+	TPublic::Pair::from_string(&format!("//{seed}"), None)
+		.expect("static values are valid; qed")
+		.public()
+}
+
+type AccountSessionKeys = (AccountId, AccountId, runtime::SessionKeys);
+
+fn make_session_keys(seed: &str) -> AccountSessionKeys {
+	let stash = get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed));
+	let babe = get_from_seed::<BabeId>(seed);
+	let grandpa = get_from_seed::<GrandpaId>(seed);
+	let im_online = get_from_seed::<ImOnlineId>(seed);
+	let session_keys = creditcoin_node_runtime::SessionKeys { grandpa, babe, im_online };
+	(stash.clone(), stash, session_keys)
+}
+
 impl GenesisParameters {
 	fn genesis_config(&self) -> GenesisConfig {
 		GenesisConfig {
 			system: SystemGenesisConfig { code: WASM_BINARY.expect("WASM_BUILD").to_vec() },
+			babe: BabeConfig {
+				epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
+				..Default::default()
+			},
+			session: SessionConfig { keys: vec![make_session_keys("Alice")] },
 			..Default::default()
 		}
 	}
