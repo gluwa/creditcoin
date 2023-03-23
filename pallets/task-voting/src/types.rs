@@ -42,3 +42,31 @@ impl<T: Config> Index<T> {
 		})
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::mock::runtime::Runtime;
+	use crate::pallet::Index;
+	use assert_matches::assert_matches;
+	use pallet_offchain_task_scheduler::{mocked_task::MockTask, tasks::TaskV2};
+	use runtime_utils::{generate_account, ExtBuilder};
+
+	#[test]
+	fn index_insert_operations() {
+		ExtBuilder::default().build_sans_config().execute_with(|| {
+			// is empty
+			let id = {
+				let task = MockTask::Remark(());
+				task.to_id()
+			};
+			let who = generate_account("seed");
+
+			assert!(Index::<Runtime>::get(id).is_none());
+
+			assert_matches!(Index::insert_once(&who, id), Ok(()));
+			// insert once, ok
+			// insert twice, error
+		});
+	}
+}
