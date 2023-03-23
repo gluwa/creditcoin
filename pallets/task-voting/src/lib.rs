@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 pub mod impls;
+pub mod mock;
 pub mod pallet;
 pub mod sampling;
 pub mod types;

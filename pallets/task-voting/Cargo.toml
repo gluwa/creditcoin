@@ -25,6 +25,7 @@ extend = "*"
 
 [dev-dependencies]
 runtime-utils = { workspace = true }
+assert_matches = { workspace = true }
 
 [features]
 default = ['std']
