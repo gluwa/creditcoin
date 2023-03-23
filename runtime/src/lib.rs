@@ -236,7 +236,6 @@ impl frame_system::Config for Runtime {
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
 	type BlockHashCount = BlockHashCount;
 	/// The weight of database operations that the runtime can invoke.
-	type DbWeight = ParityDbWeight;
 	/// Version of the runtime.
 	type Version = Version;
 	/// Converts a module to the index of the module in `construct_runtime!`.
@@ -268,16 +267,15 @@ impl pallet_grandpa::Config for Runtime {
 	type EquivocationReportSystem = ();
 
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<32>;
-	type MaxSetIdSessionEntries = ConstU64<0>;
+	type MaxAuthorities = ConstU32<32>; // Q: maximum number of grandpa authorities?
+	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
 pub const EPOCH_DURATION_IN_BLOCKS: u32 = 1 * MINUTES;
 
 parameter_types! {
-	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64;
-	pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
-
+	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64; // Q: how long to make an epoch
+	pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK; // Q: block time
 }
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
@@ -300,7 +298,8 @@ impl pallet_babe::Config for Runtime {
 		<Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
 	type EquivocationReportSystem = (); // TODO: have an actual equivocation handler
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<128>; // TODO: actually consider what to set this to, I just picked a number
+	type MaxAuthorities = ConstU32<128>; // Q: maximum authority set size?
+									 //TODO: ^^^ actually consider what to set this to, I just picked a number
 	type DisabledValidators = (); // TODO: Consider whether to use this (through the session pallet)
 }
 
@@ -316,7 +315,7 @@ impl pallet_im_online::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorSet = Historical;
 	type NextSessionRotation = Babe;
-	type ReportUnresponsiveness = ();
+	type ReportUnresponsiveness = (); // Q: is unresponsiveness an offence?
 	type UnsignedPriority = ImOnlineUnsignedPriority;
 	type WeightInfo = ();
 	type MaxKeys = MaxKeys;
@@ -329,6 +328,7 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = (Staking, ImOnline);
 }
 
+// Q: use the session pallet?
 impl pallet_session::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
@@ -343,20 +343,20 @@ impl pallet_session::Config for Runtime {
 
 parameter_types! {
 	// Six sessions in an era (6 hours).
-	pub const SessionsPerEra: SessionIndex = 6;
+	pub const SessionsPerEra: SessionIndex = 6; 	// Q: how many sessions per era?
 
 	// 28 eras for unbonding (7 days).
-	pub BondingDuration: sp_staking::EraIndex = 28;
+	pub BondingDuration: sp_staking::EraIndex = 28; // Q: bonding duration?
 
 	// 27 eras in which slashes can be cancelled (slightly less than 7 days).
-	pub SlashDeferDuration: sp_staking::EraIndex = 27;
+	pub SlashDeferDuration: sp_staking::EraIndex = 27; // Q: slash defer duration?
 
 	/// Setup election pallet to support maximum winners upto 2000. This will mean Staking Pallet
 	/// cannot have active validators higher than this count.
-	pub const MaxActiveValidators: u32 = 2000;
+	pub const MaxActiveValidators: u32 = 2000; // Q: max validators
 
-	pub const MaxNominatorRewardedPerValidator: u32 = 512;
-	pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
+	pub const MaxNominatorRewardedPerValidator: u32 = 512; // Q: max nominators rewarded per validator
+	pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17); // Q: offending validators threshold
 }
 
 pub struct StakingBenchmarkingConfig;
@@ -373,10 +373,10 @@ impl pallet_staking_substrate::Config for Runtime {
 	type CurrencyToVote = U128CurrencyToVote;
 	type ElectionProvider = OnChainExecution<OnChainSeqPhragmen>;
 	type GenesisElectionProvider = Self::ElectionProvider;
-	type RewardRemainder = (); // TODO: do something with this
+	type RewardRemainder = (); // Q: reward remainder?
 	type RuntimeEvent = RuntimeEvent;
-	type Slash = (); // TODO: do something with this
-	type Reward = (); // TODO: do something with this
+	type Slash = (); // Q: handle slashing?
+	type Reward = (); // Q: rewards?
 	type SessionsPerEra = SessionsPerEra;
 	type BondingDuration = BondingDuration;
 	type SlashDeferDuration = SlashDeferDuration;
@@ -389,22 +389,61 @@ impl pallet_staking_substrate::Config for Runtime {
 	type VoterList = VoterList;
 	type TargetList = UseValidatorsMap<Self>;
 	type MaxUnlockingChunks = frame_support::traits::ConstU32<32>;
-	type HistoryDepth = frame_support::traits::ConstU32<84>;
+	type HistoryDepth = frame_support::traits::ConstU32<84>; // TODO: check this value
 	type BenchmarkingConfig = StakingBenchmarkingConfig;
 	type OnStakerSlash = ();
 	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub MinAnnualInflation : Perquintill = Perquintill::from_rational(25u64, 1000u64);
+}
+
+// Q: Payout scheme? Polkadot uses a more complex, dynamic scheme to encourage an ideal staking ratio
+// while respecting min and max inflation goals
+// rather than a fixed amount per block, etc.
+pub struct EraPayout;
+impl pallet_staking_substrate::EraPayout<Balance> for EraPayout {
+	fn era_payout(
+		total_staked: Balance,
+		total_issuance: Balance,
+		era_duration_millis: u64,
+	) -> (Balance, Balance) {
+		pub const MAX_ANNUAL_INFLATION: Perquintill = Perquintill::from_percent(10u64);
+		pub const IDEAL_STAKE: Perquintill = Perquintill::from_percent(50u64);
+		pub const FALLOFF: Perquintill = Perquintill::from_percent(10u64);
+		const MILLISECONDS_PER_YEAR: u64 = 1000 * 3600 * 24 * 36525 / 100;
+
+		let min_annual_inflation = Perquintill::from_rational(25u64, 1000u64);
+		let delta_annual_inflation = MAX_ANNUAL_INFLATION - min_annual_inflation;
+
+		let stake = Perquintill::from_rational(total_staked, total_issuance);
+
+		let adjustment = pallet_staking_reward_fn::compute_inflation(stake, IDEAL_STAKE, FALLOFF);
+		let staking_inflation =
+			min_annual_inflation.saturating_add(delta_annual_inflation * adjustment);
+
+		let period_fraction =
+			Perquintill::from_rational(era_duration_millis, MILLISECONDS_PER_YEAR);
+		let max_payout = period_fraction * MAX_ANNUAL_INFLATION * total_issuance;
+		let staking_payout = (period_fraction * staking_inflation) * total_issuance;
+		let rest = max_payout.saturating_sub(staking_payout);
+
+		(staking_payout, rest)
+	}
 }
 
 pub type OnChainAccuracy = sp_runtime::Perbill;
 
 parameter_types! {
 	/// We take the top 12500 nominators as electing voters..
-	pub const MaxElectingVoters: u32 = 12_500;
+	pub const MaxElectingVoters: u32 = 12_500; // Q: how many nominators can vote?
 	/// ... and all of the validators as electable targets. Whilst this is the case, we cannot and
 	/// shall not increase the size of the validator intentions.
 	pub const MaxElectableTargets: u16 = u16::MAX;
 }
 
+// Q: how to run the election? (onchain is simple but slow, multi-phase is more complex but faster and lessens the on-chain burden)
 pub struct OnChainSeqPhragmen;
 impl onchain::Config for OnChainSeqPhragmen {
 	type System = Runtime;
