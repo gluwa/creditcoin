@@ -48,5 +48,5 @@ EXPOSE 30333/udp
 EXPOSE 9944 9933 9615
 SHELL ["/bin/bash", "-c"]
 COPY --from=builder /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
-COPY chainspecs .
+COPY --from=builder /creditcoin-node/chainspecs /
 ENTRYPOINT [ "/bin/creditcoin-node" ]
