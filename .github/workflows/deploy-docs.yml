@@ -5,6 +5,8 @@ on:
       - dev
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

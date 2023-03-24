@@ -5,6 +5,8 @@ on:
     tags:
       - '*'
 
+permissions: read-all
+
 jobs:
   build-native-runtime:
       strategy:

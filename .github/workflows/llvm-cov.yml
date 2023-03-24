@@ -4,6 +4,8 @@ name: llvm-cov
 on:
   pull_request:
 
+permissions: read-all
+
 jobs:
   upload-coverage-info:
     runs-on: ubuntu-22.04
