@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [dev, testnet, main]
 
+permissions: read-all
+
 jobs:
   check-version:
     runs-on: ubuntu-latest
