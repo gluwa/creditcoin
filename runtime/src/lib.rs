@@ -18,7 +18,7 @@ use frame_system::EnsureRoot;
 use pallet_babe::AuthorityId as BabeId;
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
-use pallet_difficulty::Difficulty as DifficultyT;
+pub use pallet_difficulty::Difficulty as DifficultyT;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
