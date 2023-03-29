@@ -35,6 +35,7 @@ pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
+pallet-pos-switch = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 smallvec = "1.10.0"
@@ -129,6 +130,7 @@ std = [
     'pallet-im-online/std',
     'pallet-bags-list/std',
     'pallet-authorship/std',
+    'pallet-pos-switch/std',
 ]
 try-runtime = [
     "frame-try-runtime",
