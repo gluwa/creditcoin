@@ -52,7 +52,7 @@ sp-version = { workspace = true }
 sp-consensus-babe = { workspace = true, default-features = false }
 pallet-babe = { workspace = true }
 pallet-grandpa = { workspace = true }
-pallet-staking-substrate = { package = "pallet-staking", default-features = false, branch = "polkadot-v0.9.40", git = "https://github.com/paritytech/substrate.git" }
+pallet-staking-substrate = { package = "pallet-staking", default-features = false, branch = "pos-keep-history", git = "https://github.com/nathanwhit/substrate.git" }
 frame-election-provider-support = { workspace = true }
 pallet-election-provider-multi-phase = { workspace = true }
 pallet-im-online = { workspace = true }
