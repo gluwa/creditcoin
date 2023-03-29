@@ -25,7 +25,7 @@ use sha3pow::Sha3Algorithm;
 use sp_api::NumberFor;
 use sp_consensus::{self, CacheKeyId};
 use sp_consensus_babe::SlotDuration;
-use sp_core::traits::{SpawnEssentialNamed, SpawnNamed};
+use sp_core::traits::SpawnNamed;
 use sp_inherents::CreateInherentDataProviders;
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::{
@@ -172,7 +172,7 @@ pub fn new_partial(
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
 		switch_notif.clone(),
-		task_manager.spawn_essential_handle(),
+		task_manager.spawn_handle(),
 	);
 	let babe_init = babe_import_initializer(
 		client.clone(),
@@ -485,10 +485,10 @@ fn grandpa_initializer(
 	select_chain: ChainSelection,
 	telemetry: Option<TelemetryHandle>,
 	switch_notif: Arc<Notify>,
-	spawner: impl SpawnEssentialNamed,
+	spawner: impl SpawnNamed,
 ) -> GrandpaImportInitializer {
 	let (sender, receiver) = tokio::sync::mpsc::channel::<GrandpaImportInitReq>(10);
-	spawner.spawn_essential(
+	spawner.spawn_blocking(
 		"grandpa-initializer",
 		Some("pos-switcher"),
 		Box::pin(async move {
@@ -554,7 +554,7 @@ fn babe_import_initializer(
 	spawner: impl SpawnNamed,
 ) -> BabeImportInitializer {
 	let (sender, receiver) = tokio::sync::mpsc::channel::<BabeImportInitReq>(10);
-	spawner.spawn(
+	spawner.spawn_blocking(
 		"babe-initializer",
 		Some("pos-switcher"),
 		Box::pin(async move {
