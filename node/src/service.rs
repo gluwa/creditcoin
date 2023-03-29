@@ -78,8 +78,6 @@ pub type FullNetworkService = Arc<sc_network::NetworkService<Block, BlockHash>>;
 pub type BlockTy =
 	sp_runtime::generic::Block<sp_runtime::generic::Header<u32, BlakeTwo256>, OpaqueExtrinsic>;
 
-
-
 struct AuthoritiesProv;
 impl sc_finality_grandpa::GenesisAuthoritySetProvider<BlockTy> for AuthoritiesProv {
 	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
@@ -168,15 +166,6 @@ pub fn new_partial(
 		}),
 	);
 
-	/*
-		type Deps = (
-		Arc<FullClient>,
-		ChainSelection,
-		Option<TelemetryHandle>,
-		Vec<OneshotSender<BabeLink<Block>>>,
-		OneshotSender<LinkHalf<Block, FullClient, ChainSelection>>,
-		Vec<OneshotSender<GrandpaImport>>,
-	); */
 	let switch_notif = Arc::new(Notify::new());
 	let grandpa_init = grandpa_initializer(
 		client.clone(),
@@ -450,17 +439,6 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			transaction_pool,
 			role,
 			select_chain,
-			cidp: move |_parent, ()| async move {
-				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-
-				let slot =
-							sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-								*timestamp,
-								SlotDuration::from_millis(runtime::SLOT_DURATION),
-							);
-
-				Ok((slot, timestamp))
-			},
 		},
 		switch_notif,
 	}
@@ -499,10 +477,8 @@ impl<T: Init> LazyInit<T> {
 }
 
 pub type OneshotSender<T> = tokio::sync::oneshot::Sender<T>;
-pub type OneShotReceiver<T> = tokio::sync::oneshot::Receiver<T>;
 
 pub type MpscSender<T> = tokio::sync::mpsc::Sender<T>;
-pub type MpscReceiver<T> = tokio::sync::mpsc::Receiver<T>;
 
 fn grandpa_initializer(
 	client: Arc<FullClient>,
@@ -698,20 +674,18 @@ pub type PowImport<CIDP> = sc_consensus_pow::PowBlockImport<
 	CIDP,
 >;
 
-pub struct AuthorshipSwitcher<'a, CIDP, BabeCIDP> {
+pub struct AuthorshipSwitcher<'a, CIDP> {
 	task_manager: &'a TaskManager,
 	switch_notif: Arc<tokio::sync::Notify>,
 	is_authority: bool,
 	pow_params: PowAuthorshipParams<CIDP>,
 	tokio_handle: tokio::runtime::Handle,
-	babe_params: BabeAuthorshipParams<BabeCIDP>,
+	babe_params: BabeAuthorshipParams,
 }
 
-impl<'a, CIDP, BabeCIDP> AuthorshipSwitcher<'a, CIDP, BabeCIDP>
+impl<'a, CIDP> AuthorshipSwitcher<'a, CIDP>
 where
 	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
-	BabeCIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
-	BabeCIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
 {
 	pub fn run(self) {
 		let Self {
@@ -776,14 +750,13 @@ where
 	}
 }
 
-struct BabeAuthorshipParams<CIDP> {
+struct BabeAuthorshipParams {
 	client: Arc<FullClient>,
 	backoff_authoring_blocks: Option<()>,
 	force_authoring: bool,
 	babe_link: BabeImportInitializer,
 	transaction_pool: Arc<FullPool>,
 	network: FullNetworkService,
-	cidp: CIDP,
 	keystore: SyncCryptoStorePtr,
 	grandpa_link: GrandpaImportInitializer,
 	grandpa_protocol_name: ProtocolName,
@@ -792,14 +765,11 @@ struct BabeAuthorshipParams<CIDP> {
 	name: String,
 }
 
-async fn start_babe_authorship<CIDP>(
+async fn start_babe_authorship(
 	task_manager: &TaskManager,
-	params: BabeAuthorshipParams<CIDP>,
+	params: BabeAuthorshipParams,
 	is_authority: bool,
-) where
-	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
-	CIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
-{
+) {
 	let BabeAuthorshipParams {
 		client,
 		backoff_authoring_blocks,
@@ -807,7 +777,6 @@ async fn start_babe_authorship<CIDP>(
 		mut babe_link,
 		transaction_pool,
 		network,
-		cidp: _,
 		keystore,
 		mut grandpa_link,
 		grandpa_protocol_name,
