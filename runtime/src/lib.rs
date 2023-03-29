@@ -11,7 +11,7 @@ use frame_election_provider_support::{
 };
 pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
-	traits::{ConstU32, ConstU8, U128CurrencyToVote},
+	traits::{ConstU32, ConstU8, Currency, OnRuntimeUpgrade, U128CurrencyToVote},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
 use frame_system::EnsureRoot;
@@ -19,7 +19,7 @@ use pallet_babe::AuthorityId as BabeId;
 use pallet_creditcoin::weights::WeightInfo as creditcoin_weights;
 use pallet_creditcoin::WeightInfo;
 pub use pallet_difficulty::Difficulty as DifficultyT;
-use pallet_grandpa::{
+pub use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -27,6 +27,7 @@ use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use pallet_session::historical as session_historical;
 use pallet_staking::UseValidatorsMap;
 pub use pallet_staking_substrate::{self, StakerStatus};
+use parity_scale_codec::Decode;
 use sp_api::impl_runtime_apis;
 use sp_consensus_babe as babe_primitives;
 use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata};
@@ -400,6 +401,73 @@ parameter_types! {
 	pub MinAnnualInflation : Perquintill = Perquintill::from_rational(25u64, 1000u64);
 }
 
+pub struct HackyUpgrade;
+impl OnRuntimeUpgrade for HackyUpgrade {
+	fn on_runtime_upgrade() -> Weight {
+		fn make_session_keys(
+			grandpa: GrandpaId,
+			babe: BabeId,
+			im_online: ImOnlineId,
+		) -> SessionKeys {
+			SessionKeys { grandpa, babe, im_online }
+		}
+		type AuthorityKeys = (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId);
+		const STASH: u128 = 1_000_000 * CTC;
+
+		// Generated via the `encode_keys_hack` test in `chain_spec.rs`
+		const KEYS_ENC: &[u8] = &[
+			4, 190, 93, 219, 21, 121, 183, 46, 132, 82, 79, 194, 158, 120, 96, 158, 60, 175, 66,
+			232, 90, 161, 24, 235, 254, 11, 10, 212, 4, 181, 189, 210, 95, 212, 53, 147, 199, 21,
+			253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44, 133, 88, 133, 76, 205, 227,
+			154, 86, 132, 231, 165, 109, 162, 125, 136, 220, 52, 23, 213, 5, 142, 196, 180, 80, 62,
+			12, 18, 234, 26, 10, 137, 190, 32, 15, 233, 137, 34, 66, 61, 67, 52, 1, 79, 166, 176,
+			238, 212, 53, 147, 199, 21, 253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44,
+			133, 88, 133, 76, 205, 227, 154, 86, 132, 231, 165, 109, 162, 125, 212, 53, 147, 199,
+			21, 253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44, 133, 88, 133, 76, 205,
+			227, 154, 86, 132, 231, 165, 109, 162, 125,
+		];
+		let mut enc = KEYS_ENC;
+		let initial_authorities = Vec::<AuthorityKeys>::decode(&mut enc).unwrap();
+
+		let keys: Vec<_> = initial_authorities
+			.iter()
+			.cloned()
+			.map(|(stash, _acct, grandpa, babe, im_online)| {
+				(stash.clone(), stash, make_session_keys(grandpa, babe, im_online))
+			})
+			.collect();
+		Session::genesis_init(&keys);
+
+		for (a, b, _, _, _) in initial_authorities.iter() {
+			let _ = Balances::make_free_balance_be(&a, STASH);
+			let _ = Balances::make_free_balance_be(&b, STASH);
+		}
+
+		let config = pallet_staking_substrate::InitConfig {
+			validator_count: initial_authorities.len() as u32,
+			minimum_validator_count: 1,
+			stakers: initial_authorities
+				.iter()
+				.map(|x| {
+					(
+						x.0.clone(),
+						x.1.clone(),
+						STASH,
+						pallet_staking_substrate::StakerStatus::Validator,
+					)
+				})
+				.collect(),
+			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+			force_era: pallet_staking_substrate::Forcing::NotForcing,
+			slash_reward_fraction: Perbill::from_percent(10),
+			..Default::default()
+		};
+		Staking::genesis_init(config);
+
+		Weight::zero()
+	}
+}
+
 // Q: Payout scheme? Polkadot uses a more complex, dynamic scheme to encourage an ideal staking ratio
 // while respecting min and max inflation goals
 // rather than a fixed amount per block, etc.
@@ -477,7 +545,7 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = Moment;
-	type OnTimestampSet = Difficulty;
+	type OnTimestampSet = ();
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
@@ -693,6 +761,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
+	HackyUpgrade,
 >;
 
 #[cfg(feature = "runtime-benchmarks")]

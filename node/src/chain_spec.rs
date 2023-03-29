@@ -236,3 +236,13 @@ fn testnet_genesis(
 		im_online: Default::default(),
 	}
 }
+
+// #[test]
+// fn encode_keys_hack() {
+// 	use parity_scale_codec::Encode;
+// 	let keys = vec![get_authority_keys_from_seed("Alice")];
+
+// 	let encoded = keys.encode();
+
+// 	panic!("Encoded: {:?}", encoded);
+// }
