@@ -937,6 +937,7 @@ impl_runtime_apis! {
 				authorities: Babe::authorities().to_vec(),
 				randomness: Babe::randomness(),
 				allowed_slots: epoch_config.allowed_slots,
+				initial_babe_block: PosSwitch::switch_block_number().unwrap_or_else(|| { log::warn!("No PosSwitch block number set!"); Default::default() }),
 			}
 		}
 

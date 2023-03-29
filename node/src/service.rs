@@ -3,21 +3,39 @@
 mod nonce_monitor;
 
 use crate::cli::Cli;
-use creditcoin_node_runtime::{self, opaque::Block, RuntimeApi};
+use babe::{BabeBlockImport, BabeConfiguration, BabeLink, BabeVerifier};
+use creditcoin_node_runtime::{self, self as runtime, opaque::Block, RuntimeApi};
+use jsonrpsee::core::async_trait;
 use parity_scale_codec::Encode;
+use primitives::metrics::MiningMetrics;
 use sc_client_api::{Backend, BlockBackend};
+use sc_consensus::{BlockCheckParams, BlockImportParams, LongestChain, Verifier};
 use sc_consensus_babe as babe;
-use sc_consensus_grandpa::SharedVoterState;
+use sc_consensus_pow::PowVerifier;
 pub use sc_executor::NativeElseWasmExecutor;
+use sc_consensus_grandpa::{LinkHalf, SharedVoterState};
 use sc_keystore::LocalKeystore;
+use sc_network::ProtocolName;
 use sc_service::{
 	error::Error as ServiceError, Configuration, TaskManager, TransactionPoolOptions,
 };
-use sc_telemetry::{Telemetry, TelemetryWorker};
+use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sc_transaction_pool::PoolLimit;
 use sha3pow::Sha3Algorithm;
-use sp_runtime::{app_crypto::Ss58Codec, offchain::DbExternalities, traits::IdentifyAccount};
-use std::{sync::Arc, thread, time::Duration};
+use sp_api::NumberFor;
+use sp_consensus::{self, CacheKeyId};
+use sp_consensus_babe::SlotDuration;
+use sp_core::traits::{SpawnEssentialNamed, SpawnNamed};
+use sp_inherents::CreateInherentDataProviders;
+use sp_keystore::SyncCryptoStorePtr;
+use sp_runtime::{
+	app_crypto::Ss58Codec,
+	traits::{BlakeTwo256, Block as BlockT},
+	Justification, OpaqueExtrinsic,
+	{offchain::DbExternalities, traits::IdentifyAccount},
+};
+use std::{collections::HashMap, sync::Arc, time::Duration};
+use tokio::sync::{oneshot, Notify};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -38,28 +56,36 @@ pub(crate) type FullClient =
 	sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
-type PartialComponentsType = sc_service::PartialComponents<
+type PartialComponentsType<CIDP> = sc_service::PartialComponents<
 	FullClient,
 	FullBackend,
 	FullSelectChain,
 	sc_consensus::DefaultImportQueue<Block, FullClient>,
-	sc_transaction_pool::FullPool<Block, FullClient>,
+	FullPool,
 	(
-		babe::BabeBlockImport<
-			Block,
-			FullClient,
-			sc_consensus_grandpa::GrandpaBlockImport<
-				FullBackend,
-				Block,
-				FullClient,
-				FullSelectChain,
-			>,
-		>,
-		sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
-		babe::BabeLink<Block>,
+		BabeImportInitializer,
+		GrandpaImportInitializer,
+		PowImport<CIDP>,
+		Arc<Notify>,
 		Option<Telemetry>,
 	),
 >;
+
+pub type FullPool = sc_transaction_pool::FullPool<Block, FullClient>;
+
+pub type FullNetworkService = Arc<sc_network::NetworkService<Block, BlockHash>>;
+
+pub type BlockTy =
+	sp_runtime::generic::Block<sp_runtime::generic::Header<u32, BlakeTwo256>, OpaqueExtrinsic>;
+
+
+
+struct AuthoritiesProv;
+impl sc_finality_grandpa::GenesisAuthoritySetProvider<BlockTy> for AuthoritiesProv {
+	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
+		Ok(vec![(crate::chain_spec::get_from_seed::<sp_finality_grandpa::AuthorityId>("Alice"), 1)])
+	}
+}
 
 /// Creates a transaction pool config where the limits are 5x the default, unless a limit has been set higher manually
 fn create_transaction_pool_config(mut config: TransactionPoolOptions) -> TransactionPoolOptions {
@@ -76,7 +102,12 @@ fn create_transaction_pool_config(mut config: TransactionPoolOptions) -> Transac
 	config
 }
 
-pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, ServiceError> {
+pub fn new_partial(
+	config: &Configuration,
+) -> Result<
+	PartialComponentsType<impl CreateInherentDataProviders<Block, ()> + Send + Sync + 'static>,
+	ServiceError,
+> {
 	if config.keystore_remote.is_some() {
 		return Err(ServiceError::Other("Remote Keystores are not supported.".to_string()));
 	}
@@ -123,40 +154,80 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, Serv
 		client.clone(),
 	);
 
-	let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
+	let algorithm = Sha3Algorithm::new(client.clone());
+
+	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
 		client.clone(),
-		&(client.clone() as Arc<_>),
+		client.clone(),
+		algorithm.clone(),
+		0,
+		select_chain.clone(),
+		Box::new(move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+			Ok(timestamp)
+		}),
+	);
+
+	/*
+		type Deps = (
+		Arc<FullClient>,
+		ChainSelection,
+		Option<TelemetryHandle>,
+		Vec<OneshotSender<BabeLink<Block>>>,
+		OneshotSender<LinkHalf<Block, FullClient, ChainSelection>>,
+		Vec<OneshotSender<GrandpaImport>>,
+	); */
+	let switch_notif = Arc::new(Notify::new());
+	let grandpa_init = grandpa_initializer(
+		client.clone(),
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
-	)?;
-	let justification_import = grandpa_block_import.clone();
-
-	let babe_config = babe::configuration(&*client)?;
-	let (block_import, babe_link) =
-		babe::block_import(babe_config.clone(), grandpa_block_import, client.clone())?;
-
-	let slot_duration = babe_link.config().slot_duration();
-	let import_queue = babe::import_queue(
-		babe_link.clone(),
-		block_import.clone(),
-		Some(Box::new(justification_import)),
+		switch_notif.clone(),
+		task_manager.spawn_essential_handle(),
+	);
+	let babe_init = babe_import_initializer(
 		client.clone(),
+		grandpa_init.clone(),
+		switch_notif.clone(),
+		task_manager.spawn_handle(),
+	);
+	let bi = LazyInit::<BabeImport>::new(babe_init.clone());
+
+	let switcher_block_import =
+		BlockImportSwitcher::new(client.clone(), bi, pow_block_import.clone());
+
+	let pow_verifier: PowVerifier<Block, _> = PowVerifier::new(algorithm);
+	let slot_duration = SlotDuration::from_millis(runtime::SLOT_DURATION);
+	let babe_verifier = LazyInit::<BabeVerifier<_, _, _, _>>::new((
+		client.clone(),
+		babe_init.clone(),
 		select_chain.clone(),
 		move |_, ()| async move {
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
 			let slot =
-				sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-					*timestamp,
-					slot_duration,
-				);
+			sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+				*timestamp,
+				slot_duration,
+			);
 
 			Ok((slot, timestamp))
 		},
+		telemetry.as_ref().map(|x| x.handle()),
+	));
+
+	let switcher_justification_import =
+		JustificationImportSwitcher::new(client.clone(), LazyInit::new(grandpa_init.clone()));
+
+	let switcher_verifier = VerifierSwitcher::new(client.clone(), pow_verifier, babe_verifier);
+
+	let import_queue = sc_consensus::BasicQueue::new(
+		switcher_verifier,
+		Box::new(switcher_block_import),
+		Some(Box::new(switcher_justification_import)),
 		&task_manager.spawn_essential_handle(),
 		config.prometheus_registry(),
-		telemetry.as_ref().map(|x| x.handle()),
-	)?;
+	);
 
 	Ok(sc_service::PartialComponents {
 		client,
@@ -166,7 +237,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, Serv
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (block_import, grandpa_link, babe_link, telemetry),
+		other: (babe_init, grandpa_init, pow_block_import, switch_notif, telemetry),
 	})
 }
 
@@ -223,8 +294,10 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		mut keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (block_import, grandpa_link, babe_link, mut telemetry),
+		other: (babe_link, grandpa_link, pow_block_import, switch_notif, mut telemetry),
 	} = new_partial(&config)?;
+
+	let client: Arc<FullClient> = client;
 
 	if let Some(url) = &config.keystore_remote {
 		match remote_keystore(url) {
@@ -247,12 +320,6 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		.extra_sets
 		.push(sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
 
-	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
-		backend.clone(),
-		grandpa_link.shared_authority_set().clone(),
-		Vec::default(),
-	));
-
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
@@ -261,7 +328,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			spawn_handle: task_manager.spawn_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
-			warp_sync_params: Some(sc_service::WarpSyncParams::WithProvider(warp_sync)),
+			warp_sync_params: None, // TODO: figure out if it's possible to use warp sync only after switched to pos
 		})?;
 
 	if config.offchain_worker.enabled {
@@ -286,12 +353,20 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		}
 	}
 
+	if std::env::var("GRANDPA_HACK").is_ok() {
+		// const AUTH_SET_KEY: &[u8] = b"grandpa_voters";
+		// sc_finality_grandpa::AuthoritySet::<runtime::Hash, runtime::BlockNumber>::decode(input)
+
+		// backend
+		// 	.insert_aux(insert, delete)
+	}
 	let role = config.role.clone();
 	let force_authoring = config.force_authoring;
 	let backoff_authoring_blocks: Option<()> = None;
 	let name = config.network.node_name.clone();
-	let enable_grandpa = !config.disable_grandpa;
+	let _enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
+	let tokio_handle = config.tokio_handle.clone();
 	let mining_metrics = primitives::metrics::MiningMetrics::new(prometheus_registry.as_ref())?;
 
 	let rpc_extensions_builder = {
@@ -340,18 +415,423 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		}
 	}
 
-	if role.is_authority() {
+	if switched_to_pos(&client, client.chain_info().best_hash.clone()) {
+		switch_notif.notify_one();
+	}
+
+	AuthorshipSwitcher {
+		is_authority: role.is_authority(),
+		task_manager: &task_manager,
+		tokio_handle,
+		pow_params: PowAuthorshipParams {
+			block_import: pow_block_import,
+			client: client.clone(),
+			keystore: keystore_container.local_keystore(),
+			select_chain: select_chain.clone(),
+			transaction_pool: transaction_pool.clone(),
+			network: network.clone(),
+			mining_metrics,
+			pre_runtime: mining_key
+				.map(|k| decode_mining_key(Some(&*k)))
+				.transpose()?
+				.map(|s| s.encode()),
+			threads: mining_threads,
+		},
+		babe_params: BabeAuthorshipParams {
+			client: client.clone(),
+			babe_link,
+			backoff_authoring_blocks,
+			force_authoring,
+			grandpa_link,
+			grandpa_protocol_name,
+			keystore: keystore_container.sync_keystore(),
+			name,
+			network,
+			transaction_pool,
+			role,
+			select_chain,
+			cidp: move |_parent, ()| async move {
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+
+				let slot =
+							sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+								*timestamp,
+								SlotDuration::from_millis(runtime::SLOT_DURATION),
+							);
+
+				Ok((slot, timestamp))
+			},
+		},
+		switch_notif,
+	}
+	.run();
+
+	network_starter.start_network();
+	Ok(task_manager)
+}
+
+pub struct LazyInit<T: Init> {
+	inner: Option<T>,
+
+	deps: Option<T::Deps>,
+}
+
+#[async_trait]
+pub trait Init {
+	type Deps;
+	async fn init(deps: Self::Deps) -> Self;
+}
+
+impl<T: Init> LazyInit<T> {
+	pub fn new(deps: T::Deps) -> Self {
+		Self { inner: None, deps: Some(deps) }
+	}
+
+	pub async fn get_mut(&mut self) -> &mut T {
+		if self.inner.is_none() {
+			log::info!("Initializing LazyInit <{}>", std::any::type_name::<T>());
+			let deps = self.deps.take().expect("LazyInit is initialized only once; qed");
+			self.inner = Some(T::init(deps).await);
+		}
+
+		self.inner.as_mut().expect("LazyInit is initialized only once; qed")
+	}
+}
+
+pub type OneshotSender<T> = tokio::sync::oneshot::Sender<T>;
+pub type OneShotReceiver<T> = tokio::sync::oneshot::Receiver<T>;
+
+pub type MpscSender<T> = tokio::sync::mpsc::Sender<T>;
+pub type MpscReceiver<T> = tokio::sync::mpsc::Receiver<T>;
+
+fn grandpa_initializer(
+	client: Arc<FullClient>,
+	select_chain: ChainSelection,
+	telemetry: Option<TelemetryHandle>,
+	switch_notif: Arc<Notify>,
+	spawner: impl SpawnEssentialNamed,
+) -> GrandpaImportInitializer {
+	let (sender, receiver) = tokio::sync::mpsc::channel::<GrandpaImportInitReq>(10);
+	spawner.spawn_essential(
+		"grandpa-initializer",
+		Some("pos-switcher"),
+		Box::pin(async move {
+			let mut receiver = receiver;
+			let mut grandpa_import: Option<GrandpaImport> = None;
+			let mut grandpa_link: TakeOnce<LinkHalf<Block, FullClient, ChainSelection>> =
+				TakeOnce::Empty;
+			while let Some(req) = receiver.recv().await {
+				match &grandpa_import {
+					Some(_) => {},
+					None => {
+						log::info!("Initializing Grandpa");
+						let (import, link) = sc_finality_grandpa::block_import(
+							client.clone(),
+							&AuthoritiesProv,
+							select_chain.clone(),
+							telemetry.clone(),
+						)
+						.unwrap();
+
+						grandpa_import = Some(import.clone());
+						grandpa_link = TakeOnce::Full(link);
+						log::info!("Notifying");
+						switch_notif.notify_one();
+					},
+				}
+				match req {
+					ImportInitReq::Import(import) => {
+						log::debug!("Sending grandpa import");
+
+						import.send(grandpa_import.clone().unwrap()).map_err(|_| ()).unwrap();
+					},
+					ImportInitReq::Link(link) => {
+						link.send(grandpa_link.take()).map_err(|_| ()).unwrap();
+					},
+				}
+			}
+		}),
+	);
+	GrandpaImportInitializer::new(sender)
+}
+
+enum TakeOnce<T> {
+	Empty,
+	Taken,
+	Full(T),
+}
+
+impl<T> TakeOnce<T> {
+	fn take(&mut self) -> T {
+		match std::mem::replace(self, TakeOnce::Taken) {
+			TakeOnce::Empty => panic!("TakeOnce is uninitialized"),
+			TakeOnce::Taken => panic!("TakeOnce can only be taken once"),
+			TakeOnce::Full(t) => t,
+		}
+	}
+}
+
+fn babe_import_initializer(
+	client: Arc<FullClient>,
+	mut grandpa_init: GrandpaImportInitializer,
+	switch_notif: Arc<Notify>,
+	spawner: impl SpawnNamed,
+) -> BabeImportInitializer {
+	let (sender, receiver) = tokio::sync::mpsc::channel::<BabeImportInitReq>(10);
+	spawner.spawn(
+		"babe-initializer",
+		Some("pos-switcher"),
+		Box::pin(async move {
+			let mut receiver = receiver;
+			let mut babe_import: Option<BabeImport> = None;
+			let mut babe_link: Option<BabeLink<Block>> = None;
+			while let Some(req) = receiver.recv().await {
+				match &babe_import {
+					Some(_) => {},
+					None => {
+						log::info!("Initializing BabeImport");
+						let grandpa_block_import = grandpa_init.request_import().await;
+						let babe_config = babe::configuration(&*client).unwrap();
+						let babe_config = if babe_config.authorities.is_empty() {
+							BabeConfiguration {
+								authorities: vec![(
+									crate::chain_spec::get_from_seed::<
+										sp_consensus_babe::AuthorityId,
+									>("Alice"),
+									1,
+								)],
+								..babe_config
+							}
+						} else {
+							babe_config
+						};
+						log::info!("with babe config: {babe_config:?}");
+						let (block_import, link) = babe::block_import(
+							babe_config.clone(),
+							grandpa_block_import,
+							client.clone(),
+						)
+						.unwrap();
+						babe_link = Some(link);
+						babe_import = Some(block_import);
+						switch_notif.notify_one();
+					},
+				}
+				match req {
+					BabeImportInitReq::Import(sender) => {
+						let _ = sender.send(babe_import.clone().unwrap());
+					},
+					BabeImportInitReq::Link(sender) => {
+						let _ = sender.send(babe_link.clone().unwrap());
+					},
+				}
+			}
+		}),
+	);
+
+	BabeImportInitializer::new(sender)
+}
+
+pub enum ImportInitReq<I, L> {
+	Import(OneshotSender<I>),
+	Link(OneshotSender<L>),
+}
+
+pub type BabeImportInitReq = ImportInitReq<BabeImport, BabeLink<Block>>;
+
+pub type BabeImportInitializer = ImportInitializerService<BabeImport, BabeLink<Block>>;
+
+pub type GrandpaImportInitReq =
+	ImportInitReq<GrandpaImport, LinkHalf<Block, FullClient, ChainSelection>>;
+
+pub type GrandpaImportInitializer =
+	ImportInitializerService<GrandpaImport, LinkHalf<Block, FullClient, ChainSelection>>;
+
+pub struct ImportInitializerService<I, L> {
+	inner: MpscSender<ImportInitReq<I, L>>,
+}
+
+impl<I, L> Clone for ImportInitializerService<I, L> {
+	fn clone(&self) -> Self {
+		Self { inner: self.inner.clone() }
+	}
+}
+
+impl<I, L> ImportInitializerService<I, L> {
+	pub fn new(inner: MpscSender<ImportInitReq<I, L>>) -> Self {
+		Self { inner }
+	}
+
+	pub async fn request_import(&mut self) -> I {
+		let (tx, rx) = oneshot::channel();
+		self.inner.send(ImportInitReq::Import(tx)).await.map_err(|_| ()).unwrap();
+		rx.await.unwrap()
+	}
+
+	pub async fn request_link(&mut self) -> L {
+		let (tx, rx) = oneshot::channel();
+		self.inner.send(ImportInitReq::Link(tx)).await.map_err(|_| ()).unwrap();
+		rx.await.unwrap()
+	}
+}
+
+#[async_trait]
+impl Init for BabeImport {
+	type Deps = BabeImportInitializer;
+
+	async fn init(mut babe_init: Self::Deps) -> Self {
+		babe_init.request_import().await
+	}
+}
+
+pub type GrandpaImport =
+	sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>;
+
+pub type BabeImport = BabeBlockImport<Block, FullClient, GrandpaImport>;
+
+pub type PowImport<CIDP> = sc_consensus_pow::PowBlockImport<
+	Block,
+	Arc<FullClient>,
+	FullClient,
+	FullSelectChain,
+	Sha3Algorithm<FullClient>,
+	CIDP,
+>;
+
+pub struct AuthorshipSwitcher<'a, CIDP, BabeCIDP> {
+	task_manager: &'a TaskManager,
+	switch_notif: Arc<tokio::sync::Notify>,
+	is_authority: bool,
+	pow_params: PowAuthorshipParams<CIDP>,
+	tokio_handle: tokio::runtime::Handle,
+	babe_params: BabeAuthorshipParams<BabeCIDP>,
+}
+
+impl<'a, CIDP, BabeCIDP> AuthorshipSwitcher<'a, CIDP, BabeCIDP>
+where
+	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+	BabeCIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+	BabeCIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
+{
+	pub fn run(self) {
+		let Self {
+			task_manager,
+			switch_notif,
+			pow_params,
+			tokio_handle,
+			is_authority,
+			babe_params,
+		} = self;
+
+		task_manager.spawn_handle().spawn(
+			"authorship-switcher",
+			"pos-switcher",
+			Box::pin(async move {
+				if !is_authority {
+					switch_notif.notified().await;
+					let babe_task_manager = TaskManager::new(tokio_handle.clone(), None).unwrap();
+					start_babe_authorship(&babe_task_manager, babe_params, is_authority).await;
+					std::future::pending::<()>().await;
+					return;
+				}
+
+				let client = pow_params.client.clone();
+				if switched_to_pos(&client, client.chain_info().best_hash) {
+					log::info!("Already switched to PoS");
+					let babe_task_manager = TaskManager::new(tokio_handle.clone(), None).unwrap();
+					start_babe_authorship(&babe_task_manager, babe_params, is_authority).await;
+					std::future::pending::<()>().await;
+					return;
+				}
+
+				let pow_task_manager = TaskManager::new(tokio_handle.clone(), None).unwrap();
+				let stopper = start_pow_authorship(&pow_task_manager, pow_params);
+
+				log::info!("Waiting to switch");
+				loop {
+					let sleep = tokio::time::sleep(std::time::Duration::from_secs(6));
+					tokio::select! {
+						_ = switch_notif.notified() => {
+							break;
+						}
+						_ = sleep => {
+							if switched_to_pos(&client, client.chain_info().best_hash) {
+								break;
+							}
+						}
+					}
+				}
+
+				log::info!("Stopping PoW");
+
+				stopper.stop();
+				drop(pow_task_manager);
+				let babe_task_manager = TaskManager::new(tokio_handle.clone(), None).unwrap();
+
+				log::info!("Starting Babe");
+				start_babe_authorship(&babe_task_manager, babe_params, is_authority).await;
+				std::future::pending::<()>().await;
+			}),
+		);
+	}
+}
+
+struct BabeAuthorshipParams<CIDP> {
+	client: Arc<FullClient>,
+	backoff_authoring_blocks: Option<()>,
+	force_authoring: bool,
+	babe_link: BabeImportInitializer,
+	transaction_pool: Arc<FullPool>,
+	network: FullNetworkService,
+	cidp: CIDP,
+	keystore: SyncCryptoStorePtr,
+	grandpa_link: GrandpaImportInitializer,
+	grandpa_protocol_name: ProtocolName,
+	select_chain: ChainSelection,
+	role: sc_network::config::Role,
+	name: String,
+}
+
+async fn start_babe_authorship<CIDP>(
+	task_manager: &TaskManager,
+	params: BabeAuthorshipParams<CIDP>,
+	is_authority: bool,
+) where
+	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+	CIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
+{
+	let BabeAuthorshipParams {
+		client,
+		backoff_authoring_blocks,
+		force_authoring,
+		mut babe_link,
+		transaction_pool,
+		network,
+		cidp: _,
+		keystore,
+		mut grandpa_link,
+		grandpa_protocol_name,
+		select_chain,
+		role,
+		name,
+	} = params;
+
+	if is_authority {
 		let proposer = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,
-			prometheus_registry.as_ref(),
-			telemetry.as_ref().map(|x| x.handle()),
+			None,
+			None,
 		);
 
+		let block_import = babe_link.request_import().await;
+		log::info!("got babe block import");
+		let babe_link = babe_link.request_link().await;
+		log::info!("got babe link");
 		let slot_duration = babe_link.config().slot_duration();
 		let babe_config = babe::BabeParams {
-			keystore: keystore_container.sync_keystore(),
+			keystore: keystore.clone(),
 			client: client.clone(),
 			select_chain,
 			block_import,
@@ -374,57 +854,383 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			babe_link,
 			block_proposal_slot_portion: babe::SlotProportion::new(2f32 / 3f32),
 			max_block_proposal_slot_portion: None,
-			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			telemetry: None,
 		};
 
-		let babe = babe::start_babe(babe_config)?;
+		let babe = babe::start_babe(babe_config).unwrap();
 		task_manager.spawn_essential_handle().spawn_blocking("babe", None, babe);
 	}
 
-	if enable_grandpa {
-		// if the node isn't actively participating in consensus then it doesn't
-		// need a keystore, regardless of which protocol we use below.
-		let keystore =
-			if role.is_authority() { Some(keystore_container.sync_keystore()) } else { None };
+	let grandpa_config = sc_consensus_grandpa::Config {
+		// FIXME #1578 make this available through chainspec
+		gossip_duration: Duration::from_millis(333),
+		justification_period: 512,
+		name: Some(name),
+		observer_enabled: false,
+		keystore: Some(keystore),
+		local_role: role,
+		telemetry: None,
+		protocol_name: grandpa_protocol_name,
+	};
 
-		let grandpa_config = sc_consensus_grandpa::Config {
-			// FIXME #1578 make this available through chainspec
-			gossip_duration: Duration::from_millis(333),
-			justification_period: 512,
-			name: Some(name),
-			observer_enabled: false,
-			keystore,
-			local_role: role,
-			telemetry: telemetry.as_ref().map(|x| x.handle()),
-			protocol_name: grandpa_protocol_name,
-		};
+	// start the full GRANDPA voter
+	// NOTE: non-authorities could run the GRANDPA observer protocol, but at
+	// this point the full voter should provide better guarantees of block
+	// and vote data availability than the observer. The observer has not
+	// been tested extensively yet and having most nodes in a network run it
+	// could lead to finality stalls.
+	let grandpa_config = sc_consensus_grandpa::GrandpaParams {
+		config: grandpa_config,
+		link: grandpa_link.request_link().await,
+		network,
+		voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
+		prometheus_registry: None,
+		shared_voter_state: SharedVoterState::empty(),
+		telemetry: None,
+		sync: sync_service,
+	};
+	log::info!("starting grandpa voter");
+	// the GRANDPA voter task is considered infallible, i.e.
+	// if it fails we take down the service with it.
+	task_manager.spawn_essential_handle().spawn_blocking(
+		"grandpa-voter",
+		None,
+		sc_consensus_grandpa::run_grandpa_voter(grandpa_config).unwrap(),
+	);
+}
 
-		// start the full GRANDPA voter
-		// NOTE: non-authorities could run the GRANDPA observer protocol, but at
-		// this point the full voter should provide better guarantees of block
-		// and vote data availability than the observer. The observer has not
-		// been tested extensively yet and having most nodes in a network run it
-		// could lead to finality stalls.
-		let grandpa_config = sc_consensus_grandpa::GrandpaParams {
-			config: grandpa_config,
-			link: grandpa_link,
-			network,
-			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
-			prometheus_registry,
-			shared_voter_state: SharedVoterState::empty(),
-			telemetry: telemetry.as_ref().map(|x| x.handle()),
-			sync: sync_service,
-		};
+struct PowAuthorshipParams<CIDP> {
+	client: Arc<FullClient>,
+	select_chain: FullSelectChain,
+	block_import: PowImport<CIDP>,
+	transaction_pool: Arc<FullPool>,
+	network: FullNetworkService,
+	mining_metrics: MiningMetrics,
+	pre_runtime: Option<Vec<u8>>,
+	keystore: Option<Arc<LocalKeystore>>,
+	threads: Option<usize>,
+}
 
-		// the GRANDPA voter task is considered infallible, i.e.
-		// if it fails we take down the service with it.
-		task_manager.spawn_essential_handle().spawn_blocking(
-			"grandpa-voter",
-			None,
-			sc_consensus_grandpa::run_grandpa_voter(grandpa_config)?,
-		);
+struct PowStopper {
+	stop: Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl PowStopper {
+	fn new(stop: Arc<std::sync::atomic::AtomicBool>) -> Self {
+		Self { stop }
 	}
 
-	network_starter.start_network();
-	Ok(task_manager)
+	fn stop(&self) {
+		self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+	}
+}
+
+fn start_pow_authorship<CIDP>(
+	task_manager: &TaskManager,
+	params: PowAuthorshipParams<CIDP>,
+) -> PowStopper
+where
+	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+{
+	let PowAuthorshipParams {
+		client,
+		select_chain,
+		block_import,
+		transaction_pool,
+		network,
+		mining_metrics,
+		pre_runtime,
+		keystore,
+		threads,
+	} = params;
+	let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+		task_manager.spawn_handle(),
+		client.clone(),
+		transaction_pool,
+		None,
+		None,
+	);
+
+	let algorithm = Sha3Algorithm::new(client.clone());
+
+	let (worker, worker_task) = sc_consensus_pow::start_mining_worker(
+		Box::new(block_import),
+		client.clone(),
+		select_chain,
+		algorithm,
+		proposer_factory,
+		network.clone(),
+		network,
+		pre_runtime,
+		move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+			Ok(timestamp)
+		},
+		Duration::from_secs(10),
+		Duration::from_secs(10),
+	);
+
+	task_manager
+		.spawn_essential_handle()
+		.spawn_blocking("pow", "pow_group", worker_task);
+
+	let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+	let threads = threads.unwrap_or_else(num_cpus::get);
+	for _ in 0..threads {
+		if let Some(keystore) = keystore.clone() {
+			let worker = worker.clone();
+			let client = client.clone();
+			let mining_metrics = mining_metrics.clone();
+			let stop = stop.clone();
+			std::thread::spawn(move || {
+				let mut count = 0;
+				loop {
+					let metadata = worker.metadata();
+					let version = worker.version();
+					if stop.load(std::sync::atomic::Ordering::Relaxed) {
+						log::info!("Exiting mining thread");
+						break;
+					}
+					if let Some(metadata) = metadata {
+						loop {
+							match sha3pow::mine(
+								client.as_ref(),
+								&keystore,
+								&metadata.pre_hash,
+								metadata.pre_runtime.as_ref().map(|v| &v[..]),
+								metadata.difficulty,
+							) {
+								Ok(Some(seal)) => {
+									if version == worker.version() {
+										let _ = futures_lite::future::block_on(worker.submit(seal));
+									}
+								},
+								Ok(None) => {
+									count += 1;
+								},
+								Err(e) => eprintln!("Mining error: {e}"),
+							}
+							if count >= 1_000_000 {
+								mining_metrics.add(count);
+								count = 0;
+								if stop.load(std::sync::atomic::Ordering::Relaxed) {
+									break;
+								}
+							}
+							if version != worker.version() {
+								break;
+							}
+						}
+					}
+				}
+			});
+		}
+	}
+
+	PowStopper::new(stop)
+}
+
+pub struct BlockImportSwitcher<CIDP> {
+	client: Arc<FullClient>,
+	babe_import: LazyInit<BabeImport>,
+	pow_import: PowImport<CIDP>,
+}
+
+fn switched_to_pos(client: &Arc<FullClient>, at_hash: BlockHash) -> bool {
+	use sc_client_api::backend::StateBackend;
+
+	let key = runtime::pallet_pos_switch::SwitchBlockNumber::<runtime::Runtime>::hashed_key();
+
+	let state_client = match client.state_at(at_hash) {
+		Ok(s) => s,
+		Err(e) => {
+			log::warn!("Failed to get state client at {:?}: {e:?}", at_hash);
+			return false;
+		},
+	};
+
+	let state = state_client.storage(&key).unwrap();
+
+	state.is_some()
+}
+
+impl<CIDP> BlockImportSwitcher<CIDP> {
+	pub fn new(
+		client: Arc<FullClient>,
+		babe_import: LazyInit<BabeImport>,
+		pow_import: PowImport<CIDP>,
+	) -> Self {
+		Self { client, babe_import, pow_import }
+	}
+
+	pub fn switched_to_pos(&self, at_hash: BlockHash) -> bool {
+		switched_to_pos(&self.client, at_hash)
+	}
+}
+
+#[async_trait]
+impl<CIDP> sc_consensus::BlockImport<Block> for BlockImportSwitcher<CIDP>
+where
+	CIDP: CreateInherentDataProviders<Block, ()>,
+{
+	type Error = sp_consensus::Error;
+
+	type Transaction = sp_api::TransactionFor<FullClient, Block>;
+
+	/// Check block preconditions.
+	async fn check_block(
+		&mut self,
+		block: BlockCheckParams<Block>,
+	) -> Result<sc_consensus::ImportResult, Self::Error> {
+		log::info!("check_block: #{:?}", block.number);
+		if self.switched_to_pos(block.parent_hash) {
+			log::info!("check_block: switched to pos");
+			self.babe_import.get_mut().await.check_block(block).await
+		} else {
+			self.pow_import.check_block(block).await
+		}
+	}
+
+	/// Import a block.
+	///
+	/// Cached data can be accessed through the blockchain cache.
+	async fn import_block(
+		&mut self,
+		block: BlockImportParams<Block, Self::Transaction>,
+		cache: HashMap<sp_consensus::CacheKeyId, Vec<u8>>,
+	) -> Result<sc_consensus::ImportResult, Self::Error> {
+		log::info!("import_block: #{:?}", block.header.number);
+		if self.switched_to_pos(block.header.parent_hash) {
+			log::info!("import_block: switched to pos");
+			self.babe_import.get_mut().await.import_block(block, cache).await
+		} else {
+			self.pow_import.import_block(block, cache).await
+		}
+	}
+}
+
+#[async_trait]
+impl Init for GrandpaImport {
+	type Deps = GrandpaImportInitializer;
+
+	async fn init(mut deps: Self::Deps) -> Self {
+		deps.request_import().await
+	}
+}
+
+#[derive(thiserror::Error, Debug, Clone, Copy)]
+#[error("Justification import not supported for PoW blocks")]
+pub struct JustificationNotSupported;
+
+type BlockHash = <Block as BlockT>::Hash;
+
+pub struct JustificationImportSwitcher {
+	client: Arc<FullClient>,
+	grandpa_import: LazyInit<GrandpaImport>,
+}
+
+impl JustificationImportSwitcher {
+	pub fn new(client: Arc<FullClient>, grandpa_import: LazyInit<GrandpaImport>) -> Self {
+		Self { client, grandpa_import }
+	}
+
+	pub fn switched_to_pos(&self, at_hash: BlockHash) -> bool {
+		switched_to_pos(&self.client, at_hash)
+	}
+}
+
+#[async_trait]
+impl sc_consensus::JustificationImport<Block> for JustificationImportSwitcher {
+	type Error = sp_consensus::Error;
+
+	async fn on_start(&mut self) -> Vec<(BlockHash, NumberFor<Block>)> {
+		log::debug!("justification import on_start");
+		if self.switched_to_pos(Default::default()) {
+			self.grandpa_import.get_mut().await.on_start().await
+		} else {
+			Vec::new()
+		}
+	}
+
+	async fn import_justification(
+		&mut self,
+		hash: BlockHash,
+		number: NumberFor<Block>,
+		justification: Justification,
+	) -> Result<(), Self::Error> {
+		log::debug!("Importing justification for block #{number}");
+		if self.switched_to_pos(hash) {
+			self.grandpa_import
+				.get_mut()
+				.await
+				.import_justification(hash, number, justification)
+				.await
+		} else {
+			Err(sp_consensus::Error::Other(Box::new(JustificationNotSupported)))
+		}
+	}
+}
+
+pub type ChainSelection = LongestChain<FullBackend, Block>;
+
+#[async_trait]
+impl<CIDP> Init for BabeVerifier<Block, FullClient, ChainSelection, CIDP>
+where
+	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+	CIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
+{
+	type Deps =
+		(Arc<FullClient>, BabeImportInitializer, ChainSelection, CIDP, Option<TelemetryHandle>);
+
+	async fn init((client, mut babe_init, select_chain, cidp, telemetry): Self::Deps) -> Self {
+		BabeVerifier::new(babe_init.request_link().await, client, select_chain, cidp, telemetry)
+	}
+}
+
+pub struct VerifierSwitcher<CIDP>
+where
+	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+	CIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
+{
+	client: Arc<FullClient>,
+	pow_verifier: PowVerifier<Block, Sha3Algorithm<FullClient>>,
+	babe_verifier: LazyInit<BabeVerifier<Block, FullClient, ChainSelection, CIDP>>,
+}
+
+impl<CIDP> VerifierSwitcher<CIDP>
+where
+	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+	CIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
+{
+	pub fn new(
+		client: Arc<FullClient>,
+		pow_verifier: PowVerifier<Block, Sha3Algorithm<FullClient>>,
+		babe_verifier: LazyInit<BabeVerifier<Block, FullClient, ChainSelection, CIDP>>,
+	) -> Self {
+		Self { client, pow_verifier, babe_verifier }
+	}
+
+	pub fn switched_to_pos(&self, at_hash: BlockHash) -> bool {
+		switched_to_pos(&self.client, at_hash)
+	}
+}
+
+#[async_trait]
+impl<CIDP> Verifier<Block> for VerifierSwitcher<CIDP>
+where
+	CIDP: CreateInherentDataProviders<Block, ()> + Send + Sync + 'static,
+	CIDP::InherentDataProviders: sc_consensus_slots::InherentDataProviderExt + Send + Sync,
+{
+	async fn verify(
+		&mut self,
+		block: BlockImportParams<Block, ()>,
+	) -> Result<(BlockImportParams<Block, ()>, Option<Vec<(CacheKeyId, Vec<u8>)>>), String> {
+		log::debug!("verify: #{:?}", block.header.number);
+		if self.switched_to_pos(block.header.parent_hash) {
+			self.babe_verifier.get_mut().await.verify(block).await
+		} else {
+			self.pow_verifier.verify(block).await
+		}
+	}
 }
