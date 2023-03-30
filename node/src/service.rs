@@ -375,6 +375,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		})
 	};
 
+	let dev_key_seed = config.dev_key_seed.clone();
 	let rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
 		config,
 		client: client.clone(),
@@ -439,6 +440,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			transaction_pool,
 			role,
 			select_chain,
+			dev_key_seed,
 		},
 		switch_notif,
 	}
@@ -763,6 +765,7 @@ struct BabeAuthorshipParams {
 	select_chain: ChainSelection,
 	role: sc_network::config::Role,
 	name: String,
+	dev_key_seed: Option<String>,
 }
 
 async fn start_babe_authorship(
@@ -783,9 +786,19 @@ async fn start_babe_authorship(
 		select_chain,
 		role,
 		name,
+		dev_key_seed,
 	} = params;
 
 	if is_authority {
+		if let Some(seed) = dev_key_seed {
+			sp_session::generate_initial_session_keys(
+				client.clone(),
+				client.chain_info().best_hash,
+				vec![seed],
+			)
+			.unwrap();
+		}
+
 		let proposer = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
