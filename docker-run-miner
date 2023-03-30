@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# note: for some reason need to be running as root to avoid
+# weird permissions issues with the volume
+docker run -u0 --rm -it \
+    --memory=2g --memory-reservation=1g \
+    --cpus=0.5 \
+    -p 30333:30333 \
+    -v /home/ubuntu/data.csub-448:/data \
+    gluwa/creditcoin:CSUB-448 \
+        --validator \
+        --name atodorov-CSUB-448-miner \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+        --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+        --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWSQye3uN3bZQRRC4oZbpiAZXkP2o5UZh6S8pqyh24bF3k" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWFrsEZ2aSfiigAxs6ir2kU6en4BewotyCXPhrJ7T1AzjN" \
+        --public-addr "/dns4/13.88.168.92/tcp/30333" \
+        --chain mainnet \
+        --base-path /data \
+        --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+        --port 30333
