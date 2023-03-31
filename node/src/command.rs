@@ -160,9 +160,16 @@ pub fn run() -> sc_cli::Result<()> {
 		},
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
+			use creditcoin_node_runtime::SLOT_DURATION;
 			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 			use sp_io::SubstrateHostFunctions;
+			use try_runtime_cli::block_building_info::substrate_info;
+
 			let runner = cli.create_runner(cmd)?;
+			// https://github.com/paritytech/substrate/pull/12896/files#diff-c57da6fbeff8c46ce15f55ea42fedaa5a4684d79578006ce4af01ae04fd6b8f8R245
+			// for reference implementation
+			let info_provider = substrate_info(SLOT_DURATION);
+
 			runner.async_run(|config| {
 				// we don't need any of the components of new_partial, just a runtime, or a task
 				// manager to do `async_run`.
@@ -174,7 +181,7 @@ pub fn run() -> sc_cli::Result<()> {
 					cmd.run::<Block, ExtendedHostFunctions<
 						SubstrateHostFunctions,
 						<service::ExecutorDispatch as NativeExecutionDispatch>::ExtendHostFunctions,
-					>>(),
+					>, _>(Some(info_provider)),
 					task_manager,
 				))
 			})

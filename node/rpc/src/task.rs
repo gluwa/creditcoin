@@ -4,7 +4,7 @@ use core::str::FromStr;
 use creditcoin_node_runtime as runtime;
 use sc_rpc::DenyUnsafe;
 use sp_blockchain::HeaderBackend;
-use sp_runtime::{generic::BlockId, traits};
+use sp_runtime::traits;
 use std::sync::Arc;
 use task_scheduler_runtime_api::TaskApi;
 
@@ -49,10 +49,7 @@ where
 	async fn offchain_nonce_key(&self, account_id: String) -> RpcResult<Vec<u8>> {
 		self.deny_unsafe.check_if_safe()?;
 		let api = self.client.runtime_api();
-		let at = {
-			let best = self.client.info().best_hash;
-			BlockId::hash(best)
-		};
+		let at = self.client.info().best_hash;
 		let account_id = AccountId::from_str(&account_id).map_err(|e| {
 			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
 				ErrorCode::InvalidParams.code(),
@@ -61,7 +58,7 @@ where
 			)))
 		})?;
 
-		api.offchain_nonce_key(&at, &account_id).map_err(|e| {
+		api.offchain_nonce_key(at, &account_id).map_err(|e| {
 			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
 				ErrorCode::ServerError(Error::RuntimeError.into()).code(),
 				"Unable to query offchain nonce key.",
