@@ -101,6 +101,7 @@ impl<T: Config> SortedListProvider<T::AccountId> for EmptyList<T> {
 		defensive!();
 	}
 
+	#[cfg(feature = "try-runtime")]
 	fn try_state() -> Result<(), &'static str> {
 		defensive!();
 		Ok(())
@@ -214,6 +215,7 @@ where
 		defensive!();
 	}
 
+	#[cfg(feature = "try-runtime")]
 	fn try_state() -> Result<(), &'static str> {
 		defensive!();
 		Ok(())
