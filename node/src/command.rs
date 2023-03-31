@@ -208,9 +208,18 @@ pub fn run() -> sc_cli::Result<()> {
 			runner.sync_run(|config| cmd.run::<Block>(&config))
 		},
 		None => {
+			use core::time::Duration;
+			use std::thread::sleep;
+
 			let runner = cli.create_runner(&cli.run)?;
+			log::warn!("**** DEBUG:before calling run_node_until_exit()");
 			runner.run_node_until_exit(|config| async move {
-				service::new_full(config, cli).map_err(sc_cli::Error::Service)
+				log::warn!("===== DEBUG:before service::new_full()");
+
+				let result = service::new_full(config, cli).map_err(sc_cli::Error::Service);
+				sleep(Duration::from_millis(50000));
+				log::warn!("===== DEBUG:after service::new_full()");
+				result
 			})
 		},
 	}
