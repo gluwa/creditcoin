@@ -105,7 +105,6 @@ pub mod pallet {
 	pub enum Event<T: Config> {}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]

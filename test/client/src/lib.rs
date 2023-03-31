@@ -1,6 +1,7 @@
 use creditcoin_node_runtime::{
 	self as runtime, Block, GenesisConfig, SystemConfig as SystemGenesisConfig, WASM_BINARY,
 };
+use sc_chain_spec::construct_genesis_block;
 use sc_service::client;
 use sp_core::twox_128;
 use sp_runtime::traits::{Block as BlockT, Hash as HashT, Header as HeaderT};
@@ -84,7 +85,8 @@ impl substrate_test_client::GenesisInit for GenesisParameters {
 			storage.top.clone().into_iter().chain(child_roots).collect(),
 			sp_runtime::StateVersion::V1,
 		);
-		let block: runtime::Block = client::genesis::construct_genesis_block(state_root);
+		let block: runtime::Block =
+			construct_genesis_block(state_root, sp_runtime::StateVersion::V1);
 		storage.top.extend(additional_storage_with_genesis(&block));
 
 		storage
