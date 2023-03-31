@@ -80,8 +80,7 @@ where
 	C::Api: DifficultyApi<B, Difficulty>,
 {
 	fn difficulty(&self, parent: <B as BlockT>::Hash) -> Result<Difficulty, Error<B>> {
-		let parent_id = BlockId::<B>::hash(parent);
-		self.runtime_api().difficulty(&parent_id).map_err(|err| {
+		self.runtime_api().difficulty(parent).map_err(|err| {
 			sc_consensus_pow::Error::Environment(format!(
 				"Fetching difficulty from runtime failed: {err:?}"
 			))
