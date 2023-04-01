@@ -1233,7 +1233,7 @@ dependencies = [
  "substrate-wasm-builder",
  "task-scheduler-runtime-api",
  "test-runtime-utils",
- "tracing-test",
+ "traced-test",
 ]
 
 [[package]]
@@ -4698,7 +4698,7 @@ dependencies = [
  "sp-std",
  "sp-tracing",
  "strum",
- "tracing-test",
+ "traced-test",
 ]
 
 [[package]]
@@ -4741,7 +4741,7 @@ dependencies = [
  "sp-std",
  "sp-tracing",
  "test-runtime-utils",
- "tracing-test",
+ "traced-test",
 ]
 
 [[package]]
@@ -5353,7 +5353,6 @@ dependencies = [
  "sp-tracing",
  "substrate-prometheus-endpoint",
  "test-runtime-utils",
- "tracing-test",
 ]
 
 [[package]]
@@ -8662,6 +8661,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
 
 [[package]]
+name = "traced-test"
+version = "0.1.0"
+dependencies = [
+ "sp-tracing",
+ "tracing-core",
+ "tracing-subscriber 0.3.16",
+]
+
+[[package]]
 name = "tracing"
 version = "0.1.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8765,27 +8773,6 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
-]
-
-[[package]]
-name = "tracing-test"
-version = "0.2.1"
-source = "git+https://github.com/nathanwhit/tracing-test?branch=main#ceab2765021f2bacb2a94b5ae2b47e2f6c911b19"
-dependencies = [
- "lazy_static",
- "tracing-core",
- "tracing-subscriber 0.3.16",
- "tracing-test-macro",
-]
-
-[[package]]
-name = "tracing-test-macro"
-version = "0.2.1"
-source = "git+https://github.com/nathanwhit/tracing-test?branch=main#ceab2765021f2bacb2a94b5ae2b47e2f6c911b19"
-dependencies = [
- "lazy_static",
- "quote",
- "syn",
 ]
 
 [[package]]

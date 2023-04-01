@@ -189,7 +189,6 @@ mod tests {
 	}
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn lock_works() {
 		let (offchain, _) = TestOffchainExt::new();
 		const THREADS: u32 = 2;
