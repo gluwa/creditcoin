@@ -235,8 +235,8 @@ mod tests {
 	use sp_runtime::traits::IdentifyAccount;
 
 	#[test]
-	#[tracing_test::traced_test]
 	fn register_transfer_ocw_fail_to_send() {
+		let logs = traced_test::trace();
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
 		ext.build_offchain_and_execute_with_state(|state, _| {
@@ -284,7 +284,7 @@ mod tests {
 
 				roll_to_with_ocw(1);
 
-				assert!(logs_contain("Failed to send a dispatchable transaction"));
+				assert!(logs.contain("Failed to send a dispatchable transaction"));
 			});
 
 			let _ =
@@ -302,7 +302,7 @@ mod tests {
 				));
 
 				roll_to_with_ocw(2);
-				assert!(logs_contain("Failed to send a dispatchable transaction"));
+				assert!(logs.contain("Failed to send a dispatchable transaction"));
 			});
 		});
 	}

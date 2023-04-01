@@ -40,8 +40,8 @@ fn generate_bonded_stash(
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn scheduler_doesnt_run_if_pubkey_cant_sign() {
+	let logs = traced_test::trace();
 	// for example see
 	// https://github.com/gluwa/creditcoin-authority-manager/blob/43c61aa177146e4ecfde944678db851b941d4ae6/src/main.rs#L245-L265
 	let builder = ExtBuilder::default().with_keystore();
@@ -57,25 +57,25 @@ fn scheduler_doesnt_run_if_pubkey_cant_sign() {
 	builder.build_sans_config().execute_with(|| {
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
 
-		assert!(logs_contain("local keys []"));
-		assert!(logs_contain("Not an authority, skipping offchain work"));
+		assert!(logs.contain("local keys []"));
+		assert!(logs.contain("Not an authority, skipping offchain work"));
 	});
 }
 
 #[test]
-#[tracing_test::traced_test]
 /// Needs improvement, add a pubkey to the keystore but dont bond it. Bond an account but dont add it to the keystore.
 fn scheduler_doesnt_run_if_not_staked_or_cant_sign() {
+	let logs = traced_test::trace();
 	ExtBuilder::default().with_keystore().build_sans_config().execute_with(|| {
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
 
-		assert!(logs_contain("Not an authority, skipping offchain work"));
+		assert!(logs.contain("Not an authority, skipping offchain work"));
 	});
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn scheduler_runs_if_staked_and_can_sign() {
+	let logs = traced_test::trace();
 	let mut builder = ExtBuilder::default().with_keystore();
 
 	//Can sign and is a staked controller; proceed
@@ -84,13 +84,13 @@ fn scheduler_runs_if_staked_and_can_sign() {
 	builder.build::<Runtime>().execute_with(|| {
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
 
-		assert!(!logs_contain("Not an authority, skipping offchain work"));
+		assert!(!logs.contain("Not an authority, skipping offchain work"));
 	});
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn scheduler_doesnt_run_without_active_stake() {
+	let logs = traced_test::trace();
 	let mut builder = ExtBuilder::default().with_keystore();
 
 	//Can sign and is a staked controller; proceed
@@ -101,7 +101,7 @@ fn scheduler_doesnt_run_without_active_stake() {
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
 
-		assert!(!logs_contain("Not an authority, skipping offchain work"));
+		assert!(!logs.contain("Not an authority, skipping offchain work"));
 
 		assert_ok!(Staking::unbond(
 			RuntimeOrigin::signed(controller.into()),
@@ -110,6 +110,6 @@ fn scheduler_doesnt_run_without_active_stake() {
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
-		assert!(logs_contain("Not an authority, skipping offchain work"));
+		assert!(logs.contain("Not an authority, skipping offchain work"));
 	});
 }
