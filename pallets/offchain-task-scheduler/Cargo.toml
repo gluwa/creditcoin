@@ -37,7 +37,7 @@ mocked-task = ['std']
 
 [dev-dependencies]
 assert_matches = "1.5.0"
-tracing-test = { version = "0.2.1", git = "https://github.com/nathanwhit/tracing-test", branch = "main" }
 pallet-balances = { workspace = true, features = ["std"] }
 sp-keystore = { workspace = true, features = ["std"] }
 runtime-utils = { workspace = true }
+traced-test = { workspace = true }

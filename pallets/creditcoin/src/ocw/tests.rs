@@ -666,7 +666,6 @@ fn verify_transfer_get_block_invalid_address() {
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn unconfirmed_verify_transfer_retries() {
 	let mut ext = ExtBuilder::default();
 	ext.generate_authority();
