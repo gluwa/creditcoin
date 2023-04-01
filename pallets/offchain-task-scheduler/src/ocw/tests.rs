@@ -109,8 +109,8 @@ fn task_deadline_oversubscription() {
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn evaluation_error_is_retried() {
+	let logs = traced_test::trace();
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	generate_authority(&mut ext_builder, 0);
 	ext_builder.with_offchain();
@@ -123,7 +123,7 @@ fn evaluation_error_is_retried() {
 		TaskScheduler::insert(&deadline, &id, task);
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
-		assert!(logs_contain("Failed to verify pending task Evaluation"));
+		assert!(logs.contain("Failed to verify pending task Evaluation"));
 		// It failed Evaluation and remains scheduled.
 		assert!(TaskScheduler::is_scheduled(&deadline, &id));
 
@@ -136,8 +136,8 @@ fn evaluation_error_is_retried() {
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn forget_task_guard_when_task_has_been_persisted() {
+	let logs = traced_test::trace();
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	generate_authority(&mut ext_builder, 0);
 	ext_builder.with_offchain();
@@ -163,7 +163,7 @@ fn forget_task_guard_when_task_has_been_persisted() {
 		crate::mocked_task::is_persisted_replace(true);
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(lock_deadline.block_number + 1);
 
-		assert!(logs_contain("Already handled Task"));
+		assert!(logs.contain("Already handled Task"));
 
 		let key = storage_key(&id);
 		let mut lock = task_lock::<Runtime>(&key);
@@ -177,8 +177,8 @@ fn forget_task_guard_when_task_has_been_persisted() {
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn offchain_worker_logs_error_when_transfer_validation_errors() {
+	let logs = traced_test::trace();
 	let mut ext_builder = ExtBuilder::default().with_keystore();
 	generate_authority(&mut ext_builder, 0);
 	ext_builder.with_offchain();
@@ -194,7 +194,7 @@ fn offchain_worker_logs_error_when_transfer_validation_errors() {
 
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(2);
 
-		assert!(logs_contain("Task verification encountered a processing error"));
+		assert!(logs.contain("Task verification encountered a processing error"));
 	});
 }
 
@@ -280,11 +280,11 @@ fn offchain_signed_tx_send_fails() {
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn offchain_worker_should_log_when_authority_is_missing() {
+	let logs = traced_test::trace();
 	ExtBuilder::default().with_keystore().build_sans_config().execute_with(|| {
 		WithWorkerHook::<TaskScheduler, Runtime>::roll_to(1);
 
-		assert!(logs_contain("Not an authority, skipping offchain work"));
+		assert!(logs.contain("Not an authority, skipping offchain work"));
 	});
 }
