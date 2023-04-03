@@ -83,6 +83,11 @@ updates:
     schedule:
       interval: "monthly"
 
+  - package-ecosystem: "cargo"
+    directory: "/test/traced-test"
+    schedule:
+      interval: "monthly"
+
   - package-ecosystem: "npm"
     directory: "/integration-tests"
     schedule:
