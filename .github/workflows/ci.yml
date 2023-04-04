@@ -64,6 +64,10 @@ jobs:
         run: |
           ./scripts/check-usage-of-log-warn.sh
 
+      - name: Check if Cargo.toml specifies dependencies from forks
+        run: |
+          ./scripts/check-for-used-forks.sh
+
   audit:
     name: cargo audit
     runs-on: ubuntu-latest
