@@ -9,7 +9,6 @@ use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE
 use sc_cli::{ChainSpec, Database, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
-use std::borrow::BorrowMut;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -64,7 +63,6 @@ pub mod set_db_tests {
 	use crate::cli::Cli;
 	use crate::command::maybe_set_db;
 	use sc_cli::{Database, SubstrateCli};
-	use std::borrow::BorrowMut;
 
 	#[test]
 	fn maybe_set_db_changes_config_when_no_db_is_set() {
