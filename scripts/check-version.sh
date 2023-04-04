@@ -22,6 +22,21 @@ check_version() {
 
 #### main part
 
+VERSION_FROM_CARGO_TOML=$(grep "^version =" Cargo.toml  | cut -f2 -d'=' | tr -d "' \"")
+
+SPEC_VERSION=$(grep spec_version: runtime/src/version.rs | cut -f2 -d: | tr -d " ,")
+IMPL_VERSION=$(grep impl_version: runtime/src/version.rs | cut -f2 -d: | tr -d " ,")
+VERSION_FROM_VERSION_RS="2.$SPEC_VERSION.$IMPL_VERSION"
+
+# Since PR #969 version strings in Cargo.toml and version.rs should be in sync
+echo "INFO: Cargo.toml version is $VERSION_FROM_CARGO_TOML"
+echo "INFO: version.rs version is $VERSION_FROM_VERSION_RS"
+if [ "$VERSION_FROM_CARGO_TOML" != "$VERSION_FROM_VERSION_RS" ]; then
+    echo "FAIL: Versions in Cargo.toml and runtime/src/version.rs are not in sync"
+    exit 2
+fi
+
+
 FROM=$(git rev-parse "${1:-origin/dev}")
 TO=$(git rev-parse "${2:-HEAD}")
 
