@@ -20,7 +20,7 @@ ethereum-types = { version = "0.14.0", features = [
     "rlp",
     "serialize",
 ], default-features = false }
-extend = "1.1.2"
+extend = "1.2.0"
 frame-benchmarking = { optional = true, workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
