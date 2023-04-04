@@ -45,10 +45,9 @@ declare module '@polkadot/api-base/types/submittable' {
             /**
              * Exactly as `transfer`, except the origin must be root and the source account may be
              * specified.
-             * # <weight>
+             * ## Complexity
              * - Same as transfer, but additional read and write because the source account is not
              * assumed to be in the overlay.
-             * # </weight>
              **/
             forceTransfer: AugmentedSubmittable<
                 (
@@ -129,7 +128,7 @@ declare module '@polkadot/api-base/types/submittable' {
              *
              * The dispatch origin for this call must be `Signed` by the transactor.
              *
-             * # <weight>
+             * ## Complexity
              * - Dependent on arguments but not critical, given proper implementations for input config
              * types. See related functions below.
              * - It contains a limited number of reads and writes internally and no complex
@@ -143,9 +142,6 @@ declare module '@polkadot/api-base/types/submittable' {
              * - Removing enough funds from an account will trigger `T::DustRemoval::on_unbalanced`.
              * - `transfer_keep_alive` works the same way as `transfer`, but has an additional check
              * that the transfer will not kill the origin account.
-             * ---------------------------------
-             * - Origin account is already in memory, so no DB operations for them.
-             * # </weight>
              **/
             transfer: AugmentedSubmittable<
                 (
@@ -177,9 +173,8 @@ declare module '@polkadot/api-base/types/submittable' {
              * - `keep_alive`: A boolean to determine if the `transfer_all` operation should send all
              * of the funds the account has, causing the sender account to be killed (false), or
              * transfer everything except at least the existential deposit, which will guarantee to
-             * keep the sender account alive (true). # <weight>
+             * keep the sender account alive (true). ## Complexity
              * - O(1). Just like transfer, but reading the user's transferable balance first.
-             * #</weight>
              **/
             transferAll: AugmentedSubmittable<
                 (
@@ -526,10 +521,6 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             /**
              * Anonymously schedule a task after a delay.
-             *
-             * # <weight>
-             * Same as [`schedule`].
-             * # </weight>
              **/
             scheduleAfter: AugmentedSubmittable<
                 (
@@ -565,10 +556,6 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             /**
              * Schedule a named task after a delay.
-             *
-             * # <weight>
-             * Same as [`schedule_named`](Self::schedule_named).
-             * # </weight>
              **/
             scheduleNamedAfter: AugmentedSubmittable<
                 (
@@ -597,11 +584,8 @@ declare module '@polkadot/api-base/types/submittable' {
              *
              * The dispatch origin for this call must be _Signed_.
              *
-             * # <weight>
+             * ## Complexity
              * - O(1).
-             * - Limited storage reads.
-             * - One DB change.
-             * # </weight>
              **/
             setKey: AugmentedSubmittable<
                 (
@@ -622,12 +606,8 @@ declare module '@polkadot/api-base/types/submittable' {
              *
              * The dispatch origin for this call must be _Signed_.
              *
-             * # <weight>
+             * ## Complexity
              * - O(1).
-             * - Limited storage reads.
-             * - One DB write (event).
-             * - Weight of derivative `call` execution + 10,000.
-             * # </weight>
              **/
             sudo: AugmentedSubmittable<
                 (call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -639,12 +619,8 @@ declare module '@polkadot/api-base/types/submittable' {
              *
              * The dispatch origin for this call must be _Signed_.
              *
-             * # <weight>
+             * ## Complexity
              * - O(1).
-             * - Limited storage reads.
-             * - One DB write (event).
-             * - Weight of derivative `call` execution + 10,000.
-             * # </weight>
              **/
             sudoAs: AugmentedSubmittable<
                 (
@@ -668,10 +644,8 @@ declare module '@polkadot/api-base/types/submittable' {
              *
              * The dispatch origin for this call must be _Signed_.
              *
-             * # <weight>
+             * ## Complexity
              * - O(1).
-             * - The weight of this call is defined by the caller.
-             * # </weight>
              **/
             sudoUncheckedWeight: AugmentedSubmittable<
                 (
@@ -709,9 +683,8 @@ declare module '@polkadot/api-base/types/submittable' {
             /**
              * Make some on-chain remark.
              *
-             * # <weight>
+             * ## Complexity
              * - `O(1)`
-             * # </weight>
              **/
             remark: AugmentedSubmittable<
                 (remark: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -727,16 +700,8 @@ declare module '@polkadot/api-base/types/submittable' {
             /**
              * Set the new runtime code.
              *
-             * # <weight>
+             * ## Complexity
              * - `O(C + S)` where `C` length of `code` and `S` complexity of `can_set_code`
-             * - 1 call to `can_set_code`: `O(S)` (calls `sp_io::misc::runtime_version` which is
-             * expensive).
-             * - 1 storage write (codec `O(C)`).
-             * - 1 digest item.
-             * - 1 event.
-             * The weight of this function is dependent on the runtime, but generally this is very
-             * expensive. We will treat this as a full block.
-             * # </weight>
              **/
             setCode: AugmentedSubmittable<
                 (code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -745,13 +710,8 @@ declare module '@polkadot/api-base/types/submittable' {
             /**
              * Set the new runtime code without doing any checks of the given `code`.
              *
-             * # <weight>
+             * ## Complexity
              * - `O(C)` where `C` length of `code`
-             * - 1 storage write (codec `O(C)`).
-             * - 1 digest item.
-             * - 1 event.
-             * The weight of this function is dependent on the runtime. We will treat this as a full
-             * block. # </weight>
              **/
             setCodeWithoutChecks: AugmentedSubmittable<
                 (code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -790,12 +750,11 @@ declare module '@polkadot/api-base/types/submittable' {
              *
              * The dispatch origin for this call must be `Inherent`.
              *
-             * # <weight>
+             * ## Complexity
              * - `O(1)` (Note that implementations of `OnTimestampSet` must also be `O(1)`)
              * - 1 storage read and 1 storage mutation (codec `O(1)`). (because of `DidUpdate::take` in
              * `on_finalize`)
              * - 1 event handler `on_timestamp_set`. Must be `O(1)`.
-             * # </weight>
              **/
             set: AugmentedSubmittable<
                 (now: Compact<u64> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
