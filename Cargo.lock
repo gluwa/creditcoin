@@ -1117,7 +1117,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
@@ -1172,7 +1172,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "assert_matches",
  "creditcoin-node-runtime",
@@ -1191,7 +1191,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-runtime"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "assert_matches",
  "frame-benchmarking",
@@ -1209,7 +1209,7 @@ dependencies = [
  "pallet-rewards",
  "pallet-scheduler",
  "pallet-session",
- "pallet-staking 2.214.1",
+ "pallet-staking 2.215.0",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -4665,7 +4665,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-creditcoin"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "assert_matches",
  "base58",
@@ -4703,7 +4703,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4760,7 +4760,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4817,7 +4817,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-staking"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -5335,7 +5335,7 @@ dependencies = [
 
 [[package]]
 name = "primitives"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "merlin",
  "num",
@@ -7268,7 +7268,7 @@ dependencies = [
 
 [[package]]
 name = "sha3pow"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "assert_matches",
  "pallet-difficulty",
@@ -8379,7 +8379,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test-client"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "creditcoin-node-runtime",
  "sc-client-db",
@@ -8392,7 +8392,7 @@ dependencies = [
 
 [[package]]
 name = "test-runtime-utils"
-version = "2.214.1"
+version = "2.215.0"
 dependencies = [
  "frame-support",
  "frame-system",

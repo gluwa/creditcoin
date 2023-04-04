@@ -72,7 +72,7 @@ pub mod set_db_tests {
 
 		// Start with no value set
 		assert_eq!(cli.run.import_params.database_params.database, None);
-		maybe_set_db(cli.borrow_mut());
+		maybe_set_db(&mut cli);
 
 		// Expect it is now set to ParityDB
 		assert_eq!(cli.run.import_params.database_params.database, Some(Database::ParityDb));
@@ -86,7 +86,7 @@ pub mod set_db_tests {
 		cli.run.import_params.database_params.database = Some(Database::RocksDb);
 		assert_eq!(cli.run.import_params.database_params.database, Some(Database::RocksDb));
 
-		maybe_set_db(cli.borrow_mut());
+		maybe_set_db(&mut cli);
 
 		// Expect that the value is unchanged
 		assert_eq!(cli.run.import_params.database_params.database, Some(Database::RocksDb));
@@ -110,7 +110,7 @@ pub fn run() -> sc_cli::Result<()> {
 	let mut cli = Cli::from_args();
 
 	//Set the DB to ParityDB if needed
-	maybe_set_db(cli.borrow_mut());
+	maybe_set_db(&mut cli);
 
 	match &cli.subcommand {
 		Some(Subcommand::Key(cmd)) => cmd.run(&cli),
