@@ -10,7 +10,9 @@
 USED_FORKS=$(find ./ -name Cargo.toml -print0 | xargs --null grep git |
 # whitelist begin
     grep -v "repository =" |
-    grep -v paritytech/substrate.git
+    grep -v paritytech/substrate.git |
+    # https://gluwa.atlassian.net/browse/CSUB-458
+    grep -v nathanwhit/rust-bech32-bitcoin
 # whitelist end
 )
 echo "INFO: Used forks in Cargo.toml files"
