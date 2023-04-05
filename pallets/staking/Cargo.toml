@@ -51,6 +51,5 @@ std = [
 ]
 try-runtime = [
     'frame-support/try-runtime',
-    'frame-election-provider-support/try-runtime',
     'pallet-staking-substrate/try-runtime',
 ]

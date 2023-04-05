@@ -39,7 +39,7 @@ use sp_runtime::{
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
-	SaturatedConversion,
+	SaturatedConversion, Saturating,
 };
 use sp_staking::SessionIndex;
 use sp_std::prelude::*;
@@ -258,13 +258,14 @@ impl frame_system::Config for Runtime {
 	type OnSetCode = ();
 
 	type MaxConsumers = ConstU32<{ u32::MAX }>;
+
+	type DbWeight = ParityDbWeight;
 }
 
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
-	type KeyOwnerProof =
-		<Historical as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
+	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 
 	type EquivocationReportSystem = ();
 
@@ -296,8 +297,7 @@ impl pallet_babe::Config for Runtime {
 	type EpochDuration = EpochDuration;
 	type ExpectedBlockTime = ExpectedBlockTime;
 	type EpochChangeTrigger = pallet_babe::ExternalTrigger;
-	type KeyOwnerProof =
-		<Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
+	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
 	type EquivocationReportSystem = (); // TODO: have an actual equivocation handler
 	type WeightInfo = ();
 	type MaxAuthorities = ConstU32<128>; // Q: maximum authority set size?
