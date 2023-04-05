@@ -1233,8 +1233,11 @@ dependencies = [
  "sc-consensus-babe",
  "sc-consensus-grandpa",
  "sc-consensus-pow",
+ "sc-consensus-slots",
  "sc-executor",
  "sc-keystore",
+ "sc-network",
+ "sc-network-sync",
  "sc-offchain",
  "sc-rpc-api",
  "sc-service",
@@ -1246,6 +1249,7 @@ dependencies = [
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-babe",
  "sp-consensus-grandpa",
  "sp-core",
@@ -1255,6 +1259,7 @@ dependencies = [
  "sp-keystore",
  "sp-offchain",
  "sp-runtime",
+ "sp-session",
  "sp-timestamp",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -1307,7 +1312,6 @@ dependencies = [
  "pallet-election-provider-multi-phase",
  "pallet-grandpa",
  "pallet-im-online",
- "pallet-insecure-randomness-collective-flip",
  "pallet-offchain-task-scheduler",
  "pallet-pos-switch",
  "pallet-rewards",
@@ -1315,6 +1319,7 @@ dependencies = [
  "pallet-session",
  "pallet-staking 2.216.0",
  "pallet-staking 4.0.0-dev",
+ "pallet-staking-reward-fn",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -4969,20 +4974,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-insecure-randomness-collective-flip"
-version = "4.0.0-dev"
-source = "git+https://github.com/nathanwhit/substrate.git?branch=pos-keep-history#08a2151d31e7c9a4627c8ef2e12e5b5a97e8a14d"
-dependencies = [
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "safe-mix",
- "scale-info",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-offchain-task-scheduler"
 version = "0.1.0"
 dependencies = [
@@ -5121,6 +5112,15 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-staking-reward-fn"
+version = "4.0.0-dev"
+source = "git+https://github.com/nathanwhit/substrate.git?branch=pos-keep-history#08a2151d31e7c9a4627c8ef2e12e5b5a97e8a14d"
+dependencies = [
+ "log",
+ "sp-arithmetic",
 ]
 
 [[package]]
@@ -6239,15 +6239,6 @@ checksum = "3e75f6a532d0fd9f7f13144f392b6ad56a32696bfcd9c78f797f16bbb6f072d6"
 
 [[package]]
 name = "rustc_version"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
-dependencies = [
- "semver 0.9.0",
-]
-
-[[package]]
-name = "rustc_version"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfa0f585226d2e68097d4f95d113b15b83a82e819ab25717ec0590d9584ef366"
@@ -6386,15 +6377,6 @@ name = "ryu"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
-
-[[package]]
-name = "safe-mix"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d3d055a2582e6b00ed7a31c1524040aa391092bf636328350813f3a0605215c"
-dependencies = [
- "rustc_version 0.2.3",
-]
 
 [[package]]
 name = "safe_arch"
@@ -7592,15 +7574,6 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
-dependencies = [
- "semver-parser",
-]
-
-[[package]]
-name = "semver"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bebd363326d05ec3e2f532ab7660680f3b02130d780c299bca73469d521bc0ed"
@@ -7825,7 +7798,7 @@ dependencies = [
  "curve25519-dalek 4.0.0-rc.1",
  "rand_core 0.6.4",
  "ring",
- "rustc_version 0.4.0",
+ "rustc_version",
  "sha2 0.10.6",
  "subtle",
 ]
@@ -9422,7 +9395,7 @@ checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if",
  "digest 0.10.6",
- "rand 0.8.5",
+ "rand 0.7.3",
  "static_assertions",
 ]
 

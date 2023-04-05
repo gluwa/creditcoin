@@ -142,3 +142,4 @@ pallet-im-online = { branch = "pos-keep-history", git = "https://github.com/nath
 pallet-bags-list = { branch = "pos-keep-history", git = "https://github.com/nathanwhit/substrate.git", default-features = false }
 pallet-authorship = { branch = "pos-keep-history", git = "https://github.com/nathanwhit/substrate.git", default-features = false }
 pallet-staking-reward-fn = { branch = "pos-keep-history", git = "https://github.com/nathanwhit/substrate.git", default-features = false }
+sc-network-sync = { branch = "pos-keep-history", git = "https://github.com/nathanwhit/substrate.git" }

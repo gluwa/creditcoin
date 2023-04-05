@@ -11,9 +11,9 @@ use primitives::metrics::MiningMetrics;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus::{BlockCheckParams, BlockImportParams, LongestChain, Verifier};
 use sc_consensus_babe as babe;
+use sc_consensus_grandpa::{LinkHalf, SharedVoterState};
 use sc_consensus_pow::PowVerifier;
 pub use sc_executor::NativeElseWasmExecutor;
-use sc_consensus_grandpa::{LinkHalf, SharedVoterState};
 use sc_keystore::LocalKeystore;
 use sc_network::ProtocolName;
 use sc_service::{
@@ -23,7 +23,6 @@ use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sc_transaction_pool::PoolLimit;
 use sha3pow::Sha3Algorithm;
 use sp_api::NumberFor;
-use sp_consensus::{self, CacheKeyId};
 use sp_consensus_babe::SlotDuration;
 use sp_core::traits::SpawnNamed;
 use sp_inherents::CreateInherentDataProviders;
@@ -34,7 +33,7 @@ use sp_runtime::{
 	Justification, OpaqueExtrinsic,
 	{offchain::DbExternalities, traits::IdentifyAccount},
 };
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 use tokio::sync::{oneshot, Notify};
 
 // Our native executor instance.
@@ -79,9 +78,12 @@ pub type BlockTy =
 	sp_runtime::generic::Block<sp_runtime::generic::Header<u32, BlakeTwo256>, OpaqueExtrinsic>;
 
 struct AuthoritiesProv;
-impl sc_finality_grandpa::GenesisAuthoritySetProvider<BlockTy> for AuthoritiesProv {
+impl sc_consensus_grandpa::GenesisAuthoritySetProvider<BlockTy> for AuthoritiesProv {
 	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
-		Ok(vec![(crate::chain_spec::get_from_seed::<sp_finality_grandpa::AuthorityId>("Alice"), 1)])
+		Ok(vec![(
+			crate::chain_spec::get_from_seed::<sp_consensus_grandpa::AuthorityId>("Alice"),
+			1,
+		)])
 	}
 }
 
@@ -419,13 +421,13 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			keystore: keystore_container.local_keystore(),
 			select_chain: select_chain.clone(),
 			transaction_pool: transaction_pool.clone(),
-			network: network.clone(),
 			mining_metrics,
 			pre_runtime: mining_key
 				.map(|k| decode_mining_key(Some(&*k)))
 				.transpose()?
 				.map(|s| s.encode()),
 			threads: mining_threads,
+			sync_service: sync_service.clone(),
 		},
 		babe_params: BabeAuthorshipParams {
 			client: client.clone(),
@@ -441,6 +443,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			role,
 			select_chain,
 			dev_key_seed,
+			sync_service: sync_service.clone(),
 		},
 		switch_notif,
 	}
@@ -503,7 +506,7 @@ fn grandpa_initializer(
 					Some(_) => {},
 					None => {
 						log::debug!("Initializing Grandpa");
-						let (import, link) = sc_finality_grandpa::block_import(
+						let (import, link) = sc_consensus_grandpa::block_import(
 							client.clone(),
 							&AuthoritiesProv,
 							select_chain.clone(),
@@ -663,7 +666,7 @@ impl Init for BabeImport {
 }
 
 pub type GrandpaImport =
-	sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>;
+	sc_consensus_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>;
 
 pub type BabeImport = BabeBlockImport<Block, FullClient, GrandpaImport>;
 
@@ -675,6 +678,8 @@ pub type PowImport<CIDP> = sc_consensus_pow::PowBlockImport<
 	Sha3Algorithm<FullClient>,
 	CIDP,
 >;
+
+pub type SyncService = Arc<sc_network_sync::SyncingService<Block>>;
 
 pub struct AuthorshipSwitcher<'a, CIDP> {
 	task_manager: &'a TaskManager,
@@ -766,6 +771,7 @@ struct BabeAuthorshipParams {
 	role: sc_network::config::Role,
 	name: String,
 	dev_key_seed: Option<String>,
+	sync_service: SyncService,
 }
 
 async fn start_babe_authorship(
@@ -787,6 +793,7 @@ async fn start_babe_authorship(
 		role,
 		name,
 		dev_key_seed,
+		sync_service,
 	} = params;
 
 	if is_authority {
@@ -824,10 +831,10 @@ async fn start_babe_authorship(
 				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
 				let slot =
-						sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-							*timestamp,
-							slot_duration,
-						);
+				sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+					*timestamp,
+					slot_duration,
+				);
 
 				Ok((slot, timestamp))
 			},
@@ -886,11 +893,11 @@ struct PowAuthorshipParams<CIDP> {
 	select_chain: FullSelectChain,
 	block_import: PowImport<CIDP>,
 	transaction_pool: Arc<FullPool>,
-	network: FullNetworkService,
 	mining_metrics: MiningMetrics,
 	pre_runtime: Option<Vec<u8>>,
 	keystore: Option<Arc<LocalKeystore>>,
 	threads: Option<usize>,
+	sync_service: SyncService,
 }
 
 struct PowStopper {
@@ -919,11 +926,11 @@ where
 		select_chain,
 		block_import,
 		transaction_pool,
-		network,
 		mining_metrics,
 		pre_runtime,
 		keystore,
 		threads,
+		sync_service,
 	} = params;
 	let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 		task_manager.spawn_handle(),
@@ -941,8 +948,8 @@ where
 		select_chain,
 		algorithm,
 		proposer_factory,
-		network.clone(),
-		network,
+		sync_service.clone(),
+		sync_service,
 		pre_runtime,
 		move |_, ()| async move {
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
@@ -1074,18 +1081,15 @@ where
 	}
 
 	/// Import a block.
-	///
-	/// Cached data can be accessed through the blockchain cache.
 	async fn import_block(
 		&mut self,
 		block: BlockImportParams<Block, Self::Transaction>,
-		cache: HashMap<sp_consensus::CacheKeyId, Vec<u8>>,
 	) -> Result<sc_consensus::ImportResult, Self::Error> {
 		log::debug!("import_block: #{:?}", block.header.number);
 		if self.switched_to_pos(block.header.parent_hash) {
-			self.babe_import.get_mut().await.import_block(block, cache).await
+			self.babe_import.get_mut().await.import_block(block).await
 		} else {
-			self.pow_import.import_block(block, cache).await
+			self.pow_import.import_block(block).await
 		}
 	}
 }
@@ -1205,7 +1209,7 @@ where
 	async fn verify(
 		&mut self,
 		block: BlockImportParams<Block, ()>,
-	) -> Result<(BlockImportParams<Block, ()>, Option<Vec<(CacheKeyId, Vec<u8>)>>), String> {
+	) -> Result<BlockImportParams<Block, ()>, String> {
 		log::debug!("verify: #{:?}", block.header.number);
 		if self.switched_to_pos(block.header.parent_hash) {
 			self.babe_verifier.get_mut().await.verify(block).await
