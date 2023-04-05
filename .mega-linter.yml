@@ -8,4 +8,6 @@ DISABLE_LINTERS:
   - MARKDOWN_MARKDOWN_LINK_CHECK
   # https://gluwa.atlassian.net/browse/CSUB-460
   - REPOSITORY_TRIVY
+  # https://gluwa.atlassian.net/browse/CSUB-461
+  - REPOSITORY_SECRETLINT
 JSON_JSONLINT_ARGUMENTS: --comments
