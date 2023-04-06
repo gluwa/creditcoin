@@ -50,7 +50,7 @@ jobs:
           export PR_NUMBER
           echo "**For full LLVM coverage report [click here](https://staticsitellvmhtml.z13.web.core.windows.net/$PR_NUMBER/html/)!**" > uncovered-lines.log
 
-          cargo llvm-cov \
+          cargo llvm-cov --features=try-runtime \
               --workspace --html --show-missing-lines --hide-instantiations \
               --ignore-filename-regex "(tests.rs|mock.rs)"
 
