@@ -99,3 +99,33 @@ impl<T: Config> Migrate for Migration<T> {
 		assert_eq!(new_pallet_prefix_iter.count(), past_count);
 	}
 }
+
+#[cfg(test)]
+pub mod tests {
+	use super::Authorities as OldAuthorities;
+	use super::Migrate;
+	use crate::mock::AccountId;
+	use crate::mock::ExtBuilder;
+	use crate::mock::Test;
+	use pallet_offchain_task_scheduler::Authorities as NewAuthorities;
+
+	#[test]
+	fn migrate_authorities() {
+		ExtBuilder::default().build_and_execute(|| {
+			let auth1: AccountId = AccountId::new([11; 32]);
+			OldAuthorities::<Test>::insert(auth1.clone(), ());
+
+			let auth2: AccountId = AccountId::new([22; 32]);
+			OldAuthorities::<Test>::insert(auth2.clone(), ());
+
+			let previous_count = OldAuthorities::<Test>::iter().count();
+
+			super::Migration::<Test>::new().migrate();
+
+			assert_eq!(0, OldAuthorities::<Test>::iter().count());
+			assert_eq!(previous_count, NewAuthorities::<Test>::iter().count());
+			assert!(NewAuthorities::<Test>::contains_key(auth1));
+			assert!(NewAuthorities::<Test>::contains_key(auth2));
+		});
+	}
+}
