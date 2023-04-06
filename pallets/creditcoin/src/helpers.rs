@@ -7,12 +7,13 @@ pub use external_address::{EVMAddress, PublicToAddress};
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, TaskId, Transfer,
+	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, Transfer,
 	TransferId, TransferKind, UnverifiedTransfer,
 };
 use frame_support::{ensure, traits::Get};
 use frame_system::pallet_prelude::*;
-use sp_runtime::{traits::Saturating, RuntimeAppPublic};
+use pallet_offchain_task_scheduler::tasks::{TaskScheduler, TaskV2};
+use sp_runtime::traits::Saturating;
 use sp_std::prelude::*;
 
 #[allow(unused_macros)]
@@ -152,9 +153,8 @@ impl<T: Config> Pallet<T> {
 			transfer: transfer.clone(),
 			deadline,
 		};
-		let task_id = TaskId::from(transfer_id.clone());
-		let pending = Task::from(pending);
-		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
+		let task_id = TaskV2::<T>::to_id(&pending);
+		T::TaskScheduler::insert(&deadline, &task_id, Task::from(pending));
 
 		Ok((transfer_id, transfer))
 	}
@@ -200,5 +200,8 @@ pub mod extensions {
 			core::convert::TryFrom::try_from(self.to_vec())
 		}
 
+		fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
+			self.try_into_bounded().unwrap()
+		}
 	}
 }

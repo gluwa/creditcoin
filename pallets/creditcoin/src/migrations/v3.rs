@@ -1,9 +1,10 @@
 // `interest_type` added to `LoanTerms`
 
-use super::{v1, v2};
+use super::{v1, v2, AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf};
 use core::convert::TryFrom;
 use frame_support::dispatch::Weight;
-use frame_support::{generate_storage_alias, traits::Get, Identity, Twox64Concat};
+use frame_support::{pallet_prelude::*, traits::Get, Identity, Twox64Concat};
+use sp_std::prelude::*;
 
 use crate::Config;
 
@@ -176,9 +177,9 @@ mod tests {
 	};
 
 	use super::{
-		AccountIdOf, AskOrder, AskTerms, BidOrder, BidTerms, BlockNumberOf, Blockchain, DealOrder,
-		HashOf, Identity, LoanTerms, MomentOf, OldAskOrder, OldAskTerms, OldBidOrder, OldBidTerms,
-		OldDealOrder, OldInterestRate, OldLoanTerms, Twox64Concat,
+		AccountIdOf, AskOrder, AskTerms, BidOrder, BidTerms, BlockNumberOf, DealOrder, HashOf,
+		Identity, InterestRate, LoanTerms, MomentOf, OldAskOrder, OldAskTerms, OldBidOrder,
+		OldBidTerms, OldDealOrder, OldInterestRate, OldLoanTerms, Twox64Concat,
 	};
 
 	#[frame_support::storage_alias]

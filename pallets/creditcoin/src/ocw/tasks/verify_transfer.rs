@@ -186,8 +186,8 @@ mod tests {
 	use crate::ocw::tasks::Task;
 	use crate::ocw::tasks::TaskV2;
 	use crate::ocw::tests::set_up_verify_transfer_env;
-	use crate::tests::{adjust_deal_order_to_nonce, ethless_currency, TestInfo};
-	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
+	use crate::tests::{adjust_deal_order_to_nonce, TestInfo};
+	use crate::{Blockchain, LoanTerms, TransferKind};
 	use frame_support::assert_ok;
 	use frame_support::dispatch::Dispatchable;
 	use sp_runtime::traits::IdentifyAccount;
@@ -202,48 +202,23 @@ mod tests {
 			let tx_hash = get_mock_tx_hash();
 			let contract = get_mock_contract().hex_to_address();
 			let tx_block_num = get_mock_tx_block_num();
-			let blockchain = Blockchain::RINKEBY;
+			let blockchain = Blockchain::Rinkeby;
 
 			// we're going to verify a transfer twice:
 			// First when we expect failure, which means we won't make all of the requests
-			{
-				let mut state = state.write();
-				MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-					.mock_chain_id(&mut state)
-					.mock_get_block_number(&mut state);
-			}
-			// Second when we expect success, where we'll do all the requests
 			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 				.mock_all(&mut state.write());
 
-			set_rpc_uri(&Blockchain::RINKEBY, dummy_url);
+			set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
 
 			let loan_amount = get_mock_amount();
-			let currency = ethless_currency(contract.clone());
-			let test_info = TestInfo::with_currency(currency);
-			let test_info = TestInfo {
-				blockchain,
-				loan_terms: LoanTerms { amount: loan_amount, ..test_info.loan_terms },
-				..test_info
-			};
+			let terms = LoanTerms { amount: loan_amount, ..Default::default() };
+
+			let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
 
 			let (deal_order_id, _) = test_info.create_deal_order();
 
 			let lender = test_info.lender.account_id;
-
-			// exercise when we try to send a fail_transfer but tx send fails
-			with_failing_create_transaction(|| {
-				assert_ok!(Creditcoin::register_funding_transfer(
-					Origin::signed(lender.clone()),
-					EvmTransferKind::Ethless.into(),
-					deal_order_id.clone(),
-					tx_hash.hex_to_address(),
-				));
-
-				roll_to_with_ocw(1);
-
-				assert!(logs.contain("Failed to send a dispatchable transaction"));
-			});
 
 			let _ =
 				pallet_offchain_task_scheduler::pallet::PendingTasks::<Test>::clear(u32::MAX, None);
@@ -252,14 +227,14 @@ mod tests {
 
 			// exercise when we try to send a verify_transfer but tx send fails
 			with_failing_create_transaction(|| {
-				assert_ok!(Creditcoin::register_funding_transfer_legacy(
+				assert_ok!(Creditcoin::register_funding_transfer(
 					Origin::signed(lender.clone()),
-					LegacyTransferKind::Ethless(contract.clone()),
+					TransferKind::Ethless(contract.clone()),
 					fake_deal_order_id.clone(),
 					tx_hash.hex_to_address(),
 				));
 
-				roll_to_with_ocw(2);
+				roll_to_with_ocw(1);
 				assert!(logs.contain("Failed to send a dispatchable transaction"));
 			});
 		});

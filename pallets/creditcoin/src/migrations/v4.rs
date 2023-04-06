@@ -1,25 +1,20 @@
 // address registration now verifies ownership, so removed existing addresses
-use super::{v3, AccountIdOf, HashOf};
 use super::{vec, Vec};
 use super::{Migrate, PhantomData};
-use crate::AddressId;
-use crate::{Config, ExternalAddress};
+use crate::Config;
 use frame_support::{
 	dispatch::Weight,
-	storage_alias,
 	traits::{Get, StorageVersion},
-	Blake2_128Concat,
 };
-use parity_scale_codec::{Decode, Encode};
 use sp_runtime::SaturatedConversion;
-
-use crate::Config;
 
 impl<Runtime> Migration<Runtime> {
 	pub(super) fn new() -> Self {
 		Self(PhantomData)
 	}
 }
+
+pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
 
 impl<T: Config> Migrate for Migration<T> {
 	fn pre_upgrade(&self) -> Vec<u8> {
@@ -28,7 +23,7 @@ impl<T: Config> Migrate for Migration<T> {
 
 	fn migrate(&self) -> Weight {
 		let sp_io::MultiRemovalResults { unique: count_removed, .. } =
-			Addresses::<T>::clear(u32::MAX, None);
+			crate::Addresses::<T>::clear(u32::MAX, None);
 
 		T::DbWeight::get().writes(count_removed.saturated_into())
 	}
@@ -45,7 +40,6 @@ impl<T: Config> Migrate for Migration<T> {
 #[cfg(test)]
 mod tests {
 	use super::Migrate;
-	use super::{Address, Addresses, Blockchain};
 	use crate::{
 		mock::{AccountId, ExtBuilder, Test},
 		Address, AddressId,

@@ -336,17 +336,6 @@ benchmarks! {
 		<Creditcoin<T>>::add_authority(root.clone().into(), who.clone()).unwrap();
 	}: _(root, who)
 
-	register_currency {
-		let root = RawOrigin::Root;
-		let currency = CurrencyEvm(
-			crate::EvmCurrencyType::SmartContract(
-				"0x0000000000000000000000000000000000000000".hex_to_address(),
-				[EvmTransferKind::Ethless].into_bounded(),
-			),
-			EvmInfo { chain_id: 0.into() },
-		);
-	}: _(root, currency)
-
 	set_collect_coins_contract {
 		let root = RawOrigin::Root;
 		let contract = GCreContract::default();
@@ -757,7 +746,7 @@ pub(crate) fn generate_fake_unverified_transfer<T: SystemConfig + TimestampConfi
 					&fake_ask_id::<T>(seed, deadline),
 					&fake_bid_id::<T>(seed, deadline),
 				),
-			),
+			)),
 			tx_id: format!("{seed:03x}").as_bytes().into_bounded(),
 			timestamp: None,
 		},

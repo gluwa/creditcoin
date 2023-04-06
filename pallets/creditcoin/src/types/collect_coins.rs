@@ -113,7 +113,6 @@ where
 			Err(InvalidTask(e)) => Err(TaskError::Evaluation(e)),
 			Err(NoRpcUrl(e)) => Err(TaskError::Scheduler(e.into())),
 			Err(RpcError(e)) => Err(TaskError::Scheduler(e.into())),
-			Err(IncorrectChainId) => Err(TaskError::Scheduler(SchedulerError::IncorrectChainId)),
 		}
 	}
 

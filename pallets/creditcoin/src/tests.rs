@@ -5,15 +5,14 @@ use crate::{
 	},
 	mock::{RuntimeOrigin as Origin, *},
 	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currency, CurrencyId,
-	DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind, ExternalAddress,
-	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
-	TransferId, TransferKind, Transfers, WeightInfo,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
+	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,
+	Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, BoundedVec};
 use frame_system::RawOrigin;
 use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
@@ -121,18 +120,6 @@ pub struct TestInfo {
 	pub(crate) ask_guid: Guid,
 	pub(crate) bid_guid: Guid,
 	pub(crate) expiration_block: u64,
-}
-
-impl Default for Currency {
-	fn default() -> Self {
-		Currency::Evm(
-			crate::EvmCurrencyType::SmartContract(
-				"0x0000000000000000000000000000000000000000".hex_to_address(),
-				[EvmTransferKind::Ethless].into_bounded(),
-			),
-			EvmInfo { chain_id: 0.into() },
-		)
-	}
 }
 
 impl Default for TestInfo {
@@ -465,70 +452,6 @@ fn verify_ethless_transfer() {
 			&amount,
 			&tx_id,
 		));
-	});
-}
-
-#[test]
-#[tracing_test::traced_test]
-fn register_transfer_ocw_fail_to_send() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, _| {
-		let dummy_url = "dummy";
-		let tx_hash = get_mock_tx_hash();
-		let contract = get_mock_contract().hex_to_address();
-		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = Blockchain::Rinkeby;
-
-		// we're going to verify a transfer twice:
-		// First when we expect failure, which means we won't make all of the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-			.mock_get_block_number(&mut state.write());
-		// Second when we expect success, where we'll do all the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-			.mock_all(&mut state.write());
-
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
-
-		let loan_amount = get_mock_amount();
-		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
-
-		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
-
-		let (deal_order_id, _) = test_info.create_deal_order();
-
-		let lender = test_info.lender.account_id;
-
-		// exercise when we try to send a fail_transfer but tx send fails
-		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer(
-				Origin::signed(lender.clone()),
-				TransferKind::Ethless(contract.clone()),
-				deal_order_id.clone(),
-				tx_hash.hex_to_address(),
-			));
-
-			roll_by_with_ocw(1);
-
-			assert!(logs_contain("Failed to send fail dispatchable transaction"));
-		});
-
-		crate::PendingTasks::<Test>::remove_all(None);
-
-		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
-
-		// exercise when we try to send a verify_transfer but tx send fails
-		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer(
-				Origin::signed(lender.clone()),
-				TransferKind::Ethless(contract.clone()),
-				fake_deal_order_id.clone(),
-				tx_hash.hex_to_address(),
-			));
-
-			roll_by_with_ocw(1);
-			assert!(logs_contain("Failed to send persist dispatchable transaction"));
-		});
 	});
 }
 
@@ -1448,7 +1371,7 @@ fn add_authority_should_fail_when_authority_already_exists() {
 
 		// try again
 		assert_noop!(
-			Creditcoin::add_authority(crate::mock::Origin::from(root), acct,),
+			Creditcoin::add_authority(crate::mock::RuntimeOrigin::from(root), acct,),
 			crate::Error::<Test>::AlreadyAuthority,
 		);
 	});
@@ -2932,47 +2855,6 @@ fn register_transfer_internal_should_error_when_transfer_is_already_registered()
 }
 
 #[test]
-fn register_currency_should_error_when_not_sudo() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::default();
-
-		assert_noop!(
-			Creditcoin::register_currency(
-				Origin::signed(test_info.lender.account_id),
-				Currency::default(),
-			),
-			BadOrigin
-		);
-	});
-}
-
-#[test]
-fn register_currency_works() {
-	ExtBuilder::default().build_and_execute(|| {
-		let currency = Currency::default();
-
-		assert_ok!(Creditcoin::register_currency(Origin::root(), currency.clone()));
-
-		let id = CurrencyId::new::<Test>(&currency);
-		assert_eq!(crate::Currencies::<Test>::get(&id), Some(currency));
-	})
-}
-
-#[test]
-fn register_currency_should_error_when_currency_already_registered() {
-	ExtBuilder::default().build_and_execute(|| {
-		let currency = Currency::default();
-
-		assert_ok!(Creditcoin::register_currency(Origin::root(), currency.clone()));
-
-		assert_noop!(
-			Creditcoin::register_currency(Origin::root(), currency),
-			crate::Error::<Test>::CurrencyAlreadyRegistered
-		);
-	})
-}
-
-#[test]
 fn exercise_weightinfo_functions() {
 	let result = super::weights::WeightInfo::<Test>::register_address();
 	assert!(result.ref_time() > 0);
@@ -3035,9 +2917,6 @@ fn exercise_weightinfo_functions() {
 	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::register_currency();
 	assert!(result.ref_time() > 0);
 }
 

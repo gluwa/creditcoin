@@ -21,11 +21,10 @@ use crate::{
 		MockedRpcRequests, PendingRequestExt, RuntimeCall as Call, RuntimeOrigin as Origin, RwLock,
 		TaskScheduler, Test, ETHLESS_RESPONSES,
 	},
-	ocw::rpc::{errors::RpcError, JsonRpcError, JsonRpcResponse},
-	ocw::tasks::StorageLock,
+	ocw::rpc::{errors::RpcError, JsonRpcResponse},
 	tests::TestInfo,
 	types::{DoubleMapExt, TransferId},
-	Blockchain, ExternalAddress, Id, LoanTerms, OrderId, TransferKind, Transfers,
+	Blockchain, ExternalAddress, Id, LoanTerms, OrderId, TransferKind,
 };
 use alloc::sync::Arc;
 use assert_matches::assert_matches;
@@ -373,31 +372,6 @@ fn blockchain_supports_bitcoin_native_transfer() {
 	assert!(Blockchain::Bitcoin.supports(&crate::TransferKind::Native));
 }
 
-#[test]
-fn offchain_signed_tx_works() {
-	let mut ext = ExtBuilder::default();
-	let acct_pubkey = ext.generate_authority();
-	let acct = AccountId::from(acct_pubkey.into_account().0);
-	let transfer_id = crate::TransferId::new::<crate::mock::Test>(&Blockchain::Ethereum, &[0]);
-	ext.build_offchain_and_execute_with_state(|_state, pool| {
-		crate::mock::roll_to(1);
-		let call = crate::Call::<crate::mock::Test>::fail_task {
-			task_id: transfer_id.into(),
-			deadline: 10000,
-			cause: IncorrectAmount,
-		};
-		assert_ok!(
-			crate::Pallet::<crate::mock::Test>::offchain_signed_tx(acct.clone(), |_| call.clone(),)
-		);
-		crate::mock::roll_to(2);
-
-		assert_matches!(pool.write().transactions.pop(), Some(tx) => {
-			let tx = Extrinsic::decode(&mut &*tx).unwrap();
-			assert_eq!(tx.call, crate::mock::Call::Creditcoin(call));
-		});
-	});
-}
-
 type MockTransfer = crate::Transfer<
 	crate::mock::AccountId,
 	crate::mock::BlockNumber,
@@ -486,64 +460,7 @@ fn verify_transfer_ocw_returns_err() {
 	});
 }
 
-#[test]
-#[tracing_test::traced_test]
-fn offchain_worker_logs_error_when_transfer_validation_errors() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, _pool| {
-		crate::mock::roll_to(1);
-
-		let (_unverified, mut requests) = set_up_verify_transfer_env(true);
-
-		requests.get_transaction.as_mut().unwrap().response = Some(
-			serde_json::to_vec(&JsonRpcResponse::<bool> {
-				jsonrpc: "2.0".into(),
-				id: 1,
-				error: Some(JsonRpcError { code: 555, message: "this is supposed to fail".into() }),
-				result: None,
-			})
-			.unwrap(),
-		);
-
-		requests.mock_get_transaction(&mut state.write());
-
-		crate::mock::roll_by_with_ocw(1);
-		assert!(logs_contain("Task verification encountered an error"));
-	});
-}
-
-#[test]
-#[tracing_test::traced_test]
-fn offchain_worker_should_log_and_forget_guard_when_task_is_already_handled() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute(|| {
-		crate::mock::roll_to(1);
-
-		let (unverified, _) = set_up_verify_transfer_env(true);
-		let id =
-			TransferId::new::<Test>(&unverified.transfer.blockchain, &unverified.transfer.tx_id);
-		// simulate a transfer that has already been handled
-		Transfers::<Test>::insert(&id, &unverified.transfer);
-
-		crate::mock::roll_by_with_ocw(1);
-		assert!(logs_contain("Already handled Task"));
-
-		// check that guard for the same ID has been released
-		let storage_key = crate::ocw::tasks::storage_key(&TaskId::VerifyTransfer(id));
-		let mut lock = StorageLock::<'_, BlockAndTime<System<Test>>>::with_block_and_time_deadline(
-			&storage_key,
-			1,
-			Duration::from_millis(0),
-		);
-
-		let guard = lock.try_lock();
-		assert!(guard.is_err());
-	});
-}
-
-fn set_up_verify_transfer_env(
+pub(crate) fn set_up_verify_transfer_env(
 	register_transfer: bool,
 ) -> (MockUnverifiedTransfer, MockedRpcRequests) {
 	let rpc_uri = "http://localhost:8545";

@@ -130,7 +130,6 @@ pub mod pallet {
 		fn fail_collect_coins() -> Weight;
 		fn remove_authority() -> Weight;
 		fn set_collect_coins_contract() -> Weight;
-		fn register_currency() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -213,9 +212,6 @@ pub mod pallet {
 		CollectedCoinsId<T::Hash>,
 		types::CollectedCoins<T::Hash, T::Balance>,
 	>;
-
-	#[pallet::storage]
-	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn collect_coins_contract)]
@@ -1297,20 +1293,6 @@ pub mod pallet {
 			T::TaskScheduler::insert_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
-		}
-
-		#[pallet::call_index(19)]
-		#[pallet::weight(<T as Config>::WeightInfo::register_currency())]
-		pub fn register_currency(origin: OriginFor<T>, currency: Currency) -> DispatchResult {
-			ensure_root(origin)?;
-
-			let id = CurrencyId::new::<T>(&currency);
-
-			ensure!(!Currencies::<T>::contains_key(&id), Error::<T>::CurrencyAlreadyRegistered);
-
-			Currencies::<T>::insert(&id, &currency);
-
-			Ok(())
 		}
 
 		#[transactional]

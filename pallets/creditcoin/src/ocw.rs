@@ -3,11 +3,8 @@ pub(crate) mod rpc;
 pub(crate) mod tasks;
 
 use self::{errors::RpcUrlError, rpc::errors::RpcError};
-use super::{
-	pallet::{Config, Error, Pallet},
-	ExternalAddress,
-};
-use crate::{Blockchain, Call, ExternalTxId, TransferKind};
+use super::ExternalAddress;
+use crate::{Blockchain, ExternalTxId, TransferKind};
 use alloc::string::String;
 pub(crate) use errors::{OffchainError, VerificationFailureCause, VerificationResult};
 use sp_runtime::offchain::storage::StorageValueRef;

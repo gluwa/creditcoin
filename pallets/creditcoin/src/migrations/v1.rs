@@ -8,9 +8,8 @@ use crate::{
 	loan_terms::{Decimals, Duration},
 	AddressId, Blockchain, Config, ExternalAmount, OfferId, RatePerPeriod, TransferId,
 };
-use codec::{Decode, Encode};
 use frame_support::weights::Weight;
-use frame_support::{generate_storage_alias, traits::Get};
+use frame_support::{pallet_prelude::*, traits::Get};
 use frame_support::{Identity, Twox64Concat};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
@@ -128,7 +127,6 @@ pub struct BidOrder<AccountId, BlockNum, Hash> {
 	pub block: BlockNum,
 	pub borrower: AccountId,
 }
-
 
 #[frame_support::storage_alias]
 type AskOrders<T: crate::Config> = StorageDoubleMap<

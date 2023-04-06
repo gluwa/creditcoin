@@ -443,18 +443,6 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: Creditcoin Currencies (r:1 w:1)
-	/// Proof: Creditcoin Currencies (max_values: None, max_size: Some(303), added: 2778, mode: MaxEncodedLen)
-	fn register_currency() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `42`
-		//  Estimated: `3768`
-		// Minimum execution time: 24_901_000 picoseconds.
-		Weight::from_parts(25_500_000, 0)
-			.saturating_add(Weight::from_parts(0, 3768))
-			.saturating_add(T::DbWeight::get().reads(1))
-			.saturating_add(T::DbWeight::get().writes(1))
-	}
 	/// Storage: Creditcoin CollectCoinsContract (r:0 w:1)
 	/// Proof: Creditcoin CollectCoinsContract (max_values: Some(1), max_size: Some(29), added: 524, mode: MaxEncodedLen)
 	fn set_collect_coins_contract() -> Weight {

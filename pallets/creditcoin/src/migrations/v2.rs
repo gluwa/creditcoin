@@ -1,13 +1,14 @@
 // `block` added to `DealOrder` and `timestamp` added to `Transfer`
 
+use super::v1::DealOrder as OldDealOrder;
+use super::v1::LoanTerms;
+use super::{AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf};
 use crate::{
 	AddressId, Blockchain, Config, ExternalAmount, ExternalTxId, OfferId, OrderId, TransferId,
 	TransferKind,
 };
-use frame_support::{generate_storage_alias, pallet_prelude::*, Identity, Twox64Concat};
-
-use super::v1::DealOrder as OldDealOrder;
-use super::v1::LoanTerms;
+use frame_support::{pallet_prelude::*, Identity, Twox64Concat};
+use sp_std::prelude::*;
 
 use crate::Transfer;
 
@@ -133,17 +134,13 @@ impl<T: Config> Migrate for Migration<T> {
 mod test {
 	use core::convert::TryInto;
 
-	use super::{Config, DealOrder, Identity, OldDealOrder, OldTransfer, Transfer, Twox64Concat};
 	use super::Migrate;
-	use super::{
-		AccountIdOf, BlockNumberOf, Blockchain, DealOrder, HashOf, Identity, MomentOf,
-		OldDealOrder, OldTransfer, OrderId, Transfer, TransferKind, Twox64Concat,
-	};
+	use super::{AccountIdOf, BlockNumberOf, Blockchain, HashOf, MomentOf, OrderId, TransferKind};
+	use super::{DealOrder, Identity, OldDealOrder, OldTransfer, Transfer, Twox64Concat};
 	use crate::{
 		mock::{ExtBuilder, Test},
 		tests::TestInfo,
-		Blockchain, DealOrderId, DoubleMapExt, Duration, OfferId, OrderId, TransferId,
-		TransferKind,
+		DealOrderId, DoubleMapExt, Duration, OfferId, TransferId,
 	};
 	use sp_runtime::traits::Hash;
 

@@ -1,14 +1,24 @@
-use super::v6::PendingTasks;
 use super::{vec, Vec};
-use super::{Migrate, PhantomData};
+use super::{AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf, PhantomData};
 use crate::pallet::WeightInfo;
-use crate::types::Task;
+use crate::types::{Task, TaskId};
 use crate::Config;
 use crate::StorageVersion;
 use frame_support::weights::Weight;
+use frame_support::{storage_alias, Identity};
 use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
 use sp_runtime::traits::UniqueSaturatedInto;
+
+#[storage_alias]
+pub type PendingTasks<T: Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	TaskId<HashOf<T>>,
+	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
 pub(crate) struct Migration<Runtime>(PhantomData<Runtime>);
 

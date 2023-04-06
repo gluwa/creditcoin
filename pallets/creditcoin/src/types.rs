@@ -1,11 +1,9 @@
 mod collect_coins;
 pub mod loan_terms;
-pub mod platform;
 mod transfer;
 
 pub use collect_coins::*;
 pub use loan_terms::*;
-pub use platform::*;
 pub use transfer::*;
 
 use crate::ocw::tasks::collect_coins::GCreContract;
@@ -80,43 +78,6 @@ impl<AccountId> Address<AccountId> {
 	pub fn matches_chain_of(&self, other: &Address<AccountId>) -> bool {
 		self.blockchain == other.blockchain
 	}
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectedCoins<Hash, Balance> {
-	pub to: AddressId<Hash>,
-	pub amount: Balance,
-	pub tx_id: ExternalTxId,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
-	pub kind: TransferKind,
-	pub from: AddressId<Hash>,
-	pub to: AddressId<Hash>,
-	pub order_id: OrderId<BlockNum, Hash>,
-	pub amount: ExternalAmount,
-	pub tx_id: ExternalTxId,
-	pub block: BlockNum,
-	pub is_processed: bool,
-	pub account_id: AccountId,
-	pub timestamp: Option<Moment>,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct UnverifiedCollectedCoins {
-	pub to: ExternalAddress,
-	pub tx_id: ExternalTxId,
-	pub contract: GCreContract,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
-	pub transfer: Transfer<AccountId, BlockNum, Hash, Moment>,
-	pub from_external: ExternalAddress,
-	pub to_external: ExternalAddress,
-	pub deadline: BlockNum,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -196,12 +157,6 @@ pub enum OrderId<BlockNum, Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct TransferId<Hash>(Hash);
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectedCoinsId<Hash>(Hash);
-
 fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
 	let mut hex = Vec::with_capacity(bytes.len() * 2);
@@ -277,28 +232,6 @@ impl<B, H> RepaymentOrderId<B, H> {
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
 		RepaymentOrderId(expiration_block, Config::Hashing::hash(guid))
-	}
-}
-
-impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
-	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
-		TransferId(Config::Hashing::hash(&key))
-	}
-}
-
-impl<H> CollectedCoinsId<H> {
-	pub fn new<Config>(contract_chain: &Blockchain, blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
-	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		let key = concatenate!(contract_chain.as_bytes(), blockchain_tx_id);
-		CollectedCoinsId(Config::Hashing::hash(&key))
 	}
 }
 
@@ -606,6 +539,7 @@ pub(crate) mod test {
 		helpers::extensions::HexToAddress, mock, ocw::tasks::collect_coins::tests::TX_HASH,
 		tests::TestInfo, *,
 	};
+	use frame_support::BoundedVec;
 	use parity_scale_codec::{Decode, Encode};
 	use sp_runtime::testing::H256;
 
@@ -727,6 +661,11 @@ pub(crate) mod test {
 		}
 	}
 
+	pub(crate) fn create_unverified_transfer(
+	) -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order_id, _) = test_info.create_deal_order();
+		let (_, transfer) = test_info.create_funding_transfer(&deal_order_id);
 		UnverifiedTransfer {
 			transfer,
 			from_external: b"lender".to_vec().try_into().unwrap(),
@@ -772,9 +711,6 @@ pub(crate) mod test {
 	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
 		create_funding_transfer()
 	),
-	task_data: TaskData<AccountId, Balance, BlockNum, Hash, Moment> : TaskData::<AccountId, Balance, BlockNum, Hash, Moment>::CollectCoins(
-		create_unverified_collected_coins(), 2000
-	),
 
 	// from types/loan_terms.rs
 	duration: Duration : Duration::from_millis(100),
@@ -783,18 +719,6 @@ pub(crate) mod test {
 	loan_terms: LoanTerms : TestInfo::new_defaults().loan_terms,
 	ask_terms: AskTerms : AskTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
 	bid_terms: BidTerms : BidTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
-
-	// from types/platform.rs
-	evm_chain_id: EvmChainId : EvmChainId::from(44),
-	evm_info: EvmInfo : EvmInfo { chain_id: 0.into() },
-	new_blockchain: NewBlockchain : NewBlockchain::Evm(EvmInfo { chain_id: 0.into() }),
-	evm_transfer_kind: EvmTransferKind : EvmTransferKind::Erc20,
-	evm_currency_type: EvmCurrencyType : match Currency::default() {
-		Currency::Evm(currency_type, _) => currency_type,
-	},
-	currency: Currency : Currency::default(),
-	new_transfer_kind: NewTransferKind : NewTransferKind::Evm(EvmTransferKind::Erc20),
-	currency_id: CurrencyId<Hash> : CurrencyId::new::<mock::Test>(&Currency::default()),
 	}
 
 	#[test]
@@ -881,11 +805,6 @@ pub(crate) mod test {
 				bid_terms.agreed_terms(&ask_terms),
 			);
 		})
-	}
-
-	#[test]
-	fn test_evmchainid_new() {
-		assert_eq!(EvmChainId::new(46), EvmChainId::from(46),);
 	}
 
 	#[test]
