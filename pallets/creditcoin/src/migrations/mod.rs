@@ -48,6 +48,33 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	weight
 }
 
+#[cfg(test)]
+pub mod tests {
+	use super::v7::Authorities as OldAuthorities;
+	use super::{migrate, Weight};
+	use crate::mock::AccountId;
+	use crate::mock::ExtBuilder;
+	use crate::mock::Test;
+
+	#[test]
+	fn migrate_should_not_crash() {
+		ExtBuilder::default().build_and_execute(|| {
+			// simulate a production environment b/c
+			// deployed Creditcoin installations are always supposed to have
+			// authorities. There's an explicit assert for this in v8::pre_upgrade()
+			let auth1: AccountId = AccountId::new([11; 32]);
+			OldAuthorities::<Test>::insert(auth1, ());
+
+			let auth2: AccountId = AccountId::new([22; 32]);
+			OldAuthorities::<Test>::insert(auth2, ());
+
+			let weight = migrate::<Test>();
+
+			assert_ne!(weight, Weight::zero());
+		});
+	}
+}
+
 type HashOf<T> = <T as frame_system::Config>::Hash;
 type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
