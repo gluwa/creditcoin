@@ -1,4 +1,5 @@
 mod external_address;
+mod register_transfer;
 
 pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -7,13 +8,10 @@ pub use external_address::{EVMAddress, PublicToAddress};
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
-	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, Transfer,
-	TransferId, TransferKind, UnverifiedTransfer,
+	DealOrderId, Error, Guid, Id, TransferId,
 };
-use frame_support::{ensure, traits::Get};
+use frame_support::ensure;
 use frame_system::pallet_prelude::*;
-use pallet_offchain_task_scheduler::tasks::{TaskScheduler, TaskV2};
-use sp_runtime::traits::Saturating;
 use sp_std::prelude::*;
 
 #[allow(unused_macros)]
@@ -103,60 +101,6 @@ impl<T: Config> Pallet<T> {
 		ensure!(!<UsedGuids<T>>::contains_key(guid.clone()), Error::<T>::GuidAlreadyUsed);
 		UsedGuids::<T>::insert(guid, ());
 		Ok(())
-	}
-
-	pub fn register_transfer_internal(
-		who: T::AccountId,
-		from_id: AddressId<T::Hash>,
-		to_id: AddressId<T::Hash>,
-		transfer_kind: TransferKind,
-		amount: ExternalAmount,
-		order_id: OrderId<T::BlockNumber, T::Hash>,
-		blockchain_tx_id: ExternalTxId,
-	) -> Result<
-		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>),
-		crate::Error<T>,
-	> {
-		let from = Self::get_address(&from_id)?;
-		let to = Self::get_address(&to_id)?;
-
-		ensure!(from.owner == who, Error::<T>::NotAddressOwner);
-
-		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
-
-		ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
-
-		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
-		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
-
-		let block = Self::block_number();
-
-		let transfer = Transfer {
-			blockchain: from.blockchain,
-			kind: transfer_kind,
-			amount,
-			block,
-			from: from_id,
-			to: to_id,
-			order_id,
-			is_processed: false,
-			account_id: who,
-			tx_id: blockchain_tx_id,
-			timestamp: None,
-		};
-
-		let deadline = block.saturating_add(T::UnverifiedTaskTimeout::get());
-
-		let pending = UnverifiedTransfer {
-			from_external: from.value,
-			to_external: to.value,
-			transfer: transfer.clone(),
-			deadline,
-		};
-		let task_id = TaskV2::<T>::to_id(&pending);
-		T::TaskScheduler::insert(&deadline, &task_id, Task::from(pending));
-
-		Ok((transfer_id, transfer))
 	}
 }
 

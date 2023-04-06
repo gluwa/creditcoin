@@ -154,6 +154,12 @@ pub enum OrderId<BlockNum, Hash> {
 	Repayment(RepaymentOrderId<BlockNum, Hash>),
 }
 
+impl<BlockNum, Hash> From<DealOrderId<BlockNum, Hash>> for OrderId<BlockNum, Hash> {
+	fn from(id: DealOrderId<BlockNum, Hash>) -> Self {
+		Self::Deal(id)
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
 
@@ -458,7 +464,8 @@ pub enum Task<AccountId, BlockNum, Hash, Moment> {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: SystemConfig + TimestampConfig> pallet_offchain_task_scheduler::benchmarking::TaskDefault<T>
+impl<T: SystemConfig + TimestampConfig + crate::Config>
+	pallet_offchain_task_scheduler::benchmarking::TaskDefault<T>
 	for Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
 {
 	fn generate_from_seed(seed: u32) -> Self {
@@ -510,7 +517,7 @@ impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
 	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>),
+	CollectCoins(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>),
 }
 
 impl<AccountId, Balance, BlockNum, Hash, Moment>
@@ -525,10 +532,10 @@ impl<AccountId, Balance, BlockNum, Hash, Moment>
 }
 
 impl<AccountId, Balance, BlockNum, Hash, Moment>
-	From<(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)>
+	From<(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)>
 	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
 {
-	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)) -> Self {
+	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)) -> Self {
 		Self::CollectCoins(id, coins)
 	}
 }
@@ -536,8 +543,8 @@ impl<AccountId, Balance, BlockNum, Hash, Moment>
 #[cfg(test)]
 pub(crate) mod test {
 	use crate::{
-		helpers::extensions::HexToAddress, mock, ocw::tasks::collect_coins::tests::TX_HASH,
-		tests::TestInfo, *,
+		helpers::extensions::HexToAddress, loan_terms::InvalidTermLengthError, mock,
+		ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
 	};
 	use frame_support::BoundedVec;
 	use parity_scale_codec::{Decode, Encode};
@@ -645,8 +652,8 @@ pub(crate) mod test {
 		test_info.create_funding_transfer(&deal_order_id)
 	}
 
-	fn create_collected_coins() -> CollectedCoins<Hash, Balance> {
-		CollectedCoins {
+	fn create_collected_coins() -> CollectedCoinsStruct<Hash, Balance> {
+		CollectedCoinsStruct {
 			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
 			amount: 1000,
 			tx_id: TX_HASH.hex_to_address(),
@@ -689,7 +696,7 @@ pub(crate) mod test {
 	blockchain: Blockchain : Blockchain::Bitcoin,
 	transfer_kind: TransferKind : TransferKind::Native,
 	address: Address<AccountId> : create_address(),
-	collected_coins: CollectedCoins<Hash, Balance> : create_collected_coins(),
+	collected_coins: CollectedCoinsStruct<Hash, Balance> : create_collected_coins(),
 	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
 	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
 	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),

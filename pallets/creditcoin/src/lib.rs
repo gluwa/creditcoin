@@ -35,7 +35,18 @@ pub mod ocw;
 mod types;
 
 use ocw::tasks::collect_coins::GCreContract;
-pub use types::*;
+pub use types::{
+	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
+	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
+	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
+	TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+};
+
+pub(crate) use types::{DoubleMapExt, Id};
+
+#[cfg(test)]
+pub(crate) use types::test;
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
@@ -210,7 +221,7 @@ pub mod pallet {
 		_,
 		Identity,
 		CollectedCoinsId<T::Hash>,
-		types::CollectedCoins<T::Hash, T::Balance>,
+		types::CollectedCoinsStruct<T::Hash, T::Balance>,
 	>;
 
 	#[pallet::storage]
@@ -243,7 +254,7 @@ pub mod pallet {
 		/// [collected_coins_id, collected_coins]
 		CollectedCoinsMinted(
 			types::CollectedCoinsId<T::Hash>,
-			types::CollectedCoins<T::Hash, T::Balance>,
+			types::CollectedCoinsStruct<T::Hash, T::Balance>,
 		),
 
 		/// An external transfer has been processed and marked as part of a loan.
@@ -389,7 +400,7 @@ pub mod pallet {
 		RepaymentOrderNonZeroGain,
 
 		/// The addresses specified are not on compatible external chains.
-		AddressPlatformMismatch,
+		AddressBlockchainMismatch,
 
 		/// The account is already an authority.
 		AlreadyAuthority,
@@ -720,7 +731,7 @@ pub mod pallet {
 
 			ensure!(
 				ask_order.blockchain == bid_order.blockchain,
-				Error::<T>::AddressPlatformMismatch
+				Error::<T>::AddressBlockchainMismatch
 			);
 
 			ensure!(ask_order.terms.match_with(&bid_order.terms), Error::<T>::AskBidMismatch);
@@ -912,7 +923,7 @@ pub mod pallet {
 			let lender = Self::get_address(&lender_address_id)?;
 			ensure!(lender.owner == lender_account, Error::<T>::NotAddressOwner);
 
-			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressPlatformMismatch);
+			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressBlockchainMismatch);
 
 			let ask_order_id = AskOrderId::new::<T>(expiration_block, &ask_guid);
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);

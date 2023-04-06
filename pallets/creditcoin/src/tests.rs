@@ -747,7 +747,7 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
-			crate::Error::<Test>::AddressPlatformMismatch
+			crate::Error::<Test>::AddressBlockchainMismatch
 		);
 	})
 }
@@ -1521,7 +1521,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 				pub_key.into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::AddressPlatformMismatch
+			crate::Error::<Test>::AddressBlockchainMismatch
 		);
 	});
 }
@@ -2741,52 +2741,6 @@ fn register_transfer_internal_should_error_with_non_existent_lender_address() {
 }
 
 #[test]
-fn register_transfer_internal_should_error_with_non_existent_borrower_address() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-		let bogus_address =
-			AddressId::new::<Test>(&Blockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
-
-		let result = Creditcoin::register_transfer_internal(
-			test_info.lender.account_id,
-			deal_order.lender_address_id,
-			bogus_address,
-			TransferKind::Native,
-			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
-	})
-}
-
-#[test]
-fn register_transfer_internal_should_error_when_signer_doesnt_own_from_address() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-
-		let result = Creditcoin::register_transfer_internal(
-			test_info.lender.account_id,
-			deal_order.borrower_address_id, // should match 1st argument
-			deal_order.lender_address_id,
-			TransferKind::Native,
-			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::NotAddressOwner);
-	})
-}
-
-#[test]
 fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_blockchain() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -2805,7 +2759,7 @@ fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_bl
 		)
 		.unwrap_err();
 
-		assert_eq!(result, crate::Error::<Test>::AddressPlatformMismatch);
+		assert_eq!(result, crate::Error::<Test>::AddressBlockchainMismatch);
 	})
 }
 

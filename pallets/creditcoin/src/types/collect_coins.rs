@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectedCoins<Hash, Balance> {
+pub struct CollectedCoinsStruct<Hash, Balance> {
 	pub to: AddressId<Hash>,
 	pub amount: Balance,
 	pub tx_id: ExternalTxId,
@@ -15,13 +15,13 @@ pub struct UnverifiedCollectedCoins {
 }
 
 impl UnverifiedCollectedCoins {
-	pub fn into_output<T>(self, amount: T::Balance) -> CollectedCoins<T::Hash, T::Balance>
+	pub fn into_output<T>(self, amount: T::Balance) -> CollectedCoinsStruct<T::Hash, T::Balance>
 	where
 		T: Config,
 	{
 		let Self { to, tx_id, contract: GCreContract { chain, .. } } = self;
 		let to = crate::AddressId::new::<T>(&chain, to.as_slice());
-		CollectedCoins { amount, to, tx_id }
+		CollectedCoinsStruct { amount, to, tx_id }
 	}
 }
 

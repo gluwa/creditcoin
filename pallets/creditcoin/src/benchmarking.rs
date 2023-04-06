@@ -1,18 +1,12 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::benchmarking::alloc::format;
-use crate::helpers::{
-	extensions::{HexToAddress, IntoBounded},
-	EVMAddress, PublicToAddress,
-};
+use crate::helpers::{extensions::IntoBounded, EVMAddress, PublicToAddress};
 use crate::migrations::Migrate;
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::Pallet as Creditcoin;
-use crate::{
-	types::{Blockchain, Currency::Evm as CurrencyEvm},
-	Duration, EvmTransferKind,
-};
+use crate::{types::Blockchain, Duration};
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
@@ -216,7 +210,7 @@ benchmarks! {
 		let authority = authority_account::<T>(true);
 		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
-		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,false,0u8);
+		let (transfer_id, _)= generate_transfer::<T>(deal_id,false,true,0u8);
 		let cause = crate::ocw::VerificationFailureCause::TaskFailed;
 		let deadline = T::BlockNumber::one();
 		let task_id = crate::TaskId::from(transfer_id);
@@ -242,7 +236,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
-		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,true,0u8);
+		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,false,0u8);
 	}: _(RawOrigin::Signed(lender),transfer.kind,deal_id,transfer.tx_id)
 
 	register_repayment_transfer {
@@ -250,7 +244,7 @@ benchmarks! {
 		let borrower: T::AccountId = borrower_account::<T>(true);
 		let repayment_amount = ExternalAmount::from(1);
 		let deal_id = generate_deal::<T>(true,0u8).unwrap();
-		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,true,0u8);
+		let (_,transfer) = generate_transfer::<T>(deal_id.clone(),false,true,0u8);
 	}: _(RawOrigin::Signed(borrower),transfer.kind,repayment_amount,deal_id,transfer.tx_id)
 
 	close_deal_order {
@@ -325,7 +319,7 @@ benchmarks! {
 		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 		let amount = T::Balance::unique_saturated_from(Balances::<T>::minimum_balance());
 		let collected_coins =
-			crate::types::CollectedCoins::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };
+			crate::types::CollectedCoinsStruct::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
@@ -398,25 +392,30 @@ fn generate_transfer<T: Config>(
 	let tx = raw_tx.as_bytes().into_bounded();
 	let transfer_id = TransferId::new::<T>(&Blockchain::Ethereum, &tx);
 
+	let order = try_get_id!(DealOrders<T>, &deal_id, NonExistentDealOrder).unwrap();
+
 	let contract = "0x0ad1439a0e0bfdcd49939f9722866651a4aa9b3c".as_bytes().into_bounded();
 
-	if swap_sender {
-		Creditcoin::<T>::register_repayment_transfer(
-			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract),
+	let (transfer, _) = if swap_sender {
+		Creditcoin::<T>::generate_transfer(
+			who,
+			order.borrower_address_id,
+			order.lender_address_id,
+			TransferKind::Ethless(contract.clone()),
 			gain.into(),
-			deal_id,
+			deal_id.into(),
 			tx,
-			&order.terms.currency,
 		)
 		.unwrap()
 	} else {
-		Creditcoin::<T>::register_funding_transfer(
-			RawOrigin::Signed(who).into(),
-			TransferKind::Ethless(contract),
-			deal_id,
+		Creditcoin::<T>::generate_transfer(
+			who,
+			order.lender_address_id,
+			order.borrower_address_id,
+			TransferKind::Ethless(contract.clone()),
+			order.terms.amount,
+			deal_id.into(),
 			tx,
-			&order.terms.currency,
 		)
 		.unwrap()
 	};
@@ -719,7 +718,7 @@ fn insert_fake_deal<T: Config>(
 	crate::DealOrders::<T>::insert_id(deal_id, deal);
 }
 
-pub(crate) fn generate_fake_unverified_transfer<T: SystemConfig + TimestampConfig>(
+pub(crate) fn generate_fake_unverified_transfer<T: SystemConfig + TimestampConfig + Config>(
 	who: &T::AccountId,
 	deadline: BlockNumberFor<T>,
 	seed: u32,
@@ -750,9 +749,5 @@ pub(crate) fn generate_fake_unverified_transfer<T: SystemConfig + TimestampConfi
 			tx_id: format!("{seed:03x}").as_bytes().into_bounded(),
 			timestamp: None,
 		},
-	};
-
-	let task_id = TaskId::VerifyTransfer(transfer_id);
-	let task = Task::VerifyTransfer(transfer);
-	crate::PendingTasks::<T>::insert(deadline, task_id, task)
+	}
 }
