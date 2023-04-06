@@ -325,50 +325,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: Creditcoin DealOrders (r:1 w:1)
-	/// Proof: Creditcoin DealOrders (max_values: None, max_size: Some(397), added: 2872, mode: MaxEncodedLen)
-	/// Storage: Creditcoin Addresses (r:2 w:0)
-	/// Proof: Creditcoin Addresses (max_values: None, max_size: Some(347), added: 2822, mode: MaxEncodedLen)
-	/// Storage: Creditcoin Transfers (r:1 w:0)
-	/// Proof: Creditcoin Transfers (max_values: None, max_size: Some(479), added: 2954, mode: MaxEncodedLen)
-	/// Storage: TaskScheduler PendingTasks (r:1 w:1)
-	/// Proof: TaskScheduler PendingTasks (max_values: None, max_size: Some(1276), added: 3751, mode: MaxEncodedLen)
-	fn register_funding_transfer_legacy() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `709`
-		//  Estimated: `19181`
-		// Minimum execution time: 73_602_000 picoseconds.
-		Weight::from_parts(74_502_000, 0)
-			.saturating_add(Weight::from_parts(0, 19181))
-			.saturating_add(T::DbWeight::get().reads(5))
-			.saturating_add(T::DbWeight::get().writes(2))
-	}
-	/// Storage: Creditcoin DealOrders (r:1 w:1)
-	/// Proof: Creditcoin DealOrders (max_values: None, max_size: Some(397), added: 2872, mode: MaxEncodedLen)
-	/// Storage: Creditcoin Addresses (r:2 w:0)
-	/// Proof: Creditcoin Addresses (max_values: None, max_size: Some(347), added: 2822, mode: MaxEncodedLen)
-	/// Storage: Creditcoin Transfers (r:1 w:0)
-	/// Proof: Creditcoin Transfers (max_values: None, max_size: Some(479), added: 2954, mode: MaxEncodedLen)
-	/// Storage: TaskScheduler PendingTasks (r:1 w:1)
-	/// Proof: TaskScheduler PendingTasks (max_values: None, max_size: Some(1276), added: 3751, mode: MaxEncodedLen)
-	fn register_repayment_transfer_legacy() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `709`
-		//  Estimated: `19181`
-		// Minimum execution time: 74_502_000 picoseconds.
-		Weight::from_parts(74_902_000, 0)
-			.saturating_add(Weight::from_parts(0, 19181))
-			.saturating_add(T::DbWeight::get().reads(5))
-			.saturating_add(T::DbWeight::get().writes(2))
-	}
-	/// Storage: Creditcoin DealOrders (r:1 w:1)
-	/// Proof: Creditcoin DealOrders (max_values: None, max_size: Some(397), added: 2872, mode: MaxEncodedLen)
-	/// Storage: Creditcoin Addresses (r:1 w:0)
-	/// Proof: Creditcoin Addresses (max_values: None, max_size: Some(347), added: 2822, mode: MaxEncodedLen)
-	/// Storage: Timestamp Now (r:1 w:0)
-	/// Proof: Timestamp Now (max_values: Some(1), max_size: Some(8), added: 503, mode: MaxEncodedLen)
-	/// Storage: Creditcoin Transfers (r:1 w:1)
-	/// Proof: Creditcoin Transfers (max_values: None, max_size: Some(479), added: 2954, mode: MaxEncodedLen)
+	// Storage: Creditcoin DealOrders (r:1 w:1)
+	// Storage: Creditcoin Addresses (r:1 w:0)
+	// Storage: Timestamp Now (r:1 w:0)
+	// Storage: Creditcoin Transfers (r:1 w:1)
 	fn close_deal_order() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1093`

@@ -12,7 +12,6 @@ pub enum OffchainError {
 	InvalidTask(VerificationFailureCause),
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
-	IncorrectChainId,
 }
 
 #[derive(Debug)]

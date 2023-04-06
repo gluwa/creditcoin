@@ -21,7 +21,6 @@ import type {
     PalletCreditcoinLegacyTransferKind,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
-    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOfferId,
     PalletCreditcoinPlatformBlockchain,
     PalletCreditcoinPlatformCurrency,
@@ -312,7 +311,6 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'IncorrectSender'
                         | 'InvalidAddress'
                         | 'UnsupportedMethod'
-                        | 'TransactionNotFound'
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
@@ -444,26 +442,12 @@ declare module '@polkadot/api-base/types/submittable' {
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinLegacyTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
             >;
-            removeAuthority: AugmentedSubmittable<
-                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [AccountId32]
-            >;
             requestCollectCoins: AugmentedSubmittable<
                 (
                     evmAddress: Bytes | string | Uint8Array,
                     txId: Bytes | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [Bytes, Bytes]
-            >;
-            setCollectCoinsContract: AugmentedSubmittable<
-                (
-                    contract:
-                        | PalletCreditcoinOcwTasksCollectCoinsGCreContract
-                        | { address?: any; chain?: any }
-                        | string
-                        | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinOcwTasksCollectCoinsGCreContract]
             >;
             /**
              * Generic tx

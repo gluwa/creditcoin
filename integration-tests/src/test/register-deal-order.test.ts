@@ -1,46 +1,30 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { creditcoinApi, Guid, LoanTerms, KeyringPair } from 'creditcoin-js';
-import { Blockchain } from 'creditcoin-js/lib/model';
+import { Guid } from 'creditcoin-js';
+import { POINT_01_CTC } from '../constants';
+import { KeyringPair } from 'creditcoin-js';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
-
+import { testData, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
 
-describe('RegisterDealOrder', () => {
+describe('RegisterDealOrder', (): void => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
 
     let borrowerAddressId: string;
     let lenderAddressId: string;
-    let loanTerms: LoanTerms;
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
-        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
-        (global as any).CREDITCOIN_CREATE_WALLET,
-    );
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
-        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
-
-        const eth = await ethConnection(
-            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            undefined,
-        );
-        const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(
-            ccApi,
-            currency,
-            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
-        );
-    }, 60000);
+        lender = keyring.addFromUri('//Alice');
+        borrower = keyring.addFromUri('//Bob');
+    });
 
     afterAll(async () => {
         await ccApi.api.disconnect();

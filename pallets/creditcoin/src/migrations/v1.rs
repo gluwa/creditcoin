@@ -6,9 +6,11 @@ use super::{vec, Vec};
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 use crate::{
 	loan_terms::{Decimals, Duration},
-	AddressId, Config, ExternalAmount, OfferId, RatePerPeriod, TransferId,
+	AddressId, Blockchain, Config, ExternalAmount, OfferId, RatePerPeriod, TransferId,
 };
-use frame_support::pallet_prelude::*;
+use codec::{Decode, Encode};
+use frame_support::weights::Weight;
+use frame_support::{generate_storage_alias, traits::Get};
 use frame_support::{Identity, Twox64Concat};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
@@ -127,31 +129,6 @@ pub struct BidOrder<AccountId, BlockNum, Hash> {
 	pub borrower: AccountId,
 }
 
-type OtherChainLen = ConstU32<256>;
-pub type OtherChain = BoundedVec<u8, OtherChainLen>;
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
-pub enum Blockchain {
-	Ethereum,
-	Rinkeby,
-	Luniverse,
-	Bitcoin,
-	Other(OtherChain),
-}
-
-impl Blockchain {
-	#[allow(dead_code)]
-	pub fn as_bytes(&self) -> &[u8] {
-		match self {
-			Blockchain::Ethereum => b"ethereum",
-			Blockchain::Rinkeby => b"rinkeby",
-			Blockchain::Luniverse => b"luniverse",
-			Blockchain::Bitcoin => b"bitcoin",
-			Blockchain::Other(chain) => chain.as_slice(),
-		}
-	}
-}
 
 #[frame_support::storage_alias]
 type AskOrders<T: crate::Config> = StorageDoubleMap<

@@ -1,79 +1,27 @@
 // `interest_type` added to `LoanTerms`
 
-use super::{v2, AccountIdOf, BlockNumberOf, HashOf, MomentOf};
-use super::{vec, Vec};
-use super::{Migrate, PhantomData};
-use crate::{AddressId, Config, Duration, ExternalAmount, OfferId, TransferId};
-use frame_support::{
-	dispatch::Weight, traits::Get, traits::StorageVersion, Identity, Twox64Concat,
-};
-use parity_scale_codec::{Decode, Encode};
+use super::{v1, v2};
+use core::convert::TryFrom;
+use frame_support::dispatch::Weight;
+use frame_support::{generate_storage_alias, traits::Get, Identity, Twox64Concat};
 
-pub use v2::AskOrder as OldAskOrder;
-pub use v2::AskTerms as OldAskTerms;
-pub use v2::BidOrder as OldBidOrder;
-pub use v2::BidTerms as OldBidTerms;
-pub use v2::Blockchain;
-pub use v2::DealOrder as OldDealOrder;
-pub use v2::InterestRate as OldInterestRate;
-pub use v2::LoanTerms as OldLoanTerms;
-pub use v2::{OrderId, Transfer, TransferKind};
+use crate::Config;
 
+use v1::AskOrder as OldAskOrder;
+use v1::AskTerms as OldAskTerms;
+use v1::BidOrder as OldBidOrder;
+use v1::BidTerms as OldBidTerms;
+use v1::InterestRate as OldInterestRate;
+use v1::LoanTerms as OldLoanTerms;
+use v2::DealOrder as OldDealOrder;
+
+use crate::AskOrder;
+use crate::AskTerms;
+use crate::BidOrder;
+use crate::BidTerms;
+use crate::DealOrder;
 use crate::InterestRate;
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct LoanTerms {
-	pub amount: ExternalAmount,
-	pub interest_rate: InterestRate,
-	pub term_length: Duration,
-}
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct AskTerms(pub(super) LoanTerms);
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct BidTerms(pub(super) LoanTerms);
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct AskOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
-	pub lender_address_id: AddressId<Hash>,
-	pub terms: AskTerms,
-	pub expiration_block: BlockNum,
-	pub block: BlockNum,
-	pub lender: AccountId,
-}
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct BidOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
-	pub borrower_address_id: AddressId<Hash>,
-	pub terms: BidTerms,
-	pub expiration_block: BlockNum,
-	pub block: BlockNum,
-	pub borrower: AccountId,
-}
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
-	pub offer_id: OfferId<BlockNum, Hash>,
-	pub lender_address_id: AddressId<Hash>,
-	pub borrower_address_id: AddressId<Hash>,
-	pub terms: LoanTerms,
-	pub expiration_block: BlockNum,
-	pub timestamp: Moment,
-	pub block: Option<BlockNum>,
-	pub funding_transfer_id: Option<TransferId<Hash>>,
-	pub repayment_transfer_id: Option<TransferId<Hash>>,
-	pub lock: Option<AccountId>,
-	pub borrower: AccountId,
-}
+use crate::LoanTerms;
 
 impl From<OldInterestRate> for InterestRate {
 	fn from(old: OldInterestRate) -> Self {
@@ -96,27 +44,15 @@ impl From<OldLoanTerms> for LoanTerms {
 	}
 }
 
-impl From<LoanTerms> for AskTerms {
-	fn from(terms: LoanTerms) -> Self {
-		Self(terms)
-	}
-}
-
-impl From<LoanTerms> for BidTerms {
-	fn from(terms: LoanTerms) -> Self {
-		Self(terms)
-	}
-}
-
 impl From<OldAskTerms> for AskTerms {
 	fn from(old: OldAskTerms) -> Self {
-		AskTerms(LoanTerms::from(old.0))
+		Self::try_from(LoanTerms::from(old.0)).expect("existing ask terms must be valid")
 	}
 }
 
 impl From<OldBidTerms> for BidTerms {
 	fn from(old: OldBidTerms) -> Self {
-		BidTerms(LoanTerms::from(old.0))
+		Self::try_from(LoanTerms::from(old.0)).expect("existing bid terms must be valid")
 	}
 }
 
@@ -236,7 +172,7 @@ mod tests {
 	use crate::{
 		mock::{ExtBuilder, Test},
 		tests::TestInfo,
-		AskOrderId, BidOrderId, DealOrderId, DoubleMapExt, Duration, InterestRate, OfferId,
+		AskOrderId, BidOrderId, Blockchain, DealOrderId, DoubleMapExt, Duration, OfferId,
 	};
 
 	use super::{
@@ -288,7 +224,7 @@ mod tests {
 			let test_info = TestInfo::new_defaults();
 
 			let old_ask_order = OldAskOrder {
-				blockchain: Blockchain::Ethereum,
+				blockchain: crate::Blockchain::Ethereum,
 				lender_address_id: test_info.lender.address_id,
 				terms: OldAskTerms(OldLoanTerms {
 					amount: 100u64.into(),
@@ -341,7 +277,7 @@ mod tests {
 			let test_info = TestInfo::new_defaults();
 
 			let old_bid_order = OldBidOrder {
-				blockchain: Blockchain::Ethereum,
+				blockchain: crate::Blockchain::Ethereum,
 				borrower_address_id: test_info.borrower.address_id,
 				terms: OldBidTerms(OldLoanTerms {
 					amount: 100u64.into(),

@@ -562,7 +562,6 @@ declare module '@polkadot/types/lookup' {
         readonly isIncorrectSender: boolean;
         readonly isInvalidAddress: boolean;
         readonly isUnsupportedMethod: boolean;
-        readonly isTransactionNotFound: boolean;
         readonly type:
             | 'TaskNonexistent'
             | 'TaskFailed'
@@ -581,8 +580,7 @@ declare module '@polkadot/types/lookup' {
             | 'IncorrectReceiver'
             | 'IncorrectSender'
             | 'InvalidAddress'
-            | 'UnsupportedMethod'
-            | 'TransactionNotFound';
+            | 'UnsupportedMethod';
     }
 
     /** @name PalletCreditcoinPlatformCurrency (77) */
@@ -1025,10 +1023,6 @@ declare module '@polkadot/types/lookup' {
         readonly asSetCollectCoinsContract: {
             readonly contract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
         } & Struct;
-        readonly isRemoveAuthority: boolean;
-        readonly asRemoveAuthority: {
-            readonly who: AccountId32;
-        } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
             | 'RegisterAddress'
@@ -1050,8 +1044,7 @@ declare module '@polkadot/types/lookup' {
             | 'FailTask'
             | 'AddAuthority'
             | 'RegisterCurrency'
-            | 'SetCollectCoinsContract'
-            | 'RemoveAuthority';
+            | 'SetCollectCoinsContract';
     }
 
     /** @name SpCoreEcdsaPublic (128) */
@@ -1213,7 +1206,6 @@ declare module '@polkadot/types/lookup' {
         readonly isRepaymentOrderNonZeroGain: boolean;
         readonly isAddressBlockchainMismatch: boolean;
         readonly isAlreadyAuthority: boolean;
-        readonly isNotAnAuthority: boolean;
         readonly isDuplicateOffer: boolean;
         readonly isDealNotFunded: boolean;
         readonly isDealOrderAlreadyFunded: boolean;
@@ -1268,7 +1260,6 @@ declare module '@polkadot/types/lookup' {
             | 'RepaymentOrderNonZeroGain'
             | 'AddressBlockchainMismatch'
             | 'AlreadyAuthority'
-            | 'NotAnAuthority'
             | 'DuplicateOffer'
             | 'DealNotFunded'
             | 'DealOrderAlreadyFunded'

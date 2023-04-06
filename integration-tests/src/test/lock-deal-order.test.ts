@@ -1,16 +1,14 @@
-import { creditcoinApi, KeyringPair, LoanTerms, TransferKind, Guid, Wallet } from 'creditcoin-js';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { KeyringPair } from 'creditcoin-js';
+
+import { Guid } from 'creditcoin-js';
+import { POINT_01_CTC } from '../constants';
+
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { Blockchain } from 'creditcoin-js/lib/model';
+import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
-
+import { testData, lendOnEth, tryRegisterAddress } from './common';
 import { extractFee } from '../utils';
-
-const ethless: TransferKind = {
-    platform: 'Evm',
-    kind: 'Ethless',
-};
+import { Wallet } from 'creditcoin-js';
 
 describe('LockDealOrder', (): void => {
     let ccApi: CreditcoinApi;
@@ -19,12 +17,8 @@ describe('LockDealOrder', (): void => {
     let dealOrder: DealOrderRegistered;
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
-    let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
-        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
-        (global as any).CREDITCOIN_CREATE_WALLET,
-    );
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
@@ -62,17 +56,6 @@ describe('LockDealOrder', (): void => {
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
-        const eth = await ethConnection(
-            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
-        );
-        const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(
-            ccApi,
-            currency,
-            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
-        );
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
@@ -89,8 +72,18 @@ describe('LockDealOrder', (): void => {
             lender,
         );
 
-        const fundingTxHash = await lendOnEth(lenderWallet, borrowerWallet, dealOrder.dealOrder.itemId, loanTerms, eth);
-        const fundingEvent = await registerFundingTransfer(ethless, dealOrder.dealOrder.itemId, fundingTxHash, lender);
+        const [fundingTokenAddress, fundingTxHash] = await lendOnEth(
+            lenderWallet,
+            borrowerWallet,
+            dealOrder.dealOrder.itemId,
+            loanTerms,
+        );
+        const fundingEvent = await registerFundingTransfer(
+            { kind: 'Ethless', contractAddress: fundingTokenAddress },
+            dealOrder.dealOrder.itemId,
+            fundingTxHash,
+            lender,
+        );
         const fundingTransferVerified = await fundingEvent.waitForVerification().catch();
         expect(fundingTransferVerified).toBeTruthy();
 

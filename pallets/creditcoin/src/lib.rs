@@ -39,7 +39,7 @@ pub use types::*;
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
-pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(6);
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -122,8 +122,6 @@ pub mod pallet {
 		fn lock_deal_order() -> Weight;
 		fn register_funding_transfer() -> Weight;
 		fn register_repayment_transfer() -> Weight;
-		fn register_funding_transfer_legacy() -> Weight;
-		fn register_repayment_transfer_legacy() -> Weight;
 		fn close_deal_order() -> Weight;
 		fn exempt() -> Weight;
 		fn register_deal_order() -> Weight;
@@ -318,10 +316,6 @@ pub mod pallet {
 		/// exchanging vested ERC-20 CC for native CC failed.
 		/// [collected_coins_id, cause]
 		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
-
-		/// A currency has been registered and can now be used in loan terms.
-		/// [currency_id, currency]
-		CurrencyRegistered(CurrencyId<T::Hash>, Currency),
 	}
 
 	// Errors inform users that something went wrong.
@@ -399,7 +393,7 @@ pub mod pallet {
 		RepaymentOrderNonZeroGain,
 
 		/// The addresses specified are not on compatible external chains.
-		AddressBlockchainMismatch,
+		AddressPlatformMismatch,
 
 		/// The account is already an authority.
 		AlreadyAuthority,
@@ -488,12 +482,6 @@ pub mod pallet {
 
 		/// The currency has already been registered.
 		CurrencyAlreadyRegistered,
-
-		/// The legacy/deprecated version of an extrinsic was called, the new version should be used instead.
-		DeprecatedExtrinsic,
-
-		/// The currency with the given ID has not been registered.
-		CurrencyNotRegistered,
 	}
 
 	#[pallet::genesis_config]
@@ -643,7 +631,7 @@ pub mod pallet {
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			terms: LoanTerms<T::Hash>,
+			terms: LoanTerms,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -658,16 +646,10 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
-			let currency =
-				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
-			ensure!(
-				address.blockchain == currency.blockchain(),
-				Error::<T>::AddressBlockchainMismatch
-			);
-
 			Self::use_guid(&guid)?;
 
 			let ask_order = AskOrder {
+				blockchain: address.blockchain,
 				lender_address_id: address_id,
 				terms: terms.try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -685,7 +667,7 @@ pub mod pallet {
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
 			address_id: AddressId<T::Hash>,
-			terms: LoanTerms<T::Hash>,
+			terms: LoanTerms,
 			expiration_block: BlockNumberFor<T>,
 			guid: Guid,
 		) -> DispatchResult {
@@ -700,16 +682,10 @@ pub mod pallet {
 			let address = Self::get_address(&address_id)?;
 			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
-			let currency =
-				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
-			ensure!(
-				address.blockchain == currency.blockchain(),
-				Error::<T>::AddressBlockchainMismatch
-			);
-
 			Self::use_guid(&guid)?;
 
 			let bid_order = BidOrder {
+				blockchain: address.blockchain,
 				borrower_address_id: address_id,
 				terms: terms.try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -746,12 +722,9 @@ pub mod pallet {
 
 			ensure!(bid_order.expiration_block >= head, Error::<T>::BidOrderExpired);
 
-			let lender_address = Self::get_address(&ask_order.lender_address_id)?;
-			let borrower_address = Self::get_address(&bid_order.borrower_address_id)?;
-
 			ensure!(
-				lender_address.blockchain == borrower_address.blockchain,
-				Error::<T>::AddressBlockchainMismatch
+				ask_order.blockchain == bid_order.blockchain,
+				Error::<T>::AddressPlatformMismatch
 			);
 
 			ensure!(ask_order.terms.match_with(&bid_order.terms), Error::<T>::AskBidMismatch);
@@ -764,6 +737,7 @@ pub mod pallet {
 				ask_id: ask_order_id,
 				bid_id: bid_order_id,
 				block: Self::block_number(),
+				blockchain: ask_order.blockchain,
 				expiration_block,
 				lender: who,
 			};
@@ -804,6 +778,7 @@ pub mod pallet {
 				.ok_or(Error::<T>::AskBidMismatch)?;
 
 			let deal_order = DealOrder {
+				blockchain: offer.blockchain,
 				offer_id,
 				lender_address_id: ask_order.lender_address_id,
 				borrower_address_id: bid_order.borrower_address_id,
@@ -888,7 +863,7 @@ pub mod pallet {
 				},
 				|transfer, deal_order| {
 					ensure!(
-						transfer.deal_order_id == deal_order_id.clone(),
+						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
 						Error::<T>::TransferDealOrderMismatch
 					);
 					ensure!(
@@ -912,7 +887,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			lender_address_id: AddressId<T::Hash>,
 			borrower_address_id: AddressId<T::Hash>,
-			terms: LoanTerms<T::Hash>,
+			terms: LoanTerms,
 			expiration_block: BlockNumberFor<T>,
 			ask_guid: Guid,
 			bid_guid: Guid,
@@ -935,21 +910,13 @@ pub mod pallet {
 				Error::<T>::InvalidSignature
 			);
 
-			let currency =
-				Currencies::<T>::get(&terms.currency).ok_or(Error::<T>::CurrencyNotRegistered)?;
-
 			let borrower = Self::get_address(&borrower_address_id)?;
 			ensure!(borrower.owner == borrower_account, Error::<T>::NotAddressOwner);
 
 			let lender = Self::get_address(&lender_address_id)?;
 			ensure!(lender.owner == lender_account, Error::<T>::NotAddressOwner);
 
-			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressBlockchainMismatch);
-
-			ensure!(
-				lender.blockchain == currency.blockchain(),
-				Error::<T>::AddressBlockchainMismatch
-			);
+			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressPlatformMismatch);
 
 			let ask_order_id = AskOrderId::new::<T>(expiration_block, &ask_guid);
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
@@ -966,6 +933,7 @@ pub mod pallet {
 			let current_block = Self::block_number();
 
 			let ask_order = AskOrder {
+				blockchain: lender.blockchain.clone(),
 				lender_address_id: lender_address_id.clone(),
 				terms: terms.clone().try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -974,6 +942,7 @@ pub mod pallet {
 			};
 
 			let bid_order = BidOrder {
+				blockchain: lender.blockchain.clone(),
 				borrower_address_id: borrower_address_id.clone(),
 				terms: terms.clone().try_into().map_err(Error::<T>::from)?,
 				expiration_block,
@@ -985,11 +954,13 @@ pub mod pallet {
 				ask_id: ask_order_id.clone(),
 				bid_id: bid_order_id.clone(),
 				block: current_block,
+				blockchain: lender.blockchain.clone(),
 				expiration_block,
 				lender: lender_account,
 			};
 
 			let deal_order = DealOrder {
+				blockchain: lender.blockchain,
 				offer_id: offer_id.clone(),
 				lender_address_id,
 				borrower_address_id,
@@ -1054,7 +1025,7 @@ pub mod pallet {
 				},
 				|transfer, _deal_order| {
 					ensure!(
-						transfer.deal_order_id == deal_order_id.clone(),
+						transfer.order_id == OrderId::Deal(deal_order_id.clone()),
 						Error::<T>::TransferDealOrderMismatch
 					);
 
@@ -1114,65 +1085,6 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::call_index(11)]
-		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer_legacy())]
-		pub fn register_funding_transfer_legacy(
-			origin: OriginFor<T>,
-			transfer_kind: LegacyTransferKind,
-			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
-			blockchain_tx_id: ExternalTxId,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
-
-			ensure!(order.terms.currency.is_placeholder(), Error::<T>::DeprecatedExtrinsic);
-
-			let (transfer_id, transfer) = Self::register_transfer_internal_legacy(
-				who,
-				order.lender_address_id,
-				order.borrower_address_id,
-				transfer_kind,
-				order.terms.amount,
-				deal_order_id,
-				blockchain_tx_id,
-			)?;
-			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
-
-			Ok(())
-		}
-
-		#[transactional]
-		#[pallet::call_index(12)]
-		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer_legacy())]
-		pub fn register_repayment_transfer_legacy(
-			origin: OriginFor<T>,
-			transfer_kind: LegacyTransferKind,
-			repayment_amount: ExternalAmount,
-			deal_order_id: DealOrderId<T::BlockNumber, T::Hash>,
-			blockchain_tx_id: ExternalTxId,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let order = try_get_id!(DealOrders<T>, &deal_order_id, NonExistentDealOrder)?;
-
-			ensure!(order.terms.currency.is_placeholder(), Error::<T>::DeprecatedExtrinsic);
-
-			let (transfer_id, transfer) = Self::register_transfer_internal_legacy(
-				who,
-				order.borrower_address_id,
-				order.lender_address_id,
-				transfer_kind,
-				repayment_amount,
-				deal_order_id,
-				blockchain_tx_id,
-			)?;
-			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
-
-			Ok(())
-		}
-
-		#[transactional]
-		#[pallet::call_index(13)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
@@ -1190,9 +1102,8 @@ pub mod pallet {
 				order.borrower_address_id,
 				transfer_kind,
 				order.terms.amount,
-				deal_order_id,
+				OrderId::Deal(deal_order_id),
 				blockchain_tx_id,
-				&order.terms.currency,
 			)?;
 			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
 
@@ -1200,7 +1111,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(12)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer())]
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
@@ -1219,16 +1130,15 @@ pub mod pallet {
 				order.lender_address_id,
 				transfer_kind,
 				repayment_amount,
-				deal_order_id,
+				OrderId::Deal(deal_order_id),
 				blockchain_tx_id,
-				&order.terms.currency,
 			)?;
 			Self::deposit_event(Event::<T>::TransferRegistered(transfer_id, transfer));
 
 			Ok(())
 		}
 
-		#[pallet::call_index(15)]
+		#[pallet::call_index(13)]
 		#[pallet::weight(<T as Config>::WeightInfo::exempt())]
 		pub fn exempt(
 			origin: OriginFor<T>,
@@ -1251,12 +1161,12 @@ pub mod pallet {
 					ensure!(who == lender.owner, Error::<T>::NotLender);
 
 					let fake_transfer = Transfer {
-						deal_order_id: deal_order_id.clone(),
+						order_id: OrderId::Deal(deal_order_id.clone()),
 						block: Self::block_number(),
 						account_id: who,
 						amount: ExternalAmount::zero(),
 						is_processed: true,
-						kind: TransferKind::Evm(EvmTransferKind::Ethless),
+						kind: TransferKind::Native,
 						tx_id: ExternalTxId::try_from(b"0".to_vec()).expect(
 							"0 is a length of one which will always be < size bound of ExternalTxId",
 						),
@@ -1399,7 +1309,6 @@ pub mod pallet {
 			ensure!(!Currencies::<T>::contains_key(&id), Error::<T>::CurrencyAlreadyRegistered);
 
 			Currencies::<T>::insert(&id, &currency);
-			Self::deposit_event(Event::<T>::CurrencyRegistered(id, currency));
 
 			Ok(())
 		}

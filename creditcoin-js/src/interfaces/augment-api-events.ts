@@ -10,7 +10,6 @@ import type { Null, Option, Result, U8aFixed, u128, u32 } from '@polkadot/types-
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
 import type {
-    FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
@@ -25,7 +24,6 @@ import type {
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
-    PalletCreditcoinPlatformCurrency,
     PalletCreditcoinTransfer,
     SpRuntimeDispatchError,
 } from '@polkadot/types/lookup';
@@ -148,14 +146,9 @@ declare module '@polkadot/api-base/types/events' {
             >;
             /**
              * CollectCoins has been successfully verified and minted.
-             * [collected_coins_id, collected_coins]
+             * [collected_coins_id]
              **/
             CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectCoinsCollectedCoins]>;
-            /**
-             * A currency has been registered and can now be used in loan terms.
-             * [currency_id, currency]
-             **/
-            CurrencyRegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinPlatformCurrency]>;
             /**
              * A deal order has been added by a borrower. This indicates that the borrower
              * has accepted a lender's offer and intends to enter the loan.

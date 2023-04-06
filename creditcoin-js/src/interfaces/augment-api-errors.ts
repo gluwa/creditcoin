@@ -55,13 +55,13 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AddressAlreadyRegistered: AugmentedError<ApiType>;
             /**
-             * The addresses specified are not on compatible external chains.
-             **/
-            AddressBlockchainMismatch: AugmentedError<ApiType>;
-            /**
              * The address format was not recognized for the given blockchain and external address.
              **/
             AddressFormatNotSupported: AugmentedError<ApiType>;
+            /**
+             * The addresses specified are not on compatible external chains.
+             **/
+            AddressPlatformMismatch: AugmentedError<ApiType>;
             /**
              * The account is already an authority.
              **/
@@ -74,6 +74,10 @@ declare module '@polkadot/api-base/types/errors' {
              * The ask order has expired and is no longer valid.
              **/
             AskOrderExpired: AugmentedError<ApiType>;
+            /**
+             * The balance would overflow.
+             **/
+            BalanceOverflow: AugmentedError<ApiType>;
             /**
              * The bid order has expired and is no longer valid.
              **/
@@ -202,10 +206,6 @@ declare module '@polkadot/api-base/types/errors' {
              * The address cannot be used because the user does not own it.
              **/
             NotAddressOwner: AugmentedError<ApiType>;
-            /**
-             * The account you are trying to remove is not  an authority.
-             **/
-            NotAnAuthority: AugmentedError<ApiType>;
             /**
              * Only the borrower can perform the action.
              **/

@@ -6,44 +6,7 @@ export type AccountId = string;
 
 export type ExternalAddress = string;
 
-export const evmChain = (chainId: number): Blockchain => {
-    return { platform: 'Evm', chainId: new BN(chainId) };
-};
-
-export const CHAINS: Record<string, Blockchain> = {
-    ethereum: evmChain(1),
-    rinkeby: evmChain(4),
-    luniverse: evmChain(59496427),
-    luniverseTestnet: evmChain(949790),
-    hardhat: evmChain(31337),
-};
-
-// Will eventually be something like Platform<Evm, Other> = ({ platform: 'Evm' } & Evm) | ({ platform: 'Other' } & Other);
-type Platform<Evm> = { platform: 'Evm' } & Evm;
-
-export type EvmChainId = BN;
-
-export type EvmInfo = {
-    chainId: EvmChainId;
-};
-
-export type Blockchain = Platform<EvmInfo>;
-
-export type EvmTransferKind = 'Ethless' | 'Erc20';
-
-export type TransferKind = Platform<{ kind: EvmTransferKind }>;
-
-export type EvmSmartContractCurrency = {
-    type: 'SmartContract';
-    contract: ExternalAddress;
-    supportedTransferKinds: Set<EvmTransferKind>;
-};
-
-// Eventually will be EvmSmartContractCurrency | EvmOtherTypeOfCurrency
-export type EvmCurrency = EvmSmartContractCurrency;
-
-export type Currency = EvmCurrency & Blockchain;
-export type CurrencyId = string;
+export type Blockchain = 'Ethereum' | 'Rinkeby' | 'Luniverse' | 'Bitcoin' | 'Other';
 
 export type Address = {
     accountId: AccountId;
@@ -69,7 +32,6 @@ export type LoanTerms = {
     amount: BN;
     interestRate: InterestRate;
     termLength: Duration;
-    currency: CurrencyId;
 };
 
 export type TupleId = [number, string];
@@ -80,6 +42,7 @@ type AskOrBidOrderBase = {
     loanTerms: LoanTerms;
     expirationBlock: number;
     blockNumber: number;
+    blockchain: Blockchain;
 };
 
 export type AskOrder = AskOrBidOrderBase & {
@@ -95,6 +58,7 @@ export type BidOrder = AskOrBidOrderBase & {
 export type OfferId = TupleId;
 
 export type Offer = {
+    blockchain: Blockchain;
     askOrderId: AskOrderId;
     bidOrderId: BidOrderId;
     expirationBlock: number;
@@ -134,6 +98,12 @@ export type DealOrderFunded = EventReturnIdType<DealOrderId>;
 export type DealOrderLocked = EventReturnIdType<DealOrderId>;
 export type DealOrderClosed = EventReturnIdType<DealOrderId>;
 
+export type Erc20 = { kind: 'Erc20'; contractAddress: ExternalAddress };
+export type Ethless = { kind: 'Ethless'; contractAddress: ExternalAddress };
+export type Other = { kind: 'Other'; value: ExternalAddress };
+export type Native = { kind: 'Native' };
+export type TransferKind = Erc20 | Ethless | Native | Other;
+
 export type TransferId = string;
 
 export type Transfer = {
@@ -141,7 +111,7 @@ export type Transfer = {
     kind: TransferKind;
     from: AddressId;
     to: AddressId;
-    dealOrderId: DealOrderId;
+    orderId: DealOrderId;
     amount: BN;
     txHash: string;
     blockNumber: number;
