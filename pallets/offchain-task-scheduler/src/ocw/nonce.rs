@@ -141,7 +141,7 @@ mod tests {
 		const LOOP: u32 = 10;
 		let nonces = Arc::new(AtomicU64::new(0));
 
-		let handles = (0..THREADS).into_iter().map(|_| {
+		let handles = (0..THREADS).map(|_| {
 			let offchain = offchain.clone();
 			let nonces = nonces.clone();
 

@@ -304,6 +304,7 @@ macro_rules! impl_id {
 		}
 
 		impl<BlockNum, H> $id<BlockNum, H> {
+			#[allow(clippy::extra_unused_type_parameters)]
 			pub fn with_expiration_hash<Config>(expiration_block: BlockNum, hash: H) -> Self
 			where
 				Config: frame_system::Config<BlockNumber = BlockNum>,

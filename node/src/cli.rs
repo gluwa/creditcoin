@@ -85,7 +85,7 @@ impl std::str::FromStr for NonceMonitorTarget {
 pub enum Subcommand {
 	/// Key management cli utilities
 	#[command(subcommand)]
-	Key(sc_cli::KeySubcommand),
+	Key(Box<sc_cli::KeySubcommand>),
 
 	/// Build a chain specification.
 	BuildSpec(sc_cli::BuildSpecCmd),
@@ -110,7 +110,7 @@ pub enum Subcommand {
 
 	/// The custom benchmark subcommand benchmarking runtime pallets.
 	#[command(subcommand)]
-	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
+	Benchmark(Box<frame_benchmarking_cli::BenchmarkCmd>),
 
 	/// Try some command against runtime state.
 	#[cfg(feature = "try-runtime")]

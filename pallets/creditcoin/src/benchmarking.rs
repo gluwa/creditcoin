@@ -84,7 +84,7 @@ benchmarks! {
 		let lender = lender_account::<T>(false);
 		let borrower = borrower_account::<T>(false);
 
-		let terms = get_all_fit_terms::<T>();
+		let terms = get_all_fit_terms();
 
 		let expiration_block = T::BlockNumber::one();
 		//generate this many filler asks
@@ -149,7 +149,7 @@ benchmarks! {
 	add_ask_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = lender_account::<T>(true);
-		let terms = get_all_fit_terms::<T>();
+		let terms = get_all_fit_terms();
 		let expiration_block = T::BlockNumber::one();
 
 		let (address_id,ask_id,guid) = generate_ask::<T>(&who,&terms,&expiration_block,false,0).unwrap();
@@ -160,7 +160,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = borrower_account::<T>(true);
 
-		let loan_terms = get_all_fit_terms::<T>();
+		let loan_terms = get_all_fit_terms();
 
 		let expiration_block = T::BlockNumber::one();
 
@@ -171,7 +171,7 @@ benchmarks! {
 	add_offer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
-		let loan_terms = get_all_fit_terms::<T>();
+		let loan_terms = get_all_fit_terms();
 		let expiration_block = T::BlockNumber::one();
 
 		let (_, ask_id, bid_id) = generate_offer::<T>(&lender,&loan_terms,&expiration_block,false,0u8).unwrap();
@@ -182,7 +182,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender = lender_account::<T>(false);
 		let borrower= borrower_account::<T>(true);
-		let loan_terms = get_all_fit_terms::<T>();
+		let loan_terms = get_all_fit_terms();
 		let expiration_block = T::BlockNumber::one();
 
 		let (offer_id,ask_id,bid_id) = generate_offer::<T>(&lender, &loan_terms, &expiration_block, true,0u8).unwrap();
@@ -265,7 +265,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender:T::AccountId = lender_account::<T>(true);
 		let lender_addr_id = register_eth_addr::<T>(&lender,"lender");
-		let terms = get_all_fit_terms::<T>();
+		let terms = get_all_fit_terms();
 		let expiry = T::BlockNumber::one();
 		let ask_guid = "ask_guid".as_bytes();
 		let bid_guid = "bid_guid".as_bytes();
@@ -337,7 +337,7 @@ benchmarks! {
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
-fn get_all_fit_terms<T: Config>() -> LoanTerms {
+fn get_all_fit_terms() -> LoanTerms {
 	LoanTerms {
 		amount: 10u64.into(),
 		interest_rate: InterestRate {
@@ -401,7 +401,7 @@ fn generate_transfer<T: Config>(
 			who,
 			order.borrower_address_id,
 			order.lender_address_id,
-			TransferKind::Ethless(contract.clone()),
+			TransferKind::Ethless(contract),
 			gain.into(),
 			deal_id.into(),
 			tx,
@@ -412,7 +412,7 @@ fn generate_transfer<T: Config>(
 			who,
 			order.lender_address_id,
 			order.borrower_address_id,
-			TransferKind::Ethless(contract.clone()),
+			TransferKind::Ethless(contract),
 			order.terms.amount,
 			deal_id.into(),
 			tx,
@@ -470,7 +470,7 @@ fn generate_deal<T: Config>(
 	seed: u8,
 ) -> Result<DealOrderId<T::BlockNumber, T::Hash>, crate::Error<T>> {
 	let lender = lender_account::<T>(true);
-	let terms = get_all_fit_terms::<T>();
+	let terms = get_all_fit_terms();
 	let expiration_block = T::BlockNumber::one();
 
 	let borrower = borrower_account::<T>(false);
@@ -616,7 +616,7 @@ fn insert_fake_ask<T: Config>(who: &T::AccountId, expiration_block: BlockNumberF
 		expiration_block,
 		lender: who.clone(),
 		lender_address_id: address_id,
-		terms: AskTerms::try_from(get_all_fit_terms::<T>()).unwrap(),
+		terms: AskTerms::try_from(get_all_fit_terms()).unwrap(),
 	};
 
 	crate::AskOrders::<T>::insert_id(ask_id, ask);
@@ -639,7 +639,7 @@ fn insert_fake_bid<T: Config>(who: &T::AccountId, expiration_block: BlockNumberF
 		expiration_block,
 		borrower: who.clone(),
 		borrower_address_id: address_id,
-		terms: BidTerms::try_from(get_all_fit_terms::<T>()).unwrap(),
+		terms: BidTerms::try_from(get_all_fit_terms()).unwrap(),
 	};
 
 	crate::BidOrders::<T>::insert_id(bid_id, bid);
@@ -711,7 +711,7 @@ fn insert_fake_deal<T: Config>(
 		},
 		offer_id,
 		repayment_transfer_id: None,
-		terms: get_all_fit_terms::<T>(),
+		terms: get_all_fit_terms(),
 		timestamp: pallet_timestamp::Pallet::<T>::now(),
 	};
 

@@ -737,13 +737,9 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer;
 
 		// simulate deal transfer
-		crate::AskOrders::<Test>::mutate(
-			&ask_id.expiration(),
-			&ask_id.hash(),
-			|ask_order_storage| {
-				ask_order_storage.as_mut().unwrap().blockchain = Blockchain::Bitcoin;
-			},
-		);
+		crate::AskOrders::<Test>::mutate(ask_id.expiration(), ask_id.hash(), |ask_order_storage| {
+			ask_order_storage.as_mut().unwrap().blockchain = Blockchain::Bitcoin;
+		});
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
@@ -1498,11 +1494,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 
 		let test_info = TestInfo {
 			lender: RegisteredAddress::new("lender2", Blockchain::Ethereum),
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1533,11 +1525,7 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 		// create AskOrder which will use-up the default ID
@@ -1604,11 +1592,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1658,11 +1642,7 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1722,11 +1702,7 @@ fn register_deal_order_should_succeed() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 

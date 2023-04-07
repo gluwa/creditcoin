@@ -209,7 +209,7 @@ mod tests {
 			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 				.mock_all(&mut state.write());
 
-			set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+			set_rpc_uri(&Blockchain::Rinkeby, dummy_url);
 
 			let loan_amount = get_mock_amount();
 			let terms = LoanTerms { amount: loan_amount, ..Default::default() };

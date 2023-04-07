@@ -319,7 +319,7 @@ fn blockchain_rpc_url_missing() {
 #[test]
 fn blockchain_rpc_url_non_utf8() {
 	ExtBuilder::default().build_offchain_and_execute(|| {
-		set_rpc_uri(&Blockchain::Ethereum, &[0x80]);
+		set_rpc_uri(&Blockchain::Ethereum, [0x80]);
 
 		assert_matches!(Blockchain::Ethereum.rpc_url().unwrap_err(), RpcUrlError::InvalidUrl(_));
 	});
@@ -673,7 +673,7 @@ fn unconfirmed_verify_transfer_retries() {
 		let tx_block_num_value =
 			u64::from_str_radix(tx_block_num.trim_start_matches("0x"), 16).unwrap();
 
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::Rinkeby, dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -737,7 +737,7 @@ fn luniverse_succeeds_with_fake_nonce() {
 		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 			.mock_all(&mut state.write());
 
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
+		set_rpc_uri(&Blockchain::Rinkeby, dummy_url);
 
 		let loan_amount = get_mock_amount();
 		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
@@ -831,7 +831,6 @@ fn parallel_worker_trivial() {
 	const STORAGE_KEY: &[u8] = b"demo_status";
 
 	let handles: Vec<_> = (0..THREADS)
-		.into_iter()
 		.map(|_| {
 			let offchain = offchain.clone();
 

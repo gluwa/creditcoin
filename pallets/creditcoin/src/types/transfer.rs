@@ -66,7 +66,7 @@ impl<H> TransferId<H> {
 	where
 		Hasher: Hash<Output = H>,
 	{
-		let key = concatenate!(&*blockchain.as_bytes(), blockchain_tx_id);
+		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
 		<Hasher as Hash>::hash(&key)
 	}
 
