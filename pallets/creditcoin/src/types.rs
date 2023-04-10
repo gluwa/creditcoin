@@ -2,7 +2,9 @@ mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 
-pub use collect_coins::*;
+pub use collect_coins::{
+	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
+};
 pub use loan_terms::*;
 pub use transfer::*;
 
@@ -179,7 +181,7 @@ macro_rules! concatenate {
 	};
 	($($bytes: expr),+) => {
 		{
-			let mut buf = Vec::with_capacity($crate::types::concatenate!(@strip_plus $(+ $bytes.len())+));
+			let mut buf = ::sp_std::prelude::Vec::with_capacity($crate::types::concatenate!(@strip_plus $(+ $bytes.len())+));
 			$(buf.extend($bytes);)+
 			buf
 		}
