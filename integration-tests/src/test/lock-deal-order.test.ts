@@ -1,4 +1,4 @@
-import { creditcoinApi, KeyringPair, LoanTerms, Guid, Wallet } from 'creditcoin-js';
+import { creditcoinApi, KeyringPair, Guid, Wallet } from 'creditcoin-js';
 import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { Blockchain } from 'creditcoin-js/lib/model';
@@ -14,9 +14,8 @@ describe('LockDealOrder', (): void => {
     let dealOrder: DealOrderRegistered;
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
-    let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
