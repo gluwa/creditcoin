@@ -6,6 +6,7 @@ DISABLE_LINTERS:
   - JSON_PRETTIER
   - RUST_CLIPPY
   - SPELL_CSPELL
+  - SPELL_MISSPELL
   # https://gluwa.atlassian.net/browse/CSUB-459
   - MARKDOWN_MARKDOWN_LINK_CHECK
   # https://gluwa.atlassian.net/browse/CSUB-460
