@@ -1,3 +1,4 @@
+---
 name: Check Runtime and Extrinsics
 
 # This CI checks for changes in Creditcoin runtime and extrinsic ordering
@@ -60,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: 'extrinsic-logs'
+          name: "extrinsic-logs"
           path: |
             head-node.log
             release-node.log
