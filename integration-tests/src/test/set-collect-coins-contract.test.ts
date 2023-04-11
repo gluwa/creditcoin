@@ -31,7 +31,7 @@ describe('SetCollectCoinsContract', (): void => {
         /* eslint-disable @typescript-eslint/naming-convention */
         const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
             address: '0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419',
-            chain: testingData.blockchain ,
+            chain: testingData.blockchain,
         });
 
         return new Promise((resolve, reject): void => {
