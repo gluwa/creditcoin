@@ -1,20 +1,21 @@
+---
 name: Build Release Artifacts
 
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 permissions: read-all
 
 jobs:
   build-native-runtime:
-      strategy:
-        matrix:
-          operating-system: [ubuntu-22.04, windows-2022, macos-11]
-      runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [ubuntu-22.04, windows-2022, macos-11]
+    runs-on: ${{ matrix.operating-system }}
 
-      steps:
+    steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -83,26 +84,26 @@ jobs:
       - name: Compress
         uses: thedoctor0/zip-release@0.7.2
         with:
-          type: 'zip'
-          directory: 'target/release/'
-          path: 'creditcoin-node*'
-          filename: '../../creditcoin-${{ env.TAG_NAME }}-${{ env.PLATFORM }}.zip'
-          exclusions: 'creditcoin-node.d'
+          type: "zip"
+          directory: "target/release/"
+          path: "creditcoin-node*"
+          filename: "../../creditcoin-${{ env.TAG_NAME }}-${{ env.PLATFORM }}.zip"
+          exclusions: "creditcoin-node.d"
 
       - name: Compress MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
         uses: thedoctor0/zip-release@0.7.2
         with:
-          type: 'zip'
-          directory: 'target/aarch64-apple-darwin/release/'
-          path: 'creditcoin-node*'
-          filename: '../../../creditcoin-${{ env.TAG_NAME }}-aarch64-apple-darwin.zip'
-          exclusions: 'creditcoin-node.d'
+          type: "zip"
+          directory: "target/aarch64-apple-darwin/release/"
+          path: "creditcoin-node*"
+          filename: "../../../creditcoin-${{ env.TAG_NAME }}-aarch64-apple-darwin.zip"
+          exclusions: "creditcoin-node.d"
 
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          path: 'creditcoin-${{ env.TAG_NAME }}-*.zip'
+          path: "creditcoin-${{ env.TAG_NAME }}-*.zip"
           if-no-files-found: error
 
   build-wasm-runtime:
@@ -140,7 +141,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          path: '*.wasm'
+          path: "*.wasm"
           if-no-files-found: error
 
   docker-build:
@@ -200,7 +201,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          path: 'creditcoin-js/creditcoin-js-v${{ env.TAG_NAME }}.tgz'
+          path: "creditcoin-js/creditcoin-js-v${{ env.TAG_NAME }}.tgz"
           if-no-files-found: error
 
   create-release:
@@ -231,6 +232,6 @@ jobs:
       - name: Make the release
         uses: softprops/action-gh-release@v1
         with:
-          files: 'artifact/creditcoin-*${{ env.TAG_NAME }}*'
+          files: "artifact/creditcoin-*${{ env.TAG_NAME }}*"
           fail_on_unmatched_files: true
           name: ${{ env.TAG_NAME }}

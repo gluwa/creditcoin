@@ -1,3 +1,4 @@
+---
 name: Runtime Upgrade
 
 on:
@@ -7,9 +8,9 @@ on:
 permissions: read-all
 
 env:
-    RUNNER_VM_NAME: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
-    RESOURCE_GROUP: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
-    AZ_LOCATION: "westus3"
+  RUNNER_VM_NAME: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
+  RESOURCE_GROUP: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
+  AZ_LOCATION: "westus3"
 
 jobs:
   setup:
@@ -58,7 +59,8 @@ jobs:
     needs:
       - setup
       - deploy-github-runner
-    runs-on: [ self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}" ]
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
 
     steps:
       - name: Testnet ENV
@@ -109,7 +111,8 @@ jobs:
     needs:
       - fork-creditcoin
       - deploy-github-runner
-    runs-on: [ self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}" ]
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
     steps:
       - uses: actions/checkout@v3
 
@@ -296,7 +299,8 @@ jobs:
       SNAPSHOT_DIR: /var/tmp/blockchain-snapshot
       SNAPSHOT_URL: "https://creditcoinblockchain.blob.core.windows.net/latestblocks/creditcoin-2.0-$GITHUB_BASE_REF-try-runtime-snapshot-$SNAPSHOT_TIME.tar.gz"
     # see https://gist.github.com/jonico/a94d03cac7a858e0613926d9f1bc7f2b
-    runs-on: [ self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}" ]
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
     needs:
       - deploy-github-runner
     steps:
@@ -319,24 +323,24 @@ jobs:
 
       - name: Download try-runtime snapshots data for Creditcoin
         run: |
-            echo "INFO: SNAPSHOT_URL=${{ env.SNAPSHOT_URL }}"
-            echo "INFO: SNAPSHOT_DIR=${{ env.SNAPSHOT_DIR }}"
+          echo "INFO: SNAPSHOT_URL=${{ env.SNAPSHOT_URL }}"
+          echo "INFO: SNAPSHOT_DIR=${{ env.SNAPSHOT_DIR }}"
 
-            curl --silent ${{ env.SNAPSHOT_URL }} > snapshot.tar.gz
+          curl --silent ${{ env.SNAPSHOT_URL }} > snapshot.tar.gz
 
-            mkdir ${{ env.SNAPSHOT_DIR }}
-            tar -xzvf ./snapshot.tar.gz -C ${{ env.SNAPSHOT_DIR }}
+          mkdir ${{ env.SNAPSHOT_DIR }}
+          tar -xzvf ./snapshot.tar.gz -C ${{ env.SNAPSHOT_DIR }}
 
-            # standardize file names
-            pushd ${{ env.SNAPSHOT_DIR }}
-            mv creditcoin-*.child creditcoin.child
-            mv creditcoin-*.top   creditcoin.top
-            popd
+          # standardize file names
+          pushd ${{ env.SNAPSHOT_DIR }}
+          mv creditcoin-*.child creditcoin.child
+          mv creditcoin-*.top   creditcoin.top
+          popd
 
       - name: Try-runtime migrations
         run: |
-            ./target/release/creditcoin-node try-runtime --dev --no-spec-check-panic on-runtime-upgrade \
-                snap --snapshot-path ${{ env.SNAPSHOT_DIR }}/creditcoin.
+          ./target/release/creditcoin-node try-runtime --dev --no-spec-check-panic on-runtime-upgrade \
+              snap --snapshot-path ${{ env.SNAPSHOT_DIR }}/creditcoin.
 
   remove-github-runner:
     runs-on: ubuntu-22.04

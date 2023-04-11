@@ -1,3 +1,4 @@
+---
 name: Build WASM Runtime
 
 on:
