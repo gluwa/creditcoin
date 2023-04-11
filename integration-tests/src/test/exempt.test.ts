@@ -1,8 +1,9 @@
 import { KeyringPair, Guid, Wallet, creditcoinApi } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, tryRegisterAddress } from './common';
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
+import { DealOrderRegistered, signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 
 describe('Exempt', (): void => {
     let ccApi: CreditcoinApi;
@@ -12,7 +13,10 @@ describe('Exempt', (): void => {
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
 
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);

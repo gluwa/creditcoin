@@ -1,9 +1,8 @@
 import { KeyringPair } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-import { AskOrderId, BidOrderId } from 'creditcoin-js/lib/model';
+import { AskOrderId, BidOrderId, Blockchain } from 'creditcoin-js/lib/model';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, testData } from './common';
+import { addAskAndBidOrder, testData } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
 
 describe('AddOffer', (): void => {
@@ -13,7 +12,11 @@ describe('AddOffer', (): void => {
     let askOrderId: AskOrderId;
     let bidOrderId: BidOrderId;
 
-    const { expirationBlock, keyring } = testData;
+    const testingData = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
+    const { expirationBlock, keyring, loanTerms } = testingData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
@@ -26,7 +29,7 @@ describe('AddOffer', (): void => {
     });
 
     beforeEach(async () => {
-        [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
+        [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms, testingData);
     }, 210000);
 
     afterEach(async () => {

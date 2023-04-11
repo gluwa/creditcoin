@@ -10,6 +10,7 @@ import type { Null, Option, Result, U8aFixed, u128, u32 } from '@polkadot/types-
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
 import type {
+    FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
@@ -146,7 +147,7 @@ declare module '@polkadot/api-base/types/events' {
             >;
             /**
              * CollectCoins has been successfully verified and minted.
-             * [collected_coins_id]
+             * [collected_coins_id, collected_coins]
              **/
             CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectCoinsCollectedCoins]>;
             /**

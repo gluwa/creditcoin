@@ -65,11 +65,18 @@ const ethlessTransfer = async (
     return receipt;
 };
 
+export type EthConnection = {
+    lend: (lender: Wallet, borrower: string, dealOrderId: string, amount: BN) => Promise<[string, string, number]>;
+    repay: (borrower: Wallet, lender: string, dealOrderId: string, amount: BN) => Promise<[string, string, number]>;
+    waitUntilTip: (tip: number) => Promise<void>;
+    testTokenAddress: string;
+};
+
 export const ethConnection = async (
     providerRpcUrl = 'http://localhost:8545',
     decreaseMiningInterval = true,
     minterWallet?: Wallet,
-) => {
+): Promise<EthConnection> => {
     const provider = new JsonRpcProvider(providerRpcUrl);
     const minter = minterWallet || new Wallet(MINTER, provider);
     const testToken = await deployTestToken(minter);
@@ -110,5 +117,5 @@ export const ethConnection = async (
         const result = await lend(borrower, lender, dealOrderId, amount);
         return result;
     };
-    return { lend, repay, waitUntilTip };
+    return { lend, repay, waitUntilTip, testTokenAddress: testToken.address };
 };

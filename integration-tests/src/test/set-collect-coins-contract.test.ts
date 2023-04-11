@@ -1,8 +1,7 @@
 import { KeyringPair, creditcoinApi } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData } from './common';
-import { extractFee, testIf } from '../utils';
+import { testData } from 'creditcoin-js/lib/testUtils';
 
 import { extractFee, testIf } from '../utils';
 
@@ -32,7 +31,7 @@ describe('SetCollectCoinsContract', (): void => {
         /* eslint-disable @typescript-eslint/naming-convention */
         const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
             address: '0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419',
-            chain: testData.blockchain,
+            chain: testingData.blockchain ,
         });
 
         return new Promise((resolve, reject): void => {

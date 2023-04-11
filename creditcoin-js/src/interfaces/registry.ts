@@ -45,16 +45,15 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
+    PalletCreditcoinBlockchain,
     PalletCreditcoinCall,
     PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
-    PalletCreditcoinCurrencyOrLegacyTransferKind,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinError,
     PalletCreditcoinEvent,
     PalletCreditcoinLegacySighash,
-    PalletCreditcoinLegacyTransferKind,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinLoanTermsAskTerms,
     PalletCreditcoinLoanTermsBidTerms,
@@ -65,17 +64,13 @@ import type {
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
-    PalletCreditcoinPlatformBlockchain,
-    PalletCreditcoinPlatformCurrency,
-    PalletCreditcoinPlatformEvmChainId,
-    PalletCreditcoinPlatformEvmCurrencyType,
-    PalletCreditcoinPlatformEvmInfo,
-    PalletCreditcoinPlatformEvmTransferKind,
-    PalletCreditcoinPlatformTransferKind,
+    PalletCreditcoinOrderId,
+    PalletCreditcoinRepaymentOrderId,
     PalletCreditcoinTask,
     PalletCreditcoinTaskId,
     PalletCreditcoinTaskOutput,
     PalletCreditcoinTransfer,
+    PalletCreditcoinTransferKind,
     PalletCreditcoinTransferUnverifiedTransfer,
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
@@ -156,16 +151,15 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinAskOrderId: PalletCreditcoinAskOrderId;
         PalletCreditcoinBidOrder: PalletCreditcoinBidOrder;
         PalletCreditcoinBidOrderId: PalletCreditcoinBidOrderId;
+        PalletCreditcoinBlockchain: PalletCreditcoinBlockchain;
         PalletCreditcoinCall: PalletCreditcoinCall;
         PalletCreditcoinCollectCoinsCollectedCoins: PalletCreditcoinCollectCoinsCollectedCoins;
         PalletCreditcoinCollectCoinsUnverifiedCollectedCoins: PalletCreditcoinCollectCoinsUnverifiedCollectedCoins;
-        PalletCreditcoinCurrencyOrLegacyTransferKind: PalletCreditcoinCurrencyOrLegacyTransferKind;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
         PalletCreditcoinDealOrderId: PalletCreditcoinDealOrderId;
         PalletCreditcoinError: PalletCreditcoinError;
         PalletCreditcoinEvent: PalletCreditcoinEvent;
         PalletCreditcoinLegacySighash: PalletCreditcoinLegacySighash;
-        PalletCreditcoinLegacyTransferKind: PalletCreditcoinLegacyTransferKind;
         PalletCreditcoinLoanTerms: PalletCreditcoinLoanTerms;
         PalletCreditcoinLoanTermsAskTerms: PalletCreditcoinLoanTermsAskTerms;
         PalletCreditcoinLoanTermsBidTerms: PalletCreditcoinLoanTermsBidTerms;
@@ -176,17 +170,13 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinOcwTasksCollectCoinsGCreContract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;
-        PalletCreditcoinPlatformBlockchain: PalletCreditcoinPlatformBlockchain;
-        PalletCreditcoinPlatformCurrency: PalletCreditcoinPlatformCurrency;
-        PalletCreditcoinPlatformEvmChainId: PalletCreditcoinPlatformEvmChainId;
-        PalletCreditcoinPlatformEvmCurrencyType: PalletCreditcoinPlatformEvmCurrencyType;
-        PalletCreditcoinPlatformEvmInfo: PalletCreditcoinPlatformEvmInfo;
-        PalletCreditcoinPlatformEvmTransferKind: PalletCreditcoinPlatformEvmTransferKind;
-        PalletCreditcoinPlatformTransferKind: PalletCreditcoinPlatformTransferKind;
+        PalletCreditcoinOrderId: PalletCreditcoinOrderId;
+        PalletCreditcoinRepaymentOrderId: PalletCreditcoinRepaymentOrderId;
         PalletCreditcoinTask: PalletCreditcoinTask;
         PalletCreditcoinTaskId: PalletCreditcoinTaskId;
         PalletCreditcoinTaskOutput: PalletCreditcoinTaskOutput;
         PalletCreditcoinTransfer: PalletCreditcoinTransfer;
+        PalletCreditcoinTransferKind: PalletCreditcoinTransferKind;
         PalletCreditcoinTransferUnverifiedTransfer: PalletCreditcoinTransferUnverifiedTransfer;
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;

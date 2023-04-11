@@ -11,8 +11,8 @@ import {
     PalletCreditcoinOffer,
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
-    PalletCreditcoinCollectedCoins,
-    PalletCreditcoinUnverifiedCollectedCoins,
+    PalletCreditcoinCollectCoinsCollectedCoins,
+    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
 } from '@polkadot/types/lookup';
 import {
     Address,
