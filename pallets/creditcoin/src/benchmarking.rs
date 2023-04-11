@@ -595,7 +595,7 @@ fn generate_bid<T: Config>(
 }
 
 fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
-	let address = format!("somefakeaddress{}", seed);
+	let address = format!("somefakeaddress{seed}");
 	crate::AddressId::new::<T>(&Blockchain::Ethereum, address.as_bytes())
 }
 
@@ -682,7 +682,7 @@ pub(crate) fn fake_deal_id<T: SystemConfig>(
 }
 
 fn fake_transfer_id<T: Config>(seed: u32) -> TransferId<T::Hash> {
-	let tx_id = format!("somefaketransfertxid{}", seed);
+	let tx_id = format!("somefaketransfertxid{seed}");
 	crate::TransferId::new::<T>(&Blockchain::Ethereum, tx_id.as_bytes())
 }
 
