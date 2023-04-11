@@ -16,6 +16,7 @@ mod v2;
 mod v3;
 mod v4;
 mod v5;
+mod v6;
 pub(crate) mod v7;
 pub mod v8;
 
@@ -29,6 +30,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		&v3::Migration::<T>::new(),
 		&v4::Migration::<T>::new(),
 		&v5::Migration::<T>::new(),
+		&v6::Migration,
 		&v7::Migration::<T>::new(),
 		&v8::Migration::<T>::new(),
 	];
