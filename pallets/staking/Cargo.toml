@@ -20,7 +20,7 @@ frame-system = { workspace = true }
 log = { workspace = true }
 pallet-offchain-task-scheduler = { workspace = true }
 pallet-session = { workspace = true }
-pallet-staking-substrate = { package = "pallet-staking", default-features = false, branch = "pos-keep-history", git = "https://github.com/nathanwhit/substrate.git" }
+pallet-staking-substrate = { package = "pallet-staking", default-features = false, branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git" }
 parity-scale-codec = { workspace = true }
 serde.workspace = true
 scale-info = { workspace = true }
