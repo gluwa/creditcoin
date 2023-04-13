@@ -42,10 +42,6 @@ for RUNTIME in "${runtimes[@]}"; do
   echo "[+] Release: ${release_transaction_version}"
   echo "[+] Ours: ${current_transaction_version}"
 
-  if [ ! "$release_transaction_version" = "$current_transaction_version" ]; then
-    echo "[+] Transaction version for ${RUNTIME} has been bumped since last release."
-    exit 0
-  fi
 
   # Start running the nodes in the background
   $HEAD_BIN --chain=local --tmp >head-node.log 2>&1 &
@@ -70,7 +66,12 @@ for RUNTIME in "${runtimes[@]}"; do
   if [ -n "$changed_extrinsics" ]; then
     echo "[!] Extrinsics indexing/ordering has changed in the ${RUNTIME} runtime! If this change is intentional, please bump transaction_version in lib.rs. Changed extrinsics:"
     echo "$changed_extrinsics"
-    exit 1
+
+    if [ "$release_transaction_version" == "$current_transaction_version" ]; then
+        exit 1
+    else
+        echo "[+] Transaction version for ${RUNTIME} has been bumped since last release. Exiting."
+    fi
   fi
 
   echo "[+] No change in extrinsics ordering for the ${RUNTIME} runtime"
