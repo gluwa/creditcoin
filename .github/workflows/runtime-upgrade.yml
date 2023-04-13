@@ -339,7 +339,7 @@ jobs:
 
       - name: Try-runtime migrations
         run: |
-          ./target/release/creditcoin-node try-runtime --dev --no-spec-check-panic on-runtime-upgrade \
+          ./target/release/creditcoin-node try-runtime --dev on-runtime-upgrade \
               snap --snapshot-path ${{ env.SNAPSHOT_DIR }}/creditcoin.
 
   remove-github-runner:
