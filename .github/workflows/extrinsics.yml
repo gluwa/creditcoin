@@ -57,11 +57,14 @@ jobs:
 
       #Upload logs if nodes are not connecting.
       #head-node.log and release-node.log are created in ./scripts/check-extrinsics.sh
-      - name: Upload error logs
+      - name: Upload logs
         uses: actions/upload-artifact@v3
         if: always()
         with:
+          if-no-files-found: warn
           name: "extrinsic-logs"
           path: |
             head-node.log
             release-node.log
+            metadata-cmp-with-mainnet.txt
+            metadata-cmp-with-testnet.txt

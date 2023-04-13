@@ -62,6 +62,11 @@ for RUNTIME in "${runtimes[@]}"; do
       | sed 's/^ \+//g' | grep -e 'idx: [0-9]\+ -> [0-9]\+' || true
   )
 
+  # compare to mainnet and testnet explicitly b/c latest release could be any of them
+  # for now this comparison is only used to provide more info in CI
+  polkadot-js-metadata-cmp wss://rpc.mainnet.creditcoin.network/ws "$HEAD_WS" > metadata-cmp-with-mainnet.txt
+  polkadot-js-metadata-cmp wss://rpc.testnet.creditcoin.network/ws "$HEAD_WS" > metadata-cmp-with-testnet.txt
+
   if [ -n "$changed_extrinsics" ]; then
     echo "[!] Extrinsics indexing/ordering has changed in the ${RUNTIME} runtime! If this change is intentional, please bump transaction_version in lib.rs. Changed extrinsics:"
     echo "$changed_extrinsics"
