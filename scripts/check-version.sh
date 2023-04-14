@@ -36,6 +36,15 @@ if [ "$VERSION_FROM_CARGO_TOML" != "$VERSION_FROM_VERSION_RS" ]; then
     exit 2
 fi
 
+# storage version constant in Creditcoin pallet should match the migrations, see
+# https://github.com/gluwa/creditcoin/pull/1002#discussion_r1165747440
+STORAGE_VERSION_IN_PALLET=$(grep STORAGE_VERSION  pallets/creditcoin/src/lib.rs  | grep StorageVersion | cut -f2 -d"(" | cut -f1 -d")")
+LAST_MIGRATION_NUMBER=$(find pallets/creditcoin/src/migrations/v*.rs | sort | tail -n1 | sed "s|pallets/creditcoin/src/migrations/v||" | sed "s/.rs//")
+if [ "$STORAGE_VERSION_IN_PALLET" != "$LAST_MIGRATION_NUMBER" ]; then
+    echo "FAIL: pub const STORAGE_VERSION in creditcoin/src/lib.rs doesn't match the last migration number"
+    exit 3
+fi
+
 
 FROM=$(git rev-parse "${1:-origin/dev}")
 TO=$(git rev-parse "${2:-HEAD}")
