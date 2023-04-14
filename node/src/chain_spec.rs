@@ -6,8 +6,8 @@ use creditcoin_node_runtime::{
 
 use sc_service::ChainType;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_core::{sr25519, Pair, Public, U256};
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
+use sp_core::{sr25519, Pair, Public, U256};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
 	FixedU128,
