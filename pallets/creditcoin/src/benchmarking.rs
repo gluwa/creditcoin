@@ -34,7 +34,7 @@ enum DealKind {
 }
 
 benchmarks! {
-	migration_v7 {
+	migration_v6 {
 		let t in 0..1024;
 
 		let pending = types::UnverifiedCollectedCoins {
@@ -55,15 +55,15 @@ benchmarks! {
 
 	 }: {m.migrate()}
 
-	migration_v8 {
+	migration_v7 {
 		let t in 0..1024;
 
 		for t in 0..t {
 			let account:T::AccountId = account("Authority",1,t);
-			crate::migrations::v8::Authorities::<T>::insert(account,());
+			crate::migrations::v7::Authorities::<T>::insert(account,());
 		}
 
-		let m = crate::migrations::v8::Migration::<T>::new();
+		let m = crate::migrations::v7::Migration::<T>::new();
 
 	 }: {m.migrate()}
 

@@ -38,7 +38,7 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	/// Storage: unknown `0xd766358cca00233e6155d7c14e2c085f958b219926181a115ab05df09ebaabf5` (r:1 w:0)
 	/// Proof Skipped: unknown `0xd766358cca00233e6155d7c14e2c085f958b219926181a115ab05df09ebaabf5` (r:1 w:0)
 	/// The range of component `t` is `[0, 1024]`.
-	fn migration_v7(t: u32, ) -> Weight {
+	fn migration_v6(t: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `84`
 		//  Estimated: `3533`
@@ -54,7 +54,7 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	/// Storage: TaskScheduler Authorities (r:0 w:1024)
 	/// Proof: TaskScheduler Authorities (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
 	/// The range of component `t` is `[0, 1024]`.
-	fn migration_v8(t: u32, ) -> Weight {
+	fn migration_v7(t: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `120 + t * (53 ±0)`
 		//  Estimated: `3567 + t * (2529 ±0)`

@@ -50,7 +50,7 @@ pub(crate) use types::test;
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
-pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -117,8 +117,8 @@ pub mod pallet {
 	}
 
 	pub trait WeightInfo {
+		fn migration_v6(t: u32) -> Weight;
 		fn migration_v7(t: u32) -> Weight;
-		fn migration_v8(t: u32) -> Weight;
 		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
