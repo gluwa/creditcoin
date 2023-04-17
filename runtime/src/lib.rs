@@ -658,6 +658,7 @@ impl pallet_rewards::Config for Runtime {
 
 impl pallet_pos_switch::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeBlockNumber = BlockNumber;
 }
 
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
