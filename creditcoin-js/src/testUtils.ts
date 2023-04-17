@@ -7,12 +7,11 @@ import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 
-import { Blockchain, LoanTerms, DealOrderId, Currency } from './model';
+import { Blockchain, LoanTerms, DealOrderId } from './model';
 import { CreditcoinApi } from './types';
 import { createAddress } from './transforms';
 import { EthConnection } from './examples/ethereum';
 import { AddressRegistered, createAddressId } from './extrinsics/register-address';
-import { createCurrencyId, registerCurrencyAsync } from './extrinsics/register-currency';
 
 type CreateWalletFunc = (who: string) => Wallet;
 
@@ -21,6 +20,7 @@ export type TestData = {
     expirationBlock: number;
     keyring: Keyring;
     createWallet: CreateWalletFunc;
+    loanTerms: LoanTerms;
 };
 
 export const testData = (ethereumChain: Blockchain, createWalletF: CreateWalletFunc): TestData => {
@@ -29,44 +29,22 @@ export const testData = (ethereumChain: Blockchain, createWalletF: CreateWalletF
         expirationBlock: 10_000_000,
         createWallet: createWalletF,
         keyring: new Keyring({ type: 'sr25519' }),
-    };
-};
-
-const ensureCurrencyRegistered = async (ccApi: CreditcoinApi, currency: Currency, sudoKey: KeyringPair) => {
-    const id = createCurrencyId(ccApi.api, currency);
-    const onChainCurrency = await ccApi.api.query.creditcoin.currencies(id);
-    if (onChainCurrency.isEmpty) {
-        const { itemId } = await registerCurrencyAsync(ccApi.api, currency, sudoKey);
-        if (itemId !== id) {
-            throw new Error(`Unequal: ${itemId} !== ${id}`);
-        }
-    }
-};
-
-export const loanTermsWithCurrency = async (
-    ccApi: CreditcoinApi,
-    currency: Currency,
-    sudoKey: KeyringPair,
-): Promise<LoanTerms> => {
-    const currencyId = createCurrencyId(ccApi.api, currency);
-    await ensureCurrencyRegistered(ccApi, currency, sudoKey);
-
-    return {
-        amount: new BN(1_000),
-        interestRate: {
-            ratePerPeriod: 100,
-            decimals: 4,
-            period: {
-                secs: 60 * 60 * 24,
+        loanTerms: {
+            amount: new BN(1_000),
+            interestRate: {
+                ratePerPeriod: 100,
+                decimals: 4,
+                period: {
+                    secs: 60 * 60 * 24,
+                    nanos: 0,
+                },
+                interestType: 'Simple',
+            },
+            termLength: {
+                secs: 60 * 60 * 24 * 30,
                 nanos: 0,
             },
-            interestType: 'Simple',
         },
-        termLength: {
-            secs: 60 * 60 * 24 * 30,
-            nanos: 0,
-        },
-        currency: currencyId,
     };
 };
 

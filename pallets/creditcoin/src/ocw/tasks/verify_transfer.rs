@@ -11,11 +11,10 @@ use crate::{
 	ocw::{
 		self, parse_eth_address,
 		rpc::{self, Address, EthBlock, EthTransaction, EthTransactionReceipt},
-		OffchainError, OffchainResult, VerificationFailureCause, VerificationResult,
-		ETH_CONFIRMATIONS,
+		OffchainResult, VerificationFailureCause, VerificationResult, ETH_CONFIRMATIONS,
 	},
-	Blockchain, Config, Currency, DealOrderId, EvmChainId, EvmInfo, ExternalAddress,
-	ExternalAmount, ExternalTxId, Id, LegacyTransferKind, Transfer, UnverifiedTransfer,
+	Blockchain, Config, ExternalAddress, ExternalAmount, ExternalTxId, Id, OrderId, Transfer,
+	TransferKind, UnverifiedTransfer,
 };
 
 pub(crate) fn ethless_transfer_function_abi() -> Function {
@@ -103,58 +102,23 @@ pub(in crate::ocw) fn validate_ethless_transfer(
 	Ok(())
 }
 
-fn verify_chain_id(rpc_url: &str, expected: EvmChainId) -> VerificationResult<()> {
-	let id = rpc::eth_chain_id(rpc_url)?.as_u64();
-	if id == expected.as_u64() {
-		Ok(())
-	} else {
-		Err(OffchainError::IncorrectChainId)
-	}
-}
-
 impl<T: Config> crate::Pallet<T> {
 	pub fn verify_transfer_ocw(
 		transfer: &UnverifiedTransfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>,
 	) -> VerificationResult<Option<T::Moment>> {
 		let UnverifiedTransfer {
-			transfer: Transfer { blockchain, deal_order_id, amount, tx_id: tx, .. },
+			transfer: Transfer { blockchain, kind, order_id, amount, tx_id: tx, .. },
 			from_external: from,
 			to_external: to,
-			currency_to_check,
 			..
 		} = transfer;
 		log::debug!("verifying OCW transfer");
-		match currency_to_check {
-			crate::CurrencyOrLegacyTransferKind::TransferKind(kind) => match kind {
-				LegacyTransferKind::Ethless(contract) => Self::verify_ethless_transfer(
-					blockchain,
-					contract,
-					from,
-					to,
-					deal_order_id,
-					amount,
-					tx,
-					None,
-				),
-				LegacyTransferKind::Native
-				| LegacyTransferKind::Erc20(_)
-				| LegacyTransferKind::Other(_) => Err(VerificationFailureCause::UnsupportedMethod.into()),
+		match kind {
+			TransferKind::Ethless(contract) => {
+				Self::verify_ethless_transfer(blockchain, contract, from, to, order_id, amount, tx)
 			},
-			crate::CurrencyOrLegacyTransferKind::Currency(currency) => match currency {
-				Currency::Evm(currency_type, EvmInfo { chain_id }) => match currency_type {
-					crate::EvmCurrencyType::SmartContract(contract, _) => {
-						Self::verify_ethless_transfer(
-							blockchain,
-							contract,
-							from,
-							to,
-							deal_order_id,
-							amount,
-							tx,
-							Some(*chain_id),
-						)
-					},
-				},
+			TransferKind::Native | TransferKind::Erc20(_) | TransferKind::Other(_) => {
+				Err(VerificationFailureCause::UnsupportedMethod.into())
 			},
 		}
 	}
@@ -164,17 +128,11 @@ impl<T: Config> crate::Pallet<T> {
 		contract_address: &ExternalAddress,
 		from: &ExternalAddress,
 		to: &ExternalAddress,
-		deal_order_id: &DealOrderId<BlockNumberFor<T>, T::Hash>,
+		order_id: &OrderId<BlockNumberFor<T>, T::Hash>,
 		amount: &ExternalAmount,
 		tx_id: &ExternalTxId,
-		chain_id: Option<EvmChainId>,
 	) -> VerificationResult<Option<T::Moment>> {
 		let rpc_url = blockchain.rpc_url()?;
-
-		if let Some(chain_id) = chain_id {
-			verify_chain_id(&rpc_url, chain_id)?;
-		}
-
 		let tx = ocw::eth_get_transaction(tx_id, &rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, &rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(&rpc_url)?;
@@ -194,7 +152,7 @@ impl<T: Config> crate::Pallet<T> {
 			&tx_receipt,
 			&tx,
 			eth_tip,
-			T::HashIntoNonce::from(deal_order_id.hash()),
+			T::HashIntoNonce::from(order_id.hash()),
 		)?;
 
 		let timestamp = if let Some(num) = tx_block_num {
@@ -228,8 +186,8 @@ mod tests {
 	use crate::ocw::tasks::Task;
 	use crate::ocw::tasks::TaskV2;
 	use crate::ocw::tests::set_up_verify_transfer_env;
-	use crate::tests::{adjust_deal_order_to_nonce, ethless_currency, TestInfo};
-	use crate::{Blockchain, EvmTransferKind, LegacyTransferKind, LoanTerms};
+	use crate::tests::{adjust_deal_order_to_nonce, TestInfo};
+	use crate::{Blockchain, LoanTerms, TransferKind};
 	use frame_support::assert_ok;
 	use frame_support::dispatch::Dispatchable;
 	use sp_runtime::traits::IdentifyAccount;
@@ -244,48 +202,23 @@ mod tests {
 			let tx_hash = get_mock_tx_hash();
 			let contract = get_mock_contract().hex_to_address();
 			let tx_block_num = get_mock_tx_block_num();
-			let blockchain = Blockchain::RINKEBY;
+			let blockchain = Blockchain::Rinkeby;
 
 			// we're going to verify a transfer twice:
 			// First when we expect failure, which means we won't make all of the requests
-			{
-				let mut state = state.write();
-				MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-					.mock_chain_id(&mut state)
-					.mock_get_block_number(&mut state);
-			}
-			// Second when we expect success, where we'll do all the requests
 			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
 				.mock_all(&mut state.write());
 
-			set_rpc_uri(&Blockchain::RINKEBY, dummy_url);
+			set_rpc_uri(&Blockchain::Rinkeby, dummy_url);
 
 			let loan_amount = get_mock_amount();
-			let currency = ethless_currency(contract.clone());
-			let test_info = TestInfo::with_currency(currency);
-			let test_info = TestInfo {
-				blockchain,
-				loan_terms: LoanTerms { amount: loan_amount, ..test_info.loan_terms },
-				..test_info
-			};
+			let terms = LoanTerms { amount: loan_amount, ..Default::default() };
+
+			let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
 
 			let (deal_order_id, _) = test_info.create_deal_order();
 
 			let lender = test_info.lender.account_id;
-
-			// exercise when we try to send a fail_transfer but tx send fails
-			with_failing_create_transaction(|| {
-				assert_ok!(Creditcoin::register_funding_transfer(
-					Origin::signed(lender.clone()),
-					EvmTransferKind::Ethless.into(),
-					deal_order_id.clone(),
-					tx_hash.hex_to_address(),
-				));
-
-				roll_to_with_ocw(1);
-
-				assert!(logs.contain("Failed to send a dispatchable transaction"));
-			});
 
 			let _ =
 				pallet_offchain_task_scheduler::pallet::PendingTasks::<Test>::clear(u32::MAX, None);
@@ -294,14 +227,14 @@ mod tests {
 
 			// exercise when we try to send a verify_transfer but tx send fails
 			with_failing_create_transaction(|| {
-				assert_ok!(Creditcoin::register_funding_transfer_legacy(
+				assert_ok!(Creditcoin::register_funding_transfer(
 					Origin::signed(lender.clone()),
-					LegacyTransferKind::Ethless(contract.clone()),
+					TransferKind::Ethless(contract.clone()),
 					fake_deal_order_id.clone(),
 					tx_hash.hex_to_address(),
 				));
 
-				roll_to_with_ocw(2);
+				roll_to_with_ocw(1);
 				assert!(logs.contain("Failed to send a dispatchable transaction"));
 			});
 		});

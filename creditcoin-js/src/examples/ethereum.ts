@@ -3,7 +3,6 @@ import { TestToken } from './ethless/typechain';
 import TestTokenArtifact from './ethless/contracts/TestToken.sol/TestToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { BN } from '@polkadot/util';
-import { CHAINS, Currency } from '../model';
 
 // Private key for Account #0: from gluwa/hardhat-dev (10000 ETH)
 const MINTER = '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
@@ -71,16 +70,6 @@ export type EthConnection = {
     repay: (borrower: Wallet, lender: string, dealOrderId: string, amount: BN) => Promise<[string, string, number]>;
     waitUntilTip: (tip: number) => Promise<void>;
     testTokenAddress: string;
-};
-
-export const testCurrency = (tokenAddress: string): Currency => {
-    return {
-        platform: 'Evm',
-        type: 'SmartContract',
-        contract: tokenAddress,
-        chainId: CHAINS.hardhat.chainId,
-        supportedTransferKinds: new Set(['Ethless']),
-    };
 };
 
 export const ethConnection = async (

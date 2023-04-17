@@ -6,7 +6,6 @@ import { creditcoinApi, providers, Wallet } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
-import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 import { testIf } from '../utils';
 
 describe('CollectCoins', (): void => {
@@ -17,7 +16,6 @@ describe('CollectCoins', (): void => {
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
-
     const evmAddress = '0xffffffffffffffffffffffffffffffffffffffff';
     const badHash = '0xbad';
     const addressId = createAddressId(blockchain, evmAddress);
@@ -48,7 +46,7 @@ describe('CollectCoins', (): void => {
             /* eslint-disable @typescript-eslint/naming-convention */
             const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
                 address: (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
-                chain: createCreditcoinBlockchain(api, blockchain),
+                chain: blockchain,
             });
 
             await api.tx.sudo
@@ -86,6 +84,7 @@ describe('CollectCoins', (): void => {
                 collector,
                 (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
             );
+
             const collectCoinsVerified = await collectCoinsEvent.waitForVerification(800_000).catch();
             expect(collectCoinsVerified).toBeTruthy();
 
@@ -143,6 +142,7 @@ describe('CollectCoins', (): void => {
                     amount: 1000,
                     txHash: badHash,
                 };
+
                 const collectedCoinsId = createCollectedCoinsId(evmAddress);
                 /* eslint-disable @typescript-eslint/naming-convention */
                 const taskOutput = api.createType('PalletCreditcoinTaskOutput', {

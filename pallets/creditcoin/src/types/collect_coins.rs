@@ -1,4 +1,9 @@
-use super::*;
+use crate::types::{
+	AddressId, Blockchain, ExternalAddress, ExternalTxId, GCreContract, SystemConfig,
+};
+use frame_support::RuntimeDebug;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct CollectedCoins<Hash, Balance> {
@@ -33,7 +38,7 @@ impl<H> CollectedCoinsId<H> {
 	where
 		Hasher: Hash<Output = H>,
 	{
-		let key = concatenate!(&*blockchain.as_bytes(), blockchain_tx_id);
+		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
 		<Hasher as Hash>::hash(&key)
 	}
 
@@ -113,7 +118,6 @@ where
 			Err(InvalidTask(e)) => Err(TaskError::Evaluation(e)),
 			Err(NoRpcUrl(e)) => Err(TaskError::Scheduler(e.into())),
 			Err(RpcError(e)) => Err(TaskError::Scheduler(e.into())),
-			Err(IncorrectChainId) => Err(TaskError::Scheduler(SchedulerError::IncorrectChainId)),
 		}
 	}
 

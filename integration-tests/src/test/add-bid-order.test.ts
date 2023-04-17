@@ -1,41 +1,28 @@
-import { Guid, LoanTerms, KeyringPair, creditcoinApi } from 'creditcoin-js';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { Guid, creditcoinApi } from 'creditcoin-js';
+import { KeyringPair } from 'creditcoin-js';
+import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { signAccountId } from 'creditcoin-js/lib/utils';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
-import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 
 import { extractFee } from '../utils';
 
-describe('AddBidOrder', () => {
+describe('AddBidOrder', (): void => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let borrowerRegAddr: AddressRegistered;
     let bidGuid: Guid;
-    let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
-
-        const eth = await ethConnection(
-            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            undefined,
-        );
-        const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(
-            ccApi,
-            currency,
-            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
-        );
+        borrower = keyring.addFromUri('//Bob');
     });
 
     afterAll(async () => {

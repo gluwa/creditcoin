@@ -17,7 +17,7 @@ pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
 	pub kind: TransferKind,
 	pub from: AddressId<Hash>,
 	pub to: AddressId<Hash>,
-	pub deal_order_id: DealOrderId<BlockNum, Hash>,
+	pub order_id: OrderId<BlockNum, Hash>,
 	pub amount: ExternalAmount,
 	pub tx_id: ExternalTxId,
 	pub block: BlockNum,
@@ -32,7 +32,6 @@ pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 	pub from_external: ExternalAddress,
 	pub to_external: ExternalAddress,
 	pub deadline: BlockNum,
-	pub currency_to_check: CurrencyOrLegacyTransferKind,
 }
 
 impl<AccountId, BlockNum, Hash, Moment> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>
@@ -67,7 +66,7 @@ impl<H> TransferId<H> {
 	where
 		Hasher: Hash<Output = H>,
 	{
-		let key = concatenate!(&*blockchain.as_bytes(), blockchain_tx_id);
+		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
 		<Hasher as Hash>::hash(&key)
 	}
 
@@ -134,7 +133,6 @@ where
 			Err(InvalidTask(e)) => Err(TaskError::Evaluation(e)),
 			Err(NoRpcUrl(e)) => Err(TaskError::Scheduler(e.into())),
 			Err(RpcError(e)) => Err(TaskError::Scheduler(e.into())),
-			Err(IncorrectChainId) => Err(TaskError::Scheduler(SchedulerError::IncorrectChainId)),
 		}
 	}
 

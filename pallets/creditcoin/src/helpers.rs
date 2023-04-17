@@ -1,14 +1,15 @@
 mod external_address;
 mod register_transfer;
 
+pub use external_address::{address_is_well_formed, generate_external_address};
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+pub use external_address::{EVMAddress, PublicToAddress};
+
 use crate::{
 	pallet::*,
 	types::{Address, AddressId},
 	DealOrderId, Error, Guid, Id, TransferId,
 };
-pub use external_address::{address_is_well_formed, generate_external_address};
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-pub use external_address::{EVMAddress, PublicToAddress};
 use frame_support::ensure;
 use frame_system::pallet_prelude::*;
 use sp_std::prelude::*;

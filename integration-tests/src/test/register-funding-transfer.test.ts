@@ -1,18 +1,13 @@
-import { creditcoinApi, BN, KeyringPair, TransferKind, Guid, Wallet } from 'creditcoin-js';
+import { creditcoinApi, BN, KeyringPair, Guid, Wallet } from 'creditcoin-js';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
-import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { testData, lendOnEth, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
 import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
 
 import { extractFee } from '../utils';
-
-const ethless: TransferKind = {
-    platform: 'Evm',
-    kind: 'Ethless',
-};
 
 describe('RegisterFundingTransfer', (): void => {
     let ccApi: CreditcoinApi;
@@ -23,7 +18,7 @@ describe('RegisterFundingTransfer', (): void => {
     let lenderRegAddr: AddressRegistered;
     let borrowerRegAddr: AddressRegistered;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
@@ -35,12 +30,6 @@ describe('RegisterFundingTransfer', (): void => {
             (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
             (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
             (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
-        );
-        const currency = testCurrency(eth.testTokenAddress);
-        const loanTerms = await loanTermsWithCurrency(
-            ccApi,
-            currency,
-            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
         );
         const signedParams = signLoanParams(ccApi.api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
@@ -55,7 +44,11 @@ describe('RegisterFundingTransfer', (): void => {
             signedParams,
             lender,
         );
-        return { eth, loanTerms, dealOrder };
+        return {
+            eth,
+            dealOrder,
+            ethless: { kind: 'Ethless' as const, contractAddress: eth.testTokenAddress },
+        };
     };
 
     beforeAll(async () => {
@@ -95,9 +88,10 @@ describe('RegisterFundingTransfer', (): void => {
     }, 900000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
-        const { dealOrder, loanTerms, eth } = await setup();
+        const { dealOrder, eth, ethless } = await setup();
         const txHash = await lendOnEth(lenderWallet, borrowerWallet, dealOrder.dealOrder.itemId, loanTerms, eth);
         const { api } = ccApi;
+
         const ccTransferKind = createCreditcoinTransferKind(api, ethless);
 
         return new Promise((resolve, reject): void => {
@@ -113,7 +107,7 @@ describe('RegisterFundingTransfer', (): void => {
     }, 300000);
 
     it('emits a failure event if transfer is invalid', async (): Promise<void> => {
-        const { dealOrder, loanTerms, eth } = await setup();
+        const { dealOrder, eth, ethless } = await setup();
 
         // wrong amount
         const badLoanTerms = { ...loanTerms, amount: new BN(1) };

@@ -62,11 +62,11 @@ impl SubstrateCli for Cli {
 pub mod set_db_tests {
 	use crate::cli::Cli;
 	use crate::command::maybe_set_db;
-	use sc_cli::{Database, SubstrateCli};
+	use sc_cli::{clap::Parser, Database};
 
 	#[test]
 	fn maybe_set_db_changes_config_when_no_db_is_set() {
-		let mut cli = Cli::from_args();
+		let mut cli = Cli::parse_from(Option::<&str>::None);
 
 		// Start with no value set
 		assert_eq!(cli.run.import_params.database_params.database, None);
@@ -78,7 +78,7 @@ pub mod set_db_tests {
 
 	#[test]
 	fn maybe_set_db_does_nothing_when_db_already_set() {
-		let mut cli = Cli::from_args();
+		let mut cli = Cli::parse_from(Option::<&str>::None);
 
 		// Set the value to something besides ParityDB
 		cli.run.import_params.database_params.database = Some(Database::RocksDb);
@@ -191,12 +191,12 @@ pub fn run() -> sc_cli::Result<()> {
 				You can enable it with `--features try-runtime`."
 			.into()),
 		Some(Subcommand::Benchmark(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
+			let runner = cli.create_runner(&**cmd)?;
 
 			runner.sync_run(|config| {
 				// This switch needs to be in the client, since the client decides
 				// which sub-commands it wants to support.
-				match cmd {
+				match &**cmd {
 					BenchmarkCmd::Pallet(cmd) => {
 						if !cfg!(feature = "runtime-benchmarks") {
 							return Err(

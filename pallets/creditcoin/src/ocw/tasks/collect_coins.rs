@@ -1,14 +1,14 @@
+use crate::ocw::{
+	self,
+	errors::{VerificationFailureCause, VerificationResult},
+	rpc::{self, EthTransaction, EthTransactionReceipt},
+	OffchainResult, ETH_CONFIRMATIONS,
+};
 use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
-	ocw::{
-		self,
-		errors::{VerificationFailureCause, VerificationResult},
-		rpc::{self, EthTransaction, EthTransactionReceipt},
-		OffchainResult, ETH_CONFIRMATIONS,
-	},
-	Blockchain,
+	types::{Blockchain, UnverifiedCollectedCoins},
+	ExternalAddress, ExternalAmount,
 };
-use crate::{types::UnverifiedCollectedCoins, ExternalAddress, ExternalAmount};
 use core::default::Default;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::U64;
@@ -28,7 +28,7 @@ pub struct GCreContract {
 }
 
 impl GCreContract {
-	const DEFAULT_CHAIN: Blockchain = Blockchain::ETHEREUM;
+	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
 }
 
 impl Default for GCreContract {
@@ -226,7 +226,7 @@ pub(crate) mod tests {
 		ETH_CONFIRMATIONS,
 	};
 	use crate::tests::generate_address_with_proof;
-	use crate::types::{AddressId, CollectedCoins, CollectedCoinsId};
+	use crate::types::{AddressId, CollectedCoinsId, CollectedCoinsStruct};
 	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
 	use crate::{Pallet as Creditcoin, Task};
 	use alloc::sync::Arc;
@@ -441,7 +441,7 @@ pub(crate) mod tests {
 
 			let pcc = PassingCollectCoins::default();
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -542,7 +542,7 @@ pub(crate) mod tests {
 
 			let pcc = PassingCollectCoins::default();
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -585,7 +585,7 @@ pub(crate) mod tests {
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let pcc = PassingCollectCoins::default();
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -627,7 +627,7 @@ pub(crate) mod tests {
 
 			let collected_coins_id =
 				crate::CollectedCoinsId::new::<Test>(&CHAIN, &TX_HASH.hex_to_address());
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: u128::MAX,
 				tx_id: TX_HASH.hex_to_address(),
@@ -659,7 +659,7 @@ pub(crate) mod tests {
 				sign
 			));
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -786,7 +786,7 @@ pub(crate) mod tests {
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let (molly, addr, _, _) = generate_address_with_proof("malicious");
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -832,7 +832,7 @@ pub(crate) mod tests {
 
 			assert!(!pool.read().transactions.is_empty());
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -866,7 +866,7 @@ pub(crate) mod tests {
 				sign
 			));
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -933,7 +933,7 @@ pub(crate) mod tests {
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
@@ -993,7 +993,7 @@ pub(crate) mod tests {
 		ext.build_and_execute(|| {
 			let contract = GCreContract {
 				address: sp_core::H160(hex!("aaaaabbbbbcccccdddddeeeeefffff08F3820419")),
-				chain: Blockchain::RINKEBY,
+				chain: Blockchain::Rinkeby,
 			};
 			assert_ok!(Creditcoin::<Test>::set_collect_coins_contract(
 				RawOrigin::Root.into(),
@@ -1038,7 +1038,7 @@ pub(crate) mod tests {
 		ext.build_offchain_and_execute_with_state(|_, _| {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
-			let collected_coins = CollectedCoins {
+			let collected_coins = CollectedCoinsStruct {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: 1u128,
 				tx_id: TX_HASH.hex_to_address(),

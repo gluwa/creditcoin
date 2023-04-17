@@ -64,7 +64,7 @@ fn must_be_root_to_schedule() {
 
 #[test]
 fn authority_migration_parity_checks() {
-	use pallet_creditcoin::migrations::v8::{Authorities as AC, SCHEDULER_PREFIX};
+	use pallet_creditcoin::migrations::v7::{Authorities as AC, SCHEDULER_PREFIX};
 	use pallet_offchain_task_scheduler::Authorities as AT;
 
 	//Pallet prefix

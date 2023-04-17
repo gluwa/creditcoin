@@ -16,9 +16,8 @@ mod v2;
 mod v3;
 mod v4;
 mod v5;
-mod v6;
-pub(crate) mod v7;
-pub mod v8;
+pub(crate) mod v6;
+pub mod v7;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
@@ -32,7 +31,6 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		&v5::Migration::<T>::new(),
 		&v6::Migration::<T>::new(),
 		&v7::Migration::<T>::new(),
-		&v8::Migration::<T>::new(),
 	];
 
 	for (idx, &calls) in callbacks.iter().enumerate() {

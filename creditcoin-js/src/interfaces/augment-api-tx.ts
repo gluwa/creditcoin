@@ -17,17 +17,15 @@ import type { AccountId32, Call, H256, MultiAddress } from '@polkadot/types/inte
 import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
+    PalletCreditcoinBlockchain,
     PalletCreditcoinDealOrderId,
-    PalletCreditcoinLegacyTransferKind,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOfferId,
-    PalletCreditcoinPlatformBlockchain,
-    PalletCreditcoinPlatformCurrency,
-    PalletCreditcoinPlatformTransferKind,
     PalletCreditcoinTaskId,
     PalletCreditcoinTaskOutput,
+    PalletCreditcoinTransferKind,
     SpCoreEcdsaPublic,
     SpCoreEcdsaSignature,
     SpRuntimeMultiSignature,
@@ -225,7 +223,7 @@ declare module '@polkadot/api-base/types/submittable' {
                     addressId: H256 | string | Uint8Array,
                     terms:
                         | PalletCreditcoinLoanTerms
-                        | { amount?: any; interestRate?: any; termLength?: any; currency?: any }
+                        | { amount?: any; interestRate?: any; termLength?: any }
                         | string
                         | Uint8Array,
                     expirationBlock: u32 | AnyNumber | Uint8Array,
@@ -242,7 +240,7 @@ declare module '@polkadot/api-base/types/submittable' {
                     addressId: H256 | string | Uint8Array,
                     terms:
                         | PalletCreditcoinLoanTerms
-                        | { amount?: any; interestRate?: any; termLength?: any; currency?: any }
+                        | { amount?: any; interestRate?: any; termLength?: any }
                         | string
                         | Uint8Array,
                     expirationBlock: u32 | AnyNumber | Uint8Array,
@@ -346,17 +344,19 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             registerAddress: AugmentedSubmittable<
                 (
-                    blockchain: PalletCreditcoinPlatformBlockchain | { Evm: any } | string | Uint8Array,
+                    blockchain:
+                        | PalletCreditcoinBlockchain
+                        | { Ethereum: any }
+                        | { Rinkeby: any }
+                        | { Luniverse: any }
+                        | { Bitcoin: any }
+                        | { Other: any }
+                        | string
+                        | Uint8Array,
                     address: Bytes | string | Uint8Array,
                     ownershipProof: SpCoreEcdsaSignature | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinPlatformBlockchain, Bytes, SpCoreEcdsaSignature]
-            >;
-            registerCurrency: AugmentedSubmittable<
-                (
-                    currency: PalletCreditcoinPlatformCurrency | { Evm: any } | string | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinPlatformCurrency]
+                [PalletCreditcoinBlockchain, Bytes, SpCoreEcdsaSignature]
             >;
             registerDealOrder: AugmentedSubmittable<
                 (
@@ -364,7 +364,7 @@ declare module '@polkadot/api-base/types/submittable' {
                     borrowerAddressId: H256 | string | Uint8Array,
                     terms:
                         | PalletCreditcoinLoanTerms
-                        | { amount?: any; interestRate?: any; termLength?: any; currency?: any }
+                        | { amount?: any; interestRate?: any; termLength?: any }
                         | string
                         | Uint8Array,
                     expirationBlock: u32 | AnyNumber | Uint8Array,
@@ -398,16 +398,8 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             registerFundingTransfer: AugmentedSubmittable<
                 (
-                    transferKind: PalletCreditcoinPlatformTransferKind | { Evm: any } | string | Uint8Array,
-                    dealOrderId: PalletCreditcoinDealOrderId,
-                    blockchainTxId: Bytes | string | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinPlatformTransferKind, PalletCreditcoinDealOrderId, Bytes]
-            >;
-            registerFundingTransferLegacy: AugmentedSubmittable<
-                (
                     transferKind:
-                        | PalletCreditcoinLegacyTransferKind
+                        | PalletCreditcoinTransferKind
                         | { Erc20: any }
                         | { Ethless: any }
                         | { Native: any }
@@ -417,21 +409,12 @@ declare module '@polkadot/api-base/types/submittable' {
                     dealOrderId: PalletCreditcoinDealOrderId,
                     blockchainTxId: Bytes | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinLegacyTransferKind, PalletCreditcoinDealOrderId, Bytes]
+                [PalletCreditcoinTransferKind, PalletCreditcoinDealOrderId, Bytes]
             >;
             registerRepaymentTransfer: AugmentedSubmittable<
                 (
-                    transferKind: PalletCreditcoinPlatformTransferKind | { Evm: any } | string | Uint8Array,
-                    repaymentAmount: U256 | AnyNumber | Uint8Array,
-                    dealOrderId: PalletCreditcoinDealOrderId,
-                    blockchainTxId: Bytes | string | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinPlatformTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
-            >;
-            registerRepaymentTransferLegacy: AugmentedSubmittable<
-                (
                     transferKind:
-                        | PalletCreditcoinLegacyTransferKind
+                        | PalletCreditcoinTransferKind
                         | { Erc20: any }
                         | { Ethless: any }
                         | { Native: any }
@@ -442,7 +425,7 @@ declare module '@polkadot/api-base/types/submittable' {
                     dealOrderId: PalletCreditcoinDealOrderId,
                     blockchainTxId: Bytes | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinLegacyTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
+                [PalletCreditcoinTransferKind, U256, PalletCreditcoinDealOrderId, Bytes]
             >;
             removeAuthority: AugmentedSubmittable<
                 (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,

@@ -1,42 +1,28 @@
-import { KeyringPair, creditcoinApi } from 'creditcoin-js';
-import { AskOrderId, BidOrderId, Blockchain, LoanTerms } from 'creditcoin-js/lib/model';
+import { KeyringPair } from 'creditcoin-js';
+import { AskOrderId, BidOrderId, Blockchain } from 'creditcoin-js/lib/model';
+import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, loanTermsWithCurrency, testData } from 'creditcoin-js/lib/testUtils';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
-
+import { addAskAndBidOrder, testData } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
 
-describe('AddOffer', () => {
+describe('AddOffer', (): void => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
     let askOrderId: AskOrderId;
     let bidOrderId: BidOrderId;
-    let loanTerms: LoanTerms;
 
     const testingData = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
-    const { expirationBlock, keyring } = testingData;
+    const { expirationBlock, keyring, loanTerms } = testingData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
-        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
-
-        const eth = await ethConnection(
-            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            undefined,
-        );
-        const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(
-            ccApi,
-            currency,
-            (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo'),
-        );
-    }, 60000);
+        lender = keyring.addFromUri('//Alice');
+        borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+    });
 
     afterAll(async () => {
         await ccApi.api.disconnect();

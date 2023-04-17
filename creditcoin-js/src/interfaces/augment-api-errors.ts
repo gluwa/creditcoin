@@ -87,10 +87,6 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             CurrencyAlreadyRegistered: AugmentedError<ApiType>;
             /**
-             * The currency with the given ID has not been registered.
-             **/
-            CurrencyNotRegistered: AugmentedError<ApiType>;
-            /**
              * The deal cannot be locked because it is not funded yet.
              **/
             DealNotFunded: AugmentedError<ApiType>;
@@ -114,10 +110,6 @@ declare module '@polkadot/api-base/types/errors' {
              * The deal order must be locked before it can be closed.
              **/
             DealOrderMustBeLocked: AugmentedError<ApiType>;
-            /**
-             * The legacy/deprecated version of an extrinsic was called, the new version should be used instead.
-             **/
-            DeprecatedExtrinsic: AugmentedError<ApiType>;
             /**
              * The deal order already exists.
              **/

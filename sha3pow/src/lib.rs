@@ -261,6 +261,7 @@ mod test {
 		let mock = MockDifficulty::new(1);
 		let algorithm = Sha3Algorithm::new(Arc::new(mock));
 
+		#[allow(clippy::redundant_clone)]
 		let cloning = algorithm.clone();
 		assert_eq!(cloning.client, algorithm.client);
 	}

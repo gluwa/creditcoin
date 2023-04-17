@@ -363,11 +363,6 @@ pub fn eth_get_block_by_number(
 	rpc_req.send(rpc_url)
 }
 
-pub fn eth_chain_id(rpc_url: &str) -> OffchainResult<U64, RpcError> {
-	let rpc_req = JsonRpcRequest::new("eth_chainId", None);
-	rpc_req.send(rpc_url)
-}
-
 #[cfg(test)]
 mod tests {
 	#[test]
