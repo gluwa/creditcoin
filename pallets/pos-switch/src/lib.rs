@@ -11,10 +11,10 @@ pub mod pallet {
 	use sp_std::vec::Vec;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_difficulty::Config
-	where
-		<Self as frame_system::Config>::BlockNumber: Into<sp_core::U256>,
-	{
+	pub trait Config: frame_system::Config + pallet_difficulty::Config {
+		type RuntimeBlockNumber: IsType<<Self as frame_system::Config>::BlockNumber>
+			+ Clone
+			+ Into<sp_core::U256>;
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
@@ -30,26 +30,45 @@ pub mod pallet {
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config>
-	where
-		<T as frame_system::Config>::BlockNumber: Into<sp_core::U256>,
-	{
+	pub enum Event<T: Config> {
 		/// Switched to PoS. []
 		Switched,
 	}
 
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub switch_block_number: Option<T::BlockNumber>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self { switch_block_number: None }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			if let Some(switch_block_number) = self.switch_block_number {
+				let switch_block_number = T::RuntimeBlockNumber::from_ref(&switch_block_number);
+				let switch_block_number: sp_core::U256 = switch_block_number.clone().into();
+				SwitchBlockNumber::<T>::put(switch_block_number);
+			}
+		}
+	}
+
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
-	where
-		<T as frame_system::Config>::BlockNumber: Into<sp_core::U256>,
-	{
+	impl<T: Config> Pallet<T> {
 		/// Switch to PoS
 		#[pallet::call_index(0)]
 		#[pallet::weight((T::BlockWeights::get().max_block, DispatchClass::Operational))]
 		pub fn switch_to_pos(origin: OriginFor<T>, code: Vec<u8>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			let block_number: sp_core::U256 = frame_system::Pallet::<T>::block_number().into();
+			let block_number = frame_system::Pallet::<T>::block_number();
+			let block_number: sp_core::U256 =
+				T::RuntimeBlockNumber::from_ref(&block_number).clone().into();
 			SwitchBlockNumber::<T>::put(block_number);
 
 			frame_system::Pallet::<T>::can_set_code(&code)?;
