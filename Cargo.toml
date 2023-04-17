@@ -128,7 +128,7 @@ substrate-test-client = { branch = "pos-keep-history", git = "https://github.com
 tracing = { package = "sp-tracing", branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
 frame-try-runtime = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
 sp-externalities = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
-substrate-wasm-builder = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git" }
+substrate-wasm-builder = "10.0.0"
 try-runtime-cli = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git" }
 sp-keyring = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git" }
 sc-consensus-babe = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git" }
