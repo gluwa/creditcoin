@@ -6763,7 +6763,7 @@ version = "0.10.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history#08a2151d31e7c9a4627c8ef2e12e5b5a97e8a14d"
 dependencies = [
  "sc-allocator",
- "sp-maybe-compressed-blob",
+ "sp-maybe-compressed-blob 4.1.0-dev",
  "sp-wasm-interface",
  "thiserror",
  "wasm-instrument",
@@ -8206,6 +8206,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-maybe-compressed-blob"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5df7732c6f130c3e819b142dc76bff0380133b65095567891c0a6a888c147fa3"
+dependencies = [
+ "thiserror",
+ "zstd",
+]
+
+[[package]]
 name = "sp-npos-elections"
 version = "4.0.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history#08a2151d31e7c9a4627c8ef2e12e5b5a97e8a14d"
@@ -8708,14 +8718,15 @@ dependencies = [
 
 [[package]]
 name = "substrate-wasm-builder"
-version = "5.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history#08a2151d31e7c9a4627c8ef2e12e5b5a97e8a14d"
+version = "10.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "210f9757104c3c3fb42d85c886d51a0cbec4c420936bbebda418f32d729c4d8d"
 dependencies = [
  "ansi_term",
  "build-helper",
  "cargo_metadata",
  "filetime",
- "sp-maybe-compressed-blob",
+ "sp-maybe-compressed-blob 5.0.0",
  "strum",
  "tempfile",
  "toml",
@@ -9395,7 +9406,7 @@ checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if",
  "digest 0.10.6",
- "rand 0.7.3",
+ "rand 0.8.5",
  "static_assertions",
 ]
 
