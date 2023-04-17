@@ -1,7 +1,8 @@
 use creditcoin_node_runtime::{
 	pallet_staking_substrate, AccountId, BabeConfig, BalancesConfig, CreditcoinConfig,
-	DifficultyConfig, GenesisConfig, ImOnlineId, Perbill, SessionConfig, Signature, StakingConfig,
-	SudoConfig, SystemConfig, TaskSchedulerConfig, TransactionPaymentConfig, CTC, WASM_BINARY,
+	DifficultyConfig, GenesisConfig, ImOnlineId, Perbill, PosSwitchConfig, SessionConfig,
+	Signature, StakingConfig, SudoConfig, SystemConfig, TaskSchedulerConfig,
+	TransactionPaymentConfig, CTC, WASM_BINARY,
 };
 
 use sc_service::ChainType;
@@ -199,6 +200,7 @@ fn testnet_genesis(
 		creditcoin: CreditcoinConfig::default(),
 		transaction_payment: TransactionPaymentConfig { multiplier: FixedU128::from_float(1.0) },
 		task_scheduler: TaskSchedulerConfig::default(),
+		pos_switch: PosSwitchConfig { switch_block_number: Some(0) },
 		grandpa: Default::default(),
 		babe: BabeConfig {
 			authorities: Default::default(),
