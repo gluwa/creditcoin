@@ -11,6 +11,8 @@ permissions: read-all
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # checkov:skip=CKV2_GHA_1:We need this for the git push command below
+    permissions: write-all
     steps:
       - uses: actions/checkout@v3
         with:
