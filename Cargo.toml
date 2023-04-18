@@ -69,7 +69,6 @@ frame-system = { branch = "pos-keep-history", git = "https://github.com/gluwa/su
 frame-system-benchmarking = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
 frame-system-rpc-runtime-api = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-balances = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
-pallet-insecure-randomness-collective-flip = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-session = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-staking-substrate = { package = "pallet-staking", branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-scheduler = { branch = "pos-keep-history", git = "https://github.com/gluwa/substrate.git", default-features = false }
