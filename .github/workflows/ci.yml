@@ -236,8 +236,8 @@ jobs:
         run: |
           # shellcheck disable=SC2129
           echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
-          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
-          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-Zprofile -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
+          echo "RUSTDOCFLAGS=-Zprofile -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
 
       - name: Run tests
         uses: actions-rs/cargo@v1
