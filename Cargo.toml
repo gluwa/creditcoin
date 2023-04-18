@@ -15,7 +15,6 @@ members = [
     'runtime',
     "sha3pow",
     "primitives",
-    "test/client",
     "test/runtime-utils",
     "test/traced-test",
 ]
@@ -123,7 +122,6 @@ sp-version = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://gith
 substrate-build-script-utils = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 substrate-frame-rpc-system = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 substrate-prometheus-endpoint = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
-substrate-test-client = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 tracing = { package = "sp-tracing", branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 frame-try-runtime = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 sp-externalities = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }

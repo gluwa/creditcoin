@@ -1279,13 +1279,14 @@ dependencies = [
  "frame-system",
  "jsonrpsee",
  "primitives",
+ "sc-client-api",
  "sc-rpc",
  "serde",
  "sp-api",
  "sp-blockchain",
  "sp-runtime",
+ "sp-state-machine",
  "task-scheduler-runtime-api",
- "test-client",
  "tokio",
 ]
 
@@ -8691,32 +8692,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-test-client"
-version = "2.0.1"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#4e9e5153f477ace23c83515840da8ba676b4fd16"
-dependencies = [
- "array-bytes",
- "async-trait",
- "futures",
- "parity-scale-codec",
- "sc-client-api",
- "sc-client-db",
- "sc-consensus",
- "sc-executor",
- "sc-offchain",
- "sc-service",
- "serde",
- "serde_json",
- "sp-blockchain",
- "sp-consensus",
- "sp-core",
- "sp-keyring",
- "sp-keystore",
- "sp-runtime",
- "sp-state-machine",
-]
-
-[[package]]
 name = "substrate-wasm-builder"
 version = "10.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8852,20 +8827,6 @@ name = "termtree"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
-
-[[package]]
-name = "test-client"
-version = "2.216.0"
-dependencies = [
- "creditcoin-node-runtime",
- "sc-chain-spec",
- "sc-client-db",
- "sc-executor",
- "sc-service",
- "sp-core",
- "sp-runtime",
- "substrate-test-client",
-]
 
 [[package]]
 name = "test-runtime-utils"

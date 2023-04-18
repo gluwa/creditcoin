@@ -22,7 +22,8 @@ task-scheduler-runtime-api = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
-test-client = { path = "../../test/client" }
+sc-client-api = { workspace = true }
+sp-state-machine = { workspace = true, features = ["std"] }
 tokio = { version = "1.27.0", features = ["full"] }
 
 
