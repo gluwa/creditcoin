@@ -82,8 +82,8 @@ impl<T: Config> Migrate for Migration<T> {
 	fn post_upgrade(&self, ctx: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
-			8,
-			"expected storage version to be 8 after migrations complete"
+			7,
+			"expected storage version to be 7 after migrations complete"
 		);
 
 		let new_pallet = SCHEDULER_PREFIX;

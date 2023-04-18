@@ -49,8 +49,8 @@ impl<T: Config> Migrate for Migration<T> {
 	fn post_upgrade(&self, _ctx: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
-			7,
-			"expected storage version to be 7 after migrations complete"
+			6,
+			"expected storage version to be 6 after migrations complete"
 		);
 	}
 }
