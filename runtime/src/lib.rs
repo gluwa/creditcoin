@@ -274,7 +274,7 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 1 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = MINUTES;
 
 parameter_types! {
 	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64; // Q: how long to make an epoch
@@ -439,8 +439,8 @@ impl OnRuntimeUpgrade for HackyUpgrade {
 		Session::genesis_init(&keys);
 
 		for (a, b, _, _, _) in initial_authorities.iter() {
-			let _ = Balances::make_free_balance_be(&a, STASH);
-			let _ = Balances::make_free_balance_be(&b, STASH);
+			let _ = Balances::make_free_balance_be(a, STASH);
+			let _ = Balances::make_free_balance_be(b, STASH);
 		}
 
 		let config = pallet_staking_substrate::InitConfig {

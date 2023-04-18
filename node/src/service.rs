@@ -394,7 +394,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 	})?;
 
 	if let Some(monitor_target) = monitor_nonce_account {
-		if let Some(registry) = prometheus_registry.clone() {
+		if let Some(registry) = prometheus_registry {
 			task_manager.spawn_handle().spawn("nonce_metrics", None, {
 				nonce_monitor::task(nonce_monitor::TaskArgs {
 					registry,
@@ -407,7 +407,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		}
 	}
 
-	if switched_to_pos(&client, client.chain_info().best_hash.clone()) {
+	if switched_to_pos(&client, client.chain_info().best_hash) {
 		switch_notif.notify_one();
 	}
 
@@ -430,7 +430,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			sync_service: sync_service.clone(),
 		},
 		babe_params: BabeAuthorshipParams {
-			client: client.clone(),
+			client,
 			babe_link,
 			backoff_authoring_blocks,
 			force_authoring,
@@ -443,7 +443,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			role,
 			select_chain,
 			dev_key_seed,
-			sync_service: sync_service.clone(),
+			sync_service,
 		},
 		switch_notif,
 	}
