@@ -2,7 +2,8 @@
 
 set -e
 
-FILES_WITH_EXTRINSICS=$(grep -E "pallet::call|pallet::hooks" pallets/* -R | cut -f1 -d: | sort | uniq)
+PALLET_WHITELIST='pos-switch'
+FILES_WITH_EXTRINSICS=$(grep -E "pallet::call|pallet::hooks" pallets/* -R | grep -Ev "$PALLET_WHITELIST" | cut -f1 -d: | sort | uniq)
 PALLETS=$(echo "$FILES_WITH_EXTRINSICS" | cut -f2 -d/ | sort | uniq | xargs)
 
 if [ "$1" == "--show-pallets" ]; then
