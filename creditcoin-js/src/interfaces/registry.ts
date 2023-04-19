@@ -6,8 +6,13 @@
 import '@polkadot/types/types/registry';
 
 import type {
+    CreditcoinNodeRuntimeOpaqueSessionKeys,
     CreditcoinNodeRuntimeOriginCaller,
     CreditcoinNodeRuntimeRuntime,
+    FinalityGrandpaEquivocationPrecommit,
+    FinalityGrandpaEquivocationPrevote,
+    FinalityGrandpaPrecommit,
+    FinalityGrandpaPrevote,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
@@ -33,6 +38,14 @@ import type {
     FrameSystemLimitsBlockWeights,
     FrameSystemLimitsWeightsPerClass,
     FrameSystemPhase,
+    PalletBabeCall,
+    PalletBabeError,
+    PalletBagsListCall,
+    PalletBagsListError,
+    PalletBagsListEvent,
+    PalletBagsListListBag,
+    PalletBagsListListListError,
+    PalletBagsListListNode,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesCall,
@@ -75,13 +88,50 @@ import type {
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
     PalletDifficultyError,
+    PalletGrandpaCall,
+    PalletGrandpaError,
+    PalletGrandpaEvent,
+    PalletGrandpaStoredPendingChange,
+    PalletGrandpaStoredState,
+    PalletImOnlineBoundedOpaqueNetworkState,
+    PalletImOnlineCall,
+    PalletImOnlineError,
+    PalletImOnlineEvent,
+    PalletImOnlineHeartbeat,
+    PalletImOnlineSr25519AppSr25519Public,
+    PalletImOnlineSr25519AppSr25519Signature,
     PalletOffchainTaskSchedulerError,
     PalletOffchainTaskSchedulerEvent,
+    PalletPosSwitchCall,
+    PalletPosSwitchEvent,
     PalletRewardsEvent,
     PalletSchedulerCall,
     PalletSchedulerError,
     PalletSchedulerEvent,
     PalletSchedulerScheduled,
+    PalletSessionCall,
+    PalletSessionError,
+    PalletSessionEvent,
+    PalletStakingActiveEraInfo,
+    PalletStakingEraRewardPoints,
+    PalletStakingExposure,
+    PalletStakingForcing,
+    PalletStakingIndividualExposure,
+    PalletStakingNominations,
+    PalletStakingPalletCall,
+    PalletStakingPalletConfigOpPerbill,
+    PalletStakingPalletConfigOpPercent,
+    PalletStakingPalletConfigOpU128,
+    PalletStakingPalletConfigOpU32,
+    PalletStakingPalletError,
+    PalletStakingPalletEvent,
+    PalletStakingRewardDestination,
+    PalletStakingSlashingSlashingSpans,
+    PalletStakingSlashingSpanRecord,
+    PalletStakingStakingLedger,
+    PalletStakingUnappliedSlash,
+    PalletStakingUnlockChunk,
+    PalletStakingValidatorPrefs,
     PalletSudoCall,
     PalletSudoError,
     PalletSudoEvent,
@@ -90,21 +140,39 @@ import type {
     PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
     SpArithmeticArithmeticError,
+    SpConsensusBabeAllowedSlots,
+    SpConsensusBabeAppPublic,
+    SpConsensusBabeBabeEpochConfiguration,
+    SpConsensusBabeDigestsNextConfigDescriptor,
+    SpConsensusBabeDigestsPreDigest,
+    SpConsensusBabeDigestsPrimaryPreDigest,
+    SpConsensusBabeDigestsSecondaryPlainPreDigest,
+    SpConsensusBabeDigestsSecondaryVRFPreDigest,
+    SpConsensusGrandpaAppPublic,
+    SpConsensusGrandpaAppSignature,
+    SpConsensusGrandpaEquivocation,
+    SpConsensusGrandpaEquivocationProof,
+    SpConsensusSlotsEquivocationProof,
+    SpCoreCryptoKeyTypeId,
     SpCoreEcdsaPublic,
     SpCoreEcdsaSignature,
     SpCoreEd25519Public,
     SpCoreEd25519Signature,
+    SpCoreOffchainOpaqueNetworkState,
     SpCoreSr25519Public,
     SpCoreSr25519Signature,
     SpCoreVoid,
+    SpRuntimeBlakeTwo256,
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
+    SpRuntimeHeader,
     SpRuntimeModuleError,
     SpRuntimeMultiSignature,
     SpRuntimeMultiSigner,
     SpRuntimeTokenError,
     SpRuntimeTransactionalError,
+    SpSessionMembershipProof,
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
@@ -112,8 +180,13 @@ import type {
 
 declare module '@polkadot/types/types/registry' {
     interface InterfaceTypes {
+        CreditcoinNodeRuntimeOpaqueSessionKeys: CreditcoinNodeRuntimeOpaqueSessionKeys;
         CreditcoinNodeRuntimeOriginCaller: CreditcoinNodeRuntimeOriginCaller;
         CreditcoinNodeRuntimeRuntime: CreditcoinNodeRuntimeRuntime;
+        FinalityGrandpaEquivocationPrecommit: FinalityGrandpaEquivocationPrecommit;
+        FinalityGrandpaEquivocationPrevote: FinalityGrandpaEquivocationPrevote;
+        FinalityGrandpaPrecommit: FinalityGrandpaPrecommit;
+        FinalityGrandpaPrevote: FinalityGrandpaPrevote;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
@@ -139,6 +212,14 @@ declare module '@polkadot/types/types/registry' {
         FrameSystemLimitsBlockWeights: FrameSystemLimitsBlockWeights;
         FrameSystemLimitsWeightsPerClass: FrameSystemLimitsWeightsPerClass;
         FrameSystemPhase: FrameSystemPhase;
+        PalletBabeCall: PalletBabeCall;
+        PalletBabeError: PalletBabeError;
+        PalletBagsListCall: PalletBagsListCall;
+        PalletBagsListError: PalletBagsListError;
+        PalletBagsListEvent: PalletBagsListEvent;
+        PalletBagsListListBag: PalletBagsListListBag;
+        PalletBagsListListListError: PalletBagsListListListError;
+        PalletBagsListListNode: PalletBagsListListNode;
         PalletBalancesAccountData: PalletBalancesAccountData;
         PalletBalancesBalanceLock: PalletBalancesBalanceLock;
         PalletBalancesCall: PalletBalancesCall;
@@ -181,13 +262,50 @@ declare module '@polkadot/types/types/registry' {
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;
         PalletDifficultyError: PalletDifficultyError;
+        PalletGrandpaCall: PalletGrandpaCall;
+        PalletGrandpaError: PalletGrandpaError;
+        PalletGrandpaEvent: PalletGrandpaEvent;
+        PalletGrandpaStoredPendingChange: PalletGrandpaStoredPendingChange;
+        PalletGrandpaStoredState: PalletGrandpaStoredState;
+        PalletImOnlineBoundedOpaqueNetworkState: PalletImOnlineBoundedOpaqueNetworkState;
+        PalletImOnlineCall: PalletImOnlineCall;
+        PalletImOnlineError: PalletImOnlineError;
+        PalletImOnlineEvent: PalletImOnlineEvent;
+        PalletImOnlineHeartbeat: PalletImOnlineHeartbeat;
+        PalletImOnlineSr25519AppSr25519Public: PalletImOnlineSr25519AppSr25519Public;
+        PalletImOnlineSr25519AppSr25519Signature: PalletImOnlineSr25519AppSr25519Signature;
         PalletOffchainTaskSchedulerError: PalletOffchainTaskSchedulerError;
         PalletOffchainTaskSchedulerEvent: PalletOffchainTaskSchedulerEvent;
+        PalletPosSwitchCall: PalletPosSwitchCall;
+        PalletPosSwitchEvent: PalletPosSwitchEvent;
         PalletRewardsEvent: PalletRewardsEvent;
         PalletSchedulerCall: PalletSchedulerCall;
         PalletSchedulerError: PalletSchedulerError;
         PalletSchedulerEvent: PalletSchedulerEvent;
         PalletSchedulerScheduled: PalletSchedulerScheduled;
+        PalletSessionCall: PalletSessionCall;
+        PalletSessionError: PalletSessionError;
+        PalletSessionEvent: PalletSessionEvent;
+        PalletStakingActiveEraInfo: PalletStakingActiveEraInfo;
+        PalletStakingEraRewardPoints: PalletStakingEraRewardPoints;
+        PalletStakingExposure: PalletStakingExposure;
+        PalletStakingForcing: PalletStakingForcing;
+        PalletStakingIndividualExposure: PalletStakingIndividualExposure;
+        PalletStakingNominations: PalletStakingNominations;
+        PalletStakingPalletCall: PalletStakingPalletCall;
+        PalletStakingPalletConfigOpPerbill: PalletStakingPalletConfigOpPerbill;
+        PalletStakingPalletConfigOpPercent: PalletStakingPalletConfigOpPercent;
+        PalletStakingPalletConfigOpU128: PalletStakingPalletConfigOpU128;
+        PalletStakingPalletConfigOpU32: PalletStakingPalletConfigOpU32;
+        PalletStakingPalletError: PalletStakingPalletError;
+        PalletStakingPalletEvent: PalletStakingPalletEvent;
+        PalletStakingRewardDestination: PalletStakingRewardDestination;
+        PalletStakingSlashingSlashingSpans: PalletStakingSlashingSlashingSpans;
+        PalletStakingSlashingSpanRecord: PalletStakingSlashingSpanRecord;
+        PalletStakingStakingLedger: PalletStakingStakingLedger;
+        PalletStakingUnappliedSlash: PalletStakingUnappliedSlash;
+        PalletStakingUnlockChunk: PalletStakingUnlockChunk;
+        PalletStakingValidatorPrefs: PalletStakingValidatorPrefs;
         PalletSudoCall: PalletSudoCall;
         PalletSudoError: PalletSudoError;
         PalletSudoEvent: PalletSudoEvent;
@@ -196,21 +314,39 @@ declare module '@polkadot/types/types/registry' {
         PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
+        SpConsensusBabeAllowedSlots: SpConsensusBabeAllowedSlots;
+        SpConsensusBabeAppPublic: SpConsensusBabeAppPublic;
+        SpConsensusBabeBabeEpochConfiguration: SpConsensusBabeBabeEpochConfiguration;
+        SpConsensusBabeDigestsNextConfigDescriptor: SpConsensusBabeDigestsNextConfigDescriptor;
+        SpConsensusBabeDigestsPreDigest: SpConsensusBabeDigestsPreDigest;
+        SpConsensusBabeDigestsPrimaryPreDigest: SpConsensusBabeDigestsPrimaryPreDigest;
+        SpConsensusBabeDigestsSecondaryPlainPreDigest: SpConsensusBabeDigestsSecondaryPlainPreDigest;
+        SpConsensusBabeDigestsSecondaryVRFPreDigest: SpConsensusBabeDigestsSecondaryVRFPreDigest;
+        SpConsensusGrandpaAppPublic: SpConsensusGrandpaAppPublic;
+        SpConsensusGrandpaAppSignature: SpConsensusGrandpaAppSignature;
+        SpConsensusGrandpaEquivocation: SpConsensusGrandpaEquivocation;
+        SpConsensusGrandpaEquivocationProof: SpConsensusGrandpaEquivocationProof;
+        SpConsensusSlotsEquivocationProof: SpConsensusSlotsEquivocationProof;
+        SpCoreCryptoKeyTypeId: SpCoreCryptoKeyTypeId;
         SpCoreEcdsaPublic: SpCoreEcdsaPublic;
         SpCoreEcdsaSignature: SpCoreEcdsaSignature;
         SpCoreEd25519Public: SpCoreEd25519Public;
         SpCoreEd25519Signature: SpCoreEd25519Signature;
+        SpCoreOffchainOpaqueNetworkState: SpCoreOffchainOpaqueNetworkState;
         SpCoreSr25519Public: SpCoreSr25519Public;
         SpCoreSr25519Signature: SpCoreSr25519Signature;
         SpCoreVoid: SpCoreVoid;
+        SpRuntimeBlakeTwo256: SpRuntimeBlakeTwo256;
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;
+        SpRuntimeHeader: SpRuntimeHeader;
         SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
         SpRuntimeMultiSigner: SpRuntimeMultiSigner;
         SpRuntimeTokenError: SpRuntimeTokenError;
         SpRuntimeTransactionalError: SpRuntimeTransactionalError;
+        SpSessionMembershipProof: SpSessionMembershipProof;
         SpVersionRuntimeVersion: SpVersionRuntimeVersion;
         SpWeightsRuntimeDbWeight: SpWeightsRuntimeDbWeight;
         SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
