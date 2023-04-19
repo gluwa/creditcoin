@@ -13,8 +13,9 @@ import type {
 } from '@polkadot/api-base/types';
 import type { Bytes, Compact, Option, U256, U8aFixed, Vec, bool, i64, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, Call, H256, MultiAddress } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, Call, H256, MultiAddress, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
 import type {
+    CreditcoinNodeRuntimeOpaqueSessionKeys,
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
@@ -26,10 +27,22 @@ import type {
     PalletCreditcoinTaskId,
     PalletCreditcoinTaskOutput,
     PalletCreditcoinTransferKind,
+    PalletImOnlineHeartbeat,
+    PalletImOnlineSr25519AppSr25519Signature,
+    PalletStakingPalletConfigOpPerbill,
+    PalletStakingPalletConfigOpPercent,
+    PalletStakingPalletConfigOpU128,
+    PalletStakingPalletConfigOpU32,
+    PalletStakingRewardDestination,
+    PalletStakingValidatorPrefs,
+    SpConsensusBabeDigestsNextConfigDescriptor,
+    SpConsensusGrandpaEquivocationProof,
+    SpConsensusSlotsEquivocationProof,
     SpCoreEcdsaPublic,
     SpCoreEcdsaSignature,
     SpRuntimeMultiSignature,
     SpRuntimeMultiSigner,
+    SpSessionMembershipProof,
     SpWeightsWeightV2Weight,
 } from '@polkadot/types/lookup';
 
@@ -39,6 +52,70 @@ export type __SubmittableExtrinsicFunction<ApiType extends ApiTypes> = Submittab
 
 declare module '@polkadot/api-base/types/submittable' {
     interface AugmentedSubmittables<ApiType extends ApiTypes> {
+        babe: {
+            /**
+             * Plan an epoch config change. The epoch config change is recorded and will be enacted on
+             * the next call to `enact_epoch_change`. The config will be activated one epoch after.
+             * Multiple calls to this method will replace any existing planned config change that had
+             * not been enacted yet.
+             **/
+            planConfigChange: AugmentedSubmittable<
+                (
+                    config: SpConsensusBabeDigestsNextConfigDescriptor | { V1: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [SpConsensusBabeDigestsNextConfigDescriptor]
+            >;
+            /**
+             * Report authority equivocation/misbehavior. This method will verify
+             * the equivocation proof and validate the given key ownership proof
+             * against the extracted offender. If both are valid, the offence will
+             * be reported.
+             **/
+            reportEquivocation: AugmentedSubmittable<
+                (
+                    equivocationProof:
+                        | SpConsensusSlotsEquivocationProof
+                        | { offender?: any; slot?: any; firstHeader?: any; secondHeader?: any }
+                        | string
+                        | Uint8Array,
+                    keyOwnerProof:
+                        | SpSessionMembershipProof
+                        | { session?: any; trieNodes?: any; validatorCount?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [SpConsensusSlotsEquivocationProof, SpSessionMembershipProof]
+            >;
+            /**
+             * Report authority equivocation/misbehavior. This method will verify
+             * the equivocation proof and validate the given key ownership proof
+             * against the extracted offender. If both are valid, the offence will
+             * be reported.
+             * This extrinsic must be called unsigned and it is expected that only
+             * block authors will call it (validated in `ValidateUnsigned`), as such
+             * if the block author is defined it will be defined as the equivocation
+             * reporter.
+             **/
+            reportEquivocationUnsigned: AugmentedSubmittable<
+                (
+                    equivocationProof:
+                        | SpConsensusSlotsEquivocationProof
+                        | { offender?: any; slot?: any; firstHeader?: any; secondHeader?: any }
+                        | string
+                        | Uint8Array,
+                    keyOwnerProof:
+                        | SpSessionMembershipProof
+                        | { session?: any; trieNodes?: any; validatorCount?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [SpConsensusSlotsEquivocationProof, SpSessionMembershipProof]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         balances: {
             /**
              * Exactly as `transfer`, except the origin must be root and the source account may be
@@ -467,6 +544,123 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        grandpa: {
+            /**
+             * Note that the current authority set of the GRANDPA finality gadget has stalled.
+             *
+             * This will trigger a forced authority set change at the beginning of the next session, to
+             * be enacted `delay` blocks after that. The `delay` should be high enough to safely assume
+             * that the block signalling the forced change will not be re-orged e.g. 1000 blocks.
+             * The block production rate (which may be slowed down because of finality lagging) should
+             * be taken into account when choosing the `delay`. The GRANDPA voters based on the new
+             * authority will start voting on top of `best_finalized_block_number` for new finalized
+             * blocks. `best_finalized_block_number` should be the highest of the latest finalized
+             * block of all validators of the new authority set.
+             *
+             * Only callable by root.
+             **/
+            noteStalled: AugmentedSubmittable<
+                (
+                    delay: u32 | AnyNumber | Uint8Array,
+                    bestFinalizedBlockNumber: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32]
+            >;
+            /**
+             * Report voter equivocation/misbehavior. This method will verify the
+             * equivocation proof and validate the given key ownership proof
+             * against the extracted offender. If both are valid, the offence
+             * will be reported.
+             **/
+            reportEquivocation: AugmentedSubmittable<
+                (
+                    equivocationProof:
+                        | SpConsensusGrandpaEquivocationProof
+                        | { setId?: any; equivocation?: any }
+                        | string
+                        | Uint8Array,
+                    keyOwnerProof:
+                        | SpSessionMembershipProof
+                        | { session?: any; trieNodes?: any; validatorCount?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [SpConsensusGrandpaEquivocationProof, SpSessionMembershipProof]
+            >;
+            /**
+             * Report voter equivocation/misbehavior. This method will verify the
+             * equivocation proof and validate the given key ownership proof
+             * against the extracted offender. If both are valid, the offence
+             * will be reported.
+             *
+             * This extrinsic must be called unsigned and it is expected that only
+             * block authors will call it (validated in `ValidateUnsigned`), as such
+             * if the block author is defined it will be defined as the equivocation
+             * reporter.
+             **/
+            reportEquivocationUnsigned: AugmentedSubmittable<
+                (
+                    equivocationProof:
+                        | SpConsensusGrandpaEquivocationProof
+                        | { setId?: any; equivocation?: any }
+                        | string
+                        | Uint8Array,
+                    keyOwnerProof:
+                        | SpSessionMembershipProof
+                        | { session?: any; trieNodes?: any; validatorCount?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [SpConsensusGrandpaEquivocationProof, SpSessionMembershipProof]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        imOnline: {
+            /**
+             * ## Complexity:
+             * - `O(K + E)` where K is length of `Keys` (heartbeat.validators_len) and E is length of
+             * `heartbeat.network_state.external_address`
+             * - `O(K)`: decoding of length `K`
+             * - `O(E)`: decoding/encoding of length `E`
+             **/
+            heartbeat: AugmentedSubmittable<
+                (
+                    heartbeat:
+                        | PalletImOnlineHeartbeat
+                        | {
+                              blockNumber?: any;
+                              networkState?: any;
+                              sessionIndex?: any;
+                              authorityIndex?: any;
+                              validatorsLen?: any;
+                          }
+                        | string
+                        | Uint8Array,
+                    signature: PalletImOnlineSr25519AppSr25519Signature | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        posSwitch: {
+            /**
+             * Switch to PoS
+             **/
+            switchToPos: AugmentedSubmittable<
+                (code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         scheduler: {
             /**
              * Cancel an anonymously scheduled task.
@@ -554,6 +748,599 @@ declare module '@polkadot/api-base/types/submittable' {
                     call: Call | IMethod | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [U8aFixed, u32, Option<ITuple<[u32, u32]>>, u8, Call]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        session: {
+            /**
+             * Removes any session key(s) of the function caller.
+             *
+             * This doesn't take effect until the next session.
+             *
+             * The dispatch origin of this function must be Signed and the account must be either be
+             * convertible to a validator ID using the chain's typical addressing system (this usually
+             * means being a controller account) or directly convertible into a validator ID (which
+             * usually means being a stash account).
+             *
+             * ## Complexity
+             * - `O(1)` in number of key types. Actual cost depends on the number of length of
+             * `T::Keys::key_ids()` which is fixed.
+             **/
+            purgeKeys: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Sets the session key(s) of the function caller to `keys`.
+             * Allows an account to set its session key prior to becoming a validator.
+             * This doesn't take effect until the next session.
+             *
+             * The dispatch origin of this function must be signed.
+             *
+             * ## Complexity
+             * - `O(1)`. Actual cost depends on the number of length of `T::Keys::key_ids()` which is
+             * fixed.
+             **/
+            setKeys: AugmentedSubmittable<
+                (
+                    keys:
+                        | CreditcoinNodeRuntimeOpaqueSessionKeys
+                        | { grandpa?: any; babe?: any; imOnline?: any }
+                        | string
+                        | Uint8Array,
+                    proof: Bytes | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [CreditcoinNodeRuntimeOpaqueSessionKeys, Bytes]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        staking: {
+            /**
+             * Take the origin account as a stash and lock up `value` of its balance. `controller` will
+             * be the account that controls it.
+             *
+             * `value` must be more than the `minimum_balance` specified by `T::Currency`.
+             *
+             * The dispatch origin for this call must be _Signed_ by the stash account.
+             *
+             * Emits `Bonded`.
+             * ## Complexity
+             * - Independent of the arguments. Moderate complexity.
+             * - O(1).
+             * - Three extra DB entries.
+             *
+             * NOTE: Two of the storage writes (`Self::bonded`, `Self::payee`) are _never_ cleaned
+             * unless the `origin` falls below _existential deposit_ and gets removed as dust.
+             **/
+            bond: AugmentedSubmittable<
+                (
+                    controller:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                    value: Compact<u128> | AnyNumber | Uint8Array,
+                    payee:
+                        | PalletStakingRewardDestination
+                        | { Staked: any }
+                        | { Stash: any }
+                        | { Controller: any }
+                        | { Account: any }
+                        | { None: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress, Compact<u128>, PalletStakingRewardDestination]
+            >;
+            /**
+             * Add some extra amount that have appeared in the stash `free_balance` into the balance up
+             * for staking.
+             *
+             * The dispatch origin for this call must be _Signed_ by the stash, not the controller.
+             *
+             * Use this if there are additional funds in your stash account that you wish to bond.
+             * Unlike [`bond`](Self::bond) or [`unbond`](Self::unbond) this function does not impose
+             * any limitation on the amount that can be added.
+             *
+             * Emits `Bonded`.
+             *
+             * ## Complexity
+             * - Independent of the arguments. Insignificant complexity.
+             * - O(1).
+             **/
+            bondExtra: AugmentedSubmittable<
+                (maxAdditional: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u128>]
+            >;
+            /**
+             * Cancel enactment of a deferred slash.
+             *
+             * Can be called by the `T::AdminOrigin`.
+             *
+             * Parameters: era and indices of the slashes for that era to kill.
+             **/
+            cancelDeferredSlash: AugmentedSubmittable<
+                (
+                    era: u32 | AnyNumber | Uint8Array,
+                    slashIndices: Vec<u32> | (u32 | AnyNumber | Uint8Array)[],
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Vec<u32>]
+            >;
+            /**
+             * Declare no desire to either validate or nominate.
+             *
+             * Effects will be felt at the beginning of the next era.
+             *
+             * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+             *
+             * ## Complexity
+             * - Independent of the arguments. Insignificant complexity.
+             * - Contains one read.
+             * - Writes are limited to the `origin` account key.
+             **/
+            chill: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Declare a `controller` to stop participating as either a validator or nominator.
+             *
+             * Effects will be felt at the beginning of the next era.
+             *
+             * The dispatch origin for this call must be _Signed_, but can be called by anyone.
+             *
+             * If the caller is the same as the controller being targeted, then no further checks are
+             * enforced, and this function behaves just like `chill`.
+             *
+             * If the caller is different than the controller being targeted, the following conditions
+             * must be met:
+             *
+             * * `controller` must belong to a nominator who has become non-decodable,
+             *
+             * Or:
+             *
+             * * A `ChillThreshold` must be set and checked which defines how close to the max
+             * nominators or validators we must reach before users can start chilling one-another.
+             * * A `MaxNominatorCount` and `MaxValidatorCount` must be set which is used to determine
+             * how close we are to the threshold.
+             * * A `MinNominatorBond` and `MinValidatorBond` must be set and checked, which determines
+             * if this is a person that should be chilled because they have not met the threshold
+             * bond required.
+             *
+             * This can be helpful if bond requirements are updated, and we need to remove old users
+             * who do not satisfy these requirements.
+             **/
+            chillOther: AugmentedSubmittable<
+                (controller: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            /**
+             * Force a validator to have at least the minimum commission. This will not affect a
+             * validator who already has a commission greater than or equal to the minimum. Any account
+             * can call this.
+             **/
+            forceApplyMinCommission: AugmentedSubmittable<
+                (validatorStash: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            /**
+             * Force there to be a new era at the end of the next session. After this, it will be
+             * reset to normal (non-forced) behaviour.
+             *
+             * The dispatch origin must be Root.
+             *
+             * # Warning
+             *
+             * The election process starts multiple blocks before the end of the era.
+             * If this is called just before a new era is triggered, the election process may not
+             * have enough blocks to get a result.
+             *
+             * ## Complexity
+             * - No arguments.
+             * - Weight: O(1)
+             **/
+            forceNewEra: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Force there to be a new era at the end of sessions indefinitely.
+             *
+             * The dispatch origin must be Root.
+             *
+             * # Warning
+             *
+             * The election process starts multiple blocks before the end of the era.
+             * If this is called just before a new era is triggered, the election process may not
+             * have enough blocks to get a result.
+             **/
+            forceNewEraAlways: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Force there to be no new eras indefinitely.
+             *
+             * The dispatch origin must be Root.
+             *
+             * # Warning
+             *
+             * The election process starts multiple blocks before the end of the era.
+             * Thus the election process may be ongoing when this is called. In this case the
+             * election will continue until the next era is triggered.
+             *
+             * ## Complexity
+             * - No arguments.
+             * - Weight: O(1)
+             **/
+            forceNoEras: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Force a current staker to become completely unstaked, immediately.
+             *
+             * The dispatch origin must be Root.
+             **/
+            forceUnstake: AugmentedSubmittable<
+                (
+                    stash: AccountId32 | string | Uint8Array,
+                    numSlashingSpans: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, u32]
+            >;
+            /**
+             * Increments the ideal number of validators upto maximum of
+             * `ElectionProviderBase::MaxWinners`.
+             *
+             * The dispatch origin must be Root.
+             *
+             * ## Complexity
+             * Same as [`Self::set_validator_count`].
+             **/
+            increaseValidatorCount: AugmentedSubmittable<
+                (additional: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u32>]
+            >;
+            /**
+             * Remove the given nominations from the calling validator.
+             *
+             * Effects will be felt at the beginning of the next era.
+             *
+             * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+             *
+             * - `who`: A list of nominator stash accounts who are nominating this validator which
+             * should no longer be nominating this validator.
+             *
+             * Note: Making this call only makes sense if you first set the validator preferences to
+             * block any further nominations.
+             **/
+            kick: AugmentedSubmittable<
+                (
+                    who:
+                        | Vec<MultiAddress>
+                        | (
+                              | MultiAddress
+                              | { Id: any }
+                              | { Index: any }
+                              | { Raw: any }
+                              | { Address32: any }
+                              | { Address20: any }
+                              | string
+                              | Uint8Array
+                          )[],
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<MultiAddress>]
+            >;
+            /**
+             * Declare the desire to nominate `targets` for the origin controller.
+             *
+             * Effects will be felt at the beginning of the next era.
+             *
+             * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+             *
+             * ## Complexity
+             * - The transaction's complexity is proportional to the size of `targets` (N)
+             * which is capped at CompactAssignments::LIMIT (T::MaxNominations).
+             * - Both the reads and writes follow a similar pattern.
+             **/
+            nominate: AugmentedSubmittable<
+                (
+                    targets:
+                        | Vec<MultiAddress>
+                        | (
+                              | MultiAddress
+                              | { Id: any }
+                              | { Index: any }
+                              | { Raw: any }
+                              | { Address32: any }
+                              | { Address20: any }
+                              | string
+                              | Uint8Array
+                          )[],
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<MultiAddress>]
+            >;
+            /**
+             * Pay out all the stakers behind a single validator for a single era.
+             *
+             * - `validator_stash` is the stash account of the validator. Their nominators, up to
+             * `T::MaxNominatorRewardedPerValidator`, will also receive their rewards.
+             * - `era` may be any era between `[current_era - history_depth; current_era]`.
+             *
+             * The origin of this call must be _Signed_. Any account can call this function, even if
+             * it is not one of the stakers.
+             *
+             * ## Complexity
+             * - At most O(MaxNominatorRewardedPerValidator).
+             **/
+            payoutStakers: AugmentedSubmittable<
+                (
+                    validatorStash: AccountId32 | string | Uint8Array,
+                    era: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, u32]
+            >;
+            /**
+             * Remove all data structures concerning a staker/stash once it is at a state where it can
+             * be considered `dust` in the staking system. The requirements are:
+             *
+             * 1. the `total_balance` of the stash is below existential deposit.
+             * 2. or, the `ledger.total` of the stash is below existential deposit.
+             *
+             * The former can happen in cases like a slash; the latter when a fully unbonded account
+             * is still receiving staking rewards in `RewardDestination::Staked`.
+             *
+             * It can be called by anyone, as long as `stash` meets the above requirements.
+             *
+             * Refunds the transaction fees upon successful execution.
+             **/
+            reapStash: AugmentedSubmittable<
+                (
+                    stash: AccountId32 | string | Uint8Array,
+                    numSlashingSpans: u32 | AnyNumber | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, u32]
+            >;
+            /**
+             * Rebond a portion of the stash scheduled to be unlocked.
+             *
+             * The dispatch origin must be signed by the controller.
+             *
+             * ## Complexity
+             * - Time complexity: O(L), where L is unlocking chunks
+             * - Bounded by `MaxUnlockingChunks`.
+             **/
+            rebond: AugmentedSubmittable<
+                (value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u128>]
+            >;
+            /**
+             * Scale up the ideal number of validators by a factor upto maximum of
+             * `ElectionProviderBase::MaxWinners`.
+             *
+             * The dispatch origin must be Root.
+             *
+             * ## Complexity
+             * Same as [`Self::set_validator_count`].
+             **/
+            scaleValidatorCount: AugmentedSubmittable<
+                (factor: Percent | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Percent]
+            >;
+            /**
+             * (Re-)set the controller of a stash.
+             *
+             * Effects will be felt instantly (as soon as this function is completed successfully).
+             *
+             * The dispatch origin for this call must be _Signed_ by the stash, not the controller.
+             *
+             * ## Complexity
+             * O(1)
+             * - Independent of the arguments. Insignificant complexity.
+             * - Contains a limited number of reads.
+             * - Writes are limited to the `origin` account key.
+             **/
+            setController: AugmentedSubmittable<
+                (
+                    controller:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress]
+            >;
+            /**
+             * Set the validators who cannot be slashed (if any).
+             *
+             * The dispatch origin must be Root.
+             **/
+            setInvulnerables: AugmentedSubmittable<
+                (
+                    invulnerables: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<AccountId32>]
+            >;
+            /**
+             * Sets the minimum amount of commission that each validators must maintain.
+             *
+             * This call has lower privilege requirements than `set_staking_config` and can be called
+             * by the `T::AdminOrigin`. Root can always call this.
+             **/
+            setMinCommission: AugmentedSubmittable<
+                (updated: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Perbill]
+            >;
+            /**
+             * (Re-)set the payment target for a controller.
+             *
+             * Effects will be felt instantly (as soon as this function is completed successfully).
+             *
+             * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+             *
+             * ## Complexity
+             * - O(1)
+             * - Independent of the arguments. Insignificant complexity.
+             * - Contains a limited number of reads.
+             * - Writes are limited to the `origin` account key.
+             * ---------
+             **/
+            setPayee: AugmentedSubmittable<
+                (
+                    payee:
+                        | PalletStakingRewardDestination
+                        | { Staked: any }
+                        | { Stash: any }
+                        | { Controller: any }
+                        | { Account: any }
+                        | { None: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletStakingRewardDestination]
+            >;
+            /**
+             * Update the various staking configurations .
+             *
+             * * `min_nominator_bond`: The minimum active bond needed to be a nominator.
+             * * `min_validator_bond`: The minimum active bond needed to be a validator.
+             * * `max_nominator_count`: The max number of users who can be a nominator at once. When
+             * set to `None`, no limit is enforced.
+             * * `max_validator_count`: The max number of users who can be a validator at once. When
+             * set to `None`, no limit is enforced.
+             * * `chill_threshold`: The ratio of `max_nominator_count` or `max_validator_count` which
+             * should be filled in order for the `chill_other` transaction to work.
+             * * `min_commission`: The minimum amount of commission that each validators must maintain.
+             * This is checked only upon calling `validate`. Existing validators are not affected.
+             *
+             * RuntimeOrigin must be Root to call this function.
+             *
+             * NOTE: Existing nominators and validators will not be affected by this update.
+             * to kick people under the new limits, `chill_other` should be called.
+             **/
+            setStakingConfigs: AugmentedSubmittable<
+                (
+                    minNominatorBond:
+                        | PalletStakingPalletConfigOpU128
+                        | { Noop: any }
+                        | { Set: any }
+                        | { Remove: any }
+                        | string
+                        | Uint8Array,
+                    minValidatorBond:
+                        | PalletStakingPalletConfigOpU128
+                        | { Noop: any }
+                        | { Set: any }
+                        | { Remove: any }
+                        | string
+                        | Uint8Array,
+                    maxNominatorCount:
+                        | PalletStakingPalletConfigOpU32
+                        | { Noop: any }
+                        | { Set: any }
+                        | { Remove: any }
+                        | string
+                        | Uint8Array,
+                    maxValidatorCount:
+                        | PalletStakingPalletConfigOpU32
+                        | { Noop: any }
+                        | { Set: any }
+                        | { Remove: any }
+                        | string
+                        | Uint8Array,
+                    chillThreshold:
+                        | PalletStakingPalletConfigOpPercent
+                        | { Noop: any }
+                        | { Set: any }
+                        | { Remove: any }
+                        | string
+                        | Uint8Array,
+                    minCommission:
+                        | PalletStakingPalletConfigOpPerbill
+                        | { Noop: any }
+                        | { Set: any }
+                        | { Remove: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [
+                    PalletStakingPalletConfigOpU128,
+                    PalletStakingPalletConfigOpU128,
+                    PalletStakingPalletConfigOpU32,
+                    PalletStakingPalletConfigOpU32,
+                    PalletStakingPalletConfigOpPercent,
+                    PalletStakingPalletConfigOpPerbill,
+                ]
+            >;
+            /**
+             * Sets the ideal number of validators.
+             *
+             * The dispatch origin must be Root.
+             *
+             * ## Complexity
+             * O(1)
+             **/
+            setValidatorCount: AugmentedSubmittable<
+                (updated: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u32>]
+            >;
+            /**
+             * Schedule a portion of the stash to be unlocked ready for transfer out after the bond
+             * period ends. If this leaves an amount actively bonded less than
+             * T::Currency::minimum_balance(), then it is increased to the full amount.
+             *
+             * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+             *
+             * Once the unlock period is done, you can call `withdraw_unbonded` to actually move
+             * the funds out of management ready for transfer.
+             *
+             * No more than a limited number of unlocking chunks (see `MaxUnlockingChunks`)
+             * can co-exists at the same time. If there are no unlocking chunks slots available
+             * [`Call::withdraw_unbonded`] is called to remove some of the chunks (if possible).
+             *
+             * If a user encounters the `InsufficientBond` error when calling this extrinsic,
+             * they should call `chill` first in order to free up their bonded funds.
+             *
+             * Emits `Unbonded`.
+             *
+             * See also [`Call::withdraw_unbonded`].
+             **/
+            unbond: AugmentedSubmittable<
+                (value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u128>]
+            >;
+            /**
+             * Declare the desire to validate for the origin controller.
+             *
+             * Effects will be felt at the beginning of the next era.
+             *
+             * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+             **/
+            validate: AugmentedSubmittable<
+                (
+                    prefs: PalletStakingValidatorPrefs | { commission?: any; blocked?: any } | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletStakingValidatorPrefs]
+            >;
+            /**
+             * Remove any unlocked chunks from the `unlocking` queue from our management.
+             *
+             * This essentially frees up that balance to be used by the stash account to do
+             * whatever it wants.
+             *
+             * The dispatch origin for this call must be _Signed_ by the controller.
+             *
+             * Emits `Withdrawn`.
+             *
+             * See also [`Call::unbond`].
+             *
+             * ## Complexity
+             * O(S) where S is the number of slashing spans to remove
+             * NOTE: Weight annotation is the kill scenario, we refund otherwise.
+             **/
+            withdrawUnbonded: AugmentedSubmittable<
+                (numSlashingSpans: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
             >;
             /**
              * Generic tx
@@ -742,6 +1529,62 @@ declare module '@polkadot/api-base/types/submittable' {
             set: AugmentedSubmittable<
                 (now: Compact<u64> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Compact<u64>]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        voterList: {
+            /**
+             * Move the caller's Id directly in front of `lighter`.
+             *
+             * The dispatch origin for this call must be _Signed_ and can only be called by the Id of
+             * the account going in front of `lighter`.
+             *
+             * Only works if
+             * - both nodes are within the same bag,
+             * - and `origin` has a greater `Score` than `lighter`.
+             **/
+            putInFrontOf: AugmentedSubmittable<
+                (
+                    lighter:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress]
+            >;
+            /**
+             * Declare that some `dislocated` account has, through rewards or penalties, sufficiently
+             * changed its score that it should properly fall into a different bag than its current
+             * one.
+             *
+             * Anyone can call this function about any potentially dislocated account.
+             *
+             * Will always update the stored score of `dislocated` to the correct score, based on
+             * `ScoreProvider`.
+             *
+             * If `dislocated` does not exists, it returns an error.
+             **/
+            rebag: AugmentedSubmittable<
+                (
+                    dislocated:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress]
             >;
             /**
              * Generic tx

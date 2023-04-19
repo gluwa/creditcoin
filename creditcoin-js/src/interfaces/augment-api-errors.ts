@@ -11,6 +11,28 @@ export type __AugmentedError<ApiType extends ApiTypes> = AugmentedError<ApiType>
 
 declare module '@polkadot/api-base/types/errors' {
     interface AugmentedErrors<ApiType extends ApiTypes> {
+        babe: {
+            /**
+             * A given equivocation report is valid but already previously reported.
+             **/
+            DuplicateOffenceReport: AugmentedError<ApiType>;
+            /**
+             * Submitted configuration is invalid.
+             **/
+            InvalidConfiguration: AugmentedError<ApiType>;
+            /**
+             * An equivocation proof provided as part of an equivocation report is invalid.
+             **/
+            InvalidEquivocationProof: AugmentedError<ApiType>;
+            /**
+             * A key ownership proof provided as part of an equivocation report is invalid.
+             **/
+            InvalidKeyOwnershipProof: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         balances: {
             /**
              * Beneficiary account must pre-exist
@@ -276,6 +298,56 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        grandpa: {
+            /**
+             * Attempt to signal GRANDPA change with one already pending.
+             **/
+            ChangePending: AugmentedError<ApiType>;
+            /**
+             * A given equivocation report is valid but already previously reported.
+             **/
+            DuplicateOffenceReport: AugmentedError<ApiType>;
+            /**
+             * An equivocation proof provided as part of an equivocation report is invalid.
+             **/
+            InvalidEquivocationProof: AugmentedError<ApiType>;
+            /**
+             * A key ownership proof provided as part of an equivocation report is invalid.
+             **/
+            InvalidKeyOwnershipProof: AugmentedError<ApiType>;
+            /**
+             * Attempt to signal GRANDPA pause when the authority set isn't live
+             * (either paused or already pending pause).
+             **/
+            PauseFailed: AugmentedError<ApiType>;
+            /**
+             * Attempt to signal GRANDPA resume when the authority set isn't paused
+             * (either live or already pending resume).
+             **/
+            ResumeFailed: AugmentedError<ApiType>;
+            /**
+             * Cannot signal forced change so soon after last.
+             **/
+            TooSoon: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        imOnline: {
+            /**
+             * Duplicated heartbeat.
+             **/
+            DuplicatedHeartbeat: AugmentedError<ApiType>;
+            /**
+             * Non existent public key.
+             **/
+            InvalidKey: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         scheduler: {
             /**
              * Failed to schedule a call
@@ -297,6 +369,142 @@ declare module '@polkadot/api-base/types/errors' {
              * Given target block number is in the past.
              **/
             TargetBlockNumberInPast: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        session: {
+            /**
+             * Registered duplicate key.
+             **/
+            DuplicatedKey: AugmentedError<ApiType>;
+            /**
+             * Invalid ownership proof.
+             **/
+            InvalidProof: AugmentedError<ApiType>;
+            /**
+             * Key setting account is not live, so it's impossible to associate keys.
+             **/
+            NoAccount: AugmentedError<ApiType>;
+            /**
+             * No associated validator ID for account.
+             **/
+            NoAssociatedValidatorId: AugmentedError<ApiType>;
+            /**
+             * No keys are associated with this account.
+             **/
+            NoKeys: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        staking: {
+            /**
+             * Stash is already bonded.
+             **/
+            AlreadyBonded: AugmentedError<ApiType>;
+            /**
+             * Rewards for this era have already been claimed for this validator.
+             **/
+            AlreadyClaimed: AugmentedError<ApiType>;
+            /**
+             * Controller is already paired.
+             **/
+            AlreadyPaired: AugmentedError<ApiType>;
+            /**
+             * Internal state has become somehow corrupted and the operation cannot continue.
+             **/
+            BadState: AugmentedError<ApiType>;
+            /**
+             * A nomination target was supplied that was blocked or otherwise not a validator.
+             **/
+            BadTarget: AugmentedError<ApiType>;
+            /**
+             * Some bound is not met.
+             **/
+            BoundNotMet: AugmentedError<ApiType>;
+            /**
+             * The user has enough bond and thus cannot be chilled forcefully by an external person.
+             **/
+            CannotChillOther: AugmentedError<ApiType>;
+            /**
+             * Commission is too low. Must be at least `MinCommission`.
+             **/
+            CommissionTooLow: AugmentedError<ApiType>;
+            /**
+             * Duplicate index.
+             **/
+            DuplicateIndex: AugmentedError<ApiType>;
+            /**
+             * Targets cannot be empty.
+             **/
+            EmptyTargets: AugmentedError<ApiType>;
+            /**
+             * Attempting to target a stash that still has funds.
+             **/
+            FundedTarget: AugmentedError<ApiType>;
+            /**
+             * Incorrect previous history depth input provided.
+             **/
+            IncorrectHistoryDepth: AugmentedError<ApiType>;
+            /**
+             * Incorrect number of slashing spans provided.
+             **/
+            IncorrectSlashingSpans: AugmentedError<ApiType>;
+            /**
+             * Cannot have a validator or nominator role, with value less than the minimum defined by
+             * governance (see `MinValidatorBond` and `MinNominatorBond`). If unbonding is the
+             * intention, `chill` first to remove one's role as validator/nominator.
+             **/
+            InsufficientBond: AugmentedError<ApiType>;
+            /**
+             * Invalid era to reward.
+             **/
+            InvalidEraToReward: AugmentedError<ApiType>;
+            /**
+             * Invalid number of nominations.
+             **/
+            InvalidNumberOfNominations: AugmentedError<ApiType>;
+            /**
+             * Slash record index out of bounds.
+             **/
+            InvalidSlashIndex: AugmentedError<ApiType>;
+            /**
+             * Can not schedule more unlock chunks.
+             **/
+            NoMoreChunks: AugmentedError<ApiType>;
+            /**
+             * Not a controller account.
+             **/
+            NotController: AugmentedError<ApiType>;
+            /**
+             * Items are not sorted and unique.
+             **/
+            NotSortedAndUnique: AugmentedError<ApiType>;
+            /**
+             * Not a stash account.
+             **/
+            NotStash: AugmentedError<ApiType>;
+            /**
+             * Can not rebond without unlocking chunks.
+             **/
+            NoUnlockChunk: AugmentedError<ApiType>;
+            /**
+             * There are too many nominators in the system. Governance needs to adjust the staking
+             * settings to keep things safe for the runtime.
+             **/
+            TooManyNominators: AugmentedError<ApiType>;
+            /**
+             * Too many nomination targets supplied.
+             **/
+            TooManyTargets: AugmentedError<ApiType>;
+            /**
+             * There are too many validator candidates in the system. Governance needs to adjust the
+             * staking settings to keep things safe for the runtime.
+             **/
+            TooManyValidators: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -357,6 +565,16 @@ declare module '@polkadot/api-base/types/errors' {
              * an internal error.
              **/
             OffchainSignedTxFailed: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        voterList: {
+            /**
+             * A error in the list interface implementation.
+             **/
+            List: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
