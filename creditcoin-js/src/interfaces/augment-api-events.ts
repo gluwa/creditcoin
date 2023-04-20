@@ -6,9 +6,9 @@
 import '@polkadot/api-base/types/events';
 
 import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
-import type { Null, Option, Result, U8aFixed, u128, u32 } from '@polkadot/types-codec';
+import type { Null, Option, Result, U8aFixed, Vec, u128, u32, u64 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, H256 } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, H256, Perbill } from '@polkadot/types/interfaces/runtime';
 import type {
     FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
@@ -26,6 +26,11 @@ import type {
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinTransfer,
+    PalletImOnlineSr25519AppSr25519Public,
+    PalletStakingExposure,
+    PalletStakingForcing,
+    PalletStakingValidatorPrefs,
+    SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
 } from '@polkadot/types/lookup';
 
@@ -219,6 +224,64 @@ declare module '@polkadot/api-base/types/events' {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        grandpa: {
+            /**
+             * New authority set has been applied.
+             **/
+            NewAuthorities: AugmentedEvent<
+                ApiType,
+                [authoritySet: Vec<ITuple<[SpConsensusGrandpaAppPublic, u64]>>],
+                { authoritySet: Vec<ITuple<[SpConsensusGrandpaAppPublic, u64]>> }
+            >;
+            /**
+             * Current authority set has been paused.
+             **/
+            Paused: AugmentedEvent<ApiType, []>;
+            /**
+             * Current authority set has been resumed.
+             **/
+            Resumed: AugmentedEvent<ApiType, []>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        imOnline: {
+            /**
+             * At the end of the session, no offence was committed.
+             **/
+            AllGood: AugmentedEvent<ApiType, []>;
+            /**
+             * A new heartbeat was received from `AuthorityId`.
+             **/
+            HeartbeatReceived: AugmentedEvent<
+                ApiType,
+                [authorityId: PalletImOnlineSr25519AppSr25519Public],
+                { authorityId: PalletImOnlineSr25519AppSr25519Public }
+            >;
+            /**
+             * At the end of the session, at least one validator was found to be offline.
+             **/
+            SomeOffline: AugmentedEvent<
+                ApiType,
+                [offline: Vec<ITuple<[AccountId32, PalletStakingExposure]>>],
+                { offline: Vec<ITuple<[AccountId32, PalletStakingExposure]>> }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        posSwitch: {
+            /**
+             * Switched to PoS. []
+             **/
+            Switched: AugmentedEvent<ApiType, []>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         rewards: {
             /**
              * Reward was issued. [block_author, amount]
@@ -270,6 +333,118 @@ declare module '@polkadot/api-base/types/events' {
              * Scheduled some task.
              **/
             Scheduled: AugmentedEvent<ApiType, [when: u32, index: u32], { when: u32; index: u32 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        session: {
+            /**
+             * New session has happened. Note that the argument is the session index, not the
+             * block number as the type might suggest.
+             **/
+            NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        staking: {
+            /**
+             * An account has bonded this amount. \[stash, amount\]
+             *
+             * NOTE: This event is only emitted when funds are bonded via a dispatchable. Notably,
+             * it will not be emitted for staking rewards when they are added to stake.
+             **/
+            Bonded: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>;
+            /**
+             * An account has stopped participating as either a validator or nominator.
+             **/
+            Chilled: AugmentedEvent<ApiType, [stash: AccountId32], { stash: AccountId32 }>;
+            /**
+             * The era payout has been set; the first balance is the validator-payout; the second is
+             * the remainder from the maximum amount of reward.
+             **/
+            EraPaid: AugmentedEvent<
+                ApiType,
+                [eraIndex: u32, validatorPayout: u128, remainder: u128],
+                { eraIndex: u32; validatorPayout: u128; remainder: u128 }
+            >;
+            /**
+             * A new force era mode was set.
+             **/
+            ForceEra: AugmentedEvent<ApiType, [mode: PalletStakingForcing], { mode: PalletStakingForcing }>;
+            /**
+             * A nominator has been kicked from a validator.
+             **/
+            Kicked: AugmentedEvent<
+                ApiType,
+                [nominator: AccountId32, stash: AccountId32],
+                { nominator: AccountId32; stash: AccountId32 }
+            >;
+            /**
+             * An old slashing report from a prior era was discarded because it could
+             * not be processed.
+             **/
+            OldSlashingReportDiscarded: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
+            /**
+             * The stakers' rewards are getting paid.
+             **/
+            PayoutStarted: AugmentedEvent<
+                ApiType,
+                [eraIndex: u32, validatorStash: AccountId32],
+                { eraIndex: u32; validatorStash: AccountId32 }
+            >;
+            /**
+             * The nominator has been rewarded by this amount.
+             **/
+            Rewarded: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>;
+            /**
+             * A staker (validator or nominator) has been slashed by the given amount.
+             **/
+            Slashed: AugmentedEvent<
+                ApiType,
+                [staker: AccountId32, amount: u128],
+                { staker: AccountId32; amount: u128 }
+            >;
+            /**
+             * A slash for the given validator, for the given percentage of their stake, at the given
+             * era as been reported.
+             **/
+            SlashReported: AugmentedEvent<
+                ApiType,
+                [validator: AccountId32, fraction: Perbill, slashEra: u32],
+                { validator: AccountId32; fraction: Perbill; slashEra: u32 }
+            >;
+            /**
+             * A new set of stakers was elected.
+             **/
+            StakersElected: AugmentedEvent<ApiType, []>;
+            /**
+             * The election failed. No new era is planned.
+             **/
+            StakingElectionFailed: AugmentedEvent<ApiType, []>;
+            /**
+             * An account has unbonded this amount.
+             **/
+            Unbonded: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>;
+            /**
+             * A validator has set their preferences.
+             **/
+            ValidatorPrefsSet: AugmentedEvent<
+                ApiType,
+                [stash: AccountId32, prefs: PalletStakingValidatorPrefs],
+                { stash: AccountId32; prefs: PalletStakingValidatorPrefs }
+            >;
+            /**
+             * An account has called `withdraw_unbonded` and removed unbonding chunks worth `Balance`
+             * from the unlocking queue.
+             **/
+            Withdrawn: AugmentedEvent<
+                ApiType,
+                [stash: AccountId32, amount: u128],
+                { stash: AccountId32; amount: u128 }
+            >;
             /**
              * Generic event
              **/
@@ -354,6 +529,28 @@ declare module '@polkadot/api-base/types/events' {
                 ApiType,
                 [who: AccountId32, actualFee: u128, tip: u128],
                 { who: AccountId32; actualFee: u128; tip: u128 }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        voterList: {
+            /**
+             * Moved an account from one bag to another.
+             **/
+            Rebagged: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, from: u64, to: u64],
+                { who: AccountId32; from: u64; to: u64 }
+            >;
+            /**
+             * Updated the score of some account to the given amount.
+             **/
+            ScoreUpdated: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, newScore: u64],
+                { who: AccountId32; newScore: u64 }
             >;
             /**
              * Generic event
