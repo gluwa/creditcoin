@@ -25,7 +25,7 @@ Open the Terminal application and execute the following commands:
 
 # Make sure Homebrew is up-to-date, install openssl and cmake
 brew update
-brew install openssl cmake
+brew install openssl cmake protobuf
 ```
 
 ### Ubuntu/Debian
@@ -35,7 +35,7 @@ Use a terminal shell to execute the following commands:
 ```bash
 sudo apt update
 # May prompt for location information
-sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 ```
 
 ### Arch Linux
@@ -43,7 +43,7 @@ sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libcla
 Run these commands from a terminal:
 
 ```bash
-pacman -Syu --needed --noconfirm cmake gcc openssl-1.0 pkgconf git clang
+pacman -Syu --needed --noconfirm cmake gcc openssl-1.0 pkgconf git clang protobuf
 export OPENSSL_LIB_DIR="/usr/lib/openssl-1.0"
 export OPENSSL_INCLUDE_DIR="/usr/include/openssl-1.0"
 ```
@@ -56,7 +56,7 @@ Use a terminal to run the following commands:
 # Update
 sudo dnf update
 # Install packages
-sudo dnf install cmake pkgconfig rocksdb rocksdb-devel llvm git libcurl libcurl-devel curl-devel clang
+sudo dnf install cmake pkgconfig rocksdb rocksdb-devel llvm git libcurl libcurl-devel curl-devel clang protobuf
 ```
 
 ## Rust Developer Environment
