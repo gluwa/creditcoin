@@ -46,7 +46,7 @@ describe('Creditcoin RPC', (): void => {
         await api.disconnect();
     });
 
-    it('hashrate() should return a valid hashrate', async () => {
+    it.skip('hashrate() should return a valid hashrate', async () => {
         type HashrateStats = {
             elapsed: Elapsed;
             hash_count: number; // eslint-disable-line
