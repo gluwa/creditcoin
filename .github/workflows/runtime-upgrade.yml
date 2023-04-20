@@ -306,10 +306,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Download benchmark binary
+      - name: Download creditcoin-node binary
         uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
+          path: target/release
+
+      - name: Download WASM runtime
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release
 
       - name: Restore executable permissions
@@ -339,8 +345,9 @@ jobs:
 
       - name: Try-runtime migrations
         run: |
-          ./target/release/creditcoin-node try-runtime --dev on-runtime-upgrade \
-              snap --snapshot-path ${{ env.SNAPSHOT_DIR }}/creditcoin.
+          ./target/release/creditcoin-node try-runtime \
+              --runtime ./target/release/creditcoin_node_runtime.compact.compressed.wasm \
+              --dev on-runtime-upgrade snap --snapshot-path ${{ env.SNAPSHOT_DIR }}/creditcoin.
 
   remove-github-runner:
     runs-on: ubuntu-22.04
