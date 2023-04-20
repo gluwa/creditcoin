@@ -3,6 +3,7 @@
 
 import axios from 'axios';
 
+// todo: we need to update this test for other metrics
 test.skip('Hashrate prometheus metric works', async () => {
     const metricsBase: string = (global as any).CREDITCOIN_METRICS_BASE;
     const { data } = await axios.get<string>(`${metricsBase}/metrics`);
