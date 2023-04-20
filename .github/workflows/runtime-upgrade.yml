@@ -69,6 +69,7 @@ jobs:
         run: |
           echo "target_chain=test" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
+          echo "https_rpc_url=https://rpc.testnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
 
       - name: Mainnet ENV
         id: mainnet-env
@@ -76,6 +77,7 @@ jobs:
         run: |
           echo "target_chain=main" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
+          echo "https_rpc_url=https://rpc.mainnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
 
       - name: Download creditcoin-node
         id: download-creditcoin-node
@@ -93,6 +95,17 @@ jobs:
 
       - name: Create fork
         run: |
+          # store info about the last finalized block before the fork
+          # WARNING: using getBlockHash() instead of getFinalizedBlock() b/c PoW doesn't have finalization
+          LAST_BLOCK=$(curl --silent -H "Content-Type: application/json" \
+               -d '{"id": 1, "jsonrpc": "2.0", "method": "chain_getBlockHash", "params": [] }' \
+               ${{ env.HTTPS_RPC_URL }} | jq -r .result)
+          echo "$LAST_BLOCK" > last-block.hash
+
+          curl --silent -H "Content-Type: application/json" \
+               -d "{\"id\": 1, \"jsonrpc\": \"2.0\", \"method\": \"chain_getBlock\", \"params\": [\"$LAST_BLOCK\"] }" \
+               ${{ env.HTTPS_RPC_URL }} | jq -r .result > last-block.json
+
           chmod a+x ./creditcoin-node
           chmod a+x ./creditcoin-fork
           ./creditcoin-fork --bin ./creditcoin-node --orig ${{ env.TARGET_CHAIN }} --base dev --name Development \
@@ -100,12 +113,20 @@ jobs:
         env:
           TARGET_CHAIN: ${{ steps.testnet-env.outputs.target_chain || steps.mainnet-env.outputs.target_chain }}
           RPC_URL: ${{ steps.testnet-env.outputs.rpc_url || steps.mainnet-env.outputs.rpc_url }}
+          HTTPS_RPC_URL: ${{ steps.testnet-env.outputs.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
 
       - name: Upload creditcoin-fork.json
         uses: actions/upload-artifact@v3
         with:
           name: creditcoin-fork.json
           path: creditcoin-fork.json
+
+      - name: Upload last block info
+        uses: actions/upload-artifact@v3
+        with:
+          name: last-block-info
+          path: "last-block*"
+          if-no-files-found: error
 
   execute-integration-tests:
     needs:
