@@ -1,17 +1,22 @@
 # General setup
 
-```bash
-sudo apt-get install nodejs npm
-sudo npm install -g yarn
-```
+Install `nvm` as per https://github.com/nvm-sh/nvm#installing-and-updating
 
 **WARNING:** Node.js 14.x || 16.x is required
+
+```bash
+nvm install 16
+nvm alias default 16
+nvm use 16
+
+npm install -g yarn
+```
 
 This test suite is built with creditcoin-js, Polkadot.js and Jest!
 
 ## Getting Started
 
-0. Start the software under test, see **Single-Node Development Chain** in `../README.md`
+0. In the root of the repo, start the software under test, see **Single-Node Development Chain** in `../README.md`
    for more information:
 
 ```bash
@@ -24,14 +29,18 @@ cargo run --release -- --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFt
 docker run --rm -it -p 8545:8545 gluwa/hardhat-dev
 ```
 
-2. Update creditcoin-js type definitions
+2. Install dependencies for creditcoin-js, and update its type definitions:
 
 ```bash
+
     pushd creditcoin-js/
 
+    yarn
     ./get-metadata.sh
     yarn build:types
     yarn format
+
+    popd
 ```
 
 **Important:**
@@ -42,15 +51,10 @@ this step!
 
 **Warning:** don't forget to commit changed definitions to git!
 
-3. Install dependencies:
+3. From the dir of this README.md (`integration-tests`), install dependencies and execute the test node:
 
 ```bash
 ./yarn-install-and-wait-for-creditcoin.sh
-```
-
-4. Execute the test suite:
-
-```bash
 yarn test
 ```
 

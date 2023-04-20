@@ -9,7 +9,7 @@
     ],
     "scripts": {
         "build": "tsc",
-        "example": "ts-node ./src/examples/loan-cycle.ts",
+        "example": "ts-node --files ./src/examples/loan-cycle.ts",
         "build:types": "yarn generate:defs && yarn generate:meta",
         "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package creditcoin-js/interfaces --input ./src/interfaces --endpoint ./creditcoin.json",
         "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --package creditcoin-js/interfaces  --endpoint ./creditcoin.json --output ./src/interfaces",
@@ -17,7 +17,7 @@
         "check-format": "prettier --check \"src/**/*.ts\"",
         "lint": "eslint -c .eslintrc.js --ext .ts ./src",
         "typecheck": "tsc --noEmit",
-        "prepare": "npm run build",
+        "prepare": "yarn build",
         "test": "$npm_execpath example"
     },
     "devDependencies": {
