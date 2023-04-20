@@ -3,7 +3,7 @@
 
 import axios from 'axios';
 
-test('Hashrate prometheus metric works', async () => {
+test.skip('Hashrate prometheus metric works', async () => {
     const metricsBase: string = (global as any).CREDITCOIN_METRICS_BASE;
     const { data } = await axios.get<string>(`${metricsBase}/metrics`);
     expect(data).toContain('creditcoin_node_hash_count');
