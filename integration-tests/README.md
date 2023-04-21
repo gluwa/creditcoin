@@ -16,7 +16,7 @@ This test suite is built with creditcoin-js, Polkadot.js and Jest!
 
 ## Getting Started
 
-0. In the root of the repo, start the software under test, see **Single-Node Development Chain** in `../README.md`
+0. In the root directory of this repository, start the software under test, see **Single-Node Development Chain** in `../README.md`
    for more information:
 
 ```bash
@@ -51,7 +51,7 @@ this step!
 
 **Warning:** don't forget to commit changed definitions to git!
 
-3. From the dir of this README.md (`integration-tests`), install dependencies and execute the test node:
+3. From the directory of this README.md (`integration-tests`), install dependencies and execute the test node:
 
 ```bash
 ./yarn-install-and-wait-for-creditcoin.sh
