@@ -2,13 +2,16 @@
 
 pub use pallet::*;
 
+pub trait OnSwitch {
+	fn on_switch();
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
-	use frame_system::{pallet_prelude::*, SetCode};
+	use frame_system::pallet_prelude::*;
 	use sp_core::U256;
-	use sp_std::vec::Vec;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_difficulty::Config {
@@ -17,6 +20,8 @@ pub mod pallet {
 			+ Into<sp_core::U256>;
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
+		type OnSwitch: OnSwitch;
 	}
 
 	#[pallet::storage]
@@ -33,6 +38,11 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Switched to PoS. []
 		Switched,
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {
+		AlreadySwitched,
 	}
 
 	#[pallet::genesis_config]
@@ -63,19 +73,21 @@ pub mod pallet {
 		/// Switch to PoS
 		#[pallet::call_index(0)]
 		#[pallet::weight((T::BlockWeights::get().max_block, DispatchClass::Operational))]
-		pub fn switch_to_pos(origin: OriginFor<T>, code: Vec<u8>) -> DispatchResultWithPostInfo {
+		pub fn switch_to_pos(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
+
+			ensure!(SwitchBlockNumber::<T>::get().is_none(), Error::<T>::AlreadySwitched);
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 			let block_number: sp_core::U256 =
 				T::RuntimeBlockNumber::from_ref(&block_number).clone().into();
 			SwitchBlockNumber::<T>::put(block_number);
 
-			frame_system::Pallet::<T>::can_set_code(&code)?;
-			<T as frame_system::Config>::OnSetCode::set_code(code)?;
 			pallet_difficulty::CurrentDifficulty::<T>::put(U256::MAX);
 
 			Self::deposit_event(Event::Switched);
+
+			T::OnSwitch::on_switch();
 
 			Ok(().into())
 		}
