@@ -11,7 +11,7 @@ use frame_election_provider_support::{
 };
 pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
-	traits::{ConstU32, ConstU8, Currency, OnRuntimeUpgrade, U128CurrencyToVote},
+	traits::{ConstU32, ConstU8, Currency, U128CurrencyToVote},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
 use frame_system::EnsureRoot;
@@ -402,8 +402,9 @@ parameter_types! {
 }
 
 pub struct HackyUpgrade;
-impl OnRuntimeUpgrade for HackyUpgrade {
-	fn on_runtime_upgrade() -> Weight {
+
+impl pallet_pos_switch::OnSwitch for HackyUpgrade {
+	fn on_switch() {
 		fn make_session_keys(
 			grandpa: GrandpaId,
 			babe: BabeId,
@@ -463,8 +464,6 @@ impl OnRuntimeUpgrade for HackyUpgrade {
 			..Default::default()
 		};
 		Staking::genesis_init(config);
-
-		Weight::zero()
 	}
 }
 
@@ -659,6 +658,7 @@ impl pallet_rewards::Config for Runtime {
 impl pallet_pos_switch::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeBlockNumber = BlockNumber;
+	type OnSwitch = HackyUpgrade;
 }
 
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
@@ -762,7 +762,6 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
-	HackyUpgrade,
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
