@@ -348,6 +348,13 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        posSwitch: {
+            AlreadySwitched: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         scheduler: {
             /**
              * Failed to schedule a call

@@ -652,10 +652,7 @@ declare module '@polkadot/api-base/types/submittable' {
             /**
              * Switch to PoS
              **/
-            switchToPos: AugmentedSubmittable<
-                (code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Bytes]
-            >;
+            switchToPos: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
              * Generic tx
              **/
