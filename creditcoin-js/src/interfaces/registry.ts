@@ -103,6 +103,7 @@ import type {
     PalletOffchainTaskSchedulerError,
     PalletOffchainTaskSchedulerEvent,
     PalletPosSwitchCall,
+    PalletPosSwitchError,
     PalletPosSwitchEvent,
     PalletRewardsEvent,
     PalletSchedulerCall,
@@ -277,6 +278,7 @@ declare module '@polkadot/types/types/registry' {
         PalletOffchainTaskSchedulerError: PalletOffchainTaskSchedulerError;
         PalletOffchainTaskSchedulerEvent: PalletOffchainTaskSchedulerEvent;
         PalletPosSwitchCall: PalletPosSwitchCall;
+        PalletPosSwitchError: PalletPosSwitchError;
         PalletPosSwitchEvent: PalletPosSwitchEvent;
         PalletRewardsEvent: PalletRewardsEvent;
         PalletSchedulerCall: PalletSchedulerCall;
