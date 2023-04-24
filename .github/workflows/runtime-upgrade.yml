@@ -373,7 +373,8 @@ jobs:
         run: |
           ./target/release/creditcoin-node try-runtime \
               --runtime ./target/release/creditcoin_node_runtime.compact.compressed.wasm \
-              --dev on-runtime-upgrade live --uri ${{ needs.setup.outputs.rpc_url }}
+              --dev on-runtime-upgrade live --uri ${{ needs.setup.outputs.rpc_url }} \
+              --at ${{ needs.setup.outputs.last_block_hash }}
 
   remove-github-runner:
     runs-on: ubuntu-22.04
