@@ -15,6 +15,13 @@ env:
 jobs:
   setup:
     runs-on: ubuntu-22.04
+    outputs:
+      target_chain: ${{ steps.testnet-env.outputs.target_chain || steps.mainnet-env.outputs.target_chain }}
+      rpc_url: ${{ steps.testnet-env.outputs.rpc_url || steps.mainnet-env.outputs.rpc_url }}
+      https_rpc_url: ${{ steps.testnet-env.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
+      release_tag: ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
+      artifact_name: ${{ steps.testnet-env.outputs.artifact_name || steps.mainnet-env.outputs.artifact_name }}
+
     steps:
       - uses: actions/checkout@v3
 
@@ -22,6 +29,29 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+          sudo apt install -y unzip jq
+
+      - name: Testnet ENV
+        id: testnet-env
+        if: github.base_ref == 'testnet'
+        run: |
+          echo "target_chain=test" >> "$GITHUB_OUTPUT"
+          echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
+          echo "https_rpc_url=https://rpc.testnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
+          RELEASE_TAG=$(./scripts/extract-release-tag.sh "testnet")
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=creditcoin-$RELEASE_TAG-$(uname -m)-unknown-linux-gnu.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Mainnet ENV
+        id: mainnet-env
+        if: github.base_ref == 'main'
+        run: |
+          echo "target_chain=main" >> "$GITHUB_OUTPUT"
+          echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
+          echo "https_rpc_url=https://rpc.mainnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
+          RELEASE_TAG=$(./scripts/extract-release-tag.sh "runtime")
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=creditcoin-$RELEASE_TAG-$(uname -m)-unknown-linux-gnu.zip" >> "$GITHUB_OUTPUT"
 
       - name: Configure rustc version
         run: |
@@ -63,40 +93,13 @@ jobs:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
 
     steps:
-      - name: Prepare
-        run: |
-          sudo apt-get update
-          sudo apt install -y unzip jq
-
-      - name: Testnet ENV
-        id: testnet-env
-        if: github.base_ref == 'testnet'
-        run: |
-          echo "target_chain=test" >> "$GITHUB_OUTPUT"
-          echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
-          echo "https_rpc_url=https://rpc.testnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
-          RELEASE_TAG=$(./scripts/extract-release-tag.sh "testnet")
-          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=creditcoin-$RELEASE_TAG-$(uname -m)-unknown-linux-gnu.zip" >> "$GITHUB_OUTPUT"
-
-      - name: Mainnet ENV
-        id: mainnet-env
-        if: github.base_ref == 'main'
-        run: |
-          echo "target_chain=main" >> "$GITHUB_OUTPUT"
-          echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
-          echo "https_rpc_url=https://rpc.mainnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
-          RELEASE_TAG=$(./scripts/extract-release-tag.sh "runtime")
-          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=creditcoin-$RELEASE_TAG-$(uname -m)-unknown-linux-gnu.zip" >> "$GITHUB_OUTPUT"
-
-      - name: Download creditcoin-node for release ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
+      - name: Download creditcoin-node for release ${{ needs.setup.outputs.release_tag }}
         uses: i3h/download-release-asset@v1
         with:
           owner: gluwa
           repo: creditcoin
-          tag: ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
-          file: ${{ steps.testnet-env.outputs.artifact_name || steps.mainnet-env.outputs.artifact_name }}
+          tag: ${{ needs.setup.outputs.release_tag }}
+          file: ${{ needs.setup.outputs.artifact_name }}
 
       - name: Download creditcoin-fork
         uses: i3h/download-release-asset@v1
@@ -125,12 +128,9 @@ jobs:
           unzip creditcoin-*-unknown-linux-gnu.zip
           chmod a+x ./creditcoin-node
           chmod a+x ./creditcoin-fork
-          ./creditcoin-fork --bin ./creditcoin-node --orig ${{ env.TARGET_CHAIN }} --base dev --name Development \
-                            -o creditcoin-fork.json --rpc ${{ env.RPC_URL }}
-        env:
-          TARGET_CHAIN: ${{ steps.testnet-env.outputs.target_chain || steps.mainnet-env.outputs.target_chain }}
-          RPC_URL: ${{ steps.testnet-env.outputs.rpc_url || steps.mainnet-env.outputs.rpc_url }}
-          HTTPS_RPC_URL: ${{ steps.testnet-env.outputs.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
+          ./creditcoin-fork --bin ./creditcoin-node --orig ${{ needs.setup.outputs.target_chain }} \
+                            --base dev --name Development \
+                            -o creditcoin-fork.json --rpc ${{ needs.setup.outputs.rpc_url }}
 
       - name: Upload creditcoin-fork.json
         uses: actions/upload-artifact@v3
@@ -336,6 +336,7 @@ jobs:
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
     needs:
+      - setup
       - deploy-github-runner
     steps:
       - uses: actions/checkout@v3
@@ -361,25 +362,11 @@ jobs:
         run: |
           ./scripts/check-hardware.sh
 
-      - name: Testnet ENV
-        id: testnet-env
-        if: github.base_ref == 'testnet'
-        run: |
-          echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
-
-      - name: Mainnet ENV
-        id: mainnet-env
-        if: github.base_ref == 'main'
-        run: |
-          echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
-
       - name: Try-runtime migrations
         run: |
           ./target/release/creditcoin-node try-runtime \
               --runtime ./target/release/creditcoin_node_runtime.compact.compressed.wasm \
-              --dev on-runtime-upgrade live --uri ${{ env.RPC_URL }}
-        env:
-          RPC_URL: ${{ steps.testnet-env.outputs.rpc_url || steps.mainnet-env.outputs.rpc_url }}
+              --dev on-runtime-upgrade live --uri ${{ needs.setup.outputs.rpc_url }}
 
   remove-github-runner:
     runs-on: ubuntu-22.04
