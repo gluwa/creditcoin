@@ -63,6 +63,11 @@ jobs:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
 
     steps:
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt install -y unzip jq
+
       - name: Testnet ENV
         id: testnet-env
         if: github.base_ref == 'testnet'
@@ -70,6 +75,9 @@ jobs:
           echo "target_chain=test" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
           echo "https_rpc_url=https://rpc.testnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
+          RELEASE_TAG=$(./scripts/extract-release-tag.sh "testnet")
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=creditcoin-$RELEASE_TAG-$(uname -m)-unknown-linux-gnu.zip" >> "$GITHUB_OUTPUT"
 
       - name: Mainnet ENV
         id: mainnet-env
@@ -78,12 +86,17 @@ jobs:
           echo "target_chain=main" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
           echo "https_rpc_url=https://rpc.mainnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
+          RELEASE_TAG=$(./scripts/extract-release-tag.sh "runtime")
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=creditcoin-$RELEASE_TAG-$(uname -m)-unknown-linux-gnu.zip" >> "$GITHUB_OUTPUT"
 
-      - name: Download creditcoin-node
-        id: download-creditcoin-node
-        uses: actions/download-artifact@v3
+      - name: Download creditcoin-node for release ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
+        uses: i3h/download-release-asset@v1
         with:
-          name: creditcoin-node
+          owner: gluwa
+          repo: creditcoin
+          tag: ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
+          file: ${{ steps.testnet-env.outputs.artifact_name || steps.mainnet-env.outputs.artifact_name }}
 
       - name: Download creditcoin-fork
         uses: i3h/download-release-asset@v1
@@ -106,6 +119,10 @@ jobs:
                -d "{\"id\": 1, \"jsonrpc\": \"2.0\", \"method\": \"chain_getBlock\", \"params\": [\"$LAST_BLOCK\"] }" \
                ${{ env.HTTPS_RPC_URL }} | jq -r .result > last-block.json
 
+          sudo apt-get update
+          sudo apt install -y unzip
+
+          unzip creditcoin-*-unknown-linux-gnu.zip
           chmod a+x ./creditcoin-node
           chmod a+x ./creditcoin-fork
           ./creditcoin-fork --bin ./creditcoin-node --orig ${{ env.TARGET_CHAIN }} --base dev --name Development \
