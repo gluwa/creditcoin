@@ -77,16 +77,6 @@ pub type FullNetworkService = Arc<sc_network::NetworkService<Block, BlockHash>>;
 pub type BlockTy =
 	sp_runtime::generic::Block<sp_runtime::generic::Header<u32, BlakeTwo256>, OpaqueExtrinsic>;
 
-struct AuthoritiesProv;
-impl sc_consensus_grandpa::GenesisAuthoritySetProvider<BlockTy> for AuthoritiesProv {
-	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
-		Ok(vec![(
-			crate::chain_spec::get_from_seed::<sp_consensus_grandpa::AuthorityId>("Alice"),
-			1,
-		)])
-	}
-}
-
 /// Creates a transaction pool config where the limits are 5x the default, unless a limit has been set higher manually
 fn create_transaction_pool_config(mut config: TransactionPoolOptions) -> TransactionPoolOptions {
 	let set_limit = |limit: &mut PoolLimit, default: &PoolLimit| {
@@ -355,7 +345,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 	let force_authoring = config.force_authoring;
 	let backoff_authoring_blocks: Option<()> = None;
 	let name = config.network.node_name.clone();
-	let _enable_grandpa = !config.disable_grandpa;
+	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
 	let tokio_handle = config.tokio_handle.clone();
 	let mining_metrics = primitives::metrics::MiningMetrics::new(prometheus_registry.as_ref())?;
@@ -394,7 +384,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 	})?;
 
 	if let Some(monitor_target) = monitor_nonce_account {
-		if let Some(registry) = prometheus_registry {
+		if let Some(registry) = prometheus_registry.clone() {
 			task_manager.spawn_handle().spawn("nonce_metrics", None, {
 				nonce_monitor::task(nonce_monitor::TaskArgs {
 					registry,
@@ -436,7 +426,11 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			force_authoring,
 			grandpa_link,
 			grandpa_protocol_name,
-			keystore: keystore_container.sync_keystore(),
+			keystore: if role.is_authority() {
+				Some(keystore_container.sync_keystore())
+			} else {
+				None
+			},
 			name,
 			network,
 			transaction_pool,
@@ -444,6 +438,8 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			select_chain,
 			dev_key_seed,
 			sync_service,
+			enable_grandpa,
+			prometheus_registry,
 		},
 		switch_notif,
 	}
@@ -485,6 +481,41 @@ pub type OneshotSender<T> = tokio::sync::oneshot::Sender<T>;
 
 pub type MpscSender<T> = tokio::sync::mpsc::Sender<T>;
 
+struct GrandpaAuthorityProvider {
+	client: Arc<FullClient>,
+}
+impl GrandpaAuthorityProvider {
+	fn new(client: Arc<FullClient>) -> Self {
+		Self { client }
+	}
+}
+
+impl sc_consensus_grandpa::GenesisAuthoritySetProvider<BlockTy> for GrandpaAuthorityProvider {
+	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
+		use sc_client_api::{CallExecutor, ExecutionStrategy, ExecutorProvider, HeaderBackend};
+		self.client
+			.executor()
+			.call(
+				self.client.expect_block_hash_from_id(&sp_api::BlockId::Number(
+					pos_switch_block(&self.client, self.client.chain_info().best_hash)
+						.expect("should have already switched to PoS"),
+				))?,
+				"GrandpaApi_grandpa_authorities",
+				&[],
+				ExecutionStrategy::NativeElseWasm,
+				sp_core::traits::CallContext::Offchain,
+			)
+			.and_then(|call_result| {
+				parity_scale_codec::Decode::decode(&mut &call_result[..]).map_err(|err| {
+					sp_blockchain::Error::CallResultDecode(
+						"failed to decode GRANDPA authorities set proof",
+						err,
+					)
+				})
+			})
+	}
+}
+
 fn grandpa_initializer(
 	client: Arc<FullClient>,
 	select_chain: ChainSelection,
@@ -506,9 +537,10 @@ fn grandpa_initializer(
 					Some(_) => {},
 					None => {
 						log::debug!("Initializing Grandpa");
+						let auth_provider = GrandpaAuthorityProvider::new(client.clone());
 						let (import, link) = sc_consensus_grandpa::block_import(
 							client.clone(),
-							&AuthoritiesProv,
+							&auth_provider,
 							select_chain.clone(),
 							telemetry.clone(),
 						)
@@ -764,7 +796,7 @@ struct BabeAuthorshipParams {
 	babe_link: BabeImportInitializer,
 	transaction_pool: Arc<FullPool>,
 	network: FullNetworkService,
-	keystore: SyncCryptoStorePtr,
+	keystore: Option<SyncCryptoStorePtr>,
 	grandpa_link: GrandpaImportInitializer,
 	grandpa_protocol_name: ProtocolName,
 	select_chain: ChainSelection,
@@ -772,6 +804,8 @@ struct BabeAuthorshipParams {
 	name: String,
 	dev_key_seed: Option<String>,
 	sync_service: SyncService,
+	enable_grandpa: bool,
+	prometheus_registry: Option<substrate_prometheus_endpoint::Registry>,
 }
 
 async fn start_babe_authorship(
@@ -794,6 +828,8 @@ async fn start_babe_authorship(
 		name,
 		dev_key_seed,
 		sync_service,
+		enable_grandpa,
+		prometheus_registry,
 	} = params;
 
 	if is_authority {
@@ -820,7 +856,7 @@ async fn start_babe_authorship(
 		log::debug!("got babe link");
 		let slot_duration = babe_link.config().slot_duration();
 		let babe_config = babe::BabeParams {
-			keystore: keystore.clone(),
+			keystore: keystore.clone().expect("Keystore must be present for authority node"),
 			client: client.clone(),
 			select_chain,
 			block_import,
@@ -850,42 +886,44 @@ async fn start_babe_authorship(
 		task_manager.spawn_essential_handle().spawn_blocking("babe", None, babe);
 	}
 
-	let grandpa_config = sc_consensus_grandpa::Config {
-		// FIXME #1578 make this available through chainspec
-		gossip_duration: Duration::from_millis(333),
-		justification_period: 512,
-		name: Some(name),
-		observer_enabled: false,
-		keystore: Some(keystore),
-		local_role: role,
-		telemetry: None,
-		protocol_name: grandpa_protocol_name,
-	};
+	if enable_grandpa {
+		let grandpa_config = sc_consensus_grandpa::Config {
+			// FIXME #1578 make this available through chainspec
+			gossip_duration: Duration::from_millis(833),
+			justification_period: 512,
+			name: Some(name),
+			observer_enabled: false,
+			keystore,
+			local_role: role,
+			telemetry: None,
+			protocol_name: grandpa_protocol_name,
+		};
 
-	// start the full GRANDPA voter
-	// NOTE: non-authorities could run the GRANDPA observer protocol, but at
-	// this point the full voter should provide better guarantees of block
-	// and vote data availability than the observer. The observer has not
-	// been tested extensively yet and having most nodes in a network run it
-	// could lead to finality stalls.
-	let grandpa_config = sc_consensus_grandpa::GrandpaParams {
-		config: grandpa_config,
-		link: grandpa_link.request_link().await,
-		network,
-		voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
-		prometheus_registry: None,
-		shared_voter_state: SharedVoterState::empty(),
-		telemetry: None,
-		sync: sync_service,
-	};
-	log::debug!("starting grandpa voter");
-	// the GRANDPA voter task is considered infallible, i.e.
-	// if it fails we take down the service with it.
-	task_manager.spawn_essential_handle().spawn_blocking(
-		"grandpa-voter",
-		None,
-		sc_consensus_grandpa::run_grandpa_voter(grandpa_config).unwrap(),
-	);
+		// start the full GRANDPA voter
+		// NOTE: non-authorities could run the GRANDPA observer protocol, but at
+		// this point the full voter should provide better guarantees of block
+		// and vote data availability than the observer. The observer has not
+		// been tested extensively yet and having most nodes in a network run it
+		// could lead to finality stalls.
+		let grandpa_config = sc_consensus_grandpa::GrandpaParams {
+			config: grandpa_config,
+			link: grandpa_link.request_link().await,
+			network,
+			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
+			prometheus_registry,
+			shared_voter_state: SharedVoterState::empty(),
+			telemetry: None,
+			sync: sync_service,
+		};
+		log::debug!("starting grandpa voter");
+		// the GRANDPA voter task is considered infallible, i.e.
+		// if it fails we take down the service with it.
+		task_manager.spawn_essential_handle().spawn_blocking(
+			"grandpa-voter",
+			None,
+			sc_consensus_grandpa::run_grandpa_voter(grandpa_config).unwrap(),
+		);
+	}
 }
 
 struct PowAuthorshipParams<CIDP> {
@@ -1027,6 +1065,11 @@ pub struct BlockImportSwitcher<CIDP> {
 }
 
 fn switched_to_pos(client: &Arc<FullClient>, at_hash: BlockHash) -> bool {
+	pos_switch_block(client, at_hash).is_some()
+}
+
+fn pos_switch_block(client: &Arc<FullClient>, at_hash: BlockHash) -> Option<runtime::BlockNumber> {
+	use parity_scale_codec::Decode;
 	use sc_client_api::backend::StateBackend;
 
 	let key = runtime::pallet_pos_switch::SwitchBlockNumber::<runtime::Runtime>::hashed_key();
@@ -1035,13 +1078,13 @@ fn switched_to_pos(client: &Arc<FullClient>, at_hash: BlockHash) -> bool {
 		Ok(s) => s,
 		Err(e) => {
 			log::warn!("Failed to get state client at {:?}: {e:?}", at_hash);
-			return false;
+			return None;
 		},
 	};
 
 	let state = state_client.storage(&key).unwrap();
 
-	state.is_some()
+	state.map(|v| Decode::decode(&mut v.as_slice()).unwrap())
 }
 
 impl<CIDP> BlockImportSwitcher<CIDP> {
@@ -1130,7 +1173,7 @@ impl sc_consensus::JustificationImport<Block> for JustificationImportSwitcher {
 
 	async fn on_start(&mut self) -> Vec<(BlockHash, NumberFor<Block>)> {
 		log::debug!("justification import on_start");
-		if self.switched_to_pos(Default::default()) {
+		if self.switched_to_pos(self.client.chain_info().best_hash) {
 			self.grandpa_import.get_mut().await.on_start().await
 		} else {
 			Vec::new()
