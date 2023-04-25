@@ -142,6 +142,33 @@ async function doRuntimeUpgrade(
                     }
                 });
         });
+
+        // WARNING: only used during fork-and-migrate testing
+        if (scheduleDelay === 0) {
+            callback = api.tx.posSwitch.switchToPos();
+
+            await new Promise<void>((resolve, reject) => {
+                const unsubscribe = api.tx.sudo
+                    .sudoUncheckedWeight(callback, overrideWeight)
+                    .signAndSend(keyring, { nonce: -1 }, (result) => {
+                        const finish = (fn: () => void) => {
+                            unsubscribe
+                                .then((unsub) => {
+                                    unsub();
+                                    fn();
+                                })
+                                .catch(reject);
+                        };
+                        if (result.isInBlock && !result.isError) {
+                            console.log('switchToPos called');
+                            finish(resolve);
+                        } else if (result.isError) {
+                            const error = new Error(`Failed calling switchToPos: ${result.toString()}`);
+                            finish(() => reject(error));
+                        }
+                    });
+            });
+        }
     } finally {
         await api.disconnect();
     }
