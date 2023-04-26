@@ -1622,9 +1622,9 @@
     form-data "^3.0.0"
 
 "@types/node@*":
-  version "18.15.12"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.15.12.tgz#833756634e78c829e1254db006468dadbb0c696b"
-  integrity sha512-Wha1UwsB3CYdqUm2PPzh/1gujGCNtWVUYF0mB00fJFoR4gTyWTDPjSm+zBF787Ahw8vSGgBja90MkgFwvB86Dg==
+  version "18.16.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.1.tgz#5db121e9c5352925bb1f1b892c4ae620e3526799"
+  integrity sha512-DZxSZWXxFfOlx7k7Rv4LAyiMroaxa3Ly/7OOzZO8cBNho0YzAi4qlbrx8W27JGqG57IgR/6J7r+nOJWw6kcvZA==
 
 "@types/prettier@^2.1.5":
   version "2.7.2"
@@ -2114,9 +2114,9 @@ create-require@^1.1.0:
   resolved "https://registry.yarnpkg.com/create-require/-/create-require-1.1.1.tgz#c1d7e8f1e5f6cfc9ff65f9cd352d37348756c333"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
 
-"creditcoin-js@file:../creditcoin-js/creditcoin-js-v0.9.0.tgz":
-  version "0.9.0"
-  resolved "file:../creditcoin-js/creditcoin-js-v0.9.0.tgz#87991bac088cb9c6763c9bbc44b8199892ad6db3"
+"creditcoin-js@file:../creditcoin-js/creditcoin-js-v0.9.5.tgz":
+  version "0.9.5"
+  resolved "file:../creditcoin-js/creditcoin-js-v0.9.5.tgz#7bfc9728b85cf2ce8fcbb17776eda6d250bf6ad8"
   dependencies:
     "@polkadot/api" "9.14.2"
     ethers "^5.7.1"
