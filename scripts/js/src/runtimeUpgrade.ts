@@ -1,4 +1,5 @@
-import { BN, creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi } from 'creditcoin-js';
+import { createOverrideWeight } from 'creditcoin-js/lib/utils';
 import { ApiPromise, Keyring } from '@polkadot/api';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
@@ -27,36 +28,6 @@ type WasmRuntimeInfo = {
 // these normally use callbacks, but promises are more convenient
 const readFile = promisify(fs.readFile);
 const exec = promisify(child_process.exec);
-
-type OldWeight = BN;
-type NewWeight = { refTime: BN; proofSize: BN };
-type Weight = OldWeight | NewWeight;
-
-function createOverrideWeight(api: ApiPromise): Weight {
-    const sudoCallTypeId = api.runtimeMetadata.registry.metadata.pallets
-        .find((v) => v.name.toString() === 'Sudo')
-        .calls.unwrap().type;
-    const sudoCallTypeDef = api.runtimeMetadata.registry.lookup.getTypeDef(sudoCallTypeId);
-    if (Array.isArray(sudoCallTypeDef.sub)) {
-        const sudoUncheckedWeightType = sudoCallTypeDef.sub.find((def) => def.name === 'sudo_unchecked_weight');
-        if (Array.isArray(sudoUncheckedWeightType.sub)) {
-            // the weight is the second argument to sudo_unchecked_weight
-            const weightType = sudoUncheckedWeightType.sub[1];
-            if (weightType.type === 'u64') {
-                // old weight (simple u64)
-                return new BN(1);
-            } else {
-                // new weight
-                return {
-                    refTime: new BN(1),
-                    proofSize: new BN(0),
-                };
-            }
-        }
-    }
-
-    throw new Error("Couldn't find expected Weight type from sudoUncheckedWeight metadata");
-}
 
 /**
  * Performs an upgrade to the runtime at the provided path.
