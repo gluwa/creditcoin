@@ -1754,6 +1754,7 @@ export default {
     PalletCreditcoinError: {
         _enum: [
             'AddressAlreadyRegistered',
+            'AddressAlreadyRegisteredByCaller',
             'NonExistentAddress',
             'NonExistentDealOrder',
             'NonExistentAskOrder',
