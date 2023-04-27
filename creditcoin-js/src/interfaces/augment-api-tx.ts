@@ -21,7 +21,6 @@ import type {
     U8aFixed,
     Vec,
     bool,
-    i64,
     u128,
     u16,
     u32,
@@ -552,20 +551,6 @@ declare module '@polkadot/api-base/types/submittable' {
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinOcwTasksCollectCoinsGCreContract]
-            >;
-            /**
-             * Generic tx
-             **/
-            [key: string]: SubmittableExtrinsicFunction<ApiType>;
-        };
-        difficulty: {
-            setAdjustmentPeriod: AugmentedSubmittable<
-                (period: i64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [i64]
-            >;
-            setTargetBlockTime: AugmentedSubmittable<
-                (targetTime: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [u64]
             >;
             /**
              * Generic tx

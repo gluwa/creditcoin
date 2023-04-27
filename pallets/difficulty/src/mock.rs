@@ -67,7 +67,6 @@ parameter_types! {
 
 impl pallet_difficulty::Config for Test {
 	type Moment = u64;
-	type WeightInfo = super::weights::WeightInfo<Test>;
 }
 
 impl pallet_timestamp::Config for Test {

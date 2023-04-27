@@ -508,7 +508,6 @@ jobs:
       - name: Run benchmarks to generate dummy weights
         run: |
           ./scripts/bench.sh -p creditcoin -b -r 1 -s 2
-          ./scripts/bench.sh -p difficulty -b -r 1 -s 2
           ./scripts/bench.sh -p offchain_task_scheduler -b -r 1 -s 2
           ./scripts/bench.sh -p rewards -b -r 1 -s 2
 
