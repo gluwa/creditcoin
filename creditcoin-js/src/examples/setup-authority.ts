@@ -13,10 +13,6 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
     };
     const rpcUri = u8aToHex(api.createType('String', 'http://localhost:8545').toU8a());
     await api.rpc.offchain.localStorageSet('PERSISTENT', 'ethereum-rpc-uri', rpcUri);
-    if ((await api.query.difficulty.targetBlockTime<u64>()).toNumber() > 4000) {
-        console.log('setting target block time to 4000');
-        await api.tx.sudo.sudo(api.tx.difficulty.setTargetBlockTime(4000)).signAndSend(sudoSigner, { nonce: -1 });
-    }
     const hasAuthKey = await api.rpc.author.hasKey(AUTHORITY_PUBKEY, 'gots');
     if (hasAuthKey.isFalse) {
         console.log('no auth key!');

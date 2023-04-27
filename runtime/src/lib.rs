@@ -647,7 +647,6 @@ impl pallet_creditcoin::Config for Runtime {
 
 impl pallet_difficulty::Config for Runtime {
 	type Moment = Moment;
-	type WeightInfo = pallet_difficulty::weights::WeightInfo<Runtime>;
 }
 
 impl pallet_rewards::Config for Runtime {
@@ -783,7 +782,6 @@ mod benches {
 		[pallet_timestamp, Timestamp]
 		[pallet_creditcoin, Creditcoin]
 		[pallet_rewards, Rewards]
-		[pallet_difficulty, Difficulty]
 		[pallet_offchain_task_scheduler, TaskScheduler]
 	);
 }

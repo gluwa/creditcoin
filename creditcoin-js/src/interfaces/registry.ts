@@ -86,7 +86,6 @@ import type {
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
     PalletCreditcoinTransferUnverifiedTransfer,
-    PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
     PalletDifficultyError,
     PalletFastUnstakeCall,
@@ -302,7 +301,6 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinTransfer: PalletCreditcoinTransfer;
         PalletCreditcoinTransferKind: PalletCreditcoinTransferKind;
         PalletCreditcoinTransferUnverifiedTransfer: PalletCreditcoinTransferUnverifiedTransfer;
-        PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;
         PalletDifficultyError: PalletDifficultyError;
         PalletFastUnstakeCall: PalletFastUnstakeCall;
