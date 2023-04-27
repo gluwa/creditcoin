@@ -73,9 +73,13 @@ declare module '@polkadot/api-base/types/errors' {
         };
         creditcoin: {
             /**
-             * The specified address has already been registered to another account
+             * The specified address has already been registered to another account.
              **/
             AddressAlreadyRegistered: AugmentedError<ApiType>;
+            /**
+             * The specified address has already been registered to this account.
+             **/
+            AddressAlreadyRegisteredByCaller: AugmentedError<ApiType>;
             /**
              * The addresses specified are not on compatible external chains.
              **/
