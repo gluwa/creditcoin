@@ -1150,6 +1150,7 @@ declare module '@polkadot/types/lookup' {
     /** @name PalletCreditcoinError (141) */
     interface PalletCreditcoinError extends Enum {
         readonly isAddressAlreadyRegistered: boolean;
+        readonly isAddressAlreadyRegisteredByCaller: boolean;
         readonly isNonExistentAddress: boolean;
         readonly isNonExistentDealOrder: boolean;
         readonly isNonExistentAskOrder: boolean;
@@ -1203,6 +1204,7 @@ declare module '@polkadot/types/lookup' {
         readonly isCurrencyAlreadyRegistered: boolean;
         readonly type:
             | 'AddressAlreadyRegistered'
+            | 'AddressAlreadyRegisteredByCaller'
             | 'NonExistentAddress'
             | 'NonExistentDealOrder'
             | 'NonExistentAskOrder'

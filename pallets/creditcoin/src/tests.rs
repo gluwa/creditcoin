@@ -20,7 +20,7 @@ use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
-	MultiSigner,
+	AccountId32, MultiSigner,
 };
 use std::convert::{TryFrom, TryInto};
 
@@ -89,14 +89,49 @@ impl RegisteredAddress {
 	}
 }
 
+/// Generates a random external address and returns it's address and keypair
+pub(crate) fn generate_random_external_address(
+	seed: &str,
+) -> (ExternalAddress, sp_core::ecdsa::Pair) {
+	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
+	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
+	let address = EVMAddress::from_public(&key_pair.public());
+
+	(address, key_pair)
+}
+
+/// Generates a random account and returns it's accountID and keypair
+pub(crate) fn generate_random_account(seed: &str) -> (AccountId, sp_core::ecdsa::Pair) {
+	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
+	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
+	let signer: MultiSigner = key_pair.public().into();
+	let who = signer.into_account();
+
+	(who, key_pair)
+}
+
+/// Generates proof of ownership for given account and external account
+pub(crate) fn build_proof_of_ownership(
+	who: AccountId32,
+	external_keypair: sp_core::ecdsa::Pair,
+) -> sp_core::ecdsa::Signature {
+	let message = get_register_address_message(who.clone());
+	external_keypair.sign(message.as_slice())
+}
+
+/// Generates an account, an external address, and proof of account ownership
+/// using the same keypair for the external address, and cc account.
 pub(crate) fn generate_address_with_proof(
 	seed: &str,
 ) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
 	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
 	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
+
 	let pkey = key_pair.public();
+
 	let signer: MultiSigner = pkey.into();
 	let who = signer.into_account();
+
 	let message = get_register_address_message(who.clone());
 	let ownership_proof = key_pair.sign(message.as_slice());
 	let address = EVMAddress::from_public(&pkey);
@@ -341,19 +376,60 @@ fn register_address_should_work() {
 }
 
 #[test]
-fn register_address_pre_existing() {
+fn register_address_should_fail_to_reregister_external_address_to_same_account() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let (who, _) = generate_random_account("owner");
+		let (external_address, external_keypair) =
+			generate_random_external_address("external owner");
+		let ownership_proof = build_proof_of_ownership(who.clone(), external_keypair);
 		let blockchain = Blockchain::Rinkeby;
+		// Register external address to account
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
 			blockchain.clone(),
-			address.clone(),
+			external_address.clone(),
 			ownership_proof.clone()
 		));
-
+		// Try registering again to same account and fail
 		assert_noop!(
-			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
+			Creditcoin::register_address(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				ownership_proof
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+fn register_address_should_fail_to_reregister_external_address_to_new_account() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who_first, _) = generate_random_account("first account");
+		let (who_second, _) = generate_random_account("second account");
+		let (external_address, external_keypair) =
+			generate_random_external_address("external account");
+		let blockchain = Blockchain::Rinkeby;
+
+		// Register external address to first account
+		let first_ownership_proof =
+			build_proof_of_ownership(who_first.clone(), external_keypair.clone());
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(who_first),
+			blockchain.clone(),
+			external_address.clone(),
+			first_ownership_proof.clone()
+		));
+		// Try registering to a second account and fail
+		let second_ownership_proof = build_proof_of_ownership(who_second.clone(), external_keypair);
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who_second),
+				blockchain,
+				external_address,
+				second_ownership_proof
+			),
 			crate::Error::<Test>::AddressAlreadyRegistered
 		);
 	})

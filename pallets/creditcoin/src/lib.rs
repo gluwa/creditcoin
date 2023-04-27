@@ -59,6 +59,7 @@ pub mod pallet {
 	use crate::helpers::non_paying_error;
 	use frame_support::{
 		dispatch::{DispatchResult, PostDispatchInfo},
+		fail,
 		pallet_prelude::*,
 		traits::tokens::{currency::Currency as CurrencyT, fungible::Mutate, ExistenceRequirement},
 		transactional,
@@ -329,8 +330,11 @@ pub mod pallet {
 	#[derive(PartialEq, Eq)]
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The specified address has already been registered to another account
+		/// The specified address has already been registered to another account.
 		AddressAlreadyRegistered,
+
+		/// The specified address has already been registered to this account.
+		AddressAlreadyRegisteredByCaller,
 
 		/// The specified address does not exist.
 		NonExistentAddress,
@@ -598,26 +602,43 @@ pub mod pallet {
 			address: ExternalAddress,
 			ownership_proof: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
+			// Build hash of hash of calling address (origin)
 			let who = ensure_signed(origin)?;
-
 			let message = sp_io::hashing::sha2_256(who.encode().as_slice());
 			let message = &sp_io::hashing::blake2_256(message.as_ref());
+
+			// Extract public key of keypair used to sign the address of the caller
 			let signature = <[u8; 65]>::from(ownership_proof);
 			let raw_pubkey = secp256k1_ecdsa_recover_compressed(&signature, message)
 				.map_err(|_| Error::<T>::InvalidSignature)?;
+
+			// Build the external address from the public key
 			let recreated_address = helpers::generate_external_address(
 				&blockchain,
-				&address,
+				&address, // why do we need this?
 				sp_core::ecdsa::Public::from_raw(raw_pubkey),
 			)
 			.ok_or(Error::<T>::AddressFormatNotSupported)?;
+			// Check to see if the keypair that was used to sign the address of the caller
+			// is the same one mentioned in this call to register_address
 			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
 
 			let address_id = AddressId::new::<T>(&blockchain, &address);
-			ensure!(
-				!Addresses::<T>::contains_key(&address_id),
-				Error::<T>::AddressAlreadyRegistered
-			);
+
+			// if who != account_id.owner {
+			// 	fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+			// }
+			match Addresses::<T>::try_get(&address_id) {
+				Ok(account_id) => {
+					// Already registered, let's figure out who owns it so we can
+					// return a nice error
+					if who == account_id.owner {
+						fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+					}
+					fail!(Error::<T>::AddressAlreadyRegistered);
+				},
+				_ => (), // Good! it's not registered yet, we may continue with registration
+			};
 
 			// note: this error condition is unreachable!
 			// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
