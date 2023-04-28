@@ -171,9 +171,9 @@ parameter_types! {
 	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000u128);
 	/// The maximum amount of the multiplier.
 	pub MaximumMultiplier: Multiplier = Multiplier::max_value();
-	/// We allow for 20 seconds of compute with a 60 second average block time.
+	/// We allow for 5 seconds of compute with a 15 second average block time.
 	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(Weight::from_parts(20u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX), NORMAL_DISPATCH_RATIO);
+		::with_sensible_defaults(Weight::from_parts(5u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX), NORMAL_DISPATCH_RATIO);
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
