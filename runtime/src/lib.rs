@@ -437,7 +437,6 @@ impl pallet_pos_switch::OnSwitch for HackyUpgrade {
 				(stash.clone(), stash, make_session_keys(grandpa, babe, im_online))
 			})
 			.collect();
-		Session::genesis_init(&keys);
 
 		for (a, b, _, _, _) in initial_authorities.iter() {
 			let _ = Balances::make_free_balance_be(a, STASH);
@@ -449,10 +448,10 @@ impl pallet_pos_switch::OnSwitch for HackyUpgrade {
 			minimum_validator_count: 1,
 			stakers: initial_authorities
 				.iter()
-				.map(|x| {
+				.map(|(stash, controller, _, _, _)| {
 					(
-						x.0.clone(),
-						x.1.clone(),
+						stash.clone(),
+						controller.clone(),
 						STASH,
 						pallet_staking_substrate::StakerStatus::Validator,
 					)
@@ -464,6 +463,7 @@ impl pallet_pos_switch::OnSwitch for HackyUpgrade {
 			..Default::default()
 		};
 		Staking::genesis_init(config);
+		Session::genesis_init(&keys);
 	}
 }
 
