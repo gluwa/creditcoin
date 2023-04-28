@@ -89,28 +89,23 @@ impl RegisteredAddress {
 	}
 }
 
-/// Generates a random external address and returns it's address and keypair
-pub(crate) fn generate_random_external_address(
-	seed: &str,
-) -> (ExternalAddress, sp_core::ecdsa::Pair) {
+pub(crate) fn generate_keypair_from_seed(seed: &str) -> sp_core::ecdsa::Pair {
 	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
-	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
-	let address = EVMAddress::from_public(&key_pair.public());
-
-	(address, key_pair)
+	sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap()
 }
 
-/// Generates a random account and returns it's accountID and keypair
-pub(crate) fn generate_random_account(seed: &str) -> (AccountId, sp_core::ecdsa::Pair) {
-	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
-	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
+/// Generates an external EVM address from an ecdsa keypair
+pub(crate) fn external_address_from_keypair(key_pair: sp_core::ecdsa::Pair) -> ExternalAddress {
+	EVMAddress::from_public(&key_pair.public())
+}
+
+/// Generates an account from an ecdsa keypair
+pub(crate) fn account_from_keypair(key_pair: sp_core::ecdsa::Pair) -> (AccountId) {
 	let signer: MultiSigner = key_pair.public().into();
-	let who = signer.into_account();
-
-	(who, key_pair)
+	signer.into_account()
 }
 
-/// Generates proof of ownership for given account and external account
+/// Generates proof of ownership for given account and external address
 pub(crate) fn build_proof_of_ownership(
 	who: AccountId32,
 	external_keypair: sp_core::ecdsa::Pair,
@@ -120,22 +115,15 @@ pub(crate) fn build_proof_of_ownership(
 }
 
 /// Generates an account, an external address, and proof of account ownership
-/// using the same keypair for the external address, and cc account.
+/// using the **same keypair** for the external address, and cc account.
 pub(crate) fn generate_address_with_proof(
 	seed: &str,
 ) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
-	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
-	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
-
-	let pkey = key_pair.public();
-
-	let signer: MultiSigner = pkey.into();
-	let who = signer.into_account();
-
-	let message = get_register_address_message(who.clone());
-	let ownership_proof = key_pair.sign(message.as_slice());
-	let address = EVMAddress::from_public(&pkey);
-	(who, address, ownership_proof, key_pair)
+	let key_pair = generate_keypair_from_seed(seed);
+	let external_address = external_address_from_keypair(key_pair);
+	let who = account_from_keypair(key_pair);
+	let ownership_proof = build_proof_of_ownership(who, key_pair);
+	(who, external_address, ownership_proof, key_pair)
 }
 
 type TestAskOrder = (AskOrderId<BlockNumber, Hash>, AskOrder<AccountId, BlockNumber, Hash>);
