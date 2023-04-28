@@ -1,14 +1,22 @@
 # General setup
 
-Install `nvm` as per https://github.com/nvm-sh/nvm#installing-and-updating
+Install Node.js and Yarn. You can do so from here: https://nodejs.org/en/download
 
 **WARNING:** Node.js 14.x || 16.x is required
+
+Alternatively, a convenient tool to manage Node/npm installations is `nvm`.
+You can get it here: https://github.com/nvm-sh/nvm#installing-and-updating
+
+And then install the required version as follows.
 
 ```bash
 nvm install 16
 nvm alias default 16
 nvm use 16
+```
 
+We use Yarn for our package management and build scripts. To install Yarn enter:
+```
 npm install -g yarn
 ```
 
@@ -96,7 +104,7 @@ which hold 0.1 ETH!
 **WARNING:**
 when running this test-suite against `testnet` make sure that the
 source code matches the version of testnet running on the nodes. Try
-branching the tests from the relavant branch/tag before executing them.
+branching the tests from the relevant branch/tag before executing them.
 
 Running a test-suite from `dev` against downstream branches is not supported and
 will generally fail. The most likely failures will be missing extrinsics, different
