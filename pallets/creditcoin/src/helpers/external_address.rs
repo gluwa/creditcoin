@@ -8,6 +8,8 @@ use sp_io::hashing::sha2_256;
 
 pub fn generate_external_address(
 	blockchain: &Blockchain,
+	// TODO: refactor: remove `reference` as a parameter for generate_external_address
+	// It's very suspicious to be giving the external address to the function that's meant to generate it.
 	reference: &ExternalAddress,
 	public_key: Public,
 ) -> Option<ExternalAddress> {

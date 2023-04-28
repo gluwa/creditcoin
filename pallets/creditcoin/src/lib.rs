@@ -602,9 +602,12 @@ pub mod pallet {
 			address: ExternalAddress,
 			ownership_proof: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
-			// Build hash of hash of calling address (origin)
+			// Get `origin` to look like the message to which the `ownership_proof` signature corresponds.
+			// TODO: Why do we hash twice? I presume signed blake2 digest should be sufficient.
+			// The signing happens here: https://github.com/gluwa/creditcoin/blob/d1918252b27069afccbca290f35e4ecd8fce0640/creditcoin-js/src/utils.ts#L9
 			let who = ensure_signed(origin)?;
 			let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+			// Prep message for public key recovery/extraction
 			let message = &sp_io::hashing::blake2_256(message.as_ref());
 
 			// Extract public key of keypair used to sign the address of the caller
@@ -615,30 +618,24 @@ pub mod pallet {
 			// Build the external address from the public key
 			let recreated_address = helpers::generate_external_address(
 				&blockchain,
-				&address, // why do we need this?
+				&address,
 				sp_core::ecdsa::Public::from_raw(raw_pubkey),
 			)
 			.ok_or(Error::<T>::AddressFormatNotSupported)?;
-			// Check to see if the keypair that was used to sign the address of the caller
+			// Check if external address of keypair used to sign AccountID
 			// is the same one mentioned in this call to register_address
 			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
 
 			let address_id = AddressId::new::<T>(&blockchain, &address);
 
-			// if who != account_id.owner {
-			// 	fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
-			// }
-			match Addresses::<T>::try_get(&address_id) {
-				Ok(account_id) => {
-					// Already registered, let's figure out who owns it so we can
-					// return a nice error
-					if who == account_id.owner {
-						fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
-					}
-					fail!(Error::<T>::AddressAlreadyRegistered);
-				},
-				_ => (), // Good! it's not registered yet, we may continue with registration
-			};
+			if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
+				// Already registered, let's figure out who owns it so we can
+				// return a nice error
+				if who == account_id.owner {
+					fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+				}
+				fail!(Error::<T>::AddressAlreadyRegistered);
+			}
 
 			// note: this error condition is unreachable!
 			// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
