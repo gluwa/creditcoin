@@ -100,7 +100,7 @@ pub(crate) fn external_address_from_keypair(key_pair: sp_core::ecdsa::Pair) -> E
 }
 
 /// Generates an account from an ecdsa keypair
-pub(crate) fn account_from_keypair(key_pair: sp_core::ecdsa::Pair) -> (AccountId) {
+pub(crate) fn account_from_keypair(key_pair: sp_core::ecdsa::Pair) -> AccountId {
 	let signer: MultiSigner = key_pair.public().into();
 	signer.into_account()
 }
@@ -120,9 +120,9 @@ pub(crate) fn generate_address_with_proof(
 	seed: &str,
 ) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
 	let key_pair = generate_keypair_from_seed(seed);
-	let external_address = external_address_from_keypair(key_pair);
-	let who = account_from_keypair(key_pair);
-	let ownership_proof = build_proof_of_ownership(who, key_pair);
+	let external_address = external_address_from_keypair(key_pair.clone());
+	let who = account_from_keypair(key_pair.clone());
+	let ownership_proof = build_proof_of_ownership(who.clone(), key_pair.clone());
 	(who, external_address, ownership_proof, key_pair)
 }
 
@@ -366,10 +366,7 @@ fn register_address_should_work() {
 #[test]
 fn register_address_should_fail_to_reregister_external_address_to_same_account() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (who, _) = generate_random_account("owner");
-		let (external_address, external_keypair) =
-			generate_random_external_address("external owner");
-		let ownership_proof = build_proof_of_ownership(who.clone(), external_keypair);
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
 		// Register external address to account
 		assert_ok!(Creditcoin::register_address(
@@ -394,10 +391,10 @@ fn register_address_should_fail_to_reregister_external_address_to_same_account()
 #[test]
 fn register_address_should_fail_to_reregister_external_address_to_new_account() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (who_first, _) = generate_random_account("first account");
-		let (who_second, _) = generate_random_account("second account");
-		let (external_address, external_keypair) =
-			generate_random_external_address("external account");
+		let who_first = account_from_keypair(generate_keypair_from_seed("first account"));
+		let who_second = account_from_keypair(generate_keypair_from_seed("second account"));
+		let external_keypair = generate_keypair_from_seed("external account");
+		let external_address = external_address_from_keypair(external_keypair.clone());
 		let blockchain = Blockchain::Rinkeby;
 
 		// Register external address to first account
