@@ -17,3 +17,5 @@ mdbook build
 # to host locally for immediate perusing
 mdbook serve
 ```
+
+Also see [`.github/workflows/deploy-docs.yml`](.github/workflows/deploy-docs.yml) to see how we build and deploy this mdbook.
