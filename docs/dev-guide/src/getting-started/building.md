@@ -16,8 +16,23 @@ For the installation you can refer to [these instructions](https://www.rust-lang
 Once you have a working rust installation, you'll need to add the `wasm32-unknown-unknown` target and install the nightly toolchain
 
 ```bash
+rustup update
 rustup toolchain install nightly
 rustup target add wasm32-unknown-unknown --nightly
+```
+
+Note: So that you don't have to specify the toolchain every build, you can set `nightly` as your default toolchain while working on creditcoin.
+
+You can also check [/ci/env](/ci/env) for the toolchain being used in our CI in case you run into issues with newer version before we notice them.
+
+```bash
+# set nightly as default
+rustup default nightly
+
+# work on creditcoin...
+
+# set default back to stable toolchain
+rustup default stable
 ```
 
 ### System build dependencies
