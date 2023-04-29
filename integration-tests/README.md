@@ -43,7 +43,7 @@ docker run --rm -it -p 8545:8545 gluwa/hardhat-dev
 
     pushd creditcoin-js/
 
-    yarn
+    yarn install
     ./get-metadata.sh
     yarn build:types
     yarn format
