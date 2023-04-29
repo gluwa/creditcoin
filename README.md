@@ -16,9 +16,9 @@ For more information, see [creditcoin.org](https://creditcoin.org), or read the 
 
 ## Developer Setup
 
-### Rust Setup
+### Dependency Setup
 
-First, you must complete the [basic Rust setup instructions](./docs/rust-setup.md).
+First, you must complete the [basic environment setup](/docs/dev-guide/src/getting-started/building.md#build-prerequisites).
 
 ### Run
 
