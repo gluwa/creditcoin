@@ -23,6 +23,7 @@ jobs:
           runtime_dir: runtime
           package: creditcoin-node-runtime
           workdir: ${{ github.workspace }}
+          tag: "1.66.1" # FIXME: remove this option (use the latest) once we're building w/ stable rust
       - name: Summary
         run: |
           echo '${{ steps.srtool_build.outputs.json }}' | jq . > creditcoin-srtool-digest.json

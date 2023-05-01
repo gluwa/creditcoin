@@ -126,6 +126,7 @@ jobs:
           chain: "creditcoin"
           runtime_dir: runtime
           package: creditcoin-node-runtime
+          tag: "1.66.1" # FIXME: remove this option (use the latest) once we're building w/ stable rust
           workdir: ${{ github.workspace }}
 
       - name: DEBUG
