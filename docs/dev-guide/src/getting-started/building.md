@@ -23,7 +23,7 @@ rustup target add wasm32-unknown-unknown --nightly
 
 Note: So that you don't have to specify the toolchain every build, you can set `nightly` as your default toolchain while working on creditcoin.
 
-You can also check [/ci/env](/ci/env) for the toolchain being used in our CI in case you run into issues with newer version before we notice them.
+You can also check [./ci/env](/ci/env) for the toolchain being used in our CI in case you run into issues with newer version before we notice them.
 
 ```bash
 # set nightly as default
