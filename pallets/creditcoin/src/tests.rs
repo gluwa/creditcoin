@@ -110,7 +110,7 @@ pub(crate) fn build_proof_of_ownership(
 	who: AccountId32,
 	external_keypair: sp_core::ecdsa::Pair,
 ) -> sp_core::ecdsa::Signature {
-	let message = get_register_address_message(who.clone());
+	let message = get_register_address_message(who);
 	external_keypair.sign(message.as_slice())
 }
 
@@ -404,7 +404,7 @@ fn register_address_should_fail_to_reregister_external_address_to_new_account() 
 			Origin::signed(who_first),
 			blockchain.clone(),
 			external_address.clone(),
-			first_ownership_proof.clone()
+			first_ownership_proof
 		));
 		// Try registering to a second account and fail
 		let second_ownership_proof = build_proof_of_ownership(who_second.clone(), external_keypair);
