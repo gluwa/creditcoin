@@ -26,13 +26,8 @@ Note: So that you don't have to specify the toolchain every build, you can set `
 You can also check [./ci/env](/ci/env) for the toolchain being used in our CI in case you run into issues with newer version before we notice them.
 
 ```bash
-# set nightly as default
-rustup default nightly
-
-# work on creditcoin...
-
-# set default back to stable toolchain
-rustup default stable
+# set nightly as default for your creditcoin checkout
+rustup override set nightly
 ```
 
 ### System build dependencies
