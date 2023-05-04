@@ -37,6 +37,7 @@ jobs:
         id: testnet-env
         if: github.base_ref == 'testnet'
         run: |
+          # shellcheck disable=SC2129
           echo "target_chain=test" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
           echo "https_rpc_url=https://rpc.testnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
@@ -48,6 +49,7 @@ jobs:
         id: mainnet-env
         if: github.base_ref == 'main'
         run: |
+          # shellcheck disable=SC2129
           echo "target_chain=main" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
           echo "https_rpc_url=https://rpc.mainnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
