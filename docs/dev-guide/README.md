@@ -1,11 +1,10 @@
 # Developer's Guide
 
 You can find the hosted dev-guide at
-
-https://gluwa.github.io/creditcoin/
+<https://gluwa.github.io/creditcoin/>
 
 ## Requirements
-```
+```bash
 cargo install mdbook mdbook-mermaid
 ```
 
