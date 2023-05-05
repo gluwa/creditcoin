@@ -170,4 +170,10 @@ try-runtime = [
     "pallet-timestamp/try-runtime",
     "pallet-transaction-payment/try-runtime",
     "pallet-bags-list/try-runtime",
+    'pallet-utility/try-runtime',
+    'pallet-proxy/try-runtime',
+    'pallet-fast-unstake/try-runtime',
+    'pallet-identity/try-runtime',
+    'pallet-nomination-pools/try-runtime'
+
 ]
