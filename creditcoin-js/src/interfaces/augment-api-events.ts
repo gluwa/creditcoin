@@ -6,7 +6,7 @@
 import '@polkadot/api-base/types/events';
 
 import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
-import type { Null, Option, Result, U8aFixed, Vec, u128, u32, u64 } from '@polkadot/types-codec';
+import type { Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perbill } from '@polkadot/types/interfaces/runtime';
 import type {
@@ -27,6 +27,8 @@ import type {
     PalletCreditcoinOfferId,
     PalletCreditcoinTransfer,
     PalletImOnlineSr25519AppSr25519Public,
+    PalletNominationPoolsCommissionChangeRate,
+    PalletNominationPoolsPoolState,
     PalletStakingExposure,
     PalletStakingForcing,
     PalletStakingValidatorPrefs,
@@ -224,6 +226,39 @@ declare module '@polkadot/api-base/types/events' {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        fastUnstake: {
+            /**
+             * A batch was partially checked for the given eras, but the process did not finish.
+             **/
+            BatchChecked: AugmentedEvent<ApiType, [eras: Vec<u32>], { eras: Vec<u32> }>;
+            /**
+             * A batch of a given size was terminated.
+             *
+             * This is always follows by a number of `Unstaked` or `Slashed` events, marking the end
+             * of the batch. A new batch will be created upon next block.
+             **/
+            BatchFinished: AugmentedEvent<ApiType, [size_: u32], { size_: u32 }>;
+            /**
+             * An internal error happened. Operations will be paused now.
+             **/
+            InternalError: AugmentedEvent<ApiType, []>;
+            /**
+             * A staker was slashed for requesting fast-unstake whilst being exposed.
+             **/
+            Slashed: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>;
+            /**
+             * A staker was unstaked.
+             **/
+            Unstaked: AugmentedEvent<
+                ApiType,
+                [stash: AccountId32, result: Result<Null, SpRuntimeDispatchError>],
+                { stash: AccountId32; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         grandpa: {
             /**
              * New authority set has been applied.
@@ -241,6 +276,85 @@ declare module '@polkadot/api-base/types/events' {
              * Current authority set has been resumed.
              **/
             Resumed: AugmentedEvent<ApiType, []>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        identity: {
+            /**
+             * A name was cleared, and the given balance returned.
+             **/
+            IdentityCleared: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, deposit: u128],
+                { who: AccountId32; deposit: u128 }
+            >;
+            /**
+             * A name was removed and the given balance slashed.
+             **/
+            IdentityKilled: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, deposit: u128],
+                { who: AccountId32; deposit: u128 }
+            >;
+            /**
+             * A name was set or reset (which will remove all judgements).
+             **/
+            IdentitySet: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
+            /**
+             * A judgement was given by a registrar.
+             **/
+            JudgementGiven: AugmentedEvent<
+                ApiType,
+                [target: AccountId32, registrarIndex: u32],
+                { target: AccountId32; registrarIndex: u32 }
+            >;
+            /**
+             * A judgement was asked from a registrar.
+             **/
+            JudgementRequested: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, registrarIndex: u32],
+                { who: AccountId32; registrarIndex: u32 }
+            >;
+            /**
+             * A judgement request was retracted.
+             **/
+            JudgementUnrequested: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, registrarIndex: u32],
+                { who: AccountId32; registrarIndex: u32 }
+            >;
+            /**
+             * A registrar was added.
+             **/
+            RegistrarAdded: AugmentedEvent<ApiType, [registrarIndex: u32], { registrarIndex: u32 }>;
+            /**
+             * A sub-identity was added to an identity and the deposit paid.
+             **/
+            SubIdentityAdded: AugmentedEvent<
+                ApiType,
+                [sub: AccountId32, main: AccountId32, deposit: u128],
+                { sub: AccountId32; main: AccountId32; deposit: u128 }
+            >;
+            /**
+             * A sub-identity was removed from an identity and the deposit freed.
+             **/
+            SubIdentityRemoved: AugmentedEvent<
+                ApiType,
+                [sub: AccountId32, main: AccountId32, deposit: u128],
+                { sub: AccountId32; main: AccountId32; deposit: u128 }
+            >;
+            /**
+             * A sub-identity was cleared, and the given deposit repatriated from the
+             * main identity account to the sub-identity account.
+             **/
+            SubIdentityRevoked: AugmentedEvent<
+                ApiType,
+                [sub: AccountId32, main: AccountId32, deposit: u128],
+                { sub: AccountId32; main: AccountId32; deposit: u128 }
+            >;
             /**
              * Generic event
              **/
@@ -272,11 +386,194 @@ declare module '@polkadot/api-base/types/events' {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        nominationPools: {
+            /**
+             * A member has became bonded in a pool.
+             **/
+            Bonded: AugmentedEvent<
+                ApiType,
+                [member: AccountId32, poolId: u32, bonded: u128, joined: bool],
+                { member: AccountId32; poolId: u32; bonded: u128; joined: bool }
+            >;
+            /**
+             * A pool has been created.
+             **/
+            Created: AugmentedEvent<
+                ApiType,
+                [depositor: AccountId32, poolId: u32],
+                { depositor: AccountId32; poolId: u32 }
+            >;
+            /**
+             * A pool has been destroyed.
+             **/
+            Destroyed: AugmentedEvent<ApiType, [poolId: u32], { poolId: u32 }>;
+            /**
+             * A member has been removed from a pool.
+             *
+             * The removal can be voluntary (withdrawn all unbonded funds) or involuntary (kicked).
+             **/
+            MemberRemoved: AugmentedEvent<
+                ApiType,
+                [poolId: u32, member: AccountId32],
+                { poolId: u32; member: AccountId32 }
+            >;
+            /**
+             * A payout has been made to a member.
+             **/
+            PaidOut: AugmentedEvent<
+                ApiType,
+                [member: AccountId32, poolId: u32, payout: u128],
+                { member: AccountId32; poolId: u32; payout: u128 }
+            >;
+            /**
+             * A pool's commission `change_rate` has been changed.
+             **/
+            PoolCommissionChangeRateUpdated: AugmentedEvent<
+                ApiType,
+                [poolId: u32, changeRate: PalletNominationPoolsCommissionChangeRate],
+                { poolId: u32; changeRate: PalletNominationPoolsCommissionChangeRate }
+            >;
+            /**
+             * Pool commission has been claimed.
+             **/
+            PoolCommissionClaimed: AugmentedEvent<
+                ApiType,
+                [poolId: u32, commission: u128],
+                { poolId: u32; commission: u128 }
+            >;
+            /**
+             * A pool's commission setting has been changed.
+             **/
+            PoolCommissionUpdated: AugmentedEvent<
+                ApiType,
+                [poolId: u32, current: Option<ITuple<[Perbill, AccountId32]>>],
+                { poolId: u32; current: Option<ITuple<[Perbill, AccountId32]>> }
+            >;
+            /**
+             * A pool's maximum commission setting has been changed.
+             **/
+            PoolMaxCommissionUpdated: AugmentedEvent<
+                ApiType,
+                [poolId: u32, maxCommission: Perbill],
+                { poolId: u32; maxCommission: Perbill }
+            >;
+            /**
+             * The active balance of pool `pool_id` has been slashed to `balance`.
+             **/
+            PoolSlashed: AugmentedEvent<ApiType, [poolId: u32, balance: u128], { poolId: u32; balance: u128 }>;
+            /**
+             * The roles of a pool have been updated to the given new roles. Note that the depositor
+             * can never change.
+             **/
+            RolesUpdated: AugmentedEvent<
+                ApiType,
+                [root: Option<AccountId32>, bouncer: Option<AccountId32>, nominator: Option<AccountId32>],
+                { root: Option<AccountId32>; bouncer: Option<AccountId32>; nominator: Option<AccountId32> }
+            >;
+            /**
+             * The state of a pool has changed
+             **/
+            StateChanged: AugmentedEvent<
+                ApiType,
+                [poolId: u32, newState: PalletNominationPoolsPoolState],
+                { poolId: u32; newState: PalletNominationPoolsPoolState }
+            >;
+            /**
+             * A member has unbonded from their pool.
+             *
+             * - `balance` is the corresponding balance of the number of points that has been
+             * requested to be unbonded (the argument of the `unbond` transaction) from the bonded
+             * pool.
+             * - `points` is the number of points that are issued as a result of `balance` being
+             * dissolved into the corresponding unbonding pool.
+             * - `era` is the era in which the balance will be unbonded.
+             * In the absence of slashing, these values will match. In the presence of slashing, the
+             * number of points that are issued in the unbonding pool will be less than the amount
+             * requested to be unbonded.
+             **/
+            Unbonded: AugmentedEvent<
+                ApiType,
+                [member: AccountId32, poolId: u32, balance: u128, points: u128, era: u32],
+                { member: AccountId32; poolId: u32; balance: u128; points: u128; era: u32 }
+            >;
+            /**
+             * The unbond pool at `era` of pool `pool_id` has been slashed to `balance`.
+             **/
+            UnbondingPoolSlashed: AugmentedEvent<
+                ApiType,
+                [poolId: u32, era: u32, balance: u128],
+                { poolId: u32; era: u32; balance: u128 }
+            >;
+            /**
+             * A member has withdrawn from their pool.
+             *
+             * The given number of `points` have been dissolved in return of `balance`.
+             *
+             * Similar to `Unbonded` event, in the absence of slashing, the ratio of point to balance
+             * will be 1.
+             **/
+            Withdrawn: AugmentedEvent<
+                ApiType,
+                [member: AccountId32, poolId: u32, balance: u128, points: u128],
+                { member: AccountId32; poolId: u32; balance: u128; points: u128 }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         posSwitch: {
             /**
              * Switched to PoS. []
              **/
             Switched: AugmentedEvent<ApiType, []>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        proxy: {
+            /**
+             * An announcement was placed to make a call in the future.
+             **/
+            Announced: AugmentedEvent<
+                ApiType,
+                [real: AccountId32, proxy: AccountId32, callHash: H256],
+                { real: AccountId32; proxy: AccountId32; callHash: H256 }
+            >;
+            /**
+             * A proxy was added.
+             **/
+            ProxyAdded: AugmentedEvent<
+                ApiType,
+                [delegator: AccountId32, delegatee: AccountId32, proxyType: Null, delay: u32],
+                { delegator: AccountId32; delegatee: AccountId32; proxyType: Null; delay: u32 }
+            >;
+            /**
+             * A proxy was executed correctly, with the given.
+             **/
+            ProxyExecuted: AugmentedEvent<
+                ApiType,
+                [result: Result<Null, SpRuntimeDispatchError>],
+                { result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * A proxy was removed.
+             **/
+            ProxyRemoved: AugmentedEvent<
+                ApiType,
+                [delegator: AccountId32, delegatee: AccountId32, proxyType: Null, delay: u32],
+                { delegator: AccountId32; delegatee: AccountId32; proxyType: Null; delay: u32 }
+            >;
+            /**
+             * A pure account has been created by new proxy with given
+             * disambiguation index and proxy type.
+             **/
+            PureCreated: AugmentedEvent<
+                ApiType,
+                [pure: AccountId32, who: AccountId32, proxyType: Null, disambiguationIndex: u16],
+                { pure: AccountId32; who: AccountId32; proxyType: Null; disambiguationIndex: u16 }
+            >;
             /**
              * Generic event
              **/
@@ -530,6 +827,45 @@ declare module '@polkadot/api-base/types/events' {
                 [who: AccountId32, actualFee: u128, tip: u128],
                 { who: AccountId32; actualFee: u128; tip: u128 }
             >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        utility: {
+            /**
+             * Batch of dispatches completed fully with no error.
+             **/
+            BatchCompleted: AugmentedEvent<ApiType, []>;
+            /**
+             * Batch of dispatches completed but has errors.
+             **/
+            BatchCompletedWithErrors: AugmentedEvent<ApiType, []>;
+            /**
+             * Batch of dispatches did not complete fully. Index of first failing dispatch given, as
+             * well as the error.
+             **/
+            BatchInterrupted: AugmentedEvent<
+                ApiType,
+                [index: u32, error: SpRuntimeDispatchError],
+                { index: u32; error: SpRuntimeDispatchError }
+            >;
+            /**
+             * A call was dispatched.
+             **/
+            DispatchedAs: AugmentedEvent<
+                ApiType,
+                [result: Result<Null, SpRuntimeDispatchError>],
+                { result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * A single item within a Batch of dispatches has completed with no error.
+             **/
+            ItemCompleted: AugmentedEvent<ApiType, []>;
+            /**
+             * A single item within a Batch of dispatches has completed with error.
+             **/
+            ItemFailed: AugmentedEvent<ApiType, [error: SpRuntimeDispatchError], { error: SpRuntimeDispatchError }>;
             /**
              * Generic event
              **/
