@@ -13,6 +13,7 @@ pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
 	traits::{ConstU32, ConstU8, Currency, U128CurrencyToVote},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+	PalletId,
 };
 use frame_system::EnsureRoot;
 pub use pallet_babe::AuthorityId as BabeId;
@@ -732,6 +733,11 @@ construct_runtime!(
 		Rewards: pallet_rewards,
 		Scheduler: pallet_scheduler,
 		TaskScheduler: pallet_offchain_task_scheduler,
+		Identity: pallet_identity,
+		Utility: pallet_utility,
+		Proxy: pallet_proxy,
+		FastUnstake: pallet_fast_unstake,
+		NominationPools: pallet_nomination_pools,
 	}
 );
 
@@ -1057,4 +1063,99 @@ where
 {
 	type OverarchingCall = RuntimeCall;
 	type Extrinsic = UncheckedExtrinsic;
+}
+
+parameter_types! {
+	pub const BasicDeposit: u128 = 500;
+	pub const FieldDeposit: u128 = 500;
+	pub const SubAccountDeposit: u128 = 500;
+	pub const MaxSubAccounts: u32 = 10;
+	pub const MaxAdditionalFields: u32 = 10;
+	pub const MaxRegistrars: u32 = 15;
+}
+
+impl pallet_identity::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type BasicDeposit = BasicDeposit;
+	type FieldDeposit = FieldDeposit;
+	type SubAccountDeposit = SubAccountDeposit;
+	type MaxSubAccounts = MaxSubAccounts;
+	type MaxAdditionalFields = MaxAdditionalFields;
+	type MaxRegistrars = MaxRegistrars;
+	type Slashed = ();
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type RegistrarOrigin = frame_system::EnsureRoot<AccountId>;
+	type WeightInfo = ();
+}
+
+impl pallet_utility::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type PalletsOrigin = OriginCaller;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const ProxyDepositBase: u128 = 500;
+	pub const ProxyDepositFactor: u128 = 500;
+	pub const MaxProxies: u32 = 64;
+	pub const MaxPending: u32 = 64;
+	pub const AnnouncementDepositBase: u128 = 500;
+	pub const AnnouncementDepositFactor: u128 = 500;
+
+}
+
+impl pallet_proxy::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type WeightInfo = ();
+	type ProxyType = ();
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type CallHasher = BlakeTwo256;
+	type MaxProxies = MaxProxies;
+	type MaxPending = MaxPending;
+	type AnnouncementDepositBase = AnnouncementDepositBase;
+	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
+parameter_types! {
+	pub const FastUnstakeDeposit: u128 = 500;
+	pub const FastUnstakeBatchSize: u32 = 100;
+	pub const MaxErasToCheckPerBlock: u32 = 100;
+}
+
+impl pallet_fast_unstake::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type Deposit = FastUnstakeDeposit;
+	type ControlOrigin = frame_system::EnsureRoot<AccountId>;
+	type BatchSize = FastUnstakeBatchSize;
+	type Staking = Staking;
+	type WeightInfo = ();
+	type MaxErasToCheckPerBlock = MaxErasToCheckPerBlock;
+}
+
+parameter_types! {
+	pub const NomPoolsPalletId: PalletId = PalletId(*b"creditco");
+	pub const MaxPointsToBalance: u8 = 100;
+	pub const MaxUnbonding: u32 = 100;
+	pub const PostUnbondingPoolsWindow: u32 = 10;
+}
+
+impl pallet_nomination_pools::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+	type Currency = Balances;
+	type RewardCounter = sp_runtime::FixedU128;
+	type PalletId = NomPoolsPalletId;
+	type MaxPointsToBalance = MaxPointsToBalance;
+	type BalanceToU256 = ();
+	type U256ToBalance = ();
+	type Staking = Staking;
+	type PostUnbondingPoolsWindow = PostUnbondingPoolsWindow;
+	type MaxMetadataLen = ();
+	type MaxUnbonding = MaxUnbonding;
 }

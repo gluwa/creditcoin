@@ -61,6 +61,14 @@ sp-staking = { workspace = true }
 pallet-staking-reward-fn = { workspace = true }
 log = { workspace = true }
 
+# Pallets necessary for use with the Staking Dashboard
+# CSUB-503 https://gluwa.atlassian.net/browse/CSUB-503?atlOrigin=eyJpIjoiODY0NGFjOTkzZjE1NGFkYTg1OTNkZmYxZGU1NjlmYjIiLCJwIjoiaiJ9
+pallet-utility = { workspace = true}
+pallet-proxy = { workspace = true }
+pallet-fast-unstake = { workspace = true }
+pallet-identity = { workspace = true }
+pallet-nomination-pools = { workspace = true }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -132,6 +140,11 @@ std = [
     'pallet-bags-list/std',
     'pallet-authorship/std',
     'pallet-pos-switch/std',
+    'pallet-utility/std',
+    'pallet-proxy/std',
+    'pallet-fast-unstake/std',
+    'pallet-identity/std',
+    'pallet-nomination-pools/std'
 ]
 try-runtime = [
     "frame-try-runtime",
