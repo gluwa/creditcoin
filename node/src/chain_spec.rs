@@ -236,6 +236,7 @@ fn testnet_genesis(
 				.collect(),
 		},
 		im_online: Default::default(),
+		nomination_pools: Default::default(),
 	}
 }
 

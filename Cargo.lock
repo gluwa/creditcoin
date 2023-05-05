@@ -1319,10 +1319,14 @@ dependencies = [
  "pallet-creditcoin",
  "pallet-difficulty",
  "pallet-election-provider-multi-phase",
+ "pallet-fast-unstake",
  "pallet-grandpa",
+ "pallet-identity",
  "pallet-im-online",
+ "pallet-nomination-pools",
  "pallet-offchain-task-scheduler",
  "pallet-pos-switch",
+ "pallet-proxy",
  "pallet-rewards",
  "pallet-scheduler",
  "pallet-session",
@@ -1333,6 +1337,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-utility",
  "parity-scale-codec",
  "scale-info",
  "smallvec",
@@ -1923,6 +1928,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "enumflags2"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c041f5090df68b32bcd905365fd51769c8b9d553fe87fde0b683534f10c01bd2"
+dependencies = [
+ "enumflags2_derive",
+]
+
+[[package]]
+name = "enumflags2_derive"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e9a1f9f7d83e59740248a6e14ecf93929ade55027844dfcea78beafccc15745"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -4940,6 +4965,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-fast-unstake"
+version = "4.0.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
+dependencies = [
+ "frame-benchmarking",
+ "frame-election-provider-support",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-grandpa"
 version = "4.0.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
@@ -4963,6 +5006,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-identity"
+version = "4.0.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
+dependencies = [
+ "enumflags2",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-im-online"
 version = "4.0.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
@@ -4975,6 +5034,23 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-nomination-pools"
+version = "1.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -5018,6 +5094,21 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-proxy"
+version = "4.0.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
@@ -5206,6 +5297,22 @@ dependencies = [
  "sp-api",
  "sp-runtime",
  "sp-weights",
+]
+
+[[package]]
+name = "pallet-utility"
+version = "4.0.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
