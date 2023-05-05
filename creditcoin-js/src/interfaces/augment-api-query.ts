@@ -6,6 +6,7 @@
 import '@polkadot/api-base/types/storage';
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from '@polkadot/api-base/types';
+import type { Data } from '@polkadot/types';
 import type {
     Bytes,
     Null,
@@ -45,10 +46,20 @@ import type {
     PalletCreditcoinTask,
     PalletCreditcoinTransfer,
     PalletDifficultyDifficultyAndTimestamp,
+    PalletFastUnstakeUnstakeRequest,
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
+    PalletIdentityRegistrarInfo,
+    PalletIdentityRegistration,
     PalletImOnlineBoundedOpaqueNetworkState,
     PalletImOnlineSr25519AppSr25519Public,
+    PalletNominationPoolsBondedPoolInner,
+    PalletNominationPoolsClaimPermission,
+    PalletNominationPoolsPoolMember,
+    PalletNominationPoolsRewardPool,
+    PalletNominationPoolsSubPools,
+    PalletProxyAnnouncement,
+    PalletProxyProxyDefinition,
     PalletSchedulerScheduled,
     PalletStakingActiveEraInfo,
     PalletStakingEraRewardPoints,
@@ -392,6 +403,44 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        fastUnstake: {
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForQueue: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Number of eras to check per block.
+             *
+             * If set to 0, this pallet does absolutely nothing.
+             *
+             * Based on the amount of weight available at `on_idle`, up to this many eras of a single
+             * nominator might be checked.
+             **/
+            erasToCheckPerBlock: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The current "head of the queue" being unstaked.
+             **/
+            head: AugmentedQuery<ApiType, () => Observable<Option<PalletFastUnstakeUnstakeRequest>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The map of all accounts wishing to be unstaked.
+             *
+             * Keeps track of `AccountId` wishing to unstake and it's corresponding deposit.
+             *
+             * TWOX-NOTE: SAFE since `AccountId` is a secure hash.
+             **/
+            queue: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<u128>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         grandpa: {
             /**
              * The number of changes (both in terms of keys and underlying economic responsibilities)
@@ -460,6 +509,54 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        identity: {
+            /**
+             * Information that is pertinent to identify the entity behind an account.
+             *
+             * TWOX-NOTE: OK ― `AccountId` is a secure hash.
+             **/
+            identityOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityRegistration>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * The set of registrars. Not expected to get very big as can only be added through a
+             * special origin (likely a council motion).
+             *
+             * The index into this can be cast to `RegistrarIndex` to get a valid value.
+             **/
+            registrars: AugmentedQuery<ApiType, () => Observable<Vec<Option<PalletIdentityRegistrarInfo>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Alternative "sub" identities of this account.
+             *
+             * The first item is the deposit, the second is a vector of the accounts.
+             *
+             * TWOX-NOTE: OK ― `AccountId` is a secure hash.
+             **/
+            subsOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<ITuple<[u128, Vec<AccountId32>]>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * The super-identity of an alternative "sub" identity together with its name, within that
+             * context. If the account is not some other account's sub-identity, then just `None`.
+             **/
+            superOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, Data]>>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         imOnline: {
             /**
              * For each session index, we keep a mapping of `ValidatorId<T>` to the
@@ -508,9 +605,177 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        nominationPools: {
+            /**
+             * Storage for bonded pools.
+             **/
+            bondedPools: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletNominationPoolsBondedPoolInner>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Map from a pool member account to their opted claim permission.
+             **/
+            claimPermissions: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<PalletNominationPoolsClaimPermission>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForBondedPools: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForMetadata: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForPoolMembers: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForReversePoolIdLookup: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForRewardPools: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForSubPoolsStorage: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The maximum commission that can be charged by a pool. Used on commission payouts to bound
+             * pool commissions that are > `GlobalMaxCommission`, necessary if a future
+             * `GlobalMaxCommission` is lower than some current pool commissions.
+             **/
+            globalMaxCommission: AugmentedQuery<ApiType, () => Observable<Option<Perbill>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Ever increasing number of all pools created so far.
+             **/
+            lastPoolId: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Maximum number of members that can exist in the system. If `None`, then the count
+             * members are not bound on a system wide basis.
+             **/
+            maxPoolMembers: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Maximum number of members that may belong to pool. If `None`, then the count of
+             * members is not bound on a per pool basis.
+             **/
+            maxPoolMembersPerPool: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Maximum number of nomination pools that can exist. If `None`, then an unbounded number of
+             * pools can exist.
+             **/
+            maxPools: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Metadata for the pool.
+             **/
+            metadata: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Bytes>, [u32]> &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Minimum bond required to create a pool.
+             *
+             * This is the amount that the depositor must put as their initial stake in the pool, as an
+             * indication of "skin in the game".
+             *
+             * This is the value that will always exist in the staking ledger of the pool bonded account
+             * while all other accounts leave.
+             **/
+            minCreateBond: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Minimum amount to bond to join a pool.
+             **/
+            minJoinBond: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Active members.
+             *
+             * TWOX-NOTE: SAFE since `AccountId` is a secure hash.
+             **/
+            poolMembers: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletNominationPoolsPoolMember>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * A reverse lookup from the pool's account id to its id.
+             *
+             * This is only used for slashing. In all other instances, the pool id is used, and the
+             * accounts are deterministically derived from it.
+             **/
+            reversePoolIdLookup: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<u32>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Reward pools. This is where there rewards for each pool accumulate. When a members payout is
+             * claimed, the balance comes out fo the reward pool. Keyed by the bonded pools account.
+             **/
+            rewardPools: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletNominationPoolsRewardPool>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Groups of unbonding pools. Each group of unbonding pools belongs to a
+             * bonded pool, hence the name sub-pools. Keyed by the bonded pools account.
+             **/
+            subPoolsStorage: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletNominationPoolsSubPools>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         posSwitch: {
             switchBlockNumber: AugmentedQuery<ApiType, () => Observable<Option<U256>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        proxy: {
+            /**
+             * The announcements made by the proxy (key).
+             **/
+            announcements: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<ITuple<[Vec<PalletProxyAnnouncement>, u128]>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * The set of account proxies. Maps the account which has delegated to the accounts
+             * which are being delegated to, together with the amount held on deposit.
+             **/
+            proxies: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<ITuple<[Vec<PalletProxyProxyDefinition>, u128]>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
              * Generic query
              **/

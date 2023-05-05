@@ -20,6 +20,7 @@ import type {
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSupportDispatchPerDispatchClassWeightsPerClass,
     FrameSupportDispatchRawOrigin,
+    FrameSupportPalletId,
     FrameSupportPreimagesBounded,
     FrameSupportTokensMiscBalanceStatus,
     FrameSystemAccountInfo,
@@ -88,11 +89,24 @@ import type {
     PalletDifficultyCall,
     PalletDifficultyDifficultyAndTimestamp,
     PalletDifficultyError,
+    PalletFastUnstakeCall,
+    PalletFastUnstakeError,
+    PalletFastUnstakeEvent,
+    PalletFastUnstakeUnstakeRequest,
     PalletGrandpaCall,
     PalletGrandpaError,
     PalletGrandpaEvent,
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
+    PalletIdentityBitFlags,
+    PalletIdentityCall,
+    PalletIdentityError,
+    PalletIdentityEvent,
+    PalletIdentityIdentityField,
+    PalletIdentityIdentityInfo,
+    PalletIdentityJudgement,
+    PalletIdentityRegistrarInfo,
+    PalletIdentityRegistration,
     PalletImOnlineBoundedOpaqueNetworkState,
     PalletImOnlineCall,
     PalletImOnlineError,
@@ -100,11 +114,35 @@ import type {
     PalletImOnlineHeartbeat,
     PalletImOnlineSr25519AppSr25519Public,
     PalletImOnlineSr25519AppSr25519Signature,
+    PalletNominationPoolsBondExtra,
+    PalletNominationPoolsBondedPoolInner,
+    PalletNominationPoolsCall,
+    PalletNominationPoolsClaimPermission,
+    PalletNominationPoolsCommission,
+    PalletNominationPoolsCommissionChangeRate,
+    PalletNominationPoolsConfigOpAccountId32,
+    PalletNominationPoolsConfigOpPerbill,
+    PalletNominationPoolsConfigOpU128,
+    PalletNominationPoolsConfigOpU32,
+    PalletNominationPoolsDefensiveError,
+    PalletNominationPoolsError,
+    PalletNominationPoolsEvent,
+    PalletNominationPoolsPoolMember,
+    PalletNominationPoolsPoolRoles,
+    PalletNominationPoolsPoolState,
+    PalletNominationPoolsRewardPool,
+    PalletNominationPoolsSubPools,
+    PalletNominationPoolsUnbondPool,
     PalletOffchainTaskSchedulerError,
     PalletOffchainTaskSchedulerEvent,
     PalletPosSwitchCall,
     PalletPosSwitchError,
     PalletPosSwitchEvent,
+    PalletProxyAnnouncement,
+    PalletProxyCall,
+    PalletProxyError,
+    PalletProxyEvent,
+    PalletProxyProxyDefinition,
     PalletRewardsEvent,
     PalletSchedulerCall,
     PalletSchedulerError,
@@ -140,6 +178,9 @@ import type {
     PalletTransactionPaymentChargeTransactionPayment,
     PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
+    PalletUtilityCall,
+    PalletUtilityError,
+    PalletUtilityEvent,
     SpArithmeticArithmeticError,
     SpConsensusBabeAllowedSlots,
     SpConsensusBabeAppPublic,
@@ -195,6 +236,7 @@ declare module '@polkadot/types/types/registry' {
         FrameSupportDispatchPerDispatchClassWeight: FrameSupportDispatchPerDispatchClassWeight;
         FrameSupportDispatchPerDispatchClassWeightsPerClass: FrameSupportDispatchPerDispatchClassWeightsPerClass;
         FrameSupportDispatchRawOrigin: FrameSupportDispatchRawOrigin;
+        FrameSupportPalletId: FrameSupportPalletId;
         FrameSupportPreimagesBounded: FrameSupportPreimagesBounded;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSystemAccountInfo: FrameSystemAccountInfo;
@@ -263,11 +305,24 @@ declare module '@polkadot/types/types/registry' {
         PalletDifficultyCall: PalletDifficultyCall;
         PalletDifficultyDifficultyAndTimestamp: PalletDifficultyDifficultyAndTimestamp;
         PalletDifficultyError: PalletDifficultyError;
+        PalletFastUnstakeCall: PalletFastUnstakeCall;
+        PalletFastUnstakeError: PalletFastUnstakeError;
+        PalletFastUnstakeEvent: PalletFastUnstakeEvent;
+        PalletFastUnstakeUnstakeRequest: PalletFastUnstakeUnstakeRequest;
         PalletGrandpaCall: PalletGrandpaCall;
         PalletGrandpaError: PalletGrandpaError;
         PalletGrandpaEvent: PalletGrandpaEvent;
         PalletGrandpaStoredPendingChange: PalletGrandpaStoredPendingChange;
         PalletGrandpaStoredState: PalletGrandpaStoredState;
+        PalletIdentityBitFlags: PalletIdentityBitFlags;
+        PalletIdentityCall: PalletIdentityCall;
+        PalletIdentityError: PalletIdentityError;
+        PalletIdentityEvent: PalletIdentityEvent;
+        PalletIdentityIdentityField: PalletIdentityIdentityField;
+        PalletIdentityIdentityInfo: PalletIdentityIdentityInfo;
+        PalletIdentityJudgement: PalletIdentityJudgement;
+        PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
+        PalletIdentityRegistration: PalletIdentityRegistration;
         PalletImOnlineBoundedOpaqueNetworkState: PalletImOnlineBoundedOpaqueNetworkState;
         PalletImOnlineCall: PalletImOnlineCall;
         PalletImOnlineError: PalletImOnlineError;
@@ -275,11 +330,35 @@ declare module '@polkadot/types/types/registry' {
         PalletImOnlineHeartbeat: PalletImOnlineHeartbeat;
         PalletImOnlineSr25519AppSr25519Public: PalletImOnlineSr25519AppSr25519Public;
         PalletImOnlineSr25519AppSr25519Signature: PalletImOnlineSr25519AppSr25519Signature;
+        PalletNominationPoolsBondExtra: PalletNominationPoolsBondExtra;
+        PalletNominationPoolsBondedPoolInner: PalletNominationPoolsBondedPoolInner;
+        PalletNominationPoolsCall: PalletNominationPoolsCall;
+        PalletNominationPoolsClaimPermission: PalletNominationPoolsClaimPermission;
+        PalletNominationPoolsCommission: PalletNominationPoolsCommission;
+        PalletNominationPoolsCommissionChangeRate: PalletNominationPoolsCommissionChangeRate;
+        PalletNominationPoolsConfigOpAccountId32: PalletNominationPoolsConfigOpAccountId32;
+        PalletNominationPoolsConfigOpPerbill: PalletNominationPoolsConfigOpPerbill;
+        PalletNominationPoolsConfigOpU128: PalletNominationPoolsConfigOpU128;
+        PalletNominationPoolsConfigOpU32: PalletNominationPoolsConfigOpU32;
+        PalletNominationPoolsDefensiveError: PalletNominationPoolsDefensiveError;
+        PalletNominationPoolsError: PalletNominationPoolsError;
+        PalletNominationPoolsEvent: PalletNominationPoolsEvent;
+        PalletNominationPoolsPoolMember: PalletNominationPoolsPoolMember;
+        PalletNominationPoolsPoolRoles: PalletNominationPoolsPoolRoles;
+        PalletNominationPoolsPoolState: PalletNominationPoolsPoolState;
+        PalletNominationPoolsRewardPool: PalletNominationPoolsRewardPool;
+        PalletNominationPoolsSubPools: PalletNominationPoolsSubPools;
+        PalletNominationPoolsUnbondPool: PalletNominationPoolsUnbondPool;
         PalletOffchainTaskSchedulerError: PalletOffchainTaskSchedulerError;
         PalletOffchainTaskSchedulerEvent: PalletOffchainTaskSchedulerEvent;
         PalletPosSwitchCall: PalletPosSwitchCall;
         PalletPosSwitchError: PalletPosSwitchError;
         PalletPosSwitchEvent: PalletPosSwitchEvent;
+        PalletProxyAnnouncement: PalletProxyAnnouncement;
+        PalletProxyCall: PalletProxyCall;
+        PalletProxyError: PalletProxyError;
+        PalletProxyEvent: PalletProxyEvent;
+        PalletProxyProxyDefinition: PalletProxyProxyDefinition;
         PalletRewardsEvent: PalletRewardsEvent;
         PalletSchedulerCall: PalletSchedulerCall;
         PalletSchedulerError: PalletSchedulerError;
@@ -315,6 +394,9 @@ declare module '@polkadot/types/types/registry' {
         PalletTransactionPaymentChargeTransactionPayment: PalletTransactionPaymentChargeTransactionPayment;
         PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
+        PalletUtilityCall: PalletUtilityCall;
+        PalletUtilityError: PalletUtilityError;
+        PalletUtilityEvent: PalletUtilityEvent;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpConsensusBabeAllowedSlots: SpConsensusBabeAllowedSlots;
         SpConsensusBabeAppPublic: SpConsensusBabeAppPublic;

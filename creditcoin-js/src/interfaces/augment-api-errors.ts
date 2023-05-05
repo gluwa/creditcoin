@@ -302,6 +302,38 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        fastUnstake: {
+            /**
+             * The provided un-staker is already in Head, and cannot deregister.
+             **/
+            AlreadyHead: AugmentedError<ApiType>;
+            /**
+             * The bonded account has already been queued.
+             **/
+            AlreadyQueued: AugmentedError<ApiType>;
+            /**
+             * The call is not allowed at this point because the pallet is not active.
+             **/
+            CallNotAllowed: AugmentedError<ApiType>;
+            /**
+             * The provided Controller account was not found.
+             *
+             * This means that the given account is not bonded.
+             **/
+            NotController: AugmentedError<ApiType>;
+            /**
+             * The bonded account has active unlocking chunks.
+             **/
+            NotFullyBonded: AugmentedError<ApiType>;
+            /**
+             * The provided un-staker is not in the `Queue`.
+             **/
+            NotQueued: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         grandpa: {
             /**
              * Attempt to signal GRANDPA change with one already pending.
@@ -338,6 +370,84 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        identity: {
+            /**
+             * Account ID is already named.
+             **/
+            AlreadyClaimed: AugmentedError<ApiType>;
+            /**
+             * Empty index.
+             **/
+            EmptyIndex: AugmentedError<ApiType>;
+            /**
+             * Fee is changed.
+             **/
+            FeeChanged: AugmentedError<ApiType>;
+            /**
+             * The index is invalid.
+             **/
+            InvalidIndex: AugmentedError<ApiType>;
+            /**
+             * Invalid judgement.
+             **/
+            InvalidJudgement: AugmentedError<ApiType>;
+            /**
+             * The target is invalid.
+             **/
+            InvalidTarget: AugmentedError<ApiType>;
+            /**
+             * The provided judgement was for a different identity.
+             **/
+            JudgementForDifferentIdentity: AugmentedError<ApiType>;
+            /**
+             * Judgement given.
+             **/
+            JudgementGiven: AugmentedError<ApiType>;
+            /**
+             * Error that occurs when there is an issue paying for judgement.
+             **/
+            JudgementPaymentFailed: AugmentedError<ApiType>;
+            /**
+             * No identity found.
+             **/
+            NoIdentity: AugmentedError<ApiType>;
+            /**
+             * Account isn't found.
+             **/
+            NotFound: AugmentedError<ApiType>;
+            /**
+             * Account isn't named.
+             **/
+            NotNamed: AugmentedError<ApiType>;
+            /**
+             * Sub-account isn't owned by sender.
+             **/
+            NotOwned: AugmentedError<ApiType>;
+            /**
+             * Sender is not a sub-account.
+             **/
+            NotSub: AugmentedError<ApiType>;
+            /**
+             * Sticky judgement.
+             **/
+            StickyJudgement: AugmentedError<ApiType>;
+            /**
+             * Too many additional fields.
+             **/
+            TooManyFields: AugmentedError<ApiType>;
+            /**
+             * Maximum amount of registrars reached. Cannot add any more.
+             **/
+            TooManyRegistrars: AugmentedError<ApiType>;
+            /**
+             * Too many subs-accounts.
+             **/
+            TooManySubAccounts: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         imOnline: {
             /**
              * Duplicated heartbeat.
@@ -352,8 +462,180 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        nominationPools: {
+            /**
+             * An account is already delegating in another pool. An account may only belong to one
+             * pool at a time.
+             **/
+            AccountBelongsToOtherPool: AugmentedError<ApiType>;
+            /**
+             * Bonding extra is restricted to the exact pending reward amount.
+             **/
+            BondExtraRestricted: AugmentedError<ApiType>;
+            /**
+             * The pools state cannot be changed.
+             **/
+            CanNotChangeState: AugmentedError<ApiType>;
+            /**
+             * None of the funds can be withdrawn yet because the bonding duration has not passed.
+             **/
+            CannotWithdrawAny: AugmentedError<ApiType>;
+            /**
+             * The submitted changes to commission change rate are not allowed.
+             **/
+            CommissionChangeRateNotAllowed: AugmentedError<ApiType>;
+            /**
+             * Not enough blocks have surpassed since the last commission update.
+             **/
+            CommissionChangeThrottled: AugmentedError<ApiType>;
+            /**
+             * The supplied commission exceeds the max allowed commission.
+             **/
+            CommissionExceedsMaximum: AugmentedError<ApiType>;
+            /**
+             * Some error occurred that should never happen. This should be reported to the
+             * maintainers.
+             **/
+            Defensive: AugmentedError<ApiType>;
+            /**
+             * The caller does not have adequate permissions.
+             **/
+            DoesNotHavePermission: AugmentedError<ApiType>;
+            /**
+             * The member is fully unbonded (and thus cannot access the bonded and reward pool
+             * anymore to, for example, collect rewards).
+             **/
+            FullyUnbonding: AugmentedError<ApiType>;
+            /**
+             * Pool id provided is not correct/usable.
+             **/
+            InvalidPoolId: AugmentedError<ApiType>;
+            /**
+             * The pool's max commission cannot be set higher than the existing value.
+             **/
+            MaxCommissionRestricted: AugmentedError<ApiType>;
+            /**
+             * Too many members in the pool or system.
+             **/
+            MaxPoolMembers: AugmentedError<ApiType>;
+            /**
+             * The system is maxed out on pools.
+             **/
+            MaxPools: AugmentedError<ApiType>;
+            /**
+             * The member cannot unbond further chunks due to reaching the limit.
+             **/
+            MaxUnbondingLimit: AugmentedError<ApiType>;
+            /**
+             * Metadata exceeds [`Config::MaxMetadataLen`]
+             **/
+            MetadataExceedsMaxLen: AugmentedError<ApiType>;
+            /**
+             * The amount does not meet the minimum bond to either join or create a pool.
+             *
+             * The depositor can never unbond to a value less than
+             * `Pallet::depositor_min_bond`. The caller does not have nominating
+             * permissions for the pool. Members can never unbond to a value below `MinJoinBond`.
+             **/
+            MinimumBondNotMet: AugmentedError<ApiType>;
+            /**
+             * No commission current has been set.
+             **/
+            NoCommissionCurrentSet: AugmentedError<ApiType>;
+            /**
+             * There is no pending commission to claim.
+             **/
+            NoPendingCommission: AugmentedError<ApiType>;
+            /**
+             * A pool must be in [`PoolState::Destroying`] in order for the depositor to unbond or for
+             * other members to be permissionlessly unbonded.
+             **/
+            NotDestroying: AugmentedError<ApiType>;
+            /**
+             * Either a) the caller cannot make a valid kick or b) the pool is not destroying.
+             **/
+            NotKickerOrDestroying: AugmentedError<ApiType>;
+            /**
+             * The caller does not have nominating permissions for the pool.
+             **/
+            NotNominator: AugmentedError<ApiType>;
+            /**
+             * The pool is not open to join
+             **/
+            NotOpen: AugmentedError<ApiType>;
+            /**
+             * The transaction could not be executed due to overflow risk for the pool.
+             **/
+            OverflowRisk: AugmentedError<ApiType>;
+            /**
+             * Partial unbonding now allowed permissionlessly.
+             **/
+            PartialUnbondNotAllowedPermissionlessly: AugmentedError<ApiType>;
+            /**
+             * Pool id currently in use.
+             **/
+            PoolIdInUse: AugmentedError<ApiType>;
+            /**
+             * An account is not a member.
+             **/
+            PoolMemberNotFound: AugmentedError<ApiType>;
+            /**
+             * A (bonded) pool id does not exist.
+             **/
+            PoolNotFound: AugmentedError<ApiType>;
+            /**
+             * A reward pool does not exist. In all cases this is a system logic error.
+             **/
+            RewardPoolNotFound: AugmentedError<ApiType>;
+            /**
+             * A sub pool does not exist.
+             **/
+            SubPoolsNotFound: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         posSwitch: {
             AlreadySwitched: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        proxy: {
+            /**
+             * Account is already a proxy.
+             **/
+            Duplicate: AugmentedError<ApiType>;
+            /**
+             * Call may not be made by proxy because it may escalate its privileges.
+             **/
+            NoPermission: AugmentedError<ApiType>;
+            /**
+             * Cannot add self as proxy.
+             **/
+            NoSelfProxy: AugmentedError<ApiType>;
+            /**
+             * Proxy registration not found.
+             **/
+            NotFound: AugmentedError<ApiType>;
+            /**
+             * Sender is not a proxy of the account to be proxied.
+             **/
+            NotProxy: AugmentedError<ApiType>;
+            /**
+             * There are too many proxies registered or too many announcements pending.
+             **/
+            TooMany: AugmentedError<ApiType>;
+            /**
+             * Announcement, if made at all, was made too recently.
+             **/
+            Unannounced: AugmentedError<ApiType>;
+            /**
+             * A call which is incompatible with the proxy type's filter was attempted.
+             **/
+            Unproxyable: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -576,6 +858,16 @@ declare module '@polkadot/api-base/types/errors' {
              * an internal error.
              **/
             OffchainSignedTxFailed: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        utility: {
+            /**
+             * Too many calls batched.
+             **/
+            TooManyCalls: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

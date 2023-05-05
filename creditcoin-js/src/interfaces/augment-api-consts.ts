@@ -9,6 +9,7 @@ import type { ApiTypes, AugmentedConst } from '@polkadot/api-base/types';
 import type { Vec, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { Codec } from '@polkadot/types-codec/types';
 import type {
+    FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
     SpVersionRuntimeVersion,
@@ -63,6 +64,17 @@ declare module '@polkadot/api-base/types/consts' {
              **/
             [key: string]: Codec;
         };
+        fastUnstake: {
+            /**
+             * Deposit to take for unstaking, to make sure we're able to slash the it in order to cover
+             * the costs of resources on unsuccessful unstake.
+             **/
+            deposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         grandpa: {
             /**
              * Max Authorities in use
@@ -82,6 +94,40 @@ declare module '@polkadot/api-base/types/consts' {
              **/
             [key: string]: Codec;
         };
+        identity: {
+            /**
+             * The amount held on deposit for a registered identity
+             **/
+            basicDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * The amount held on deposit per additional field for a registered identity.
+             **/
+            fieldDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * Maximum number of additional fields that may be stored in an ID. Needed to bound the I/O
+             * required to access an identity, but can be pretty high.
+             **/
+            maxAdditionalFields: u32 & AugmentedConst<ApiType>;
+            /**
+             * Maxmimum number of registrars allowed in the system. Needed to bound the complexity
+             * of, e.g., updating judgements.
+             **/
+            maxRegistrars: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of sub-accounts allowed per identified account.
+             **/
+            maxSubAccounts: u32 & AugmentedConst<ApiType>;
+            /**
+             * The amount held on deposit for a registered subaccount. This should account for the fact
+             * that one storage item's value will increase by the size of an account ID, and there will
+             * be another trie item whose value is the size of an account ID plus 32 bytes.
+             **/
+            subAccountDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         imOnline: {
             /**
              * A configuration for base priority of unsigned transactions.
@@ -90,6 +136,74 @@ declare module '@polkadot/api-base/types/consts' {
              * multiple pallets send unsigned transactions.
              **/
             unsignedPriority: u64 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
+        nominationPools: {
+            /**
+             * The maximum pool points-to-balance ratio that an `open` pool can have.
+             *
+             * This is important in the event slashing takes place and the pool's points-to-balance
+             * ratio becomes disproportional.
+             *
+             * Moreover, this relates to the `RewardCounter` type as well, as the arithmetic operations
+             * are a function of number of points, and by setting this value to e.g. 10, you ensure
+             * that the total number of points in the system are at most 10 times the total_issuance of
+             * the chain, in the absolute worse case.
+             *
+             * For a value of 10, the threshold would be a pool points-to-balance ratio of 10:1.
+             * Such a scenario would also be the equivalent of the pool being 90% slashed.
+             **/
+            maxPointsToBalance: u8 & AugmentedConst<ApiType>;
+            /**
+             * The nomination pool's pallet id.
+             **/
+            palletId: FrameSupportPalletId & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
+        proxy: {
+            /**
+             * The base amount of currency needed to reserve for creating an announcement.
+             *
+             * This is held when a new storage item holding a `Balance` is created (typically 16
+             * bytes).
+             **/
+            announcementDepositBase: u128 & AugmentedConst<ApiType>;
+            /**
+             * The amount of currency needed per announcement made.
+             *
+             * This is held for adding an `AccountId`, `Hash` and `BlockNumber` (typically 68 bytes)
+             * into a pre-existing storage value.
+             **/
+            announcementDepositFactor: u128 & AugmentedConst<ApiType>;
+            /**
+             * The maximum amount of time-delayed announcements that are allowed to be pending.
+             **/
+            maxPending: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum amount of proxies allowed for a single account.
+             **/
+            maxProxies: u32 & AugmentedConst<ApiType>;
+            /**
+             * The base amount of currency needed to reserve for creating a proxy.
+             *
+             * This is held for an additional storage item whose value size is
+             * `sizeof(Balance)` bytes and whose key size is `sizeof(AccountId)` bytes.
+             **/
+            proxyDepositBase: u128 & AugmentedConst<ApiType>;
+            /**
+             * The amount of currency needed per proxy added.
+             *
+             * This is held for adding 32 bytes plus an instance of `ProxyType` more into a
+             * pre-existing storage value. Thus, when configuring `ProxyDepositFactor` one should take
+             * into account `32 + proxy_type.encode().len()` bytes of data.
+             **/
+            proxyDepositFactor: u128 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
@@ -249,6 +363,16 @@ declare module '@polkadot/api-base/types/consts' {
              * transactions.
              **/
             operationalFeeMultiplier: u8 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
+        utility: {
+            /**
+             * The limit on the number of batched calls.
+             **/
+            batchedCallsLimit: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
