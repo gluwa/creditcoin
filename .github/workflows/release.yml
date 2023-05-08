@@ -82,7 +82,7 @@ jobs:
           args: --release --target aarch64-apple-darwin
 
       - name: Compress
-        uses: thedoctor0/zip-release@0.7.2
+        uses: thedoctor0/zip-release@0.7.1
         with:
           type: "zip"
           directory: "target/release/"
@@ -92,7 +92,7 @@ jobs:
 
       - name: Compress MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
-        uses: thedoctor0/zip-release@0.7.2
+        uses: thedoctor0/zip-release@0.7.1
         with:
           type: "zip"
           directory: "target/aarch64-apple-darwin/release/"
