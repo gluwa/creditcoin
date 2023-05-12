@@ -6,7 +6,6 @@ function askQuestion(query: string): Promise<string> {
         output: process.stdout,
     });
 
-    //@ts-ignore
     return new Promise<string>(resolve => rl.question(query, ans => {
         rl.close();
         resolve(ans);
