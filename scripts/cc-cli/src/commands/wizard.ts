@@ -86,10 +86,6 @@ export function makeWizardCommand() {
         const bondTxHash = await bond(stashSeed, controllerAddress, parseInt(options.amount), rewardDestination, api);
         console.log("Bond transaction sent with hash:", bondTxHash);
 
-        // Set up controller account
-        let setKeysTx;
-        let validateTx;
-
         // Rotate keys
         console.log("Generating new session keys on node...");
         const newKeys = (await api.rpc.author.rotateKeys()).toString();
@@ -97,11 +93,11 @@ export function makeWizardCommand() {
 
         // Set keys
         console.log("Creating setKeys transaction...");
-        setKeysTx = api.tx.session.setKeys(newKeys, preferences);
+        const setKeysTx = api.tx.session.setKeys(newKeys, preferences);
 
         // Validate
         console.log("Creating validate transaction...");
-        validateTx = api.tx.staking.validate({ preferences: preferences });
+        const validateTx = api.tx.staking.validate({ preferences: preferences });
 
         // Send transactions
         console.log("Sending setKeys and validate transactions...");
