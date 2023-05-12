@@ -29,8 +29,8 @@ export function balanceFreeIsZero(balance: Balance): boolean {
 }
 
 export function printBalance(balance: Balance) {
-    console.log("Available: " + balance.free / 1000000000000000000, "CTC");
-    console.log("Bonded: " + balance.miscFrozen / 1000000000000000000, "CTC");
+    console.log(`Available: ${ (balance.free / 1000000000000000000).toString() } CTC`);
+    console.log(`Bonded: ${ (balance.miscFrozen / 1000000000000000000).toString() } CTC`);
 }
 
 

@@ -2,7 +2,7 @@ import { Keyring } from 'creditcoin-js';
 import { OptionValues } from 'commander';
 import { readFileSync } from 'fs';
 
-export function initKeyringPair(seed: String) {
+export function initKeyringPair(seed: string) {
     const keyring = new Keyring({ type: 'sr25519' });
     const pair = keyring.addFromUri(`${seed}`);
     return pair
