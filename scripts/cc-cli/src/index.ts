@@ -37,6 +37,3 @@ program
     .addCommand(makeWizardCommand());
 
 program.parse(process.argv);
-
-
-

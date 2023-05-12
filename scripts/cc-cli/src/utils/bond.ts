@@ -7,7 +7,7 @@ export async function bond(
     amount: number,
     rewardDestination: "Staked" | "Stash" | "Controller",
     api: ApiPromise) {
-        
+
         const bond = api.tx.staking.bond(
             controllerAddress,
             amount + "000000000000000000", // Add 18 zeros to convert to micro units TODO: Improve amount handling

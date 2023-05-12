@@ -26,7 +26,7 @@ export function makeWizardCommand() {
     cmd.option('--blocked', 'Specify if validator is blocked for new nominations')
     cmd.action(async (options: OptionValues) => {
         console.log("🧙 Running staking wizard...");
-        
+
         // Create new API instance
         const api = await newApi(options.url);
 
@@ -34,7 +34,7 @@ export function makeWizardCommand() {
         const stashSeed = getStashSeedFromOptions(options);
         const stashKeyring = initKeyringPair(stashSeed);
         const stashAddress = stashKeyring.address;
-    
+
         // Generate controller keyring
         const controllerSeed = getControllerSeedFromOptions(options);
         const controllerKeyring = initKeyringPair(controllerSeed);
@@ -94,7 +94,7 @@ export function makeWizardCommand() {
         // Send transactions
         console.log("Sending setKeys and validate transactions...");
         const txs = [setKeysTx, validateTx];
-        
+
         await api.tx.utility.batchAll(txs).signAndSend(controllerKeyring, ({status}) => {
             if (status.isInBlock) {
                 console.log(`included in ${status.asInBlock}`);
@@ -104,11 +104,11 @@ export function makeWizardCommand() {
         // // Inform process
         console.log("🧙 Validator wizard completed successfully!");
         console.log("Your validator should appear on the waiting queue.");
-            
+
 
         // console.log(controllerKeys.isEmpty);
         process.exit(0);
-        
+
     });
     return cmd;
 }
