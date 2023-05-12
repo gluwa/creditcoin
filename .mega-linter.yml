@@ -1,4 +1,5 @@
 ---
+ACTION_ACTIONLINT_ARGUMENTS: -ignore 'property "https_rpc_url" is not defined in object type'
 DISABLE_LINTERS:
   - BASH_SHFMT
   - COPYPASTE_JSCPD

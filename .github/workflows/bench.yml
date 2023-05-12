@@ -192,14 +192,6 @@ jobs:
         run: |
           ./scripts/bench.sh -p "$PALLET" -b -r "$REPEAT" -s "$STEPS"
 
-      - name: Difficulty
-        shell: bash
-        continue-on-error: false
-        env:
-          PALLET: difficulty
-        run: |
-          ./scripts/bench.sh -p "$PALLET" -b
-
       - name: Offchain Task Scheduler
         shell: bash
         continue-on-error: false
