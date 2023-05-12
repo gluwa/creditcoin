@@ -381,7 +381,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests, scripts/js]
+        directory: [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
       - uses: actions/checkout@v3
@@ -406,7 +406,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests, scripts/js]
+        directory: [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
       - uses: actions/checkout@v3
@@ -431,7 +431,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests, scripts/js]
+        directory: [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
       - uses: actions/checkout@v3
