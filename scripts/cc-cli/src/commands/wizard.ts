@@ -43,7 +43,7 @@ export function makeWizardCommand() {
         // Validate prefs
         const commission = options.commission ? perbillFromPercent(options.commission) : 0;
         const blocked:  boolean = options.blocked ? options.blocked : false;
-        const preferences: StakingPalletValidatorPrefs = { commission: commission, blocked: blocked };
+        const preferences: StakingPalletValidatorPrefs = { commission, blocked };
 
         // Node settings
         const nodeUrl: string = options.url ? options.url : "ws://localhost:9944";
@@ -97,7 +97,7 @@ export function makeWizardCommand() {
 
         // Validate
         console.log("Creating validate transaction...");
-        const validateTx = api.tx.staking.validate({ preferences: preferences });
+        const validateTx = api.tx.staking.validate({ preferences });
 
         // Send transactions
         console.log("Sending setKeys and validate transactions...");
