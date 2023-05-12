@@ -8,8 +8,13 @@ export function makeNewSeedCommand() {
     cmd.description('Create new mnemonic seed');
     cmd.option('-l, --lenght [word-lenght]', 'Specify the amount of words')
     cmd.option('-s, --save [file-name]', 'Save the new stash seed to a file')
-    cmd.action(async (options: OptionValues) => {
-        console.log("Creating new mnemonic...")
+    cmd.action(newSeedAction);
+    return cmd;
+}
+
+function newSeedAction(options: OptionValues) {
+
+    console.log("Creating new mnemonic...")
         const mnemonic = options.lenght ? mnemonicGenerate(options.lenght) : mnemonicGenerate();
         if (options.save) {
             console.log("Saving seed to file:", options.save);
@@ -19,6 +24,4 @@ export function makeNewSeedCommand() {
             console.log("Mnemonic:", mnemonic);
         }
         process.exit(0);
-    });
-    return cmd;
 }

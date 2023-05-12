@@ -10,6 +10,6 @@ export async function newApi(url: string) {
     const api = await ApiPromise.create({
         provider: new WsProvider(url)
     });
-    cryptoWaitReady();
+    await cryptoWaitReady();
     return api;
 }
