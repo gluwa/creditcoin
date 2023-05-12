@@ -11,7 +11,7 @@ export function makeReceiveCommand() {
     return cmd;
 }
 
-async function receiveAction(options: OptionValues) {
+function receiveAction(options: OptionValues) {
 
     const seed = getSeedFromOptions(options);
     const pair = initKeyringPair(seed);
