@@ -1,7 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
-import { ApiPromise } from "creditcoin-js";
+import { getSeedFromOptions } from "../utils/account";
 import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
 
 export function makeValidateCommand() {

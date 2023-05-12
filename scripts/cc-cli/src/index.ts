@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 
 const {Command} = require('commander');
-import { OptionValues } from "commander";
-
-import { newApi } from "./api";
-import { getSeedFromOptions, initKeyringPair } from "./utils/account";
 
 // Subcommands
 import { makeWizardCommand } from "./commands/wizard";

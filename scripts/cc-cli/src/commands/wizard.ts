@@ -4,13 +4,9 @@ import { readFileSync } from "fs";
 import { initKeyringPair } from "../utils/account";
 import { promptContinue } from "../utils/promptContinue";
 import { bond, parseRewardDestination } from "../utils/bond";
-import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
-import Perbill from "@polkadot/types/interfaces/runtime";
+import { StakingPalletValidatorPrefs } from "../utils/validate";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
 import { Balance, getBalance, printBalance } from "../utils/balance";
-import { check } from "prettier";
-import { ApiPromise, KeyringPair } from "creditcoin-js";
-
 
 export function makeWizardCommand() {
     const cmd = new Command('wizard');
@@ -151,9 +147,4 @@ function checkStashBalance(address: string, balance: Balance, amount: number) {
         console.log("Please send funds to stash address " + address + " and try again.")
         process.exit(1);
     }
-}
-
-async function getPreviousKeys(keyring: KeyringPair, api: ApiPromise) {
-    const nextKeys = await api.query.session.nextKeys(keyring.publicKey);
-    return nextKeys;
 }
