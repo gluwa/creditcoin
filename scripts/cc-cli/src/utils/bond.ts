@@ -8,14 +8,14 @@ export async function bond(
     rewardDestination: "Staked" | "Stash" | "Controller",
     api: ApiPromise) {
 
-        const bond = api.tx.staking.bond(
+        const bondTx = api.tx.staking.bond(
             controllerAddress,
             `${amount}000000000000000000`, // Add 18 zeros to convert to micro units TODO: Improve amount handling
             rewardDestination);
 
         const stashKeyring = initKeyringPair(stashSeed);
 
-        const hash = await bond.signAndSend(stashKeyring);
+        const hash = await bondTx.signAndSend(stashKeyring);
 
         return hash.toHex();
 }

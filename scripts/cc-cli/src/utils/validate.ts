@@ -18,9 +18,9 @@ export async function validate(seed: string, prefs: StakingPalletValidatorPrefs,
     console.log(`Comission: ${preferences.commission}`);
     console.log(`Blocked for new nominators: ${preferences.blocked}`);
 
-    const validate = api.tx.staking.validate(preferences);
+    const validateTx = api.tx.staking.validate(preferences);
 
-    const hash = await validate.signAndSend(stash);
+    const hash = await validateTx.signAndSend(stash);
 
     console.log(`Validate transaction sent with hash: ${hash.toHex()}`);
     return hash;
