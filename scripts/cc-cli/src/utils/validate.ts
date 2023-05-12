@@ -16,7 +16,7 @@ export async function validate(seed: string, prefs: StakingPalletValidatorPrefs,
     const preferences: StakingPalletValidatorPrefs = prefs ? prefs : { commission: 0, blocked: false };
 
     console.log(`Comission: ${preferences.commission}`);
-    console.log(`Blocked for new nominators: ${preferences.blocked}`);
+    console.log(`Blocked for new nominators: ${preferences.blocked.toString()}`);
 
     const validateTx = api.tx.staking.validate(preferences);
 
