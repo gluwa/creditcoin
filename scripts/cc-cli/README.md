@@ -6,7 +6,7 @@ Please be aware that the command line tool you are using is still in active deve
 
 ## Building
 
-This tool depends on `creditcoin-js`. Make sure to pack the library using `yarn pack` in the `creditcoin-js` folder before building. It should be available as `creditcoin-js-v0.9.0.tgz`.
+This tool depends on `creditcoin-js`. Make sure to pack the library using `yarn pack` in the `creditcoin-js` folder before building. It should be available as `creditcoin-js-vX.Y.Z.tgz`.
 
 Build using yarn.
 
