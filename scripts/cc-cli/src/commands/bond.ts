@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { getSeedFromOptions } from "../utils/account";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
 

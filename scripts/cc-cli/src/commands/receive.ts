@@ -1,5 +1,4 @@
 import { Command, OptionValues } from "commander";
-import { ApiPromise } from "creditcoin-js";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 
 export function makeReceiveCommand() {
@@ -13,7 +12,6 @@ export function makeReceiveCommand() {
 }
 
 async function receiveAction(options: OptionValues) {
-    const api = await ApiPromise.create();
 
     const seed = getSeedFromOptions(options);
     const pair = initKeyringPair(seed);
