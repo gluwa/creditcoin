@@ -21,11 +21,11 @@ function balanceFromData(data: any): Balance {
 }
 
 export function balanceIsZero(balance: Balance): boolean {
-    return balance.free == 0 && balance.reserved == 0 && balance.miscFrozen == 0 && balance.feeFrozen == 0;
+    return !(balance.free > 0) && !(balance.reserved > 0) && !(balance.miscFrozen > 0) && !(balance.feeFrozen > 0);
 }
 
 export function balanceFreeIsZero(balance: Balance): boolean {
-    return balance.free == 0;
+    return !(balance.free > 0);
 }
 
 export function printBalance(balance: Balance) {
