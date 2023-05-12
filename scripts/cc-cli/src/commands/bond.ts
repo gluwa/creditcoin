@@ -18,7 +18,7 @@ export function makeBondCommand() {
 }
 
 async function bondAction(options: OptionValues) {
-    
+
     // If no controller error and exit
     if (!options.controller) {
         console.log("Must specify controller address");
@@ -34,10 +34,10 @@ async function bondAction(options: OptionValues) {
     const api = await newApi(options.url);
 
     const stashSeed = getSeedFromOptions(options);
-    
+
     const rewardDestination = options.rewardDestination ? parseRewardDestination(options.rewardDestination) : 'Staked';
 
-    
+
     console.log("Creating bond transaction...");
     console.log("Controller address:", options.controller);
     console.log("Reward destination:", rewardDestination);
@@ -56,4 +56,3 @@ async function bondAction(options: OptionValues) {
     console.log("Bond transaction sent with hash:", bondTxHash);
     process.exit(0);
 }
-

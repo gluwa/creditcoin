@@ -18,4 +18,3 @@ export function getSeedFromOptions(options: OptionValues) {
         process.exit(1);
     }
 }
-

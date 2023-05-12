@@ -20,5 +20,3 @@ export async function promptContinue() {
         process.exit(0);
     }
 }
-
-

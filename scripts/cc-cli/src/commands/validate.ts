@@ -31,4 +31,3 @@ async function validateAction(options: OptionValues) {
     console.log("Validate transaction sent with hash:", validateTxHash.toHex());
     process.exit(0);
 }
-

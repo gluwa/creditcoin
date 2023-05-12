@@ -34,8 +34,8 @@ export function printBalance(balance: Balance) {
 }
 
 
-   
-   
+
+
 //    // @ts-ignore TODO fix errror related to augmented-apis
 //     const {nonce, data: balance} = await api.query.system.account(address);
 

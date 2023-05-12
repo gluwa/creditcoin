@@ -82,4 +82,3 @@ This example asumes seeds are saved in `stashseed` and `controllerseed` files an
 ```
 creditcoin-cli wizard -sf stashseed -cf controllerseed -a 1000 -u ws://localhost:9944
 ```
-
