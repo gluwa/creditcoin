@@ -26,7 +26,7 @@ async function bondAction(options: OptionValues) {
     }
 
     // If no amount error and exit
-    if (!options.amount || parseInt(options.amount) < 1) {
+    if (!options.amount || parseInt(options.amount,10) < 1) {
         console.log("Must specify amount to bond");
         process.exit(1);
     }
@@ -41,14 +41,14 @@ async function bondAction(options: OptionValues) {
     console.log("Creating bond transaction...");
     console.log("Controller address:", options.controller);
     console.log("Reward destination:", rewardDestination);
-    console.log("Amount:", parseInt(options.amount));
+    console.log("Amount:", parseInt(options.amount,10));
 
     await promptContinue();
 
     const bondTxHash = await bond(
         stashSeed,
         options.controller,
-        parseInt(options.amount),
+        parseInt(options.amount,10),
         rewardDestination,
         api
     )

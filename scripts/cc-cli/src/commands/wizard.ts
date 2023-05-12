@@ -37,7 +37,7 @@ export function makeWizardCommand() {
         const controllerAddress = controllerKeyring.address;
 
         // Bond prefs
-        const amount: string = options.amount ? parseInt(options.amount).toString() : "0";
+        const amount: string = options.amount ? parseInt(options.amount,10).toString() : "0";
         const rewardDestination = options.rewardDestination ? parseRewardDestination(options.rewardDestination) : 'Staked';
 
         // Validate prefs
@@ -83,7 +83,7 @@ export function makeWizardCommand() {
 
         // Bond
         console.log("Sending bond transaction...");
-        const bondTxHash = await bond(stashSeed, controllerAddress, parseInt(options.amount), rewardDestination, api);
+        const bondTxHash = await bond(stashSeed, controllerAddress, parseInt(options.amount,10), rewardDestination, api);
         console.log("Bond transaction sent with hash:", bondTxHash);
 
         // Rotate keys
