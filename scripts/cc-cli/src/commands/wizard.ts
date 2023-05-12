@@ -36,23 +36,39 @@ export function makeWizardCommand() {
         const controllerKeyring = initKeyringPair(controllerSeed);
         const controllerAddress = controllerKeyring.address;
 
-        // Reward destination
+        // Bond prefs
+        const amount: string = options.amount ? parseInt(options.amount).toString() : "0";
         const rewardDestination = options.rewardDestination ? parseRewardDestination(options.rewardDestination) : 'Staked';
 
         // Validate prefs
         const commission = options.commission ? perbillFromPercent(options.commission) : 0;
-        const blocked = options.blocked ? options.blocked : false;
+        const blocked:  boolean = options.blocked ? options.blocked : false;
         const preferences: StakingPalletValidatorPrefs = { commission: commission, blocked: blocked };
+
+        // Node settings
+        const nodeUrl: string = options.url ? options.url : "ws://localhost:9944";
 
         // State parameters being used
         console.log("Using the following parameters:")
-        console.log("💰 Stash account: " + stashAddress);
-        console.log("🕹️  Controller account: " + controllerAddress);
-        console.log("🪙  Amount to bond: " + options.amount + " CTC");
-        console.log("🎁 Reward destination: " + rewardDestination);
-        console.log("📡 Node URL: " + (options.url ? options.url : "ws://localhost:9944"));
-        console.log("💸 Commission: " + percentFromPerbill(commission));
-        console.log("🔐 Blocked: " + (blocked ? "Yes" : "No"));
+        console.log(`💰 Stash account: ${stashAddress}`);
+        console.log(`🕹️  Controller account: ${controllerAddress}`);
+        console.log(`🪙  Amount to bond: ${amount} CTC`);
+        console.log(`🎁 Reward destination: ${rewardDestination}`);
+        console.log(`📡 Node URL: ${nodeUrl}`);
+        console.log(`💸 Commission: ${percentFromPerbill(commission).toString()}`);
+        console.log(`🔐 Blocked: ${(blocked ? "Yes" : "No")}`);
+
+        // The same as above but using template literals
+        // console.log(`Using the following parameters:
+        //     Stash account: ${stashAddress}
+        //     Controller account: ${controllerAddress}
+        //     Amount to bond: ${options.amount} CTC
+
+        //     Reward destination: ${rewardDestination}
+        //     Node URL: ${options.url ? options.url : "ws://localhost:9944"}
+        //     Commission: ${percentFromPerbill(commission)}
+        //     Blocked: ${blocked ? "Yes" : "No"}
+        // `);
 
         // Prompt continue
         await promptContinue();
@@ -93,7 +109,7 @@ export function makeWizardCommand() {
 
         await api.tx.utility.batchAll(txs).signAndSend(controllerKeyring, ({status}) => {
             if (status.isInBlock) {
-                console.log(`included in ${status.asInBlock}`);
+                console.log(`included in ${status.asInBlock.toString()}`);
               }
         });
 
@@ -135,16 +151,16 @@ function checkControllerBalance(address: string, balance: Balance, amount: numbe
     if (balance.free < amount) {
         console.log("Controller account does not have enough funds to pay transaction fees");
         printBalance(balance);
-        console.log("Please send at least " + amount + " CTC to controller address " + address + " and try again.")
+        console.log(`Please send at least ${amount.toString()} CTC to controller address ${address} and try again.`)
         process.exit(1);
     }
 }
 
 function checkStashBalance(address: string, balance: Balance, amount: number) {
     if (balance.free < amount) {
-        console.log("Stash account does not have enough funds to bond " + amount + " CTC");
+        console.log(`Stash account does not have enough funds to bond ${amount.toString()} CTC`);
         printBalance(balance);
-        console.log("Please send funds to stash address " + address + " and try again.")
+        console.log(`Please send funds to stash address ${address} and try again.`)
         process.exit(1);
     }
 }

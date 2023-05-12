@@ -15,13 +15,13 @@ export async function validate(seed: string, prefs: StakingPalletValidatorPrefs,
 
     const preferences: StakingPalletValidatorPrefs = prefs ? prefs : { commission: 0, blocked: false };
 
-    console.log("Comission: " + preferences.commission);
-    console.log("Blocked for new nominators: " + preferences.blocked);
+    console.log(`Comission: ${preferences.commission}`);
+    console.log(`Blocked for new nominators: ${preferences.blocked}`);
 
     const validate = api.tx.staking.validate(preferences);
 
     const hash = await validate.signAndSend(stash);
 
-    console.log("Validate transaction sent with hash:", hash.toHex());
+    console.log(`Validate transaction sent with hash: ${hash.toHex()}`);
     return hash;
 }

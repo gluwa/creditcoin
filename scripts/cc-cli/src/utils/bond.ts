@@ -10,7 +10,7 @@ export async function bond(
 
         const bond = api.tx.staking.bond(
             controllerAddress,
-            amount + "000000000000000000", // Add 18 zeros to convert to micro units TODO: Improve amount handling
+            `${amount}000000000000000000`, // Add 18 zeros to convert to micro units TODO: Improve amount handling
             rewardDestination);
 
         const stashKeyring = initKeyringPair(stashSeed);
