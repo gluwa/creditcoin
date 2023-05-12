@@ -21,7 +21,7 @@ async function validateAction(options: OptionValues) {
 
     const commission = options.commission ? options.commission : 0;
     const blocked = options.blocked ? options.blocked : false;
-    const preferences: StakingPalletValidatorPrefs = { commission: commission, blocked: blocked };
+    const preferences: StakingPalletValidatorPrefs = { commission, blocked };
 
     console.log("Creating validate transaction...");
 
