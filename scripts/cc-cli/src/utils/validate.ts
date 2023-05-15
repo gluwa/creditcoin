@@ -31,3 +31,14 @@ export async function validate(
   console.log(`Validate transaction sent with hash: ${hash.toHex()}`);
   return hash;
 }
+
+export async function chill(seed: string, api: ApiPromise) {
+  const account = initKeyringPair(seed);
+
+  const chillTx = api.tx.staking.chill();
+
+  const hash = await chillTx.signAndSend(account);
+
+  console.log(`Chill transaction sent with hash: ${hash.toHex()}`);
+  return hash;
+}
