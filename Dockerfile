@@ -58,13 +58,16 @@ RUN apt-get update && \
 
 COPY --from=cli-builder /creditcoin-cli/creditcoin-js/creditcoin-js-v${creditcoin_js_version}.tgz /creditcoin-cli/creditcoin-js/creditcoin-js-v${creditcoin_js_version}.tgz
 COPY --from=cli-builder /creditcoin-cli/scripts/cc-cli/creditcoin-cli-v${cli_version}.tgz /creditcoin-cli/scripts/cli/creditcoin-cli-v${cli_version}.tgz
-RUN apt-get update && apt-get install curl -y && \
+RUN apt-get update && apt-get install curl -y --no-install-recommends && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+    
 WORKDIR /creditcoin-cli/scripts/cli
-RUN npm install -g creditcoin-cli-v${cli_version}.tgz
-
-RUN useradd --home-dir /creditcoin-node --create-home creditcoin
+RUN npm install -g creditcoin-cli-v${cli_version}.tgz && \
+    useradd --home-dir /creditcoin-node --create-home creditcoin
+    
 USER creditcoin
 
 EXPOSE 30333/tcp
