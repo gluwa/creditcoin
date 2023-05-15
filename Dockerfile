@@ -33,13 +33,37 @@ COPY chainspecs /creditcoin-node/chainspecs
 COPY test /creditcoin-node/test
 RUN source ~/.cargo/env && cargo build --release
 
+
+FROM node:16.13.0-bullseye-slim AS cli-builder
+WORKDIR /creditcoin-cli
+COPY creditcoin-js /creditcoin-cli/creditcoin-js
+COPY scripts/cc-cli /creditcoin-cli/scripts/cc-cli
+# RUN apt-get update && apt-get install curl -y && \
+#     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+#     apt-get install -y nodejs
+WORKDIR /creditcoin-cli/creditcoin-js
+RUN yarn install && yarn build && yarn pack
+WORKDIR /creditcoin-cli/scripts/cc-cli
+RUN yarn install && yarn build && yarn pack
+
 FROM ubuntu:22.04
+ARG cli_version=1.0.0
+ARG creditcoin_js_version=0.9.5
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends ca-certificates && \
     update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
+
+COPY --from=cli-builder /creditcoin-cli/creditcoin-js/creditcoin-js-v${creditcoin_js_version}.tgz /creditcoin-cli/creditcoin-js/creditcoin-js-v${creditcoin_js_version}.tgz
+COPY --from=cli-builder /creditcoin-cli/scripts/cc-cli/creditcoin-cli-v${cli_version}.tgz /creditcoin-cli/scripts/cli/creditcoin-cli-v${cli_version}.tgz
+RUN apt-get update && apt-get install curl -y && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+WORKDIR /creditcoin-cli/scripts/cli
+RUN npm install -g creditcoin-cli-v${cli_version}.tgz
+
 RUN useradd --home-dir /creditcoin-node --create-home creditcoin
 USER creditcoin
 
