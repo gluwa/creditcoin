@@ -44,7 +44,7 @@ COPY scripts/cc-cli /creditcoin-cli/scripts/cc-cli
 WORKDIR /creditcoin-cli/creditcoin-js
 RUN yarn install && yarn build && yarn pack
 WORKDIR /creditcoin-cli/scripts/cc-cli
-RUN yarn install && yarn build && yarn pack
+RUN yarn --update-checksums && yarn install && yarn build && yarn pack
 
 FROM ubuntu:22.04
 ARG cli_version=1.0.0
