@@ -12,6 +12,7 @@ import { makeRotateKeysCommand } from "./commands/rotateKeys";
 import { makeSetKeysCommand } from "./commands/setKeys";
 import { makeReceiveCommand } from "./commands/receive";
 import { makeSendCommand } from "./commands/send";
+import { makeChillCommand } from "./commands/chill";
 
 const program = new Command();
 
@@ -28,6 +29,7 @@ program
   .addCommand(makeRotateKeysCommand())
   .addCommand(makeSetKeysCommand())
   .addCommand(makeValidateCommand())
+  .addCommand(makeChillCommand())
   .addCommand(makeWizardCommand());
 
 program.parse(process.argv);
