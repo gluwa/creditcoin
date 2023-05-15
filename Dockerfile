@@ -63,11 +63,11 @@ RUN apt-get update && apt-get install curl -y --no-install-recommends && \
     apt-get install -y nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-    
+
 WORKDIR /creditcoin-cli/scripts/cli
 RUN npm install -g creditcoin-cli-v${cli_version}.tgz && \
     useradd --home-dir /creditcoin-node --create-home creditcoin
-    
+
 USER creditcoin
 
 EXPOSE 30333/tcp
