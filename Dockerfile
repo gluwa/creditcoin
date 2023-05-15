@@ -60,7 +60,7 @@ COPY --from=cli-builder /creditcoin-cli/creditcoin-js/creditcoin-js-v${creditcoi
 COPY --from=cli-builder /creditcoin-cli/scripts/cc-cli/creditcoin-cli-v${cli_version}.tgz /creditcoin-cli/scripts/cli/creditcoin-cli-v${cli_version}.tgz
 RUN apt-get update && apt-get install curl -y --no-install-recommends && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
+    apt-get install -y nodejs --no-install-recommends&& \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
