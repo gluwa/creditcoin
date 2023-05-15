@@ -10,6 +10,7 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint": "eslint -c .eslintrc.js --ext .ts ./src",
         "format": "prettier --write \"src/**/*.ts\"",
+        "check-format": "prettier --check \"src/**/*.ts\"",
         "typecheck": "tsc --noEmit",
         "build": "npx tsc"
     },
