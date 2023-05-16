@@ -8,7 +8,7 @@ export function makeBondCommand() {
   const cmd = new Command("bond");
   cmd.description("Bond CTC from a Stash account");
   cmd.option("-a, --amount [amount]", "Amount to bond");
-  cmd.option("-s, --seed [seed]", "Specify mnemonic phrase to bond from");
+  cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to bond from");
   cmd.option(
     "-f, --file [file]",
     "Specify file with mnemonic phrase to bond from"
