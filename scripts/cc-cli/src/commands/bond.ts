@@ -13,7 +13,6 @@ export function makeBondCommand() {
     "-f, --file [file-name]",
     "Specify file with mnemonic phrase to bond from"
   );
-  // cmd.option('-p, --password [password]', 'Specify password to use for new account')
   cmd.option("-c, --controller [controller]", "Specify controller address");
   cmd.option(
     "-r, --reward-destination [reward-destination]",
