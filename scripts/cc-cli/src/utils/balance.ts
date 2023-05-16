@@ -20,19 +20,6 @@ function balanceFromData(data: any): Balance {
   };
 }
 
-export function balanceIsZero(balance: Balance): boolean {
-  return (
-    !(balance.free > 0) &&
-    !(balance.reserved > 0) &&
-    !(balance.miscFrozen > 0) &&
-    !(balance.feeFrozen > 0)
-  );
-}
-
-export function balanceFreeIsZero(balance: Balance): boolean {
-  return !(balance.free > 0);
-}
-
 export function printBalance(balance: Balance) {
   console.log(
     `Available: ${(balance.free / 1000000000000000000).toString()} CTC`
@@ -41,11 +28,3 @@ export function printBalance(balance: Balance) {
     `Bonded: ${(balance.miscFrozen / 1000000000000000000).toString()} CTC`
   );
 }
-
-//    // @ts-ignore TODO fix errror related to augmented-apis
-//     const {nonce, data: balance} = await api.query.system.account(address);
-
-//     console.log("Account address:", address);
-//     console.log(balance.toHuman());
-//     console.log("Available: " + balance.free / 1000000000000000000, "CTC");
-//     console.log("Bonded: " + balance.miscFrozen / 1000000000000000000, "CTC");
