@@ -7,7 +7,7 @@ export function makeValidateCommand() {
   const cmd = new Command("validate");
   cmd.description("Signal intention to validate from a Controller account");
   cmd.option(
-    "-s, --seed [mneomonic]",
+    "-s, --seed [mnemonic]",
     "Specify mnemonic phrase to use for new account"
   );
   cmd.option(
