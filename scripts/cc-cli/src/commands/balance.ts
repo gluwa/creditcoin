@@ -7,7 +7,7 @@ export function makeBalanceCommand() {
   const cmd = new Command("balance");
   cmd.description("Get balance of an account");
   cmd.option(
-    "-s, --seed [mneomonic]",
+    "-s, --seed [mnemonic]",
     "Specify mnemonic phrase to use for new account"
   );
   cmd.option(
