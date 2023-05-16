@@ -6,7 +6,7 @@ export function makeSendCommand() {
   const cmd = new Command("send");
   cmd.description("Send CTC from an account");
   cmd.option(
-    "-s, --seed [mneomonic]",
+    "-s, --seed [mnemonic]",
     "Specify mnemonic phrase to use for new account"
   );
   cmd.option(

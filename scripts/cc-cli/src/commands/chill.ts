@@ -9,7 +9,7 @@ export function makeChillCommand() {
     "Signal intention to stop validating from a Controller account"
   );
   cmd.option(
-    "-s, --seed [mneomonic]",
+    "-s, --seed [mnemonic]",
     "Specify mnemonic phrase to use for new account"
   );
   cmd.option(
