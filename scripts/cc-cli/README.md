@@ -1,9 +1,5 @@
 # Creditcoin CLI Tool
 
-⚠️🔧 Warning: This tool is currently under development! 🔧⚠️
-
-Please be aware that the command line tool you are using is still in active development. It may contain bugs, incomplete features, or unexpected behavior. Exercise caution and use it at your own risk. Feedback and bug reports are greatly appreciated to help improve the tool and ensure its stability.
-
 ## Building
 
 This tool depends on `creditcoin-js`. Make sure to pack the library using `yarn pack` in the `creditcoin-js` folder before building. It should be available as `creditcoin-js-vX.Y.Z.tgz`.
@@ -82,3 +78,7 @@ This example asumes seeds are saved in `stashseed` and `controllerseed` files an
 ```
 creditcoin-cli wizard -sf stashseed -cf controllerseed -a 1000 -u ws://localhost:9944
 ```
+
+⚠️🔧 Warning: This tool is currently under development! 🔧⚠️
+
+Please be aware that the command line tool you are using is still in active development. It may contain bugs, incomplete features, or unexpected behavior. Exercise caution and use it at your own risk. Feedback and bug reports are greatly appreciated to help improve the tool and ensure its stability.
