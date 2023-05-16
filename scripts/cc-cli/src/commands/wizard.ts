@@ -84,18 +84,6 @@ export function makeWizardCommand() {
     console.log(`💸 Commission: ${percentFromPerbill(commission).toString()}`);
     console.log(`🔐 Blocked: ${blocked ? "Yes" : "No"}`);
 
-    // The same as above but using template literals
-    // console.log(`Using the following parameters:
-    //     Stash account: ${stashAddress}
-    //     Controller account: ${controllerAddress}
-    //     Amount to bond: ${options.amount} CTC
-
-    //     Reward destination: ${rewardDestination}
-    //     Node URL: ${options.url ? options.url : "ws://localhost:9944"}
-    //     Commission: ${percentFromPerbill(commission)}
-    //     Blocked: ${blocked ? "Yes" : "No"}
-    // `);
-
     // Prompt continue
     await promptContinue();
 
@@ -104,8 +92,6 @@ export function makeWizardCommand() {
     const controllerBalance = await getBalance(controllerAddress, api);
     checkStashBalance(stashAddress, stashBalance, options.amount);
     checkControllerBalance(controllerAddress, controllerBalance, 1);
-
-    // Set up stash account
 
     // Bond
     console.log("Sending bond transaction...");
@@ -147,7 +133,6 @@ export function makeWizardCommand() {
     console.log("🧙 Validator wizard completed successfully!");
     console.log("Your validator should appear on the waiting queue.");
 
-    // console.log(controllerKeys.isEmpty);
     process.exit(0);
   });
   return cmd;
