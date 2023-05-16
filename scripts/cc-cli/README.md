@@ -32,7 +32,10 @@ node dist/index.js
 - **rotate-keys**: Rotates the node keys used for validating.
 - **set-keys**: Set new keys for the controller account.
 - **validate**: Signal intention to start validating.
+- **chill**: Signal validator to *chill* and stop producing blocks.
 - **wizard**: Run the validator setup wizard.
+
+To view all commands run the tool with the `--help` flag.
 
 ## Examples
 
