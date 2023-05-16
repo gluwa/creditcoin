@@ -7,7 +7,7 @@ export function makeSetKeysCommand() {
   cmd.description("Set session keys for a Controller account");
   cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to set keys from");
   cmd.option(
-    "-f, --file [file]",
+    "-f, --file [file-name]",
     "Specify file with mnemonic phrase to set keys from"
   );
   cmd.option("-k, --keys [keys]", "Specify keys to set");

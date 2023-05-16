@@ -5,7 +5,7 @@ export function makeReceiveCommand() {
   const cmd = new Command("receive");
   cmd.description("Show account address");
   cmd.option(
-    "-s, --seed [mneomonic]",
+    "-s, --seed [mnemonic]",
     "Specify mnemonic phrase to use for new account"
   );
   cmd.option(
