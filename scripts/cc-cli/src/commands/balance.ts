@@ -1,7 +1,7 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
-import { balanceIsZero, getBalance, printBalance } from "../utils/balance";
+import { getBalance, printBalance } from "../utils/balance";
 
 export function makeBalanceCommand() {
   const cmd = new Command("balance");
@@ -27,11 +27,9 @@ async function balanceAction(options: OptionValues) {
 
   const balance = await getBalance(address, api);
 
-  if (balanceIsZero(balance)) {
-    console.log("Account address " + address + " has no funds");
-  } else {
-    printBalance(balance);
-  }
+  
+  printBalance(balance);
+  
 
   process.exit(0);
 }
