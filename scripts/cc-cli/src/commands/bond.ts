@@ -10,7 +10,7 @@ export function makeBondCommand() {
   cmd.option("-a, --amount [amount]", "Amount to bond");
   cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to bond from");
   cmd.option(
-    "-f, --file [file]",
+    "-f, --file [file-name]",
     "Specify file with mnemonic phrase to bond from"
   );
   // cmd.option('-p, --password [password]', 'Specify password to use for new account')
