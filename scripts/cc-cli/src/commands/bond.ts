@@ -30,7 +30,7 @@ async function bondAction(options: OptionValues) {
   }
 
   // If no amount error and exit
-  if (!options.amount || parseInt(options.amount, 10) < 1) {
+  if (!options.amount || !parseInt(options.amount, 10)) {
     console.log("Must specify amount to bond");
     process.exit(1);
   }
