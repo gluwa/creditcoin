@@ -5,7 +5,7 @@ import { writeFileSync } from "fs";
 export function makeNewSeedCommand() {
   const cmd = new Command("new");
   cmd.description("Create new mnemonic seed");
-  cmd.option("-l, --lenght [word-lenght]", "Specify the amount of words");
+  cmd.option("-l, --length [word-length]", "Specify the amount of words");
   cmd.option("-s, --save [file-name]", "Save the new stash seed to a file");
   cmd.action(newSeedAction);
   return cmd;
