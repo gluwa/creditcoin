@@ -16,7 +16,7 @@ import { makeChillCommand } from "./commands/chill";
 
 const program = new Command();
 
-program.version("0.0.1").description("Creditcoin Staking Tool");
+program.description("Creditcoin Staking Tool");
 
 // Option to set custom URL for Substrate node
 
