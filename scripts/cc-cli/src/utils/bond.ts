@@ -8,9 +8,12 @@ export async function bond(
   rewardDestination: "Staked" | "Stash" | "Controller",
   api: ApiPromise
 ) {
+
+  const amountInMicroUnits = BigInt(amount) * BigInt(1000000000000000000); // Multiply by to convert to micro units
+
   const bondTx = api.tx.staking.bond(
     controllerAddress,
-    `${amount}000000000000000000`, // Add 18 zeros to convert to micro units TODO: Improve amount handling
+    amountInMicroUnits.toString(),
     rewardDestination
   );
 
@@ -20,6 +23,8 @@ export async function bond(
 
   return hash.toHex();
 }
+
+
 
 export function parseRewardDestination(rewardDestination: string) {
   if (rewardDestination === "staked") {
