@@ -27,9 +27,6 @@ module.exports = {
     sourceType: "module",
   },
   plugins: [
-    // "eslint-plugin-jsdoc",
-    // "eslint-plugin-prefer-arrow",
-    // "eslint-plugin-react",
     "@typescript-eslint",
   ],
   rules: {
