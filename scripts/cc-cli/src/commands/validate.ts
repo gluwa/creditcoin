@@ -2,6 +2,7 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getSeedFromOptions } from "../utils/account";
 import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
+import { perbillFromPercent } from "../utils/perbill";
 
 export function makeValidateCommand() {
   const cmd = new Command("validate");
@@ -14,7 +15,7 @@ export function makeValidateCommand() {
     "-f, --file [file-name]",
     "Specify file with mnemonic phrase to use for new account"
   );
-  cmd.option("--commission [commission]", "Specify commission for validator");
+  cmd.option("--commission [commission]", "Specify commission for validator in percent");
   cmd.option(
     "--blocked",
     "Specify if validator is blocked for new nominations"
@@ -23,12 +24,14 @@ export function makeValidateCommand() {
   return cmd;
 }
 
+
+
 async function validateAction(options: OptionValues) {
   const api = await newApi(options.url);
 
   const stashSeed = getSeedFromOptions(options);
 
-  const commission = options.commission ? options.commission : 0;
+  const commission = options.commission ? perbillFromPercent(options.commission) : perbillFromPercent(0);
   const blocked = options.blocked ? options.blocked : false;
   const preferences: StakingPalletValidatorPrefs = { commission, blocked };
 
