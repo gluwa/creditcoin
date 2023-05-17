@@ -5,7 +5,10 @@ import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
   cmd.description("Set session keys for a Controller account");
-  cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to set keys from");
+  cmd.option(
+    "-s, --seed [mnemonic]",
+    "Specify mnemonic phrase to set keys from"
+  );
   cmd.option(
     "-f, --file [file-name]",
     "Specify file with mnemonic phrase to set keys from"

@@ -27,9 +27,7 @@ async function balanceAction(options: OptionValues) {
 
   const balance = await getBalance(address, api);
 
-
   printBalance(balance);
-
 
   process.exit(0);
 }
