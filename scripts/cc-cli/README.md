@@ -39,6 +39,22 @@ To view all commands run the tool with the `--help` flag.
 
 ## Examples
 
+### Running from the Creditcoin Docker container
+
+From the root of the Creditcoin repository, build and run the image.
+
+```
+docker build -t creditcoin-node .
+docker run --name creditcoin creditcoin-node
+```
+
+Execute the CLI tool with the `exec` Docker command like so:
+
+```
+docker exec creditcoin creditcoin-cli --help
+docker exec creditcoin creditcoin-cli new-seed
+```
+
 ### Create a new seed
 
 ```
