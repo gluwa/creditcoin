@@ -12,7 +12,6 @@ export function makeReceiveCommand() {
     "-f, --file [file-name]",
     "Specify file with mnemonic phrase to use for new account"
   );
-  // cmd.option('-p, --password [password]', 'Specify password to use for new account')
   cmd.action(receiveAction);
   return cmd;
 }
