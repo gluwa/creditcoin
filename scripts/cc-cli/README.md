@@ -2,7 +2,9 @@
 
 ## Building
 
-This tool depends on `creditcoin-js`. Make sure to pack the library using `yarn pack` in the `creditcoin-js` folder before building. It should be available as `creditcoin-js-vX.Y.Z.tgz`.
+This tool depends on `creditcoin-js`.
+Make sure to pack the library using `yarn pack` in the `creditcoin-js` folder before building.
+It should be available as `creditcoin-js-vX.Y.Z.tgz`.
 
 Build using yarn.
 
@@ -25,15 +27,22 @@ node dist/index.js
 
 ## Commands
 
-- **new-seed**: Create a new seed and print it or save it to a file.
-- **receive**: Show address for a particular account.
-- **balance**: Check the balance of an account.
-- **bond**: Bond CTC tokens using a stash account.
-- **rotate-keys**: Rotates the node keys used for validating.
-- **set-keys**: Set new keys for the controller account.
-- **validate**: Signal intention to start validating.
-- **chill**: Signal validator to *chill* and stop producing blocks.
-- **wizard**: Run the validator setup wizard.
+- **balance**:            Get balance of an account
+- **bond**:               Bond CTC from a Stash account
+- **chill**:              Signal intention to stop validating from a Controller account
+- **collect-coins**:      Swap GCRE for CTC
+- **distribute-rewards**: Distribute all pending rewards for all validators
+- **new**:                Create new seed phrase
+- **register-address**:   Link a CreditCoin address to an address from another blockchain
+- **rotate-keys**:        Rotate session keys for a specified node
+- **send**:               Send CTC from an account
+- **set-keys**:           Set session keys for a Controller account
+- **show-address**:       Show account address
+- **status**:             Get staking status for an address
+- **unbond**:             Schedule a portion of the stash to be unlocked
+- **validate**:           Signal intention to validate from a Controller account
+- **withdraw-unbonded**:  Withdraw unbonded funds from a stash account
+- **wizard**:             Run the validator setup wizard. Only requires funded stash and controller accounts.
 
 To view all commands run the tool with the `--help` flag.
 
@@ -52,7 +61,7 @@ Execute the CLI tool with the `exec` Docker command like so:
 
 ```bash
 docker exec creditcoin creditcoin-cli --help
-docker exec creditcoin creditcoin-cli new-seed
+docker exec creditcoin creditcoin-cli new
 ```
 
 ### Create a new seed
@@ -100,4 +109,24 @@ creditcoin-cli wizard -sf stashseed -cf controllerseed -a 1000 -u ws://localhost
 
 ⚠️🔧 Warning: This tool is currently under development! 🔧⚠️
 
-Please be aware that the command line tool you are using is still in active development. It may contain bugs, incomplete features, or unexpected behavior. Exercise caution and use it at your own risk. Feedback and bug reports are greatly appreciated to help improve the tool and ensure its stability.
+Please be aware that the command line tool you are using is still in active development.
+It may contain bugs, incomplete features, or unexpected behavior.
+Exercise caution and use it at your own risk.
+Feedback and bug reports are greatly appreciated to help improve the tool and ensure its stability.
+
+## Local testing for NPoS
+
+You need to have the following:
+- `gluwa/hardhat-dev` container to simulate Ethereum
+- `creditcoin-node`
+
+    cargo build --release --features fast-runtime
+    ./target/release/creditcoin-node --chain local --validator --alice --node-key d182d503b7dd97e7c055f33438c7717145840fd66b2a055284ee8d768241a463 -lrpc=info --enable-log-reloading --pruning archive --base-path ./demo --unsafe-ws-external --unsafe-rpc-external --rpc-cors=all
+
+- Subscan database & Subscan API containers running
+- Creditcoin Staking Dashboard running
+- Account 0: Private Key from hardhat
+
+Execute like so:
+
+    $ node dist/index.js collect-coins -k 0xAccount0privateKey --seed //Alice --debug
