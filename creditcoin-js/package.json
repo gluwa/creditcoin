@@ -1,6 +1,6 @@
 {
     "name": "creditcoin-js",
-    "version": "0.9.5",
+    "version": "0.10.0",
     "author": "Jeremy Frank <support@gluwa.com>",
     "license": "MIT",
     "main": "lib/index.js",
