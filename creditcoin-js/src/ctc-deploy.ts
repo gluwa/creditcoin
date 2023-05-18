@@ -1,6 +1,6 @@
 import { ContractFactory, Signer, Wallet } from 'ethers';
-import { GluwaCreditVestingToken } from './ethereum/ctc/typechain';
-import CtcArtifact from './ethereum/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
+import { GluwaCreditVestingToken } from './examples/ctc/typechain';
+import CtcArtifact from './examples/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
 const deployCtcToken = async (deployer: Signer, existingAddress: string | undefined) => {
@@ -33,14 +33,14 @@ const burnCtc = async (ctcToken: GluwaCreditVestingToken) => {
     process.env.CREDITCOIN_CTC_BURN_TX_HASH = txHash;
 };
 
-export const main = async (existingAddress: string | undefined) => {
-    const provider = new JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
-    const deployer = new Wallet((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY, provider);
+export const main = async (
+    existingAddress: string | undefined,
+    ethereumUrl: string | undefined,
+    deployerPrivateKey: string,
+) => {
+    const provider = new JsonRpcProvider(ethereumUrl);
+    const deployer = new Wallet(deployerPrivateKey, provider);
     const ctcToken = await deployCtcToken(deployer, existingAddress);
 
     await burnCtc(ctcToken);
 };
-
-if (require.main === module) {
-    main(undefined).catch(console.error);
-}
