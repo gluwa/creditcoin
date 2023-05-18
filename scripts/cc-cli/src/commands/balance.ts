@@ -11,7 +11,7 @@ export function makeBalanceCommand() {
 }
 
 async function balanceAction(options: OptionValues) {
-  const api = await newApi(options.url);
+  const { api } = await newApi(options.url);
 
   // Check options
   checkAddress(options);
