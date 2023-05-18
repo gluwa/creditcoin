@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider, Keyring, KeyringPair, Wallet, POINT_01_CTC } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
-import { main as deployCtcContract } from './ctc-deploy';
+import { main as deployCtcContract } from 'creditcoin-js/lib/ctc-deploy';
 
 const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
     switch (who) {
@@ -87,7 +87,11 @@ const setup = async () => {
     }
 
     // Note: in case address is defined will attach to already deployed contract
-    await deployCtcContract((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS);
+    await deployCtcContract(
+        (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
+        (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+        (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
+    );
     (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS;
 
     if ((global as any).CREDITCOIN_CTC_BURN_TX_HASH === undefined) {
