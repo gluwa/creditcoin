@@ -36,7 +36,7 @@ async function bondAction(options: OptionValues) {
     process.exit(1);
   }
 
-  const api = await newApi(options.url);
+  const { api } = await newApi(options.url);
 
   const stashSeed = getSeedFromOptions(options);
 

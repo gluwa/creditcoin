@@ -9,7 +9,7 @@ export function makeRotateKeysCommand() {
 }
 
 async function rotateKeysAction(options: OptionValues) {
-  const api = await newApi(options.url);
+  const { api } = await newApi(options.url);
   const newKeys = await api.rpc.author.rotateKeys();
   console.log("New keys: " + newKeys.toString());
   process.exit(0);

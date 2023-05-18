@@ -21,7 +21,7 @@ export function makeChillCommand() {
 }
 
 async function chillAction(options: OptionValues) {
-  const api = await newApi(options.url);
+  const { api } = await newApi(options.url);
 
   const controllerSeed = getSeedFromOptions(options);
 

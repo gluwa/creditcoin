@@ -43,7 +43,7 @@ export function makeWizardCommand() {
     console.log("🧙 Running staking wizard...");
 
     // Create new API instance
-    const api = await newApi(options.url);
+    const { api } = await newApi(options.url);
 
     // Generate stash keyring
     const stashSeed = getStashSeedFromOptions(options);

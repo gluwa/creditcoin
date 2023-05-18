@@ -28,7 +28,7 @@ export function makeValidateCommand() {
 }
 
 async function validateAction(options: OptionValues) {
-  const api = await newApi(options.url);
+  const { api } = await newApi(options.url);
 
   const stashSeed = getSeedFromOptions(options);
 

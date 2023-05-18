@@ -21,7 +21,7 @@ export function makeSetKeysCommand() {
 }
 
 async function setKeysAction(options: OptionValues) {
-  const api = await newApi(options.url);
+  const { api } = await newApi(options.url);
 
   // Build account
   const seed = getSeedFromOptions(options);
