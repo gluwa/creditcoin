@@ -32,7 +32,7 @@ node dist/index.js
 - **rotate-keys**: Rotates the node keys used for validating.
 - **set-keys**: Set new keys for the controller account.
 - **validate**: Signal intention to start validating.
-- **chill**: Signal validator to *chill* and stop producing blocks.
+- **chill**: Signal validator to _chill_ and stop producing blocks.
 - **wizard**: Run the validator setup wizard.
 
 To view all commands run the tool with the `--help` flag.
@@ -45,26 +45,25 @@ From the root of the Creditcoin repository, build and run the image.
 
 ```
 docker build -t creditcoin-node .
-docker run --name creditcoin creditcoin-node
+docker run --rm --name creditcoin creditcoin-node --chain test
 ```
 
 Execute the CLI tool with the `exec` Docker command like so:
 
 ```
 docker exec creditcoin creditcoin-cli --help
-docker exec creditcoin creditcoin-cli new-seed
 ```
 
 ### Create a new seed
 
 ```
-creditcoin-cli new-seed
+creditcoin-cli new
 ```
 
 ### Create a new seed and save it to a file
 
 ```
-creditcoin-cli new-seed --file seed.txt
+creditcoin-cli new --save seed.txt
 ```
 
 ### Show address for a particular account
@@ -92,6 +91,7 @@ creditcoin-cli rotate-keys -u http://localhost:8000
 ```
 
 ### Run the validator setup wizard
+
 This example asumes seeds are saved in `stashseed` and `controllerseed` files and a node is running on `ws://localhost:9944`.
 
 ```
