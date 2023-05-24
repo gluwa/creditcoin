@@ -1,80 +1,91 @@
 package http
 
 import (
-	middlewares "subscan-end/internal/middleware"
-	"subscan-end/internal/server/websocket"
-	"subscan-end/internal/service"
+	"time"
 
-	"github.com/bilibili/kratos/pkg/conf/paladin"
-	bm "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	"github.com/gin-gonic/gin"
+	"github.com/go-kratos/kratos/v2/middleware/metrics"
+	"github.com/go-kratos/kratos/v2/middleware/tracing"
+	"github.com/go-kratos/kratos/v2/middleware/validate"
+	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/itering/subscan/configs"
+	"github.com/itering/subscan/internal/service"
+	"github.com/itering/subscan/plugins"
 )
 
 var (
-	svc   *service.Service
-	WsHub *websocket.Hub
+	svc *service.Service
 )
 
-func New(s *service.Service) (engine *bm.Engine) {
-	var (
-		hc struct {
-			Server *bm.ServerConfig
-		}
-	)
-	if err := paladin.Get("http.toml").UnmarshalTOML(&hc); err != nil {
-		if err != paladin.ErrNotExist {
-			panic(err)
-		}
+// NewHTTPServer new a HTTP server.
+func NewHTTPServer(c *configs.Server, s *service.Service) *http.Server {
+	var opts = []http.ServerOption{
+		http.Middleware(
+			tracing.Server(),
+			metrics.Server(),
+			validate.Validator(),
+		),
 	}
+
 	svc = s
-	engine = bm.DefaultServer(hc.Server)
-	initWs()
-	initRouter(engine)
-	if err := engine.Start(); err != nil {
-		panic(err)
+	if c.Http.Network != "" {
+		opts = append(opts, http.Network(c.Http.Network))
 	}
-	return
+	if c.Http.Addr != "" {
+		opts = append(opts, http.Address(c.Http.Addr))
+	}
+	if c.Http.Timeout != "" {
+		timeout, _ := time.ParseDuration(c.Http.Timeout)
+		opts = append(opts, http.Timeout(timeout))
+	}
+	engine := http.NewServer(opts...)
+	e := gin.New()
+	e.Use(gin.Recovery())
+	defer engine.HandlePrefix("/", e)
+	initRouter(e)
+	return engine
 }
 
-func initRouter(e *bm.Engine) {
-	limiter := bm.NewRateLimiter(nil)
-	e.Use(limiter.Limit())
-	e.GET("socket", wsPullHandle) //Websocket
+func initRouter(e *gin.Engine) {
+	e.GET("ping", ping)
+	// internal
 	g := e.Group("/api")
 	{
-		e.Ping(ping)
 		g.GET("system/status", systemStatus)
-		g.Use(middlewares.CORS())
+		g.POST("/now", now)
+		s := g.Group("/scan")
 		{
-			g.POST("/now", now)
-			s := g.Group("/scan")
-			{
-				s.POST("metadata", metadata)
-				// Block
-				s.POST("blocks", blocks)
-				s.POST("block", block)
-				// Extrinsics
-				s.POST("extrinsics", extrinsics)
-				s.POST("extrinsic", extrinsic)
-				// Event
-				s.POST("events", events)
-				s.POST("event", event)
-				//Search
-				s.POST("search", search)
-				s.POST("check_hash", checkSearchHash)
-				// Log
-				s.POST("logs", logs)
-				s.POST("log", logInfo)
-				// Transfer
-				s.POST("transfers", transfers)
-				// daily stat
-				s.POST("daily", dailyStat)
-			}
+			s.POST("metadata", metadata)
+			// Block
+			s.POST("blocks", blocks)
+			s.POST("block", block)
+
+			// Extrinsic
+			s.POST("extrinsics", extrinsics)
+			s.POST("extrinsic", extrinsic)
+			// Event
+			s.POST("events", events)
+
+			s.POST("check_hash", checkSearchHash)
+
+			// Runtime
+			s.POST("runtime/metadata", runtimeMetadata)
+			s.POST("runtime/list", runtimeList)
+
+			// Plugin
+			s.POST("plugins", pluginList)
+			s.POST("plugins/ui", pluginUIConfig)
 		}
+		pluginRouter(g)
 	}
 }
 
-func initWs() {
-	WsHub = websocket.NewHub()
-	go WsHub.Run()
-	websocket.NewMessageRouter(WsHub.Broadcast, svc)
+func pluginRouter(g *gin.RouterGroup) {
+	for name, plugin := range plugins.RegisteredPlugins {
+		for _, r := range plugin.InitHttp() {
+			g.Group("plugin").Group(name).POST(r.Router, func(context *gin.Context) {
+				_ = r.Handle(context.Writer, context.Request)
+			})
+		}
+	}
 }

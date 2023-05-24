@@ -1,24 +1,26 @@
 package http
 
 import (
-	"github.com/bilibili/kratos/pkg/log"
-	bm "github.com/bilibili/kratos/pkg/net/http/blademaster"
 	"net/http"
 	"time"
+
+	"log"
+
+	"github.com/gin-gonic/gin"
 )
 
-func ping(ctx *bm.Context) {
-	if err := svc.Ping(ctx); err != nil {
-		log.Error("ping error(%v)", err)
+func ping(ctx *gin.Context) {
+	if _, err := svc.Ping(ctx, nil); err != nil {
+		log.Printf("ping error(%v)", err)
 		ctx.AbortWithStatus(http.StatusServiceUnavailable)
 	}
 }
 
-func now(c *bm.Context) {
-	c.JSON(time.Now().Unix(), nil)
+func now(c *gin.Context) {
+	toJson(c, time.Now().Unix(), nil)
 }
 
-func systemStatus(c *bm.Context) {
-	status := svc.GetSystemHeartBeat(c)
-	c.JSON(status, nil)
+func systemStatus(c *gin.Context) {
+	status := svc.DaemonHealth(c)
+	toJson(c, status, nil)
 }

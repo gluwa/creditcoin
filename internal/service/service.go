@@ -1,45 +1,37 @@
 package service
 
 import (
-	"context"
-	"github.com/bilibili/kratos/pkg/conf/paladin"
-	"subscan-end/internal/dao"
-	"subscan-end/internal/model"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+
+	"log"
+
+	"github.com/itering/subscan/internal/dao"
+	"github.com/itering/subscan/util"
+	"github.com/itering/substrate-api-rpc"
+	"github.com/itering/substrate-api-rpc/metadata"
+	"github.com/itering/substrate-api-rpc/websocket"
 )
 
-// Service service.
+// Service
 type Service struct {
-	ac  *paladin.Map
-	dao *dao.Dao
+	dao dao.IDao
 }
 
-// New new a service and return.
+// New  a service and return.
 func New() (s *Service) {
-	var ac = new(paladin.TOML)
-	if err := paladin.Watch("application.toml", ac); err != nil {
-		panic(err)
-	}
-	s = &Service{
-		ac:  ac,
-		dao: dao.New(),
-	}
-	model.InitEsClient()
-	s.AfterInit()
+	websocket.SetEndpoint(util.WSEndPoint)
+	d, dbStorage := dao.New()
+	s = &Service{dao: d}
+	s.initSubRuntimeLatest()
+	pluginRegister(dbStorage)
 	return s
 }
 
-// Ping ping the resource.
-func (s *Service) Ping(ctx context.Context) (err error) {
-	return s.dao.Ping(ctx)
-}
-
-func (s *Service) SetHeartBeat(action string) {
-	ctx := context.TODO()
-	s.dao.SetHeartBeatNow(ctx, action)
-}
-
-func (s *Service) GetSystemHeartBeat(ctx context.Context) map[string]bool {
-	return s.dao.GetHeartBeatNow(ctx)
+func (s *Service) GetDao() dao.IDao {
+	return s.dao
 }
 
 // Close close the resource.
@@ -47,6 +39,36 @@ func (s *Service) Close() {
 	s.dao.Close()
 }
 
-func (s *Service) AfterInit() {
-	s.dao.Migration()
+func (s *Service) initSubRuntimeLatest() {
+	// reg network custom type
+	defer func() {
+		go s.unknownToken()
+		if c, err := readTypeRegistry(); err == nil {
+			substrate.RegCustomTypes(c)
+			if unknown := metadata.Decoder.CheckRegistry(); len(unknown) > 0 {
+				log.Printf("Found unknown type %s", strings.Join(unknown, ", "))
+			}
+		} else {
+			if os.Getenv("TEST_MOD") != "true" {
+				panic(err)
+			}
+		}
+	}()
+
+	// find db
+	if recent := s.dao.RuntimeVersionRecent(); recent != nil && strings.HasPrefix(recent.RawData, "0x") {
+		metadata.Latest(&metadata.RuntimeRaw{Spec: recent.SpecVersion, Raw: recent.RawData})
+		return
+	}
+	// find metadata for blockChain
+	if raw := s.regCodecMetadata(); strings.HasPrefix(raw, "0x") {
+		metadata.Latest(&metadata.RuntimeRaw{Spec: 1, Raw: raw})
+		return
+	}
+	panic("Can not find chain metadata, please check network")
+}
+
+// read custom registry from local or remote
+func readTypeRegistry() ([]byte, error) {
+	return ioutil.ReadFile(fmt.Sprintf(util.ConfDir+"/source/%s.json", util.NetworkNode))
 }

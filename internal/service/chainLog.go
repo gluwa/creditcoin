@@ -1,41 +1,35 @@
 package service
 
 import (
-	"context"
-	"encoding/json"
-	"github.com/gorilla/websocket"
-	"subscan-end/internal/dao"
-	"subscan-end/internal/model"
-	"subscan-end/libs/substrate"
-	"subscan-end/libs/substrate/protos/codec_protos"
-	"subscan-end/utiles"
+	"fmt"
+	"github.com/itering/subscan/internal/dao"
+	"github.com/itering/subscan/model"
+	"github.com/itering/subscan/util"
+	"github.com/itering/substrate-api-rpc"
+	"github.com/itering/substrate-api-rpc/storage"
+	"strings"
 )
 
-func (s *Service) GetLogList(page, row int) (*[]model.ChainLogJson, int) {
-	c := context.TODO()
-	return s.dao.GetLogList(c, page, row)
-}
-
-func (s *Service) GetLogByIndex(index string) *model.ChainLogJson {
-	c := context.TODO()
-	return s.dao.GetLogsByIndex(c, index)
-}
-
-func (s *Service) EmitLog(c context.Context, txn *dao.GormDB, blockHash, blockNum, decodeLog string) (validator string) {
-	var l []codec_protos.DecoderLog
-	_ = json.Unmarshal([]byte(decodeLog), &l)
+func (s *Service) EmitLog(txn *dao.GormDB, blockNum int, l []storage.DecoderLog, finalized bool, validatorList []string) (validator string, err error) {
 	for index, logData := range l {
-		data, _ := json.Marshal(logData.Value)
-		s.dao.CreateLog(c, txn, blockNum, index, logData, data)
-		if logData.Index == "PreRuntime" {
-			c, _, err := websocket.DefaultDialer.Dial(utiles.ProviderEndPoint, nil)
-			if err != nil {
-				return ""
-			}
-			validatorList, _ := s.GetValidatorFromSub(c, blockHash) //todo,websocket connection not init
-			validator = substrate.ExtractAuthor(data, validatorList)
-			c.Close()
+		dataStr := util.ToString(logData.Value)
+
+		ce := model.ChainLog{
+			LogIndex:  fmt.Sprintf("%d-%d", blockNum, index),
+			BlockNum:  blockNum,
+			LogType:   logData.Type,
+			Data:      dataStr,
+			Finalized: finalized,
 		}
+		if err = s.dao.CreateLog(txn, &ce); err != nil {
+			return "", err
+		}
+
+		// check validator
+		if strings.EqualFold(ce.LogType, "PreRuntime") {
+			validator = substrate.ExtractAuthor([]byte(dataStr), validatorList)
+		}
+
 	}
-	return validator
+	return validator, err
 }

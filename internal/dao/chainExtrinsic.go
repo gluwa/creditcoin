@@ -3,118 +3,130 @@ package dao
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/shopspring/decimal"
-	"subscan-end/internal/model"
-	"subscan-end/utiles"
-	"subscan-end/utiles/ss58"
+	"github.com/itering/subscan/model"
+	"github.com/itering/subscan/util"
+	"github.com/itering/subscan/util/address"
+	"strings"
 )
 
-func (d *Dao) CreateExtrinsic(c context.Context, txn *GormDB, blockNum string, index, blockTimestamp int, success bool, extrinsic *model.ChainExtrinsic) error {
-	params, _ := json.Marshal(extrinsic.Params)
-	extrinsicHash := ""
-	if extrinsic.ExtrinsicHash != "" {
-		extrinsicHash = utiles.AddHex(extrinsic.ExtrinsicHash)
-	}
-	ce := &model.ChainExtrinsic{
-		BlockTimestamp:     blockTimestamp,
-		ExtrinsicIndex:     fmt.Sprintf("%s-%d", utiles.HexToNumStr(blockNum), index),
-		BlockNum:           utiles.StringToInt(utiles.HexToNumStr(blockNum)),
-		ValueRaw:           extrinsic.ValueRaw,
+func (d *Dao) CreateExtrinsic(c context.Context, txn *GormDB, extrinsic *model.ChainExtrinsic) error {
+	ce := model.ChainExtrinsic{
+		BlockTimestamp:     extrinsic.BlockTimestamp,
+		ExtrinsicIndex:     extrinsic.ExtrinsicIndex,
+		BlockNum:           extrinsic.BlockNum,
 		ExtrinsicLength:    extrinsic.ExtrinsicLength,
 		VersionInfo:        extrinsic.VersionInfo,
 		CallCode:           extrinsic.CallCode,
 		CallModuleFunction: extrinsic.CallModuleFunction,
 		CallModule:         extrinsic.CallModule,
-		Params:             string(params),
-		AccountLength:      extrinsic.AccountLength,
+		Params:             util.ToString(extrinsic.Params),
 		AccountId:          extrinsic.AccountId,
-		AccountIndex:       extrinsic.AccountIndex,
 		Signature:          extrinsic.Signature,
 		Era:                extrinsic.Era,
-		ExtrinsicHash:      extrinsicHash,
+		ExtrinsicHash:      util.AddHex(extrinsic.ExtrinsicHash),
 		Nonce:              extrinsic.Nonce,
-		Success:            success,
+		Success:            extrinsic.Success,
 		IsSigned:           extrinsic.Signature != "",
+		Fee:                extrinsic.Fee,
 	}
 	query := txn.Create(&ce)
 	if query.RowsAffected > 0 {
 		_ = d.IncrMetadata(c, "count_extrinsic", 1)
-	}
-	if err := d.CreateTransaction(c, ce, blockTimestamp); err == nil {
-		_ = d.IncrMetadata(c, "count_signed_extrinsic", 1)
-	}
-	return query.Error
-}
-
-func (d *Dao) GetExtrinsicsByBlockNum(c context.Context, blockNum int) *[]model.ChainExtrinsicJson {
-	var extrinsics []model.ChainExtrinsicJson
-	query := d.db.Model(model.ChainExtrinsic{}).Where("block_num = ?", blockNum).Order("id asc").Scan(&extrinsics)
-	if query == nil || query.RecordNotFound() {
-		return nil
-	}
-	return &extrinsics
-}
-
-func (d *Dao) GetExtrinsicList(c context.Context, page, row int, order string, queryWhere ...string) (*[]model.ChainExtrinsicJson, int) {
-	var extrinsics []model.ChainExtrinsicJson
-	queryOrigin := d.db.Model(&model.ChainExtrinsic{})
-	for _, w := range queryWhere {
-		queryOrigin = queryOrigin.Where(w)
-	}
-	query := queryOrigin.Offset(page * row).Limit(row).Order(fmt.Sprintf("block_num %s", order)).Scan(&extrinsics)
-	if query == nil || query.Error != nil || query.RecordNotFound() {
-		return &extrinsics, 0
-	}
-	var count int
-	if len(queryWhere) == 0 {
-		m, _ := d.GetMetadata(c)
-		count = utiles.StringToInt(m["count_extrinsic"])
-	} else {
-		queryOrigin.Count(&count)
-	}
-	return &extrinsics, count
-}
-
-func (d *Dao) GetExtrinsicsByHash(c context.Context, hash string) *model.ChainExtrinsicJson {
-	var extrinsic model.ChainExtrinsicJson
-	query := d.db.Model(model.ChainExtrinsic{}).Where("extrinsic_hash = ?", hash).Scan(&extrinsic)
-	if query == nil || query.RecordNotFound() {
-		return nil
-	}
-	return &extrinsic
-}
-
-func (d *Dao) GetExtrinsicsByIndex(c context.Context, index string) *model.ChainExtrinsicJson {
-	var extrinsic model.ChainExtrinsicJson
-	query := d.db.Model(model.ChainExtrinsic{}).Where("extrinsic_index = ?", index).Scan(&extrinsic)
-	if query == nil || query.RecordNotFound() {
-		return nil
-	}
-	return &extrinsic
-}
-
-func (d *Dao) GetTimestamp(c context.Context, params []model.ExtrinsicParam) (timestamp int) {
-	for _, p := range params {
-		if p.Name == "now" {
-			return int(p.Value.(float64))
+		if ce.IsSigned {
+			_ = d.IncrMetadata(c, "count_signed_extrinsic", 1)
 		}
 	}
-	return
+	return d.checkDBError(query.Error)
+}
+
+func (d *Dao) DropExtrinsicNotFinalizedData(c context.Context, blockNum int, finalized bool) bool {
+	delExist := false
+	if finalized {
+		if query := d.db.Where("block_num = ?", blockNum).Delete(model.ChainExtrinsic{BlockNum: blockNum}); query.RowsAffected > 0 {
+			_ = d.IncrMetadata(c, "count_extrinsic", -int(query.RowsAffected))
+			delExist = true
+		}
+
+	}
+	return delExist
+}
+
+func (d *Dao) GetExtrinsicsByBlockNum(blockNum int) []model.ChainExtrinsicJson {
+	var extrinsics []model.ChainExtrinsic
+	query := d.db.Model(model.ChainExtrinsic{BlockNum: blockNum}).
+		Where("block_num = ?", blockNum).Order("id asc").Scan(&extrinsics)
+	if query == nil || query.RecordNotFound() {
+		return nil
+	}
+	var list []model.ChainExtrinsicJson
+	for _, extrinsic := range extrinsics {
+		list = append(list, *d.ExtrinsicsAsJson(&extrinsic))
+	}
+	return list
+}
+
+func (d *Dao) GetExtrinsicList(c context.Context, page, row int, order string, queryWhere ...string) ([]model.ChainExtrinsic, int) {
+	var extrinsics []model.ChainExtrinsic
+	var count int
+
+	blockNum, _ := d.GetFillBestBlockNum(context.TODO())
+	for index := blockNum / model.SplitTableBlockNum; index >= 0; index-- {
+		var tableData []model.ChainExtrinsic
+		var tableCount int
+		queryOrigin := d.db.Model(model.ChainExtrinsic{BlockNum: index * model.SplitTableBlockNum})
+		for _, w := range queryWhere {
+			queryOrigin = queryOrigin.Where(w)
+		}
+
+		queryOrigin.Count(&tableCount)
+
+		if tableCount == 0 {
+			continue
+		}
+		preCount := count
+		count += tableCount
+		if len(extrinsics) >= row {
+			continue
+		}
+		query := queryOrigin.Order("block_num desc").Offset(page*row - preCount).Limit(row - len(extrinsics)).Scan(&tableData)
+		if query == nil || query.Error != nil || query.RecordNotFound() {
+			continue
+		}
+		extrinsics = append(extrinsics, tableData...)
+
+	}
+
+	if len(queryWhere) == 0 {
+		m, _ := d.GetMetadata(c)
+		count = util.StringToInt(m["count_extrinsic"])
+	}
+	return extrinsics, count
+}
+
+func (d *Dao) GetExtrinsicsByHash(c context.Context, hash string) *model.ChainExtrinsic {
+	var extrinsic model.ChainExtrinsic
+	blockNum, _ := d.GetFillBestBlockNum(c)
+	for index := blockNum / (model.SplitTableBlockNum); index >= 0; index-- {
+		query := d.db.Model(model.ChainExtrinsic{BlockNum: index * model.SplitTableBlockNum}).Where("extrinsic_hash = ?", hash).Order("id asc").Limit(1).Scan(&extrinsic)
+		if query != nil && !query.RecordNotFound() {
+			return &extrinsic
+		}
+	}
+	return nil
 }
 
 func (d *Dao) GetExtrinsicsDetailByHash(c context.Context, hash string) *model.ExtrinsicDetail {
-	var extrinsic model.ChainExtrinsic
-	query := d.db.Model(model.ChainExtrinsic{}).Where("extrinsic_hash = ?", hash).First(&extrinsic)
-	if query == nil || query.RecordNotFound() {
-		return nil
+	if extrinsic := d.GetExtrinsicsByHash(c, hash); extrinsic != nil {
+		return d.extrinsicsAsDetail(c, extrinsic)
 	}
-	return d.extrinsicsAsDetail(c, &extrinsic)
+	return nil
 }
 
 func (d *Dao) GetExtrinsicsDetailByIndex(c context.Context, index string) *model.ExtrinsicDetail {
 	var extrinsic model.ChainExtrinsic
-	query := d.db.Model(model.ChainExtrinsic{}).Where("extrinsic_index = ?", index).Scan(&extrinsic)
+	indexArr := strings.Split(index, "-")
+	query := d.db.Model(model.ChainExtrinsic{BlockNum: util.StringToInt(indexArr[0])}).
+		Where("extrinsic_index = ?", index).Scan(&extrinsic)
 	if query == nil || query.RecordNotFound() {
 		return nil
 	}
@@ -128,38 +140,53 @@ func (d *Dao) extrinsicsAsDetail(c context.Context, e *model.ChainExtrinsic) *mo
 		BlockNum:           e.BlockNum,
 		CallModule:         e.CallModule,
 		CallModuleFunction: e.CallModuleFunction,
-		AccountId:          ss58.Encode(e.AccountId),
+		AccountId:          address.SS58Address(e.AccountId),
 		Signature:          e.Signature,
 		Nonce:              e.Nonce,
 		ExtrinsicHash:      e.ExtrinsicHash,
 		Success:            e.Success,
+		Fee:                e.Fee,
 	}
-	var params []model.ExtrinsicParam
-	_ = json.Unmarshal([]byte(e.Params.([]uint8)), &params)
-	detail.Params = &params
-	if detail.ExtrinsicHash != "" {
-		detail.Event = d.GetEventsByIndex(c, e.ExtrinsicIndex)
+	util.UnmarshalAny(&detail.Params, e.Params)
+
+	if block := d.GetBlockByNum(detail.BlockNum); block != nil {
+		detail.Finalized = block.Finalized
 	}
-	if detail.CallModuleFunction == TransferModule {
-		var dest string
-		var amount decimal.Decimal
-		for _, v := range params {
-			if v.Type == "Address" {
-				dest = v.Value.(string)
-			}
-			if v.Type == "Compact<Balance>" {
-				amount = utiles.FloatToDecimal(v.Value.(float64))
-			}
-		}
-		t := model.TransferJson{
-			From:    detail.AccountId,
-			To:      ss58.Encode(dest),
-			Module:  detail.CallModule,
-			Hash:    detail.ExtrinsicHash,
-			Amount:  amount,
-			Success: detail.Success,
-		}
-		detail.Transfer = &t
+
+	events := d.GetEventsByIndex(e.ExtrinsicIndex)
+	for k, event := range events {
+		events[k].Params = util.ToString(event.Params)
 	}
+
+	detail.Event = &events
+
 	return &detail
+}
+
+func (d *Dao) ExtrinsicsAsJson(e *model.ChainExtrinsic) *model.ChainExtrinsicJson {
+	ej := &model.ChainExtrinsicJson{
+		BlockNum:           e.BlockNum,
+		BlockTimestamp:     e.BlockTimestamp,
+		ExtrinsicIndex:     e.ExtrinsicIndex,
+		ExtrinsicHash:      e.ExtrinsicHash,
+		Success:            e.Success,
+		CallModule:         e.CallModule,
+		CallModuleFunction: e.CallModuleFunction,
+		Params:             util.ToString(e.Params),
+		AccountId:          address.SS58Address(e.AccountId),
+		Signature:          e.Signature,
+		Nonce:              e.Nonce,
+		Fee:                e.Fee,
+	}
+	var paramsInstant []model.ExtrinsicParam
+	if err := json.Unmarshal([]byte(ej.Params), &paramsInstant); err != nil {
+		for pi, param := range paramsInstant {
+			if paramsInstant[pi].Type == "Address" {
+				paramsInstant[pi].Value = address.SS58Address(param.Value.(string))
+			}
+		}
+		bp, _ := json.Marshal(paramsInstant)
+		ej.Params = string(bp)
+	}
+	return ej
 }

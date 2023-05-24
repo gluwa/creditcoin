@@ -1,32 +1,24 @@
 package main
 
 import (
-	"context"
-	"flag"
 	"fmt"
-	"github.com/bilibili/kratos/pkg/conf/paladin"
-	"github.com/bilibili/kratos/pkg/log"
-	"github.com/urfave/cli"
 	"os"
-	"os/signal"
 	"runtime"
-	"subscan-end/internal/jobs"
-	"subscan-end/internal/server/http"
-	"subscan-end/internal/service"
-	"subscan-end/libs/substrate"
-	"subscan-end/sub"
-	"syscall"
-	"time"
+
+	"github.com/go-kratos/kratos/v2"
+	"github.com/itering/subscan/configs"
+	"github.com/itering/subscan/internal/observer"
+	"github.com/itering/subscan/internal/script"
+	"github.com/itering/subscan/internal/server/http"
+	"github.com/itering/subscan/internal/service"
+	"github.com/itering/substrate-api-rpc/websocket"
+	"github.com/urfave/cli"
 )
 
 func main() {
-	flag.Parse()
-	if err := paladin.Init(); err != nil {
-		panic(err)
-	}
-	log.Init(nil)
-	defer afterClose()
-	jobs.Init()
+	defer func() {
+		websocket.Close()
+	}()
 	if err := setupApp().Run(os.Args); err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -34,53 +26,59 @@ func main() {
 }
 
 func setupApp() *cli.App {
-	return &cli.App{
-		Name:  "Subscan",
-		Usage: "Subscan End",
-		Action: func(c *cli.Context) error {
-			if len(c.Args()) == 0 {
-				runServe()
-			}
-			return nil
+	app := cli.NewApp()
+	app.Name = "SUBSCAN"
+	app.Usage = "SUBSCAN Backend Service, use -h get help"
+	app.Version = "1.1"
+	app.Action = func(*cli.Context) error { run(); return nil }
+	app.Description = "SubScan Backend Service, substrate blockchain explorer"
+	app.Flags = []cli.Flag{
+		cli.StringFlag{Name: "conf", Value: "../configs"},
+	}
+	app.Before = func(context *cli.Context) error {
+		configs.Init()
+		runtime.GOMAXPROCS(runtime.NumCPU())
+		return nil
+	}
+	app.Commands = []cli.Command{
+		{
+			Name:  "start",
+			Usage: "Start one worker, E.g substrate",
+			Action: func(c *cli.Context) error {
+				observer.Run(c.Args().Get(0))
+				return nil
+			},
 		},
-		Version:  "1.0",
-		Commands: sub.Commands,
-		Flags: []cli.Flag{
-			cli.StringFlag{Name: "config, conf"},
+		{
+			Name:  "install",
+			Usage: "Create database and create default conf file",
+			Action: func(c *cli.Context) error {
+				script.Install(c.Parent().String("conf"))
+				return nil
+			},
 		},
-		Before: func(context *cli.Context) error {
-			runtime.GOMAXPROCS(runtime.NumCPU())
-			return nil
+		{
+			Name:  "CheckCompleteness",
+			Usage: "Create blocks completeness",
+			Action: func(c *cli.Context) error {
+				script.CheckCompleteness()
+				return nil
+			},
 		},
 	}
+	return app
 }
 
-func runServe() {
+func run() {
 	svc := service.New()
-	httpSrv := http.New(svc)
-	c := make(chan os.Signal, 1)
-	log.Info("subscan-end run ......")
-	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
-	for {
-		s := <-c
-		log.Info("get a signal %s", s.String())
-		switch s {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
-			_ = httpSrv.Shutdown(ctx)
-			log.Info("subscan-end exit")
-			svc.Close()
-			cancel()
-			time.Sleep(time.Second)
-			return
-		case syscall.SIGHUP:
-		default:
-			return
-		}
-	}
-}
+	httpSrv := http.NewHTTPServer(configs.Boot.Server, svc)
+	defer func() {
+		// Micro services
+		svc.Close()
+	}()
 
-func afterClose() {
-	_ = log.Close()
-	substrate.CloseWsConnection()
+	app := kratos.New(kratos.Metadata(map[string]string{}), kratos.Server(httpSrv))
+	if err := app.Run(); err != nil {
+		panic(err)
+	}
 }

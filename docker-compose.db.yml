@@ -1,0 +1,31 @@
+version: "2.4"
+
+services:
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      # Name of the db created on start up
+      MYSQL_DATABASE: subscan
+      MYSQL_ROOT_PASSWORD: helloload
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    networks:
+      - app_net
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  redis:
+    image: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - app_net
+
+networks:
+  app_net:
+    external: true

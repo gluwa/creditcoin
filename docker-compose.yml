@@ -1,31 +1,43 @@
 version: "2.4"
 
 services:
-  darwinia_scan: &app_base
-    init: true
+  subscan-api:
     build: .
-    image: 'scan/darwinia_end'
-    environment:
+    image: subscan/api
+    environment: &app_base
       MYSQL_HOST: mysql
-      MYSQL_PASS: 'hello'
-      MYSQL_DB: 'darwinia-scan'
+      MYSQL_PASS: 'helloload'
+      # Name of the database subscan will connect to and use
+      # this db must exist
+      MYSQL_DB: 'subscan'
       REDIS_ADDR: redis:6379
-      GRPC_PYTHON_HOST: darwinia-tools
-      GRPC_PYTHON_PORT: 50051
-      CHAIN_WS_ENDPOINT: 'wss://crayfish.darwinia.network/'
-      LOG_DIR: '../log'
-      ES_ENABLE: 'false'
+      CHAIN_WS_ENDPOINT: 'wss://rpc.polkadot.io'
+      # the types file used for the chain as:
+      # configs/source/{NETWORK_NODE}.json
+      NETWORK_NODE: 'polkadot'
+      WEB_HOST: 'http://subscan-api:4399'
       DEPLOY_ENV: 'prod'
-      NETWORK_NODE: 'darwinia'
-    env_file: .env
+    ports:
+      - '4399:4399'
     networks:
       - app_net
-  darwinia-daemon:
-    <<: *app_base
-    image: 'scan/darwinia_end'
-    container_name: 'darwinia-daemon'
-    ports: []
-    command: ["python","run.py","substrate"]
+  subscan-observer:
+    environment:
+      <<: *app_base
+    image: subscan/api
+    command: ["subscan","start","substrate"]
+    networks:
+      - app_net
+
+  subscan-static:
+    build:
+      context: ./ui
+    environment:
+      NODE_ENV: 'production'
+    ports:
+      - '80:80'
+    networks:
+      - app_net
 
 networks:
   app_net:
