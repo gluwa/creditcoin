@@ -25,3 +25,17 @@ justfile
 .idea/
 
 docs/dev-guide/book
+
+# Subscan
+subscan/cmd/cmd
+subscan/cmd/subscan
+subscan/configs/config.yaml
+subscan/configs/config.yml
+subscan/log/*
+!subscan/log/.gitkeep
+subscan/node_modules
+subscan/target
+subscan/*.so
+subscan/data/*
+!subscan/data/.gitkeep
+subscan/tmp
