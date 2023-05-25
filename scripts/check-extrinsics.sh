@@ -49,9 +49,9 @@ for RUNTIME in "${runtimes[@]}"; do
   jobs
 
   #Wait for HEAD BINARY
-  ./integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9944'
+  ./integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9933'
   #Wait for RELEASE BINARY
-  ./integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9945'
+  ./integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9934'
 
   changed_extrinsics=$(
     polkadot-js-metadata-cmp "$RELEASE_WS" "$HEAD_WS" \
