@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ./subscan
 
     services:
       # Label used to access the service container
@@ -48,8 +51,6 @@ jobs:
       # Checkout Go module directory
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
-      - name: Switch directories
-        run: cd subscan
       # Cache Go Modules
       - name: Cache Go Modules
         uses: actions/cache@v1
@@ -84,6 +85,9 @@ jobs:
   golangci:
     name: Lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./subscan
     steps:
       - uses: actions/checkout@v3
         with:
