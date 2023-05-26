@@ -1,19 +1,11 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 import { getBalance, printBalance } from "../utils/balance";
 
 export function makeBalanceCommand() {
   const cmd = new Command("balance");
   cmd.description("Get balance of an account");
-  cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for new account"
-  );
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for new account"
-  );
+  cmd.option("-a, --address [address]", "Specify address to get balance of");
   cmd.action(balanceAction);
   return cmd;
 }
@@ -21,13 +13,19 @@ export function makeBalanceCommand() {
 async function balanceAction(options: OptionValues) {
   const api = await newApi(options.url);
 
-  const seed = getSeedFromOptions(options);
-  const pair = initKeyringPair(seed);
-  const address = pair.address;
+  // Check options
+  checkAddress(options);
 
-  const balance = await getBalance(address, api);
+  const balance = await getBalance(options.address, api);
 
   printBalance(balance);
 
   process.exit(0);
+}
+
+function checkAddress(options: OptionValues) {
+  if (!options.address) {
+    console.log("Must specify address to get balance of");
+    process.exit(0);
+  }
 }
