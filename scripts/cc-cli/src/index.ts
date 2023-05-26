@@ -32,4 +32,12 @@ program
   .addCommand(makeChillCommand())
   .addCommand(makeWizardCommand());
 
+program.commands.forEach((cmd) => {
+  cmd.option(
+    "-u, --url [url]",
+    "URL for the Substrate node",
+    "ws://localhost:9944"
+  );
+});
+
 program.parse(process.argv);

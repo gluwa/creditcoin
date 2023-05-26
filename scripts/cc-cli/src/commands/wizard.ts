@@ -13,7 +13,6 @@ export function makeWizardCommand() {
   cmd.description(
     "Run the validator setup wizard. Only requires funded stash and controller accounts."
   );
-  cmd.option("-u, --url [url]", "URL for the Substrate node");
   cmd.option(
     "-ss, --stash-seed [stash-seed]",
     "Specify mnemonic phrase to use for stash account"

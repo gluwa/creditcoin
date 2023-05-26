@@ -15,11 +15,7 @@ export function makeSetKeysCommand() {
   );
   cmd.option("-k, --keys [keys]", "Specify keys to set");
   cmd.option("-r, --rotate", "Rotate and set new keys");
-  cmd.option(
-    "-u, --url [url]",
-    "URL for the Substrate node",
-    "ws://localhost:9944"
-  );
+
   cmd.action(setKeysAction);
   return cmd;
 }
