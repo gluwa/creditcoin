@@ -22,6 +22,10 @@ export function makeSendCommand() {
 async function sendAction(options: OptionValues) {
   const api = await newApi(options.url);
 
+  // Check options
+  checkAmount(options);
+  checkTo(options);
+
   // Build account
   const seed = getSeedFromOptions(options);
   const stash = initKeyringPair(seed);
@@ -32,4 +36,18 @@ async function sendAction(options: OptionValues) {
 
   console.log("Transfer transaction hash: " + hash.toHex());
   process.exit(0);
+}
+
+function checkAmount(options: OptionValues) {
+  if (!options.amount) {
+    console.log("Must specify amount to send");
+    process.exit(0);
+  }
+}
+
+function checkTo(options: OptionValues) {
+  if (!options.to) {
+    console.log("Must specify recipient address");
+    process.exit(0);
+  }
 }
