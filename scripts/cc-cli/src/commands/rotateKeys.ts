@@ -3,7 +3,7 @@ import { newApi } from "../api";
 
 export function makeRotateKeysCommand() {
   const cmd = new Command("rotate-keys");
-  cmd.option("-u, --url [url]", "URL for the Substrate node");
+  cmd.option("-u, --url [url]", "URL for the Substrate node", "ws://localhost:9944");
   cmd.description("Rotate session keys for a specified node");
   cmd.action(rotateKeysAction);
   return cmd;
