@@ -14,7 +14,12 @@ export function makeSetKeysCommand() {
     "Specify file with mnemonic phrase to set keys from"
   );
   cmd.option("-k, --keys [keys]", "Specify keys to set");
-  cmd.option("-u, --url [url]", "URL for the Substrate node");
+  cmd.option("-r, --rotate", "Rotate and set new keys");
+  cmd.option(
+    "-u, --url [url]",
+    "URL for the Substrate node",
+    "ws://localhost:9944"
+  );
   cmd.action(setKeysAction);
   return cmd;
 }
@@ -26,8 +31,19 @@ async function setKeysAction(options: OptionValues) {
   const seed = getSeedFromOptions(options);
   const stash = initKeyringPair(seed);
 
-  // Send transaction
-  const tx = api.tx.session.setKeys(options.keys, []);
+  let keys;
+  if (!options.keys && !options.rotate) {
+    console.log(
+      "Must specify keys to set or generate new ones using the --rotate flag"
+    );
+    process.exit(0);
+  } else if (options.rotate) {
+    keys = (await api.rpc.author.rotateKeys()).toString();
+  } else {
+    keys = options.keys;
+  }
+
+  const tx = api.tx.session.setKeys(keys, []);
   const hash = await tx.signAndSend(stash);
 
   console.log("Set keys transaction hash: " + hash.toHex());
