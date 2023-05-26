@@ -7,11 +7,11 @@ export function makeSendCommand() {
   cmd.description("Send CTC from an account");
   cmd.option(
     "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for new account"
+    "Specify mnemonic phrase to use for sending CTC"
   );
   cmd.option(
     "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for new account"
+    "Specify file with mnemonic phrase to use for sending CTC"
   );
   cmd.option("-a, --amount [amount]", "Amount to send");
   cmd.option("-t, --to [to]", "Specify recipient address");

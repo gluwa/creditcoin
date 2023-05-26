@@ -6,11 +6,11 @@ export function makeReceiveCommand() {
   cmd.description("Show account address");
   cmd.option(
     "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for new account"
+    "Specify mnemonic phrase to use of account"
   );
   cmd.option(
     "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for new account"
+    "Specify file with mnemonic phrase of account"
   );
   cmd.action(receiveAction);
   return cmd;

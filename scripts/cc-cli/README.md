@@ -85,7 +85,7 @@ creditcoin-cli balance -f seed.txt
 creditcoin-cli bond -f seed.txt --amount 1000 --controller 5DJ8qkxAbSVfyvorNBKt4BwDR9hUUzH8aqofuTAMTkLZtpv9
 ```
 
-### Rotates of a particular node
+### Rotate session keys of a particular node
 
 ```
 creditcoin-cli rotate-keys -u http://localhost:8000

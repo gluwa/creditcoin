@@ -12,6 +12,6 @@ export function makeRotateKeysCommand() {
 async function rotateKeysAction(options: OptionValues) {
   const api = await newApi(options.url);
   const newKeys = await api.rpc.author.rotateKeys();
-  console.log(newKeys.toString());
+  console.log("New keys: " + newKeys.toString());
   process.exit(0);
 }

@@ -10,11 +10,11 @@ export function makeChillCommand() {
   );
   cmd.option(
     "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for new account"
+    "Specify mnemonic phrase of controller account"
   );
   cmd.option(
     "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for new account"
+    "Specify file with mnemonic phrase of controller account"
   );
   cmd.action(chillAction);
   return cmd;
