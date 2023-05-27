@@ -79,6 +79,7 @@ import type {
     SpConsensusBabeDigestsPreDigest,
     SpCoreCryptoKeyTypeId,
     SpRuntimeDigest,
+    SpStakingOffenceOffenceDetails,
 } from '@polkadot/types/lookup';
 import type { Observable } from '@polkadot/types/types';
 
@@ -743,6 +744,44 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        offences: {
+            /**
+             * A vector of reports of the same kind that happened at the same time slot.
+             **/
+            concurrentReportsIndex: AugmentedQuery<
+                ApiType,
+                (arg1: U8aFixed | string | Uint8Array, arg2: Bytes | string | Uint8Array) => Observable<Vec<H256>>,
+                [U8aFixed, Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [U8aFixed, Bytes]>;
+            /**
+             * The primary structure that holds all offence records keyed by report identifiers.
+             **/
+            reports: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<SpStakingOffenceOffenceDetails>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * Enumerates all reports of a kind along with the time they happened.
+             *
+             * All reports are sorted by the time of offence.
+             *
+             * Note that the actual type of this mapping is `Vec<u8>`, this is because values of
+             * different types are not supported at the moment so we are doing the manual serialization.
+             **/
+            reportsByKindIndex: AugmentedQuery<
+                ApiType,
+                (arg: U8aFixed | string | Uint8Array) => Observable<Bytes>,
+                [U8aFixed]
+            > &
+                QueryableStorageEntry<ApiType, [U8aFixed]>;
             /**
              * Generic query
              **/
