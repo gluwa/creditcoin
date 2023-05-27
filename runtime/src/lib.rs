@@ -281,7 +281,7 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = 12 * HOURS;
 
 parameter_types! {
 	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64; // Q: how long to make an epoch
@@ -352,14 +352,14 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-	// Six sessions in an era (6 hours).
-	pub const SessionsPerEra: SessionIndex = 6; 	// Q: how many sessions per era?
+	// Two sessions in an era (24 hours).
+	pub const SessionsPerEra: SessionIndex = 2;
 
-	// 28 eras for unbonding (7 days).
-	pub const BondingDuration: sp_staking::EraIndex = 28; // Q: bonding duration?
+	// 7 eras for unbonding (7 days).
+	pub const BondingDuration: sp_staking::EraIndex = 7; // Q: bonding duration?
 
-	// 27 eras in which slashes can be cancelled (slightly less than 7 days).
-	pub const SlashDeferDuration: sp_staking::EraIndex = 27; // Q: slash defer duration?
+	// 7 eras in which slashes can be cancelled (7 days).
+	pub const SlashDeferDuration: sp_staking::EraIndex = 7; // Q: slash defer duration?
 
 	/// Setup election pallet to support maximum winners upto 2000. This will mean Staking Pallet
 	/// cannot have active validators higher than this count.
@@ -383,10 +383,10 @@ impl pallet_staking_substrate::Config for Runtime {
 	type CurrencyToVote = U128CurrencyToVote;
 	type ElectionProvider = OnChainExecution<OnChainSeqPhragmen>;
 	type GenesisElectionProvider = Self::ElectionProvider;
-	type RewardRemainder = (); // Q: reward remainder?
+	type RewardRemainder = ();
 	type RuntimeEvent = RuntimeEvent;
-	type Slash = (); // Q: handle slashing?
-	type Reward = (); // Q: rewards?
+	type Slash = (); // burn slashed funds
+	type Reward = ();
 	type SessionsPerEra = SessionsPerEra;
 	type BondingDuration = BondingDuration;
 	type SlashDeferDuration = SlashDeferDuration;
