@@ -263,12 +263,18 @@ impl frame_system::Config for Runtime {
 	type DbWeight = ParityDbWeight;
 }
 
+parameter_types! {
+	pub const ReportLongevity: u64 =
+			BondingDuration::get() as u64 * SessionsPerEra::get() as u64 * EpochDuration::get();
+}
+
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 
-	type EquivocationReportSystem = ();
+	type EquivocationReportSystem =
+		pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 
 	type WeightInfo = ();
 	type MaxAuthorities = ConstU32<32>; // Q: maximum number of grandpa authorities?
@@ -299,7 +305,8 @@ impl pallet_babe::Config for Runtime {
 	type ExpectedBlockTime = ExpectedBlockTime;
 	type EpochChangeTrigger = pallet_babe::ExternalTrigger;
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
-	type EquivocationReportSystem = (); // TODO: have an actual equivocation handler
+	type EquivocationReportSystem =
+		pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 	type WeightInfo = ();
 	type MaxAuthorities = ConstU32<128>; // Q: maximum authority set size?
 									 //TODO: ^^^ actually consider what to set this to, I just picked a number
@@ -318,7 +325,7 @@ impl pallet_im_online::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorSet = Historical;
 	type NextSessionRotation = Babe;
-	type ReportUnresponsiveness = (); // Q: is unresponsiveness an offence?
+	type ReportUnresponsiveness = Offences; // Q: is unresponsiveness an offence?
 	type UnsignedPriority = ImOnlineUnsignedPriority;
 	type WeightInfo = ();
 	type MaxKeys = MaxKeys;
@@ -349,10 +356,10 @@ parameter_types! {
 	pub const SessionsPerEra: SessionIndex = 6; 	// Q: how many sessions per era?
 
 	// 28 eras for unbonding (7 days).
-	pub BondingDuration: sp_staking::EraIndex = 28; // Q: bonding duration?
+	pub const BondingDuration: sp_staking::EraIndex = 28; // Q: bonding duration?
 
 	// 27 eras in which slashes can be cancelled (slightly less than 7 days).
-	pub SlashDeferDuration: sp_staking::EraIndex = 27; // Q: slash defer duration?
+	pub const SlashDeferDuration: sp_staking::EraIndex = 27; // Q: slash defer duration?
 
 	/// Setup election pallet to support maximum winners upto 2000. This will mean Staking Pallet
 	/// cannot have active validators higher than this count.
@@ -394,8 +401,14 @@ impl pallet_staking_substrate::Config for Runtime {
 	type MaxUnlockingChunks = frame_support::traits::ConstU32<32>;
 	type HistoryDepth = frame_support::traits::ConstU32<84>; // TODO: check this value
 	type BenchmarkingConfig = StakingBenchmarkingConfig;
-	type OnStakerSlash = ();
+	type OnStakerSlash = NominationPools;
 	type WeightInfo = ();
+}
+
+impl pallet_offences::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
+	type OnOffenceHandler = Staking;
 }
 
 parameter_types! {
@@ -720,6 +733,7 @@ construct_runtime!(
 		Balances: pallet_balances,
 		Authorship: pallet_authorship,
 		Staking: pallet_staking_substrate,
+		Offences: pallet_offences,
 		Historical: session_historical,
 		Session: pallet_session,
 		Grandpa: pallet_grandpa,
