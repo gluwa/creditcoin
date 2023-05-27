@@ -1325,6 +1325,7 @@ dependencies = [
  "pallet-im-online",
  "pallet-nomination-pools",
  "pallet-offchain-task-scheduler",
+ "pallet-offences",
  "pallet-pos-switch",
  "pallet-proxy",
  "pallet-rewards",
@@ -5080,6 +5081,23 @@ dependencies = [
  "sp-tracing",
  "test-runtime-utils",
  "traced-test",
+]
+
+[[package]]
+name = "pallet-offences"
+version = "4.0.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
 ]
 
 [[package]]
