@@ -1,8 +1,9 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions } from "../utils/account";
+import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
+import { Balance, getBalance } from "../utils/balance";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");
@@ -39,6 +40,13 @@ async function bondAction(options: OptionValues) {
 
   const stashSeed = getSeedFromOptions(options);
 
+  // Check balance
+  const stashKeyring = initKeyringPair(stashSeed);
+  const stashAddress = stashKeyring.address;
+  const balance = await getBalance(stashAddress, api);
+  const amount = parseInt(options.amount, 10);
+  checkBalanceAgainstBondAmount(balance, amount);
+
   const rewardDestination = options.rewardDestination
     ? parseRewardDestination(options.rewardDestination)
     : "Staked";
@@ -53,11 +61,18 @@ async function bondAction(options: OptionValues) {
   const bondTxHash = await bond(
     stashSeed,
     options.controller,
-    parseInt(options.amount, 10),
+    amount,
     rewardDestination,
     api
   );
 
   console.log("Bond transaction sent with hash:", bondTxHash);
   process.exit(0);
+}
+
+function checkBalanceAgainstBondAmount(balance: Balance, amount: number) {
+  const amountInMicroUnits = BigInt(amount) * BigInt(1000000000000000000);
+  if (BigInt(balance.free) < amountInMicroUnits) {
+    throw new Error(`Insufficient funds to bond ${amountInMicroUnits}`);
+  }
 }
