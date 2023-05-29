@@ -23,17 +23,17 @@ export async function bond(
   return hash.toHex();
 }
 
-export function parseRewardDestination(rewardDestination: string) {
-  if (rewardDestination === "staked") {
-    return "Staked";
-  } else if (rewardDestination === "stash") {
-    return "Stash";
-  } else if (rewardDestination === "controller") {
-    return "Controller";
-  } else {
-    console.log(
-      "Invalid reward destination, must be one of 'staked', 'stash', or 'controller'"
+export function parseRewardDestination(rewardDestinationRaw: string) {
+  // Capitalize first letter and lowercase the rest
+  const rewardDestination =
+    rewardDestinationRaw.charAt(0).toUpperCase() +
+    rewardDestinationRaw.slice(1).toLowerCase();
+
+  if (rewardDestination != "Staked" || "Stash" || "Controller") {
+    throw new Error(
+      "Invalid reward destination, must be one of 'Staked', 'Stash', or 'Controller'"
     );
-    process.exit(1);
+  } else {
+    return rewardDestination;
   }
 }

@@ -14,7 +14,6 @@ export function getSeedFromOptions(options: OptionValues) {
   } else if (options.file) {
     return readFileSync(options.file).toString();
   } else {
-    console.log("Must specify either seed or file");
-    process.exit(1);
+    throw new Error("Must specify either mnemonic phrase or file as an option");
   }
 }
