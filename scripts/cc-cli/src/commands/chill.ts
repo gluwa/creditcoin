@@ -9,12 +9,12 @@ export function makeChillCommand() {
     "Signal intention to stop validating from a Controller account"
   );
   cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase of controller account"
+    "-s, --seed [seed phrase]",
+    "Specify seed phrase of controller account"
   );
   cmd.option(
     "-f, --file [file-name]",
-    "Specify file with mnemonic phrase of controller account"
+    "Specify file with seed phrase of controller account"
   );
   cmd.action(chillAction);
   return cmd;

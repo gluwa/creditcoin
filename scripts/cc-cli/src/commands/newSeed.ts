@@ -4,7 +4,7 @@ import { writeFileSync } from "fs";
 
 export function makeNewSeedCommand() {
   const cmd = new Command("new");
-  cmd.description("Create new mnemonic seed");
+  cmd.description("Create new seed phrase");
   cmd.option("-l, --length [word-length]", "Specify the amount of words");
   cmd.option("-s, --save [file-name]", "Save the new seed to a file");
   cmd.action(newSeedAction);
@@ -12,16 +12,16 @@ export function makeNewSeedCommand() {
 }
 
 function newSeedAction(options: OptionValues) {
-  console.log("Creating new mnemonic...");
-  const mnemonic = options.length
+  console.log("Creating new seed phrase...");
+  const seedPhrase = options.length
     ? mnemonicGenerate(options.length)
     : mnemonicGenerate();
   if (options.save) {
     console.log("Saving seed to file:", options.save);
-    // Write mnemonic to a file
-    writeFileSync(options.save, mnemonic);
+    // Write seed phrase to a file
+    writeFileSync(options.save, seedPhrase);
   } else {
-    console.log("Mnemonic:", mnemonic);
+    console.log("Seed phrase:", seedPhrase);
   }
   process.exit(0);
 }
