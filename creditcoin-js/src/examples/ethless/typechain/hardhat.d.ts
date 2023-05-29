@@ -10,25 +10,39 @@ import * as Contracts from '.';
 declare module 'hardhat/types/runtime' {
     interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
         getContractFactory(
-            name: 'AccessControl',
+            name: 'CreditcoinBase',
             signerOrOptions?: ethers.Signer | FactoryOptions,
-        ): Promise<Contracts.AccessControl__factory>;
+        ): Promise<Contracts.CreditcoinBase__factory>;
         getContractFactory(
-            name: 'ERC20',
+            name: 'Erc20',
             signerOrOptions?: ethers.Signer | FactoryOptions,
-        ): Promise<Contracts.ERC20__factory>;
+        ): Promise<Contracts.Erc20__factory>;
         getContractFactory(
-            name: 'IERC20',
+            name: 'Erc20Plus',
             signerOrOptions?: ethers.Signer | FactoryOptions,
-        ): Promise<Contracts.IERC20__factory>;
+        ): Promise<Contracts.Erc20Plus__factory>;
         getContractFactory(
-            name: 'ETHlessTransfer',
+            name: 'GluwaCreditVestingToken',
             signerOrOptions?: ethers.Signer | FactoryOptions,
-        ): Promise<Contracts.ETHlessTransfer__factory>;
+        ): Promise<Contracts.GluwaCreditVestingToken__factory>;
         getContractFactory(
-            name: 'TestToken',
+            name: 'Owned',
             signerOrOptions?: ethers.Signer | FactoryOptions,
-        ): Promise<Contracts.TestToken__factory>;
+        ): Promise<Contracts.Owned__factory>;
+
+        getContractAt(
+            name: 'CreditcoinBase',
+            address: string,
+            signer?: ethers.Signer,
+        ): Promise<Contracts.CreditcoinBase>;
+        getContractAt(name: 'Erc20', address: string, signer?: ethers.Signer): Promise<Contracts.Erc20>;
+        getContractAt(name: 'Erc20Plus', address: string, signer?: ethers.Signer): Promise<Contracts.Erc20Plus>;
+        getContractAt(
+            name: 'GluwaCreditVestingToken',
+            address: string,
+            signer?: ethers.Signer,
+        ): Promise<Contracts.GluwaCreditVestingToken>;
+        getContractAt(name: 'Owned', address: string, signer?: ethers.Signer): Promise<Contracts.Owned>;
 
         // default types
         getContractFactory(
@@ -40,5 +54,6 @@ declare module 'hardhat/types/runtime' {
             bytecode: ethers.utils.BytesLike,
             signer?: ethers.Signer,
         ): Promise<ethers.ContractFactory>;
+        getContractAt(nameOrAbi: string | any[], address: string, signer?: ethers.Signer): Promise<ethers.Contract>;
     }
 }

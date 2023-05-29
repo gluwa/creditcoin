@@ -1,6 +1,6 @@
 import { ContractFactory, Signer, Wallet } from 'ethers';
-import { GluwaCreditVestingToken } from './ethereum/ctc/typechain';
-import CtcArtifact from './ethereum/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
+import { GluwaCreditVestingToken } from 'creditcoin-js/lib/examples/ethless/typechain';
+import CtcArtifact from 'creditcoin-js/lib/examples/ethless/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
 const deployCtcToken = async (deployer: Signer, existingAddress: string | undefined) => {
@@ -39,6 +39,8 @@ export const main = async (existingAddress: string | undefined) => {
     const ctcToken = await deployCtcToken(deployer, existingAddress);
 
     await burnCtc(ctcToken);
+
+    return ctcToken;
 };
 
 if (require.main === module) {

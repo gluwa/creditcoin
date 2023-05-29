@@ -6,6 +6,7 @@ import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 import { signLoanParams } from '../extrinsics/register-deal-order';
 import { ethConnection } from './ethereum';
+import { GluwaCreditVestingToken } from './ethless/typechain';
 import { LoanTerms, TransferKind } from '../model';
 import { setupAuthority } from './setup-authority';
 
@@ -24,6 +25,7 @@ export const fullLoanCycleExample = async (
     ethereumRpcUrl = 'http://localhost:8545',
     decreaseMiningInterval = true,
     minterWallet?: Wallet,
+    tstToken?: GluwaCreditVestingToken,
 ) => {
     const {
         api,
@@ -125,7 +127,12 @@ export const fullLoanCycleExample = async (
         console.log(dealOrderId);
 
         // connect to ethereum to lend and repay
-        const { lend, repay, waitUntilTip } = await ethConnection(ethereumRpcUrl, decreaseMiningInterval, minterWallet);
+        const { lend, repay, waitUntilTip } = await ethConnection(
+            ethereumRpcUrl,
+            decreaseMiningInterval,
+            minterWallet,
+            tstToken,
+        );
 
         // Lender lends to borrower on ethereum
         const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
@@ -220,7 +227,12 @@ export const fullLoanCycleExample = async (
         const { itemId: dealOrderId } = dealOrder;
 
         // connect to ethereum to lend and repay
-        const { lend, waitUntilTip } = await ethConnection(ethereumRpcUrl, decreaseMiningInterval, minterWallet);
+        const { lend, waitUntilTip } = await ethConnection(
+            ethereumRpcUrl,
+            decreaseMiningInterval,
+            minterWallet,
+            tstToken,
+        );
 
         // Lender lends to borrower on ethereum
         const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(

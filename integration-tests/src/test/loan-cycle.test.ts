@@ -70,6 +70,7 @@ describe('Full Loan Cycle', (): void => {
                 (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET
                     ? undefined
                     : registeredWallets.registeredLender.wallet,
+                (global as any).CREDITCOIN_CTC_TOKEN,
             ),
         ).resolves.toBeUndefined();
     }, 120000000);
