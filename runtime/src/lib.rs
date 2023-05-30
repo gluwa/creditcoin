@@ -358,8 +358,8 @@ parameter_types! {
 	// 7 eras for unbonding (7 days).
 	pub const BondingDuration: sp_staking::EraIndex = 7; // Q: bonding duration?
 
-	// 7 eras in which slashes can be cancelled (7 days).
-	pub const SlashDeferDuration: sp_staking::EraIndex = 7; // Q: slash defer duration?
+	// 6 eras in which slashes can be cancelled (6 days).
+	pub const SlashDeferDuration: sp_staking::EraIndex = 6; // Q: slash defer duration?
 
 	/// Setup election pallet to support maximum winners upto 2000. This will mean Staking Pallet
 	/// cannot have active validators higher than this count.
