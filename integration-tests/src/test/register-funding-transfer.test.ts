@@ -104,7 +104,7 @@ describe('RegisterFundingTransfer', (): void => {
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
-    }, 300000);
+    }, 600000);
 
     it('emits a failure event if transfer is invalid', async (): Promise<void> => {
         const { dealOrder, eth, ethless } = await setup();
