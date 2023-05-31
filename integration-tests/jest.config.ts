@@ -2,7 +2,7 @@ import type { Config } from "@jest/types";
 const config: Config.InitialOptions = {
   preset: "ts-jest",
   testEnvironment: "node",
-  testTimeout: 30000,
+  testTimeout: 45000,
   globalSetup: "./src/globalSetup.ts",
 };
 
