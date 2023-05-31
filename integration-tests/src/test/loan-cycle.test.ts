@@ -67,9 +67,7 @@ describe('Full Loan Cycle', (): void => {
                 registeredWallets,
                 (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
                 (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-                (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET
-                    ? undefined
-                    : registeredWallets.registeredLender.wallet,
+                registeredWallets.registeredLender.wallet,
                 (global as any).CREDITCOIN_CTC_TOKEN,
             ),
         ).resolves.toBeUndefined();

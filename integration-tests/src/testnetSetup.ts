@@ -29,7 +29,6 @@ const setup = async () => {
         throw new Error('ETHEREUM_NODE_URL environment variable is required');
     }
     (global as any).CREDITCOIN_ETHEREUM_NODE_URL = ethereumNodeUrl;
-    (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET = false;
 
     (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY = false;
     (global as any).CREDITCOIN_NETWORK_LONG_NAME = 'Creditcoin Testnet';

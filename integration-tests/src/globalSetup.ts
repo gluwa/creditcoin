@@ -1,6 +1,8 @@
 import { ApiPromise, WsProvider, Keyring, KeyringPair, Wallet, POINT_01_CTC } from 'creditcoin-js';
+import { performTransfer } from 'creditcoin-js/lib/examples/ethereum';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { main as deployCtcContract } from './ctc-deploy';
+import { JsonRpcProvider } from '@ethersproject/providers';
 
 const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
     switch (who) {
@@ -15,12 +17,22 @@ const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): Ke
     }
 };
 
+// provide fixed wallets, which are constant during the same test session
+// because we'll need to fund them with fake $G-CRE
+const createWallet = (who: 'lender' | 'borrower') => {
+    const privateKeys = {
+        // Private key for Account #1: from gluwa/hardhat-dev (10000 ETH)
+        'lender': '0xdcb7118c9946a39cd40b661e0d368e4afcc3cc48d21aa750d8164ca2e44961c4',
+        // Private key for Account #2: from gluwa/hardhat-dev (10000 ETH)
+        'borrower': '0x2d7aaa9b78d759813448eb26483284cd5e4344a17dede2ab7f062f0757113a28',
+    }
+
+    const provider = new JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+    return new Wallet(privateKeys[who] , provider);
+};
+
 const setup = async () => {
     process.env.NODE_ENV = 'test';
-
-    if ((global as any).CREDITCOIN_CREATE_WALLET === undefined) {
-        (global as any).CREDITCOIN_CREATE_WALLET = Wallet.createRandom; // eslint-disable-line
-    }
 
     if ((global as any).CREDITCOIN_CREATE_SIGNER === undefined) {
         (global as any).CREDITCOIN_CREATE_SIGNER = createSigner; // eslint-disable-line
@@ -50,8 +62,8 @@ const setup = async () => {
         (global as any).CREDITCOIN_ETHEREUM_NODE_URL = 'http://127.0.0.1:8545';
     }
 
-    if ((global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET === undefined) {
-        (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET = true;
+    if ((global as any).CREDITCOIN_CREATE_WALLET === undefined) {
+        (global as any).CREDITCOIN_CREATE_WALLET = createWallet;
     }
 
     if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY === undefined) {
@@ -87,6 +99,25 @@ const setup = async () => {
     if ((global as any).CREDITCOIN_CTC_BURN_TX_HASH === undefined) {
         // Note: burn is always called inside deployCtcContract() !!!
         (global as any).CREDITCOIN_CTC_BURN_TX_HASH = process.env.CREDITCOIN_CTC_BURN_TX_HASH;
+    }
+
+    // fund lender & borrower on hardhat/Ethereum testnet with fake $G-CRE from the
+    // contract that was deployed above so they can have tokens to lend/repay
+    if ((global as any).CREDITCOIN_FUND_WITH_GCRE_ON_ETHEREUM !== false) {
+        const provider = new JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
+        const deployer = new Wallet((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY, provider);
+        // ^^^ this is the same wallet that had just deployed the ctcToken
+
+        const lender = createWallet('lender');
+        const borrower = createWallet('borrower');
+        console.log('**** CONFIG ******');
+        console.log('**** deloyer=', deployer);
+        console.log('**** lender=', lender);
+        console.log('**** borrower=', borrower);
+
+        await performTransfer((global as any).CREDITCOIN_CTC_TOKEN, deployer, lender.address, 1_000_000);
+
+        await performTransfer((global as any).CREDITCOIN_CTC_TOKEN, deployer, borrower.address, 1_000_000);
     }
 
     const api = await ApiPromise.create({

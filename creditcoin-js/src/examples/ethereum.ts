@@ -15,10 +15,11 @@ const deployTestToken = async (deployer: Signer) => {
     return testToken;
 };
 
-const performTransfer = async (token: GluwaCreditVestingToken, fromSigner: Signer, to: string, amount: number) => {
+export const performTransfer = async (token: GluwaCreditVestingToken, fromSigner: Signer, to: string, amount: number) => {
+    const balance = await token.connect(fromSigner).balanceOf((fromSigner as Wallet).address);
+console.log('++++ DEBUG: calling performTransfer with balance=', balance, 'amount=', amount, fromSigner, 'to=', to);
     const tx = await token.connect(fromSigner).transfer(to, amount);
-console.log('++++ DEBUG: amount=', amount);
-console.log('**** DEBUG: tx=', tx);
+//console.log('**** DEBUG: tx=', tx);
     const receipt = await tx.wait();
     return receipt;
 };

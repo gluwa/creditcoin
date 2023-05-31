@@ -59,7 +59,7 @@ describe('LockDealOrder', (): void => {
         const eth = await ethConnection(
             (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
             (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+            lenderWallet,
             (global as any).CREDITCOIN_CTC_TOKEN,
         );
         const askGuid = Guid.newGuid();

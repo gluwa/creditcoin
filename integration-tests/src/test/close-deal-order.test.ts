@@ -73,7 +73,7 @@ describe('CloseDealOrder', (): void => {
         const eth = await ethConnection(
             (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
             (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+            lenderWallet,
             (global as any).CREDITCOIN_CTC_TOKEN,
         );
 
@@ -98,8 +98,11 @@ describe('CloseDealOrder', (): void => {
 
         const fundingTxHash = await lendOnEth(lenderWallet, borrowerWallet, dealOrder.dealOrder.itemId, loanTerms, eth);
         const fundingEvent = await registerFundingTransfer(ethless, dealOrder.dealOrder.itemId, fundingTxHash, lender);
+console.log('+++++++ after calling registerFundingTransfer()');
         const fundingTransferVerified = await fundingEvent.waitForVerification().catch();
+console.log('+++++++ after waiting for verification)');
         expect(fundingTransferVerified).toBeTruthy();
+console.log('+++++++ before calling fundDealOrder()');
 
         await fundDealOrder(dealOrder.dealOrder.itemId, fundingEvent.transferId, lender);
         await lockDealOrder(dealOrder.dealOrder.itemId, borrower);

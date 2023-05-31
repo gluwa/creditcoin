@@ -2159,7 +2159,7 @@ create-require@^1.1.0:
 
 "creditcoin-js@file:../creditcoin-js/creditcoin-js-v0.10.0.tgz":
   version "0.10.0"
-  resolved "file:../creditcoin-js/creditcoin-js-v0.10.0.tgz#207c5f6c1f61ddc917066751e08e7494016f4d39"
+  resolved "file:../creditcoin-js/creditcoin-js-v0.10.0.tgz#a5234e565d4f1561db22a3a98e1b7333f3ed3179"
   dependencies:
     "@polkadot/api" "9.14.2"
     ethers "^5.7.1"
