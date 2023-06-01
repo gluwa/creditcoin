@@ -78,7 +78,7 @@ sp-session = { workspace = true }
 sc-network-sync = { workspace = true }
 
 [dependencies.tokio]
-version = "1.27.0"
+version = "1.28.2"
 default-features = false
 features = ["time"]
 
