@@ -117,3 +117,11 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/scripts/cc-cli"
+    schedule:
+      interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
