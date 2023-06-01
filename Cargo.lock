@@ -1217,7 +1217,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
@@ -1281,7 +1281,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "assert_matches",
  "creditcoin-node-runtime",
@@ -1300,7 +1300,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-runtime"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "assert_matches",
  "frame-benchmarking",
@@ -1325,12 +1325,13 @@ dependencies = [
  "pallet-im-online",
  "pallet-nomination-pools",
  "pallet-offchain-task-scheduler",
+ "pallet-offences",
  "pallet-pos-switch",
  "pallet-proxy",
  "pallet-rewards",
  "pallet-scheduler",
  "pallet-session",
- "pallet-staking 2.219.0",
+ "pallet-staking 2.220.0",
  "pallet-staking 4.0.0-dev",
  "pallet-staking-reward-fn",
  "pallet-sudo",
@@ -3447,9 +3448,9 @@ dependencies = [
 
 [[package]]
 name = "keccak"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3afef3b6eff9ce9d8ff9b3601125eec7f0c8cbac7abd14f355d053fa56c98768"
+checksum = "8f6d5ed8676d904364de097082f4e7d240b571b67989ced0240f08b7f966f940"
 dependencies = [
  "cpufeatures",
 ]
@@ -4873,7 +4874,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-creditcoin"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "assert_matches",
  "base58",
@@ -4911,7 +4912,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5083,8 +5084,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-offences"
+version = "4.0.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#1b1b67eb1c162656303fce1426ae044e4a589dab"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-pos-switch"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5115,7 +5133,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5172,7 +5190,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-staking"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -5715,7 +5733,7 @@ dependencies = [
 
 [[package]]
 name = "primitives"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "merlin",
  "num",
@@ -7802,9 +7820,9 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.10.7"
+version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54c2bb1a323307527314a36bfb73f24febb08ce2b8a554bf4ffd6f51ad15198c"
+checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
 dependencies = [
  "digest 0.10.6",
  "keccak",
@@ -7812,7 +7830,7 @@ dependencies = [
 
 [[package]]
 name = "sha3pow"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "assert_matches",
  "pallet-difficulty",
@@ -8977,7 +8995,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test-client"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "creditcoin-node-runtime",
  "sc-chain-spec",
@@ -8991,7 +9009,7 @@ dependencies = [
 
 [[package]]
 name = "test-runtime-utils"
-version = "2.219.0"
+version = "2.220.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -9153,9 +9171,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.28.0"
+version = "1.28.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3c786bf8134e5a3a166db9b29ab8f48134739014a3eca7bc6bfa95d673b136f"
+checksum = "94d7b1cfd2aa4011f2de74c2c4c63665e27a71006b0a192dcd2710272e73dfa2"
 dependencies = [
  "autocfg",
  "bytes",
@@ -9303,9 +9321,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.30"
+version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24eb03ba0eab1fd845050058ce5e616558e8f8d8fca633e6b163fe25c797213a"
+checksum = "0955b8137a1df6f1a2e9a37d8a6656291ff0297c1a97c24e0d8425fe2312f79a"
 dependencies = [
  "once_cell",
  "valuable",

@@ -6,7 +6,7 @@
 import '@polkadot/api-base/types/events';
 
 import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
-import type { Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64 } from '@polkadot/types-codec';
+import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perbill } from '@polkadot/types/interfaces/runtime';
 import type {
@@ -517,6 +517,18 @@ declare module '@polkadot/api-base/types/events' {
                 [member: AccountId32, poolId: u32, balance: u128, points: u128],
                 { member: AccountId32; poolId: u32; balance: u128; points: u128 }
             >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        offences: {
+            /**
+             * There is an offence reported of the given `kind` happened at the `session_index` and
+             * (kind-specific) time slot. This event is not deposited for duplicate slashes.
+             * \[kind, timeslot\].
+             **/
+            Offence: AugmentedEvent<ApiType, [kind: U8aFixed, timeslot: Bytes], { kind: U8aFixed; timeslot: Bytes }>;
             /**
              * Generic event
              **/

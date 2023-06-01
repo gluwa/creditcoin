@@ -31,5 +31,9 @@ if [[ ! "$PEERS" -gt 0 ]]; then
     exit 2
 fi
 
+# no assertion here, in case of error jq should fail
+ROTATE_KEYS=$(curl --silent -X POST http://127.0.0.1:9933 -H 'Content-Type: application/json' -d '{ "jsonrpc": "2.0", "method": "author_rotateKeys", "params": [], "id": 1 }')
+jq  -r '.result' <<< "$ROTATE_KEYS"
+
 echo "PASS"
 exit 0
