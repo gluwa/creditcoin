@@ -40,7 +40,7 @@ use sp_runtime::{
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
-	SaturatedConversion, Saturating,
+	SaturatedConversion,
 };
 use sp_staking::SessionIndex;
 use sp_std::prelude::*;
@@ -263,19 +263,25 @@ impl frame_system::Config for Runtime {
 	type DbWeight = ParityDbWeight;
 }
 
+parameter_types! {
+	pub const ReportLongevity: u64 =
+			BondingDuration::get() as u64 * SessionsPerEra::get() as u64 * EpochDuration::get();
+}
+
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 
-	type EquivocationReportSystem = ();
+	type EquivocationReportSystem =
+		pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 
 	type WeightInfo = ();
 	type MaxAuthorities = ConstU32<32>; // Q: maximum number of grandpa authorities?
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = 12 * HOURS;
 
 parameter_types! {
 	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64; // Q: how long to make an epoch
@@ -299,7 +305,8 @@ impl pallet_babe::Config for Runtime {
 	type ExpectedBlockTime = ExpectedBlockTime;
 	type EpochChangeTrigger = pallet_babe::ExternalTrigger;
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
-	type EquivocationReportSystem = (); // TODO: have an actual equivocation handler
+	type EquivocationReportSystem =
+		pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 	type WeightInfo = ();
 	type MaxAuthorities = ConstU32<128>; // Q: maximum authority set size?
 									 //TODO: ^^^ actually consider what to set this to, I just picked a number
@@ -318,7 +325,7 @@ impl pallet_im_online::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorSet = Historical;
 	type NextSessionRotation = Babe;
-	type ReportUnresponsiveness = (); // Q: is unresponsiveness an offence?
+	type ReportUnresponsiveness = Offences; // Q: is unresponsiveness an offence?
 	type UnsignedPriority = ImOnlineUnsignedPriority;
 	type WeightInfo = ();
 	type MaxKeys = MaxKeys;
@@ -345,14 +352,14 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-	// Six sessions in an era (6 hours).
-	pub const SessionsPerEra: SessionIndex = 6; 	// Q: how many sessions per era?
+	// Two sessions in an era (24 hours).
+	pub const SessionsPerEra: SessionIndex = 2;
 
-	// 28 eras for unbonding (7 days).
-	pub BondingDuration: sp_staking::EraIndex = 28; // Q: bonding duration?
+	// 7 eras for unbonding (7 days).
+	pub const BondingDuration: sp_staking::EraIndex = 7; // Q: bonding duration?
 
-	// 27 eras in which slashes can be cancelled (slightly less than 7 days).
-	pub SlashDeferDuration: sp_staking::EraIndex = 27; // Q: slash defer duration?
+	// 6 eras in which slashes can be cancelled (6 days).
+	pub const SlashDeferDuration: sp_staking::EraIndex = 6; // Q: slash defer duration?
 
 	/// Setup election pallet to support maximum winners upto 2000. This will mean Staking Pallet
 	/// cannot have active validators higher than this count.
@@ -376,16 +383,16 @@ impl pallet_staking_substrate::Config for Runtime {
 	type CurrencyToVote = U128CurrencyToVote;
 	type ElectionProvider = OnChainExecution<OnChainSeqPhragmen>;
 	type GenesisElectionProvider = Self::ElectionProvider;
-	type RewardRemainder = (); // Q: reward remainder?
+	type RewardRemainder = ();
 	type RuntimeEvent = RuntimeEvent;
-	type Slash = (); // Q: handle slashing?
-	type Reward = (); // Q: rewards?
+	type Slash = (); // burn slashed funds
+	type Reward = ();
 	type SessionsPerEra = SessionsPerEra;
 	type BondingDuration = BondingDuration;
 	type SlashDeferDuration = SlashDeferDuration;
 	type AdminOrigin = EnsureRoot<Self::AccountId>;
 	type SessionInterface = Self;
-	type EraPayout = ();
+	type EraPayout = EraPayout;
 	type NextNewSession = Session;
 	type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
 	type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
@@ -394,8 +401,14 @@ impl pallet_staking_substrate::Config for Runtime {
 	type MaxUnlockingChunks = frame_support::traits::ConstU32<32>;
 	type HistoryDepth = frame_support::traits::ConstU32<84>; // TODO: check this value
 	type BenchmarkingConfig = StakingBenchmarkingConfig;
-	type OnStakerSlash = ();
+	type OnStakerSlash = NominationPools;
 	type WeightInfo = ();
+}
+
+impl pallet_offences::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
+	type OnOffenceHandler = Staking;
 }
 
 parameter_types! {
@@ -468,37 +481,20 @@ impl pallet_pos_switch::OnSwitch for HackyUpgrade {
 	}
 }
 
-// Q: Payout scheme? Polkadot uses a more complex, dynamic scheme to encourage an ideal staking ratio
-// while respecting min and max inflation goals
-// rather than a fixed amount per block, etc.
+const CTC_REWARD_PER_BLOCK: Balance = 2 * CTC;
 pub struct EraPayout;
 impl pallet_staking_substrate::EraPayout<Balance> for EraPayout {
 	fn era_payout(
-		total_staked: Balance,
-		total_issuance: Balance,
-		era_duration_millis: u64,
+		_total_staked: Balance,
+		_total_issuance: Balance,
+		_era_duration_millis: u64,
 	) -> (Balance, Balance) {
-		pub const MAX_ANNUAL_INFLATION: Perquintill = Perquintill::from_percent(10u64);
-		pub const IDEAL_STAKE: Perquintill = Perquintill::from_percent(50u64);
-		pub const FALLOFF: Perquintill = Perquintill::from_percent(10u64);
-		const MILLISECONDS_PER_YEAR: u64 = 1000 * 3600 * 24 * 36525 / 100;
-
-		let min_annual_inflation = Perquintill::from_rational(25u64, 1000u64);
-		let delta_annual_inflation = MAX_ANNUAL_INFLATION - min_annual_inflation;
-
-		let stake = Perquintill::from_rational(total_staked, total_issuance);
-
-		let adjustment = pallet_staking_reward_fn::compute_inflation(stake, IDEAL_STAKE, FALLOFF);
-		let staking_inflation =
-			min_annual_inflation.saturating_add(delta_annual_inflation * adjustment);
-
-		let period_fraction =
-			Perquintill::from_rational(era_duration_millis, MILLISECONDS_PER_YEAR);
-		let max_payout = period_fraction * MAX_ANNUAL_INFLATION * total_issuance;
-		let staking_payout = (period_fraction * staking_inflation) * total_issuance;
-		let rest = max_payout.saturating_sub(staking_payout);
-
-		(staking_payout, rest)
+		(
+			CTC_REWARD_PER_BLOCK // reward per block
+				* (EPOCH_DURATION_IN_BLOCKS as Balance) // blocks per epoch
+				* (SessionsPerEra::get() as Balance), // epochs per era
+			0,
+		)
 	}
 }
 
@@ -720,6 +716,7 @@ construct_runtime!(
 		Balances: pallet_balances,
 		Authorship: pallet_authorship,
 		Staking: pallet_staking_substrate,
+		Offences: pallet_offences,
 		Historical: session_historical,
 		Session: pallet_session,
 		Grandpa: pallet_grandpa,

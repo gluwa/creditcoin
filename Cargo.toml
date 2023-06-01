@@ -21,7 +21,7 @@ members = [
 ]
 
 [workspace.package]
-version = '2.219.0'
+version = '2.220.0'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2021'
 license = 'Unlicense'
@@ -141,12 +141,13 @@ pallet-im-online = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https:
 pallet-bags-list = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-authorship = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-staking-reward-fn = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-offences = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 sc-network-sync = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 
 # Pallets necessary for use with the Staking Dashboard
 # CSUB-503 https://gluwa.atlassian.net/browse/CSUB-503?atlOrigin=eyJpIjoiODY0NGFjOTkzZjE1NGFkYTg1OTNkZmYxZGU1NjlmYjIiLCJwIjoiaiJ9
-pallet-utility = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features=false}
-pallet-proxy = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features=false}
-pallet-fast-unstake = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features=false}
-pallet-nomination-pools = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features=false}
-pallet-identity = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features=false}
+pallet-utility = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-proxy = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-fast-unstake = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-nomination-pools = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-identity = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }

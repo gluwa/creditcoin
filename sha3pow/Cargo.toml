@@ -14,7 +14,7 @@ rand = { version = "0.8.5", features = ["small_rng"], default-features = false }
 sc-consensus-pow = { workspace = true }
 sc-keystore = { workspace = true }
 scale-info = { features = ["std"], workspace = true }
-sha3 = "0.10.7"
+sha3 = "0.10.8"
 sp-api = { workspace = true }
 sp-consensus-pow = { features = ["std"], workspace = true }
 sp-core = { features = ["std"], workspace = true }

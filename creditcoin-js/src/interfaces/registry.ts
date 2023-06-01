@@ -134,6 +134,7 @@ import type {
     PalletNominationPoolsUnbondPool,
     PalletOffchainTaskSchedulerError,
     PalletOffchainTaskSchedulerEvent,
+    PalletOffencesEvent,
     PalletPosSwitchCall,
     PalletPosSwitchError,
     PalletPosSwitchEvent,
@@ -214,6 +215,7 @@ import type {
     SpRuntimeTokenError,
     SpRuntimeTransactionalError,
     SpSessionMembershipProof,
+    SpStakingOffenceOffenceDetails,
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
@@ -349,6 +351,7 @@ declare module '@polkadot/types/types/registry' {
         PalletNominationPoolsUnbondPool: PalletNominationPoolsUnbondPool;
         PalletOffchainTaskSchedulerError: PalletOffchainTaskSchedulerError;
         PalletOffchainTaskSchedulerEvent: PalletOffchainTaskSchedulerEvent;
+        PalletOffencesEvent: PalletOffencesEvent;
         PalletPosSwitchCall: PalletPosSwitchCall;
         PalletPosSwitchError: PalletPosSwitchError;
         PalletPosSwitchEvent: PalletPosSwitchEvent;
@@ -429,6 +432,7 @@ declare module '@polkadot/types/types/registry' {
         SpRuntimeTokenError: SpRuntimeTokenError;
         SpRuntimeTransactionalError: SpRuntimeTransactionalError;
         SpSessionMembershipProof: SpSessionMembershipProof;
+        SpStakingOffenceOffenceDetails: SpStakingOffenceOffenceDetails;
         SpVersionRuntimeVersion: SpVersionRuntimeVersion;
         SpWeightsRuntimeDbWeight: SpWeightsRuntimeDbWeight;
         SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
