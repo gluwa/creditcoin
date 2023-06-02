@@ -12,7 +12,7 @@
         "format": "prettier --write \"src/**/*.ts\"",
         "check-format": "prettier --check \"src/**/*.ts\"",
         "typecheck": "tsc --noEmit",
-        "build": "npx tsc"
+        "build": "tsc"
     },
     "keywords": [],
     "author": "",
