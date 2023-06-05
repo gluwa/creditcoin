@@ -85,6 +85,7 @@ traced-test = { workspace = true }
 
 [features]
 default = ['std']
+fast-runtime = []
 runtime-benchmarks = [
     'frame-benchmarking/runtime-benchmarks',
     'frame-support/runtime-benchmarks',
