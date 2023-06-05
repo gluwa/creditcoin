@@ -26,6 +26,10 @@ pub const BASE_REWARD_IN_CTC: u64 = 28;
 pub const CREDO_PER_CTC: u64 = 1_000_000_000_000_000_000;
 pub const SAWTOOTH_PORT_HEIGHT: u64 = 1_123_966;
 
+pub trait RewardsEnabled {
+	fn should_issue_rewards() -> bool;
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -48,6 +52,8 @@ pub mod pallet {
 		type Currency: Currency<AccountIdOf<Self>>;
 
 		type WeightInfo: WeightInfo;
+
+		type RewardsEnabled: RewardsEnabled;
 	}
 
 	pub trait WeightInfo {
@@ -74,6 +80,9 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_now: BlockNumberFor<T>) -> Weight {
+			if !T::RewardsEnabled::should_issue_rewards() {
+				return T::DbWeight::get().reads(1);
+			}
 			let block_author = frame_system::Pallet::<T>::digest().convert_first(|item| {
 				item.pre_runtime_try_to::<AccountIdOf<T>>(&sp_consensus_pow::POW_ENGINE_ID)
 			});
@@ -86,6 +95,9 @@ pub mod pallet {
 		}
 
 		fn on_finalize(block_number: BlockNumberFor<T>) {
+			if !T::RewardsEnabled::should_issue_rewards() {
+				return;
+			}
 			if let Some(author) = BlockAuthor::<T>::get() {
 				let reward = Self::reward_amount(block_number);
 				Self::issue_reward(author, reward);

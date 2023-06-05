@@ -645,10 +645,19 @@ impl pallet_difficulty::Config for Runtime {
 	type Moment = Moment;
 }
 
+pub struct RewardIfNotPoS;
+
+impl pallet_rewards::RewardsEnabled for RewardIfNotPoS {
+	fn should_issue_rewards() -> bool {
+		pallet_pos_switch::SwitchBlockNumber::<Runtime>::get().is_none()
+	}
+}
+
 impl pallet_rewards::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type WeightInfo = pallet_rewards::weights::WeightInfo<Runtime>;
+	type RewardsEnabled = RewardIfNotPoS;
 }
 
 impl pallet_pos_switch::Config for Runtime {
