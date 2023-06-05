@@ -85,6 +85,28 @@ impl pallet_rewards::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type WeightInfo = super::weights::WeightInfo<Test>;
+	type RewardsEnabled = TestRewardsEnabled;
+}
+
+thread_local! {
+	static REWARDS_ENABLED: std::cell::RefCell<bool> = std::cell::RefCell::new(true);
+}
+
+pub struct TestRewardsEnabled;
+
+impl TestRewardsEnabled {
+	pub fn with_disabled<R>(f: impl FnOnce() -> R) -> R {
+		REWARDS_ENABLED.with(|v| *v.borrow_mut() = false);
+		let res = f();
+		REWARDS_ENABLED.with(|v| *v.borrow_mut() = true);
+		res
+	}
+}
+
+impl crate::RewardsEnabled for TestRewardsEnabled {
+	fn should_issue_rewards() -> bool {
+		REWARDS_ENABLED.with(|v| *v.borrow())
+	}
 }
 
 // Build genesis storage according to the mock runtime.
