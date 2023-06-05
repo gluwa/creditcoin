@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: The Unlicense
 
 import axios from 'axios';
+import { testIf } from '../utils';
 
 test('Prometheus metrics work', async () => {
     const metricsBase: string = (global as any).CREDITCOIN_METRICS_BASE;
@@ -20,7 +21,7 @@ test('Prometheus metrics work', async () => {
     }
 });
 
-test('Nonce metrics are returned', async () => {
+testIf((global as any).CREDITCOIN_API_URL === 'ws://127.0.0.1:9944', 'Nonce metrics are returned', async () => {
     const metricsBase: string = (global as any).CREDITCOIN_METRICS_BASE;
     const { data } = await axios.get<string>(`${metricsBase}/metrics`);
 
