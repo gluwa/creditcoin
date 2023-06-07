@@ -35,13 +35,14 @@ pub mod migrations;
 pub mod ocw;
 mod types;
 
-use ocw::tasks::collect_coins::GCreContract;
+use ocw::tasks::collect_coins::{GATEContract, GCreContract};
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
-	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
-	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
-	TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+	Blockchain, BurnGATEId, BurnGATEStruct, CollectedCoinsId, CollectedCoinsStruct, DealOrder,
+	DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate,
+	InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId,
+	TaskOutput, Transfer, TransferId, TransferKind, UnverifiedBurnGATE, UnverifiedCollectedCoins,
+	UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
@@ -231,6 +232,15 @@ pub mod pallet {
 	#[pallet::getter(fn collect_coins_contract)]
 	pub type CollectCoinsContract<T: Config> = StorageValue<_, GCreContract, ValueQuery>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn burned_GATE)]
+	pub type BurnedGATE<T: Config> =
+		StorageMap<_, Identity, BurnGATEId<T::Hash>, types::BurnGATEStruct<T::Hash, T::Balance>>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn GATE_contract)]
+	pub type BurnGATEContract<T: Config> = StorageValue<_, GATEContract, ValueQuery>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -241,6 +251,8 @@ pub mod pallet {
 		/// Collecting coins from Eth ERC-20 has been registered and will be verified.
 		/// [collected_coins_id, registered_collect_coins]
 		CollectCoinsRegistered(CollectedCoinsId<T::Hash>, types::UnverifiedCollectedCoins),
+
+		BurnGATERegistered(BurnGATEId<T::Hash>, types::UnverifiedBurnGATE),
 
 		/// An external transfer has been registered and will be verified.
 		/// [registered_transfer_id, registered_transfer]
@@ -1369,6 +1381,7 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
+<<<<<<< HEAD
 		/// Registers an address on an external blockchain as the property of an onchain address.
 		/// To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
 		/// The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
@@ -1423,6 +1436,41 @@ pub mod pallet {
 					fail!(e)
 				},
 			}
+=======
+		#[transactional]
+		#[pallet::call_index(23)]
+		#[pallet::weight(<T as Config>::WeightInfo::request_burn_gate())]
+		pub fn request_burn_gate(
+			origin: OriginFor<T>,
+			evm_address: ExternalAddress,
+			tx_id: ExternalTxId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let contract = Self::GATE_contract();
+			let pending = types::UnverifiedBurnGATE { to: evm_address, tx_id, contract };
+			let burn_gate_id = TaskV2::<T>::to_id(&pending);
+			let deadline = T::TaskScheduler::deadline();
+
+			ensure!(
+				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&burn_gate_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			ensure!(
+				!T::TaskScheduler::is_scheduled(&deadline, &burn_gate_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
+			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			T::TaskScheduler::insert(&deadline, &burn_gate_id, Task::from(pending.clone()));
+
+			Self::deposit_event(Event::<T>::BurnGATERegistered(burn_gate_id.into(), pending));
+
+			Ok(())
+>>>>>>> d5293f33 (need review from other team member to continue progressing)
 		}
 	}
 }
