@@ -13,13 +13,12 @@ For more information, see [creditcoin.org](https://creditcoin.org), or read the 
 - [Miner Setup](./docs/miner-setup.md)
 - [Legacy Account Migration](./docs/legacy-account-migration.md)
 - [Using PolkadotJs](./docs/using-polkadotjs.md)
-- [PolkadotJs Example Project](./javascript)
 
 ## Developer Setup
 
-### Rust Setup
+### Dependency Setup
 
-First, you must complete the [basic Rust setup instructions](./docs/rust-setup.md).
+First, you must complete the [basic environment setup](/docs/dev-guide/src/getting-started/building.md#build-prerequisites).
 
 ### Run
 

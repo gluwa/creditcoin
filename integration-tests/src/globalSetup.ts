@@ -1,12 +1,29 @@
-import { ApiPromise, WsProvider, Wallet, Keyring, CHAINS } from 'creditcoin-js';
+import { ApiPromise, WsProvider, Keyring, KeyringPair, Wallet, POINT_01_CTC } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { main as deployCtcContract } from './ctc-deploy';
+
+const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
+    switch (who) {
+        case 'lender':
+            return keyring.addFromUri('//Alice');
+        case 'borrower':
+            return keyring.addFromUri('//Bob');
+        case 'sudo':
+            return keyring.addFromUri('//Alice');
+        default:
+            throw new Error(`Unexpected value "${who}"`); // eslint-disable-line
+    }
+};
 
 const setup = async () => {
     process.env.NODE_ENV = 'test';
 
     if ((global as any).CREDITCOIN_CREATE_WALLET === undefined) {
         (global as any).CREDITCOIN_CREATE_WALLET = Wallet.createRandom; // eslint-disable-line
+    }
+
+    if ((global as any).CREDITCOIN_CREATE_SIGNER === undefined) {
+        (global as any).CREDITCOIN_CREATE_SIGNER = createSigner; // eslint-disable-line
     }
 
     // WARNING: when setting global variables `undefined' means no value has been assigned
@@ -18,16 +35,19 @@ const setup = async () => {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
     }
 
+    if ((global as any).CREDITCOIN_MINIMUM_TXN_FEE === undefined) {
+        (global as any).CREDITCOIN_MINIMUM_TXN_FEE = POINT_01_CTC;
+    }
+
     if ((global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL === undefined) {
         (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL = true;
     }
-
     if ((global as any).CREDITCOIN_ETHEREUM_CHAIN === undefined) {
-        (global as any).CREDITCOIN_ETHEREUM_CHAIN = CHAINS.hardhat;
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN = 'Ethereum';
     }
 
     if ((global as any).CREDITCOIN_ETHEREUM_NODE_URL === undefined) {
-        (global as any).CREDITCOIN_ETHEREUM_NODE_URL = 'http://localhost:8545';
+        (global as any).CREDITCOIN_ETHEREUM_NODE_URL = 'http://127.0.0.1:8545';
     }
 
     if ((global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET === undefined) {
@@ -73,8 +93,9 @@ const setup = async () => {
         provider: new WsProvider((global as any).CREDITCOIN_API_URL),
     });
     if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
-        const alice = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
-        await setupAuthority(api, alice);
+        const keyring = new Keyring({ type: 'sr25519' });
+        const sudo = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo');
+        await setupAuthority(api, sudo);
     }
     await api.disconnect();
 };

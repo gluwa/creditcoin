@@ -1,11 +1,9 @@
-import { KeyringPair, Guid, POINT_01_CTC, Wallet, creditcoinApi } from 'creditcoin-js';
+import { KeyringPair, Guid, Wallet, creditcoinApi } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
-
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
+import { DealOrderRegistered, signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 
 describe('Exempt', (): void => {
     let ccApi: CreditcoinApi;
@@ -15,15 +13,15 @@ describe('Exempt', (): void => {
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -58,13 +56,6 @@ describe('Exempt', (): void => {
         ]);
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
-        const eth = await ethConnection(
-            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
-        );
-        const currency = testCurrency(eth.testTokenAddress);
-        const loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
         dealOrder = await registerDealOrder(
@@ -91,7 +82,7 @@ describe('Exempt', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 60000);
 });

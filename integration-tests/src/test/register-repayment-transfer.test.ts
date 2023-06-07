@@ -1,18 +1,13 @@
-import { creditcoinApi, KeyringPair, LoanTerms, TransferKind, Guid, Wallet, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, KeyringPair, Guid, Wallet } from 'creditcoin-js';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
-import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { testData, lendOnEth, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
 
 import { extractFee } from '../utils';
-
-const ethless: TransferKind = {
-    platform: 'Evm',
-    kind: 'Ethless',
-};
 
 describe('RegisterRepaymentTransfer', (): void => {
     let ccApi: CreditcoinApi;
@@ -22,17 +17,17 @@ describe('RegisterRepaymentTransfer', (): void => {
     let repaymentTxHash: string;
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
-    let loanTerms: LoanTerms;
+    let contractAddress: string;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -70,8 +65,7 @@ describe('RegisterRepaymentTransfer', (): void => {
             (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
             (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
         );
-        const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(ccApi, currency);
+        contractAddress = eth.testTokenAddress;
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
@@ -89,6 +83,10 @@ describe('RegisterRepaymentTransfer', (): void => {
         );
 
         const fundingTxHash = await lendOnEth(lenderWallet, borrowerWallet, dealOrder.dealOrder.itemId, loanTerms, eth);
+        const ethless = {
+            kind: 'Ethless' as const,
+            contractAddress,
+        };
         const fundingEvent = await registerFundingTransfer(ethless, dealOrder.dealOrder.itemId, fundingTxHash, lender);
         const fundingTransferVerified = await fundingEvent.waitForVerification().catch();
         expect(fundingTransferVerified).toBeTruthy();
@@ -101,6 +99,10 @@ describe('RegisterRepaymentTransfer', (): void => {
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
+        const ethless = {
+            kind: 'Ethless' as const,
+            contractAddress,
+        };
         const ccTransferKind = createCreditcoinTransferKind(api, ethless);
 
         return new Promise((resolve, reject): void => {
@@ -116,7 +118,7 @@ describe('RegisterRepaymentTransfer', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 18000000);
 });

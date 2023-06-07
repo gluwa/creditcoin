@@ -1,3 +1,4 @@
+---
 name: CI
 
 # Controls when the action will run.
@@ -10,6 +11,8 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+permissions: read-all
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   docker-build:
@@ -21,6 +24,33 @@ jobs:
         run: |
           docker build -t gluwa/creditcoin .
 
+      - name: Start a container from image
+        run: |
+          # see https://opensource.com/article/18/5/how-find-ip-address-linux
+          IP_ADDRESS=$(curl https://ifconfig.me)
+          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
+
+          docker run -d -p 9933:9933 -p 30333:30333 -v "$(pwd)"/test-data:/data gluwa/creditcoin   \
+              --validator --chain mainnet                                   \
+              --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+              --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+              --public-addr "/dns4/$IP_ADDRESS/tcp/30333" \
+              --prometheus-external \
+              --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+              --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+              --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWSQye3uN3bZQRRC4oZbpiAZXkP2o5UZh6S8pqyh24bF3k" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWFrsEZ2aSfiigAxs6ir2kU6en4BewotyCXPhrJ7T1AzjN" \
+              --port 30333 --unsafe-rpc-external
+
+      - name: Healtcheck
+        run: |
+          sleep 60
+          ./scripts/check-health.sh
+
+      - name: Kill the container
+        run: |
+          # this will also kill the parent container
+          sudo killall -9 creditcoin-node
+
   sanity-tests:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +58,62 @@ jobs:
 
       - name: Check for parity between extrinsics, benchmarks and weights
         run: |
+          echo "INFO: active pallets are"
+          ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets
+          echo "========================"
           ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh
+
+      - name: Check migrations
+        run: |
+          ./scripts/check-usage-of-log-warn.sh
+
+      - name: Check if Cargo.toml specifies dependencies from forks
+        run: |
+          ./scripts/check-for-used-forks.sh
+
+  audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo audit
+        run: |
+          cargo install cargo-audit --features=fix
+
+      - name: Run cargo audit
+        run: |
+          cargo audit --ignore RUSTSEC-2020-0071
+          CC_MATCH=$(cargo audit --ignore RUSTSEC-2020-0071 --color never | grep -E "^.── creditcoin" || true)
+
+          # fail for anything which is a 1st level dependency of Creditcoin
+          if [ -n "$CC_MATCH" ]; then
+              echo "FAIL: Direct dependencies of Creditcoin found in audit report"
+              echo "INFO: Inspect the output above for more information"
+              exit 1
+          else
+              echo "INFO: No direct dependencies of Creditcoin found in audit report"
+              exit 0
+          fi
 
   fmt:
     name: Rustfmt
@@ -39,7 +124,7 @@ jobs:
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -61,10 +146,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y protobuf-compiler
+
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -74,7 +164,7 @@ jobs:
           profile: minimal
           override: true
           components: clippy
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Run Clippy
         uses: actions-rs/cargo@v1
@@ -84,7 +174,7 @@ jobs:
 
   check:
     # The type of runner that the job will run on
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -94,12 +184,12 @@ jobs:
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -108,7 +198,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Check Build
         run: |
@@ -119,19 +209,19 @@ jobs:
           SKIP_WASM_BUILD=1 cargo check --features=runtime-benchmarks --release
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
 
       - name: Set-Up
         run: |
-          sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          brew update
+          brew install cmake openssl protobuf
 
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -140,19 +230,20 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Configure flags for collecting coverage
         run: |
-          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
-          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> $GITHUB_ENV
+          # shellcheck disable=SC2129
+          echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
+          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
 
       - name: Run tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -- --test-threads 1
+          args: --features=try-runtime -- --test-threads 1
         env:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
@@ -169,7 +260,8 @@ jobs:
           verbose: true
 
   integration-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
     permissions: write-all
     steps:
       - uses: actions/checkout@v3
@@ -181,12 +273,12 @@ jobs:
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -195,7 +287,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build SUT
         uses: actions-rs/cargo@v1
@@ -205,15 +297,7 @@ jobs:
 
       - name: Start SUT
         run: |
-          MINING_KEY=$(docker run docker.io/parity/subkey:latest generate | grep "SS58 Address" | tr -d ' ' | cut -f2 -d':')
-
-          if [ -z "$MINING_KEY" ]; then
-            echo "ERROR: Problem generating mining key"
-            exit 1
-          fi
-
-          echo "INFO: MINING_KEY=$MINING_KEY"
-          cargo run --release -- --dev --mining-key $MINING_KEY --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          cargo run --release -- --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
@@ -240,6 +324,7 @@ jobs:
         run: |
           pushd creditcoin-js/
 
+          ./get-metadata.sh
           yarn build:types
           yarn format
 
@@ -250,7 +335,7 @@ jobs:
 
           if [ -n "$(git status --short)" ]; then
               git diff
-              echo "::set-output name=git_diff::true"
+              echo "git_diff=true" >> "$GITHUB_OUTPUT"
           fi
 
           popd
@@ -293,10 +378,10 @@ jobs:
 
   javascript-lint:
     name: javascript-lint / ${{ matrix.directory }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests, scripts/js]
+        directory: [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
       - uses: actions/checkout@v3
@@ -318,10 +403,10 @@ jobs:
 
   javascript-typecheck:
     name: javascript-typecheck / ${{ matrix.directory }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests, scripts/js]
+        directory: [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
       - uses: actions/checkout@v3
@@ -343,10 +428,10 @@ jobs:
 
   javascript-format:
     name: javascript-format / ${{ matrix.directory }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        directory: [creditcoin-js, integration-tests, scripts/js]
+        directory: [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
       - uses: actions/checkout@v3
@@ -372,28 +457,33 @@ jobs:
           popd
 
   benchmark:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
       - name: Inspect benchmark CI config
         run: |
-          PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
-          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+          # WARNING: Command below may differ depending on which workflow config file
+          # your job is defined in !!! Don't copy&paste it blindly !!!
+          PALLETS_IN_CI_CONFIG=$(grep "./scripts/bench.sh -p" .github/workflows/ci.yml | grep -v PALLETS_IN_CI_CONFIG | tr -s ' ' | cut -d' ' -f4 | sort | xargs)
+
+          PALLETS_IN_SOURCE=$(./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets)
           if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
               echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              echo "INFO: in source: '$PALLETS_IN_SOURCE'"
+              echo "INFO: CI config: '$PALLETS_IN_CI_CONFIG'"
               exit 1
           fi
 
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -402,7 +492,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build benchmarks
         uses: actions-rs/cargo@v1
@@ -410,11 +500,16 @@ jobs:
           command: build
           args: --release --features runtime-benchmarks
 
+      - name: Check if runner machine meets chain's requirements
+        continue-on-error: true
+        run: |
+          ./scripts/check-hardware.sh
+
       - name: Run benchmarks to generate dummy weights
         run: |
-          ./scripts/bench.sh -p difficulty -b -r 1 -s 1
-          ./scripts/bench.sh -p creditcoin -b -r 1 -s 1
-          ./scripts/bench.sh -p rewards    -b -r 1 -s 1
+          ./scripts/bench.sh -p creditcoin -b -r 1 -s 2
+          ./scripts/bench.sh -p offchain_task_scheduler -b -r 1 -s 2
+          ./scripts/bench.sh -p rewards -b -r 1 -s 2
 
       # check if automatically generated weights compile
       - name: Rebuild SUT with newly generated weights
@@ -425,10 +520,10 @@ jobs:
 
   shellcheck:
     name: "🐚 Shellcheck"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
-    - name: Run ShellCheck
-      uses: ludeeus/action-shellcheck@1.1.0
-      env:
-        SHELLCHECK_OPTS: -e SC2002 # allow useless cat commands
+      - uses: actions/checkout@v3
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        env:
+          SHELLCHECK_OPTS: -e SC2002 # allow useless cat commands

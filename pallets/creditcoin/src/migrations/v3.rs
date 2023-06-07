@@ -1,77 +1,28 @@
 // `interest_type` added to `LoanTerms`
 
-use super::v2;
-use codec::{Decode, Encode};
+use super::{v1, v2, AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf};
+use core::convert::TryFrom;
 use frame_support::dispatch::Weight;
-use frame_support::{generate_storage_alias, traits::Get, Identity, Twox64Concat};
+use frame_support::{pallet_prelude::*, traits::Get, Identity, Twox64Concat};
+use sp_std::prelude::*;
 
-use crate::{AddressId, Config, Duration, ExternalAmount, OfferId, TransferId};
+use crate::Config;
 
-pub use v2::AskOrder as OldAskOrder;
-pub use v2::AskTerms as OldAskTerms;
-pub use v2::BidOrder as OldBidOrder;
-pub use v2::BidTerms as OldBidTerms;
-pub use v2::Blockchain;
-pub use v2::DealOrder as OldDealOrder;
-pub use v2::InterestRate as OldInterestRate;
-pub use v2::LoanTerms as OldLoanTerms;
-pub use v2::{OrderId, Transfer, TransferKind};
+use v1::AskOrder as OldAskOrder;
+use v1::AskTerms as OldAskTerms;
+use v1::BidOrder as OldBidOrder;
+use v1::BidTerms as OldBidTerms;
+use v1::InterestRate as OldInterestRate;
+use v1::LoanTerms as OldLoanTerms;
+use v2::DealOrder as OldDealOrder;
 
+use crate::AskOrder;
+use crate::AskTerms;
+use crate::BidOrder;
+use crate::BidTerms;
+use crate::DealOrder;
 use crate::InterestRate;
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct LoanTerms {
-	pub amount: ExternalAmount,
-	pub interest_rate: InterestRate,
-	pub term_length: Duration,
-}
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct AskTerms(pub(super) LoanTerms);
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct BidTerms(pub(super) LoanTerms);
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct AskOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
-	pub lender_address_id: AddressId<Hash>,
-	pub terms: AskTerms,
-	pub expiration_block: BlockNum,
-	pub block: BlockNum,
-	pub lender: AccountId,
-}
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct BidOrder<AccountId, BlockNum, Hash> {
-	pub blockchain: Blockchain,
-	pub borrower_address_id: AddressId<Hash>,
-	pub terms: BidTerms,
-	pub expiration_block: BlockNum,
-	pub block: BlockNum,
-	pub borrower: AccountId,
-}
-
-#[derive(Encode, Decode)]
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-pub struct DealOrder<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
-	pub offer_id: OfferId<BlockNum, Hash>,
-	pub lender_address_id: AddressId<Hash>,
-	pub borrower_address_id: AddressId<Hash>,
-	pub terms: LoanTerms,
-	pub expiration_block: BlockNum,
-	pub timestamp: Moment,
-	pub block: Option<BlockNum>,
-	pub funding_transfer_id: Option<TransferId<Hash>>,
-	pub repayment_transfer_id: Option<TransferId<Hash>>,
-	pub lock: Option<AccountId>,
-	pub borrower: AccountId,
-}
+use crate::LoanTerms;
 
 impl From<OldInterestRate> for InterestRate {
 	fn from(old: OldInterestRate) -> Self {
@@ -94,51 +45,69 @@ impl From<OldLoanTerms> for LoanTerms {
 	}
 }
 
-impl From<LoanTerms> for AskTerms {
-	fn from(terms: LoanTerms) -> Self {
-		Self(terms)
-	}
-}
-
-impl From<LoanTerms> for BidTerms {
-	fn from(terms: LoanTerms) -> Self {
-		Self(terms)
-	}
-}
-
 impl From<OldAskTerms> for AskTerms {
 	fn from(old: OldAskTerms) -> Self {
-		AskTerms(LoanTerms::from(old.0))
+		Self::try_from(LoanTerms::from(old.0)).expect("existing ask terms must be valid")
 	}
 }
 
 impl From<OldBidTerms> for BidTerms {
 	fn from(old: OldBidTerms) -> Self {
-		BidTerms(LoanTerms::from(old.0))
+		Self::try_from(LoanTerms::from(old.0)).expect("existing bid terms must be valid")
 	}
 }
 
-generate_storage_alias!(
-	Creditcoin,
-	DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), DealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-);
+#[frame_support::storage_alias]
+type AskOrders<T: crate::Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Twox64Concat,
+	BlockNumberOf<T>,
+	Identity,
+	HashOf<T>,
+	AskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+>;
 
-generate_storage_alias!(
-	Creditcoin,
-	AskOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), AskOrder<T::AccountId, T::BlockNumber, T::Hash>>
-);
+#[frame_support::storage_alias]
+type BidOrders<T: crate::Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Twox64Concat,
+	BlockNumberOf<T>,
+	Identity,
+	HashOf<T>,
+	BidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+>;
 
-generate_storage_alias!(
-	Creditcoin,
-	BidOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), BidOrder<T::AccountId, T::BlockNumber, T::Hash>>
-);
+#[frame_support::storage_alias]
+type DealOrders<T: crate::Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Twox64Concat,
+	BlockNumberOf<T>,
+	Identity,
+	HashOf<T>,
+	DealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = 0;
-	let weight_each = T::DbWeight::get().reads_writes(1, 1);
+pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
 
-	DealOrders::<T>::translate::<OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>, _>(
-		|_exp, _hash, old_deal| {
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData)
+	}
+}
+
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
+	}
+
+	fn migrate(&self) -> Weight {
+		let mut weight: Weight = Weight::zero();
+		let weight_each = T::DbWeight::get().reads_writes(1, 1);
+
+		DealOrders::<T>::translate::<
+			OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+			_,
+		>(|_exp, _hash, old_deal| {
 			weight = weight.saturating_add(weight_each);
 			Some(DealOrder {
 				blockchain: old_deal.blockchain,
@@ -154,74 +123,98 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 				lock: old_deal.lock,
 				borrower: old_deal.borrower,
 			})
-		},
-	);
+		});
 
-	AskOrders::<T>::translate::<OldAskOrder<T::AccountId, T::BlockNumber, T::Hash>, _>(
-		|_exp, _hash, old_ask| {
-			weight = weight.saturating_add(weight_each);
-			Some(AskOrder {
-				blockchain: old_ask.blockchain,
-				lender_address_id: old_ask.lender_address_id,
-				terms: AskTerms::from(old_ask.terms),
-				expiration_block: old_ask.expiration_block,
-				block: old_ask.block,
-				lender: old_ask.lender,
-			})
-		},
-	);
+		AskOrders::<T>::translate::<OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
+			|_exp, _hash, old_ask| {
+				weight = weight.saturating_add(weight_each);
+				Some(AskOrder {
+					blockchain: old_ask.blockchain,
+					lender_address_id: old_ask.lender_address_id,
+					terms: AskTerms::from(old_ask.terms),
+					expiration_block: old_ask.expiration_block,
+					block: old_ask.block,
+					lender: old_ask.lender,
+				})
+			},
+		);
 
-	BidOrders::<T>::translate::<OldBidOrder<T::AccountId, T::BlockNumber, T::Hash>, _>(
-		|_exp, _hash, old_bid| {
-			weight = weight.saturating_add(weight_each);
-			Some(BidOrder {
-				blockchain: old_bid.blockchain,
-				borrower_address_id: old_bid.borrower_address_id,
-				terms: BidTerms::from(old_bid.terms),
-				expiration_block: old_bid.expiration_block,
-				block: old_bid.block,
-				borrower: old_bid.borrower,
-			})
-		},
-	);
+		BidOrders::<T>::translate::<OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>, _>(
+			|_exp, _hash, old_bid| {
+				weight = weight.saturating_add(weight_each);
+				Some(BidOrder {
+					blockchain: old_bid.blockchain,
+					borrower_address_id: old_bid.borrower_address_id,
+					terms: BidTerms::from(old_bid.terms),
+					expiration_block: old_bid.expiration_block,
+					block: old_bid.block,
+					borrower: old_bid.borrower,
+				})
+			},
+		);
 
-	weight
+		weight
+	}
+
+	fn post_upgrade(&self, _ctx: Vec<u8>) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			3,
+			"expected storage version to be 3 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 mod tests {
+	use super::Migrate;
 	use core::convert::TryFrom;
 
 	use crate::{
 		mock::{ExtBuilder, Test},
 		tests::TestInfo,
-		AskOrderId, BidOrderId, DealOrderId, DoubleMapExt, Duration, InterestRate, OfferId,
+		AskOrderId, BidOrderId, Blockchain, DealOrderId, DoubleMapExt, Duration, OfferId,
 	};
 
 	use super::{
-		generate_storage_alias, AskOrder, AskTerms, BidOrder, BidTerms, Blockchain, Config,
-		DealOrder, Identity, LoanTerms, OldAskOrder, OldAskTerms, OldBidOrder, OldBidTerms,
-		OldDealOrder, OldInterestRate, OldLoanTerms, Twox64Concat,
+		AccountIdOf, AskOrder, AskTerms, BidOrder, BidTerms, BlockNumberOf, DealOrder, HashOf,
+		Identity, InterestRate, LoanTerms, MomentOf, OldAskOrder, OldAskTerms, OldBidOrder,
+		OldBidTerms, OldDealOrder, OldInterestRate, OldLoanTerms, Twox64Concat,
 	};
 
-	generate_storage_alias!(
-		Creditcoin,
-		DealOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), OldDealOrder<T::AccountId, T::BlockNumber, T::Hash, T::Moment>>
-	);
+	#[frame_support::storage_alias]
+	type DealOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		OldDealOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+	>;
 
 	type OldDealOrders = DealOrders<Test>;
 
-	generate_storage_alias!(
-		Creditcoin,
-		AskOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), OldAskOrder<T::AccountId, T::BlockNumber, T::Hash>>
-	);
+	#[frame_support::storage_alias]
+	type AskOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		OldAskOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	>;
 
 	type OldAskOrders = AskOrders<Test>;
 
-	generate_storage_alias!(
-		Creditcoin,
-		BidOrders<T: Config> => DoubleMap<(Twox64Concat, T::BlockNumber), (Identity, T::Hash), OldBidOrder<T::AccountId, T::BlockNumber, T::Hash>>
-	);
+	#[frame_support::storage_alias]
+	type BidOrders<T: crate::Config> = StorageDoubleMap<
+		crate::Pallet<T>,
+		Twox64Concat,
+		BlockNumberOf<T>,
+		Identity,
+		HashOf<T>,
+		OldBidOrder<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>>,
+	>;
 
 	type OldBidOrders = BidOrders<Test>;
 
@@ -232,7 +225,7 @@ mod tests {
 			let test_info = TestInfo::new_defaults();
 
 			let old_ask_order = OldAskOrder {
-				blockchain: Blockchain::Ethereum,
+				blockchain: crate::Blockchain::Ethereum,
 				lender_address_id: test_info.lender.address_id,
 				terms: OldAskTerms(OldLoanTerms {
 					amount: 100u64.into(),
@@ -250,7 +243,7 @@ mod tests {
 
 			OldAskOrders::insert_id(&ask_order_id, &old_ask_order);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let ask_order = super::AskOrders::<Test>::try_get_id(&ask_order_id).unwrap();
 
@@ -285,7 +278,7 @@ mod tests {
 			let test_info = TestInfo::new_defaults();
 
 			let old_bid_order = OldBidOrder {
-				blockchain: Blockchain::Ethereum,
+				blockchain: crate::Blockchain::Ethereum,
 				borrower_address_id: test_info.borrower.address_id,
 				terms: OldBidTerms(OldLoanTerms {
 					amount: 100u64.into(),
@@ -303,7 +296,7 @@ mod tests {
 
 			OldBidOrders::insert_id(&bid_order_id, &old_bid_order);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let bid_order = super::BidOrders::<Test>::try_get_id(&bid_order_id).unwrap();
 
@@ -364,7 +357,7 @@ mod tests {
 
 			OldDealOrders::insert_id(&deal_id, &old_deal);
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			let deal = super::DealOrders::<Test>::try_get_id(&deal_id).unwrap();
 

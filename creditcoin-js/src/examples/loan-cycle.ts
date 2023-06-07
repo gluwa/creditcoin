@@ -5,10 +5,9 @@ import { creditcoinApi } from '../creditcoin-api';
 import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 import { signLoanParams } from '../extrinsics/register-deal-order';
-import { ethConnection, testCurrency } from './ethereum';
-import { LoanTerms, TransferKind, CHAINS } from '../model';
+import { ethConnection } from './ethereum';
+import { LoanTerms, TransferKind } from '../model';
 import { setupAuthority } from './setup-authority';
-import { registerCurrencyAsync } from '../extrinsics/register-currency';
 
 export type PostAddressRegistrationInfo = {
     wallet: Wallet;
@@ -48,24 +47,19 @@ export const fullLoanCycleExample = async (
     } = extrinsics;
 
     const initLenderAndBorrower = async () => {
-        const iKeyring = new Keyring({ type: 'sr25519' });
-        const iLender = iKeyring.addFromUri('//Alice');
-        const iBorrower = iKeyring.addFromUri('//Bob');
+        const keyring = new Keyring({ type: 'sr25519' });
+        const iLender = keyring.addFromUri('//Alice');
+        const iBorrower = keyring.addFromUri('//Bob');
         await setupAuthority(api, iLender);
 
         const iLenderWallet = Wallet.createRandom();
         const iBorrowerWallet = Wallet.createRandom();
 
         const [iLenderAddress, iBorrowerAddress] = await Promise.all([
-            registerAddress(
-                iLenderWallet.address,
-                CHAINS.hardhat,
-                signAccountId(iLenderWallet, iLender.address),
-                iLender,
-            ),
+            registerAddress(iLenderWallet.address, 'Ethereum', signAccountId(iLenderWallet, iLender.address), iLender),
             registerAddress(
                 iBorrowerWallet.address,
-                CHAINS.hardhat,
+                'Ethereum',
                 signAccountId(iBorrowerWallet, iBorrower.address),
                 iBorrower,
             ),
@@ -86,17 +80,6 @@ export const fullLoanCycleExample = async (
         };
     };
 
-    const { lend, repay, waitUntilTip, testTokenAddress } = await ethConnection(
-        ethereumRpcUrl,
-        decreaseMiningInterval,
-        minterWallet,
-    );
-
-    const currency = testCurrency(testTokenAddress);
-    const keyring = new Keyring({ type: 'sr25519' });
-    const sudoKey = keyring.addFromUri('//Alice');
-    const registeredCurrency = await registerCurrencyAsync(api, currency, sudoKey);
-
     const expBlock = 100_000_000;
     const loanTerms: LoanTerms = {
         amount: new BN(100),
@@ -113,7 +96,6 @@ export const fullLoanCycleExample = async (
             secs: 6000,
             nanos: 0,
         },
-        currency: registeredCurrency.itemId,
     };
 
     const { registeredLender, registeredBorrower } = registeredWallets || (await initLenderAndBorrower());
@@ -143,6 +125,7 @@ export const fullLoanCycleExample = async (
         console.log(dealOrderId);
 
         // connect to ethereum to lend and repay
+        const { lend, repay, waitUntilTip } = await ethConnection(ethereumRpcUrl, decreaseMiningInterval, minterWallet);
 
         // Lender lends to borrower on ethereum
         const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
@@ -159,7 +142,7 @@ export const fullLoanCycleExample = async (
         await waitUntilTip(lendBlockNumber + 12);
 
         // Register the ethereum transaction as a funding transfer
-        const transferKind: TransferKind = { platform: 'Evm', kind: 'Ethless' };
+        const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
         const { waitForVerification, transfer, transferId } = await registerFundingTransfer(
             transferKind,
             dealOrderId,
@@ -236,6 +219,9 @@ export const fullLoanCycleExample = async (
         console.log(dealOrder);
         const { itemId: dealOrderId } = dealOrder;
 
+        // connect to ethereum to lend and repay
+        const { lend, waitUntilTip } = await ethConnection(ethereumRpcUrl, decreaseMiningInterval, minterWallet);
+
         // Lender lends to borrower on ethereum
         const [tokenAddress, lendTxHash, lendBlockNumber] = await lend(
             lenderWallet,
@@ -251,7 +237,7 @@ export const fullLoanCycleExample = async (
         await waitUntilTip(lendBlockNumber + 12);
 
         // Register the ethereum transaction as a funding transfer
-        const transferKind: TransferKind = { platform: 'Evm', kind: 'Ethless' };
+        const transferKind: TransferKind = { kind: 'Ethless', contractAddress: tokenAddress };
         const { waitForVerification, transfer, transferId } = await registerFundingTransfer(
             transferKind,
             dealOrderId,

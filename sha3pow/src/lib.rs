@@ -1,5 +1,5 @@
+use pallet_difficulty::Difficulty;
 use parity_scale_codec::{Decode, Encode};
-use primitives::Difficulty;
 use rand::{prelude::SmallRng, SeedableRng};
 use sc_consensus_pow::{Error, PowAlgorithm};
 use sc_keystore::LocalKeystore;
@@ -80,11 +80,9 @@ where
 	C::Api: DifficultyApi<B, Difficulty>,
 {
 	fn difficulty(&self, parent: <B as BlockT>::Hash) -> Result<Difficulty, Error<B>> {
-		let parent_id = BlockId::<B>::hash(parent);
-		self.runtime_api().difficulty(&parent_id).map_err(|err| {
+		self.runtime_api().difficulty(parent).map_err(|err| {
 			sc_consensus_pow::Error::Environment(format!(
-				"Fetching difficulty from runtime failed: {:?}",
-				err
+				"Fetching difficulty from runtime failed: {err:?}"
 			))
 		})
 	}
@@ -152,7 +150,7 @@ where
 	C: GetDifficulty<B>,
 {
 	let mut rng = SmallRng::from_rng(&mut rand::thread_rng()).map_err(|e| {
-		sc_consensus_pow::Error::Environment(format!("Initialize RNG failed for mining: {:?}", e))
+		sc_consensus_pow::Error::Environment(format!("Initialize RNG failed for mining: {e:?}"))
 	})?;
 
 	let nonce = H256::random_using(&mut rng);
@@ -169,7 +167,7 @@ where
 
 #[cfg(test)]
 mod test {
-	use primitives::Difficulty;
+	use super::Difficulty;
 	use sc_keystore::LocalKeystore;
 	use sp_core::H256;
 	use sp_runtime::{testing::Block, OpaqueExtrinsic};
@@ -263,6 +261,7 @@ mod test {
 		let mock = MockDifficulty::new(1);
 		let algorithm = Sha3Algorithm::new(Arc::new(mock));
 
+		#[allow(clippy::redundant_clone)]
 		let cloning = algorithm.clone();
 		assert_eq!(cloning.client, algorithm.client);
 	}

@@ -1,5 +1,6 @@
 import { creditcoinApi } from 'creditcoin-js';
-import { Keyring } from '@polkadot/api';
+import { createOverrideWeight } from 'creditcoin-js/lib/utils';
+import { ApiPromise, Keyring } from '@polkadot/api';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { promisify } from 'util';
@@ -41,6 +42,7 @@ async function doRuntimeUpgrade(
     wasmBlobPath: string,
     sudoKeyUri: string,
     hasSubwasm = false,
+    scheduleDelay = 50,
 ): Promise<void> {
     // init the api client
     const { api } = await creditcoinApi(wsUrl);
@@ -83,14 +85,16 @@ async function doRuntimeUpgrade(
             return byteArray.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
         };
 
-        const scheduleDelay = 50;
-
         const hexBlob = u8aToHex(wasmBlob);
+        let callback = api.tx.system.setCode(hexBlob);
+        if (scheduleDelay > 0) {
+            callback = api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, callback);
+        }
+        const overrideWeight = createOverrideWeight(api);
         // schedule the upgrade
         await new Promise<void>((resolve, reject) => {
             const unsubscribe = api.tx.sudo
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                .sudo(api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, { Value: api.tx.system.setCode(hexBlob) }))
+                .sudoUncheckedWeight(callback, overrideWeight)
                 .signAndSend(keyring, { nonce: -1 }, (result) => {
                     const finish = (fn: () => void) => {
                         unsubscribe
@@ -109,6 +113,33 @@ async function doRuntimeUpgrade(
                     }
                 });
         });
+
+        // WARNING: only used during fork-and-migrate testing
+        if (scheduleDelay === 0) {
+            callback = api.tx.posSwitch.switchToPos();
+
+            await new Promise<void>((resolve, reject) => {
+                const unsubscribe = api.tx.sudo
+                    .sudoUncheckedWeight(callback, overrideWeight)
+                    .signAndSend(keyring, { nonce: -1 }, (result) => {
+                        const finish = (fn: () => void) => {
+                            unsubscribe
+                                .then((unsub) => {
+                                    unsub();
+                                    fn();
+                                })
+                                .catch(reject);
+                        };
+                        if (result.isInBlock && !result.isError) {
+                            console.log('switchToPos called');
+                            finish(resolve);
+                        } else if (result.isError) {
+                            const error = new Error(`Failed calling switchToPos: ${result.toString()}`);
+                            finish(() => reject(error));
+                        }
+                    });
+            });
+        }
     } finally {
         await api.disconnect();
     }
@@ -122,8 +153,9 @@ if (process.argv.length < 5) {
 const inputWsUrl = process.argv[2];
 const inputWasmBlobPath = process.argv[3];
 const inputSudoKeyUri = process.argv[4];
+const explicitDelay = Number(process.argv[5] || 50);
 
-doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true).catch((reason) => {
+doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true, explicitDelay).catch((reason) => {
     console.error(reason);
     process.exit(1);
 });

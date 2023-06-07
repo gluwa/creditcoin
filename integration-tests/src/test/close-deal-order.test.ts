@@ -1,12 +1,15 @@
-import { creditcoinApi, KeyringPair, LoanTerms, TransferKind, Guid, Wallet, POINT_01_CTC } from 'creditcoin-js';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
+import { KeyringPair, TransferKind, creditcoinApi } from 'creditcoin-js';
+
+import { Guid } from 'creditcoin-js';
+
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { TransferEvent } from 'creditcoin-js/lib/extrinsics/register-transfers';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, lendOnEth, tryRegisterAddress, loanTermsWithCurrency } from 'creditcoin-js/lib/testUtils';
-
+import { testData, lendOnEth, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
+import { Wallet } from 'creditcoin-js';
+import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
 
 describe('CloseDealOrder', (): void => {
     let ccApi: CreditcoinApi;
@@ -16,17 +19,16 @@ describe('CloseDealOrder', (): void => {
     let repaymentEvent: TransferEvent;
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
-    let loanTerms: LoanTerms;
 
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -73,15 +75,13 @@ describe('CloseDealOrder', (): void => {
             (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
             (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
         );
-        const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(ccApi, currency);
-
-        const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
         const ethless: TransferKind = {
-            platform: 'Evm',
             kind: 'Ethless',
+            contractAddress: eth.testTokenAddress,
         };
+
+        const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
         dealOrder = await registerDealOrder(
             lenderRegAddr.itemId,
@@ -134,7 +134,7 @@ describe('CloseDealOrder', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 600000);
 });

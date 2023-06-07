@@ -1,7 +1,7 @@
 use creditcoin_node_runtime::AccountId;
-use sc_cli::RunCmd;
+pub use sc_cli::clap;
+use sc_cli::{clap::Parser, RunCmd};
 use sp_core::crypto::{PublicError, Ss58Codec};
-use structopt::StructOpt;
 
 fn parse_rpc_pair(input: &str) -> Result<(String, String), String> {
 	let (name, uri) = input
@@ -12,7 +12,7 @@ fn parse_rpc_pair(input: &str) -> Result<(String, String), String> {
 			Ok(s.trim_matches('\'').into())
 		} else if s.starts_with('\"') && s.ends_with('\"') {
 			Ok(s.trim_matches('\"').into())
-		} else if !s.starts_with(&['\'', '\"']) {
+		} else if !s.starts_with(['\'', '\"']) {
 			Ok(s.into())
 		} else {
 			Err(String::from("invalid quotes in rpc mapping"))
@@ -38,7 +38,7 @@ mod parse_tests {
 	}
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct Cli {
 	#[structopt(subcommand)]
 	pub subcommand: Option<Subcommand>,
@@ -54,11 +54,11 @@ pub struct Cli {
 	/// The number of mining worker threads to spawn. Defaults to the number of cores if omitted.
 	pub mining_threads: Option<usize>,
 
-	#[structopt(long, parse(try_from_str = parse_rpc_pair))]
+	#[clap(long, value_parser(parse_rpc_pair))]
 	/// If the node is an oracle authority, the RPC URL to use for a given external chain.
 	pub rpc_mapping: Option<Vec<(String, String)>>,
 
-	#[structopt(long)]
+	#[clap(long)]
 	/// An authority account ID to monitor the nonce of (must be an account actively running as an authority on this node), or
 	/// `auto` to find the authority account automatically.
 	pub monitor_nonce: Option<NonceMonitorTarget>,
@@ -81,10 +81,11 @@ impl std::str::FromStr for NonceMonitorTarget {
 	}
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
 	/// Key management cli utilities
-	Key(sc_cli::KeySubcommand),
+	#[command(subcommand)]
+	Key(Box<sc_cli::KeySubcommand>),
 
 	/// Build a chain specification.
 	BuildSpec(sc_cli::BuildSpecCmd),
@@ -108,6 +109,17 @@ pub enum Subcommand {
 	Revert(sc_cli::RevertCmd),
 
 	/// The custom benchmark subcommand benchmarking runtime pallets.
-	#[structopt(name = "benchmark", about = "Benchmark runtime pallets.")]
-	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
+	#[command(subcommand)]
+	Benchmark(Box<frame_benchmarking_cli::BenchmarkCmd>),
+
+	/// Try some command against runtime state.
+	#[cfg(feature = "try-runtime")]
+	TryRuntime(try_runtime_cli::TryRuntimeCmd),
+
+	/// Try some command against runtime state. Note: `try-runtime` feature must be enabled.
+	#[cfg(not(feature = "try-runtime"))]
+	TryRuntime,
+
+	/// Db meta columns information.
+	ChainInfo(sc_cli::ChainInfoCmd),
 }

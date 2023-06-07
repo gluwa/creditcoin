@@ -1,10 +1,10 @@
 use std::{convert::TryInto, time::Duration};
 
-use codec::Decode;
 use creditcoin_node_runtime::AccountId;
-use jsonrpc_core::{futures::channel::mpsc, futures::join, Failure, Response, Success};
+use futures::join;
+use parity_scale_codec::Decode;
 use sc_client_api::Backend;
-use sc_service::{Arc, RpcHandlers, RpcSession};
+use sc_service::{Arc, RpcHandlers};
 use sp_keystore::CryptoStore;
 use sp_runtime::{
 	app_crypto::Ss58Codec, offchain::OffchainStorage, traits::IdentifyAccount, MultiSigner,
@@ -20,38 +20,23 @@ use super::FullBackend;
 #[error("{0}")]
 enum Error {
 	Serde(sc_telemetry::serde_json::Error),
-	JsonRpc(jsonrpc_core::Error),
+	JsonRpc(jsonrpsee::core::error::Error),
 	Rpc(String),
-	Codec(codec::Error),
+	Codec(parity_scale_codec::Error),
 	KeyStore(String),
 	Signer(String),
 }
 
-async fn rpc_request(
-	handlers: &RpcHandlers,
-	request: &str,
-) -> Result<jsonrpc_core::serde_json::Value, Error> {
-	let (tx, _rx) = mpsc::unbounded();
-	let session = RpcSession::new(tx);
+impl From<jsonrpsee::core::Error> for Error {
+	fn from(value: jsonrpsee::core::Error) -> Self {
+		Error::JsonRpc(value)
+	}
+}
 
-	let response = handlers
-		.rpc_query(&session, request)
-		.await
-		.ok_or_else(|| Error::Rpc("empty response".into()))?;
+async fn rpc_request(handlers: &RpcHandlers, request: &str) -> Result<serde_json::Value, Error> {
+	let (response, _stream) = handlers.rpc_query(request).await?;
 
-	let response: Response = jsonrpc_core::serde_json::from_str(&response).map_err(Error::Serde)?;
-
-	let result = match response {
-		Response::Single(out) => match out {
-			jsonrpc_core::Output::Success(Success { result, .. }) => result,
-			jsonrpc_core::Output::Failure(Failure { error, .. }) => {
-				return Err(Error::JsonRpc(error))
-			},
-		},
-		Response::Batch(_) => {
-			unreachable!("we don't send any batch requests, so we cannot receive batch responses")
-		},
-	};
+	let result = serde_json::from_str(&response).map_err(Error::Serde)?;
 
 	Ok(result)
 }
@@ -132,7 +117,7 @@ async fn get_authority_account(
 	Ok(match target {
 		NonceMonitorTarget::Auto => {
 			let keys = keystore
-				.keys(sp_runtime::KeyTypeId(*b"ctcs"))
+				.keys(sp_runtime::KeyTypeId(*b"gots"))
 				.await
 				.map_err(|e| Error::KeyStore(e.to_string()))?;
 			keys.into_iter()

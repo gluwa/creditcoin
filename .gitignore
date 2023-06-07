@@ -7,7 +7,8 @@
 .DS_Store
 
 # The cache for docker container dependency
-.cargo
+.cargo/*
+!.cargo/config.toml
 
 # The cache for chain data in container
 .local
@@ -18,3 +19,9 @@
 **/package-lock.json
 **/node_modules/
 *.tgz
+justfile
+
+# JetBrains IDE Files
+.idea/
+
+docs/dev-guide/book

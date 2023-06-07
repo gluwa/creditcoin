@@ -1,33 +1,36 @@
+---
 name: Build Release Artifacts
 
 on:
   push:
     tags:
-      - '*'
+      - "*"
+
+permissions: read-all
 
 jobs:
   build-native-runtime:
-      strategy:
-        matrix:
-          operating-system: [ubuntu-20.04, windows-2022, macos-11]
-      runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [ubuntu-22.04, windows-2022, macos-11]
+    runs-on: ${{ matrix.operating-system }}
 
-      steps:
+    steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Set-up Linux
-        if: matrix.operating-system == 'ubuntu-20.04'
+        if: matrix.operating-system == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         shell: bash
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -46,19 +49,19 @@ jobs:
           profile: minimal
           override: true
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Figure out platform
         shell: bash
         run: |
-          PLATFORM="$(rustup target list --installed | grep $(uname -m))"
-          echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
+          PLATFORM=$(rustup target list --installed | grep "$(uname -m)")
+          echo "PLATFORM=$PLATFORM" >> "$GITHUB_ENV"
 
       - name: Figure out tag name
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: DEBUG
         shell: bash
@@ -79,28 +82,28 @@ jobs:
           args: --release --target aarch64-apple-darwin
 
       - name: Compress
-        uses: thedoctor0/zip-release@0.6.2
+        uses: thedoctor0/zip-release@0.7.1
         with:
-          type: 'zip'
-          directory: 'target/release/'
-          path: 'creditcoin-node*'
-          filename: '../../creditcoin-${{ env.TAG_NAME }}-${{ env.PLATFORM }}.zip'
-          exclusions: 'creditcoin-node.d'
+          type: "zip"
+          directory: "target/release/"
+          path: "creditcoin-node*"
+          filename: "../../creditcoin-${{ env.TAG_NAME }}-${{ env.PLATFORM }}.zip"
+          exclusions: "creditcoin-node.d"
 
       - name: Compress MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
-        uses: thedoctor0/zip-release@0.6.2
+        uses: thedoctor0/zip-release@0.7.1
         with:
-          type: 'zip'
-          directory: 'target/aarch64-apple-darwin/release/'
-          path: 'creditcoin-node*'
-          filename: '../../../creditcoin-${{ env.TAG_NAME }}-aarch64-apple-darwin.zip'
-          exclusions: 'creditcoin-node.d'
+          type: "zip"
+          directory: "target/aarch64-apple-darwin/release/"
+          path: "creditcoin-node*"
+          filename: "../../../creditcoin-${{ env.TAG_NAME }}-aarch64-apple-darwin.zip"
+          exclusions: "creditcoin-node.d"
 
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          path: 'creditcoin-${{ env.TAG_NAME }}-*.zip'
+          path: "creditcoin-${{ env.TAG_NAME }}-*.zip"
           if-no-files-found: error
 
   build-wasm-runtime:
@@ -114,7 +117,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Build WASM runtime
         id: srtool_build
@@ -123,6 +126,7 @@ jobs:
           chain: "creditcoin"
           runtime_dir: runtime
           package: creditcoin-node-runtime
+          tag: "1.66.1" # FIXME: remove this option (use the latest) once we're building w/ stable rust
           workdir: ${{ github.workspace }}
 
       - name: DEBUG
@@ -138,7 +142,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          path: '*.wasm'
+          path: "*.wasm"
           if-no-files-found: error
 
   docker-build:
@@ -152,7 +156,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Build docker image
         run: |
@@ -181,7 +185,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Build creditcoin-js package
         run: |
@@ -198,7 +202,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          path: 'creditcoin-js/creditcoin-js-v${{ env.TAG_NAME }}.tgz'
+          path: "creditcoin-js/creditcoin-js-v${{ env.TAG_NAME }}.tgz"
           if-no-files-found: error
 
   create-release:
@@ -216,7 +220,7 @@ jobs:
         shell: bash
         run: |
           TAG_NAME=$(git describe --tag)
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Download binaries
         uses: actions/download-artifact@v3
@@ -229,6 +233,6 @@ jobs:
       - name: Make the release
         uses: softprops/action-gh-release@v1
         with:
-          files: 'artifact/creditcoin-*${{ env.TAG_NAME }}*'
+          files: "artifact/creditcoin-*${{ env.TAG_NAME }}*"
           fail_on_unmatched_files: true
           name: ${{ env.TAG_NAME }}

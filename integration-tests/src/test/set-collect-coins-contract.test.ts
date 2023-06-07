@@ -1,8 +1,7 @@
-import { KeyringPair, creditcoinApi, POINT_01_CTC } from 'creditcoin-js';
+import { KeyringPair, creditcoinApi } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData } from 'creditcoin-js/lib/testUtils';
-import { createCreditcoinBlockchain } from 'creditcoin-js/lib/transforms';
 
 import { extractFee, testIf } from '../utils';
 
@@ -18,7 +17,7 @@ describe('SetCollectCoinsContract', (): void => {
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
-            sudoSigner = keyring.addFromUri('//Alice');
+            sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
         }
     });
 
@@ -32,7 +31,7 @@ describe('SetCollectCoinsContract', (): void => {
         /* eslint-disable @typescript-eslint/naming-convention */
         const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
             address: '0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419',
-            chain: createCreditcoinBlockchain(api, testingData.blockchain),
+            chain: testingData.blockchain,
         });
 
         return new Promise((resolve, reject): void => {
@@ -43,7 +42,7 @@ describe('SetCollectCoinsContract', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     });
 });

@@ -1,88 +1,9 @@
 use crate::{
-	mock::*, next_difficulty, DifficultyAdjustmentPeriod, DifficultyAndTimestamp,
-	PreviousDifficultiesAndTimestamps, TargetBlockTime, WeightInfo,
+	mock::{RuntimeOrigin as Origin, *},
+	next_difficulty, DifficultyAdjustmentPeriod, DifficultyAndTimestamp,
+	PreviousDifficultiesAndTimestamps, TargetBlockTime,
 };
-use frame_support::{assert_noop, assert_ok};
 use pallet_timestamp::{self as timestamp};
-use sp_runtime::traits::BadOrigin;
-
-#[test]
-fn set_target_block_time_should_error_when_not_signed() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(Difficulty::set_target_block_time(Origin::none(), 12345), BadOrigin);
-	});
-}
-
-#[test]
-fn set_target_block_time_should_error_when_signed_by_non_root() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(Difficulty::set_target_block_time(Origin::signed(0), 12345), BadOrigin);
-	});
-}
-
-#[test]
-fn set_target_block_time_should_error_when_target_time_is_zero() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(
-			Difficulty::set_target_block_time(Origin::root(), 0),
-			crate::Error::<Test>::ZeroTargetTime
-		);
-	});
-}
-
-#[test]
-fn set_target_block_time_should_update_storage() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(Difficulty::set_target_block_time(Origin::root(), 789),);
-
-		let value = TargetBlockTime::<Test>::get();
-		assert_eq!(value, 789);
-	});
-}
-
-#[test]
-fn set_adjustment_period_should_error_when_not_signed() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(Difficulty::set_adjustment_period(Origin::none(), 12345), BadOrigin);
-	});
-}
-
-#[test]
-fn set_adjustment_period_should_error_when_signed_by_non_root() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(Difficulty::set_adjustment_period(Origin::signed(0), 12345), BadOrigin);
-	});
-}
-
-#[test]
-fn set_adjustment_period_should_error_when_period_is_zero() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(
-			Difficulty::set_adjustment_period(Origin::root(), 0),
-			crate::Error::<Test>::ZeroAdjustmentPeriod
-		);
-	});
-}
-
-#[test]
-fn set_adjustment_period_should_error_when_period_is_negative() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(
-			Difficulty::set_adjustment_period(Origin::root(), -3),
-			crate::Error::<Test>::NegativeAdjustmentPeriod
-		);
-	});
-}
-
-#[test]
-fn set_adjustment_period_should_update_storage() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(Difficulty::set_adjustment_period(Origin::root(), 95),);
-
-		let value = DifficultyAdjustmentPeriod::<Test>::get();
-		assert_eq!(value, 95);
-	});
-}
 
 #[test]
 fn next_difficulty_should_return_initial_when_previous_is_too_short() {
@@ -172,13 +93,4 @@ fn exercise_on_timestamp_set_when_previous_is_configured() {
 		// just exercise the getter function
 		let _ = crate::Pallet::<Test>::difficulty();
 	});
-}
-
-#[test]
-fn exercise_weightinfo_functions() {
-	let result = super::weights::WeightInfo::<Test>::set_target_block_time();
-	assert!(result > 0);
-
-	let result = super::weights::WeightInfo::<Test>::set_adjustment_period();
-	assert!(result > 0);
 }

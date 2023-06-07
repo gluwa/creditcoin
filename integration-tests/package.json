@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "jest --silent",
+        "test:comments": "--runInBand avoids race conditions with global setup",
+        "test": "jest --silent --runInBand",
         "lint": "eslint -c .eslintrc.js --ext .ts ./src",
         "format": "prettier --write \"src/**/*.ts\"",
         "check-format": "prettier --check \"src/**/*.ts\"",
@@ -14,10 +15,10 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "@polkadot/keyring": "10.1.9",
+        "@polkadot/keyring": "12.2.1",
         "@types/ws": "^8.5.3",
         "axios": "^1.0.0",
-        "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.7.0.tgz",
+        "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.9.5.tgz",
         "ws": "^8.5.0"
     },
     "devDependencies": {
@@ -30,6 +31,6 @@
         "prettier": "^2.6.2",
         "ts-jest": "^29.0.0",
         "ts-node": "^10.8.0",
-        "typescript": "^4.7.2"
+        "typescript": "^5.0.4"
     }
 }

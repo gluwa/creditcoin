@@ -10,13 +10,9 @@ import {
     PalletCreditcoinLoanTermsDuration,
     PalletCreditcoinOffer,
     PalletCreditcoinTransfer,
-    PalletCreditcoinPlatformBlockchain,
-    PalletCreditcoinPlatformTransferKind,
-    PalletCreditcoinCollectedCoins,
-    PalletCreditcoinUnverifiedCollectedCoins,
-    PalletCreditcoinPlatformEvmInfo,
-    PalletCreditcoinPlatformCurrency,
-    PalletCreditcoinPlatformEvmTransferKind,
+    PalletCreditcoinTransferKind,
+    PalletCreditcoinCollectCoinsCollectedCoins,
+    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
 } from '@polkadot/types/lookup';
 import {
     Address,
@@ -24,7 +20,6 @@ import {
     LoanTerms,
     BidOrder,
     Offer,
-    EvmInfo,
     AskOrderId,
     BidOrderId,
     DealOrder,
@@ -36,94 +31,11 @@ import {
     TransferKind,
     UnverifiedCollectedCoins,
     CollectedCoins,
-    Blockchain,
-    Currency,
-    EvmTransferKind,
 } from './model';
-
-export const createEvmInfo = (info: PalletCreditcoinPlatformEvmInfo): EvmInfo => {
-    const chainId = info.chainId.toString();
-    return {
-        chainId: new BN(chainId),
-    };
-};
-
-export const createBlockchain = (blockchain: PalletCreditcoinPlatformBlockchain): Blockchain => {
-    switch (blockchain.type) {
-        case 'Evm':
-            const evmInfo = createEvmInfo(blockchain.asEvm);
-            return {
-                platform: 'Evm',
-                ...evmInfo,
-            };
-    }
-};
-
-export const createCreditcoinBlockchain = (
-    api: ApiPromise,
-    blockchain: Blockchain,
-): PalletCreditcoinPlatformBlockchain => {
-    const toType = (): unknown => {
-        switch (blockchain.platform) {
-            case 'Evm':
-                return { Evm: { chainId: blockchain.chainId } }; // eslint-disable-line @typescript-eslint/naming-convention
-        }
-    };
-    return api.createType('PalletCreditcoinPlatformBlockchain', toType());
-};
-
-/* eslint-disable @typescript-eslint/naming-convention */
-
-export const createEvmTransferKind = (evmTransferKind: PalletCreditcoinPlatformEvmTransferKind): EvmTransferKind => {
-    return evmTransferKind.type;
-};
-
-export const createCurrency = (currency: PalletCreditcoinPlatformCurrency): Currency => {
-    switch (currency.type) {
-        case 'Evm':
-            const [ctcCurrencyType, ctcEvmInfo] = currency.asEvm;
-            const evmInfo = createEvmInfo(ctcEvmInfo);
-            switch (ctcCurrencyType.type) {
-                case 'SmartContract':
-                    const [contractAddr, supported] = ctcCurrencyType.asSmartContract;
-                    const supportedTransferKinds = new Set(supported.map(createEvmTransferKind));
-                    const contract = contractAddr.toString();
-                    return {
-                        platform: 'Evm',
-                        type: 'SmartContract',
-                        contract,
-                        supportedTransferKinds,
-                        ...evmInfo,
-                    };
-            }
-    }
-};
-
-export const createCreditcoinCurrency = (api: ApiPromise, currency: Currency): PalletCreditcoinPlatformCurrency => {
-    const toType = (): unknown => {
-        switch (currency.platform) {
-            case 'Evm':
-                switch (currency.type) {
-                    case 'SmartContract':
-                        return {
-                            Evm: [
-                                { SmartContract: [currency.contract, Array.from(currency.supportedTransferKinds)] },
-                                {
-                                    chainId: currency.chainId,
-                                },
-                            ],
-                        };
-                }
-        }
-    };
-    return api.createType('PalletCreditcoinPlatformCurrency', toType());
-};
-
-/* eslint-enable @typescript-eslint/naming-convention */
 
 export const createAddress = ({ value, blockchain, owner }: PalletCreditcoinAddress): Address => ({
     accountId: owner.toString(),
-    blockchain: createBlockchain(blockchain),
+    blockchain: blockchain.type,
     externalAddress: value.toString(),
 });
 
@@ -144,36 +56,31 @@ export const createInterestRate = ({
     interestType: interestType.type,
 });
 
-export const createLoanTerms = ({
-    amount,
-    interestRate,
-    termLength,
-    currency,
-}: PalletCreditcoinLoanTerms): LoanTerms => ({
+export const createLoanTerms = ({ amount, interestRate, termLength }: PalletCreditcoinLoanTerms): LoanTerms => ({
     amount,
     interestRate: createInterestRate(interestRate),
     termLength: createDuration(termLength),
-    currency: currency.toString(),
 });
 
 export const createCreditcoinLoanTerms = (
     api: ApiPromise,
-    { amount, interestRate, termLength, currency }: LoanTerms,
+    { amount, interestRate, termLength }: LoanTerms,
 ): PalletCreditcoinLoanTerms =>
     api.createType('PalletCreditcoinLoanTerms', {
         amount,
         interestRate,
         termLength,
-        currency,
     });
 
 export const createAskOrder = ({
+    blockchain,
     terms,
     lenderAddressId,
     expirationBlock,
     block,
     lender,
 }: PalletCreditcoinAskOrder): AskOrder => ({
+    blockchain: blockchain.type,
     blockNumber: block.toNumber(),
     expirationBlock: expirationBlock.toNumber(),
     loanTerms: createLoanTerms(terms),
@@ -182,12 +89,14 @@ export const createAskOrder = ({
 });
 
 export const createBidOrder = ({
+    blockchain,
     terms,
     borrowerAddressId,
     expirationBlock,
     block,
     borrower,
 }: PalletCreditcoinBidOrder): BidOrder => ({
+    blockchain: blockchain.type,
     blockNumber: block.toNumber(),
     expirationBlock: expirationBlock.toNumber(),
     loanTerms: createLoanTerms(terms),
@@ -195,7 +104,15 @@ export const createBidOrder = ({
     borrowerAccountId: borrower.toString(),
 });
 
-export const createOffer = ({ askId, bidId, expirationBlock, block, lender }: PalletCreditcoinOffer): Offer => ({
+export const createOffer = ({
+    blockchain,
+    askId,
+    bidId,
+    expirationBlock,
+    block,
+    lender,
+}: PalletCreditcoinOffer): Offer => ({
+    blockchain: blockchain.type,
     askOrderId: askId.toJSON() as AskOrderId,
     bidOrderId: bidId.toJSON() as BidOrderId,
     expirationBlock: expirationBlock.toNumber(),
@@ -235,34 +152,45 @@ export const createDealOrder = (dealOrder: PalletCreditcoinDealOrder): DealOrder
 export const createCreditcoinTransferKind = (
     api: ApiPromise,
     transferKind: TransferKind,
-): PalletCreditcoinPlatformTransferKind => {
+): PalletCreditcoinTransferKind => {
     const toType = (): unknown => {
-        switch (transferKind.platform) {
-            case 'Evm':
-                return { Evm: transferKind.kind }; // eslint-disable-line @typescript-eslint/naming-convention
+        switch (transferKind.kind) {
+            case 'Erc20':
+                return { Erc20: transferKind.contractAddress }; // eslint-disable-line  @typescript-eslint/naming-convention
+            case 'Ethless':
+                return { Ethless: transferKind.contractAddress }; // eslint-disable-line  @typescript-eslint/naming-convention
+            case 'Native':
+                return 'Native';
+            case 'Other':
+                return { Other: transferKind.value }; // eslint-disable-line  @typescript-eslint/naming-convention
         }
     };
 
-    return api.createType('PalletCreditcoinPlatformTransferKind', toType());
+    return api.createType('PalletCreditcoinTransferKind', toType());
 };
 
-export const createTransferKind = (transferKind: PalletCreditcoinPlatformTransferKind): TransferKind => {
+export const createTransferKind = (transferKind: PalletCreditcoinTransferKind): TransferKind => {
     switch (transferKind.type) {
-        case 'Evm':
-            return { platform: 'Evm', kind: transferKind.asEvm.type };
+        case 'Erc20':
+            return { kind: 'Erc20', contractAddress: transferKind.asErc20.toString() };
+        case 'Ethless':
+            return { kind: 'Ethless', contractAddress: transferKind.asEthless.toString() };
+        case 'Native':
+            return { kind: 'Native' };
+        default:
+            return { kind: 'Other', value: transferKind.asOther.toString() };
     }
 };
 
 export const createTransfer = (transfer: PalletCreditcoinTransfer): Transfer => {
-    const { blockchain, dealOrderId, kind, from, to, amount, txId, block, isProcessed, accountId, timestamp } =
-        transfer;
+    const { blockchain, kind, from, to, orderId, amount, txId, block, isProcessed, accountId, timestamp } = transfer;
     return {
-        blockchain: createBlockchain(blockchain),
+        blockchain: blockchain.type,
         kind: createTransferKind(kind),
         from: from.toString(),
         to: to.toString(),
+        orderId: (orderId.isDeal ? orderId.asDeal.toJSON() : orderId.asRepayment.toJSON()) as DealOrderId,
         amount,
-        dealOrderId: dealOrderId.toJSON() as DealOrderId,
         txHash: txId.toString(),
         blockNumber: block.toNumber(),
         processed: isProcessed.isTrue,
@@ -272,7 +200,7 @@ export const createTransfer = (transfer: PalletCreditcoinTransfer): Transfer => 
 };
 
 export const createUnverifiedCollectedCoins = (
-    collectedCoins: PalletCreditcoinUnverifiedCollectedCoins,
+    collectedCoins: PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
 ): UnverifiedCollectedCoins => {
     const { to, txId } = collectedCoins;
     return {
@@ -281,7 +209,7 @@ export const createUnverifiedCollectedCoins = (
     };
 };
 
-export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectedCoins): CollectedCoins => {
+export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectCoinsCollectedCoins): CollectedCoins => {
     const { to, txId, amount } = collectedCoins;
     return {
         to: to.toString(),

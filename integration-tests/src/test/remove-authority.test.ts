@@ -22,7 +22,7 @@ describe('RemoveAuthority', (): void => {
     beforeAll(async () => {
         api = (await creditcoinApi((global as any).CREDITCOIN_API_URL)).api;
         if (globals.CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
-            sudoSigner = keyring.addFromUri('//Alice');
+            sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
             authority = keyring.addFromUri('//Auth');
             await addAuthorityAsync(api, authority.address, sudoSigner);
         }

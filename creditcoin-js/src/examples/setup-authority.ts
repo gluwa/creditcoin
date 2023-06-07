@@ -12,18 +12,13 @@ export const setupAuthority = async (api: ApiPromise, sudoSigner: KeyringPair) =
         return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
     };
     const rpcUri = u8aToHex(api.createType('String', 'http://localhost:8545').toU8a());
-    // platform + chain id + '-rpc-uri' suffix, to match `Blockchain::rpc_key` in the rust code
-    await api.rpc.offchain.localStorageSet('PERSISTENT', 'evm-31337-rpc-uri', rpcUri);
-    if ((await api.query.difficulty.targetBlockTime<u64>()).toNumber() > 4000) {
-        console.log('setting target block time to 4000');
-        await api.tx.sudo.sudo(api.tx.difficulty.setTargetBlockTime(4000)).signAndSend(sudoSigner, { nonce: -1 });
-    }
-    const hasAuthKey = await api.rpc.author.hasKey(AUTHORITY_PUBKEY, 'ctcs');
+    await api.rpc.offchain.localStorageSet('PERSISTENT', 'ethereum-rpc-uri', rpcUri);
+    const hasAuthKey = await api.rpc.author.hasKey(AUTHORITY_PUBKEY, 'gots');
     if (hasAuthKey.isFalse) {
         console.log('no auth key!');
-        await api.rpc.author.insertKey('ctcs', AUTHORITY_SURI, AUTHORITY_PUBKEY);
+        await api.rpc.author.insertKey('gots', AUTHORITY_SURI, AUTHORITY_PUBKEY);
     }
-    const auth = await api.query.creditcoin.authorities<Option<Null>>(AUTHORITY_ACCOUNTID);
+    const auth = await api.query.taskScheduler.authorities<Option<Null>>(AUTHORITY_ACCOUNTID);
     if (auth.isNone) {
         console.log('adding authority');
         await addAuthorityAsync(api, AUTHORITY_ACCOUNTID, sudoSigner);

@@ -1,13 +1,12 @@
 // Copyright 2022 Gluwa, Inc. & contributors
 // SPDX-License-Identifier: The Unlicense
 
-import { creditcoinApi, Guid, LoanTerms, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
+import { creditcoinApi, Guid, KeyringPair } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { createCreditcoinLoanTerms } from 'creditcoin-js/lib/transforms';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
 import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { loanTermsWithCurrency, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 
 import { extractFee } from '../utils';
 
@@ -18,24 +17,15 @@ describe('RegisterDealOrder', () => {
 
     let borrowerAddressId: string;
     let lenderAddressId: string;
-    let loanTerms: LoanTerms;
-    const { blockchain, expirationBlock, createWallet, keyring } = testData(
+    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
-
-        const eth = await ethConnection(
-            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            undefined,
-        );
-        const currency = testCurrency(eth.testTokenAddress);
-        loanTerms = await loanTermsWithCurrency(ccApi, currency);
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     }, 60000);
 
     afterAll(async () => {
@@ -94,7 +84,7 @@ describe('RegisterDealOrder', () => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 120000);
 });

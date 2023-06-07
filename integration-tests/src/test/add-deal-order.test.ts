@@ -1,9 +1,8 @@
-import { creditcoinApi, KeyringPair, POINT_01_CTC } from 'creditcoin-js';
-import { Blockchain, Currency, LoanTerms, OfferId } from 'creditcoin-js/lib/model';
+import { KeyringPair } from 'creditcoin-js';
+import { Blockchain, OfferId } from 'creditcoin-js/lib/model';
+import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { ethConnection, testCurrency } from 'creditcoin-js/lib/examples/ethereum';
-import { addAskAndBidOrder, loanTermsWithCurrency, testData } from 'creditcoin-js/lib/testUtils';
-
+import { addAskAndBidOrder, testData } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
 
 describe('AddDealOrder', (): void => {
@@ -11,26 +10,17 @@ describe('AddDealOrder', (): void => {
     let borrower: KeyringPair;
     let lender: KeyringPair;
     let offerId: OfferId;
-    let loanTerms: LoanTerms;
-    let currency: Currency;
 
     const testingData = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
     );
-    const { expirationBlock, keyring } = testingData;
+    const { expirationBlock, keyring, loanTerms } = testingData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
-
-        const eth = await ethConnection(
-            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
-            undefined,
-        );
-        currency = testCurrency(eth.testTokenAddress);
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -38,7 +28,6 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        loanTerms = await loanTermsWithCurrency(ccApi, currency);
         const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms, testingData);
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;
@@ -58,7 +47,7 @@ describe('AddDealOrder', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 240000);
 });
