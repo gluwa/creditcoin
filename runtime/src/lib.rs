@@ -105,6 +105,16 @@ pub type Hash = sp_core::H256;
 
 pub use opaque::SessionKeys;
 
+macro_rules! prod_or_fast {
+	($prod: expr, $fast: expr) => {
+		if cfg!(feature = "fast-runtime") {
+			$fast
+		} else {
+			$prod
+		}
+	};
+}
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -138,7 +148,7 @@ pub mod opaque {
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 15_000;
+pub const MILLISECS_PER_BLOCK: u64 = prod_or_fast!(15_000, 5_000);
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -281,7 +291,7 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 12 * HOURS;
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = prod_or_fast!(12 * HOURS, 15);
 
 parameter_types! {
 	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64; // Q: how long to make an epoch
@@ -353,7 +363,7 @@ impl pallet_session::Config for Runtime {
 
 parameter_types! {
 	// Two sessions in an era (24 hours).
-	pub const SessionsPerEra: SessionIndex = 2;
+	pub const SessionsPerEra: SessionIndex = 2; 	// Q: how many sessions per era?
 
 	// 7 eras for unbonding (7 days).
 	pub const BondingDuration: sp_staking::EraIndex = 7; // Q: bonding duration?

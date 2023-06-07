@@ -21,7 +21,7 @@ members = [
 ]
 
 [workspace.package]
-version = '2.221.0'
+version = '2.222.0'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2021'
 license = 'Unlicense'
