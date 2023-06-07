@@ -122,7 +122,7 @@ export function makeWizardCommand() {
 
     await api.tx.utility
       .batchAll(txs)
-      .signAndSend(controllerKeyring, ({ status }) => {
+      .signAndSend(controllerKeyring, { nonce: -1 }, ({ status }) => {
         if (status.isInBlock) {
           console.log(`included in ${status.asInBlock.toString()}`);
         }
