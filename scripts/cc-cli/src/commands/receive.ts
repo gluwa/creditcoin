@@ -1,5 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { newApi } from "../api";
 
 export function makeReceiveCommand() {
   const cmd = new Command("receive");
@@ -16,7 +17,8 @@ export function makeReceiveCommand() {
   return cmd;
 }
 
-function receiveAction(options: OptionValues) {
+async function receiveAction(options: OptionValues) {
+  const { api } = await newApi();
   const seed = getSeedFromOptions(options);
   const pair = initKeyringPair(seed);
   const address = pair.address;
