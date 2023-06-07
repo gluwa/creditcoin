@@ -24,7 +24,10 @@ jobs:
         if: matrix.operating-system == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+
+      - name: Install protobuf
+        uses: arduino/setup-protoc@v2
 
       - name: Configure rustc version
         shell: bash
