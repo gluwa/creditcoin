@@ -1,6 +1,7 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { toMicrounits } from "../utils/balance";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
@@ -31,7 +32,10 @@ async function sendAction(options: OptionValues) {
   const stash = initKeyringPair(seed);
 
   // Send transaction
-  const tx = api.tx.balances.transfer(options.to, options.amount);
+  const tx = api.tx.balances.transfer(
+    options.to,
+    toMicrounits(options.amount).toString()
+  );
   const hash = await tx.signAndSend(stash);
 
   console.log("Transfer transaction hash: " + hash.toHex());

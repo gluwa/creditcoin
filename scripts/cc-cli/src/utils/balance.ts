@@ -11,6 +11,10 @@ export async function getBalance(address: string, api: any) {
   return balanceFromData(account.data);
 }
 
+export function toMicrounits(amount: number) {
+  return BigInt(amount) * BigInt(1000000000000000000);
+}
+
 function balanceFromData(data: any): Balance {
   return {
     free: data.free,
