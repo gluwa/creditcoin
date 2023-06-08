@@ -18,7 +18,7 @@ export function makeReceiveCommand() {
 }
 
 async function receiveAction(options: OptionValues) {
-  const { api } = await newApi();
+  await newApi();
   const seed = getSeedFromOptions(options);
   const pair = initKeyringPair(seed);
   const address = pair.address;
