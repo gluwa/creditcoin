@@ -1,7 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { addAuthorityAsync } from '../extrinsics/add-authority';
-import { Option, Null, u64 } from '@polkadot/types';
+import { Option, Null } from '@polkadot/types';
 
 const AUTHORITY_PUBKEY = '0x0238bcdc4d9ab1ef09a2f18ea49e512aafabaab02d21a8c6ff7d2ecee1f2a34d';
 export const AUTHORITY_SURI = 'version energy retire rely olympic figure shop stumble fence trust spider civil';

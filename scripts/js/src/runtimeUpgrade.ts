@@ -1,6 +1,6 @@
 import { creditcoinApi } from 'creditcoin-js';
 import { createOverrideWeight } from 'creditcoin-js/lib/utils';
-import { ApiPromise, Keyring } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { promisify } from 'util';
