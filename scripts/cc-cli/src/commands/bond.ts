@@ -3,7 +3,7 @@ import { newApi } from "../api";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
-import { Balance, getBalance } from "../utils/balance";
+import { Balance, getBalance, toMicrounits } from "../utils/balance";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");
@@ -71,8 +71,9 @@ async function bondAction(options: OptionValues) {
 }
 
 function checkBalanceAgainstBondAmount(balance: Balance, amount: number) {
-  const amountInMicroUnits = BigInt(amount) * BigInt(1000000000000000000);
-  if (BigInt(balance.free) < amountInMicroUnits) {
-    throw new Error(`Insufficient funds to bond ${amountInMicroUnits}`);
+  if (balance.free.lt(toMicrounits(amount))) {
+    throw new Error(
+      `Insufficient funds to bond ${toMicrounits(amount).toString()}`
+    );
   }
 }

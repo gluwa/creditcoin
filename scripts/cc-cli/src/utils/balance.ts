@@ -1,18 +1,29 @@
+import { BN } from "creditcoin-js";
+
+const MICROUNITS_PER_CTC = new BN("1000000000000000000");
+
+export function parseCTCString(amount: string): BN {
+  return new BN(amount).mul(MICROUNITS_PER_CTC);
+}
+
+export function toMicrounits(amount: number | BN): BN {
+  return new BN(amount).mul(MICROUNITS_PER_CTC);
+}
+
+export function toCTCString(amount: BN): string {
+  return amount.div(MICROUNITS_PER_CTC).toString() + "CTC";
+}
+
 export interface Balance {
-  free: number;
-  reserved: number;
-  miscFrozen: number;
-  feeFrozen: number;
+  free: BN;
+  reserved: BN;
+  miscFrozen: BN;
+  feeFrozen: BN;
 }
 
 export async function getBalance(address: string, api: any) {
   const account = await api.query.system.account(address);
-  // console.log(data.toHuman);
   return balanceFromData(account.data);
-}
-
-export function toMicrounits(amount: number) {
-  return BigInt(amount) * BigInt(1000000000000000000);
 }
 
 function balanceFromData(data: any): Balance {
@@ -25,10 +36,8 @@ function balanceFromData(data: any): Balance {
 }
 
 export function printBalance(balance: Balance) {
-  console.log(
-    `Available: ${(balance.free / 1000000000000000000).toString()} CTC`
-  );
-  console.log(
-    `Bonded: ${(balance.miscFrozen / 1000000000000000000).toString()} CTC`
-  );
+  console.log("Free:", toCTCString(balance.free));
+  console.log("Reserved:", toCTCString(balance.reserved));
+  console.log("Misc Frozen:", toCTCString(balance.miscFrozen));
+  console.log("Fee Frozen:", toCTCString(balance.feeFrozen));
 }

@@ -6,7 +6,13 @@ import { promptContinue } from "../utils/promptContinue";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
-import { Balance, getBalance, printBalance } from "../utils/balance";
+import {
+  Balance,
+  getBalance,
+  printBalance,
+  toMicrounits,
+} from "../utils/balance";
+import { BN } from "creditcoin-js";
 
 export function makeWizardCommand() {
   const cmd = new Command("wizard");
@@ -164,7 +170,7 @@ function checkControllerBalance(
   balance: Balance,
   amount: number
 ) {
-  if (balance.free < amount) {
+  if (balance.free < new BN(amount)) {
     console.log(
       "Controller account does not have enough funds to pay transaction fees"
     );
@@ -177,7 +183,7 @@ function checkControllerBalance(
 }
 
 function checkStashBalance(address: string, balance: Balance, amount: number) {
-  if (balance.free < amount) {
+  if (balance.free.lt(toMicrounits(amount))) {
     console.log(
       `Stash account does not have enough funds to bond ${amount.toString()} CTC`
     );
