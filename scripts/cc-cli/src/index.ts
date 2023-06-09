@@ -10,7 +10,7 @@ import { makeValidateCommand } from "./commands/validate";
 import { makeBondCommand } from "./commands/bond";
 import { makeRotateKeysCommand } from "./commands/rotateKeys";
 import { makeSetKeysCommand } from "./commands/setKeys";
-import { makeReceiveCommand } from "./commands/receive";
+import { makeShowAddressCommand } from "./commands/showAddress";
 import { makeSendCommand } from "./commands/send";
 import { makeChillCommand } from "./commands/chill";
 
@@ -22,7 +22,7 @@ program.description("Creditcoin Staking Tool");
 
 program
   .addCommand(makeNewSeedCommand())
-  .addCommand(makeReceiveCommand())
+  .addCommand(makeShowAddressCommand())
   .addCommand(makeSendCommand())
   .addCommand(makeBalanceCommand())
   .addCommand(makeBondCommand())
