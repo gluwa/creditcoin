@@ -14,6 +14,8 @@ import { makeShowAddressCommand } from "./commands/showAddress";
 import { makeSendCommand } from "./commands/send";
 import { makeChillCommand } from "./commands/chill";
 import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
+import { makeBondExtraCommand } from "./commands/bondExtra";
+import { makeUnbondCommand } from "./commands/unbond";
 
 const program = new Command();
 
@@ -27,6 +29,8 @@ program
   .addCommand(makeSendCommand())
   .addCommand(makeBalanceCommand())
   .addCommand(makeBondCommand())
+  .addCommand(makeBondExtraCommand())
+  .addCommand(makeUnbondCommand())
   .addCommand(makeRotateKeysCommand())
   .addCommand(makeSetKeysCommand())
   .addCommand(makeValidateCommand())
