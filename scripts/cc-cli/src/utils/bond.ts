@@ -6,18 +6,25 @@ export async function bond(
   controllerAddress: string,
   amount: number,
   rewardDestination: "Staked" | "Stash" | "Controller",
-  api: ApiPromise
+  api: ApiPromise,
+  extra = false
 ) {
   if (amount < 1) {
     throw new Error("Amount to bond must be at least 1");
   }
   const amountInMicroUnits = BigInt(amount) * BigInt(1000000000000000000); // Multiply by to convert to micro units
 
-  const bondTx = api.tx.staking.bond(
-    controllerAddress,
-    amountInMicroUnits.toString(),
-    rewardDestination
-  );
+  let bondTx;
+
+  if (extra) {
+    bondTx = api.tx.staking.bondExtra(amountInMicroUnits.toString());
+  } else {
+    bondTx = api.tx.staking.bond(
+      controllerAddress,
+      amountInMicroUnits.toString(),
+      rewardDestination
+    );
+  }
 
   const stashKeyring = initKeyringPair(stashSeed);
 

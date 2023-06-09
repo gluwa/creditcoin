@@ -36,6 +36,7 @@ function balanceFromData(data: any): Balance {
 }
 
 export function printBalance(balance: Balance) {
+  console.log("Available:", toCTCString(balance.free.sub(balance.miscFrozen)));
   console.log("Free:", toCTCString(balance.free));
   console.log("Reserved:", toCTCString(balance.reserved));
   console.log("Misc Frozen:", toCTCString(balance.miscFrozen));
