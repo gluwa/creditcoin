@@ -14,7 +14,6 @@ describe('switch_to_post()', (): void => {
     let root: KeyringPair;
 
     // this file is created by the calling CI environment
-    const POW_BLOCK_INFO_PATH = 'fork-last-block-json.log';
     const { keyring } = testData(
         (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
         (global as any).CREDITCOIN_CREATE_WALLET,
@@ -108,21 +107,27 @@ describe('switch_to_post()', (): void => {
         await expect(sendSudo(api, root, callback)).rejects.toThrow('posSwitch.AlreadySwitched');
     });
 
-    testIf(fs.existsSync(POW_BLOCK_INFO_PATH), 'block history is preserved', async (): Promise<void> => {
-        const { api } = ccApi;
+    testIf(
+        process.env.LAST_POW_BLOCK_NUMBER !== undefined &&
+            process.env.LAST_POW_BLOCK_INFO_PATH !== undefined &&
+            fs.existsSync(process.env.LAST_POW_BLOCK_INFO_PATH),
+        'block history is preserved',
+        async (): Promise<void> => {
+            const { api } = ccApi;
 
-        const powBlockData = JSON.parse(fs.readFileSync(POW_BLOCK_INFO_PATH, 'utf-8'));
+            const powBlockData = JSON.parse(fs.readFileSync(process.env.LAST_POW_BLOCK_INFO_PATH as string, 'utf-8'));
 
-        const blockHash = await api.rpc.chain.getBlockHash(process.env.LAST_POW_BLOCK_NUMBER);
-        const blockInfo = await api.rpc.chain.getBlock(blockHash);
-        const posBlockData = JSON.parse(JSON.stringify(blockInfo));
+            const blockHash = await api.rpc.chain.getBlockHash(process.env.LAST_POW_BLOCK_NUMBER);
+            const blockInfo = await api.rpc.chain.getBlock(blockHash);
+            const posBlockData = JSON.parse(JSON.stringify(blockInfo));
 
-        // returned as decimal integer in blockInfo but hex string before PoS switch
-        powBlockData.block.header.number = parseInt(powBlockData.block.header.number, 16); // eslint-disable-line
-        // the digest field differs before and after the switch
-        delete powBlockData.block.header.digest;
-        delete posBlockData.block.header.digest;
+            // returned as decimal integer in blockInfo but hex string before PoS switch
+            powBlockData.block.header.number = parseInt(powBlockData.block.header.number, 16); // eslint-disable-line
+            // the digest field differs before and after the switch
+            delete powBlockData.block.header.digest;
+            delete posBlockData.block.header.digest;
 
-        expect(posBlockData).toEqual(powBlockData);
-    });
+            expect(posBlockData).toEqual(powBlockData);
+        },
+    );
 });
