@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
-import { newApi } from "../api";
+import { cryptoWaitReady } from "@polkadot/util-crypto";
 
 export function makeReceiveCommand() {
   const cmd = new Command("receive");
@@ -18,7 +18,7 @@ export function makeReceiveCommand() {
 }
 
 async function receiveAction(options: OptionValues) {
-  await newApi();
+  await cryptoWaitReady();
   const seed = getSeedFromOptions(options);
   const pair = initKeyringPair(seed);
   const address = pair.address;
