@@ -13,6 +13,7 @@ import { makeSetKeysCommand } from "./commands/setKeys";
 import { makeShowAddressCommand } from "./commands/showAddress";
 import { makeSendCommand } from "./commands/send";
 import { makeChillCommand } from "./commands/chill";
+import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
 
 const program = new Command();
 
@@ -29,6 +30,7 @@ program
   .addCommand(makeRotateKeysCommand())
   .addCommand(makeSetKeysCommand())
   .addCommand(makeValidateCommand())
+  .addCommand(makeDistributeRewardsCommand())
   .addCommand(makeChillCommand())
   .addCommand(makeWizardCommand());
 
