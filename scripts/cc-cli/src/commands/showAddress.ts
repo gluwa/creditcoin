@@ -2,8 +2,8 @@ import { Command, OptionValues } from "commander";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 
-export function makeReceiveCommand() {
-  const cmd = new Command("receive");
+export function makeShowAddressCommand() {
+  const cmd = new Command("show-address");
   cmd.description("Show account address");
   cmd.option(
     "-s, --seed [mnemonic]",
@@ -13,11 +13,11 @@ export function makeReceiveCommand() {
     "-f, --file [file-name]",
     "Specify file with mnemonic phrase of account"
   );
-  cmd.action(receiveAction);
+  cmd.action(showAddressAction);
   return cmd;
 }
 
-async function receiveAction(options: OptionValues) {
+async function showAddressAction(options: OptionValues) {
   await cryptoWaitReady();
   const seed = getSeedFromOptions(options);
   const pair = initKeyringPair(seed);
