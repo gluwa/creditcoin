@@ -71,7 +71,7 @@ async function bondAction(options: OptionValues) {
 }
 
 function checkBalanceAgainstBondAmount(balance: Balance, amount: number) {
-  if (balance.free.lt(toMicrounits(amount))) {
+  if (balance.free.sub(balance.miscFrozen).lt(toMicrounits(amount))) {
     throw new Error(
       `Insufficient funds to bond ${toMicrounits(amount).toString()}`
     );

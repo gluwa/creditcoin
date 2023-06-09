@@ -2,7 +2,7 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { readFileSync } from "fs";
 import { initKeyringPair } from "../utils/account";
-import { promptContinue } from "../utils/promptContinue";
+import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
@@ -97,17 +97,38 @@ export function makeWizardCommand() {
     const controllerBalance = await getBalance(controllerAddress, api);
     checkStashBalance(stashAddress, stashBalance, options.amount);
     checkControllerBalance(controllerAddress, controllerBalance, 1);
+    const bondExtra: boolean = checkIfAlreadyBonded(stashAddress, stashBalance);
 
-    // Bond
-    console.log("Sending bond transaction...");
-    const bondTxHash = await bond(
-      stashSeed,
-      controllerAddress,
-      parseInt(options.amount, 10),
-      rewardDestination,
-      api
-    );
-    console.log("Bond transaction sent with hash:", bondTxHash);
+    if (bondExtra) {
+      console.log(
+        "⚠️  Warning: Stash account already bonded. This will increase the amount bonded."
+      );
+      if (await promptContinueOrSkip(`Continue or skip bonding extra funds?`)) {
+        checkStashBalance(stashAddress, stashBalance, options.amount);
+        // Bond extra
+        console.log("Sending bond transaction...");
+        const bondTxHash = await bond(
+          stashSeed,
+          controllerAddress,
+          parseInt(options.amount, 10),
+          rewardDestination,
+          api,
+          bondExtra
+        );
+        console.log("Bond transaction sent with hash:", bondTxHash);
+      }
+    } else {
+      // Bond
+      console.log("Sending bond transaction...");
+      const bondTxHash = await bond(
+        stashSeed,
+        controllerAddress,
+        parseInt(options.amount, 10),
+        rewardDestination,
+        api
+      );
+      console.log("Bond transaction sent with hash:", bondTxHash);
+    }
 
     // Rotate keys
     console.log("Generating new session keys on node...");
@@ -183,12 +204,20 @@ function checkControllerBalance(
 }
 
 function checkStashBalance(address: string, balance: Balance, amount: number) {
-  if (balance.free.lt(toMicrounits(amount))) {
+  if (balance.free.sub(balance.miscFrozen).lt(toMicrounits(amount))) {
     console.log(
       `Stash account does not have enough funds to bond ${amount.toString()} CTC`
     );
     printBalance(balance);
     console.log(`Please send funds to stash address ${address} and try again.`);
     process.exit(1);
+  }
+}
+
+function checkIfAlreadyBonded(address: string, balance: Balance) {
+  if (balance.miscFrozen.gt(new BN(0))) {
+    return true;
+  } else {
+    return false;
   }
 }
