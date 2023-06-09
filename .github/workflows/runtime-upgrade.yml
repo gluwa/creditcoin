@@ -16,7 +16,9 @@ jobs:
   setup:
     runs-on: ubuntu-22.04
     outputs:
+      test_config: ${{ steps.testnet-env.outputs.test_config || steps.mainnet-env.outputs.test_config }}
       target_chain: ${{ steps.testnet-env.outputs.target_chain || steps.mainnet-env.outputs.target_chain }}
+      boot_node: ${{ steps.testnet-env.outputs.boot_node || steps.mainnet-env.outputs.boot_node }}
       rpc_url: ${{ steps.testnet-env.outputs.rpc_url || steps.mainnet-env.outputs.rpc_url }}
       https_rpc_url: ${{ steps.testnet-env.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
       release_tag: ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
@@ -30,8 +32,7 @@ jobs:
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
-          sudo apt install -y unzip jq
+          sudo apt install -y jq
 
       - name: Testnet ENV
         id: testnet-env
@@ -39,6 +40,8 @@ jobs:
         run: |
           # shellcheck disable=SC2129
           echo "target_chain=test" >> "$GITHUB_OUTPUT"
+          echo "test_config=testnet.config.ts" >> "$GITHUB_OUTPUT"
+          echo "boot_node=/dns4/testnet-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.testnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
           echo "https_rpc_url=https://rpc.testnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
           RELEASE_TAG=$(./scripts/extract-release-tag.sh "testnet")
@@ -51,6 +54,8 @@ jobs:
         run: |
           # shellcheck disable=SC2129
           echo "target_chain=main" >> "$GITHUB_OUTPUT"
+          echo "test_config=mainnet.config.ts" >> "$GITHUB_OUTPUT"
+          echo "boot_node=/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
           echo "https_rpc_url=https://rpc.mainnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
           RELEASE_TAG=$(./scripts/extract-release-tag.sh "runtime")
@@ -92,6 +97,19 @@ jobs:
           path: "last-block*"
           if-no-files-found: error
 
+
+  build-sut:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+          sudo apt install -y unzip jq
+
       - name: Configure rustc version
         run: |
           source ci/env
@@ -127,11 +145,14 @@ jobs:
   fork-creditcoin:
     needs:
       - setup
+      - live-sync-creditcoin
       - deploy-github-runner
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
 
     steps:
+      - uses: actions/checkout@v3
+
       - name: Download creditcoin-node for release ${{ needs.setup.outputs.release_tag }}
         uses: i3h/download-release-asset@v1
         with:
@@ -148,17 +169,59 @@ jobs:
           tag: latest
           file: creditcoin-fork
 
-      - name: Create fork
+      - name: Start local creditcoin-node for ${{ needs.setup.outputs.target_chain }}
         run: |
+          # see https://opensource.com/article/18/5/how-find-ip-address-linux
+          IP_ADDRESS=$(curl https://ifconfig.me)
+          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
+
           sudo apt-get update
           sudo apt install -y unzip
 
           unzip creditcoin-*-unknown-linux-gnu.zip
           chmod a+x ./creditcoin-node
+
+          ./creditcoin-node --version
+          ./creditcoin-node \
+            --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+            --chain ${{ needs.setup.outputs.target_chain }} \
+            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+            --bootnodes "${{ needs.setup.outputs.boot_node }}" \
+            --prometheus-external \
+            --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
+            --port 50555 >creditcoin-node-used-for-fork.log 2>&1 &
+
+      - name: Wait for creditcoin-node to initialize
+        run: |
+          ./integration-tests/wait-for-creditcoin.sh
+
+      - name: Create fork
+        run: |
           chmod a+x ./creditcoin-fork
+
           ./creditcoin-fork --bin ./creditcoin-node --orig ${{ needs.setup.outputs.target_chain }} \
                             --base dev --name Development \
-                            -o creditcoin-fork.json --rpc ${{ needs.setup.outputs.rpc_url }}
+                            -o creditcoin-fork.json --rpc ws://127.0.0.1:9944
+
+      - name: TERM creditcoin-node
+        continue-on-error: true
+        run: |
+          killall -TERM creditcoin-node
+          sleep 120
+
+      - name: KILL creditcoin-node
+        continue-on-error: true
+        run: |
+          killall -KILL creditcoin-node
+          sleep 120
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: logs
+          path: "*.log"
 
       - name: Upload creditcoin-fork.json
         uses: actions/upload-artifact@v3
@@ -166,8 +229,73 @@ jobs:
           name: creditcoin-fork.json
           path: creditcoin-fork.json
 
-  execute-integration-tests:
+  live-sync-creditcoin:
     needs:
+      - setup
+      - deploy-github-runner
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download creditcoin-node for release ${{ needs.setup.outputs.release_tag }}
+        uses: i3h/download-release-asset@v1
+        with:
+          owner: gluwa
+          repo: creditcoin
+          tag: ${{ needs.setup.outputs.release_tag }}
+          file: ${{ needs.setup.outputs.artifact_name }}
+
+      - name: Sync with ${{ needs.setup.outputs.target_chain }} past block number ${{ needs.setup.outputs.last_block_number }}
+        run: |
+          # see https://opensource.com/article/18/5/how-find-ip-address-linux
+          IP_ADDRESS=$(curl https://ifconfig.me)
+          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
+
+          sudo apt-get update
+          sudo apt install -y unzip
+
+          unzip creditcoin-*-unknown-linux-gnu.zip
+          chmod a+x ./creditcoin-node
+
+          ./creditcoin-node --version
+          ./creditcoin-node \
+            --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+            --chain ${{ needs.setup.outputs.target_chain }} \
+            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+            --bootnodes "${{ needs.setup.outputs.boot_node }}" \
+            --prometheus-external --pruning archive \
+            --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
+            --port 50555 >creditcoin-node-initial-live-sync.log 2>&1 &
+
+      - name: Wait for creditcoin-node to sync past block number ${{ needs.setup.outputs.last_block_number }}
+        run: |
+          ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
+
+      - name: TERM creditcoin-node
+        continue-on-error: true
+        run: |
+          killall -TERM creditcoin-node
+          sleep 120
+
+      - name: KILL creditcoin-node
+        continue-on-error: true
+        run: |
+          killall -KILL creditcoin-node
+          sleep 120
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: logs
+          path: "*.log"
+
+  test-against-fork:
+    needs:
+      - build-sut
       - fork-creditcoin
       - deploy-github-runner
     runs-on:
@@ -175,10 +303,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Download creditcoin-node
+      - name: Download creditcoin-node from current PR
         uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
+          path: target/release
 
       - name: Download creditcoin-fork.json
         uses: actions/download-artifact@v3
@@ -187,14 +316,12 @@ jobs:
 
       - name: Start a local creditcoin-node from the fork
         run: |
-          chmod a+x ./creditcoin-node
-          echo "DEBUG: **** free memory before running creditcoin-node ****"
-          free -m
-          ps aux --sort=-%mem | head -n 20
-          echo "DEBUG: *********************"
-          ./creditcoin-node --chain ./creditcoin-fork.json --validator --alice --pruning archive \
-                            --node-key d182d503b7dd97e7c055f33438c7717145840fd66b2a055284ee8d768241a463 \
-                            --monitor-nonce auto >creditcoin-node.log 2>&1 &
+          chmod a+x ./target/release/creditcoin-node
+
+          ./target/release/creditcoin-node --version
+          ./target/release/creditcoin-node --chain ./creditcoin-fork.json --validator --alice --pruning archive \
+                            --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+                            --monitor-nonce auto >creditcoin-node-with-forked-chain.log 2>&1 &
 
       - name: Wait for blockchain to start
         run: |
@@ -228,20 +355,172 @@ jobs:
 
       - name: Install Docker engine
         run: |
-          sudo apt-get remove -y docker docker-engine docker.io containerd runc || echo
-          sudo apt-get update
-          sudo apt-get install -y ca-certificates curl gnupg lsb-release
-          sudo mkdir -p /etc/apt/keyrings
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-          echo \
-              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-              $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-          sudo apt-get update
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          ./scripts/install-docker-engine-from-upstream.sh
 
       - name: Start local Ethereum node
         run: |
-          sudo docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
+          sudo docker run --name hardhat-dev --rm -p 8545:8545 -d gluwa/hardhat-dev
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
+
+      - name: Prepare for integration tests
+        run: |
+          pushd integration-tests/
+
+          # wait for creditcoin-node to initialize
+          ./yarn-install-and-wait-for-creditcoin.sh
+          git checkout yarn.lock
+
+          popd
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+          sudo apt install -y gcc
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          profile: minimal
+          override: true
+
+      - name: Install Subwasm
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1
+
+      - name: Download WASM runtime from current PR
+        id: download-wasm
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin_node_runtime.compact.compressed.wasm
+
+      - name: Upgrade WASM
+        run: |
+          yarn --cwd ./scripts/js upgrade 'creditcoin-js'
+          yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm //Alice 0
+
+      # TODO: wait & confirm wasm upgrade has finished, incl. migrations
+      - name: Execute integration tests
+        run: |
+          cp fork-last-block-json.log ./integration-tests/
+          yarn --cwd ./integration-tests/ test --config creditcoin-fork.config.ts
+        env:
+          # Note: this is PoW blocks on the forked chain, not Prod
+          LAST_POW_BLOCK_NUMBER: ${{ steps.last-block-info.outputs.last_block_number }}
+          LAST_POW_BLOCK_INFO_PATH: fork-last-block-json.log
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: logs
+          path: "*.log"
+
+      - name: Kill hardhat-dev
+        if: always()
+        run: |
+          sudo docker kill hardhat-dev
+
+      - name: Kill creditcoin-node
+        run: |
+          # if all went well kill the node. Otherwise GitHub Actions would exit on the
+          # previous step killing everything and we don't have to worry about
+          # dangling processes
+          killall -9 creditcoin-node
+
+  test-against-disconnected-live-node:
+    # execute only against Testnet b/c we don't have sudo key for Mainnet
+    if: github.base_ref == 'testnet'
+    needs:
+      - build-sut
+      - setup
+      - live-sync-creditcoin
+      - deploy-github-runner
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download creditcoin-node from current PR
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release
+
+      - name: Start creditcoin-node from current PR
+        run: |
+          # see https://opensource.com/article/18/5/how-find-ip-address-linux
+          IP_ADDRESS=$(curl https://ifconfig.me)
+          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
+
+          chmod a+x ./target/release/creditcoin-node
+          ./target/release/creditcoin-node --version
+
+          ./target/release/creditcoin-node \
+            --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+            --chain ${{ needs.setup.outputs.target_chain }} \
+            --pruning archive \
+            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+            --bootnodes "${{ needs.setup.outputs.boot_node }}" \
+            --prometheus-external \
+            --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
+            --port 50555 >creditcoin-node-disconnected-paritydb-sync.log 2>&1 &
+
+      - name: Wait for blockchain to start
+        run: |
+          ./integration-tests/wait-for-creditcoin.sh
+
+      # wait again because of RocksDB -> ParityDB switch !
+      - name: Wait for creditcoin-node to sync past block number ${{ needs.setup.outputs.last_block_number }}
+        run: |
+          ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
+
+      - name: TERM creditcoin-node
+        continue-on-error: true
+        run: |
+          killall -TERM creditcoin-node
+          sleep 30
+
+      - name: KILL creditcoin-node
+        continue-on-error: true
+        run: |
+          killall -KILL creditcoin-node
+          sleep 30
+
+      - name: Start a disconnected creditcoin-node
+        run: |
+          chmod a+x ./target/release/creditcoin-node
+          ./target/release/creditcoin-node --version
+
+          ./target/release/creditcoin-node \
+            --name "test-node-disconnected-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+            --chain ${{ needs.setup.outputs.target_chain }} \
+            --validator --alice --pruning archive \
+            --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+            --prometheus-external \
+            --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --monitor-nonce auto >creditcoin-node-disconnected-live-node.log 2>&1 &
+
+      - name: Wait for blockchain to start
+        run: |
+          ./integration-tests/wait-for-creditcoin.sh
+
+      - name: Install Docker engine
+        run: |
+          ./scripts/install-docker-engine-from-upstream.sh
+
+      - name: Start local Ethereum node
+        run: |
+          sudo docker run --name hardhat-dev --rm -p 8545:8545 -d gluwa/hardhat-dev
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -287,27 +566,27 @@ jobs:
       - name: Upgrade WASM & switchToPos
         run: |
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
-          echo "DEBUG: **** free memory before runtimeUpgrade ****"
-          free -m
-          ps aux --sort=-%mem | head -n 20
-          echo "DEBUG: *********************"
           yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm //Alice 0
           sleep 10
           yarn --cwd ./scripts/js switchToPos ws://127.0.0.1:9944 //Alice
 
+      - name: Download last-block.json from Setup stage
+        uses: actions/download-artifact@v3
+        with:
+          name: last-block-info
+
       # TODO: wait & confirm wasm upgrade has finished, incl. migrations
       - name: Execute integration tests
         run: |
-          echo "DEBUG: **** free memory before running integration tests ****"
-          free -m
-          ps aux --sort=-%mem | head -n 20
-          echo "DEBUG: *********************"
+          cp last-block.json ./integration-tests/
 
-          cp fork-last-block-json.log ./integration-tests/
-          yarn --cwd ./integration-tests/ test --config creditcoin-fork.config.ts
+          # TODO: using the default config b/c creditcoin-node is running stand-alone
+          # not sure if that will work
+          yarn --cwd ./integration-tests/ test
         env:
-          # Note: this is PoW blocks on the forked chain, not Prod
-          LAST_POW_BLOCK_NUMBER: ${{ steps.last-block-info.outputs.last_block_number }}
+          # Note: this is PoW blocks on the live chain
+          LAST_POW_BLOCK_NUMBER: ${{ needs.setup.outputs.last_block_number }}
+          LAST_POW_BLOCK_INFO_PATH: last-block.json
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
@@ -315,6 +594,11 @@ jobs:
         with:
           name: logs
           path: "*.log"
+
+      - name: Kill hardhat-dev
+        if: always()
+        run: |
+          sudo docker kill hardhat-dev
 
       - name: Kill creditcoin-node
         run: |
@@ -325,7 +609,6 @@ jobs:
 
   deploy-github-runner:
     runs-on: ubuntu-22.04
-    needs: setup
     outputs:
       runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
       resource_group: ${{ steps.get-env.outputs.resource_group }}
@@ -394,12 +677,13 @@ jobs:
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
     needs:
+      - build-sut
       - setup
       - deploy-github-runner
     steps:
       - uses: actions/checkout@v3
 
-      - name: Download creditcoin-node binary
+      - name: Download creditcoin-node binary from current PR
         uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
@@ -420,19 +704,60 @@ jobs:
         run: |
           ./scripts/check-hardware.sh
 
+      - name: Start local creditcoin-node for ${{ needs.setup.outputs.target_chain }}
+        run: |
+          # see https://opensource.com/article/18/5/how-find-ip-address-linux
+          IP_ADDRESS=$(curl https://ifconfig.me)
+          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
+
+          ./target/release/creditcoin-node --version
+          ./target/release/creditcoin-node \
+            --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+            --chain ${{ needs.setup.outputs.target_chain }} \
+            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+            --bootnodes "${{ needs.setup.outputs.boot_node }}" \
+            --prometheus-external \
+            --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --public-addr "/dns4/$IP_ADDRESS/tcp/30333" >creditcoin-node-used-for-try-runtime.log 2>&1 &
+
+      - name: Wait for creditcoin-node to initialize
+        run: |
+          ./integration-tests/wait-for-creditcoin.sh
+
       - name: Try-runtime migrations
         run: |
           ./target/release/creditcoin-node try-runtime \
               --runtime ./target/release/creditcoin_node_runtime.compact.compressed.wasm \
-              --dev on-runtime-upgrade live --uri ${{ needs.setup.outputs.rpc_url }} \
+              --dev on-runtime-upgrade live --uri ws://127.0.0.1:9944 \
               --at ${{ needs.setup.outputs.last_block_hash }}
+
+      - name: TERM creditcoin-node
+        continue-on-error: true
+        run: |
+          killall -TERM creditcoin-node
+          sleep 60
+
+      - name: KILL creditcoin-node
+        if: always()
+        continue-on-error: true
+        run: |
+          killall -KILL creditcoin-node
+          sleep 600
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: logs
+          path: "*.log"
 
   remove-github-runner:
     runs-on: ubuntu-22.04
     needs:
       - deploy-github-runner
       - test-migrations-via-try-runtime
-      - execute-integration-tests
+      - test-against-fork
+      - test-against-disconnected-live-node
     if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
 
     steps:
