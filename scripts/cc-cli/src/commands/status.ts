@@ -3,6 +3,7 @@ import { newApi } from "../api";
 import { ApiPromise, BN } from "creditcoin-js";
 import { readAmount, readAmountFromHex, toCTCString } from "../utils/balance";
 import { timeTillEra } from "../utils/era";
+import { checkAddress } from "../utils/account";
 
 export function makeStatusCommand() {
   const cmd = new Command("status");
@@ -14,6 +15,9 @@ export function makeStatusCommand() {
 
 async function statusAction(options: OptionValues) {
   const { api } = await newApi(options.url);
+
+  // Check options
+  checkAddress(options.address, api);
 
   const res = await api.derive.staking.account(options.address);
   const totalStaked = readAmount(res.stakingLedger.total.toString());
