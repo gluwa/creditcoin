@@ -16,6 +16,7 @@ import { makeChillCommand } from "./commands/chill";
 import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
 import { makeBondExtraCommand } from "./commands/bondExtra";
 import { makeUnbondCommand } from "./commands/unbond";
+import { makeStatusCommand } from "./commands/status";
 
 const program = new Command();
 
@@ -36,7 +37,8 @@ program
   .addCommand(makeValidateCommand())
   .addCommand(makeDistributeRewardsCommand())
   .addCommand(makeChillCommand())
-  .addCommand(makeWizardCommand());
+  .addCommand(makeWizardCommand())
+  .addCommand(makeStatusCommand());
 
 program.commands.forEach((cmd) => {
   cmd.option(

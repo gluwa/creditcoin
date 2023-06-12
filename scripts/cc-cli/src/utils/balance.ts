@@ -11,7 +11,15 @@ export function toMicrounits(amount: number | BN): BN {
 }
 
 export function toCTCString(amount: BN): string {
-  return amount.div(MICROUNITS_PER_CTC).toString() + "CTC";
+  return amount.div(MICROUNITS_PER_CTC).toString() + " CTC";
+}
+
+export function readAmount(amount: string): BN {
+  return new BN(amount);
+}
+
+export function readAmountFromHex(amount: string): BN {
+  return new BN(amount.slice(2), 16);
 }
 
 export interface Balance {
