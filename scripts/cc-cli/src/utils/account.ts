@@ -1,4 +1,4 @@
-import { Keyring } from "creditcoin-js";
+import { ApiPromise, Keyring } from "creditcoin-js";
 import { OptionValues } from "commander";
 import { readFileSync } from "fs";
 
@@ -15,5 +15,23 @@ export function getSeedFromOptions(options: OptionValues) {
     return readFileSync(options.file).toString();
   } else {
     throw new Error("Must specify either mnemonic phrase or file as an option");
+  }
+}
+
+export function checkAddress(address: string, api: ApiPromise) {
+  if (!address) {
+    console.log("Must specify address to get balance of");
+    process.exit(0);
+  } else {
+    checkIfAddressIsValid(address, api);
+  }
+}
+
+function checkIfAddressIsValid(address: string, api: ApiPromise) {
+  try {
+    api.createType("Address", address);
+  } catch (e) {
+    console.log("Invalid controller address");
+    process.exit(1);
   }
 }

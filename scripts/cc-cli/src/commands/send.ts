@@ -1,6 +1,10 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import {
+  checkAddress,
+  getSeedFromOptions,
+  initKeyringPair,
+} from "../utils/account";
 import { toMicrounits } from "../utils/balance";
 
 export function makeSendCommand() {
@@ -25,7 +29,7 @@ async function sendAction(options: OptionValues) {
 
   // Check options
   checkAmount(options);
-  checkTo(options);
+  checkAddress(options.to, api);
 
   // Build account
   const seed = getSeedFromOptions(options);
@@ -45,13 +49,6 @@ async function sendAction(options: OptionValues) {
 function checkAmount(options: OptionValues) {
   if (!options.amount) {
     console.log("Must specify amount to send");
-    process.exit(0);
-  }
-}
-
-function checkTo(options: OptionValues) {
-  if (!options.to) {
-    console.log("Must specify recipient address");
     process.exit(0);
   }
 }

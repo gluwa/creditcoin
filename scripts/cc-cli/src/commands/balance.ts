@@ -1,6 +1,8 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getBalance, printBalance } from "../utils/balance";
+import { checkAddress } from "../utils/account";
+import { ApiPromise } from "creditcoin-js";
 
 export function makeBalanceCommand() {
   const cmd = new Command("balance");
@@ -14,17 +16,10 @@ async function balanceAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   // Check options
-  checkAddress(options);
+  checkAddress(options.address, api);
 
   const balance = await getBalance(options.address, api);
   printBalance(balance);
 
   process.exit(0);
-}
-
-function checkAddress(options: OptionValues) {
-  if (!options.address) {
-    console.log("Must specify address to get balance of");
-    process.exit(0);
-  }
 }

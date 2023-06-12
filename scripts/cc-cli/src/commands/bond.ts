@@ -1,6 +1,10 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import {
+  checkAddress,
+  getSeedFromOptions,
+  initKeyringPair,
+} from "../utils/account";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
 import { Balance, getBalance, toMicrounits } from "../utils/balance";
@@ -28,19 +32,16 @@ export function makeBondCommand() {
 }
 
 async function bondAction(options: OptionValues) {
+  const { api } = await newApi(options.url);
+
   // If no controller error and exit
-  if (!options.controller) {
-    console.log("Must specify controller address");
-    process.exit(1);
-  }
+  checkAddress(options.controller, api);
 
   // If no amount error and exit
   if (!options.amount || !parseInt(options.amount, 10)) {
     console.log("Must specify amount to bond");
     process.exit(1);
   }
-
-  const { api } = await newApi(options.url);
 
   const stashSeed = getSeedFromOptions(options);
 
