@@ -160,7 +160,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 }
 
 pub fn testnet_config() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../../chainspecs/testnetSpec.json")[..])
+	ChainSpec::from_json_bytes(&include_bytes!("../../chainspecs/posTestnetSpec.json")[..])
 }
 
 pub fn mainnet_config() -> Result<ChainSpec, String> {
