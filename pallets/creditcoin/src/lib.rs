@@ -145,6 +145,9 @@ pub mod pallet {
 		fn remove_authority() -> Weight;
 		fn set_collect_coins_contract() -> Weight;
 		fn register_address_v2() -> Weight;
+		fn request_burn_gate() -> Weight;
+		fn persist_burn_gate() -> Weight;
+		fn fail_burn_gate() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -272,6 +275,8 @@ pub mod pallet {
 			types::CollectedCoinsStruct<T::Hash, T::Balance>,
 		),
 
+		BurnedGATEMinted(types::BurnGATEId<T::Hash>, types::BurnGATEStruct<T::Hash, T::Balance>),
+
 		/// An external transfer has been processed and marked as part of a loan.
 		/// [processed_transfer_id]
 		TransferProcessed(TransferId<T::Hash>),
@@ -338,6 +343,8 @@ pub mod pallet {
 		/// exchanging vested ERC-20 CC for native CC failed.
 		/// [collected_coins_id, cause]
 		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
+
+		BurnGATEFailedVerification(BurnGATEId<T::Hash>, VerificationFailureCause),
 	}
 
 	// Errors inform users that something went wrong.
@@ -522,6 +529,9 @@ pub mod pallet {
 
 		/// An unsupported blockchain was specified to register_address_v2
 		UnsupportedBlockchain,
+
+		/// A burn GATE transaction with matching parameters has already been registered
+		BurnGATEAlreadyRegistered,
 	}
 
 	#[pallet::genesis_config]
@@ -1247,6 +1257,7 @@ pub mod pallet {
 		#[pallet::weight(match &task_output {
 			crate::TaskOutput::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
 			crate::TaskOutput::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
+			crate::TaskOutput::BurnGATE(..) => <T as Config>::WeightInfo::persist_burn_gate(),
 		})]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
@@ -1287,6 +1298,23 @@ pub mod pallet {
 					CollectedCoins::<T>::insert(&id, collected_coins.clone());
 					(id.clone().into_inner(), Event::<T>::CollectedCoinsMinted(id, collected_coins))
 				},
+				TaskOutput::BurnGATE(id, burned_coins) => {
+					ensure!(
+						!BurnedGATE::<T>::contains_key(&id),
+						non_paying_error(Error::<T>::BurnGATEAlreadyRegistered)
+					);
+
+					let address =
+						Self::addresses(&burned_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
+
+					<pallet_balances::Pallet<T> as Mutate<T::AccountId>>::mint_into(
+						&address.owner,
+						burned_coins.amount,
+					)?;
+
+					BurnedGATE::<T>::insert(&id, burned_coins.clone());
+					(id.clone().into_inner(), Event::<T>::BurnedGATEMinted(id, burned_coins))
+				},
 			};
 			T::TaskScheduler::remove(&deadline, &task_id);
 
@@ -1299,6 +1327,7 @@ pub mod pallet {
 		#[pallet::weight(match &task_id {
 			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::fail_transfer(),
 			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::fail_collect_coins(),
+			crate::TaskId::BurnGATE(..) => <T as Config>::WeightInfo::fail_burn_gate(),
 		})]
 		pub fn fail_task(
 			origin: OriginFor<T>,
@@ -1329,6 +1358,16 @@ pub mod pallet {
 					(
 						collected_coins_id.clone().into_inner(),
 						Event::<T>::CollectCoinsFailedVerification(collected_coins_id, cause),
+					)
+				},
+				TaskId::BurnGATE(burn_gate_id) => {
+					ensure!(
+						!BurnedGATE::<T>::contains_key(&burn_gate_id),
+						Error::<T>::BurnGATEAlreadyRegistered
+					);
+					(
+						burn_gate_id.clone().into_inner(),
+						Event::<T>::BurnGATEFailedVerification(burn_gate_id, cause),
 					)
 				},
 			};
@@ -1381,7 +1420,6 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-<<<<<<< HEAD
 		/// Registers an address on an external blockchain as the property of an onchain address.
 		/// To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
 		/// The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
@@ -1436,7 +1474,8 @@ pub mod pallet {
 					fail!(e)
 				},
 			}
-=======
+		}
+
 		#[transactional]
 		#[pallet::call_index(23)]
 		#[pallet::weight(<T as Config>::WeightInfo::request_burn_gate())]
@@ -1470,7 +1509,6 @@ pub mod pallet {
 			Self::deposit_event(Event::<T>::BurnGATERegistered(burn_gate_id.into(), pending));
 
 			Ok(())
->>>>>>> d5293f33 (need review from other team member to continue progressing)
 		}
 	}
 }
