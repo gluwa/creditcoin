@@ -1,0 +1,8 @@
+Description: Nodes are synced
+Network: ../network.yaml
+Creds: config
+
+first: is up
+
+first: reports block height is at least 5 within 100 seconds
+first: reports peers count is at least 1
