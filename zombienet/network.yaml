@@ -17,7 +17,9 @@ relaychain:
       validator: false
       # you can override the default args and other config settings
       args: ['--database', 'rocksdb']
-  node_groups:
-    # a group of 5 nodes (note: node groups are always validator nodes)
-    - name: 'validators'
-      count: 5
+  # NOTE: node groups not currently working. should work when https://github.com/paritytech/zombienet/pull/1119
+  # is merged
+  # node_groups:
+  #   # a group of 5 nodes (note: node groups are always validator nodes)
+  #   - name: 'validators'
+  #     count: 2
