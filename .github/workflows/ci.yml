@@ -214,6 +214,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set-Up
+        env:
+          HOMEBREW_NO_INSTALL_CLEANUP: true
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
         run: |
           brew update
           brew install cmake openssl protobuf
