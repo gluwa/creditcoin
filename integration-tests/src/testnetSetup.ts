@@ -32,8 +32,8 @@ const setup = async () => {
     (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET = false;
 
     (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY = false;
-    (global as any).CREDITCOIN_NETWORK_LONG_NAME = 'Creditcoin Testnet';
-    (global as any).CREDITCOIN_NETWORK_SHORT_NAME = 'creditcoin_testnet';
+    (global as any).CREDITCOIN_NETWORK_LONG_NAME = 'Creditcoin PoS Testnet';
+    (global as any).CREDITCOIN_NETWORK_SHORT_NAME = 'creditcoin_pos_testnet';
     (global as any).CREDITCOIN_METRICS_BASE = 'http://test-rpc-creditcoin-rpc-2.eastus.cloudapp.azure.com:9615';
     (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = true;
 
