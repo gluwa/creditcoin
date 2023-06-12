@@ -2,7 +2,9 @@
   "name": "Creditcoin PoS Testnet",
   "id": "creditcoin_pos_testnet",
   "chainType": "Live",
-  "bootNodes": [],
+  "bootNodes": [
+    "/dns4/testnet-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH"
+  ],
   "telemetryEndpoints": null,
   "protocolId": null,
   "properties": {
