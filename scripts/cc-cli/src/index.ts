@@ -17,6 +17,7 @@ import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
 import { makeBondExtraCommand } from "./commands/bondExtra";
 import { makeUnbondCommand } from "./commands/unbond";
 import { makeStatusCommand } from "./commands/status";
+import { makeWithdrawUnbondedCommand } from "./commands/withdrawUnbonded";
 
 const program = new Command();
 
@@ -32,6 +33,7 @@ program
   .addCommand(makeBondCommand())
   .addCommand(makeBondExtraCommand())
   .addCommand(makeUnbondCommand())
+  .addCommand(makeWithdrawUnbondedCommand())
   .addCommand(makeRotateKeysCommand())
   .addCommand(makeSetKeysCommand())
   .addCommand(makeValidateCommand())

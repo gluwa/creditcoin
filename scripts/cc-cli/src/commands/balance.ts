@@ -2,7 +2,6 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getBalance, printBalance } from "../utils/balance";
 import { checkAddress } from "../utils/account";
-import { ApiPromise } from "creditcoin-js";
 
 export function makeBalanceCommand() {
   const cmd = new Command("balance");
