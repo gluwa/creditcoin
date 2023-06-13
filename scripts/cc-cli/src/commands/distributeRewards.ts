@@ -5,13 +5,10 @@ import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
   cmd.description("Distribute all pending rewards for all validators");
-  cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for sending CTC"
-  );
+  cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to use");
   cmd.option(
     "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for sending CTC"
+    "Specify file with mnemonic phrase to use"
   );
   cmd.option(
     "-v, --validator-id [validator-id]",
