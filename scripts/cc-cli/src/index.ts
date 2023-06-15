@@ -10,9 +10,14 @@ import { makeValidateCommand } from "./commands/validate";
 import { makeBondCommand } from "./commands/bond";
 import { makeRotateKeysCommand } from "./commands/rotateKeys";
 import { makeSetKeysCommand } from "./commands/setKeys";
-import { makeReceiveCommand } from "./commands/receive";
+import { makeShowAddressCommand } from "./commands/showAddress";
 import { makeSendCommand } from "./commands/send";
 import { makeChillCommand } from "./commands/chill";
+import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
+import { makeBondExtraCommand } from "./commands/bondExtra";
+import { makeUnbondCommand } from "./commands/unbond";
+import { makeStatusCommand } from "./commands/status";
+import { makeWithdrawUnbondedCommand } from "./commands/withdrawUnbonded";
 
 const program = new Command();
 
@@ -22,15 +27,20 @@ program.description("Creditcoin Staking Tool");
 
 program
   .addCommand(makeNewSeedCommand())
-  .addCommand(makeReceiveCommand())
+  .addCommand(makeShowAddressCommand())
   .addCommand(makeSendCommand())
   .addCommand(makeBalanceCommand())
   .addCommand(makeBondCommand())
+  .addCommand(makeBondExtraCommand())
+  .addCommand(makeUnbondCommand())
+  .addCommand(makeWithdrawUnbondedCommand())
   .addCommand(makeRotateKeysCommand())
   .addCommand(makeSetKeysCommand())
   .addCommand(makeValidateCommand())
+  .addCommand(makeDistributeRewardsCommand())
   .addCommand(makeChillCommand())
-  .addCommand(makeWizardCommand());
+  .addCommand(makeWizardCommand())
+  .addCommand(makeStatusCommand());
 
 program.commands.forEach((cmd) => {
   cmd.option(
