@@ -14,12 +14,10 @@ use sc_service::TaskManager;
 use sc_telemetry::TelemetryHandle;
 
 use sha3pow::Sha3Algorithm;
-use sp_api::NumberFor;
 
 use sp_core::traits::SpawnNamed;
 use sp_inherents::CreateInherentDataProviders;
 use sp_keystore::SyncCryptoStorePtr;
-use sp_runtime::Justification;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{oneshot, Notify};
 
@@ -59,112 +57,24 @@ pub(crate) type OneshotSender<T> = tokio::sync::oneshot::Sender<T>;
 
 pub(crate) type MpscSender<T> = tokio::sync::mpsc::Sender<T>;
 
-struct GrandpaAuthorityProvider {
-	client: Arc<FullClient>,
+pub(crate) struct GrandpaAuthorityProvider {
+	initial_authorities: Vec<sp_consensus_grandpa::AuthorityId>,
 }
 impl GrandpaAuthorityProvider {
-	fn new(client: Arc<FullClient>) -> Self {
-		Self { client }
+	pub(crate) fn new(initial_authorities: Vec<sp_consensus_grandpa::AuthorityId>) -> Self {
+		Self { initial_authorities }
 	}
 }
 
 impl sc_consensus_grandpa::GenesisAuthoritySetProvider<BlockTy> for GrandpaAuthorityProvider {
 	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
-		use sc_client_api::{CallExecutor, ExecutionStrategy, ExecutorProvider, HeaderBackend};
-		self.client
-			.executor()
-			.call(
-				self.client.expect_block_hash_from_id(&sp_api::BlockId::Number(
-					pos_switch_block(&self.client, self.client.chain_info().best_hash)
-						.expect("should have already switched to PoS"),
-				))?,
-				"GrandpaApi_grandpa_authorities",
-				&[],
-				ExecutionStrategy::NativeElseWasm,
-				sp_core::traits::CallContext::Offchain,
-			)
-			.and_then(|call_result| {
-				parity_scale_codec::Decode::decode(&mut &call_result[..]).map_err(|err| {
-					sp_blockchain::Error::CallResultDecode(
-						"failed to decode GRANDPA authorities set proof",
-						err,
-					)
-				})
-			})
-	}
-}
-
-pub(super) fn grandpa_initializer(
-	client: Arc<FullClient>,
-	select_chain: ChainSelection,
-	telemetry: Option<TelemetryHandle>,
-	switch_notif: Arc<Notify>,
-	spawner: impl SpawnNamed,
-) -> GrandpaImportInitializer {
-	let (sender, receiver) = tokio::sync::mpsc::channel::<GrandpaImportInitReq>(10);
-	spawner.spawn_blocking(
-		"grandpa-initializer",
-		Some("pos-switcher"),
-		Box::pin(async move {
-			let mut receiver = receiver;
-			let mut grandpa_import: Option<GrandpaImport> = None;
-			let mut grandpa_link: TakeOnce<LinkHalf<Block, FullClient, ChainSelection>> =
-				TakeOnce::Empty;
-			while let Some(req) = receiver.recv().await {
-				match &grandpa_import {
-					Some(_) => {},
-					None => {
-						log::debug!("Initializing Grandpa");
-						let auth_provider = GrandpaAuthorityProvider::new(client.clone());
-						let (import, link) = sc_consensus_grandpa::block_import(
-							client.clone(),
-							&auth_provider,
-							select_chain.clone(),
-							telemetry.clone(),
-						)
-						.unwrap();
-
-						grandpa_import = Some(import.clone());
-						grandpa_link = TakeOnce::Full(link);
-						log::debug!("Notifying authorship switcher");
-						switch_notif.notify_one();
-					},
-				}
-				match req {
-					ImportInitReq::Import(import) => {
-						log::debug!("Sending grandpa import");
-
-						import.send(grandpa_import.clone().unwrap()).map_err(|_| ()).unwrap();
-					},
-					ImportInitReq::Link(link) => {
-						link.send(grandpa_link.take()).map_err(|_| ()).unwrap();
-					},
-				}
-			}
-		}),
-	);
-	GrandpaImportInitializer::new(sender)
-}
-
-enum TakeOnce<T> {
-	Empty,
-	Taken,
-	Full(T),
-}
-
-impl<T> TakeOnce<T> {
-	fn take(&mut self) -> T {
-		match std::mem::replace(self, TakeOnce::Taken) {
-			TakeOnce::Empty => panic!("TakeOnce is uninitialized"),
-			TakeOnce::Taken => panic!("TakeOnce can only be taken once"),
-			TakeOnce::Full(t) => t,
-		}
+		Ok(self.initial_authorities.iter().cloned().map(|auth| (auth, 1)).collect())
 	}
 }
 
 pub(super) fn babe_import_initializer(
 	client: Arc<FullClient>,
-	mut grandpa_init: GrandpaImportInitializer,
+	grandpa_block_import: GrandpaImport,
 	switch_notif: Arc<Notify>,
 	spawner: impl SpawnNamed,
 ) -> BabeImportInitializer {
@@ -181,7 +91,6 @@ pub(super) fn babe_import_initializer(
 					Some(_) => {},
 					None => {
 						log::debug!("Initializing BabeImport");
-						let grandpa_block_import = grandpa_init.request_import().await;
 						let babe_config = babe::configuration(&*client).unwrap();
 						let babe_config = if babe_config.authorities.is_empty() {
 							BabeConfiguration {
@@ -199,7 +108,7 @@ pub(super) fn babe_import_initializer(
 						log::debug!("with babe config: {babe_config:?}");
 						let (block_import, link) = babe::block_import(
 							babe_config.clone(),
-							grandpa_block_import,
+							grandpa_block_import.clone(),
 							client.clone(),
 						)
 						.unwrap();
@@ -228,15 +137,13 @@ pub(crate) enum ImportInitReq<I, L> {
 	Link(OneshotSender<L>),
 }
 
+pub(crate) type GrandpaLink = LinkHalf<Block, FullClient, ChainSelection>;
+
 pub(crate) type BabeImportInitReq = ImportInitReq<BabeImport, BabeLink<Block>>;
 
 pub(crate) type BabeImportInitializer = ImportInitializerService<BabeImport, BabeLink<Block>>;
 
-pub(crate) type GrandpaImportInitReq =
-	ImportInitReq<GrandpaImport, LinkHalf<Block, FullClient, ChainSelection>>;
-
-pub(crate) type GrandpaImportInitializer =
-	ImportInitializerService<GrandpaImport, LinkHalf<Block, FullClient, ChainSelection>>;
+pub(crate) type GrandpaImportInitializer = ImportInitializerService<GrandpaImport, GrandpaLink>;
 
 pub(crate) struct ImportInitializerService<I, L> {
 	inner: MpscSender<ImportInitReq<I, L>>,
@@ -282,7 +189,7 @@ pub(crate) type BabeImport = BabeBlockImport<Block, FullClient, GrandpaImport>;
 
 pub(crate) type PowImport<CIDP> = sc_consensus_pow::PowBlockImport<
 	Block,
-	Arc<FullClient>,
+	GrandpaImport,
 	FullClient,
 	FullSelectChain,
 	Sha3Algorithm<FullClient>,
@@ -375,7 +282,7 @@ pub(crate) struct BabeAuthorshipParams {
 	pub(crate) transaction_pool: Arc<FullPool>,
 	pub(crate) network: FullNetworkService,
 	pub(crate) keystore: Option<SyncCryptoStorePtr>,
-	pub(crate) grandpa_link: GrandpaImportInitializer,
+	pub(crate) grandpa_link: GrandpaLink,
 	pub(crate) grandpa_protocol_name: ProtocolName,
 	pub(crate) select_chain: ChainSelection,
 	pub(crate) role: sc_network::config::Role,
@@ -399,7 +306,7 @@ async fn start_babe_authorship(
 		transaction_pool,
 		network,
 		keystore,
-		mut grandpa_link,
+		grandpa_link,
 		grandpa_protocol_name,
 		select_chain,
 		role,
@@ -485,7 +392,7 @@ async fn start_babe_authorship(
 		// could lead to finality stalls.
 		let grandpa_config = sc_consensus_grandpa::GrandpaParams {
 			config: grandpa_config,
-			link: grandpa_link.request_link().await,
+			link: grandpa_link,
 			network,
 			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry,
@@ -710,6 +617,7 @@ where
 		if self.switched_to_pos(block.header.parent_hash) {
 			self.babe_import.get_mut().await.import_block(block).await
 		} else {
+			log::debug!("import_block: pow");
 			self.pow_import.import_block(block).await
 		}
 	}
@@ -721,57 +629,6 @@ impl Init for GrandpaImport {
 
 	async fn init(mut deps: Self::Deps) -> Self {
 		deps.request_import().await
-	}
-}
-
-#[derive(thiserror::Error, Debug, Clone, Copy)]
-#[error("Justification import not supported for PoW blocks")]
-pub(crate) struct JustificationNotSupported;
-
-pub(crate) struct JustificationImportSwitcher {
-	client: Arc<FullClient>,
-	grandpa_import: LazyInit<GrandpaImport>,
-}
-
-impl JustificationImportSwitcher {
-	pub(crate) fn new(client: Arc<FullClient>, grandpa_import: LazyInit<GrandpaImport>) -> Self {
-		Self { client, grandpa_import }
-	}
-
-	pub(crate) fn switched_to_pos(&self, at_hash: BlockHash) -> bool {
-		switched_to_pos(&self.client, at_hash)
-	}
-}
-
-#[async_trait]
-impl sc_consensus::JustificationImport<Block> for JustificationImportSwitcher {
-	type Error = sp_consensus::Error;
-
-	async fn on_start(&mut self) -> Vec<(BlockHash, NumberFor<Block>)> {
-		log::debug!("justification import on_start");
-		if self.switched_to_pos(self.client.chain_info().best_hash) {
-			self.grandpa_import.get_mut().await.on_start().await
-		} else {
-			Vec::new()
-		}
-	}
-
-	async fn import_justification(
-		&mut self,
-		hash: BlockHash,
-		number: NumberFor<Block>,
-		justification: Justification,
-	) -> Result<(), Self::Error> {
-		log::debug!("Importing justification for block #{number}");
-		if self.switched_to_pos(hash) {
-			self.grandpa_import
-				.get_mut()
-				.await
-				.import_justification(hash, number, justification)
-				.await
-		} else {
-			Err(sp_consensus::Error::Other(Box::new(JustificationNotSupported)))
-		}
 	}
 }
 

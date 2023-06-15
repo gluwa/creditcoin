@@ -76,6 +76,8 @@ sp-consensus-grandpa = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
 sp-session = { workspace = true }
 sc-network-sync = { workspace = true }
+serde = { workspace = true }
+sc-chain-spec = { workspace = true }
 
 [dependencies.tokio]
 version = "1.28.2"
