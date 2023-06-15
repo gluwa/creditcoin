@@ -38,8 +38,7 @@ use tokio::sync::Notify;
 
 use self::consensus_switcher::{
 	switched_to_pos, AuthorshipSwitcher, BabeAuthorshipParams, BabeImport, BabeImportInitializer,
-	BlockImportSwitcher, GrandpaImportInitializer, JustificationImportSwitcher, LazyInit,
-	PowAuthorshipParams, PowImport, VerifierSwitcher,
+	BlockImportSwitcher, GrandpaLink, LazyInit, PowAuthorshipParams, PowImport, VerifierSwitcher,
 };
 
 // Our native executor instance.
@@ -67,13 +66,7 @@ type PartialComponentsType<CIDP> = sc_service::PartialComponents<
 	FullSelectChain,
 	sc_consensus::DefaultImportQueue<Block, FullClient>,
 	FullPool,
-	(
-		BabeImportInitializer,
-		GrandpaImportInitializer,
-		PowImport<CIDP>,
-		Arc<Notify>,
-		Option<Telemetry>,
-	),
+	(BabeImportInitializer, GrandpaLink, PowImport<CIDP>, Arc<Notify>, Option<Telemetry>),
 >;
 
 type BlockHash = <Block as BlockT>::Hash;
@@ -140,6 +133,7 @@ pub(crate) fn new_partial(
 		task_manager.spawn_handle().spawn("telemetry", "telemetry_tasks", worker.run());
 		telemetry
 	});
+	let telemetry_handle = telemetry.as_ref().map(|telemetry| telemetry.handle());
 
 	let select_chain = sc_consensus::LongestChain::new(backend.clone());
 
@@ -154,8 +148,38 @@ pub(crate) fn new_partial(
 
 	let algorithm = Sha3Algorithm::new(client.clone());
 
-	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
+	let initial_authorities = sc_chain_spec::get_extension::<
+		super::chain_spec::GrandpaInitialAuthorities,
+	>(config.chain_spec.extensions())
+	.unwrap();
+
+	log::debug!("initial grandpa authorities: {initial_authorities:?}");
+	let auth_provider = consensus_switcher::GrandpaAuthorityProvider::new(
+		initial_authorities
+			.grandpa_initial_authorities
+			.clone()
+			.expect("No initial authorities configured for GRANDPA"),
+	);
+	let (grandpa_import, grandpa_link) = sc_consensus_grandpa::block_import(
 		client.clone(),
+		&auth_provider,
+		select_chain.clone(),
+		telemetry_handle.clone(),
+	)
+	.unwrap();
+
+	let switch_notif = Arc::new(Notify::new());
+
+	let babe_init = consensus_switcher::babe_import_initializer(
+		client.clone(),
+		grandpa_import.clone(),
+		switch_notif.clone(),
+		task_manager.spawn_handle(),
+	);
+	let bi = LazyInit::<BabeImport>::new(babe_init.clone());
+
+	let pow_block_import = sc_consensus_pow::PowBlockImport::new(
+		grandpa_import.clone(),
 		client.clone(),
 		algorithm.clone(),
 		0,
@@ -165,22 +189,6 @@ pub(crate) fn new_partial(
 			Ok(timestamp)
 		}),
 	);
-
-	let switch_notif = Arc::new(Notify::new());
-	let grandpa_init = consensus_switcher::grandpa_initializer(
-		client.clone(),
-		select_chain.clone(),
-		telemetry.as_ref().map(|x| x.handle()),
-		switch_notif.clone(),
-		task_manager.spawn_handle(),
-	);
-	let babe_init = consensus_switcher::babe_import_initializer(
-		client.clone(),
-		grandpa_init.clone(),
-		switch_notif.clone(),
-		task_manager.spawn_handle(),
-	);
-	let bi = LazyInit::<BabeImport>::new(babe_init.clone());
 
 	let switcher_block_import =
 		BlockImportSwitcher::new(client.clone(), bi, pow_block_import.clone());
@@ -205,15 +213,12 @@ pub(crate) fn new_partial(
 		telemetry.as_ref().map(|x| x.handle()),
 	));
 
-	let switcher_justification_import =
-		JustificationImportSwitcher::new(client.clone(), LazyInit::new(grandpa_init.clone()));
-
 	let switcher_verifier = VerifierSwitcher::new(client.clone(), pow_verifier, babe_verifier);
 
 	let import_queue = sc_consensus::BasicQueue::new(
 		switcher_verifier,
 		Box::new(switcher_block_import),
-		Some(Box::new(switcher_justification_import)),
+		Some(Box::new(grandpa_import.clone())),
 		&task_manager.spawn_essential_handle(),
 		config.prometheus_registry(),
 	);
@@ -226,7 +231,7 @@ pub(crate) fn new_partial(
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (babe_init, grandpa_init, pow_block_import, switch_notif, telemetry),
+		other: (babe_init, grandpa_link, pow_block_import, switch_notif, telemetry),
 	})
 }
 
