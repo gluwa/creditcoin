@@ -5,7 +5,9 @@ use creditcoin_node_runtime::{
 	TransactionPaymentConfig, CTC, WASM_BINARY,
 };
 
+use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
+use serde::{Deserialize, Serialize};
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public, U256};
@@ -18,7 +20,13 @@ use sp_runtime::{
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, GrandpaInitialAuthorities>;
+
+#[derive(Clone, Debug, Deserialize, Serialize, ChainSpecExtension)]
+#[serde(rename_all = "camelCase")]
+pub struct GrandpaInitialAuthorities {
+	pub grandpa_initial_authorities: Option<Vec<GrandpaId>>,
+}
 
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -70,6 +78,14 @@ fn chain_properties() -> serde_json::Map<String, serde_json::Value> {
 pub fn development_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
+	let initial_authorities = vec![get_authority_keys_from_seed("Alice")];
+
+	let grandpa_initial_authorities = GrandpaInitialAuthorities {
+		grandpa_initial_authorities: Some(
+			initial_authorities.clone().into_iter().map(|x| x.2).collect(),
+		),
+	};
+
 	Ok(ChainSpec::from_genesis(
 		// Name
 		"Development",
@@ -80,7 +96,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 			testnet_genesis(
 				wasm_binary,
 				// Initial authorities
-				vec![get_authority_keys_from_seed("Alice")],
+				initial_authorities.clone(),
 				// Sudo account
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				// Pre-funded accounts
@@ -105,12 +121,19 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Properties
 		Some(chain_properties()),
 		// Extensions
-		None,
+		grandpa_initial_authorities,
 	))
 }
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+	let initial_authorities = vec![get_authority_keys_from_seed("Alice")];
+
+	let grandpa_initial_authorities = GrandpaInitialAuthorities {
+		grandpa_initial_authorities: Some(
+			initial_authorities.clone().into_iter().map(|x| x.2).collect(),
+		),
+	};
 
 	Ok(ChainSpec::from_genesis(
 		// Name
@@ -122,7 +145,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 			testnet_genesis(
 				wasm_binary,
 				// Initial authorities
-				vec![get_authority_keys_from_seed("Alice")],
+				initial_authorities.clone(),
 				// Sudo account
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				// Pre-funded accounts
@@ -155,7 +178,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Properties
 		Some(chain_properties()),
 		// Extensions
-		None,
+		grandpa_initial_authorities,
 	))
 }
 
