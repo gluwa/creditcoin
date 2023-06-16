@@ -48,6 +48,46 @@ subcommands:
 ./target/release/creditcoin-node -h
 ```
 
+### Connecting to Creditcoin Networks
+
+A node can be configured to connect to different Creditcoin networks. The network configuration is specified using the `--chain` flag and the `--bootnodes` flag, which specifies the initial nodes to connect to.
+
+Currently, only the `test` network chain specs include bootnodes. The `main` and `dev` networks bootnodes must be specified manually.
+
+Example:
+
+```bash
+./target/release/creditcoin-node --chain main --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb"
+```
+
+#### ChainSpecs
+
+Creditcoin networks are configured using a `ChainSpec`. The `ChainSpec` is a JSON file that defines the initial configuration of the network. To use a `ChainSpec`, use the `--chain` flag when starting the node.
+
+- Mainnet: `--chain main`
+- Testnet: `--chain test`
+- Devnet: `--chain dev`
+
+#### Bootnodes
+
+Bootnodes are nodes that are always on and can be used to bootstrap new nodes and discover other nodes in the network. To use a bootnode, use the `--bootnodes` flag when starting the node followed by the bootnode's address.
+
+Mainnet bootnodes:
+
+- `/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb`
+- `/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWSQye3uN3bZQRRC4oZbpiAZXkP2o5UZh6S8pqyh24bF3k`
+- `/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWFrsEZ2aSfiigAxs6ir2kU6en4BewotyCXPhrJ7T1AzjN`
+
+Testnet bootnodes:
+
+- `/dns4/testnet-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH`
+- `/dns4/testnet-bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWLq7wCMQS3qVMCNJ2Zm6rYuYh74cM99i9Tm8PMdqJPDzb`
+- `/dns4/testnet-bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWAKUrvmchoLomoouoN1sKfF9kq8dYtCVFvtPuvqp7wFBS`
+
+Devnet bootnodes:
+
+- `/dns4/devnet-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWMtJz2E3ENY66Sfoa1MDmV3ZATXRKUWdeZgtEjfme6iwS`
+
 ### Single-Node Development Chain
 
 This command will start the single-node development chain with persistent state:
