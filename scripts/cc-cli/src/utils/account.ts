@@ -8,6 +8,12 @@ export function initKeyringPair(seed: string) {
   return pair;
 }
 
+export function initECDSAKeyringPairFromPK(pk: string) {
+  const keyring = new Keyring({ type: "ecdsa" });
+  const pair = keyring.addFromUri(`${pk}`);
+  return pair;
+}
+
 export function getSeedFromOptions(options: OptionValues) {
   if (options.seed) {
     return options.seed;
@@ -18,9 +24,13 @@ export function getSeedFromOptions(options: OptionValues) {
   }
 }
 
-export function checkAddress(address: string, api: ApiPromise) {
+export function checkAddress(
+  address: string,
+  api: ApiPromise,
+  action = "interact with."
+) {
   if (!address) {
-    console.log("Must specify address to get balance of");
+    console.log(`Must specify address to ${action}`);
     process.exit(1);
   } else {
     checkIfAddressIsValid(address, api);
