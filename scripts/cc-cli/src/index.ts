@@ -25,22 +25,24 @@ program.description("Creditcoin Staking Tool");
 
 // Option to set custom URL for Substrate node
 
+// IMPORTANT: keep this list ordered alphabetically b/c
+// it determines the order in which commands are printed in help text
 program
-  .addCommand(makeNewSeedCommand())
-  .addCommand(makeShowAddressCommand())
-  .addCommand(makeSendCommand())
   .addCommand(makeBalanceCommand())
   .addCommand(makeBondCommand())
   .addCommand(makeBondExtraCommand())
-  .addCommand(makeUnbondCommand())
-  .addCommand(makeWithdrawUnbondedCommand())
-  .addCommand(makeRotateKeysCommand())
-  .addCommand(makeSetKeysCommand())
-  .addCommand(makeValidateCommand())
-  .addCommand(makeDistributeRewardsCommand())
   .addCommand(makeChillCommand())
-  .addCommand(makeWizardCommand())
-  .addCommand(makeStatusCommand());
+  .addCommand(makeDistributeRewardsCommand())
+  .addCommand(makeNewSeedCommand())
+  .addCommand(makeRotateKeysCommand())
+  .addCommand(makeSendCommand())
+  .addCommand(makeSetKeysCommand())
+  .addCommand(makeShowAddressCommand())
+  .addCommand(makeStatusCommand())
+  .addCommand(makeUnbondCommand())
+  .addCommand(makeValidateCommand())
+  .addCommand(makeWithdrawUnbondedCommand())
+  .addCommand(makeWizardCommand());
 
 program.commands.forEach((cmd) => {
   cmd.option(
