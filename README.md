@@ -30,15 +30,6 @@ node.
 cargo run --release -- --dev --tmp --mining-key <your mining key>
 ```
 
-### Build
-
-The `cargo run` command will perform an initial build. Use the following command to build the node
-without launching it:
-
-```sh
-cargo build --release
-```
-
 ### Explore Node Options
 
 Once the project has been built, the following command can be used to explore all parameters and
