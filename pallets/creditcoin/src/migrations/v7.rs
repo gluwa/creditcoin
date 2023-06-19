@@ -39,7 +39,7 @@ impl<T: Config> Migrate for Migration<T> {
 		if old_pallet == new_pallet {
 			log::info!(
 				target: "runtime::Creditcoin",
-				"pre-migrate V8, nothing to do.",
+				"pre-migrate V7, nothing to do.",
 			);
 			return vec![];
 		}
