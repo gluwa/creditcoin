@@ -32,7 +32,7 @@ async function setKeysAction(options: OptionValues) {
     console.log(
       "Must specify keys to set or generate new ones using the --rotate flag"
     );
-    process.exit(0);
+    process.exit(1);
   } else if (options.rotate) {
     keys = (await api.rpc.author.rotateKeys()).toString();
   } else {

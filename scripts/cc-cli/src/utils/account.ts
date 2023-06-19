@@ -21,7 +21,7 @@ export function getSeedFromOptions(options: OptionValues) {
 export function checkAddress(address: string, api: ApiPromise) {
   if (!address) {
     console.log("Must specify address to get balance of");
-    process.exit(0);
+    process.exit(1);
   } else {
     checkIfAddressIsValid(address, api);
   }
