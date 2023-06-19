@@ -51,6 +51,21 @@ jobs:
           # this will also kill the parent container
           sudo killall -9 creditcoin-node
 
+      - name: Start docker-compose
+        run: |
+          docker-compose up -d
+
+      - name: Sanity check for persistently mounted directory
+        run: |
+          sleep 60
+          docker exec creditcoin-validator ls -ld /creditcoin-node/data
+          docker exec creditcoin-validator ls -la /creditcoin-node/data
+
+      - name: Kill the container
+        run: |
+          # this will also kill the parent container
+          sudo killall -9 creditcoin-node
+
   sanity-tests:
     runs-on: ubuntu-latest
     steps:
