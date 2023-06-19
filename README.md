@@ -118,7 +118,6 @@ local node template.
 
 If you want to see the multi-node consensus algorithm in action, refer to our
 [Start a Private Network tutorial](https://substrate.dev/docs/en/tutorials/start-a-private-network/).
-[Start a Private Network tutorial](https://substrate.dev/docs/en/tutorials/start-a-private-network/).
 
 ## Links Regarding legacy Creditcoin implementation
 
