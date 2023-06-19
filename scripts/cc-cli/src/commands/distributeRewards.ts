@@ -26,12 +26,12 @@ async function distributeRewardsAction(options: OptionValues) {
 
   if (!options.validatorId) {
     console.log("Must specify a validator to distribute rewards for");
-    process.exit(0);
+    process.exit(1);
   }
 
   if (!options.era) {
     console.log("Must specify an era");
-    process.exit(0);
+    process.exit(1);
   }
 
   const distributeTx = api.tx.staking.payoutStakers(
