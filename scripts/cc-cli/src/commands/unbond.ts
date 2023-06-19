@@ -38,6 +38,6 @@ async function unbondAction(options: OptionValues) {
 function checkAmount(options: OptionValues) {
   if (!options.amount) {
     console.log("Must specify amount to send");
-    process.exit(0);
+    process.exit(1);
   }
 }
