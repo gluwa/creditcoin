@@ -14,7 +14,6 @@ import { makeShowAddressCommand } from "./commands/showAddress";
 import { makeSendCommand } from "./commands/send";
 import { makeChillCommand } from "./commands/chill";
 import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
-import { makeBondExtraCommand } from "./commands/bondExtra";
 import { makeUnbondCommand } from "./commands/unbond";
 import { makeStatusCommand } from "./commands/status";
 import { makeWithdrawUnbondedCommand } from "./commands/withdrawUnbonded";
@@ -30,7 +29,6 @@ program.description("Creditcoin Staking Tool");
 program
   .addCommand(makeBalanceCommand())
   .addCommand(makeBondCommand())
-  .addCommand(makeBondExtraCommand())
   .addCommand(makeChillCommand())
   .addCommand(makeDistributeRewardsCommand())
   .addCommand(makeNewSeedCommand())
