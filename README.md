@@ -11,7 +11,6 @@ For more information, see [creditcoin.org](https://creditcoin.org), or read the 
 ## Getting Started
 
 - [Miner Setup](./docs/miner-setup.md)
-- [Legacy Account Migration](./docs/legacy-account-migration.md)
 - [Using PolkadotJs](./docs/using-polkadotjs.md)
 
 ## Developer Setup
@@ -119,7 +118,7 @@ local node template.
 If you want to see the multi-node consensus algorithm in action, refer to our
 [Start a Private Network tutorial](https://substrate.dev/docs/en/tutorials/start-a-private-network/).
 
-## Links Regarding legacy Creditcoin implementation
+## Links Regarding legacy Creditcoin 1.x implementation
 
-- [Legacy Mining Setup](https://docs.creditcoin.org/creditcoin-miners-manual/pre-2.0-mining-setup)
-- [Legacy Creditcoin Repos](https://github.com/gluwa?q=legacy)
+- [Legacy Creditcoin 1.x Account Migration](./docs/legacy-account-migration.md)
+- [Legacy Creditcoin 1.x Repos](https://github.com/gluwa?q=legacy)
