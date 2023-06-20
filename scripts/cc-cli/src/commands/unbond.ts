@@ -4,7 +4,7 @@ import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
-import { toMicrounits } from "../utils/balance";
+import { parseCTCString } from "../utils/balance";
 import { getStatus, requireStatus } from "../utils/status";
 
 export function makeUnbondCommand() {
@@ -35,7 +35,7 @@ async function unbondAction(options: OptionValues) {
   requireStatus(stashStatus, "bonded");
 
   // Unbond transaction
-  const tx = api.tx.staking.unbond(toMicrounits(options.amount).toString());
+  const tx = api.tx.staking.unbond(parseCTCString(options.amount).toString());
 
   const hash = await tx.signAndSend(controllerKeyring);
 

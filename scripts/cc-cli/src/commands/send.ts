@@ -7,7 +7,7 @@ import {
   initECDSAKeyringPairFromPK,
   initKeyringPair,
 } from "../utils/account";
-import { toMicrounits } from "../utils/balance";
+import { parseCTCString } from "../utils/balance";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
@@ -36,7 +36,6 @@ async function sendAction(options: OptionValues) {
     const hash = await sendFromSr25519(options, api);
     console.log("Transfer transaction hash: " + hash.toHex());
   }
-
   process.exit(0);
 }
 
@@ -55,7 +54,7 @@ async function sendFromSr25519(options: OptionValues, api: ApiPromise) {
   // Send transaction
   const tx = api.tx.balances.transfer(
     options.to,
-    toMicrounits(options.amount).toString()
+    parseCTCString(options.amount).toString()
   );
   const hash = await tx.signAndSend(caller);
   return hash;
@@ -65,12 +64,11 @@ async function sendFromECDSA(options: OptionValues, api: ApiPromise) {
   // Build account
   const callerSeed = await getCallerSeedFromEnvOrPrompt();
   const caller = initECDSAKeyringPairFromPK(callerSeed);
-  console.log(caller.address);
 
   // Send transaction
   const tx = api.tx.balances.transfer(
     options.to,
-    toMicrounits(options.amount).toString()
+    parseCTCString(options.amount).toString()
   );
   const hash = await tx.signAndSend(caller);
   return hash;
