@@ -1,7 +1,11 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getControllerSeedFromEnvOrPrompt } from "../utils/account";
+import {
+  getControllerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 import { chill } from "../utils/validate";
+import { getStatus, requireStatus } from "../utils/status";
 
 export function makeChillCommand() {
   const cmd = new Command("chill");
@@ -16,6 +20,11 @@ async function chillAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controllerKeyring = initKeyringPair(controllerSeed);
+  const controllerAddress = controllerKeyring.address;
+
+  let status = await getStatus(controllerAddress, api);
+  requireStatus(status, "validating");
 
   console.log("Creating chill transaction...");
 
