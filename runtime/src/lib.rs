@@ -65,6 +65,7 @@ pub use pallet_pos_switch;
 use frame_support::traits::UpgradeCheckSelect;
 
 pub use frame_system::Call as SystemCall;
+use hex_literal::hex;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
@@ -650,6 +651,14 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 }
 
+parameter_types! {
+	/// Treasury wallet containing tokens for the bridging of GATE to CTC.
+	/// Done with the intent purpose of allowing only previously minted CTC to be used in a coin swap
+	/// TODO get wallet address from Ada
+	pub BurnGATECTCWalletAddress: AccountId = hex!["ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"].into();
+
+}
+
 impl pallet_creditcoin::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Call = RuntimeCall;
@@ -659,6 +668,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
 	type TaskScheduler = TaskScheduler;
+	type BurnGATECTCWalletAddress = BurnGATECTCWalletAddress;
 }
 
 impl pallet_difficulty::Config for Runtime {

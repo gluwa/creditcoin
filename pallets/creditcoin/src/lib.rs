@@ -117,6 +117,8 @@ pub mod pallet {
 				Hash = Self::Hash,
 				Task = Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
 			> + AuthorityController<AccountId = Self::AccountId>;
+
+		type BurnGATECTCWalletAddress: Get<<Self as frame_system::Config>::AccountId>;
 	}
 
 	pub trait WeightInfo {
@@ -1307,10 +1309,20 @@ pub mod pallet {
 					let address =
 						Self::addresses(&burned_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
 
-					<pallet_balances::Pallet<T> as Mutate<T::AccountId>>::mint_into(
-						&address.owner,
-						burned_coins.amount,
-					)?;
+					let ctc_treasury_address = &T::BurnGATECTCWalletAddress::get();
+
+					let transfer_result =
+						<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
+							ctc_treasury_address,
+							&address.owner,
+							burned_coins.amount,
+							ExistenceRequirement::AllowDeath,
+						);
+
+					match transfer_result {
+						DispatchError(_) => return DispatchResultWithPostInfo::from(try_get!()),
+						Ok(()) => (),
+					}
 
 					BurnedGATE::<T>::insert(&id, burned_coins.clone());
 					(id.clone().into_inner(), Event::<T>::BurnedGATEMinted(id, burned_coins))

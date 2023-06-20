@@ -9,7 +9,7 @@ use crate::{
 	types::{Blockchain, UnverifiedBurnGATE, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
-use core::default::Default;
+use core::{default::Default, ops::Div};
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::U64;
 use frame_support::{ensure, RuntimeDebug};
@@ -197,8 +197,9 @@ impl<T: CreditcoinConfig> Pallet<T> {
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
 
-		let amount = validate_burn_GATE(to, &tx_receipt, &tx, eth_tip, address)?;
-		let amount = amount.saturating_mul(sp_core::U256::from_dec_str("2").unwrap());
+		let amount = validate_burn_gate(to, &tx_receipt, &tx, eth_tip, address)?;
+		// 2:1 GATE:CTC Ratio
+		let amount = amount.div(sp_core::U256::from_dec_str("2").unwrap());
 		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
 
 		Ok(amount)

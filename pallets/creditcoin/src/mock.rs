@@ -10,6 +10,7 @@ use frame_support::{
 	traits::{ConstU32, ConstU64, GenesisBuild, Hooks},
 };
 use frame_system as system;
+use hex_literal::hex;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
 pub(crate) use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 pub(crate) use parking_lot::RwLock;
@@ -114,6 +115,8 @@ impl pallet_creditcoin::Config for Test {
 	type WeightInfo = super::weights::WeightInfo<Test>;
 
 	type TaskScheduler = TaskScheduler;
+
+	type BurnGATECTCWalletAddress = BurnGATECTCWalletAddress;
 }
 
 impl pallet_offchain_task_scheduler::Config for Test {
@@ -564,4 +567,11 @@ fn default_works() {
 		assert_eq!(defaults.legacy_wallets.len(), 0);
 		assert_eq!(defaults.legacy_balance_keeper, None);
 	});
+}
+
+parameter_types! {
+	/// Test Treasury wallet containing tokens for the bridging of GATE to CTC.
+	/// Done with the intent purpose of allowing only previously minted CTC to be used in a coin swap
+	/// TODO get wallet address from Ada
+	pub BurnGATECTCWalletAddress: AccountId = hex!["ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"].into();
 }
