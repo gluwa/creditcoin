@@ -9,7 +9,9 @@ import { getStatus, requireStatus } from "../utils/status";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
-  cmd.description("Schedule a portion of the stash to be unlocked");
+  cmd.description(
+    "Schedule a portion of the stash to be unlocked by the controller"
+  );
   cmd.option("-a, --amount [amount]", "Amount to send");
   cmd.action(unbondAction);
   return cmd;
