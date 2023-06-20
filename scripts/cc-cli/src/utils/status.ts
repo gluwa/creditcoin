@@ -124,10 +124,16 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
   console.log(`Next unbonding chunk: ${nextUnlocking}`);
 }
 
-export function requireStatus(status: Status, condition: keyof Status) {
+export function requireStatus(
+  status: Status,
+  condition: keyof Status,
+  message?: string
+) {
   if (!status[condition]) {
     console.error(
-      `Cannot perform action, validator is not ${condition.toString()}`
+      message
+        ? message
+        : `Cannot perform action, validator is not ${condition.toString()}`
     );
     process.exit(1);
   }

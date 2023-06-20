@@ -1,5 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
+import { getStatus, requireStatus } from "../utils/status";
 import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
@@ -18,6 +19,14 @@ async function withdrawUnbondedAction(options: OptionValues) {
 
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
   const controller = initKeyringPair(controllerSeed);
+
+  let status = await getStatus(controller.address, api);
+  requireStatus(
+    status,
+    "canWithdraw",
+    "Cannot perform action, there are no unlocked funds to withdraw"
+  );
+
   const slashingSpans = await api.query.staking.slashingSpans(
     controller.address
   );
