@@ -124,11 +124,11 @@ export function makeWizardCommand() {
 
     // Set keys
     console.log("Creating setKeys transaction...");
-    const setKeysTx = api.tx.session.setKeys(newKeys, preferences);
+    const setKeysTx = api.tx.session.setKeys(newKeys, "");
 
     // Validate
     console.log("Creating validate transaction...");
-    const validateTx = api.tx.staking.validate({ preferences });
+    const validateTx = api.tx.staking.validate(preferences);
 
     // Send transactions
     console.log("Sending setKeys and validate transactions...");
