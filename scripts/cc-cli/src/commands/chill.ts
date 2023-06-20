@@ -23,13 +23,16 @@ async function chillAction(options: OptionValues) {
   const controllerKeyring = initKeyringPair(controllerSeed);
   const controllerAddress = controllerKeyring.address;
 
+  const info = await api.query.staking.ledger(controllerAddress);
+  console.log(info.unwrap().stash.toPrimitive());
+
   let status = await getStatus(controllerAddress, api);
   requireStatus(status, "validating");
 
   console.log("Creating chill transaction...");
 
-  const chillTxHash = await chill(controllerSeed, api);
+  // const chillTxHash = await chill(controllerSeed, api);
 
-  console.log("Chill transaction sent with hash:", chillTxHash.toHex());
+  // console.log("Chill transaction sent with hash:", chillTxHash.toHex());
   process.exit(0);
 }

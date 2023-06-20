@@ -24,22 +24,10 @@ export async function getStatus(address: string, api: ApiPromise) {
   const totalStaked = readAmount(res.stakingLedger.total.toString());
   const bonded = totalStaked.gt(new BN(0));
 
-  const controller = res.controllerId ? res.controllerId.toString() : "null";
+  const controller = res.controllerId ? res.controllerId.toString() : "None";
 
-  console.log(res.stakingLedger.stash.toHuman());
-
-  const query = await api.query.staking.ledger(address);
-  console.log(query.toHuman());
-
-  const stash = "TODO";
-
-  //   const stash = query.stash ? query.stash.toString() : "null";
-  //   console.log(stash ? stash.toString() : "null");
-  //   const stash = stashRes. ? stashRes.stash.toString() : "null";
-
-  //   const stash = res.stakingLedger.stash
-  //     ? res.stakingLedger.stash.toString()
-  //     : "null";
+  const stashRes = await api.query.staking.ledger(address);
+  const stash = stashRes.isSome ? stashRes.unwrap().stash.toString() : "None";
 
   const unlockingRes = res.stakingLedger.unlocking;
   const currentEra = await api.query.staking.currentEra();
