@@ -103,7 +103,12 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
 
   console.log("Can withdraw: ", status.canWithdraw);
   if (status.canWithdraw) {
-    console.log("Unlocking chunks: ", status.readyForWithdraw);
+    console.log("Unlocked chunks: ");
+    status.readyForWithdraw.forEach((chunk) => {
+      console.log(
+        `  ${toCTCString(chunk.value)} unlocked since era ${chunk.era}`
+      );
+    });
   }
 
   let nextUnlocking = "None";
