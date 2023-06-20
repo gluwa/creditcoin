@@ -39,6 +39,5 @@ export async function chill(controllerSeed: string, api: ApiPromise) {
 
   const hash = await chillTx.signAndSend(account);
 
-  console.log(`Chill transaction sent with hash: ${hash.toHex()}`);
   return hash;
 }
