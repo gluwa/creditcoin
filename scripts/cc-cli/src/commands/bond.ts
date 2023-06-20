@@ -33,7 +33,7 @@ async function bondAction(options: OptionValues) {
   checkAddress(options.controller, api);
 
   // If no amount error and exit
-  if (!options.amount || !parseInt(options.amount, 10)) {
+  if (!options.amount || !parseFloat(options.amount)) {
     console.log("Must specify amount to bond");
     process.exit(1);
   }
@@ -44,7 +44,7 @@ async function bondAction(options: OptionValues) {
   const stashKeyring = initKeyringPair(stashSeed);
   const stashAddress = stashKeyring.address;
   const balance = await getBalance(stashAddress, api);
-  const amount = parseInt(options.amount, 10);
+  const amount = parseFloat(options.amount);
   checkBalanceAgainstBondAmount(balance, amount);
 
   const rewardDestination = options.rewardDestination
@@ -54,7 +54,7 @@ async function bondAction(options: OptionValues) {
   console.log("Creating bond transaction...");
   console.log("Controller address:", options.controller);
   console.log("Reward destination:", rewardDestination);
-  console.log("Amount:", parseInt(options.amount, 10));
+  console.log("Amount:", parseFloat(options.amount));
 
   await promptContinue();
 
