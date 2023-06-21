@@ -17,15 +17,15 @@ async function withdrawUnbondedAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
-  const stashAccount = initKeyringPair(controllerSeed);
+  const controller = initKeyringPair(controllerSeed);
   const slashingSpans = await api.query.staking.slashingSpans(
-    stashAccount.address
+    controller.address
   );
   const slashingSpansCount = slashingSpans.toHuman()
     ? slashingSpans.toHuman()
     : 0;
   const withdrawUnbondTx = api.tx.staking.withdrawUnbonded(slashingSpansCount);
-  const hash = await withdrawUnbondTx.signAndSend(stashAccount);
+  const hash = await withdrawUnbondTx.signAndSend(controller);
 
   console.log("Withdraw unbonded transaction sent with hash:", hash.toHex());
   process.exit(0);

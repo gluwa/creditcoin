@@ -25,14 +25,14 @@ async function sendAction(options: OptionValues) {
 
   // Build account
   const callerSeed = await getCallerSeedFromEnvOrPrompt();
-  const stash = initKeyringPair(callerSeed);
+  const caller = initKeyringPair(callerSeed);
 
   // Send transaction
   const tx = api.tx.balances.transfer(
     options.to,
     toMicrounits(options.amount).toString()
   );
-  const hash = await tx.signAndSend(stash);
+  const hash = await tx.signAndSend(caller);
 
   console.log("Transfer transaction hash: " + hash.toHex());
   process.exit(0);

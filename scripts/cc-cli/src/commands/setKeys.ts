@@ -20,7 +20,7 @@ async function setKeysAction(options: OptionValues) {
 
   // Build account
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
-  const stash = initKeyringPair(controllerSeed);
+  const controller = initKeyringPair(controllerSeed);
 
   let keys;
   if (!options.keys && !options.rotate) {
@@ -35,7 +35,7 @@ async function setKeysAction(options: OptionValues) {
   }
 
   const tx = api.tx.session.setKeys(keys, []);
-  const hash = await tx.signAndSend(stash);
+  const hash = await tx.signAndSend(controller);
 
   console.log("Set keys transaction hash: " + hash.toHex());
 
