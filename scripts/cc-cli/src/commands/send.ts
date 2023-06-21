@@ -60,9 +60,8 @@ async function sendFromSr25519(options: OptionValues, api: ApiPromise) {
     toMicrounits(options.amount).toString()
   );
 
-  const result = await signSendAndWatch(tx, api, stash);
-  console.log(result.info);
-  process.exit(0);
+  const result = await signSendAndWatch(tx, api, caller);
+  return result;
 }
 
 async function sendFromECDSA(options: OptionValues, api: ApiPromise) {
