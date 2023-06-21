@@ -1,35 +1,60 @@
 import { ISubmittableResult } from "@polkadot/types/types";
-import { ApiPromise } from "creditcoin-js";
+import { ApiPromise, KeyringPair } from "creditcoin-js";
 
-export function handleTxStatusAndExit(
-  result: ISubmittableResult,
-  api: ApiPromise
-): void {
-  const { status, dispatchError } = result;
+import { SubmittableExtrinsic } from "@polkadot/api/types";
 
-  if (status.isFinalized) {
-    console.log(
-      `Transaction succeeded and included at blockHash ${status.asFinalized.toString()}`
+export async function signSendAndWatch(
+  tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
+  api: ApiPromise,
+  signer: KeyringPair
+): Promise<TxResult> {
+  let result;
+
+  return new Promise(async (resolve) => {
+    let result = await new Promise(
+      await tx.signAndSend(signer, ({ status, dispatchError }) => {
+        if (status.isFinalized) {
+          const result = {
+            status: TxStatus.ok,
+            info: `Transaction included at blockHash ${status.asFinalized.toString()}`,
+          };
+
+          // resolve(result);
+        }
+        if (dispatchError) {
+          if (dispatchError.isModule) {
+            // for module errors, the section is indexed, lookup
+            const decoded = api.registry.findMetaError(dispatchError.asModule);
+            const { docs, name, section } = decoded;
+
+            const error = `${section}.${name}: ${docs.join(" ")}`;
+
+            const result = {
+              status: TxStatus.failed,
+              info: `Transaction failed with error: "${error}"`,
+            };
+
+            //   resolve(result);
+          } else {
+            // Other, CannotLookup, BadOrigin, no extra info
+            const result = {
+              status: TxStatus.failed,
+              info: `Transaction failed with error: "${dispatchError.toString()}"`,
+            };
+            //   resolve(result);
+          }
+        }
+      })
     );
-    process.exit(0);
-  }
+  });
+}
 
-  if (dispatchError) {
-    if (dispatchError.isModule) {
-      // for module errors, the section is indexed, lookup
-      const decoded = api.registry.findMetaError(dispatchError.asModule);
-      const { docs, name, section } = decoded;
+export enum TxStatus {
+  ok,
+  failed,
+}
 
-      const error = `${section}.${name}: ${docs.join(" ")}`;
-
-      console.log(`Transaction failed with error: "${error}"`);
-      process.exit(1);
-    } else {
-      // Other, CannotLookup, BadOrigin, no extra info
-      console.log(
-        `Transaction failed with error: "${dispatchError.toString()}"`
-      );
-      process.exit(1);
-    }
-  }
+export interface TxResult {
+  status: TxStatus;
+  info: string;
 }
