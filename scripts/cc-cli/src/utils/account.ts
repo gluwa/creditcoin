@@ -20,8 +20,14 @@ export async function getControllerSeedFromEnvOrPrompt() {
     "Specify a seed phrase for the Controller account"
   );
 }
+export async function getCallerSeedFromEnvOrPrompt() {
+  return await getSeedFromEnvOrPrompt(
+    process.env.CC_SEED,
+    "Specify caller's seed phrase"
+  );
+}
 
-export async function getSeedFromEnvOrPrompt(
+async function getSeedFromEnvOrPrompt(
   envVar?: string | undefined,
   promptStr?: string | null
 ) {

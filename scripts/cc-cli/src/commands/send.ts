@@ -2,7 +2,7 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import {
   checkAddress,
-  getStashSeedFromEnvOrPrompt,
+  getCallerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
@@ -24,7 +24,7 @@ async function sendAction(options: OptionValues) {
   checkAddress(options.to, api);
 
   // Build account
-  const seed = await getStashSeedFromEnvOrPrompt();
+  const seed = await getCallerSeedFromEnvOrPrompt();
   const stash = initKeyringPair(seed);
 
   // Send transaction

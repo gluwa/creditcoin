@@ -1,6 +1,6 @@
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { Command } from "commander";
-import { getSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import { getCallerSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 
 export function makeShowAddressCommand() {
   const cmd = new Command("show-address");
@@ -11,10 +11,7 @@ export function makeShowAddressCommand() {
 
 async function showAddressAction() {
   await cryptoWaitReady();
-  const seed = await getSeedFromEnvOrPrompt(
-    process.env.CC_SEED,
-    "Specify seed phrase"
-  );
+  const seed = await getCallerSeedFromEnvOrPrompt();
   const pair = initKeyringPair(seed);
   const address = pair.address;
 

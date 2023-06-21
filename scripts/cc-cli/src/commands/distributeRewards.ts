@@ -1,6 +1,9 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import {
+  getCallerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
@@ -27,10 +30,7 @@ async function distributeRewardsAction(options: OptionValues) {
     process.exit(1);
   }
 
-  const signerSeed = await getSeedFromEnvOrPrompt(
-    process.env.CC_SEED,
-    "Specify caller's seed phrase"
-  );
+  const signerSeed = await getCallerSeedFromEnvOrPrompt();
   const distributeTx = api.tx.staking.payoutStakers(
     options.validatorId,
     options.era
