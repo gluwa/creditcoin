@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import { getControllerSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
 
 export function makeUnbondCommand() {
@@ -18,13 +18,13 @@ async function unbondAction(options: OptionValues) {
   checkAmount(options);
 
   // Build account
-  const stashSeed = await getStashSeedFromEnvOrPrompt();
-  const stash = initKeyringPair(stashSeed);
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controller = initKeyringPair(controllerSeed);
 
   // Unbond transaction
   const tx = api.tx.staking.unbond(toMicrounits(options.amount).toString());
 
-  const hash = await tx.signAndSend(stash);
+  const hash = await tx.signAndSend(controller);
 
   console.log("Unbond transaction hash: " + hash.toHex());
   process.exit(0);
