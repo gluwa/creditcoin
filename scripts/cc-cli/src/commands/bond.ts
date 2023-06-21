@@ -54,7 +54,7 @@ async function bondAction(options: OptionValues) {
   console.log("Creating bond transaction...");
   console.log("Controller address:", options.controller);
   console.log("Reward destination:", rewardDestination);
-  console.log("Amount:", parseFloat(options.amount));
+  console.log("Amount:", amount);
 
   await promptContinue();
 
