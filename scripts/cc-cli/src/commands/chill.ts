@@ -27,8 +27,8 @@ async function chillAction(options: OptionValues) {
 
   console.log("Creating chill transaction...");
 
-  const chillTxHash = await chill(controllerSeed, api);
+  const result = await chill(controllerSeed, api);
 
-  console.log("Chill transaction sent with hash:", chillTxHash.toHex());
+  console.log(result.info);
   process.exit(0);
 }

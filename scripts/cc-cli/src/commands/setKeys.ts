@@ -1,6 +1,7 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
@@ -40,9 +41,9 @@ async function setKeysAction(options: OptionValues) {
   }
 
   const tx = api.tx.session.setKeys(keys, []);
-  const hash = await tx.signAndSend(stash);
+  const result = await signSendAndWatch(tx, api, stash);
 
-  console.log("Set keys transaction hash: " + hash.toHex());
+  console.log(result.info);
 
   process.exit(0);
 }

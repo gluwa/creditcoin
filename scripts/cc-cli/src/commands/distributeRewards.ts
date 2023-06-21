@@ -1,6 +1,7 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
@@ -39,8 +40,12 @@ async function distributeRewardsAction(options: OptionValues) {
     options.era
   );
 
-  const hash = await distributeTx.signAndSend(initKeyringPair(signerSeed));
+  const result = await signSendAndWatch(
+    distributeTx,
+    api,
+    initKeyringPair(signerSeed)
+  );
 
-  console.log("Payout stakers transaction sent with hash:", hash.toHex());
+  console.log(result.info);
   process.exit(0);
 }

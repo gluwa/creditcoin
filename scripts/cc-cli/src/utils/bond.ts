@@ -1,5 +1,6 @@
 import { ApiPromise } from "creditcoin-js";
 import { initKeyringPair } from "./account";
+import { signSendAndWatch } from "./tx";
 
 export async function bond(
   stashSeed: string,
@@ -28,9 +29,9 @@ export async function bond(
 
   const stashKeyring = initKeyringPair(stashSeed);
 
-  const hash = await bondTx.signAndSend(stashKeyring);
+  const result = await signSendAndWatch(bondTx, api, stashKeyring);
 
-  return hash.toHex();
+  return result;
 }
 
 export function parseRewardDestination(

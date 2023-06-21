@@ -1,6 +1,7 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");
@@ -30,8 +31,8 @@ async function withdrawUnbondedAction(options: OptionValues) {
     ? slashingSpans.toHuman()
     : 0;
   const withdrawUnbondTx = api.tx.staking.withdrawUnbonded(slashingSpansCount);
-  const hash = await withdrawUnbondTx.signAndSend(stashAccount);
+  const result = await signSendAndWatch(withdrawUnbondTx, api, stashAccount);
 
-  console.log("Withdraw unbonded transaction sent with hash:", hash.toHex());
+  console.log(result.info);
   process.exit(0);
 }

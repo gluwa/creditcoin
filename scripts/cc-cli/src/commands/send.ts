@@ -6,6 +6,7 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
@@ -40,9 +41,9 @@ async function sendAction(options: OptionValues) {
     options.to,
     toMicrounits(options.amount).toString()
   );
-  const hash = await tx.signAndSend(stash);
+  const result = await signSendAndWatch(tx, api, stash);
 
-  console.log("Transfer transaction hash: " + hash.toHex());
+  console.log(result.info);
   process.exit(0);
 }
 

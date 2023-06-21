@@ -31,7 +31,8 @@ async function unbondAction(options: OptionValues) {
   const tx = api.tx.staking.unbond(toMicrounits(options.amount).toString());
 
   const result = await signSendAndWatch(tx, api, stash);
-  console.log(`Unbond Result: ${JSON.stringify(result)}`);
+
+  console.log(result.info);
   process.exit(0);
 }
 
