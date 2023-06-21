@@ -12,7 +12,6 @@ import {
   parseCTCString,
   printBalance,
   toCTCString,
-  toMicrounits,
 } from "../utils/balance";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
