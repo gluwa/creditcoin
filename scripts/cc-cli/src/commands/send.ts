@@ -3,7 +3,7 @@ import { newApi } from "../api";
 import {
   checkAddress,
   getStashSeedFromEnvOrPrompt,
-  initKeyringPair
+  initKeyringPair,
 } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
 

@@ -11,7 +11,10 @@ export function makeShowAddressCommand() {
 
 async function showAddressAction(options: OptionValues) {
   await cryptoWaitReady();
-  const seed = await getSeedFromEnvOrPrompt(process.env.CC_SEED, "Specify seed phrase");
+  const seed = await getSeedFromEnvOrPrompt(
+    process.env.CC_SEED,
+    "Specify seed phrase"
+  );
   const pair = initKeyringPair(seed);
   const address = pair.address;
 

@@ -21,19 +21,34 @@ export async function getControllerSeedFromEnvOrPrompt() {
   );
 }
 
-export async function getSeedFromEnvOrPrompt(envVar?: string | undefined, promptStr?: string | null) {
-  if (envVar && mnemonicValidate(envVar)) {
-    return envVar;
+export async function getSeedFromEnvOrPrompt(
+  envVar?: string | undefined,
+  promptStr?: string | null
+) {
+  if (envVar) {
+    if (mnemonicValidate(envVar)) {
+      return envVar;
+    } else {
+      console.log("Error: Seed phrase provided in environment variable is invalid.");
+      process.exit(1);
+    }
   }
   let seedPromptResult = await prompts([
     {
       type: "invisible",
       name: "seed",
       message: promptStr ? promptStr : "Enter seed phrase",
-      validate: seed => mnemonicValidate(seed)
-    }
+      validate: (seed) => mnemonicValidate(seed),
+    },
   ]);
-  return seedPromptResult.seed;
+
+  // If SIGTERM is issued while prompting, it will log a bogus address anyways and exit without error.
+  // To avoid this, we check if prompt was successful, before returning.
+  if (seedPromptResult.seed) {
+    return seedPromptResult.seed;
+  }
+  console.log("Error: Could not retrieve seed phrase.");
+  process.exit(1);
 }
 
 export function checkAddress(address: string, api: ApiPromise) {

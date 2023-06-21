@@ -17,7 +17,6 @@ export function makeDistributeRewardsCommand() {
 async function distributeRewardsAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-
   if (!options.validatorId) {
     console.log("Must specify a validator to distribute rewards for");
     process.exit(1);
@@ -28,7 +27,10 @@ async function distributeRewardsAction(options: OptionValues) {
     process.exit(1);
   }
 
-  const signerSeed = await getSeedFromEnvOrPrompt(process.env.CC_SEED, "Specify caller's seed phrase");
+  const signerSeed = await getSeedFromEnvOrPrompt(
+    process.env.CC_SEED,
+    "Specify caller's seed phrase"
+  );
   const distributeTx = api.tx.staking.payoutStakers(
     options.validatorId,
     options.era

@@ -1,7 +1,11 @@
 import { Command, OptionValues } from "commander";
 import { BN } from "creditcoin-js";
 import { newApi } from "../api";
-import { getControllerSeedFromEnvOrPrompt, getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import {
+  getControllerSeedFromEnvOrPrompt,
+  getStashSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 import {
   Balance,
   getBalance,
