@@ -35,7 +35,7 @@ export async function getSeedFromEnvOrPrompt(
       process.exit(1);
     }
   }
-  let seedPromptResult = await prompts([
+  const seedPromptResult = await prompts([
     {
       type: "invisible",
       name: "seed",
