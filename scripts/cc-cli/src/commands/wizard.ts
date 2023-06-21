@@ -8,6 +8,7 @@ import {
 } from "../utils/account";
 import {
   Balance,
+  MICROUNITS_PER_CTC,
   getBalance,
   parseCTCString,
   printBalance,
@@ -51,6 +52,8 @@ export function makeWizardCommand() {
 
     // Bond prefs
     const amount = parseCTCString(options.amount);
+
+    checkAmount(amount);
 
     const rewardDestination = options.rewardDestination
       ? parseRewardDestination(options.rewardDestination)
@@ -184,5 +187,12 @@ function checkIfAlreadyBonded(balance: Balance) {
     return true;
   } else {
     return false;
+  }
+}
+
+function checkAmount(amount: BN) {
+  if (amount.lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
+    console.log("Amount to bond must be at least 1 CTC");
+    process.exit(1);
   }
 }
