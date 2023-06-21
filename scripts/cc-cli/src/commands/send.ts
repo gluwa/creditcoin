@@ -1,25 +1,17 @@
 import { Command, OptionValues } from "commander";
+import { ApiPromise } from "creditcoin-js";
 import { newApi } from "../api";
 import {
   checkAddress,
-  getSeedFromOptions,
+  getCallerSeedFromEnvOrPrompt,
   initECDSAKeyringPairFromPK,
   initKeyringPair,
 } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
-import { ApiPromise } from "creditcoin-js";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
   cmd.description("Send CTC from an account");
-  cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for sending CTC"
-  );
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for sending CTC"
-  );
   cmd.option(
     "--use-ecdsa",
     "Use ECDSA signature scheme and a private key instead of a mnemonic phrase"
@@ -57,29 +49,29 @@ function checkAmount(options: OptionValues) {
 
 async function sendFromSr25519(options: OptionValues, api: ApiPromise) {
   // Build account
-  const seed = getSeedFromOptions(options);
-  const stash = initKeyringPair(seed);
+  const callerSeed = await getCallerSeedFromEnvOrPrompt();
+  const caller = initKeyringPair(callerSeed);
 
   // Send transaction
   const tx = api.tx.balances.transfer(
     options.to,
     toMicrounits(options.amount).toString()
   );
-  const hash = await tx.signAndSend(stash);
+  const hash = await tx.signAndSend(caller);
   return hash;
 }
 
 async function sendFromECDSA(options: OptionValues, api: ApiPromise) {
   // Build account
-  const seed = getSeedFromOptions(options);
-  const stash = initECDSAKeyringPairFromPK(seed);
-  console.log(stash.address);
+  const callerSeed = await getCallerSeedFromEnvOrPrompt();
+  const caller = initECDSAKeyringPairFromPK(callerSeed);
+  console.log(caller.address);
 
   // Send transaction
   const tx = api.tx.balances.transfer(
     options.to,
     toMicrounits(options.amount).toString()
   );
-  const hash = await tx.signAndSend(stash);
+  const hash = await tx.signAndSend(caller);
   return hash;
 }
