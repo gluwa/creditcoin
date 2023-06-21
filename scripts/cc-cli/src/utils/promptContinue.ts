@@ -5,8 +5,12 @@ export async function promptContinue() {
     type: "confirm",
     name: "confirm",
     message: "Continue?",
-    initial: true,
+    initial: false,
   });
+
+  if (!promptResult.confirm) {
+    process.exit(0);
+  }
 
   return promptResult.confirm;
 }
