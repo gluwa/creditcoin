@@ -5,9 +5,16 @@ import {
   getStashSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
-import { Balance, getBalance, toMicrounits } from "../utils/balance";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
+import {
+  Balance,
+  MICROUNITS_PER_CTC,
+  getBalance,
+  parseCTCString,
+  toCTCString,
+} from "../utils/balance";
+import { BN } from "creditcoin-js";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");
@@ -29,23 +36,16 @@ export function makeBondCommand() {
 async function bondAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  // If no controller error and exit
-  checkAddress(options.controller, api);
-
-  // If no amount error and exit
-  if (!options.amount || !parseFloat(options.amount)) {
-    console.log("Must specify amount to bond");
-    process.exit(1);
-  }
-
   const stashSeed = await getStashSeedFromEnvOrPrompt();
-
-  // Check balance
   const stashKeyring = initKeyringPair(stashSeed);
   const stashAddress = stashKeyring.address;
-  const balance = await getBalance(stashAddress, api);
-  const amount = parseFloat(options.amount);
-  checkBalanceAgainstBondAmount(balance, amount);
+
+  const amount = parseCTCString(options.amount);
+
+  // Check inputs
+  checkAddress(options.controller, api);
+  checkAmount(options);
+  await checkBalance(options, api, stashAddress);
 
   const rewardDestination = options.rewardDestination
     ? parseRewardDestination(options.rewardDestination)
@@ -54,7 +54,7 @@ async function bondAction(options: OptionValues) {
   console.log("Creating bond transaction...");
   console.log("Controller address:", options.controller);
   console.log("Reward destination:", rewardDestination);
-  console.log("Amount:", amount);
+  console.log("Amount:", toCTCString(amount));
 
   await promptContinue();
 
@@ -73,10 +73,31 @@ async function bondAction(options: OptionValues) {
   process.exit(0);
 }
 
-function checkBalanceAgainstBondAmount(balance: Balance, amount: number) {
-  if (balance.free.sub(balance.miscFrozen).lt(toMicrounits(amount))) {
+async function checkBalance(options: OptionValues, api: any, address: string) {
+  const balance = await getBalance(address, api);
+  const amount = parseCTCString(options.amount);
+  checkBalanceAgainstBondAmount(balance, amount);
+}
+
+function checkBalanceAgainstBondAmount(balance: Balance, amount: BN) {
+  const available = balance.free.sub(balance.miscFrozen);
+  if (available.lt(amount)) {
     throw new Error(
-      `Insufficient funds to bond ${toMicrounits(amount).toString()}`
+      `Insufficient funds to bond ${toCTCString(amount)}, only ${toCTCString(
+        available
+      )} available`
     );
+  }
+}
+
+function checkAmount(options: OptionValues) {
+  if (!options.amount) {
+    console.log("Must specify amount to bond");
+    process.exit(1);
+  } else {
+    if (parseCTCString(options.amount).lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
+      console.log("Bond amount must be at least 1 CTC");
+      process.exit(1);
+    }
   }
 }
