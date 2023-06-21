@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import { getControllerSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
@@ -16,8 +16,8 @@ async function setKeysAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   // Build account
-  const seed = await getStashSeedFromEnvOrPrompt();
-  const stash = initKeyringPair(seed);
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const stash = initKeyringPair(controllerSeed);
 
   let keys;
   if (!options.keys && !options.rotate) {
