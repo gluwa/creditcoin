@@ -61,3 +61,4 @@ COPY --from=rust-builder --chown=creditcoin:creditcoin /creditcoin-node/chainspe
 USER 0
 RUN npm install -g /creditcoin-node/scripts/cc-cli/creditcoin-cli-v*.tgz
 USER creditcoin
+RUN mkdir /creditcoin-node/data
