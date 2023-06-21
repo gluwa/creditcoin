@@ -1,12 +1,13 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
+
 import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
+
 import { toMicrounits } from "../utils/balance";
 import { signSendAndWatch } from "../utils/tx";
-
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
   cmd.description("Schedule a portion of the stash to be unlocked");

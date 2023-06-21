@@ -39,12 +39,12 @@ async function distributeRewardsAction(options: OptionValues) {
     options.era
   );
 
-
   const result = await signSendAndWatch(
     distributeTx,
     api,
     initKeyringPair(signerSeed)
   );
+
   console.log(result.info);
   process.exit(0);
 }
