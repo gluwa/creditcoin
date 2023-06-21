@@ -2,6 +2,7 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
@@ -29,9 +30,8 @@ async function unbondAction(options: OptionValues) {
   // Unbond transaction
   const tx = api.tx.staking.unbond(toMicrounits(options.amount).toString());
 
-  const hash = await tx.signAndSend(stash);
-
-  console.log("Unbond transaction hash: " + hash.toHex());
+  const result = await signSendAndWatch(tx, api, stash);
+  console.log(`Unbond Result: ${JSON.stringify(result)}`);
   process.exit(0);
 }
 
