@@ -6,6 +6,7 @@ import {
 } from "../utils/account";
 import { getBalance, parseCTCString } from "../utils/balance";
 import { getStatus, requireStatus } from "../utils/status";
+import {signSendAndWatch} from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
 
@@ -44,9 +45,8 @@ async function unbondAction(options: OptionValues) {
   // Unbond transaction
   const tx = api.tx.staking.unbond(amount.toString());
 
-  const hash = await tx.signAndSend(controllerKeyring);
-
-  console.log("Unbond transaction hash: " + hash.toHex());
+  const result = await signSendAndWatch(tx, api, controllerKeyring);
+  console.log(`Unbond Result: ${JSON.stringify(result)}`);
   process.exit(0);
 }
 
