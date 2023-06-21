@@ -2,22 +2,14 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import {
   checkAddress,
-  getSeedFromOptions,
-  initKeyringPair,
+  getStashSeedFromEnvOrPrompt,
+  initKeyringPair
 } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
   cmd.description("Send CTC from an account");
-  cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for sending CTC"
-  );
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for sending CTC"
-  );
   cmd.option("-a, --amount [amount]", "Amount to send");
   cmd.option("-t, --to [to]", "Specify recipient address");
   cmd.action(sendAction);
@@ -32,7 +24,7 @@ async function sendAction(options: OptionValues) {
   checkAddress(options.to, api);
 
   // Build account
-  const seed = getSeedFromOptions(options);
+  const seed = await getStashSeedFromEnvOrPrompt();
   const stash = initKeyringPair(seed);
 
   // Send transaction

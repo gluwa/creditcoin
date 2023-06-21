@@ -1,18 +1,10 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
   cmd.description("Set session keys for a Controller account");
-  cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to set keys from"
-  );
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to set keys from"
-  );
   cmd.option("-k, --keys [keys]", "Specify keys to set");
   cmd.option("-r, --rotate", "Rotate and set new keys");
 
@@ -24,7 +16,7 @@ async function setKeysAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   // Build account
-  const seed = getSeedFromOptions(options);
+  const seed = await getStashSeedFromEnvOrPrompt();
   const stash = initKeyringPair(seed);
 
   let keys;

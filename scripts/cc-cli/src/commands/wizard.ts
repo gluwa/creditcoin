@@ -1,39 +1,22 @@
 import { Command, OptionValues } from "commander";
+import { BN } from "creditcoin-js";
 import { newApi } from "../api";
-import { readFileSync } from "fs";
-import { initKeyringPair } from "../utils/account";
-import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
-import { bond, parseRewardDestination } from "../utils/bond";
-import { StakingPalletValidatorPrefs } from "../utils/validate";
-import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
+import { getControllerSeedFromEnvOrPrompt, getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import {
   Balance,
   getBalance,
   printBalance,
   toMicrounits,
 } from "../utils/balance";
-import { BN } from "creditcoin-js";
+import { bond, parseRewardDestination } from "../utils/bond";
+import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
+import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
+import { StakingPalletValidatorPrefs } from "../utils/validate";
 
 export function makeWizardCommand() {
   const cmd = new Command("wizard");
   cmd.description(
     "Run the validator setup wizard. Only requires funded stash and controller accounts."
-  );
-  cmd.option(
-    "-ss, --stash-seed [stash-seed]",
-    "Specify mnemonic phrase to use for stash account"
-  );
-  cmd.option(
-    "-sf, --stash-file [stash-file]",
-    "Specify file with mnemonic phrase to use for stash account"
-  );
-  cmd.option(
-    "-cs, --controller-seed [controller-seed]",
-    "Specify mnemonic phrase to use for controller account"
-  );
-  cmd.option(
-    "-cf, --controller-file [controller-file]",
-    "Specify file with mnemonic phrase to use for controller account"
   );
   cmd.option(
     "-r, --reward-destination [reward-destination]",
@@ -52,12 +35,12 @@ export function makeWizardCommand() {
     const { api } = await newApi(options.url);
 
     // Generate stash keyring
-    const stashSeed = getStashSeedFromOptions(options);
+    const stashSeed = await getStashSeedFromEnvOrPrompt();
     const stashKeyring = initKeyringPair(stashSeed);
     const stashAddress = stashKeyring.address;
 
     // Generate controller keyring
-    const controllerSeed = getControllerSeedFromOptions(options);
+    const controllerSeed = await getControllerSeedFromEnvOrPrompt();
     const controllerKeyring = initKeyringPair(controllerSeed);
     const controllerAddress = controllerKeyring.address;
 
@@ -162,28 +145,6 @@ export function makeWizardCommand() {
     process.exit(0);
   });
   return cmd;
-}
-
-function getStashSeedFromOptions(options: OptionValues) {
-  if (options.stashSeed) {
-    return options.stashSeed;
-  } else if (options.stashFile) {
-    return readFileSync(options.stashFile).toString();
-  } else {
-    console.log("Must specify either seed or file for the Stash account");
-    process.exit(1);
-  }
-}
-
-function getControllerSeedFromOptions(options: OptionValues) {
-  if (options.controllerSeed) {
-    return options.controllerSeed;
-  } else if (options.controllerFile) {
-    return readFileSync(options.controllerFile).toString();
-  } else {
-    console.log("Must specify either seed or file for the Controller account");
-    process.exit(1);
-  }
 }
 
 function checkControllerBalance(

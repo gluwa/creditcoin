@@ -2,22 +2,17 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import {
   checkAddress,
-  getSeedFromOptions,
-  initKeyringPair,
+  getStashSeedFromEnvOrPrompt,
+  initKeyringPair
 } from "../utils/account";
+import { Balance, getBalance, toMicrounits } from "../utils/balance";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
-import { Balance, getBalance, toMicrounits } from "../utils/balance";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");
   cmd.description("Bond CTC from a Stash account");
   cmd.option("-a, --amount [amount]", "Amount to bond");
-  cmd.option("-s, --seed [seed phrase]", "Specify seed phrase to bond from");
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with seed phrase to bond from"
-  );
   cmd.option("-c, --controller [controller]", "Specify controller address");
   cmd.option(
     "-r, --reward-destination [reward-destination]",
@@ -43,7 +38,7 @@ async function bondAction(options: OptionValues) {
     process.exit(1);
   }
 
-  const stashSeed = getSeedFromOptions(options);
+  const stashSeed = await getStashSeedFromEnvOrPrompt();
 
   // Check balance
   const stashKeyring = initKeyringPair(stashSeed);

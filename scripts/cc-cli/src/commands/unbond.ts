@@ -1,16 +1,11 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { toMicrounits } from "../utils/balance";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
   cmd.description("Schedule a portion of the stash to be unlocked");
-  cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to use");
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use"
-  );
   cmd.option("-a, --amount [amount]", "Amount to send");
   cmd.action(unbondAction);
   return cmd;
@@ -23,7 +18,7 @@ async function unbondAction(options: OptionValues) {
   checkAmount(options);
 
   // Build account
-  const seed = getSeedFromOptions(options);
+  const seed = await getStashSeedFromEnvOrPrompt();
   const stash = initKeyringPair(seed);
 
   // Unbond transaction

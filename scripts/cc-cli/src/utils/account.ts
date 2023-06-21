@@ -1,6 +1,6 @@
+import { mnemonicValidate } from "@polkadot/util-crypto";
 import { ApiPromise, Keyring } from "creditcoin-js";
-import { OptionValues } from "commander";
-import { readFileSync } from "fs";
+import prompts from "prompts";
 
 export function initKeyringPair(seed: string) {
   const keyring = new Keyring({ type: "sr25519" });
@@ -8,14 +8,32 @@ export function initKeyringPair(seed: string) {
   return pair;
 }
 
-export function getSeedFromOptions(options: OptionValues) {
-  if (options.seed) {
-    return options.seed;
-  } else if (options.file) {
-    return readFileSync(options.file).toString();
-  } else {
-    throw new Error("Must specify either mnemonic phrase or file as an option");
+export async function getStashSeedFromEnvOrPrompt() {
+  return await getSeedFromEnvOrPrompt(
+    process.env.CC_STASH_SEED,
+    "Specify a seed phrase for the Stash account"
+  );
+}
+export async function getControllerSeedFromEnvOrPrompt() {
+  return await getSeedFromEnvOrPrompt(
+    process.env.CC_CONTROLLER_SEED,
+    "Specify a seed phrase for the Controller account"
+  );
+}
+
+export async function getSeedFromEnvOrPrompt(envVar?: string | undefined, promptStr?: string | null) {
+  if (envVar && mnemonicValidate(envVar)) {
+    return envVar;
   }
+  let seedPromptResult = await prompts([
+    {
+      type: "invisible",
+      name: "seed",
+      message: promptStr ? promptStr : "Enter seed phrase",
+      validate: seed => mnemonicValidate(seed)
+    }
+  ]);
+  return seedPromptResult.seed;
 }
 
 export function checkAddress(address: string, api: ApiPromise) {

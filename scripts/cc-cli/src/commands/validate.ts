@@ -1,20 +1,12 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions } from "../utils/account";
-import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
+import { getStashSeedFromEnvOrPrompt } from "../utils/account";
 import { perbillFromPercent } from "../utils/perbill";
+import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
 
 export function makeValidateCommand() {
   const cmd = new Command("validate");
   cmd.description("Signal intention to validate from a Controller account");
-  cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to use for new account"
-  );
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use for new account"
-  );
   cmd.option(
     "--commission [commission]",
     "Specify commission for validator in percent"
@@ -30,7 +22,7 @@ export function makeValidateCommand() {
 async function validateAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const stashSeed = getSeedFromOptions(options);
+  const stashSeed = await getStashSeedFromEnvOrPrompt();
 
   const commission = options.commission
     ? perbillFromPercent(options.commission)
