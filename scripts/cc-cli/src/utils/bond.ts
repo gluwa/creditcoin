@@ -1,18 +1,20 @@
-import { ApiPromise } from "creditcoin-js";
+import { ApiPromise, BN } from "creditcoin-js";
 import { initKeyringPair } from "./account";
+import { MICROUNITS_PER_CTC } from "./balance";
 
 export async function bond(
   stashSeed: string,
   controllerAddress: string,
-  amount: number,
+  amount: BN,
   rewardDestination: "Staked" | "Stash" | "Controller",
   api: ApiPromise,
   extra = false
 ) {
-  if (amount < 1) {
+  if (amount.lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
     throw new Error("Amount to bond must be at least 1");
   }
-  const amountInMicroUnits = BigInt(amount) * BigInt(1000000000000000000); // Multiply by to convert to micro units
+
+  const amountInMicroUnits = amount;
 
   let bondTx;
 
