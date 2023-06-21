@@ -18,6 +18,8 @@ import { bond, parseRewardDestination } from "../utils/bond";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
 import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
+import { BN } from "creditcoin-js";
+import { TxStatus, signSendAndWatch } from "../utils/tx";
 
 export function makeWizardCommand() {
   const cmd = new Command("wizard");
@@ -97,7 +99,7 @@ export function makeWizardCommand() {
         checkStashBalance(stashAddress, stashBalance, amount);
         // Bond extra
         console.log("Sending bond transaction...");
-        const bondTxHash = await bond(
+        const bondTxResult = await bond(
           stashSeed,
           controllerAddress,
           amount,
@@ -105,19 +107,27 @@ export function makeWizardCommand() {
           api,
           bondExtra
         );
-        console.log("Bond transaction sent with hash:", bondTxHash);
+        console.log(bondTxResult.info);
+        if (bondTxResult.status === TxStatus.failed) {
+          console.log("Bond transaction failed. Exiting.");
+          process.exit(1);
+        }
       }
     } else {
       // Bond
       console.log("Sending bond transaction...");
-      const bondTxHash = await bond(
+      const bondTxResult = await bond(
         stashSeed,
         controllerAddress,
         amount,
         rewardDestination,
         api
       );
-      console.log("Bond transaction sent with hash:", bondTxHash);
+      console.log(bondTxResult.info);
+      if (bondTxResult.status === TxStatus.failed) {
+        console.log("Bond transaction failed. Exiting.");
+        process.exit(1);
+      }
     }
 
     // Rotate keys
@@ -137,13 +147,11 @@ export function makeWizardCommand() {
     console.log("Sending setKeys and validate transactions...");
     const txs = [setKeysTx, validateTx];
 
-    await api.tx.utility
-      .batchAll(txs)
-      .signAndSend(controllerKeyring, { nonce: -1 }, ({ status }) => {
-        if (status.isInBlock) {
-          console.log(`included in ${status.asInBlock.toString()}`);
-        }
-      });
+    const batchTx = api.tx.utility.batchAll(txs);
+
+    const batchResult = await signSendAndWatch(batchTx, api, controllerKeyring);
+
+    console.log(batchResult.info);
 
     // // Inform process
     console.log("🧙 Validator wizard completed successfully!");

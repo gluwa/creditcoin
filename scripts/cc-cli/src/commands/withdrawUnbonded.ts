@@ -5,6 +5,7 @@ import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");
@@ -42,8 +43,8 @@ async function withdrawUnbondedAction(options: OptionValues) {
     ? slashingSpans.unwrap().lastNonzeroSlash
     : 0;
   const withdrawUnbondTx = api.tx.staking.withdrawUnbonded(slashingSpansCount);
-  const hash = await withdrawUnbondTx.signAndSend(controller);
+  const result = await signSendAndWatch(withdrawUnbondTx, api, controller);
 
-  console.log("Withdraw unbonded transaction sent with hash:", hash.toHex());
+  console.log(result.info);
   process.exit(0);
 }

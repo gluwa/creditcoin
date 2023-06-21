@@ -1,5 +1,6 @@
 import { ApiPromise } from "creditcoin-js";
 import { initKeyringPair } from "./account";
+import { signSendAndWatch } from "./tx";
 
 export interface StakingPalletValidatorPrefs {
   // The validator's commission.
@@ -26,10 +27,9 @@ export async function validate(
 
   const validateTx = api.tx.staking.validate(preferences);
 
-  const hash = await validateTx.signAndSend(controller);
+  const result = await signSendAndWatch(validateTx, api, controller);
 
-  console.log(`Validate transaction sent with hash: ${hash.toHex()}`);
-  return hash;
+  return result;
 }
 
 export async function chill(controllerSeed: string, api: ApiPromise) {
@@ -37,7 +37,7 @@ export async function chill(controllerSeed: string, api: ApiPromise) {
 
   const chillTx = api.tx.staking.chill();
 
-  const hash = await chillTx.signAndSend(account);
+  const result = await signSendAndWatch(chillTx, api, account);
 
-  return hash;
+  return result;
 }

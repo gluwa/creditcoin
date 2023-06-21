@@ -4,6 +4,7 @@ import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
@@ -35,9 +36,9 @@ async function setKeysAction(options: OptionValues) {
   }
 
   const tx = api.tx.session.setKeys(keys, "");
-  const hash = await tx.signAndSend(controller);
+  const result = await signSendAndWatch(tx, api, controller);
 
-  console.log("Set keys transaction hash: " + hash.toHex());
+  console.log(result.info);
 
   process.exit(0);
 }

@@ -9,6 +9,7 @@ import { getStatus, requireStatus } from "../utils/status";
 import {signSendAndWatch} from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
@@ -46,7 +47,8 @@ async function unbondAction(options: OptionValues) {
   const tx = api.tx.staking.unbond(amount.toString());
 
   const result = await signSendAndWatch(tx, api, controllerKeyring);
-  console.log(`Unbond Result: ${JSON.stringify(result)}`);
+
+  console.log(result.info);
   process.exit(0);
 }
 
