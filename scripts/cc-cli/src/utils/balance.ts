@@ -1,6 +1,6 @@
 import { BN } from "creditcoin-js";
 
-const MICROUNITS_PER_CTC = new BN("1000000000000000000");
+export const MICROUNITS_PER_CTC = new BN("1000000000000000000");
 
 export function parseCTCString(amount: string): BN {
   const CTC = amount.split(".")[0];
