@@ -9,7 +9,9 @@ import {
 import {
   Balance,
   getBalance,
+  parseCTCString,
   printBalance,
+  toCTCString,
   toMicrounits,
 } from "../utils/balance";
 import { bond, parseRewardDestination } from "../utils/bond";
@@ -49,9 +51,8 @@ export function makeWizardCommand() {
     const controllerAddress = controllerKeyring.address;
 
     // Bond prefs
-    const amount: string = options.amount
-      ? parseInt(options.amount, 10).toString()
-      : "0";
+    const amount = parseCTCString(options.amount);
+
     const rewardDestination = options.rewardDestination
       ? parseRewardDestination(options.rewardDestination)
       : "Staked";
@@ -70,7 +71,7 @@ export function makeWizardCommand() {
     console.log("Using the following parameters:");
     console.log(`💰 Stash account: ${stashAddress}`);
     console.log(`🕹️  Controller account: ${controllerAddress}`);
-    console.log(`🪙  Amount to bond: ${amount} CTC`);
+    console.log(`🪙  Amount to bond: ${toCTCString(amount)}`);
     console.log(`🎁 Reward destination: ${rewardDestination}`);
     console.log(`📡 Node URL: ${nodeUrl}`);
     console.log(`💸 Commission: ${percentFromPerbill(commission).toString()}`);
@@ -82,22 +83,22 @@ export function makeWizardCommand() {
     // Check both accounts have funds
     const stashBalance = await getBalance(stashAddress, api);
     const controllerBalance = await getBalance(controllerAddress, api);
-    checkStashBalance(stashAddress, stashBalance, options.amount);
-    checkControllerBalance(controllerAddress, controllerBalance, 1);
-    const bondExtra: boolean = checkIfAlreadyBonded(stashAddress, stashBalance);
+    checkStashBalance(stashAddress, stashBalance, amount);
+    checkControllerBalance(controllerAddress, controllerBalance, new BN(2));
+    const bondExtra: boolean = checkIfAlreadyBonded(stashBalance);
 
     if (bondExtra) {
       console.log(
         "⚠️  Warning: Stash account already bonded. This will increase the amount bonded."
       );
       if (await promptContinueOrSkip(`Continue or skip bonding extra funds?`)) {
-        checkStashBalance(stashAddress, stashBalance, options.amount);
+        checkStashBalance(stashAddress, stashBalance, amount);
         // Bond extra
         console.log("Sending bond transaction...");
         const bondTxHash = await bond(
           stashSeed,
           controllerAddress,
-          parseInt(options.amount, 10),
+          amount,
           rewardDestination,
           api,
           bondExtra
@@ -110,7 +111,7 @@ export function makeWizardCommand() {
       const bondTxHash = await bond(
         stashSeed,
         controllerAddress,
-        parseInt(options.amount, 10),
+        amount,
         rewardDestination,
         api
       );
@@ -168,8 +169,8 @@ function checkControllerBalance(
   }
 }
 
-function checkStashBalance(address: string, balance: Balance, amount: number) {
-  if (balance.free.sub(balance.miscFrozen).lt(toMicrounits(amount))) {
+function checkStashBalance(address: string, balance: Balance, amount: BN) {
+  if (balance.free.sub(balance.miscFrozen).lt(amount)) {
     console.log(
       `Stash account does not have enough funds to bond ${amount.toString()} CTC`
     );
@@ -179,7 +180,7 @@ function checkStashBalance(address: string, balance: Balance, amount: number) {
   }
 }
 
-function checkIfAlreadyBonded(address: string, balance: Balance) {
+function checkIfAlreadyBonded(balance: Balance) {
   if (balance.miscFrozen.gt(new BN(0))) {
     return true;
   } else {
