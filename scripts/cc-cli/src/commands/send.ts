@@ -24,8 +24,8 @@ async function sendAction(options: OptionValues) {
   checkAddress(options.to, api);
 
   // Build account
-  const seed = await getCallerSeedFromEnvOrPrompt();
-  const stash = initKeyringPair(seed);
+  const callerSeed = await getCallerSeedFromEnvOrPrompt();
+  const stash = initKeyringPair(callerSeed);
 
   // Send transaction
   const tx = api.tx.balances.transfer(

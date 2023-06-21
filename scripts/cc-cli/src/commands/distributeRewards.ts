@@ -30,13 +30,14 @@ async function distributeRewardsAction(options: OptionValues) {
     process.exit(1);
   }
 
-  const signerSeed = await getCallerSeedFromEnvOrPrompt();
+  // Any account can call the distribute_rewards extrinsic
+  const callerSeed = await getCallerSeedFromEnvOrPrompt();
   const distributeTx = api.tx.staking.payoutStakers(
     options.validatorId,
     options.era
   );
 
-  const hash = await distributeTx.signAndSend(initKeyringPair(signerSeed));
+  const hash = await distributeTx.signAndSend(initKeyringPair(callerSeed));
 
   console.log("Payout stakers transaction sent with hash:", hash.toHex());
   process.exit(0);

@@ -18,8 +18,8 @@ async function unbondAction(options: OptionValues) {
   checkAmount(options);
 
   // Build account
-  const seed = await getStashSeedFromEnvOrPrompt();
-  const stash = initKeyringPair(seed);
+  const stashSeed = await getStashSeedFromEnvOrPrompt();
+  const stash = initKeyringPair(stashSeed);
 
   // Unbond transaction
   const tx = api.tx.staking.unbond(toMicrounits(options.amount).toString());

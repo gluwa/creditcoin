@@ -11,8 +11,8 @@ export function makeShowAddressCommand() {
 
 async function showAddressAction() {
   await cryptoWaitReady();
-  const seed = await getCallerSeedFromEnvOrPrompt();
-  const pair = initKeyringPair(seed);
+  const callerSeed = await getCallerSeedFromEnvOrPrompt();
+  const pair = initKeyringPair(callerSeed);
   const address = pair.address;
 
   console.log("Account address:", address);

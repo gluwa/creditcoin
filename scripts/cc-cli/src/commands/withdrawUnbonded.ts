@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import { getControllerSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");
@@ -13,8 +13,8 @@ export function makeWithdrawUnbondedCommand() {
 async function withdrawUnbondedAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const stashSeed = await getStashSeedFromEnvOrPrompt();
-  const stashAccount = initKeyringPair(stashSeed);
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const stashAccount = initKeyringPair(controllerSeed);
   const slashingSpans = await api.query.staking.slashingSpans(
     stashAccount.address
   );

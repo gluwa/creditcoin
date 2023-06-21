@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStashSeedFromEnvOrPrompt } from "../utils/account";
+import { getControllerSeedFromEnvOrPrompt } from "../utils/account";
 import { perbillFromPercent } from "../utils/perbill";
 import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
 
@@ -22,7 +22,7 @@ export function makeValidateCommand() {
 async function validateAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const stashSeed = await getStashSeedFromEnvOrPrompt();
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
 
   const commission = options.commission
     ? perbillFromPercent(options.commission)
@@ -32,7 +32,7 @@ async function validateAction(options: OptionValues) {
 
   console.log("Creating validate transaction...");
 
-  const validateTxHash = await validate(stashSeed, preferences, api);
+  const validateTxHash = await validate(controllerSeed, preferences, api);
 
   console.log("Validate transaction sent with hash:", validateTxHash.toHex());
   process.exit(0);
