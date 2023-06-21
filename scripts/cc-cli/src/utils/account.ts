@@ -29,7 +29,9 @@ export async function getSeedFromEnvOrPrompt(
     if (mnemonicValidate(envVar)) {
       return envVar;
     } else {
-      console.log("Error: Seed phrase provided in environment variable is invalid.");
+      console.log(
+        "Error: Seed phrase provided in environment variable is invalid."
+      );
       process.exit(1);
     }
   }
