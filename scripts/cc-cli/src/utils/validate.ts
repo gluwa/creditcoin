@@ -9,11 +9,11 @@ export interface StakingPalletValidatorPrefs {
 }
 
 export async function validate(
-  seed: string,
+  controllerSeed: string,
   prefs: StakingPalletValidatorPrefs,
   api: ApiPromise
 ) {
-  const stash = initKeyringPair(seed);
+  const controller = initKeyringPair(controllerSeed);
 
   console.log("Creating validate transaction with params:");
 
@@ -26,14 +26,14 @@ export async function validate(
 
   const validateTx = api.tx.staking.validate(preferences);
 
-  const hash = await validateTx.signAndSend(stash);
+  const hash = await validateTx.signAndSend(controller);
 
   console.log(`Validate transaction sent with hash: ${hash.toHex()}`);
   return hash;
 }
 
-export async function chill(seed: string, api: ApiPromise) {
-  const account = initKeyringPair(seed);
+export async function chill(controllerSeed: string, api: ApiPromise) {
+  const account = initKeyringPair(controllerSeed);
 
   const chillTx = api.tx.staking.chill();
 
