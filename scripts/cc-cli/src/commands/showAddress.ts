@@ -1,6 +1,9 @@
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { Command } from "commander";
-import { getCallerSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import {
+  getCallerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 
 export function makeShowAddressCommand() {
   const cmd = new Command("show-address");

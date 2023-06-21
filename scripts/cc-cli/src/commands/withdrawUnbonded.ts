@@ -1,6 +1,9 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getControllerSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import {
+  getControllerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");

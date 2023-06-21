@@ -1,6 +1,9 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getControllerSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import {
+  getControllerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
