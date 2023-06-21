@@ -14,6 +14,7 @@ export async function signSendAndWatch(
   return new Promise(async (resolve) => {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     const out: TxResult = await new Promise(async (resolveInner) => {
+      console.log("Sending transaction...");
       // Sign and send with callback
       await tx.signAndSend(signer, ({ status, dispatchError }) => {
         // Called every time the status changes
