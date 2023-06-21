@@ -9,8 +9,8 @@ export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
   cmd.description("Distribute all pending rewards for all validators");
   cmd.option(
-    "-v, --validator-id [validator-id]",
-    "Specify validator to distribute rewards for"
+    "-v, --validator-id [stash-address]",
+    "Specify the Stash address of Validator to distribute rewards for"
   );
   cmd.option("-e, --era [era]", "Specify era to distribute rewards for");
   cmd.action(distributeRewardsAction);
