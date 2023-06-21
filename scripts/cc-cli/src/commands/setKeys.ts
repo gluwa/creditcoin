@@ -1,19 +1,18 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
+<<<<<<< HEAD
 import { getSeedFromOptions, initKeyringPair } from "../utils/account";
 import { signSendAndWatch } from "../utils/tx";
+=======
+import {
+  getControllerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
+>>>>>>> 6dc67c37 (CSUB-589: changed sensitive input to interactive or env vars (#1151))
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
   cmd.description("Set session keys for a Controller account");
-  cmd.option(
-    "-s, --seed [mnemonic]",
-    "Specify mnemonic phrase to set keys from"
-  );
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to set keys from"
-  );
   cmd.option("-k, --keys [keys]", "Specify keys to set");
   cmd.option("-r, --rotate", "Rotate and set new keys");
 
@@ -25,8 +24,8 @@ async function setKeysAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   // Build account
-  const seed = getSeedFromOptions(options);
-  const stash = initKeyringPair(seed);
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controller = initKeyringPair(controllerSeed);
 
   let keys;
   if (!options.keys && !options.rotate) {
@@ -41,7 +40,11 @@ async function setKeysAction(options: OptionValues) {
   }
 
   const tx = api.tx.session.setKeys(keys, []);
+<<<<<<< HEAD
   const result = await signSendAndWatch(tx, api, stash);
+=======
+  const hash = await tx.signAndSend(controller);
+>>>>>>> 6dc67c37 (CSUB-589: changed sensitive input to interactive or env vars (#1151))
 
   console.log(result.info);
 

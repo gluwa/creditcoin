@@ -10,11 +10,11 @@ export interface StakingPalletValidatorPrefs {
 }
 
 export async function validate(
-  seed: string,
+  controllerSeed: string,
   prefs: StakingPalletValidatorPrefs,
   api: ApiPromise
 ) {
-  const stash = initKeyringPair(seed);
+  const controller = initKeyringPair(controllerSeed);
 
   console.log("Creating validate transaction with params:");
 
@@ -32,8 +32,8 @@ export async function validate(
   return result;
 }
 
-export async function chill(seed: string, api: ApiPromise) {
-  const account = initKeyringPair(seed);
+export async function chill(controllerSeed: string, api: ApiPromise) {
+  const account = initKeyringPair(controllerSeed);
 
   const chillTx = api.tx.staking.chill();
 

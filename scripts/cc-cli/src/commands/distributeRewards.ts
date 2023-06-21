@@ -1,16 +1,15 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import { initKeyringPair } from "../utils/account";
 import { signSendAndWatch } from "../utils/tx";
+import {
+  getCallerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
   cmd.description("Distribute all pending rewards for all validators");
-  cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to use");
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use"
-  );
   cmd.option(
     "-v, --validator-id [validator-id]",
     "Specify validator to distribute rewards for"
@@ -23,8 +22,6 @@ export function makeDistributeRewardsCommand() {
 async function distributeRewardsAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const signerSeed = getSeedFromOptions(options);
-
   if (!options.validatorId) {
     console.log("Must specify a validator to distribute rewards for");
     process.exit(1);
@@ -35,17 +32,19 @@ async function distributeRewardsAction(options: OptionValues) {
     process.exit(1);
   }
 
+  // Any account can call the distribute_rewards extrinsic
+  const callerSeed = await getCallerSeedFromEnvOrPrompt();
   const distributeTx = api.tx.staking.payoutStakers(
     options.validatorId,
     options.era
   );
+
 
   const result = await signSendAndWatch(
     distributeTx,
     api,
     initKeyringPair(signerSeed)
   );
-
   console.log(result.info);
   process.exit(0);
 }

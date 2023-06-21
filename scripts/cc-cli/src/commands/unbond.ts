@@ -1,17 +1,15 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getSeedFromOptions, initKeyringPair } from "../utils/account";
+import {
+  getControllerSeedFromEnvOrPrompt,
+  initKeyringPair,
+} from "../utils/account";
 import { toMicrounits } from "../utils/balance";
 import { signSendAndWatch } from "../utils/tx";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
   cmd.description("Schedule a portion of the stash to be unlocked");
-  cmd.option("-s, --seed [mnemonic]", "Specify mnemonic phrase to use");
-  cmd.option(
-    "-f, --file [file-name]",
-    "Specify file with mnemonic phrase to use"
-  );
   cmd.option("-a, --amount [amount]", "Amount to send");
   cmd.action(unbondAction);
   return cmd;
@@ -24,13 +22,14 @@ async function unbondAction(options: OptionValues) {
   checkAmount(options);
 
   // Build account
-  const seed = getSeedFromOptions(options);
-  const stash = initKeyringPair(seed);
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controller = initKeyringPair(controllerSeed);
 
   // Unbond transaction
   const tx = api.tx.staking.unbond(toMicrounits(options.amount).toString());
 
   const result = await signSendAndWatch(tx, api, stash);
+  const hash = await tx.signAndSend(controller);
 
   console.log(result.info);
   process.exit(0);
