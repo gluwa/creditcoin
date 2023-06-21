@@ -30,7 +30,7 @@ jobs:
           IP_ADDRESS=$(curl https://ifconfig.me)
           echo "INFO: IP_ADDRESS=$IP_ADDRESS"
 
-          docker run -d -p 9933:9933 -p 30333:30333 -v "$(pwd)"/test-data:/data gluwa/creditcoin   \
+          docker run -d -p 9933:9933 -p 30333:30333 gluwa/creditcoin   \
               --validator --chain mainnet                                   \
               --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
               --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
