@@ -37,7 +37,7 @@ export async function getSeedFromEnvOrPrompt(
   }
   const seedPromptResult = await prompts([
     {
-      type: "invisible",
+      type: "password",
       name: "seed",
       message: promptStr ? promptStr : "Enter seed phrase",
       validate: (seed) => mnemonicValidate(seed),
