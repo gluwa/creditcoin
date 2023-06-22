@@ -26,3 +26,6 @@ justfile
 .idea/
 
 docs/dev-guide/book
+
+**/.yarn/*
+**/.yarn/cache
