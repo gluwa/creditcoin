@@ -1,5 +1,5 @@
 import { Command, OptionValues } from "commander";
-import { ApiPromise } from "creditcoin-js";
+import { ApiPromise, BN } from "creditcoin-js";
 import { newApi } from "../api";
 import {
   checkAddress,
@@ -7,7 +7,7 @@ import {
   initECDSAKeyringPairFromPK,
   initKeyringPair,
 } from "../utils/account";
-import { parseCTCString } from "../utils/balance";
+import { getBalance, parseCTCString } from "../utils/balance";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
@@ -29,13 +29,22 @@ async function sendAction(options: OptionValues) {
   checkAmount(options);
   checkAddress(options.to, api, "send funds to");
 
-  if (options.useEcdsa) {
-    const hash = await sendFromECDSA(options, api);
-    console.log("Transfer transaction hash: " + hash.toHex());
-  } else {
-    const hash = await sendFromSr25519(options, api);
-    console.log("Transfer transaction hash: " + hash.toHex());
-  }
+  const recipient = options.to;
+  const amount = parseCTCString(options.amount);
+
+  const seed = await getCallerSeedFromEnvOrPrompt();
+  const caller = options.useEcdsa
+    ? initECDSAKeyringPairFromPK(seed)
+    : initKeyringPair(seed);
+
+  await checkEnoughFundsToSend(caller.address, amount, api);
+
+  const tx = api.tx.balances.transfer(recipient, amount.toString());
+
+  const hash = await tx.signAndSend(caller);
+
+  console.log("Transfer transaction hash: " + hash.toHex());
+
   process.exit(0);
 }
 
@@ -46,30 +55,14 @@ function checkAmount(options: OptionValues) {
   }
 }
 
-async function sendFromSr25519(options: OptionValues, api: ApiPromise) {
-  // Build account
-  const callerSeed = await getCallerSeedFromEnvOrPrompt();
-  const caller = initKeyringPair(callerSeed);
-
-  // Send transaction
-  const tx = api.tx.balances.transfer(
-    options.to,
-    parseCTCString(options.amount).toString()
-  );
-  const hash = await tx.signAndSend(caller);
-  return hash;
-}
-
-async function sendFromECDSA(options: OptionValues, api: ApiPromise) {
-  // Build account
-  const callerSeed = await getCallerSeedFromEnvOrPrompt();
-  const caller = initECDSAKeyringPairFromPK(callerSeed);
-
-  // Send transaction
-  const tx = api.tx.balances.transfer(
-    options.to,
-    parseCTCString(options.amount).toString()
-  );
-  const hash = await tx.signAndSend(caller);
-  return hash;
+async function checkEnoughFundsToSend(
+  address: string,
+  amount: BN,
+  api: ApiPromise
+) {
+  const balance = await getBalance(address, api);
+  if (balance.free.sub(balance.miscFrozen).lt(amount)) {
+    console.log(`Caller ${address} has insufficient funds to send ${amount}`);
+    process.exit(1);
+  }
 }
