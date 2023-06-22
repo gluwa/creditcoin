@@ -42,9 +42,8 @@ async function sendAction(options: OptionValues) {
 
   const tx = api.tx.balances.transfer(recipient, amount.toString());
 
-  const hash = await tx.signAndSend(caller);
-
-  console.log("Transfer transaction hash: " + hash.toHex());
+  const result = await signSendAndWatch(tx, api, caller);
+  console.log(result.info);
 
   /// TODO: this needs to be fixed
   process.exit(0);
@@ -79,7 +78,7 @@ async function sendFromSr25519(options: OptionValues, api: ApiPromise) {
   // Send transaction
   const tx = api.tx.balances.transfer(
     options.to,
-    toMicrounits(options.amount).toString()
+    parseCTCString(options.amount).toString()
   );
 
   const result = await signSendAndWatch(tx, api, caller);
@@ -90,13 +89,12 @@ async function sendFromECDSA(options: OptionValues, api: ApiPromise) {
   // Build account
   const callerSeed = await getCallerSeedFromEnvOrPrompt();
   const caller = initECDSAKeyringPairFromPK(callerSeed);
-  console.log(caller.address);
 
   // Send transaction
   const tx = api.tx.balances.transfer(
     options.to,
-    toMicrounits(options.amount).toString()
+    parseCTCString(options.amount).toString()
   );
-  const hash = await tx.signAndSend(caller);
-  return hash;
+  const result = signSendAndWatch(tx, api, caller);
+  return result;
 }
