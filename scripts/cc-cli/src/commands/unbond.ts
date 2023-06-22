@@ -6,7 +6,7 @@ import {
 } from "../utils/account";
 import { getBalance, parseCTCString } from "../utils/balance";
 import { getStatus, requireStatus } from "../utils/status";
-import {signSendAndWatch} from "../utils/tx";
+import { signSendAndWatch } from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
 import { toCTCString } from "../utils/balance";
