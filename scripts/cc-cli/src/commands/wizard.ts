@@ -18,7 +18,6 @@ import { bond, parseRewardDestination } from "../utils/bond";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
 import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
-import { BN } from "creditcoin-js";
 import { TxStatus, signSendAndWatch } from "../utils/tx";
 
 export function makeWizardCommand() {

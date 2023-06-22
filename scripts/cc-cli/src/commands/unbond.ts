@@ -9,6 +9,7 @@ import { getStatus, requireStatus } from "../utils/status";
 import {signSendAndWatch} from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
+import { toCTCString } from "../utils/balance";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
@@ -43,7 +44,7 @@ async function unbondAction(options: OptionValues) {
   await checkIfUnbodingMax(controllerAddress, amount, api);
 
   // Unbond transaction
-  const tx = api.tx.staking.unbond(amount.toString());
+  const tx = api.tx.staking.unbond(toCTCString(options.amount).toString());
 
   const result = await signSendAndWatch(tx, api, controllerKeyring);
 
