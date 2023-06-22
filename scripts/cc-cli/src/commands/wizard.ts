@@ -12,7 +12,7 @@ import {
   getBalance,
   parseCTCString,
   printBalance,
-  toCTCString,
+  toCTCString, checkAmount,
 } from "../utils/balance";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
@@ -187,12 +187,5 @@ function checkIfAlreadyBonded(balance: Balance) {
     return true;
   } else {
     return false;
-  }
-}
-
-function checkAmount(amount: BN) {
-  if (amount.lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
-    console.log("Amount to bond must be at least 1 CTC");
-    process.exit(1);
   }
 }
