@@ -8,50 +8,49 @@ export async function signSendAndWatch(
   api: ApiPromise,
   signer: KeyringPair
 ): Promise<TxResult> {
-  // Top-Level Promise
 
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  return new Promise(async (resolve) => {
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    const out: TxResult = await new Promise(async (resolveInner) => {
-      console.log("Sending transaction...");
-      // Sign and send with callback
-      await tx.signAndSend(signer, ({ status, dispatchError }) => {
-        // Called every time the status changes
-        if (status.isFinalized) {
+  return new Promise((resolve) => {
+    console.log("Sending transaction...");
+    let maybeUnsub: (() => void) | undefined;
+    const unsubAndResolve = (result: TxResult) => {
+      if (maybeUnsub) {
+        maybeUnsub();
+      }
+      resolve(result);
+    };
+    // Sign and send with callback
+    tx.signAndSend(signer, ({ status, dispatchError }) => {
+      // Called every time the status changes
+      if (status.isFinalized) {
+        const result = {
+          status: TxStatus.ok,
+          info: `Transaction included at blockHash ${status.asFinalized.toString()}`,
+        };
+        unsubAndResolve(result);
+      }
+      if (dispatchError) {
+        if (dispatchError.isModule) {
+          // for module errors, the section is indexed, lookup
+          const decoded = api.registry.findMetaError(dispatchError.asModule);
+          const { docs, name, section } = decoded;
+          const error = `${section}.${name}: ${docs.join(" ")}`;
           const result = {
-            status: TxStatus.ok,
-            info: `Transaction included at blockHash ${status.asFinalized.toString()}`,
+            status: TxStatus.failed,
+            info: `Transaction failed with error: "${error}"`,
           };
-
-          resolveInner(result);
+          unsubAndResolve(result);
+        } else {
+          // Other, CannotLookup, BadOrigin, no extra info
+          const result = {
+            status: TxStatus.failed,
+            info: `Transaction failed with error: "${dispatchError.toString()}"`,
+          };
+          unsubAndResolve(result);
         }
-        if (dispatchError) {
-          if (dispatchError.isModule) {
-            // for module errors, the section is indexed, lookup
-            const decoded = api.registry.findMetaError(dispatchError.asModule);
-            const { docs, name, section } = decoded;
-
-            const error = `${section}.${name}: ${docs.join(" ")}`;
-
-            const result = {
-              status: TxStatus.failed,
-              info: `Transaction failed with error: "${error}"`,
-            };
-
-            resolveInner(result);
-          } else {
-            // Other, CannotLookup, BadOrigin, no extra info
-            const result = {
-              status: TxStatus.failed,
-              info: `Transaction failed with error: "${dispatchError.toString()}"`,
-            };
-            resolveInner(result);
-          }
-        }
-      });
+      }
+    }).then((unsub) => {
+      maybeUnsub = unsub;
     });
-    resolve(out);
   });
 }
 
