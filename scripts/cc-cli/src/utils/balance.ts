@@ -69,3 +69,15 @@ export function printBalance(balance: Balance) {
   console.log("Misc Frozen:", toCTCString(balance.miscFrozen));
   console.log("Fee Frozen:", toCTCString(balance.feeFrozen));
 }
+
+export function checkAmount(amount: BN) {
+  if (!amount) {
+    console.log("Must specify amount to bond");
+    process.exit(1);
+  } else {
+    if (amount.lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
+      console.log("Bond amount must be at least 1 CTC");
+      process.exit(1);
+    }
+  }
+}
