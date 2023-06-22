@@ -9,7 +9,7 @@ export async function signSendAndWatch(
   signer: KeyringPair
 ): Promise<TxResult> {
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     console.log("Sending transaction...");
     let maybeUnsub: (() => void) | undefined;
     const unsubAndResolve = (result: TxResult) => {
@@ -50,6 +50,8 @@ export async function signSendAndWatch(
       }
     }).then((unsub) => {
       maybeUnsub = unsub;
+    }).catch((err) => {
+      reject(err)
     });
   });
 }
