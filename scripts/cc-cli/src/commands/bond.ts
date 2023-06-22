@@ -9,10 +9,10 @@ import { bond, parseRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
 import {
   Balance,
-  MICROUNITS_PER_CTC,
   getBalance,
   parseCTCString,
-  toCTCString, checkAmount,
+  toCTCString,
+  checkAmount,
 } from "../utils/balance";
 import { BN } from "creditcoin-js";
 
@@ -81,9 +81,11 @@ async function checkBalance(amount: BN, api: any, address: string) {
 function checkBalanceAgainstBondAmount(balance: Balance, amount: BN) {
   const available = balance.free.sub(balance.miscFrozen);
   if (available.lt(amount)) {
-    console.error(`Insufficient funds to bond ${toCTCString(amount)}, only ${toCTCString(
-      available
-    )} available`);
-    process.exit(1)
+    console.error(
+      `Insufficient funds to bond ${toCTCString(amount)}, only ${toCTCString(
+        available
+      )} available`
+    );
+    process.exit(1);
   }
 }

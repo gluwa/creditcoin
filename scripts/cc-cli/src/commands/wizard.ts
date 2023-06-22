@@ -8,11 +8,11 @@ import {
 } from "../utils/account";
 import {
   Balance,
-  MICROUNITS_PER_CTC,
   getBalance,
   parseCTCString,
   printBalance,
-  toCTCString, checkAmount,
+  toCTCString,
+  checkAmount,
 } from "../utils/balance";
 import { bond, parseRewardDestination } from "../utils/bond";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
