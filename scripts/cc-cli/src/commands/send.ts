@@ -69,32 +69,3 @@ async function checkEnoughFundsToSend(
     process.exit(1);
   }
 }
-
-async function sendFromSr25519(options: OptionValues, api: ApiPromise) {
-  // Build account
-  const callerSeed = await getCallerSeedFromEnvOrPrompt();
-  const caller = initKeyringPair(callerSeed);
-
-  // Send transaction
-  const tx = api.tx.balances.transfer(
-    options.to,
-    parseCTCString(options.amount).toString()
-  );
-
-  const result = await signSendAndWatch(tx, api, caller);
-  return result;
-}
-
-async function sendFromECDSA(options: OptionValues, api: ApiPromise) {
-  // Build account
-  const callerSeed = await getCallerSeedFromEnvOrPrompt();
-  const caller = initECDSAKeyringPairFromPK(callerSeed);
-
-  // Send transaction
-  const tx = api.tx.balances.transfer(
-    options.to,
-    parseCTCString(options.amount).toString()
-  );
-  const result = signSendAndWatch(tx, api, caller);
-  return result;
-}
