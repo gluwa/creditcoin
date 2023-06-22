@@ -1,13 +1,14 @@
-import { BN, FixedNumber } from "creditcoin-js";
+import { BN, parseUnits } from "creditcoin-js";
 
 export const MICROUNITS_PER_CTC = new BN("1000000000000000000");
 
 export function parseCTCString(amount: string): BN {
   try {
-    return new BN(FixedNumber.fromString(amount, 18).toString())
+    const parsed = parseUnits(amount, 18);
+    return new BN(parsed.toString());
   } catch (e) {
-    console.error(`Unable to parse CTC amount: ${amount}`)
-    process.exit(1)
+    console.error(`Unable to parse CTC amount: ${amount}`);
+    process.exit(1);
   }
 }
 
