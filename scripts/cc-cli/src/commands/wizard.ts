@@ -154,12 +154,8 @@ export function makeWizardCommand() {
   return cmd;
 }
 
-function checkControllerBalance(
-  address: string,
-  balance: Balance,
-  amount: number
-) {
-  if (balance.free < new BN(amount)) {
+function checkControllerBalance(address: string, balance: Balance, amount: BN) {
+  if (balance.free.lt(amount)) {
     console.log(
       "Controller account does not have enough funds to pay transaction fees"
     );
