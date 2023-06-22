@@ -26,7 +26,7 @@ async function chillAction(options: OptionValues) {
   const controllerStatus = await getStatus(controllerAddress, api);
 
   if (!controllerStatus.stash) {
-    console.error(`Cannot chill, ${controllerAddress} is not bonded`);
+    console.error(`Cannot chill, ${controllerAddress} is not staked`);
     process.exit(1);
   }
   const stashStatus = await getStatus(controllerStatus.stash, api);
