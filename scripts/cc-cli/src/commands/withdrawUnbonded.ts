@@ -22,7 +22,9 @@ async function withdrawUnbondedAction(options: OptionValues) {
   const controllerStatus = await getStatus(controller.address, api);
 
   if (!controllerStatus.stash) {
-    console.error(`Cannot withdraw, ${controller.address} is not staked`);
+    console.error(
+      `Could not find stash account associated with the provided controller address: ${controller.address}. Please ensure the address is actually a controller.`
+    );
     process.exit(1);
   }
 
