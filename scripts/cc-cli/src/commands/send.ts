@@ -8,6 +8,7 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { getBalance, parseCTCString } from "../utils/balance";
+import { signSendAndWatch } from "../utils/tx";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
@@ -41,10 +42,10 @@ async function sendAction(options: OptionValues) {
 
   const tx = api.tx.balances.transfer(recipient, amount.toString());
 
-  const hash = await tx.signAndSend(caller);
+  const result = await signSendAndWatch(tx, api, caller);
+  console.log(result.info);
 
-  console.log("Transfer transaction hash: " + hash.toHex());
-
+  /// TODO: this needs to be fixed
   process.exit(0);
 }
 

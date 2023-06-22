@@ -32,8 +32,8 @@ async function validateAction(options: OptionValues) {
 
   console.log("Creating validate transaction...");
 
-  const validateTxHash = await validate(controllerSeed, preferences, api);
+  const result = await validate(controllerSeed, preferences, api);
 
-  console.log("Validate transaction sent with hash:", validateTxHash.toHex());
+  console.log(result.info);
   process.exit(0);
 }
