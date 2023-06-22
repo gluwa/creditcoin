@@ -27,7 +27,9 @@ export async function getStatus(address: string, api: ApiPromise) {
   const controller = res.controllerId ? res.controllerId.toString() : "None";
 
   const stashRes = await api.query.staking.ledger(address);
-  const stash = stashRes.isSome ? stashRes.unwrap().stash.toString() : "None";
+  const stash = stashRes.isSome
+    ? stashRes.unwrap().stash.toString()
+    : undefined;
 
   const unlockingRes = res.stakingLedger.unlocking;
   const currentEra = await api.query.staking.currentEra();
@@ -109,7 +111,7 @@ export function requireStatus(status: Status, condition: keyof Status) {
 
 export interface Status {
   bonded: boolean;
-  stash: string;
+  stash?: string;
   controller: string;
   validating: boolean;
   waiting: boolean;

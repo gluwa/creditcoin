@@ -24,6 +24,11 @@ async function chillAction(options: OptionValues) {
   const controllerAddress = controllerKeyring.address;
 
   const controllerStatus = await getStatus(controllerAddress, api);
+
+  if (!controllerStatus.stash) {
+    console.error(`Cannot chill, ${controllerAddress} is not bonded`);
+    process.exit(1);
+  }
   const stashStatus = await getStatus(controllerStatus.stash, api);
 
   requireStatus(stashStatus, "validating");
