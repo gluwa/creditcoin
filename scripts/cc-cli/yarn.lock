@@ -2020,11 +2020,7 @@ create-require@^1.1.0:
 
 "creditcoin-js@file:../../creditcoin-js/creditcoin-js-v0.9.5.tgz":
   version "0.9.5"
-<<<<<<< HEAD
-  resolved "file:../../creditcoin-js/creditcoin-js-v0.9.5.tgz#9b51fa1b480b211209174db858b6261878364f9a"
-=======
-  resolved "file:../../creditcoin-js/creditcoin-js-v0.9.5.tgz#699b5c8cf04475e6455b689a6794e2b73947dced"
->>>>>>> e179b919 (Replace CTC string parsing with FixedNumber implementation; Export)
+  resolved "file:../../creditcoin-js/creditcoin-js-v0.9.5.tgz#2f73d8d60c471837241f47fa6fb2c6707c9b91b3"
   dependencies:
     "@polkadot/api" "9.14.2"
     ethers "^5.7.1"
