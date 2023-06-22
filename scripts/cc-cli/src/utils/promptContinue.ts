@@ -8,6 +8,10 @@ export async function promptContinue() {
     initial: false,
   });
 
+  if (promptResult === undefined) {
+    process.exit(1);
+  }
+
   if (!promptResult.confirm) {
     process.exit(0);
   }
@@ -26,6 +30,10 @@ export async function promptContinueOrSkip(prompt: string) {
     ],
     initial: 1,
   });
+
+  if (promptResult === undefined) {
+    process.exit(1);
+  }
 
   return promptResult.continue;
 }
