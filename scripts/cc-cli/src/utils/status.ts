@@ -32,7 +32,7 @@ export async function getStatus(address: string, api: ApiPromise) {
     : undefined;
 
   const unlockingRes = res.stakingLedger.unlocking;
-  const currentEra = await api.query.staking.currentEra();
+  const currentEra = (await api.query.staking.currentEra()).unwrap();
   const unlocking = unlockingRes
     ? unlockingRes.filter((u: any) => u.era > currentEra)
     : [];
@@ -40,6 +40,18 @@ export async function getStatus(address: string, api: ApiPromise) {
   const redeemable = res.redeemable
     ? readAmountFromHex(res.redeemable.toString())
     : new BN(0);
+
+  const readyForWithdraw = res.stakingLedger.unlocking
+    .map((u: any) => {
+      const chunk: UnlockChunk = {
+        era: u.era.toNumber(),
+        value: u.value.toBn(),
+      };
+      return chunk;
+    })
+    .filter((u: UnlockChunk) => u.era < currentEra.toNumber());
+
+  const canWithdraw = readyForWithdraw.length > 0;
 
   const nextUnbondingDate =
     unlocking.length > 0 ? unlocking[0].era.toNumber() : null;
@@ -71,6 +83,8 @@ export async function getStatus(address: string, api: ApiPromise) {
     validating: validatorEntries.includes(address),
     waiting: waitingValidators.includes(address),
     active: activeValidators.includes(address),
+    canWithdraw,
+    readyForWithdraw,
     nextUnbondingDate,
     nextUnbondingAmount: nextUnbondingAmount ? nextUnbondingAmount : new BN(0),
     redeemable,
@@ -87,6 +101,16 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
   console.log("Waiting: ", status.waiting);
   console.log("Active: ", status.active);
 
+  console.log("Can withdraw: ", status.canWithdraw);
+  if (status.canWithdraw) {
+    console.log("Unlocked chunks: ");
+    status.readyForWithdraw.forEach((chunk) => {
+      console.log(
+        `  ${toCTCString(chunk.value)} unlocked since era ${chunk.era}`
+      );
+    });
+  }
+
   let nextUnlocking = "None";
   if (status.nextUnbondingAmount && status.nextUnbondingAmount.eq(new BN(0))) {
     nextUnlocking = "None";
@@ -100,10 +124,16 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
   console.log(`Next unbonding chunk: ${nextUnlocking}`);
 }
 
-export function requireStatus(status: Status, condition: keyof Status) {
+export function requireStatus(
+  status: Status,
+  condition: keyof Status,
+  message?: string
+) {
   if (!status[condition]) {
     console.error(
-      `Cannot perform action, validator is not ${condition.toString()}`
+      message
+        ? message
+        : `Cannot perform action, validator is not ${condition.toString()}`
     );
     process.exit(1);
   }
@@ -116,9 +146,16 @@ export interface Status {
   validating: boolean;
   waiting: boolean;
   active: boolean;
+  canWithdraw: boolean;
+  readyForWithdraw: UnlockChunk[];
   nextUnbondingDate: Option<EraNumber>;
   nextUnbondingAmount: Option<Balance>;
   redeemable: Balance;
+}
+
+interface UnlockChunk {
+  era: EraNumber;
+  value: Balance;
 }
 
 type Balance = BN;

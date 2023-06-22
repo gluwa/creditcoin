@@ -1,5 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
+import { getStatus, requireStatus } from "../utils/status";
 import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
@@ -8,7 +9,6 @@ import {
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");
   cmd.description("Withdraw unbonded funds from a stash account");
-  cmd.option("-a, --amount [amount]", "Amount to withdraw");
   cmd.action(withdrawUnbondedAction);
   return cmd;
 }
@@ -18,6 +18,23 @@ async function withdrawUnbondedAction(options: OptionValues) {
 
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
   const controller = initKeyringPair(controllerSeed);
+
+  const controllerStatus = await getStatus(controller.address, api);
+
+  if (!controllerStatus.stash) {
+    console.error(
+      `Could not find stash account associated with the provided controller address: ${controller.address}. Please ensure the address is actually a controller.`
+    );
+    process.exit(1);
+  }
+
+  const status = await getStatus(controllerStatus.stash, api);
+  requireStatus(
+    status,
+    "canWithdraw",
+    "Cannot perform action, there are no unlocked funds to withdraw"
+  );
+
   const slashingSpans = await api.query.staking.slashingSpans(
     controller.address
   );
