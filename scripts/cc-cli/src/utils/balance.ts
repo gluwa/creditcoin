@@ -4,7 +4,7 @@ export const MICROUNITS_PER_CTC = new BN("1000000000000000000");
 
 export function parseCTCString(amount: string): BN {
   try {
-    const parsed = parseUnits(amount, 18);
+    const parsed = positiveBigNumberFromString(amount);
     return new BN(parsed.toString());
   } catch (e) {
     console.error(`Unable to parse CTC amount: ${amount}`);
@@ -66,4 +66,20 @@ export function checkAmount(amount: BN) {
       process.exit(1);
     }
   }
+}
+
+function positiveBigNumberFromString(amount: string) {
+  const parsedValue = parseUnits(amount, 18);
+
+  if (parsedValue.isZero()) {
+    console.error("Failed to parse amount, must be greater than 0");
+    process.exit(1);
+  }
+
+  if (parsedValue.isNegative()) {
+    console.error("Failed to parse amount, must be a positive number");
+    process.exit(1);
+  }
+
+  return parsedValue;
 }
