@@ -62,7 +62,9 @@ async function checkEnoughFundsToSend(
 ) {
   const balance = await getBalance(address, api);
   if (balance.free.sub(balance.miscFrozen).lt(amount)) {
-    console.log(`Caller ${address} has insufficient funds to send ${amount}`);
+    console.log(
+      `Caller ${address} has insufficient funds to send ${amount.toString()}`
+    );
     process.exit(1);
   }
 }
