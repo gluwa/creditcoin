@@ -20,7 +20,7 @@ async function withdrawUnbondedAction(options: OptionValues) {
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
   const controller = initKeyringPair(controllerSeed);
 
-  let status = await getStatus(controller.address, api);
+  const status = await getStatus(controller.address, api);
   requireStatus(
     status,
     "canWithdraw",
