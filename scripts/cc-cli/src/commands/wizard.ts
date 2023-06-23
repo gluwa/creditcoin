@@ -83,11 +83,19 @@ export function makeWizardCommand() {
     // Prompt continue
     await promptContinue();
 
-    // Check both accounts have funds
+    // get balances.
     const stashBalance = await getBalance(stashAddress, api);
-    const controllerBalance = await getBalance(controllerAddress, api);
-    checkStashBalance(stashAddress, stashBalance, amount);
-    checkControllerBalance(controllerAddress, controllerBalance, new BN(2));
+    const controllerBalance = stashAddress == controllerAddress ? stashBalance : await getBalance(controllerAddress, api);
+
+    // ensure they have enough fee's and balance to cover the wizard.
+    if (controllerAddress == stashAddress) {
+      let amountWithFee = amount.add(new BN(2));
+      checkStashBalance(stashAddress, stashBalance, amountWithFee);
+    } else {
+      checkStashBalance(stashAddress, stashBalance, amount);
+      checkControllerBalance(controllerAddress, controllerBalance, new BN(2));
+    }
+
     const bondExtra: boolean = checkIfAlreadyBonded(stashBalance);
 
     if (bondExtra) {
