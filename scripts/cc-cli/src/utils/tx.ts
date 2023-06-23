@@ -30,8 +30,7 @@ export async function signSendAndWatch(
       if (dispatchError) {
 
         let blockHash: string | null = null;
-        if (status.isInBlock)
-          blockHash = status.asInBlock.toHex();
+        if (status.isInBlock) blockHash = status.asInBlock.toHex();
 
         if (dispatchError.isModule) {
           // for module errors, the section is indexed, lookup
@@ -40,14 +39,14 @@ export async function signSendAndWatch(
           const error = `${section}.${name}: ${docs.join(" ")}`;
           const result = {
             status: TxStatus.failed,
-            info: `Transaction failed with error: "${error}". ${blockHash ? "at block " + blockHash : ""}`,
+            info: `Transaction failed with error: "${error}" ${blockHash ? "at block " + blockHash : ""}`,
           };
           unsubAndResolve(result);
         } else {
           // Other, CannotLookup, BadOrigin, no extra info
           const result = {
             status: TxStatus.failed,
-            info: `Transaction failed with error: "${dispatchError.toString()}". ${blockHash ? "at block " + blockHash : ""}`,
+            info: `Transaction failed with error: "${dispatchError.toString()}" ${blockHash ? "at block " + blockHash : ""}`,
           };
           unsubAndResolve(result);
         }
