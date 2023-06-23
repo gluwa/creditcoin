@@ -85,7 +85,10 @@ export function makeWizardCommand() {
 
     // get balances.
     const stashBalance = await getBalance(stashAddress, api);
-    const controllerBalance = stashAddress === controllerAddress ? stashBalance : await getBalance(controllerAddress, api);
+    const controllerBalance =
+      stashAddress === controllerAddress
+        ? stashBalance
+        : await getBalance(controllerAddress, api);
 
     // ensure they have enough fee's and balance to cover the wizard.
     if (controllerAddress === stashAddress) {
