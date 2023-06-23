@@ -184,7 +184,7 @@ function checkControllerBalance(address: string, balance: Balance, amount: BN) {
     );
     printBalance(balance);
     console.log(
-      `Please send at least ${amount.toString()} CTC to controller address ${address} and try again.`
+      `Please send at least ${toCTCString(amount)} to controller address ${address} and try again.`
     );
     process.exit(1);
   }
@@ -193,7 +193,7 @@ function checkControllerBalance(address: string, balance: Balance, amount: BN) {
 function checkStashBalance(address: string, balance: Balance, amount: BN) {
   if (balance.free.sub(balance.miscFrozen).lt(amount)) {
     console.log(
-      `Stash account does not have enough funds to bond ${amount.toString()} CTC`
+      `Stash account does not have enough funds to bond ${toCTCString(amount)}`
     );
     printBalance(balance);
     console.log(`Please send funds to stash address ${address} and try again.`);
