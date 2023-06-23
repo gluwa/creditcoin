@@ -13,7 +13,7 @@ import { makeSetKeysCommand } from "./commands/setKeys";
 import { makeShowAddressCommand } from "./commands/showAddress";
 import { makeSendCommand } from "./commands/send";
 import { makeChillCommand } from "./commands/chill";
-import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
+import { makeDistributeRewardsCommand, makeDistributeRewardsMultiEraCommand } from "./commands/distributeRewards";
 import { makeUnbondCommand } from "./commands/unbond";
 import { makeStatusCommand } from "./commands/status";
 import { makeWithdrawUnbondedCommand } from "./commands/withdrawUnbonded";
@@ -31,6 +31,7 @@ program
   .addCommand(makeBondCommand())
   .addCommand(makeChillCommand())
   .addCommand(makeDistributeRewardsCommand())
+  .addCommand(makeDistributeRewardsMultiEraCommand())
   .addCommand(makeNewSeedCommand())
   .addCommand(makeRotateKeysCommand())
   .addCommand(makeSendCommand())
