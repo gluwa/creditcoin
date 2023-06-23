@@ -184,7 +184,9 @@ function checkControllerBalance(address: string, balance: Balance, amount: BN) {
     );
     printBalance(balance);
     console.log(
-      `Please send at least ${toCTCString(amount)} to controller address ${address} and try again.`
+      `Please send at least ${toCTCString(
+        amount
+      )} to controller address ${address} and try again.`
     );
     process.exit(1);
   }
