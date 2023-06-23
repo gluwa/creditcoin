@@ -73,8 +73,8 @@ export function makeWizardCommand() {
     // State parameters being used
     console.log("Using the following parameters:");
     console.log(`💰 Stash account: ${stashAddress}`);
-    console.log(`🕹️  Controller account: ${controllerAddress}`);
-    console.log(`🪙  Amount to bond: ${toCTCString(amount)}`);
+    console.log(`🎮 Controller account: ${controllerAddress}`);
+    console.log(`🪙 Amount to bond: ${toCTCString(amount)}`);
     console.log(`🎁 Reward destination: ${rewardDestination}`);
     console.log(`📡 Node URL: ${nodeUrl}`);
     console.log(`💸 Commission: ${percentFromPerbill(commission).toString()}`);
