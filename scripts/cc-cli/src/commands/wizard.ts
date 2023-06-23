@@ -91,12 +91,17 @@ export function makeWizardCommand() {
         : await getBalance(controllerAddress, api);
 
     // ensure they have enough fee's and balance to cover the wizard.
+    const grosslyEstimatedFee = parseCTCString("2");
     if (controllerAddress === stashAddress) {
-      const amountWithFee = amount.add(new BN(2));
+      const amountWithFee = amount.add(grosslyEstimatedFee);
       checkStashBalance(stashAddress, stashBalance, amountWithFee);
     } else {
       checkStashBalance(stashAddress, stashBalance, amount);
-      checkControllerBalance(controllerAddress, controllerBalance, new BN(2));
+      checkControllerBalance(
+        controllerAddress,
+        controllerBalance,
+        grosslyEstimatedFee
+      );
     }
 
     const bondExtra: boolean = checkIfAlreadyBonded(stashBalance);
