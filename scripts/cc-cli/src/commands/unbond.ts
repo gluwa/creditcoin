@@ -41,10 +41,10 @@ async function unbondAction(options: OptionValues) {
   requireStatus(stashStatus, "bonded");
 
   // Check if amount specified exceeds total bonded funds
-  await checkIfUnbodingMax(controllerAddress, amount, api);
+  await checkIfUnbodingMax(controllerStatus.stash, amount, api);
 
   // Unbond transaction
-  const tx = api.tx.staking.unbond(toCTCString(options.amount).toString());
+  const tx = api.tx.staking.unbond(amount.toString());
 
   const result = await signSendAndWatch(tx, api, controllerKeyring);
 

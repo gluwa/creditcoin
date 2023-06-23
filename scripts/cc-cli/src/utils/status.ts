@@ -95,7 +95,8 @@ export async function getStatus(address: string, api: ApiPromise) {
 
 export async function printValidatorStatus(status: Status, api: ApiPromise) {
   console.log("Bonded: ", status.bonded);
-  console.log("Stash: ", status.stash);
+  if (status.stash)
+    console.log("Stash: ", status.stash);
   console.log("Controller: ", status.controller);
   console.log("Validating: ", status.validating);
   console.log("Waiting: ", status.waiting);
