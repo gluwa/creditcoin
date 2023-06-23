@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "bin": {
-    "creditcoin-cli": "dist/index.js"
-  },
+  "bin": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint -c .eslintrc.js --ext .ts ./src",
@@ -15,7 +13,9 @@
     "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --package sample-polkadotjs-typegen/interfaces --endpoint ./edgeware.json --output ./src/interfaces",
     "check-format": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "build": "tsc"
+    "build": "tsc",
+    "exec": "tsc && node dist/index.js",
+    "start": "node dist/index.js"
   },
   "keywords": [],
   "author": "",
