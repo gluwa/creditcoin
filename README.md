@@ -122,4 +122,3 @@ If you want to see the multi-node consensus algorithm in action, refer to our
 
 - [Legacy Creditcoin 1.x Account Migration](./docs/legacy-account-migration.md)
 - [Legacy Creditcoin 1.x Repos](https://github.com/gluwa?q=legacy)
-
