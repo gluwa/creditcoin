@@ -45,7 +45,6 @@ async function sendAction(options: OptionValues) {
   const result = await signSendAndWatch(tx, api, caller);
   console.log(result.info);
 
-  /// TODO: this needs to be fixed
   process.exit(0);
 }
 
