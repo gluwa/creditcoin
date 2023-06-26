@@ -193,7 +193,7 @@ jobs:
           ps aux --sort=-%mem | head -n 20
           echo "DEBUG: *********************"
           ./creditcoin-node --chain ./creditcoin-fork.json --validator --alice --pruning archive \
-                            --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+                            --node-key d182d503b7dd97e7c055f33438c7717145840fd66b2a055284ee8d768241a463 \
                             --monitor-nonce auto >creditcoin-node.log 2>&1 &
 
       - name: Wait for blockchain to start
