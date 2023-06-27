@@ -28,3 +28,6 @@ justfile
 docs/dev-guide/book
 
 **/.yarn/cache
+
+repro/chaindata/*
+!repro/chaindata/.gitkeep
