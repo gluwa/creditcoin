@@ -11,7 +11,7 @@ use frame_election_provider_support::{
 };
 pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
-	traits::{ConstU32, ConstU8, U128CurrencyToVote},
+	traits::{ConstU32, ConstU8, OnRuntimeUpgrade, U128CurrencyToVote},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 	PalletId,
 };
@@ -479,6 +479,23 @@ impl pallet_pos_switch::OnSwitch for InitPosPallets {
 	}
 }
 
+pub struct InitBabe;
+
+impl OnRuntimeUpgrade for InitBabe {
+	fn on_runtime_upgrade() -> Weight {
+		if Babe::epoch_config().is_none() {
+			let babe_config = pallet_babe::InitConfig {
+				authorities: Vec::new(),
+				epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
+			};
+			Babe::genesis_init(babe_config);
+			<Runtime as frame_system::Config>::DbWeight::get().writes(3)
+		} else {
+			Weight::zero()
+		}
+	}
+}
+
 const CTC_REWARD_PER_BLOCK: Balance = 2 * CTC;
 pub struct EraPayout;
 impl pallet_staking_substrate::EraPayout<Balance> for EraPayout {
@@ -772,6 +789,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
+	(InitBabe,),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
