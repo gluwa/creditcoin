@@ -61,7 +61,7 @@ jobs:
         id: last-block-info
         run: |
           # store info about the last finalized block before the fork
-          # WARNING: using getBlockHash() instead of getFinalizedBlock() b/c PoW doesn't have finalization
+          # WARNING: using getBlockHash() instead of getFinalizedHead() b/c PoW doesn't have finalization
           LAST_BLOCK=$(curl --silent -H "Content-Type: application/json" \
                -d '{"id": 1, "jsonrpc": "2.0", "method": "chain_getBlockHash", "params": [] }' \
                ${{ env.HTTPS_RPC_URL }} | jq -r .result)
@@ -204,7 +204,7 @@ jobs:
         id: last-block-info
         run: |
           # store info about the last finalized block before the fork
-          # WARNING: using getBlockHash() instead of getFinalizedBlock() b/c PoW doesn't have finalization
+          # WARNING: using getBlockHash() instead of getFinalizedHead() b/c PoW doesn't have finalization
           LAST_BLOCK=$(curl --silent -H "Content-Type: application/json" \
                -d '{"id": 1, "jsonrpc": "2.0", "method": "chain_getBlockHash", "params": [] }' \
                http://127.0.0.1:9933 | jq -r .result)
