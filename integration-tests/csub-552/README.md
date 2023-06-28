@@ -13,13 +13,13 @@ All commands from the root of the repo.
 2. Import blocks for node1
 
     ```bash
-    ./target/release/creditcoin-node import-blocks --chain ./repro/reproSpec.json --base-path ./repro/chaindata/node1 --state-pruning archive --blocks-pruning archive --database paritydb ./repro/repro.blocks
+    ./target/release/creditcoin-node import-blocks --chain ./integration-tests/csub-552/reproSpec.json --base-path ./integration-tests/csub-552/chaindata/node1 --state-pruning archive --blocks-pruning archive --database paritydb ./integration-tests/csub-552/repro.blocks
     ```
 
 3. Run node1
 
     ```bash
-    ./target/release/creditcoin-node --chain repro/reproSpec.json --validator --alice --mining-threads 1 --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --pruning archive --node-key 844794b5f1da387970d769debc3a30f729f3515841121ccecebed2582723e04d --base-path ./repro/chaindata/node1
+    ./target/release/creditcoin-node --chain integration-tests/csub-552/reproSpec.json --validator --alice --mining-threads 1 --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --pruning archive --node-key 844794b5f1da387970d769debc3a30f729f3515841121ccecebed2582723e04d --base-path ./integration-tests/csub-552/chaindata/node1
     ```
 
 4. Initiate PoS switchover by calling the `posSwitch.switchToPos` extrinsic (through polkadot-js or whatever else)
@@ -29,7 +29,7 @@ All commands from the root of the repo.
 6. Sync node2 with node1. In a separate terminal:
 
     ```bash
-    ./target/release/creditcoin-node --chain repro/reproSpec.json --validator --mining-threads 1 --base-path ./repro/chaindata/node2 --rpc-cors=all --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --bootnodes '/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWSrv5vZAh2Xr97BpyHLZ8scGqcaPr8CLYvm4EVtLwKiXy' --port 30334 --ws-port 9945 --rpc-port 9934 --pruning archive
+    ./target/release/creditcoin-node --chain integration-tests/csub-552/reproSpec.json --validator --mining-threads 1 --base-path integration-tests/csub-552/chaindata/node2 --rpc-cors=all --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --bootnodes '/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWSrv5vZAh2Xr97BpyHLZ8scGqcaPr8CLYvm4EVtLwKiXy' --port 30334 --ws-port 9945 --rpc-port 9934 --pruning archive
     ```
 
 7. 💥
@@ -43,7 +43,7 @@ So there's no magic, here's how I created the chainspec and blocks.
 1. Copy `devSpec.json`
 
     ```bash
-    cp chainspecs/devSpec.json repro/reproSpec.json
+    cp chainspecs/devSpec.json integration-tests/csub-552/reproSpec.json
     ```
 
 2. Change chain name ID, and add some random genesis data
@@ -68,7 +68,7 @@ So there's no magic, here's how I created the chainspec and blocks.
 1. Start node on `reproSpec.json`
 
     ```bash
-    ./target/release/creditcoin-node --chain repro/reproSpec.json --validator --alice --mining-threads 1 --mining-key 5GsNKWrzHCPw1urznfdoHsrv1oDT1GxD7gpjvkR9LKibWTHh --pruning archive --node-key 844794b5f1da387970d769debc3a30f729f3515841121ccecebed2582723e04d --base-path ./repro/chaindata/node1
+    ./target/release/creditcoin-node --chain integration-tests/csub-552/reproSpec.json --validator --alice --mining-threads 1 --mining-key 5GsNKWrzHCPw1urznfdoHsrv1oDT1GxD7gpjvkR9LKibWTHh --pruning archive --node-key 844794b5f1da387970d769debc3a30f729f3515841121ccecebed2582723e04d --base-path ./integration-tests/csub-552/chaindata/node1
     ```
 
 2. Set the block time to 5s (through polkadot-js)
@@ -80,5 +80,5 @@ So there's no magic, here's how I created the chainspec and blocks.
 5. Export the blocks
 
     ```bash
-    ./target/release/creditcoin-node export-blocks --chain repro/reproSpec.json --blocks-pruning archive --state-pruning archive --database paritydb repro/repro.blocks
+    ./target/release/creditcoin-node export-blocks --chain integration-tests/csub-552/reproSpec.json --blocks-pruning archive --state-pruning archive --database paritydb integration-tests/csub-552/repro.blocks
     ```
