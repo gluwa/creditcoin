@@ -277,7 +277,7 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
-  integration-test:
+  integration-test-loan-cycle:
     runs-on: ubuntu-22.04
     # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
     permissions: write-all
