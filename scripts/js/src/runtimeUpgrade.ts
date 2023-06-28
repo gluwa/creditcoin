@@ -1,6 +1,10 @@
-import { creditcoinApi } from 'creditcoin-js';
+import { CREDO_PER_CTC, creditcoinApi } from 'creditcoin-js';
 import { createOverrideWeight } from 'creditcoin-js/lib/utils';
-import { Keyring } from '@polkadot/api';
+import { Keyring, ApiPromise } from '@polkadot/api';
+import { Option, Vec, Bytes } from '@polkadot/types';
+import { ITuple } from '@polkadot/types/types/interfaces';
+import { KeyTypeId } from '@polkadot/types/interfaces';
+import { decodeAddress } from '@polkadot/util-crypto';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { promisify } from 'util';
@@ -28,6 +32,34 @@ type WasmRuntimeInfo = {
 // these normally use callbacks, but promises are more convenient
 const readFile = promisify(fs.readFile);
 const exec = promisify(child_process.exec);
+
+type Keys = {
+    grandpa: string;
+    babe: string;
+    imOnline: string;
+};
+
+async function rotateKeys(api: ApiPromise): Promise<Keys> {
+    const rotatedKeys = await api.rpc.author.rotateKeys();
+    console.log('Rotated` keys:', rotatedKeys.toHex());
+    const decoded = await api.call.sessionKeys.decodeSessionKeys<Option<Vec<ITuple<[Bytes, KeyTypeId]>>>>(rotatedKeys);
+    const unwrapped = decoded.unwrap();
+    const [grandpaKey] = unwrapped[0];
+    const [babeKey] = unwrapped[1];
+    const [imOnlineKey] = unwrapped[2];
+    console.log('Grandpa key:', grandpaKey.toHex());
+    console.log('Babe key:', babeKey.toHex());
+    console.log('ImOnline key:', imOnlineKey.toHex());
+    return {
+        grandpa: grandpaKey.toHex(),
+        babe: babeKey.toHex(),
+        imOnline: imOnlineKey.toHex(),
+    };
+}
+
+function ctc(credo: number | bigint | string) {
+    return BigInt(credo) * BigInt(CREDO_PER_CTC);
+}
 
 /**
  * Performs an upgrade to the runtime at the provided path.
@@ -116,7 +148,20 @@ async function doRuntimeUpgrade(
 
         // WARNING: only used during fork-and-migrate testing
         if (scheduleDelay === 0) {
-            callback = api.tx.posSwitch.switchToPos();
+            const { grandpa, babe, imOnline } = await rotateKeys(api);
+            const initialValidators = [
+                {
+                    stash: keyring.address,
+                    controller: keyring.address,
+                    grandpa,
+                    babe,
+                    imOnline,
+                    bonded: ctc('1_000_000'),
+                    controllerBalance: 0,
+                    invulnerable: true,
+                },
+            ];
+            callback = api.tx.posSwitch.switchToPos(initialValidators);
 
             await new Promise<void>((resolve, reject) => {
                 const unsubscribe = api.tx.sudo
