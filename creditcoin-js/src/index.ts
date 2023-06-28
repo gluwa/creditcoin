@@ -7,7 +7,7 @@ export { parseUnits } from 'ethers/lib/utils';
 export { Guid } from 'js-guid';
 
 export { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
-export { Option } from '@polkadot/types';
+export { Option, Vec, Bytes } from '@polkadot/types';
 export { BN } from '@polkadot/util';
 export { KeyringPair } from '@polkadot/keyring/types';
 export type { Balance, DispatchError, DispatchResult } from '@polkadot/types/interfaces';
