@@ -20,11 +20,11 @@ echo "INFO: will start comparing blocks numbers ......"
 
 
 LAST_BLOCK_NUMBER=0x0
-# Bash seems to support hex comparisons if numbers are prefixed wwith 0x
+# Bash seems to support hex comparisons if numbers are prefixed with 0x
 # https://stackoverflow.com/a/13503150/1431647
 while [[ $LAST_BLOCK_NUMBER -lt $WAIT_FOR_BLOCK_NUMBER ]]; do
     echo "INFO: Block Number from chain: $LAST_BLOCK_NUMBER < target: $WAIT_FOR_BLOCK_NUMBER"
-    # WARNING: using getBlockHash() instead of getFinalizedBlock() b/c PoW doesn't have finalization
+    # WARNING: using getBlockHash() instead of getFinalizedHead() b/c PoW doesn't have finalization
     LAST_BLOCK=$(curl --silent -H "Content-Type: application/json" \
                   -d '{"id": 1, "jsonrpc": "2.0", "method": "chain_getBlockHash", "params": [] }' \
                     "$RPC_URL" | jq -r '.result'
