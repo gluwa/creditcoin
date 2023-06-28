@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 set -o errexit
 
 # create registry container unless it already exists
