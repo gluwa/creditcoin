@@ -13,7 +13,7 @@ All commands from the root of the repo.
 2. Import blocks for node1
 
     ```bash
-    ./target/release/creditcoin-node import-blocks --chain ./repro/reproSpec.json --base-path ./repro/chaindata/node1 --state-pruning archive --blocks-pruning archive --database paritydb ./repro/repro.block
+    ./target/release/creditcoin-node import-blocks --chain ./repro/reproSpec.json --base-path ./repro/chaindata/node1 --state-pruning archive --blocks-pruning archive --database paritydb ./repro/repro.blocks
     ```
 
 3. Run node1
