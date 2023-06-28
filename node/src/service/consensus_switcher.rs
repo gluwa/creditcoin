@@ -68,6 +68,13 @@ impl GrandpaAuthorityProvider {
 
 impl sc_consensus_grandpa::GenesisAuthoritySetProvider<BlockTy> for GrandpaAuthorityProvider {
 	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
+		if self.initial_authorities.is_empty() {
+			log::warn!("No initial grandpa authorities provided. Make sure this is configured correctly in the chain spec. Using a dummy authority for now.");
+			return Ok(vec![(
+				crate::chain_spec::get_from_seed::<sp_consensus_grandpa::AuthorityId>("Alice"),
+				1,
+			)]);
+		}
 		Ok(self.initial_authorities.iter().cloned().map(|auth| (auth, 1)).collect())
 	}
 }
