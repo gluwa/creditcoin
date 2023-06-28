@@ -5,6 +5,7 @@
     "main": "index.js",
     "scripts": {
         "runtimeUpgrade": "ts-node ./src/runtimeUpgrade.ts",
+        "switchToPos": "ts-node ./src/switchToPos.ts",
         "lint": "eslint -c .eslintrc.js --ext .ts ./src",
         "format": "prettier --write \"src/**/*.ts\"",
         "check-format": "prettier --check \"src/**/*.ts\"",

@@ -284,7 +284,7 @@ jobs:
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
 
-      - name: Upgrade WASM
+      - name: Upgrade WASM & switchToPos
         run: |
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
           echo "DEBUG: **** free memory before runtimeUpgrade ****"
@@ -292,6 +292,8 @@ jobs:
           ps aux --sort=-%mem | head -n 20
           echo "DEBUG: *********************"
           yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm //Alice 0
+          sleep 10
+          yarn --cwd ./scripts/js switchToPos ws://127.0.0.1:9944 //Alice
 
       # TODO: wait & confirm wasm upgrade has finished, incl. migrations
       - name: Execute integration tests
