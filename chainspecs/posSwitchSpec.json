@@ -2,14 +2,14 @@
   "name": "PoS Switch Test Chain",
   "id": "pos_switch_test",
   "chainType": "Local",
-  "bootNodes": [
-  ],
+  "bootNodes": [],
   "telemetryEndpoints": null,
   "protocolId": "ctc",
   "properties": {
     "tokenDecimals": 18,
     "tokenSymbol": "CTC"
   },
+  "grandpaInitialAuthorities": [],
   "codeSubstitutes": {},
   "genesis": {
     "raw": {
