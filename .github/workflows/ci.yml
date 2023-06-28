@@ -277,16 +277,10 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
-  integration-test-loan-cycle:
+  build-creditcoin-node:
     runs-on: ubuntu-22.04
-    # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
-    permissions: write-all
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 10
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set-Up
         run: |
@@ -311,11 +305,43 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release
+          args: --release --features fast-runtime
+
+      - name: Upload creditcoin-node binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release/creditcoin-node
+
+      - name: Upload WASM runtime
+        uses: actions/upload-artifact@v3
+        with:
+          name: creditcoin_node_runtime.compact.compressed.wasm
+          path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
+
+  integration-test-loan-cycle:
+    needs:
+      - build-creditcoin-node
+    runs-on: ubuntu-22.04
+    # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 10
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Download creditcoin-node binary
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release
 
       - name: Start SUT
         run: |
-          cargo run --release -- --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          chmod a+x ./target/release/creditcoin-node
+          ./target/release/creditcoin-node --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
