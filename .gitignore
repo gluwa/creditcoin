@@ -29,5 +29,5 @@ docs/dev-guide/book
 
 **/.yarn/cache
 
-repro/chaindata/*
-!repro/chaindata/.gitkeep
+integration-tests/csub-552/chaindata/*
+!integration-tests/csub-552/chaindata/.gitkeep
