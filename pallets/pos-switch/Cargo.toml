@@ -23,6 +23,9 @@ sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 sp-core = { workspace = true }
 pallet-difficulty = { workspace = true }
+sp-consensus-grandpa = { workspace = true }
+sp-consensus-babe = { workspace = true }
+pallet-im-online = { workspace = true }
 
 [dev-dependencies]
 
@@ -38,5 +41,8 @@ std = [
     'sp-std/std',
     'sp-core/std',
     'pallet-difficulty/std',
+    'sp-consensus-grandpa/std',
+    'sp-consensus-babe/std',
+    'pallet-im-online/std',
 ]
 try-runtime = ['frame-support/try-runtime']
