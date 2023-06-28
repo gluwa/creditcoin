@@ -457,6 +457,9 @@ impl pallet_pos_switch::OnSwitch for InitPosPallets {
 			minimum_validator_count: 1,
 			stakers: initial_validators
 				.iter()
+				// The staking pallet assumes that all `stakers` listed here are not yet bonded (and will panic otherwise).
+				// So here we filter out validators that are already bonded.
+				.filter(|validator| Staking::bonded(&validator.stash).is_none())
 				.map(|validator| {
 					(
 						validator.stash.clone(),
@@ -484,6 +487,7 @@ pub struct InitBabe;
 impl OnRuntimeUpgrade for InitBabe {
 	fn on_runtime_upgrade() -> Weight {
 		if Babe::epoch_config().is_none() {
+			log::debug!("Initializing BABE");
 			let babe_config = pallet_babe::InitConfig {
 				authorities: Vec::new(),
 				epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
