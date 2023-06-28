@@ -164,7 +164,7 @@ pub(crate) fn new_partial(
 		client.clone(),
 		&auth_provider,
 		select_chain.clone(),
-		telemetry_handle.clone(),
+		telemetry_handle,
 	)
 	.unwrap();
 
@@ -218,7 +218,7 @@ pub(crate) fn new_partial(
 	let import_queue = sc_consensus::BasicQueue::new(
 		switcher_verifier,
 		Box::new(switcher_block_import),
-		Some(Box::new(grandpa_import.clone())),
+		Some(Box::new(grandpa_import)),
 		&task_manager.spawn_essential_handle(),
 		config.prometheus_registry(),
 	);
