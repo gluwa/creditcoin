@@ -8,6 +8,7 @@ RUN apt-get update && \
     update-ca-certificates && \
     curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y nodejs --no-install-recommends && \
+    apt-get install -y build-essential && \
     npm install -g yarn
 
 RUN useradd --home-dir /creditcoin-node --create-home creditcoin
@@ -17,28 +18,34 @@ WORKDIR /creditcoin-node
 
 
 FROM runtime-base AS devel-base
-COPY --chown=creditcoin:creditcoin . /creditcoin-node/
 
 
 FROM devel-base as rust-builder
 USER 0
 RUN apt-get install -y --no-install-recommends \
     cmake pkg-config libssl-dev git build-essential clang libclang-dev protobuf-compiler
-USER creditcoin
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | /bin/sh -s -- -y
-
-COPY --chown=creditcoin:creditcoin . /creditcoin-node/
-# shellcheck source=/dev/null
-RUN source ~/.cargo/env && \
+RUN mkdir -p /creditcoin-node/ci
+COPY ./ci/env /creditcoin-node/ci/env
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | /bin/sh -s -- -y && \
+    source ~/.cargo/env && \
     source ./ci/env && \
     rustup default $RUSTC_VERSION && \
     rustup update $RUSTC_VERSION && \
-    rustup target add wasm32-unknown-unknown --toolchain $RUSTC_VERSION && \
+    rustup target add wasm32-unknown-unknown --toolchain $RUSTC_VERSION
+
+COPY --chown=creditcoin:creditcoin . /creditcoin-node/
+# shellcheck source=/dev/null
+RUN --mount=type=cache,target=/creditcoin-node/target \
+    --mount=type=cache,target=~/target \
+    --mount=type=cache,target=~/.cargo/registry \
     source ~/.cargo/env && \
-    cargo build --release
+    cargo build --release && \
+    cp /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
 
 
 FROM devel-base AS cli-builder
+USER creditcoin
+COPY --chown=creditcoin:creditcoin . /creditcoin-node/
 RUN pushd ~/creditcoin-js && \
     yarn install && yarn build && yarn pack && \
     popd && \
@@ -55,7 +62,7 @@ ENTRYPOINT [ "/bin/creditcoin-node" ]
 
 COPY --from=cli-builder  --chown=creditcoin:creditcoin /creditcoin-node/creditcoin-js/creditcoin-js-v*.tgz /creditcoin-node/creditcoin-js/
 COPY --from=cli-builder  --chown=creditcoin:creditcoin /creditcoin-node/scripts/cc-cli/creditcoin-cli-v*.tgz /creditcoin-node/scripts/cc-cli/
-COPY --from=rust-builder --chown=creditcoin:creditcoin /creditcoin-node/target/release/creditcoin-node /bin/creditcoin-node
+COPY --from=rust-builder --chown=creditcoin:creditcoin /bin/creditcoin-node /bin/creditcoin-node
 COPY --from=rust-builder --chown=creditcoin:creditcoin /creditcoin-node/chainspecs /
 
 USER 0
