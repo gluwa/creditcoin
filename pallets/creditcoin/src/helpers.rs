@@ -172,7 +172,9 @@ pub fn try_extract_address<T: Config>(
 	}
 }
 
+use ethers_core::Signature;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
+use web3::signing::{keccak256, recover};
 
 fn ExtractEthSignPublicKey<T: Config>(
 	signature: [u8; 65],

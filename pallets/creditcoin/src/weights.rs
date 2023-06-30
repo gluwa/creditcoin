@@ -447,7 +447,9 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 
-	fn register_external_address() -> Weight {
+	fn register_address_v2() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+
 }

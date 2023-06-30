@@ -62,6 +62,21 @@ impl Blockchain {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum SignautreType {
+	PersonalSign,
+	EthSign,
+}
+
+impl SignatureType {
+	pub fn as_bytes(&self) -> &[u8] {
+		match Self {
+			SignatureType::PerosnalSign => b"PersonalSign",
+			SignatureType::EthSign => b"EthSign",
+		}
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TransferKind {
 	Erc20(ExternalAddress),
 	Ethless(ExternalAddress),
