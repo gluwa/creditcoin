@@ -1,19 +1,16 @@
 mod external_address;
 mod register_transfer;
 
-use ethers_core::types::RecoveryMessage;
+use alloc::string::String;
 pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub use external_address::{EVMAddress, PublicToAddress};
-use sp_core::U256;
-use sp_runtime::BoundedVec;
 
 use crate::{
 	pallet::*,
 	types::{Address, AddressId, SignatureType},
 	Blockchain, DealOrderId, Error, ExternalAddress, Guid, Id, TransferId,
 };
-use ethers_core::types::Signature;
 use frame_support::ensure;
 use frame_system::pallet_prelude::*;
 use sp_std::prelude::*;
@@ -106,6 +103,80 @@ impl<T: Config> Pallet<T> {
 		UsedGuids::<T>::insert(guid, ());
 		Ok(())
 	}
+
+	pub fn try_extract_address(
+		signature_type: SignatureType,
+		signature: [u8; 65],
+		account_id: String,
+		blockchain: Blockchain,
+		address: ExternalAddress,
+	) -> Result<ExternalAddress, crate::Error<T>> {
+		match signature_type {
+			// Old Way
+			SignatureType::EthSign => {
+				Self::ExtractEthSignPublicKey(signature, account_id, blockchain, address)
+			},
+			// New Way
+			SignatureType::PersonalSign => {
+				Self::ExtractPeronalSignPublicKey(signature, account_id, blockchain, address)
+			},
+		}
+	}
+
+	fn ExtractEthSignPublicKey(
+		signature: [u8; 65],
+		account_id: String,
+		blockchain: Blockchain,
+		address: ExternalAddress,
+	) -> Result<ExternalAddress, crate::Error<T>> {
+		let message = sp_io::hashing::sha2_256(account_id.as_bytes());
+		let message = &sp_io::hashing::blake2_256(message.as_ref());
+
+		match secp256k1_ecdsa_recover_compressed(&signature, &message) {
+			Ok(public_key) => {
+				match generate_external_address(
+					&blockchain,
+					&address,
+					sp_core::ecdsa::Public::from_raw(public_key),
+				) {
+					Some(s) => Ok(s),
+					None => Err(crate::Error::<T>::EthSignExternalAddressGenerationFailed),
+				}
+			},
+			Err(e) => Err(crate::Error::<T>::EthSignInvalidSignature),
+		}
+	}
+
+	pub fn eth_message(message: String) -> [u8; 32] {
+		sp_io::hashing::keccak_256(
+			alloc::format!("{}{}{}", "\x19Ethereum Signed Message:\n", message.len(), message)
+				.as_bytes(),
+		)
+	}
+
+	pub fn ExtractPeronalSignPublicKey(
+		signature: [u8; 65],
+		account_id: String,
+		blockchain: Blockchain,
+		address: ExternalAddress,
+	) -> Result<ExternalAddress, crate::Error<T>> {
+		let message = Self::eth_message(account_id);
+		let message = &sp_io::hashing::blake2_256(message.as_ref());
+
+		match secp256k1_ecdsa_recover_compressed(&signature, &message) {
+			Ok(public_key) => {
+				match generate_external_address(
+					&blockchain,
+					&address,
+					sp_core::ecdsa::Public::from_raw(public_key),
+				) {
+					Some(s) => Ok(s),
+					None => Err(crate::Error::<T>::EthSignExternalAddressGenerationFailed),
+				}
+			},
+			Err(e) => Err(crate::Error::<T>::EthSignInvalidSignature),
+		}
+	}
 }
 
 pub fn non_paying_error<T: Config>(
@@ -154,80 +225,4 @@ pub mod extensions {
 	}
 }
 
-pub fn try_extract_address<T: Config>(
-	signature_type: SignatureType,
-	signature: [u8; 65],
-	account_id: String,
-	blockchain: Blockchain,
-	address: ExternalAddress,
-) -> Result<ExternalAddress, crate::Error<T>> {
-	match signature_type {
-		// Old Way
-		SignatureType::EthSign => {
-			ExtractEthSignPublicKey(signature, account_id, blockchain, address)
-		},
-		// New Way
-		SignatureType::PersonalSign => ExtractPeronalSignPublicKey(signature, account_id),
-	}
-}
-
-use ethers_core::types::Signature;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
-use web3::signing::{keccak256, recover};
-
-fn ExtractEthSignPublicKey<T: Config>(
-	signature: [u8; 65],
-	account_id: String,
-	blockchain: Blockchain,
-	address: ExternalAddress,
-) -> Result<ExternalAddress, crate::Error<T>> {
-	let message = sp_io::hashing::sha2_256(account_id.as_bytes());
-	let message = &sp_io::hashing::blake2_256(message.as_ref());
-
-	match secp256k1_ecdsa_recover_compressed(&signature, &message) {
-		Ok(public_key) => {
-			match generate_external_address(
-				&blockchain,
-				&address,
-				sp_core::ecdsa::Public::from_raw(public_key),
-			) {
-				Some(s) => Ok(s),
-				None => Err(crate::Error::EthSignExternalAddressGenerationFailed),
-			}
-		},
-		Err(e) => Err(crate::Error::EthSignInvalidSignature),
-	}
-}
-
-pub fn eth_message(message: String) -> [u8; 32] {
-	keccak256(
-		format!("{}{}{}", "\x19Ethereum Signed Message:\n", message.len(), message).as_bytes(),
-	)
-}
-
-pub fn ExtractPeronalSignPublicKey<T: Config>(
-	signature: [u8; 65],
-	message: String,
-) -> Result<ExternalAddress, crate::Error<T>> {
-	// Build the signature object
-	let v = signature[64];
-	let r = U256::from_big_endian(&signature[0..32]);
-	let s = U256::from_big_endian(&signature[32..64]);
-	let signature = Signature { r, s, v: v.into() };
-
-	// Create the message and format it properly
-	let message = eth_message(message);
-	let recovery_message = RecoveryMessage::Data(message.to_vec());
-
-	if let Ok(address) = signature.recover(message) {
-		let address = address.as_bytes();
-		let address = address.to_vec();
-
-		let res: ExternalAddress =
-			BoundedVec::try_from(address).expect("20 bytes fits within bounds.");
-
-		return Ok(res);
-	}
-
-	return Err(crate::Error::PerosnalSignFailedRecovery);
-}

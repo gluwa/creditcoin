@@ -46,10 +46,6 @@ serde = { version = "1.0.163", default-features = false, features = ["derive"] }
 scale-info = { version = "2.7", default-features = false, features = [
     "derive",
 ] }
-sha3 = "0.10.8"
-ethers-core = "2.0.7"
-web3 = "0.19.0"
-getrandom = { version = "0.2", features = ["js"] }
 
 # Project Local Dependencies
 creditcoin-node-runtime = { path = "runtime" }
@@ -105,7 +101,6 @@ sc-service = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://gith
     "test-helpers",
 ] }
 sp-api = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
-sp-application-crypto = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 sp-arithmetic = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 sp-block-builder = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 sp-blockchain = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }

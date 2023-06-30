@@ -656,6 +656,63 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(23)]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
+		pub fn register_address_v2(
+			origin: OriginFor<T>,
+			blockchain: Blockchain,
+			address: ExternalAddress,
+			ownership_proof: sp_core::ecdsa::Signature,
+			signature_type: SignatureType,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let account_id = who.encode().to_vec();
+			let account_id = alloc::string::String::from_utf8(account_id).unwrap();
+
+			match Pallet::<T>::try_extract_address(
+				signature_type,
+				ownership_proof.into(),
+				account_id,
+				blockchain,
+				address,
+			) {
+				Ok(recreated_address) => {
+					// Check if external address of keypair used to sign AccountID
+					// is the same one mentioned in this call to register_address
+					ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
+
+					let address_id = AddressId::new::<T>(&blockchain, &address);
+
+					if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
+						// Already registered, let's figure out who owns it so we can
+						// return a nice error
+						if who == account_id.owner {
+							fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+						}
+						fail!(Error::<T>::AddressAlreadyRegistered);
+					}
+
+					// note: this error condition is unreachable!
+					// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
+					ensure!(
+						helpers::address_is_well_formed(&blockchain, &address),
+						Error::<T>::MalformedExternalAddress
+					);
+
+					let entry = Address { blockchain, value: address, owner: who };
+					Self::deposit_event(Event::<T>::AddressRegistered(
+						address_id.clone(),
+						entry.clone(),
+					));
+					<Addresses<T>>::insert(address_id, entry);
+				},
+				Err(e) => return Err(Error::<T>::AddressAlreadyRegistered),
+			}
+
+			Err(Error::<T>::AddressAlreadyRegistered)
+		}
+
 		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_ask_order())]
 		pub fn add_ask_order(
@@ -1355,60 +1412,6 @@ pub mod pallet {
 			T::TaskScheduler::remove_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
-		}
-
-		#[pallet::call_index(22)]
-		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
-		pub fn register_address_v2(
-			origin: OriginFor<T>,
-			blockchain: Blockchain,
-			address: ExternalAddress,
-			ownership_proof: sp_core::ecdsa::Signature,
-			signature_type: SignatureType,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			match helpers::try_extract_address(
-				signature_type,
-				ownership_proof.into(),
-				who.to_string(),
-				blockchain,
-				address,
-			) {
-				Ok(recreated_address) => {
-					// Check if external address of keypair used to sign AccountID
-					// is the same one mentioned in this call to register_address
-					ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
-
-					let address_id = AddressId::new::<T>(&blockchain, &address);
-
-					if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
-						// Already registered, let's figure out who owns it so we can
-						// return a nice error
-						if who == account_id.owner {
-							fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
-						}
-						fail!(Error::<T>::AddressAlreadyRegistered);
-					}
-
-					// note: this error condition is unreachable!
-					// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
-					ensure!(
-						helpers::address_is_well_formed(&blockchain, &address),
-						Error::<T>::MalformedExternalAddress
-					);
-
-					let entry = Address { blockchain, value: address, owner: who };
-					Self::deposit_event(Event::<T>::AddressRegistered(
-						address_id.clone(),
-						entry.clone(),
-					));
-					<Addresses<T>>::insert(address_id, entry);
-				},
-				Err(e) => return Err(e),
-			}
-
-			Ok(())
 		}
 	}
 }
