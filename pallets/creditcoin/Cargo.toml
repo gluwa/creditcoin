@@ -49,6 +49,7 @@ strum = { version = "0.24.1", features = ["derive"], default-features = false }
 tracing = { workspace = true }
 pallet-offchain-task-scheduler = { workspace = true }
 ethers-core.workspace = true
+web3.workspace = true
 
 [dev-dependencies]
 assert_matches = { workspace = true }

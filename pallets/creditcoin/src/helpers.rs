@@ -5,7 +5,6 @@ use ethers_core::types::RecoveryMessage;
 pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub use external_address::{EVMAddress, PublicToAddress};
-use sha3::Keccak256;
 use sp_core::U256;
 use sp_runtime::BoundedVec;
 
@@ -172,7 +171,7 @@ pub fn try_extract_address<T: Config>(
 	}
 }
 
-use ethers_core::Signature;
+use ethers_core::types::Signature;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use web3::signing::{keccak256, recover};
 

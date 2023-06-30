@@ -62,15 +62,15 @@ impl Blockchain {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum SignautreType {
+pub enum SignatureType {
 	PersonalSign,
 	EthSign,
 }
 
 impl SignatureType {
 	pub fn as_bytes(&self) -> &[u8] {
-		match Self {
-			SignatureType::PerosnalSign => b"PersonalSign",
+		match self {
+			SignatureType::PersonalSign => b"PersonalSign",
 			SignatureType::EthSign => b"EthSign",
 		}
 	}
