@@ -43,6 +43,7 @@ describe('RegisterAddress', () => {
             extrinsics: { registerAddress },
         } = ccApi;
 
+        console.log("here")
         const lenderWallet = Wallet.createRandom();
         const lenderRegAddr = await registerAddress(
             lenderWallet.address,

@@ -493,6 +493,11 @@ pub mod pallet {
 
 		/// The currency has already been registered.
 		CurrencyAlreadyRegistered,
+
+		EthSignExternalAddressGenerationFailed,
+		EthSignInvalidSignature,
+
+		PerosnalSignFailedRecovery,
 	}
 
 	#[pallet::genesis_config]
