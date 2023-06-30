@@ -201,14 +201,9 @@ fn ExtractEthSignPublicKey<T: Config>(
 }
 
 pub fn eth_message(message: String) -> [u8; 32] {
-	let mut hasher = Keccak256::new();
-
-	hasher.update(
-		format!("{}{}{}", "\x19Ethereum Signed Message:\n", message.len(), message.to_string())
-			.as_bytes(),
-	);
-
-	return hasher.finalize();
+	keccak256(
+		format!("{}{}{}", "\x19Ethereum Signed Message:\n", message.len(), message).as_bytes(),
+	)
 }
 
 pub fn ExtractPeronalSignPublicKey<T: Config>(
