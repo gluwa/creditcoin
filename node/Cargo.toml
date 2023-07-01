@@ -28,7 +28,7 @@ futures-lite = "1.13.0"
 hex = { workspace = true }
 jsonrpc-core = { workspace = true }
 log = { workspace = true }
-num_cpus = "1.15.0"
+num_cpus = "1.16.0"
 pallet-transaction-payment-rpc = { workspace = true }
 parity-scale-codec = { features = ["std"], workspace = true }
 primitives = { workspace = true, features = ["prometheus"] }
