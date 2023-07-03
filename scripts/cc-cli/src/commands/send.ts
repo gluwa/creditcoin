@@ -9,6 +9,12 @@ import {
 } from "../utils/account";
 import { getBalance, parseCTCString } from "../utils/balance";
 import { signSendAndWatch } from "../utils/tx";
+import {
+  parseAddresOrExit,
+  parseAmountOrExit,
+  parseBoolean,
+  requiredInput,
+} from "../utils/parsing";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
@@ -26,15 +32,10 @@ export function makeSendCommand() {
 async function sendAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  // Check options
-  checkAmount(options);
-  checkAddress(options.to, api, "send funds to");
-
-  const recipient = options.to;
-  const amount = parseCTCString(options.amount);
+  const { amount, recipient, useEcdsa } = parseOptions(options);
 
   const seed = await getCallerSeedFromEnvOrPrompt();
-  const caller = options.useEcdsa
+  const caller = useEcdsa
     ? initECDSAKeyringPairFromPK(seed)
     : initKeyringPair(seed);
 
@@ -48,11 +49,18 @@ async function sendAction(options: OptionValues) {
   process.exit(0);
 }
 
-function checkAmount(options: OptionValues) {
-  if (!options.amount) {
-    console.log("Must specify amount to send");
-    process.exit(1);
-  }
+function parseOptions(options: OptionValues) {
+  const amount = parseAmountOrExit(
+    requiredInput(options.amount, "Failed to send CTC: Must specify an amount")
+  );
+
+  const recipient = parseAddresOrExit(
+    requiredInput(options.to, "Failed to send CTC: Must specify a recipient")
+  );
+
+  const useEcdsa = parseBoolean(options.useEcdsa);
+
+  return { amount, recipient, useEcdsa };
 }
 
 async function checkEnoughFundsToSend(
