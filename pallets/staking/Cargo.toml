@@ -29,6 +29,10 @@ sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 sp-std = { workspace = true }
 
+[dev-dependencies]
+pallet-balances = { workspace = true }
+substrate-test-utils = { workspace = true }
+
 [features]
 default = ['std']
 runtime-benchmarks = [

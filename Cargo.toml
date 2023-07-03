@@ -153,3 +153,4 @@ pallet-proxy = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://gi
 pallet-fast-unstake = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-nomination-pools = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-identity = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+substrate-test-utils = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
