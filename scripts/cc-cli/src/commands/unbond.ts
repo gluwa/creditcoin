@@ -9,6 +9,7 @@ import { getStatus, requireStatus } from "../utils/status";
 import { signSendAndWatch } from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
+import { parseAmountOrExit, requiredInput } from "../utils/parsing";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
@@ -21,10 +22,9 @@ export function makeUnbondCommand() {
 async function unbondAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  // Check options
-  checkAmount(options);
-
-  const amount = parseCTCString(options.amount);
+  const amount = parseAmountOrExit(
+    requiredInput(options.amount, "Failed to unbond: Must specify an amount")
+  );
 
   // Build account
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
@@ -49,13 +49,6 @@ async function unbondAction(options: OptionValues) {
 
   console.log(result.info);
   process.exit(0);
-}
-
-function checkAmount(options: OptionValues) {
-  if (!options.amount) {
-    console.log("Must specify amount to send");
-    process.exit(1);
-  }
 }
 
 async function checkIfUnbodingMax(
