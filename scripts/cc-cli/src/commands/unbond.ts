@@ -4,7 +4,7 @@ import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
-import { getBalance, parseCTCString } from "../utils/balance";
+import { getBalance } from "../utils/balance";
 import { getStatus, requireStatus } from "../utils/status";
 import { signSendAndWatch } from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";

@@ -18,7 +18,7 @@ function newSeedAction(options: OptionValues) {
 }
 
 function parseLength(length: string): 12 | 15 | 18 | 21 | 24 {
-  const parsed = parseInt(length);
+  const parsed = parseInt(length, 10);
   if (
     parsed !== 12 &&
     parsed !== 15 &&

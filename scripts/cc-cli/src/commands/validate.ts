@@ -1,7 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getControllerSeedFromEnvOrPrompt } from "../utils/account";
-import { perbillFromPercent } from "../utils/perbill";
 import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
 import {
   inputOrDefault,

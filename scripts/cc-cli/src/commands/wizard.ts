@@ -12,15 +12,10 @@ import {
   parseCTCString,
   printBalance,
   toCTCString,
-  checkAmount,
   MICROUNITS_PER_CTC,
 } from "../utils/balance";
-import {
-  bond,
-  checkRewardDestination,
-  parseRewardDestination,
-} from "../utils/bond";
-import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
+import { bond, checkRewardDestination } from "../utils/bond";
+import { percentFromPerbill } from "../utils/perbill";
 import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
 import { TxStatus, signSendAndWatch } from "../utils/tx";
