@@ -1,7 +1,7 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getBalance, printBalance } from "../utils/balance";
-import { checkAddress } from "../utils/account";
+import { parseAddresOrExit, requiredInput } from "../utils/parsing";
 
 export function makeBalanceCommand() {
   const cmd = new Command("balance");
@@ -14,10 +14,14 @@ export function makeBalanceCommand() {
 async function balanceAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  // Check options
-  checkAddress(options.address, api);
+  const address = parseAddresOrExit(
+    requiredInput(
+      options.address,
+      "Failed to show balance: Must specify an address"
+    )
+  );
 
-  const balance = await getBalance(options.address, api);
+  const balance = await getBalance(address, api);
   printBalance(balance);
 
   process.exit(0);
