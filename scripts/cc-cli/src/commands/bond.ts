@@ -5,7 +5,11 @@ import {
   getStashSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
-import { bond, parseRewardDestination } from "../utils/bond";
+import {
+  bond,
+  checkRewardDestination,
+  parseRewardDestination,
+} from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
 import {
   Balance,
@@ -15,6 +19,15 @@ import {
   checkAmount,
 } from "../utils/balance";
 import { BN } from "creditcoin-js";
+import {
+  inputOrDefault,
+  parseAddresOrExit,
+  parseAmountOrExit,
+  parseBoolean,
+  parseChoice,
+  parseChoiceOrExit,
+  requiredInput,
+} from "../utils/parsing";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");
@@ -36,37 +49,33 @@ export function makeBondCommand() {
 async function bondAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
+  const { amount, controller, rewardDestination, extra } =
+    parseOptions(options);
+
   const stashSeed = await getStashSeedFromEnvOrPrompt();
   const stashKeyring = initKeyringPair(stashSeed);
   const stashAddress = stashKeyring.address;
 
-  const amount = parseCTCString(options.amount);
-
-  // Check inputs
-  checkAddress(options.controller, api);
-  checkAmount(amount);
+  // Check if stash has enough balance
   await checkBalance(amount, api, stashAddress);
 
-  const rewardDestination = options.rewardDestination
-    ? parseRewardDestination(options.rewardDestination)
-    : "Staked";
-
   console.log("Creating bond transaction...");
-  console.log("Controller address:", options.controller);
+  console.log("Controller address:", controller);
   console.log("Reward destination:", rewardDestination);
   console.log("Amount:", toCTCString(amount));
+  if (extra) {
+    console.log("Bonding as 'extra'; funds will be added to existing bond");
+  }
 
   await promptContinue();
 
-  console.log("Extra: ", options.extra);
-
   const bondTxHash = await bond(
     stashSeed,
-    options.controller,
+    controller,
     amount,
     rewardDestination,
     api,
-    options.extra
+    extra
   );
 
   console.log("Bond transaction sent with hash:", bondTxHash);
@@ -88,4 +97,33 @@ function checkBalanceAgainstBondAmount(balance: Balance, amount: BN) {
     );
     process.exit(1);
   }
+}
+
+function parseOptions(options: OptionValues) {
+  const amount = parseAmountOrExit(
+    requiredInput(
+      options.amount,
+      "Failed to bond: Must specify an amount to bond"
+    )
+  );
+  checkAmount(amount);
+
+  const controller = parseAddresOrExit(
+    requiredInput(
+      options.controller,
+      "Failed to bond: Must specify a controller address"
+    )
+  );
+
+  const rewardDestination = checkRewardDestination(
+    parseChoice(inputOrDefault(options.rewardDestination, "Staked"), [
+      "Staked",
+      "Stash",
+      "Controller",
+    ])
+  );
+
+  const extra = parseBoolean(options.extra);
+
+  return { amount, controller, rewardDestination, extra };
 }
