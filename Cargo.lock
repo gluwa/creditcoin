@@ -1261,13 +1261,13 @@ dependencies = [
  "sp-consensus",
  "sp-consensus-babe",
  "sp-consensus-grandpa",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-io",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-keyring",
- "sp-keystore",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-offchain",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-session",
  "sp-timestamp",
  "substrate-build-script-utils",
@@ -1292,7 +1292,7 @@ dependencies = [
  "serde",
  "sp-api",
  "sp-blockchain",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "task-scheduler-runtime-api",
  "test-client",
  "tokio",
@@ -1346,15 +1346,15 @@ dependencies = [
  "sp-block-builder",
  "sp-consensus-babe",
  "sp-consensus-pow",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-io",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-offchain",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-session",
  "sp-staking",
- "sp-std",
- "sp-tracing",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
@@ -2210,7 +2210,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 [[package]]
 name = "fork-tree"
 version = "3.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
 ]
@@ -2233,7 +2233,7 @@ checksum = "6c2141d6d6c8512188a7891b4b01590a45f6dac67afb4f255c4124dbb86d4eaa"
 [[package]]
 name = "frame-benchmarking"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-support-procedural",
@@ -2245,20 +2245,20 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
- "sp-application-crypto",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-runtime-interface",
- "sp-std",
- "sp-storage",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "static_assertions",
 ]
 
 [[package]]
 name = "frame-benchmarking-cli"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "Inflector",
  "array-bytes",
@@ -2288,16 +2288,16 @@ dependencies = [
  "serde_json",
  "sp-api",
  "sp-blockchain",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-database",
- "sp-externalities",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-keystore",
- "sp-runtime",
- "sp-state-machine",
- "sp-std",
- "sp-storage",
- "sp-trie",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
  "thousands",
 ]
@@ -2305,7 +2305,7 @@ dependencies = [
 [[package]]
 name = "frame-election-provider-solution-type"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -2316,35 +2316,35 @@ dependencies = [
 [[package]]
 name = "frame-election-provider-support"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-election-provider-solution-type",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
- "sp-arithmetic",
- "sp-core",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-npos-elections",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "frame-executive"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-system",
  "frame-try-runtime",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-tracing",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -2362,15 +2362,15 @@ dependencies = [
 [[package]]
 name = "frame-remote-externalities"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-rpc-client",
  "tokio",
 ]
@@ -2378,7 +2378,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "bitflags",
  "environmental",
@@ -2394,24 +2394,24 @@ dependencies = [
  "serde",
  "smallvec",
  "sp-api",
- "sp-arithmetic",
- "sp-core",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-core-hashing-proc-macro",
  "sp-inherents",
- "sp-io",
- "sp-runtime",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-state-machine",
- "sp-std",
- "sp-tracing",
- "sp-weights",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "tt-call",
 ]
 
 [[package]]
 name = "frame-support-procedural"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "Inflector",
  "cfg-expr",
@@ -2426,7 +2426,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support-procedural-tools-derive",
  "proc-macro-crate",
@@ -2438,7 +2438,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "3.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2448,40 +2448,40 @@ dependencies = [
 [[package]]
 name = "frame-system"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "log",
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version",
- "sp-weights",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "frame-system-benchmarking"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "frame-system-rpc-runtime-api"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -2490,13 +2490,13 @@ dependencies = [
 [[package]]
 name = "frame-try-runtime"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
  "sp-api",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -4790,21 +4790,21 @@ dependencies = [
 [[package]]
 name = "pallet-authorship"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
  "parity-scale-codec",
  "scale-info",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-babe"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4815,20 +4815,20 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
- "sp-application-crypto",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-consensus-babe",
- "sp-consensus-vrf",
- "sp-io",
- "sp-runtime",
+ "sp-consensus-vrf 0.10.0-dev (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-session",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-bags-list"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4838,17 +4838,17 @@ dependencies = [
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-tracing",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-balances"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4856,8 +4856,8 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "scale-info",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -4888,12 +4888,12 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.6",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
- "sp-tracing",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "strum",
  "traced-test",
 ]
@@ -4909,18 +4909,18 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-tracing",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-election-provider-multi-phase"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4931,32 +4931,32 @@ dependencies = [
  "parity-scale-codec",
  "rand 0.8.5",
  "scale-info",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-npos-elections",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "strum",
 ]
 
 [[package]]
 name = "pallet-election-provider-support-benchmarking"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
  "frame-system",
  "parity-scale-codec",
  "sp-npos-elections",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-fast-unstake"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4965,16 +4965,16 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "scale-info",
- "sp-io",
- "sp-runtime",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-grandpa"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4984,20 +4984,20 @@ dependencies = [
  "pallet-session",
  "parity-scale-codec",
  "scale-info",
- "sp-application-crypto",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-consensus-grandpa",
- "sp-core",
- "sp-io",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-session",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-identity"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "enumflags2",
  "frame-benchmarking",
@@ -5005,15 +5005,15 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "scale-info",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-im-online"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5022,29 +5022,29 @@ dependencies = [
  "pallet-authorship",
  "parity-scale-codec",
  "scale-info",
- "sp-application-crypto",
- "sp-core",
- "sp-io",
- "sp-runtime",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-nomination-pools"
 version = "1.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-system",
  "log",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -5061,12 +5061,12 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
- "sp-tracing",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "test-runtime-utils",
  "traced-test",
 ]
@@ -5074,7 +5074,7 @@ dependencies = [
 [[package]]
 name = "pallet-offences"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5083,9 +5083,9 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -5099,24 +5099,24 @@ dependencies = [
  "pallet-difficulty",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-proxy"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -5131,17 +5131,17 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-consensus-pow",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-tracing",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-scheduler"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5149,16 +5149,16 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "scale-info",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-weights",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-session"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5167,13 +5167,13 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-session",
  "sp-staking",
- "sp-std",
- "sp-trie",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -5192,17 +5192,17 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-arithmetic",
- "sp-runtime",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-test-utils",
 ]
 
 [[package]]
 name = "pallet-staking"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -5215,40 +5215,40 @@ dependencies = [
  "rand_chacha 0.2.2",
  "scale-info",
  "serde",
- "sp-application-crypto",
- "sp-io",
- "sp-runtime",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-staking-reward-fn"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "log",
- "sp-arithmetic",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-sudo"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-timestamp"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5257,70 +5257,70 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-inherents",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-timestamp",
 ]
 
 [[package]]
 name = "pallet-transaction-payment"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-transaction-payment-rpc"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "jsonrpsee",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
  "sp-api",
  "sp-blockchain",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-rpc",
- "sp-runtime",
- "sp-weights",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-transaction-payment-rpc-runtime-api"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "pallet-transaction-payment",
  "parity-scale-codec",
  "sp-api",
- "sp-runtime",
- "sp-weights",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "pallet-utility"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -5731,14 +5731,14 @@ dependencies = [
  "proptest",
  "rand 0.8.5",
  "schnorrkel",
- "sp-arithmetic",
- "sp-consensus-vrf",
- "sp-core",
- "sp-externalities",
- "sp-keystore",
- "sp-runtime-interface",
- "sp-std",
- "sp-tracing",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-consensus-vrf 0.10.0-dev (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "test-runtime-utils",
 ]
@@ -6522,18 +6522,18 @@ dependencies = [
 [[package]]
 name = "sc-allocator"
 version = "4.1.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "log",
- "sp-core",
- "sp-wasm-interface",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-wasm-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
 [[package]]
 name = "sc-basic-authorship"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "futures",
  "futures-timer",
@@ -6547,31 +6547,31 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
 ]
 
 [[package]]
 name = "sc-block-builder"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "sc-client-api",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-chain-spec"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "memmap2",
  "sc-chain-spec-derive",
@@ -6582,15 +6582,15 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
- "sp-state-machine",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-chain-spec-derive"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -6601,7 +6601,7 @@ dependencies = [
 [[package]]
 name = "sc-cli"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "chrono",
@@ -6627,11 +6627,11 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-blockchain",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-keyring",
- "sp-keystore",
- "sp-panic-handler",
- "sp-runtime",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-panic-handler 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version",
  "thiserror",
  "tiny-bip39",
@@ -6641,7 +6641,7 @@ dependencies = [
 [[package]]
 name = "sc-client-api"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "fnv",
  "futures",
@@ -6654,20 +6654,20 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-database",
- "sp-externalities",
- "sp-keystore",
- "sp-runtime",
- "sp-state-machine",
- "sp-storage",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
 ]
 
 [[package]]
 name = "sc-client-db"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "hash-db",
  "kvdb",
@@ -6681,19 +6681,19 @@ dependencies = [
  "sc-client-api",
  "sc-state-db",
  "schnellru",
- "sp-arithmetic",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-blockchain",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-database",
- "sp-runtime",
- "sp-state-machine",
- "sp-trie",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-consensus"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "futures",
@@ -6708,9 +6708,9 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
- "sp-runtime",
- "sp-state-machine",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "thiserror",
 ]
@@ -6718,7 +6718,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-babe"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "fork-tree",
@@ -6739,17 +6739,17 @@ dependencies = [
  "scale-info",
  "schnorrkel",
  "sp-api",
- "sp-application-crypto",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-block-builder",
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-babe",
  "sp-consensus-slots",
- "sp-consensus-vrf",
- "sp-core",
+ "sp-consensus-vrf 0.10.0-dev (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-keystore",
- "sp-runtime",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "thiserror",
 ]
@@ -6757,21 +6757,21 @@ dependencies = [
 [[package]]
 name = "sc-consensus-epochs"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "fork-tree",
  "parity-scale-codec",
  "sc-client-api",
  "sc-consensus",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-consensus-grandpa"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "ahash 0.8.3",
  "array-bytes",
@@ -6796,14 +6796,14 @@ dependencies = [
  "sc-utils",
  "serde_json",
  "sp-api",
- "sp-application-crypto",
- "sp-arithmetic",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-grandpa",
- "sp-core",
- "sp-keystore",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "thiserror",
 ]
@@ -6811,7 +6811,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-pow"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "futures",
@@ -6826,9 +6826,9 @@ dependencies = [
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-pow",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "thiserror",
 ]
@@ -6836,7 +6836,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-slots"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "futures",
@@ -6846,20 +6846,20 @@ dependencies = [
  "sc-client-api",
  "sc-consensus",
  "sc-telemetry",
- "sp-arithmetic",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-slots",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-runtime",
- "sp-state-machine",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-executor"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "lru",
  "parity-scale-codec",
@@ -6868,14 +6868,14 @@ dependencies = [
  "sc-executor-wasmi",
  "sc-executor-wasmtime",
  "sp-api",
- "sp-core",
- "sp-externalities",
- "sp-io",
- "sp-panic-handler",
- "sp-runtime-interface",
- "sp-trie",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-panic-handler 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version",
- "sp-wasm-interface",
+ "sp-wasm-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "tracing",
  "wasmi",
 ]
@@ -6883,11 +6883,11 @@ dependencies = [
 [[package]]
 name = "sc-executor-common"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "sc-allocator",
  "sp-maybe-compressed-blob 4.1.0-dev",
- "sp-wasm-interface",
+ "sp-wasm-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
  "wasm-instrument",
  "wasmi",
@@ -6896,20 +6896,20 @@ dependencies = [
 [[package]]
 name = "sc-executor-wasmi"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "log",
  "sc-allocator",
  "sc-executor-common",
- "sp-runtime-interface",
- "sp-wasm-interface",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-wasm-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "wasmi",
 ]
 
 [[package]]
 name = "sc-executor-wasmtime"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -6919,15 +6919,15 @@ dependencies = [
  "rustix 0.36.13",
  "sc-allocator",
  "sc-executor-common",
- "sp-runtime-interface",
- "sp-wasm-interface",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-wasm-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "wasmtime",
 ]
 
 [[package]]
 name = "sc-informant"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "ansi_term",
  "futures",
@@ -6937,28 +6937,28 @@ dependencies = [
  "sc-network",
  "sc-network-common",
  "sp-blockchain",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-keystore"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "async-trait",
  "parking_lot 0.12.1",
  "serde_json",
- "sp-application-crypto",
- "sp-core",
- "sp-keystore",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
 [[package]]
 name = "sc-network"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "async-channel",
@@ -6988,11 +6988,11 @@ dependencies = [
  "serde",
  "serde_json",
  "smallvec",
- "sp-arithmetic",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "thiserror",
  "unsigned-varint",
@@ -7002,7 +7002,7 @@ dependencies = [
 [[package]]
 name = "sc-network-bitswap"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "cid",
  "futures",
@@ -7014,7 +7014,7 @@ dependencies = [
  "sc-network",
  "sc-network-common",
  "sp-blockchain",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
  "unsigned-varint",
 ]
@@ -7022,7 +7022,7 @@ dependencies = [
 [[package]]
 name = "sc-network-common"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "async-trait",
@@ -7041,7 +7041,7 @@ dependencies = [
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-grandpa",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "thiserror",
  "zeroize",
@@ -7050,7 +7050,7 @@ dependencies = [
 [[package]]
 name = "sc-network-gossip"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "ahash 0.8.3",
  "futures",
@@ -7061,7 +7061,7 @@ dependencies = [
  "sc-network",
  "sc-network-common",
  "sc-peerset",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "tracing",
 ]
@@ -7069,7 +7069,7 @@ dependencies = [
 [[package]]
 name = "sc-network-light"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "futures",
@@ -7083,15 +7083,15 @@ dependencies = [
  "sc-network-common",
  "sc-peerset",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
 [[package]]
 name = "sc-network-sync"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "async-trait",
@@ -7112,12 +7112,12 @@ dependencies = [
  "sc-peerset",
  "sc-utils",
  "smallvec",
- "sp-arithmetic",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-grandpa",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
  "thiserror",
 ]
@@ -7125,7 +7125,7 @@ dependencies = [
 [[package]]
 name = "sc-network-transactions"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "futures",
@@ -7138,14 +7138,14 @@ dependencies = [
  "sc-peerset",
  "sc-utils",
  "sp-consensus",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-prometheus-endpoint",
 ]
 
 [[package]]
 name = "sc-offchain"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "bytes",
@@ -7166,9 +7166,9 @@ dependencies = [
  "sc-peerset",
  "sc-utils",
  "sp-api",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-offchain",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "threadpool",
  "tracing",
 ]
@@ -7176,7 +7176,7 @@ dependencies = [
 [[package]]
 name = "sc-peerset"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "futures",
  "libp2p",
@@ -7189,7 +7189,7 @@ dependencies = [
 [[package]]
 name = "sc-proposer-metrics"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "log",
  "substrate-prometheus-endpoint",
@@ -7198,7 +7198,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "futures",
  "jsonrpsee",
@@ -7215,11 +7215,11 @@ dependencies = [
  "serde_json",
  "sp-api",
  "sp-blockchain",
- "sp-core",
- "sp-keystore",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-offchain",
  "sp-rpc",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-session",
  "sp-version",
  "tokio",
@@ -7228,7 +7228,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-api"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "jsonrpsee",
  "parity-scale-codec",
@@ -7237,9 +7237,9 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-rpc",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version",
  "thiserror",
 ]
@@ -7247,7 +7247,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-server"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "http",
  "jsonrpsee",
@@ -7262,7 +7262,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-spec-v2"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "futures",
@@ -7278,8 +7278,8 @@ dependencies = [
  "serde",
  "sp-api",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version",
  "thiserror",
  "tokio-stream",
@@ -7288,7 +7288,7 @@ dependencies = [
 [[package]]
 name = "sc-service"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "directories",
@@ -7331,16 +7331,16 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
- "sp-externalities",
- "sp-keystore",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-session",
- "sp-state-machine",
- "sp-storage",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-transaction-pool",
  "sp-transaction-storage-proof",
- "sp-trie",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version",
  "static_init",
  "substrate-prometheus-endpoint",
@@ -7354,18 +7354,18 @@ dependencies = [
 [[package]]
 name = "sc-state-db"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "log",
  "parity-scale-codec",
  "parking_lot 0.12.1",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-storage-monitor"
 version = "0.1.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "clap",
  "fs4",
@@ -7373,7 +7373,7 @@ dependencies = [
  "log",
  "sc-client-db",
  "sc-utils",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
  "tokio",
 ]
@@ -7381,7 +7381,7 @@ dependencies = [
 [[package]]
 name = "sc-sysinfo"
 version = "6.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "futures",
  "libc",
@@ -7392,15 +7392,15 @@ dependencies = [
  "sc-telemetry",
  "serde",
  "serde_json",
- "sp-core",
- "sp-io",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sc-telemetry"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "chrono",
  "futures",
@@ -7419,7 +7419,7 @@ dependencies = [
 [[package]]
 name = "sc-tracing"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "ansi_term",
  "atty",
@@ -7437,10 +7437,10 @@ dependencies = [
  "serde",
  "sp-api",
  "sp-blockchain",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-rpc",
- "sp-runtime",
- "sp-tracing",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
  "tracing",
  "tracing-log",
@@ -7450,7 +7450,7 @@ dependencies = [
 [[package]]
 name = "sc-tracing-proc-macro"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -7461,7 +7461,7 @@ dependencies = [
 [[package]]
 name = "sc-transaction-pool"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "futures",
@@ -7477,9 +7477,9 @@ dependencies = [
  "serde",
  "sp-api",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
- "sp-tracing",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-transaction-pool",
  "substrate-prometheus-endpoint",
  "thiserror",
@@ -7488,21 +7488,21 @@ dependencies = [
 [[package]]
 name = "sc-transaction-pool-api"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "futures",
  "log",
  "serde",
  "sp-blockchain",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
 [[package]]
 name = "sc-utils"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-channel",
  "futures",
@@ -7511,7 +7511,7 @@ dependencies = [
  "log",
  "parking_lot 0.12.1",
  "prometheus",
- "sp-arithmetic",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -7825,8 +7825,8 @@ dependencies = [
  "sha3",
  "sp-api",
  "sp-consensus-pow",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -7956,17 +7956,17 @@ dependencies = [
 [[package]]
 name = "sp-api"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "hash-db",
  "log",
  "parity-scale-codec",
  "sp-api-proc-macro",
- "sp-core",
- "sp-runtime",
- "sp-state-machine",
- "sp-std",
- "sp-trie",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version",
  "thiserror",
 ]
@@ -7974,7 +7974,7 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "Inflector",
  "blake2",
@@ -7993,9 +7993,22 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-core",
- "sp-io",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "sp-application-crypto"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8008,26 +8021,40 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "static_assertions",
+]
+
+[[package]]
+name = "sp-arithmetic"
+version = "6.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "integer-sqrt",
+ "num-traits",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "static_assertions",
 ]
 
 [[package]]
 name = "sp-block-builder"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-inherents",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-blockchain"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "futures",
  "log",
@@ -8037,48 +8064,48 @@ dependencies = [
  "sp-api",
  "sp-consensus",
  "sp-database",
- "sp-runtime",
- "sp-state-machine",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
 [[package]]
 name = "sp-consensus"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "futures",
  "log",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-runtime",
- "sp-state-machine",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
 [[package]]
 name = "sp-consensus-aura"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
- "sp-application-crypto",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-consensus",
  "sp-consensus-slots",
  "sp-inherents",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-timestamp",
 ]
 
 [[package]]
 name = "sp-consensus-babe"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "merlin",
@@ -8086,22 +8113,22 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
- "sp-application-crypto",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-consensus",
  "sp-consensus-slots",
- "sp-consensus-vrf",
- "sp-core",
+ "sp-consensus-vrf 0.10.0-dev (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-timestamp",
 ]
 
 [[package]]
 name = "sp-consensus-grandpa"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "finality-grandpa",
  "log",
@@ -8109,34 +8136,34 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
- "sp-application-crypto",
- "sp-core",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-consensus-pow"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-consensus-slots"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-timestamp",
 ]
 
@@ -8148,9 +8175,22 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "schnorrkel",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "sp-consensus-vrf"
+version = "0.10.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "schnorrkel",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8183,12 +8223,55 @@ dependencies = [
  "secp256k1",
  "secrecy",
  "serde",
- "sp-core-hashing",
- "sp-debug-derive",
- "sp-externalities",
- "sp-runtime-interface",
- "sp-std",
- "sp-storage",
+ "sp-core-hashing 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-debug-derive 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "ss58-registry",
+ "substrate-bip39",
+ "thiserror",
+ "tiny-bip39",
+ "zeroize",
+]
+
+[[package]]
+name = "sp-core"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "array-bytes",
+ "base58",
+ "bitflags",
+ "blake2",
+ "bounded-collections",
+ "dyn-clonable",
+ "ed25519-zebra",
+ "futures",
+ "hash-db",
+ "hash256-std-hasher",
+ "impl-serde",
+ "lazy_static",
+ "libsecp256k1",
+ "log",
+ "merlin",
+ "parity-scale-codec",
+ "parking_lot 0.12.1",
+ "primitive-types",
+ "rand 0.8.5",
+ "regex",
+ "scale-info",
+ "schnorrkel",
+ "secp256k1",
+ "secrecy",
+ "serde",
+ "sp-core-hashing 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-debug-derive 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "ss58-registry",
  "substrate-bip39",
  "thiserror",
@@ -8206,25 +8289,39 @@ dependencies = [
  "digest 0.10.6",
  "sha2 0.10.6",
  "sha3",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "twox-hash",
+]
+
+[[package]]
+name = "sp-core-hashing"
+version = "5.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "blake2b_simd",
+ "byteorder",
+ "digest 0.10.6",
+ "sha2 0.10.6",
+ "sha3",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "twox-hash",
 ]
 
 [[package]]
 name = "sp-core-hashing-proc-macro"
 version = "5.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "proc-macro2",
  "quote",
- "sp-core-hashing",
+ "sp-core-hashing 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "syn 1.0.109",
 ]
 
 [[package]]
 name = "sp-database"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "kvdb",
  "parking_lot 0.12.1",
@@ -8241,28 +8338,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-debug-derive"
+version = "5.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "sp-externalities"
 version = "0.13.0"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
 dependencies = [
  "environmental",
  "parity-scale-codec",
- "sp-std",
- "sp-storage",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "sp-externalities"
+version = "0.13.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "environmental",
+ "parity-scale-codec",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-inherents"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "impl-trait-for-tuples",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
@@ -8279,14 +8397,39 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "secp256k1",
- "sp-core",
- "sp-externalities",
- "sp-keystore",
- "sp-runtime-interface",
- "sp-state-machine",
- "sp-std",
- "sp-tracing",
- "sp-trie",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "tracing",
+ "tracing-core",
+]
+
+[[package]]
+name = "sp-io"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "bytes",
+ "ed25519",
+ "ed25519-dalek",
+ "futures",
+ "libsecp256k1",
+ "log",
+ "parity-scale-codec",
+ "secp256k1",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "tracing",
  "tracing-core",
 ]
@@ -8294,11 +8437,11 @@ dependencies = [
 [[package]]
 name = "sp-keyring"
 version = "7.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "lazy_static",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "strum",
 ]
 
@@ -8313,16 +8456,32 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "schnorrkel",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "thiserror",
+]
+
+[[package]]
+name = "sp-keystore"
+version = "0.13.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "async-trait",
+ "futures",
+ "merlin",
+ "parity-scale-codec",
+ "parking_lot 0.12.1",
+ "schnorrkel",
  "serde",
- "sp-core",
- "sp-externalities",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
 [[package]]
 name = "sp-maybe-compressed-blob"
 version = "4.1.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "thiserror",
  "zstd",
@@ -8341,25 +8500,25 @@ dependencies = [
 [[package]]
 name = "sp-npos-elections"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-offchain"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "sp-api",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8373,13 +8532,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-panic-handler"
+version = "5.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "backtrace",
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "sp-rpc"
 version = "6.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "rustc-hash",
  "serde",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8396,12 +8565,34 @@ dependencies = [
  "rand 0.8.5",
  "scale-info",
  "serde",
- "sp-application-crypto",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-std",
- "sp-weights",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "sp-runtime"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "either",
+ "hash256-std-hasher",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "paste",
+ "rand 0.8.5",
+ "scale-info",
+ "serde",
+ "sp-application-crypto 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8413,12 +8604,30 @@ dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
  "primitive-types",
- "sp-externalities",
- "sp-runtime-interface-proc-macro",
- "sp-std",
- "sp-storage",
- "sp-tracing",
- "sp-wasm-interface",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-runtime-interface-proc-macro 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-wasm-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "static_assertions",
+]
+
+[[package]]
+name = "sp-runtime-interface"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "bytes",
+ "impl-trait-for-tuples",
+ "parity-scale-codec",
+ "primitive-types",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime-interface-proc-macro 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-storage 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-wasm-interface 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "static_assertions",
 ]
 
@@ -8435,29 +8644,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-runtime-interface-proc-macro"
+version = "6.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "Inflector",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "sp-session"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-api",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-staking",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-staking"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8471,11 +8692,31 @@ dependencies = [
  "parking_lot 0.12.1",
  "rand 0.8.5",
  "smallvec",
- "sp-core",
- "sp-externalities",
- "sp-panic-handler",
- "sp-std",
- "sp-trie",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-panic-handler 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "sp-state-machine"
+version = "0.13.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "hash-db",
+ "log",
+ "parity-scale-codec",
+ "parking_lot 0.12.1",
+ "rand 0.8.5",
+ "smallvec",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-panic-handler 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
  "tracing",
 ]
@@ -8486,6 +8727,11 @@ version = "5.0.0"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
 
 [[package]]
+name = "sp-std"
+version = "5.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+
+[[package]]
 name = "sp-storage"
 version = "7.0.0"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
@@ -8494,22 +8740,35 @@ dependencies = [
  "parity-scale-codec",
  "ref-cast",
  "serde",
- "sp-debug-derive",
- "sp-std",
+ "sp-debug-derive 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "sp-storage"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "impl-serde",
+ "parity-scale-codec",
+ "ref-cast",
+ "serde",
+ "sp-debug-derive 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-timestamp"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "futures-timer",
  "log",
  "parity-scale-codec",
  "sp-inherents",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
 ]
 
@@ -8519,7 +8778,19 @@ version = "6.0.0"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
 dependencies = [
  "parity-scale-codec",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "tracing",
+ "tracing-core",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "sp-tracing"
+version = "6.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "parity-scale-codec",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "tracing",
  "tracing-core",
  "tracing-subscriber 0.2.25",
@@ -8528,26 +8799,26 @@ dependencies = [
 [[package]]
 name = "sp-transaction-pool"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "sp-api",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "sp-transaction-storage-proof"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "log",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-runtime",
- "sp-std",
- "sp-trie",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-trie 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8565,8 +8836,31 @@ dependencies = [
  "parking_lot 0.12.1",
  "scale-info",
  "schnellru",
- "sp-core",
- "sp-std",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "thiserror",
+ "tracing",
+ "trie-db",
+ "trie-root",
+]
+
+[[package]]
+name = "sp-trie"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "ahash 0.8.3",
+ "hash-db",
+ "hashbrown 0.12.3",
+ "lazy_static",
+ "memory-db",
+ "nohash-hasher",
+ "parity-scale-codec",
+ "parking_lot 0.12.1",
+ "scale-info",
+ "schnellru",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "thiserror",
  "tracing",
  "trie-db",
@@ -8576,7 +8870,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "5.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -8584,8 +8878,8 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-core-hashing-proc-macro",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-version-proc-macro",
  "thiserror",
 ]
@@ -8593,7 +8887,7 @@ dependencies = [
 [[package]]
 name = "sp-version-proc-macro"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "parity-scale-codec",
  "proc-macro2",
@@ -8610,7 +8904,21 @@ dependencies = [
  "impl-trait-for-tuples",
  "log",
  "parity-scale-codec",
- "sp-std",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "wasmi",
+ "wasmtime",
+]
+
+[[package]]
+name = "sp-wasm-interface"
+version = "7.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "anyhow",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "wasmi",
  "wasmtime",
 ]
@@ -8624,10 +8932,25 @@ dependencies = [
  "scale-info",
  "serde",
  "smallvec",
- "sp-arithmetic",
- "sp-core",
- "sp-debug-derive",
- "sp-std",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-debug-derive 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "sp-weights"
+version = "4.0.0"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "smallvec",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-debug-derive 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-std 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -8764,7 +9087,7 @@ dependencies = [
 [[package]]
 name = "substrate-build-script-utils"
 version = "3.0.0"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "platforms 2.0.0",
 ]
@@ -8772,7 +9095,7 @@ dependencies = [
 [[package]]
 name = "substrate-frame-rpc-system"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "frame-system-rpc-runtime-api",
  "futures",
@@ -8784,14 +9107,14 @@ dependencies = [
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "substrate-prometheus-endpoint"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "hyper",
  "log",
@@ -8803,20 +9126,20 @@ dependencies = [
 [[package]]
 name = "substrate-rpc-client"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "jsonrpsee",
  "log",
  "sc-rpc-api",
  "serde",
- "sp-runtime",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "substrate-test-client"
 version = "2.0.1"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "array-bytes",
  "async-trait",
@@ -8832,17 +9155,17 @@ dependencies = [
  "serde_json",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-keyring",
- "sp-keystore",
- "sp-runtime",
- "sp-state-machine",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
 name = "substrate-test-utils"
 version = "4.0.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "futures",
  "substrate-test-utils-derive",
@@ -8852,7 +9175,7 @@ dependencies = [
 [[package]]
 name = "substrate-test-utils-derive"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -9006,8 +9329,8 @@ dependencies = [
  "sc-client-db",
  "sc-executor",
  "sc-service",
- "sp-core",
- "sp-runtime",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-test-client",
 ]
 
@@ -9018,13 +9341,13 @@ dependencies = [
  "frame-support",
  "frame-system",
  "parking_lot 0.12.1",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-state-machine",
- "sp-tracing",
+ "sp-arithmetic 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
 ]
 
 [[package]]
@@ -9295,7 +9618,7 @@ checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
 name = "traced-test"
 version = "0.1.0"
 dependencies = [
- "sp-tracing",
+ "sp-tracing 6.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "tracing-core",
  "tracing-subscriber 0.3.17",
 ]
@@ -9482,7 +9805,7 @@ checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
 [[package]]
 name = "try-runtime-cli"
 version = "0.10.0-dev"
-source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+source = "git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards#e9a088ec7546c4321cb08c7896688fd964b6b0e3"
 dependencies = [
  "async-trait",
  "clap",
@@ -9499,19 +9822,19 @@ dependencies = [
  "sp-api",
  "sp-consensus-aura",
  "sp-consensus-babe",
- "sp-core",
- "sp-debug-derive",
- "sp-externalities",
+ "sp-core 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-debug-derive 5.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-externalities 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-inherents",
- "sp-io",
- "sp-keystore",
+ "sp-io 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-keystore 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-rpc",
- "sp-runtime",
- "sp-state-machine",
+ "sp-runtime 7.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
+ "sp-state-machine 0.13.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "sp-timestamp",
  "sp-transaction-storage-proof",
  "sp-version",
- "sp-weights",
+ "sp-weights 4.0.0 (git+https://github.com/gluwa/substrate.git?branch=testing/CSUB-526-staking-rewards)",
  "substrate-rpc-client",
  "zstd",
 ]
