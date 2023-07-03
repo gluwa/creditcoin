@@ -1,5 +1,5 @@
 import { mnemonicValidate } from "@polkadot/util-crypto";
-import { ApiPromise, Keyring } from "creditcoin-js";
+import { Keyring } from "creditcoin-js";
 import prompts from "prompts";
 
 export function initKeyringPair(seed: string) {
