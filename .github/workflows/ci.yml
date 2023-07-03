@@ -433,6 +433,18 @@ jobs:
           name: creditcoin-node
           path: target/release
 
+      - name: Download runtime
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin_node_runtime.compact.compressed.wasm
+          path: target/release
+
+      - name: Install Subwasm
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1
+
       - name: Import blocks
         run: |
           chmod a+x ./target/release/creditcoin-node
@@ -461,6 +473,7 @@ jobs:
         run: |
           pushd ./creditcoin-js/ && yarn install && yarn pack && popd || exit 1
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
+          yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../target/release/creditcoin_node_runtime.compact.compressed.wasm //Alice 0
           yarn --cwd ./scripts/js switchToPos ws://127.0.0.1:9944 //Alice
 
       - name: Wait for finalized blocks to catch-up
