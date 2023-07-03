@@ -66,7 +66,7 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
                 grandpa,
                 babe,
                 imOnline,
-                bonded: ctc('1_000_000'),
+                bonded: ctc('1000000'),
                 controllerBalance: 0,
                 invulnerable: true,
             },
