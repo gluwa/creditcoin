@@ -13,12 +13,25 @@ import {
   printBalance,
   toCTCString,
   checkAmount,
+  MICROUNITS_PER_CTC,
 } from "../utils/balance";
-import { bond, parseRewardDestination } from "../utils/bond";
+import {
+  bond,
+  checkRewardDestination,
+  parseRewardDestination,
+} from "../utils/bond";
 import { perbillFromPercent, percentFromPerbill } from "../utils/perbill";
 import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
 import { TxStatus, signSendAndWatch } from "../utils/tx";
+import {
+  inputOrDefault,
+  parseAmountOrExit,
+  parseBoolean,
+  parseChoice,
+  parsePercentAsPerbill,
+  requiredInput,
+} from "../utils/parsing";
 
 export function makeWizardCommand() {
   const cmd = new Command("wizard");
@@ -38,6 +51,9 @@ export function makeWizardCommand() {
   cmd.action(async (options: OptionValues) => {
     console.log("🧙 Running staking wizard...");
 
+    const { amount, rewardDestination, commission, blocked } =
+      parseOptions(options);
+
     // Create new API instance
     const { api } = await newApi(options.url);
 
@@ -51,20 +67,7 @@ export function makeWizardCommand() {
     const controllerKeyring = initKeyringPair(controllerSeed);
     const controllerAddress = controllerKeyring.address;
 
-    // Bond prefs
-    const amount = parseCTCString(options.amount);
-
-    checkAmount(amount);
-
-    const rewardDestination = options.rewardDestination
-      ? parseRewardDestination(options.rewardDestination)
-      : "Staked";
-
     // Validate prefs
-    const commission = options.commission
-      ? perbillFromPercent(options.commission)
-      : 0;
-    const blocked: boolean = options.blocked ? options.blocked : false;
     const preferences: StakingPalletValidatorPrefs = { commission, blocked };
 
     // Node settings
@@ -209,4 +212,33 @@ function checkIfAlreadyBonded(balance: Balance) {
   } else {
     return false;
   }
+}
+
+function parseOptions(options: OptionValues) {
+  const amount = parseAmountOrExit(
+    requiredInput(
+      options.amount,
+      "Failed to setup wizard: Bond amount required"
+    )
+  );
+  if (amount.lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
+    console.log("Failed to setup wizard: Bond amount must be at least 1 CTC");
+    process.exit(1);
+  }
+
+  const rewardDestination = checkRewardDestination(
+    parseChoice(inputOrDefault(options.rewardDestination, "Staked"), [
+      "Staked",
+      "Stash",
+      "Controller",
+    ])
+  );
+
+  const commission = parsePercentAsPerbill(
+    inputOrDefault(options.commission, "0")
+  );
+
+  const blocked = parseBoolean(options.blocked);
+
+  return { amount, rewardDestination, commission, blocked };
 }
