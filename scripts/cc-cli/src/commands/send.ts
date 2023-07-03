@@ -2,12 +2,11 @@ import { Command, OptionValues } from "commander";
 import { ApiPromise, BN } from "creditcoin-js";
 import { newApi } from "../api";
 import {
-  checkAddress,
   getCallerSeedFromEnvOrPrompt,
   initECDSAKeyringPairFromPK,
   initKeyringPair,
 } from "../utils/account";
-import { getBalance, parseCTCString } from "../utils/balance";
+import { getBalance } from "../utils/balance";
 import { signSendAndWatch } from "../utils/tx";
 import {
   parseAddresOrExit,
