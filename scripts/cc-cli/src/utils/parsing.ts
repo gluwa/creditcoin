@@ -1,6 +1,7 @@
 import { validateAddress } from "@polkadot/util-crypto/address";
 import { BN, parseUnits } from "creditcoin-js";
 
+// Parse valid or exit with error
 export const parseAddresOrExit = parseOrExit(parseAddress);
 export const parseAmountOrExit = parseOrExit(parseAmount);
 export const parseHexStringOrExit = parseOrExit(parseHexString);
@@ -103,4 +104,25 @@ function positiveBigNumberFromString(amount: string) {
   }
 
   return parsedValue;
+}
+
+export function inputOrDefault(
+  input: string | undefined,
+  defaultValue: string
+): string {
+  if (input === undefined) {
+    return defaultValue;
+  }
+  return input;
+}
+
+export function requiredInput(
+  input: string | undefined,
+  message: string
+): string {
+  if (input === undefined) {
+    console.error(message);
+    process.exit(1);
+  }
+  return input;
 }
