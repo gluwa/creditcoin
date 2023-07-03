@@ -5,6 +5,11 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { signSendAndWatch } from "../utils/tx";
+import {
+  parseAddresOrExit,
+  parseIntegerOrExit,
+  requiredInput,
+} from "../utils/parsing";
 
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
@@ -21,22 +26,11 @@ export function makeDistributeRewardsCommand() {
 async function distributeRewardsAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  if (!options.validatorId) {
-    console.log("Must specify a validator to distribute rewards for");
-    process.exit(1);
-  }
-
-  if (!options.era) {
-    console.log("Must specify an era");
-    process.exit(1);
-  }
+  const { validator, era } = parseOptions(options);
 
   // Any account can call the distribute_rewards extrinsic
   const callerSeed = await getCallerSeedFromEnvOrPrompt();
-  const distributeTx = api.tx.staking.payoutStakers(
-    options.validatorId,
-    options.era
-  );
+  const distributeTx = api.tx.staking.payoutStakers(validator, era);
 
   const result = await signSendAndWatch(
     distributeTx,
@@ -46,4 +40,22 @@ async function distributeRewardsAction(options: OptionValues) {
 
   console.log(result.info);
   process.exit(0);
+}
+
+function parseOptions(options: OptionValues) {
+  const validator = parseAddresOrExit(
+    requiredInput(
+      options.validatorId,
+      "Failed to distribute rewards: Must specify a validator address"
+    )
+  );
+
+  const era = parseIntegerOrExit(
+    requiredInput(
+      options.era,
+      "Failed to distribute rewards: Must specify an era"
+    )
+  );
+
+  return { validator, era };
 }
