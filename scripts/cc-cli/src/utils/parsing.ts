@@ -15,7 +15,7 @@ function parseOrExit<T>(parse: (input: string) => T): (input: string) => T {
     try {
       return parse(input);
     } catch (e: any) {
-      console.error(`Unable to parse input. ${e.message}`);
+      console.error(`Unable to parse input. ${e.message as string}`);
       process.exit(1);
     }
   };
@@ -25,7 +25,7 @@ function parseChoiceOrExitFn(input: string, choices: string[]): string | never {
   try {
     return parseChoice(input, choices);
   } catch (e: any) {
-    console.error(`Unable to parse input. ${e.message}`);
+    console.error(`Unable to parse input. ${e.message as string}`);
     process.exit(1);
   }
 }
@@ -34,7 +34,7 @@ export function parseAddress(input: string): string {
   try {
     validateAddress(input);
   } catch (e: any) {
-    throw new Error(`Invalid address: ${e.message}`);
+    throw new Error(`Invalid address: ${e.message as string}`);
   }
   return input;
 }
@@ -44,18 +44,16 @@ export function parseAmount(input: string): BN {
     const parsed = positiveBigNumberFromString(input);
     return new BN(parsed.toString());
   } catch (e: any) {
-    throw new Error(`Invalid amount: ${e.message}`);
+    throw new Error(`Invalid amount: ${e.message as string}`);
   }
 }
 
 // Choices must be in Capitalized form: ['Staked', 'Stash', 'Controller']
 export function parseChoice(input: string, choices: string[]): string {
-  let styled = input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+  const styled = input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
   if (!choices.includes(styled)) {
     throw new Error(
-      `Invalid choice: ${input}, must be one of ${choices.flatMap(
-        (c) => `'${c}' `
-      )}`
+      `Invalid choice: ${input}, must be one of ${choices.toString()}`
     );
   }
   return styled;
