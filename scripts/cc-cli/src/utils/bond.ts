@@ -56,3 +56,24 @@ export function parseRewardDestination(
     return rewardDestination;
   }
 }
+
+export function checkRewardDestination(
+  rewardDestinationRaw: string
+): "Staked" | "Stash" | "Controller" {
+  // Capitalize first letter and lowercase the rest
+  const rewardDestination =
+    rewardDestinationRaw.charAt(0).toUpperCase() +
+    rewardDestinationRaw.slice(1).toLowerCase();
+
+  if (
+    rewardDestination !== "Staked" &&
+    rewardDestination !== "Stash" &&
+    rewardDestination !== "Controller"
+  ) {
+    throw new Error(
+      "Invalid reward destination, must be one of 'Staked', 'Stash', or 'Controller'"
+    );
+  } else {
+    return rewardDestination;
+  }
+}
