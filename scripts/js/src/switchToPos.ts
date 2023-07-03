@@ -40,9 +40,25 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
     try {
         // make the keyring for the sudo account
         const keyring = new Keyring({ type: 'sr25519' }).createFromUri(sudoKeyUri);
+        const ed25519Keyring = new Keyring({ type: 'ed25519' }).createFromUri(sudoKeyUri);
         const overrideWeight = createOverrideWeight(api);
+        let grandpa: string;
+        let babe: string;
+        let imOnline: string;
 
-        const { grandpa, babe, imOnline } = await rotateKeys(api);
+        // if it's not Alice, rotate the keys (the proper method).
+        // if it's alice, just use alice's keys as session keys (not the proper method)
+        // for the ease of having a known initial grandpa key (in tests)
+        if (sudoKeyUri.trim() !== '//Alice') {
+            const keys = await rotateKeys(api);
+            grandpa = keys.grandpa;
+            babe = keys.babe;
+            imOnline = keys.imOnline;
+        } else {
+            grandpa = ed25519Keyring.address;
+            babe = keyring.address;
+            imOnline = keyring.address;
+        }
         const initialValidators = [
             {
                 stash: keyring.address,
@@ -55,6 +71,7 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
                 invulnerable: true,
             },
         ];
+        console.log(initialValidators);
         const callback = api.tx.posSwitch.switchToPos(initialValidators);
 
         await new Promise<void>((resolve, reject) => {
