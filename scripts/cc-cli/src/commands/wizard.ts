@@ -63,7 +63,7 @@ export function makeWizardCommand() {
     // Validate prefs
     const commission = options.commission
       ? perbillFromPercent(options.commission)
-      : 0;
+      : perbillFromPercent(0);
     const blocked: boolean = options.blocked ? options.blocked : false;
     const preferences: StakingPalletValidatorPrefs = { commission, blocked };
 
