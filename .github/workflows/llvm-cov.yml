@@ -44,6 +44,9 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Run tests
+        if: env.GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
         id: coverage
         run: |
           PR_NUMBER=$(echo "$GITHUB_REF" | sed "s|refs/pull/||" | sed "s|/merge||")
@@ -63,12 +66,18 @@ jobs:
           echo "uncovered_lines=$UNCOVERED_LINES" >> "$GITHUB_OUTPUT"
 
       - name: Azure login
+        if: env.GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           allow-no-subscriptions: true
 
       - name: Upload coverage report to Azure Storage
+        if: env.GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
         run: |
           AZURE_STORAGE_KEY=${{ secrets.LLVM_AZURE_STORAGE_KEY }}
           export AZURE_STORAGE_KEY
