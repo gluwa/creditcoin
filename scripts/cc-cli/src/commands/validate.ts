@@ -3,6 +3,11 @@ import { newApi } from "../api";
 import { getControllerSeedFromEnvOrPrompt } from "../utils/account";
 import { perbillFromPercent } from "../utils/perbill";
 import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
+import {
+  inputOrDefault,
+  parseBoolean,
+  parsePercentAsPerbill,
+} from "../utils/parsing";
 
 export function makeValidateCommand() {
   const cmd = new Command("validate");
@@ -24,10 +29,13 @@ async function validateAction(options: OptionValues) {
 
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
 
-  const commission = options.commission
-    ? perbillFromPercent(options.commission)
-    : perbillFromPercent(0);
-  const blocked = options.blocked ? options.blocked : false;
+  // Default commission is 0%
+  const commission = parsePercentAsPerbill(
+    inputOrDefault(options.commission, "0")
+  );
+
+  const blocked = parseBoolean(options.blocked);
+
   const preferences: StakingPalletValidatorPrefs = { commission, blocked };
 
   console.log("Creating validate transaction...");
