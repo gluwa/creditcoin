@@ -1,20 +1,11 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import {
-  checkAddress,
-  getStashSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
-import {
-  bond,
-  checkRewardDestination,
-  parseRewardDestination,
-} from "../utils/bond";
+import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
+import { bond, checkRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
 import {
   Balance,
   getBalance,
-  parseCTCString,
   toCTCString,
   checkAmount,
 } from "../utils/balance";
@@ -25,7 +16,6 @@ import {
   parseAmountOrExit,
   parseBoolean,
   parseChoice,
-  parseChoiceOrExit,
   requiredInput,
 } from "../utils/parsing";
 
