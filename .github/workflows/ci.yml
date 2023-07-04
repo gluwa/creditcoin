@@ -474,7 +474,7 @@ jobs:
           pushd ./creditcoin-js/ && yarn install && yarn pack && popd || exit 1
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
           yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../target/release/creditcoin_node_runtime.compact.compressed.wasm //Alice 0
-          yarn --cwd ./scripts/js switchToPos ws://127.0.0.1:9944 //Alice
+          yarn --cwd ./scripts/js switchToPos ws://127.0.0.1:9944 //Alice 5
 
       - name: Wait for finalized blocks to catch-up
         run: |
