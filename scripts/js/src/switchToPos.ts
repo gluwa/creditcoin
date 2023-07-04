@@ -1,10 +1,12 @@
 import { ApiPromise, CREDO_PER_CTC, creditcoinApi, Keyring } from 'creditcoin-js';
-import { Option, Vec, Bytes } from 'creditcoin-js';
+import { Option } from 'creditcoin-js';
+import { Vec, Bytes } from '@polkadot/types';
 import { createOverrideWeight } from 'creditcoin-js/lib/utils';
+import { decodeAddress, cryptoWaitReady } from '@polkadot/util-crypto';
+import { u8aToHex } from './common';
 
 import { ITuple } from '@polkadot/types/types/interfaces';
 import { KeyTypeId } from '@polkadot/types/interfaces';
-import { decodeAddress } from '@polkadot/util-crypto';
 
 type Keys = {
     grandpa: string;
@@ -34,9 +36,38 @@ function ctc(credo: number | bigint | string) {
     return BigInt(credo) * BigInt(CREDO_PER_CTC);
 }
 
+async function waitBlocks(wsUrl: string, n: number): Promise<void> {
+    const { api } = await creditcoinApi(wsUrl);
+
+    const {
+        block: {
+            header: { number: startBlock },
+        },
+    } = await api.rpc.chain.getBlock();
+    const targetBlock = startBlock.toNumber() + n;
+    await new Promise<void>((resolve, reject) => {
+        const unsubscribe = api.rpc.chain.subscribeNewHeads((header) => {
+            const currentBlock = header.number.toNumber();
+            if (currentBlock >= targetBlock) {
+                unsubscribe.then(
+                    (unsub) => {
+                        unsub();
+                        resolve();
+                    },
+                    (err) => {
+                        console.error(err);
+                        reject(err);
+                    },
+                );
+            }
+        });
+    });
+}
+
 async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
     // init the api client
     const { api } = await creditcoinApi(wsUrl);
+    await cryptoWaitReady();
     try {
         // make the keyring for the sudo account
         const keyring = new Keyring({ type: 'sr25519' }).createFromUri(sudoKeyUri);
@@ -55,9 +86,10 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
             babe = keys.babe;
             imOnline = keys.imOnline;
         } else {
-            grandpa = ed25519Keyring.address;
-            babe = keyring.address;
-            imOnline = keyring.address;
+            const decode = (ss58: string) => u8aToHex(decodeAddress(ss58));
+            grandpa = decode(ed25519Keyring.address);
+            babe = decode(keyring.address);
+            imOnline = decode(keyring.address);
         }
         const initialValidators = [
             {
@@ -101,14 +133,18 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
 }
 
 if (process.argv.length < 3) {
-    console.error('switchToPos.ts <wsUrl> <sudoKeyUri>');
+    console.error('switchToPos.ts <wsUrl> <sudoKeyUri> [waitNBlocks]');
     process.exit(1);
 }
 
 const inputWsUrl = process.argv[2];
 const inputSudoKeyUri = process.argv[3];
+const waitNBlocks = process.argv[4] ? parseInt(process.argv[4].trim(), 10) : 0;
 
-doSwitchToPos(inputWsUrl, inputSudoKeyUri).catch((reason) => {
-    console.error(reason);
-    process.exit(1);
-});
+const preSwitch = waitNBlocks > 0 ? waitBlocks(inputWsUrl, waitNBlocks) : Promise.resolve();
+preSwitch
+    .then(() => doSwitchToPos(inputWsUrl, inputSudoKeyUri))
+    .catch((reason) => {
+        console.error(reason);
+        process.exit(1);
+    });
