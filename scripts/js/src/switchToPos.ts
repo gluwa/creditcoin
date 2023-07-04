@@ -111,9 +111,12 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
                 .sudoUncheckedWeight(callback, overrideWeight)
                 .signAndSend(keyring, { nonce: -1 }, (result) => {
                     const finish = (fn: () => void) => {
+                        console.log('finish called');
                         unsubscribe
                             .then((unsub) => {
+                                console.log('unsubscribing');
                                 unsub();
+                                console.log('unsubscribed');
                                 fn();
                             })
                             .catch(reject);
@@ -127,6 +130,8 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
                     }
                 });
         });
+        console.log('switchToPos finished');
+        process.exit(0);
     } finally {
         await api.disconnect();
     }
@@ -142,9 +147,10 @@ const inputSudoKeyUri = process.argv[3];
 const waitNBlocks = process.argv[4] ? parseInt(process.argv[4].trim(), 10) : 0;
 
 const preSwitch = waitNBlocks > 0 ? waitBlocks(inputWsUrl, waitNBlocks) : Promise.resolve();
-preSwitch
-    .then(() => doSwitchToPos(inputWsUrl, inputSudoKeyUri))
-    .catch((reason) => {
+preSwitch.then(
+    () => doSwitchToPos(inputWsUrl, inputSudoKeyUri),
+    (reason) => {
         console.error(reason);
         process.exit(1);
-    });
+    },
+);
