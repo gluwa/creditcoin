@@ -3,6 +3,7 @@ import { createOverrideWeight } from 'creditcoin-js/lib/utils';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { promisify } from 'util';
+import { u8aToHex } from './common';
 
 // From https://github.com/chevdor/subwasm/blob/c2e5b62384537875bfd0497c2b2d706265699798/lib/src/runtime_info.rs#L8-L20
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -78,11 +79,6 @@ async function doRuntimeUpgrade(
 
         // read the wasm blob from the give path
         const wasmBlob = await readFile(wasmBlobPath);
-
-        const u8aToHex = (bytes: Uint8Array | Buffer): string => {
-            const byteArray = Uint8Array.from(bytes);
-            return byteArray.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
-        };
 
         const hexBlob = u8aToHex(wasmBlob);
         let callback = api.tx.system.setCode(hexBlob);
