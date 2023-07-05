@@ -28,7 +28,7 @@ jobs:
           node-version: 16
       - run: npm install -g yarn
 
-      - name: Run tools
+      - name: Execute tests
         run: |
           pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd scripts/cc-cli
