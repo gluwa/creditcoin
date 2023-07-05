@@ -3517,11 +3517,7 @@ onetime@^5.1.2:
   dependencies:
     mimic-fn "^2.1.0"
 
-<<<<<<< HEAD
 optionator@^0.9.3:
-=======
-optionator@^0.9.1:
->>>>>>> 7f3b3231 (add: new parsing & tests)
   version "0.9.3"
   resolved "https://registry.yarnpkg.com/optionator/-/optionator-0.9.3.tgz#007397d44ed1872fdc6ed31360190f81814e2c64"
   integrity sha512-JjCoypp+jKn1ttEFExxhetCKeJt9zhAgAve5FXHixTvFDW/5aEktX9bufBKLRRMdU7bNtpLfcGu94B3cdEJgjg==
