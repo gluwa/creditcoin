@@ -28,3 +28,4 @@ justfile
 docs/dev-guide/book
 
 **/.yarn/cache
+scripts/cc-cli/coverage/
