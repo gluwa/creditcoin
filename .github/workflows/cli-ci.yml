@@ -36,3 +36,9 @@ jobs:
           yarn upgrade 'creditcoin-js'
           yarn test
           popd
+
+      - uses: codecov/codecov-action@v3
+        with:
+          files: scripts/cc-cli/coverage/lcov.info
+          fail_ci_if_error: true
+          verbose: true
