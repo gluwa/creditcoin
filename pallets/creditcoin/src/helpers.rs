@@ -193,13 +193,11 @@ fn extract_public_key_eth_sign<T: Config>(
 			) {
 				Some(s) => Ok(s),
 				None => {
-					log::warn!("generate external failed");
 					return Err(Error::EthSignExternalAddressGenerationFailed);
 				},
 			}
 		},
 		Err(_) => {
-			log::warn!("error recovery");
 			return Err(Error::EthSignPublicKeyRecoveryFailed);
 		},
 	}
@@ -207,10 +205,10 @@ fn extract_public_key_eth_sign<T: Config>(
 
 pub fn eth_message(message: &[u8; 32]) -> [u8; 32] {
 	let mut bytes: Vec<u8> = vec![];
-	let salt = alloc::format!("{}{}", "\x19Ethereum Signed Message:\n", 32);
+	let salt = b"\x19Ethereum Signed Message:\n32";
 
-	bytes.extend_from_slice(salt.as_bytes());
-	bytes.extend_from_slice(message.as_bytes_ref());
+	bytes.extend_from_slice(salt);
+	bytes.extend_from_slice(message);
 
 	sp_io::hashing::keccak_256(&bytes)
 }
@@ -223,8 +221,6 @@ pub fn extract_public_key_personal_sign<T: Config>(
 ) -> Result<ExternalAddress, Error<T>> {
 	let message = sp_io::hashing::blake2_256(account_id);
 	let message = eth_message(&message);
-
-	log::info!("message: {:?}", message);
 
 	match secp256k1_ecdsa_recover_compressed(&signature, &message) {
 		Ok(public_key) => {
@@ -239,4 +235,19 @@ pub fn extract_public_key_personal_sign<T: Config>(
 		},
 		Err(_) => Err(Error::PersonalSignPublicKeyRecoveryFailed),
 	}
+}
+
+#[test]
+fn test_extract_public_key_personal_sign() {
+	let expected_hash =
+		hex::decode("cc2da28afbc18b601ee75cebaea68b70189c6eaae842c8971b31cd181dceda8c").unwrap();
+
+	let raw_address: [u8; 32] = [
+		136, 220, 52, 23, 213, 5, 142, 196, 180, 80, 62, 12, 18, 234, 26, 10, 137, 190, 32, 15,
+		233, 137, 34, 66, 61, 67, 52, 1, 79, 166, 176, 238,
+	];
+
+	let message = eth_message(&raw_address);
+
+	assert_eq!(message.as_slice(), expected_hash.as_slice());
 }

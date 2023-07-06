@@ -5,6 +5,8 @@ import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { signAccountId, personalSignAccountId } from 'creditcoin-js/lib/utils';
 import { extractFee } from '../utils';
 import { account } from '@polkadot/api-derive/balances';
+import { hashMessage } from "ethers/lib/utils";
+import { sha256AsU8a, blake2AsU8a } from '@polkadot/util-crypto';
 
 
 describe('RegisterAddressV2', () => {
@@ -39,30 +41,30 @@ describe('RegisterAddressV2', () => {
         });
     });
 
-    // it('registerAddressV2 EthSign works as expected', async (): Promise<void> => {
-    //     const {
-    //         api,
-    //         extrinsics: { registerAddressV2 },
-    //     } = ccApi;
+    it('registerAddressV2 EthSign works as expected', async (): Promise<void> => {
+        const {
+            api,
+            extrinsics: { registerAddressV2 },
+        } = ccApi;
 
-    //     const lenderWallet = Wallet.createRandom();
-    //     const accountId = signAccountId(api, lenderWallet, lender.address)
-    //     const lenderRegAddr = await registerAddressV2(
-    //         lenderWallet.address,
-    //         blockchain,
-    //         accountId,
-    //         "EthSign",
-    //         lender,
-    //     );
+        const lenderWallet = Wallet.createRandom();
+        const accountId = signAccountId(api, lenderWallet, lender.address)
+        const lenderRegAddr = await registerAddressV2(
+            lenderWallet.address,
+            blockchain,
+            accountId,
+            "EthSign",
+            lender,
+        );
 
-    //     // manually constructed address is the same as returned by Creditcoin
-    //     const addressId = createAddressId(blockchain, lenderWallet.address);
-    //     expect(addressId).toBe(lenderRegAddr.itemId);
+        // manually constructed address is the same as returned by Creditcoin
+        const addressId = createAddressId(blockchain, lenderWallet.address);
+        expect(addressId).toBe(lenderRegAddr.itemId);
 
-    //     // manually constructed address should be reported as registered
-    //     const result = await checkAddress(ccApi, addressId);
-    //     expect(result).toBeDefined();
-    // }, 100000);
+        // manually constructed address should be reported as registered
+        const result = await checkAddress(ccApi, addressId);
+        expect(result).toBeDefined();
+    }, 100000);
 
     it('registerAddressV2 PersonalSign works as expected', async (): Promise<void> => {
         const {
@@ -72,7 +74,6 @@ describe('RegisterAddressV2', () => {
 
         const lenderWallet = Wallet.createRandom();
         const accountId = await personalSignAccountId(api, lenderWallet, lender.addressRaw);
-
         const lenderRegAddr = await registerAddressV2(
             lenderWallet.address,
             blockchain,
@@ -88,6 +89,6 @@ describe('RegisterAddressV2', () => {
         // manually constructed address should be reported as registered
         const result = await checkAddress(ccApi, addressId);
         expect(result).toBeDefined();
-    }, 100000);
+    },);
 
 });

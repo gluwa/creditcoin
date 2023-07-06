@@ -12,18 +12,13 @@ export const signAccountId = (api: ApiPromise, signer: Wallet, accountId: Accoun
     return joinSignature(signer._signingKey().signDigest(accountIdHash)); // eslint-disable-line no-underscore-dangle
 };
 
-export const personalSignAccountId = (api: ApiPromise, signer: Wallet, accountId: Uint8Array) => {
+export const personalSignAccountId = async (api: ApiPromise, signer: Wallet, accountId: Uint8Array) => {
     const accountIdHash = blake2AsU8a(accountId);
 
-    signer
-        .signMessage(accountIdHash)
-        .then((result) => {
-            return joinSignature(result);
-        })
-        .catch((error) => {
-            console.log(error);
-        });
-    return '';
+    let signature = await signer.signMessage(accountIdHash);
+    let return_val = joinSignature(signature);
+
+    return return_val;
 };
 
 type OldWeight = BN;

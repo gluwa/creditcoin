@@ -1373,7 +1373,6 @@ pub mod pallet {
 			signature_type: SignatureType,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-
 			let signature = ownership_proof.into();
 			let encoded = who.encode();
 			let account = encoded.as_slice();
@@ -1389,7 +1388,6 @@ pub mod pallet {
 					// Check if external address of keypair used to sign AccountID
 					// is the same one mentioned in this call to register_address
 					ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
-					log::warn!("extract address ok");
 					let address_id = AddressId::new::<T>(&blockchain, &address);
 
 					if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
@@ -1417,7 +1415,6 @@ pub mod pallet {
 					return Ok(());
 				},
 				Err(e) => {
-					log::warn!("failed");
 					fail!(e)
 				},
 			}
