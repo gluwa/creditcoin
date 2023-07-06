@@ -99,15 +99,23 @@ describe("parseBoolean", () => {
 });
 
 describe("parseInteger", () => {
-  test("with valid argument returns the same integer", () => {
-    const integer = "100";
-    const parsedInteger = parseInteger(integer);
-    expect(parsedInteger).toBe(100);
+  test("with valid argument, 0, returns the same integer", () => {
+    const parsedInteger = parseInteger("0");
+    expect(parsedInteger).toBe(0);
+  });
+
+  test("with valid argument, > 0, returns the same integer", () => {
+    const parsedInteger = parseInteger("1");
+    expect(parsedInteger).toBe(1);
+  });
+
+  test("with valid argument, < 0, returns the same integer", () => {
+    const parsedInteger = parseInteger("-1");
+    expect(parsedInteger).toBe(-1);
   });
 
   test("with float argument throws an error", () => {
-    const integer = "100.1";
-    const parsedInvalid = () => parseInteger(integer);
+    const parsedInvalid = () => parseInteger("0.1");
     expect(parsedInvalid).toThrowError(Error);
   });
 
