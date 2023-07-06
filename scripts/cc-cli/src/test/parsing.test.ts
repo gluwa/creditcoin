@@ -69,8 +69,8 @@ describe("parseChoice", () => {
     expect(parsedChoice).toBe(choice);
   });
 
-  test("with valid lowercase argument returns choice in canonical format", () => {
-    const choice = "staked";
+  test("with valid mixed case argument returns choice in canonical format", () => {
+    const choice = "stAKed";
     const choices = ["Staked", "Stash", "Controller"];
     const parsedChoice = parseChoice(choice, choices);
     expect(parsedChoice).toBe("Staked");
