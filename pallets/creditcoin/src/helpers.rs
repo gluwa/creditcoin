@@ -155,6 +155,8 @@ pub mod extensions {
 
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 
+/// Try to extract an external address for a particular blockchain through a signature and an account id which acts as a message.
+/// This function supports the older and insecure EthSign signing method and the new PersonalSign standard that is supported by Metamask.
 pub fn try_extract_address<T: Config>(
 	signature_type: SignatureType,
 	signature: [u8; 65],
