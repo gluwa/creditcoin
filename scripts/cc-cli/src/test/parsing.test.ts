@@ -9,13 +9,14 @@ import {
 } from "../utils/parsing";
 
 describe("parseAddress", () => {
-  test("parsed valid address returns same address", () => {
+  test("with valid argument returns the same address", () => {
     const substrateAddress = "5EACfEfYjfg5ZHpzp9uoMCR68UNGBUAu5AYjvZdM5aLYaojx";
     const parsedAddress = parseAddress(substrateAddress);
     expect(parsedAddress).toBe(substrateAddress);
   });
 
-  test("parsed invalid address throws error", () => {
+  test("with invalid argument throws an error", () => {
+    // address is too short
     const substrateAddress = "5EACfEfYjfg5ZHpzp9uoMCZdM5aLYaojx";
     const parsedInvalid = () => parseAddress(substrateAddress);
     expect(parsedInvalid).toThrowError(Error);
@@ -23,31 +24,31 @@ describe("parseAddress", () => {
 });
 
 describe("parseAmount", () => {
-  test("parsed valid amount returns same amount * 10^^18", () => {
+  test("with valid integer argument returns the same amount * 10^^18", () => {
     const amount = "100";
     const parsedAmount = parseAmount(amount);
     expect(parsedAmount.toString()).toBe("100000000000000000000");
   });
 
-  test("parsed negative amount throws error", () => {
+  test("with negative argument throws an error", () => {
     const amount = "-100";
     const parsedInvalid = () => parseAmount(amount);
     expect(parsedInvalid).toThrowError(Error);
   });
 
-  test("parsed invalid decimal char throws error", () => {
+  test("with argument containing decimal comma throws an error", () => {
     const amount = "100,1";
     const parsedInvalid = () => parseAmount(amount);
     expect(parsedInvalid).toThrowError(Error);
   });
 
-  test("parsed zero amount throws error", () => {
+  test("with 0 as argument throws an error", () => {
     const amount = "0";
     const parsedInvalid = () => parseAmount(amount);
     expect(parsedInvalid).toThrowError(Error);
   });
 
-  test("parsed string throws error", () => {
+  test("with string argument throws an error", () => {
     const amount = "abcdef";
     const parsedInvalid = () => parseAmount(amount);
     expect(parsedInvalid).toThrowError(Error);
@@ -55,21 +56,21 @@ describe("parseAmount", () => {
 });
 
 describe("parseChoice", () => {
-  test("parsed valid choice returns same choice", () => {
+  test("with valid argument returns the same choice", () => {
     const choice = "Staked";
     const choices = ["Staked", "Stash", "Controller"];
     const parsedChoice = parseChoice(choice, choices);
     expect(parsedChoice).toBe(choice);
   });
 
-  test("parsed different choice returns formatted choice", () => {
+  test("with valid lowercase argument returns choice in canonical format", () => {
     const choice = "staked";
     const choices = ["Staked", "Stash", "Controller"];
     const parsedChoice = parseChoice(choice, choices);
     expect(parsedChoice).toBe("Staked");
   });
 
-  test("parsed invalid choice throws error", () => {
+  test("with invalid argument throws an error", () => {
     const choice = "Bonded";
     const choices = ["Staked", "Stash", "Controller"];
     const parsedInvalid = () => parseChoice(choice, choices);
@@ -78,13 +79,13 @@ describe("parseChoice", () => {
 });
 
 describe("parseBoolean", () => {
-  test("parsed true returns true", () => {
+  test("with 'true' argument returns true", () => {
     const bool = true;
     const parsedBool = parseBoolean(bool);
     expect(parsedBool).toBe(bool);
   });
 
-  test("parsed undefined returns false", () => {
+  test("with 'undefined' argument returns false", () => {
     const bool = undefined;
     const parsedBool = parseBoolean(bool);
     expect(parsedBool).toBe(false);
@@ -92,19 +93,19 @@ describe("parseBoolean", () => {
 });
 
 describe("parseInteger", () => {
-  test("parsed valid integer returns same integer", () => {
+  test("with valid argument returns the same integer", () => {
     const integer = "100";
     const parsedInteger = parseInteger(integer);
     expect(parsedInteger).toBe(100);
   });
 
-  test("parsed float throws error", () => {
+  test("with float argument throws an error", () => {
     const integer = "100.1";
     const parsedInvalid = () => parseInteger(integer);
     expect(parsedInvalid).toThrowError(Error);
   });
 
-  test("parsed string throws error", () => {
+  test("with string argument throws an error", () => {
     const integer = "abcdef";
     const parsedInvalid = () => parseInteger(integer);
     expect(parsedInvalid).toThrowError(Error);
@@ -112,13 +113,13 @@ describe("parseInteger", () => {
 });
 
 describe("parseHexString", () => {
-  test("parsed valid hex string returns same hex string", () => {
+  test("with valid argument returns the same hex string", () => {
     const hexString = "0x1234567890abcdef";
     const parsedHexString = parseHexString(hexString);
     expect(parsedHexString).toBe(hexString);
   });
 
-  test("parsed invalid hex string throws error", () => {
+  test("with invalid argument, missing 0x prefix, throws an error", () => {
     const hexString = "1234567890abcdef";
     const parsedInvalid = () => parseHexString(hexString);
     expect(parsedInvalid).toThrowError(Error);
@@ -126,19 +127,19 @@ describe("parseHexString", () => {
 });
 
 describe("parsePercentAsPerbill", () => {
-  test("parsed valid percent returns correct perbill", () => {
+  test("with valid argument returns correct perbill", () => {
     const percent = "100";
     const parsedPerbill = parsePercentAsPerbill(percent);
     expect(parsedPerbill).toBe(100 * 10_000_000);
   });
 
-  test("parsed invalid perbill throws error", () => {
+  test("with invalid argument, a float, throws an error", () => {
     const perbill = "100.1";
     const parsedInvalid = () => parsePercentAsPerbill(perbill);
     expect(parsedInvalid).toThrowError(Error);
   });
 
-  test("parsed not number throws error", () => {
+  test("with invalid argument, a string, throws an error", () => {
     const perbill = "abcdef";
     const parsedInvalid = () => parsePercentAsPerbill(perbill);
     expect(parsedInvalid).toThrowError(Error);
