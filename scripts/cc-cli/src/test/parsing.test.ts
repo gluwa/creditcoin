@@ -127,8 +127,14 @@ describe("parseInteger", () => {
 });
 
 describe("parseHexString", () => {
-  test("with valid argument returns the same hex string", () => {
+  test("with valid argument, lower case, returns the same hex string", () => {
     const hexString = "0x1234567890abcdef";
+    const parsedHexString = parseHexString(hexString);
+    expect(parsedHexString).toBe(hexString);
+  });
+
+  test("with valid argument, mixed case, returns the same hex string", () => {
+    const hexString = "0x1234567890AbCdeF";
     const parsedHexString = parseHexString(hexString);
     expect(parsedHexString).toBe(hexString);
   });
@@ -136,6 +142,11 @@ describe("parseHexString", () => {
   test("with invalid argument, missing 0x prefix, throws an error", () => {
     const hexString = "1234567890abcdef";
     const parsedInvalid = () => parseHexString(hexString);
+    expect(parsedInvalid).toThrowError(Error);
+  });
+
+  test("with invalid argument, contains invalid hex digits, throws an error", () => {
+    const parsedInvalid = () => parseHexString("0x123x==xZZZ");
     expect(parsedInvalid).toThrowError(Error);
   });
 });
