@@ -25,13 +25,19 @@ describe("parseAddress", () => {
 
 describe("parseAmount", () => {
   test("with valid integer argument returns the same amount * 10^^18", () => {
-    const amount = "100";
+    const amount = "1";
     const parsedAmount = parseAmount(amount);
-    expect(parsedAmount.toString()).toBe("100000000000000000000");
+    expect(parsedAmount.toString()).toBe("1000000000000000000");
+  });
+
+  test("with valid float argument returns the same amount * 10^^18", () => {
+    const amount = "0.4";
+    const parsedAmount = parseAmount(amount);
+    expect(parsedAmount.toString()).toBe("400000000000000000");
   });
 
   test("with negative argument throws an error", () => {
-    const amount = "-100";
+    const amount = "-1";
     const parsedInvalid = () => parseAmount(amount);
     expect(parsedInvalid).toThrowError(Error);
   });
