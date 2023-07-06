@@ -152,15 +152,39 @@ describe("parseHexString", () => {
 });
 
 describe("parsePercentAsPerbill", () => {
-  test("with valid argument returns correct perbill", () => {
-    const percent = "100";
-    const parsedPerbill = parsePercentAsPerbill(percent);
-    expect(parsedPerbill).toBe(100 * 10_000_000);
+  test("with valid argument, lower boundary, returns correct perbill", () => {
+    const parsedPerbill = parsePercentAsPerbill("0");
+    expect(parsedPerbill).toBe(0);
   });
 
-  test("with invalid argument, a float, throws an error", () => {
+  test("with valid argument, upper boundary, returns correct perbill", () => {
+    const parsedPerbill = parsePercentAsPerbill("100");
+    expect(parsedPerbill).toBe(1_000_000_000);
+  });
+
+  test("with valid argument, float value inside boundaries, returns correct perbill", () => {
+    const parsedPerbill = parsePercentAsPerbill("50.5");
+    expect(parsedPerbill).toBe(505_000_000);
+  });
+
+  test("with invalid argument, float < lower boundary, throws an error", () => {
+    const parsedInvalid = () => parsePercentAsPerbill("-0.1");
+    expect(parsedInvalid).toThrowError(Error);
+  });
+
+  test("with invalid argument, int < lower boundary, throws an error", () => {
+    const parsedInvalid = () => parsePercentAsPerbill("-1");
+    expect(parsedInvalid).toThrowError(Error);
+  });
+
+  test("with invalid argument, float > upper boundary, throws an error", () => {
     const perbill = "100.1";
     const parsedInvalid = () => parsePercentAsPerbill(perbill);
+    expect(parsedInvalid).toThrowError(Error);
+  });
+
+  test("with invalid argument, int > upper boundary, throws an error", () => {
+    const parsedInvalid = () => parsePercentAsPerbill("101");
     expect(parsedInvalid).toThrowError(Error);
   });
 
