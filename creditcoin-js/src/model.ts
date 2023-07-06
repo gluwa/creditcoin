@@ -134,3 +134,5 @@ export type UnverifiedCollectedCoins = {
     to: ExternalAddress;
     txHash: string;
 };
+
+export type SignatureType = 'PersonalSign' | 'EthSign';

@@ -55,6 +55,8 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
 #[frame_support::pallet]
 pub mod pallet {
 
+	use core::borrow::BorrowMut;
+
 	use super::*;
 	use crate::helpers::non_paying_error;
 	use frame_support::{
@@ -1363,7 +1365,7 @@ pub mod pallet {
 
 		#[pallet::call_index(22)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
-		pub fn offchain_address(
+		pub fn register_address_v2(
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
 			address: ExternalAddress,
@@ -1372,13 +1374,14 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let account_id = who.encode().to_vec();
-			let account_id = alloc::string::String::from_utf8(account_id).unwrap();
+			let signature = ownership_proof.into();
+			let encoded = who.encode();
+			let account = encoded.as_slice();
 
 			match helpers::try_extract_address::<T>(
 				signature_type,
-				ownership_proof.into(),
-				account_id,
+				signature,
+				account,
 				&blockchain,
 				&address,
 			) {
@@ -1386,7 +1389,7 @@ pub mod pallet {
 					// Check if external address of keypair used to sign AccountID
 					// is the same one mentioned in this call to register_address
 					ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
-
+					log::warn!("extract address ok");
 					let address_id = AddressId::new::<T>(&blockchain, &address);
 
 					if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
@@ -1413,7 +1416,10 @@ pub mod pallet {
 					<Addresses<T>>::insert(address_id, entry);
 					return Ok(());
 				},
-				Err(e) => fail!(e),
+				Err(e) => {
+					log::warn!("failed");
+					fail!(e)
+				},
 			}
 		}
 	}

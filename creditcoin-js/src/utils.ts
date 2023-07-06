@@ -12,11 +12,18 @@ export const signAccountId = (api: ApiPromise, signer: Wallet, accountId: Accoun
     return joinSignature(signer._signingKey().signDigest(accountIdHash)); // eslint-disable-line no-underscore-dangle
 };
 
-export const personalSignAccountId = async (api: ApiPromise, signer: Wallet, accountId: AccountId) => {
-    const accountIdBytes = api.createType('AccountId', accountId).toU8a();
-    const accountIdHash = blake2AsU8a(sha256AsU8a(accountIdBytes));
+export const personalSignAccountId = (api: ApiPromise, signer: Wallet, accountId: Uint8Array) => {
+    const accountIdHash = blake2AsU8a(accountId);
 
-    return joinSignature(await signer.signMessage(accountIdHash));
+    signer
+        .signMessage(accountIdHash)
+        .then((result) => {
+            return joinSignature(result);
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    return '';
 };
 
 type OldWeight = BN;
@@ -52,6 +59,7 @@ export const createOverrideWeight = (api: ApiPromise): Weight => {
 export const utils = (api: ApiPromise) => {
     return {
         signAccountId: (signer: Wallet, accountId: AccountId) => signAccountId(api, signer, accountId),
+        personalSignAccountId: (signer: Wallet, accountId: Uint8Array) => personalSignAccountId(api, signer, accountId),
         createOverrideWeight: () => createOverrideWeight(api),
     };
 };
