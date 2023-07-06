@@ -73,8 +73,8 @@ export function parseInteger(input: string): number {
 }
 
 export function parseHexString(input: string): string {
-  if (!input.startsWith("0x")) {
-    throw new Error("Must start with 0x");
+  if (!input.match(/^0x[\da-f]+$/i)) {
+    throw new Error("Must be a valid hexadecimal number");
   }
   return input;
 }
