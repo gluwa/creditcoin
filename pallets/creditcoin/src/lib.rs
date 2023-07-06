@@ -1363,6 +1363,9 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
+		/// Registers an address on an external blockchain as the property of an onchain address.
+		/// To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
+		/// The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
 		#[pallet::call_index(22)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
 		pub fn register_address_v2(

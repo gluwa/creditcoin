@@ -162,9 +162,8 @@ pub fn try_extract_address<T: Config>(
 	blockchain: &Blockchain,
 	address: &ExternalAddress,
 ) -> Result<ExternalAddress, crate::Error<T>> {
-	log::warn!("inside extract address");
 	match signature_type {
-		// Old Way
+		// Old insecure signing method
 		SignatureType::EthSign => {
 			extract_public_key_eth_sign(signature, account_id, blockchain, address)
 		},
