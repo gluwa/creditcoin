@@ -1,6 +1,6 @@
 import { ApiPromise } from "creditcoin-js";
 import { initKeyringPair } from "./account";
-import { signSendAndWatch } from "./tx";
+import { requireEnoughFundsToSend, signSendAndWatch } from "./tx";
 
 export interface StakingPalletValidatorPrefs {
   // The validator's commission.
@@ -27,6 +27,8 @@ export async function validate(
 
   const validateTx = api.tx.staking.validate(preferences);
 
+  await requireEnoughFundsToSend(validateTx, controller.address, api);
+
   const result = await signSendAndWatch(validateTx, api, controller);
 
   return result;
@@ -36,6 +38,8 @@ export async function chill(controllerSeed: string, api: ApiPromise) {
   const account = initKeyringPair(controllerSeed);
 
   const chillTx = api.tx.staking.chill();
+
+  await requireEnoughFundsToSend(chillTx, account.address, api);
 
   const result = await signSendAndWatch(chillTx, api, account);
 

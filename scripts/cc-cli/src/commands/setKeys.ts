@@ -4,7 +4,7 @@ import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
-import { signSendAndWatch } from "../utils/tx";
+import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import { parseHexStringOrExit } from "../utils/parsing";
 
 export function makeSetKeysCommand() {
@@ -42,6 +42,9 @@ async function setKeysAction(options: OptionValues) {
   }
 
   const tx = api.tx.session.setKeys(keys, "");
+
+  await requireEnoughFundsToSend(tx, controllerSeed, api);
+
   const result = await signSendAndWatch(tx, api, controller);
 
   console.log(result.info);

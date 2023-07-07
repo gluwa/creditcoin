@@ -5,7 +5,7 @@ import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
-import { signSendAndWatch } from "../utils/tx";
+import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");
@@ -43,6 +43,9 @@ async function withdrawUnbondedAction(options: OptionValues) {
     ? slashingSpans.unwrap().lastNonzeroSlash
     : 0;
   const withdrawUnbondTx = api.tx.staking.withdrawUnbonded(slashingSpansCount);
+
+  await requireEnoughFundsToSend(withdrawUnbondTx, controller.address, api);
+
   const result = await signSendAndWatch(withdrawUnbondTx, api, controller);
 
   console.log(result.info);
