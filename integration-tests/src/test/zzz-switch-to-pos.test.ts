@@ -7,9 +7,9 @@ import { creditcoinApi, ApiPromise } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { createOverrideWeight } from 'creditcoin-js/lib/utils';
 import { testData } from 'creditcoin-js/lib/testUtils';
-import { testIf } from '../utils';
+import { describeIf, testIf } from '../utils';
 
-describe('switch_to_post()', (): void => {
+describeIf((global as any).CREDITCOIN_SWITCH_TO_POS_ALREADY_CALLED !== true, 'switch_to_post()', (): void => {
     let ccApi: CreditcoinApi;
     let root: KeyringPair;
 
