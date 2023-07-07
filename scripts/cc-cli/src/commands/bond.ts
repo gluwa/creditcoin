@@ -16,6 +16,7 @@ import {
   parseAmountOrExit,
   parseBoolean,
   parseChoice,
+  parseChoiceOrExit,
   requiredInput,
 } from "../utils/parsing";
 
@@ -105,7 +106,7 @@ function parseOptions(options: OptionValues) {
   );
 
   const rewardDestination = checkRewardDestination(
-    parseChoice(inputOrDefault(options.rewardDestination, "Staked"), [
+    parseChoiceOrExit(inputOrDefault(options.rewardDestination, "Staked"), [
       "Staked",
       "Stash",
       "Controller",
