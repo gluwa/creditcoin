@@ -5,7 +5,7 @@ import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
 import {
   inputOrDefault,
   parseBoolean,
-  parsePercentAsPerbill,
+  parsePercentAsPerbillOrExit,
 } from "../utils/parsing";
 
 export function makeValidateCommand() {
@@ -26,12 +26,12 @@ export function makeValidateCommand() {
 async function validateAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
-
   // Default commission is 0%
-  const commission = parsePercentAsPerbill(
+  const commission = parsePercentAsPerbillOrExit(
     inputOrDefault(options.commission, "0")
   );
+
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
 
   const blocked = parseBoolean(options.blocked);
 
