@@ -27,8 +27,8 @@ import {
   inputOrDefault,
   parseAmountOrExit,
   parseBoolean,
-  parseChoice,
-  parsePercentAsPerbill,
+  parseChoiceOrExit,
+  parsePercentAsPerbillOrExit,
   requiredInput,
 } from "../utils/parsing";
 
@@ -235,14 +235,14 @@ function parseOptions(options: OptionValues) {
   }
 
   const rewardDestination = checkRewardDestination(
-    parseChoice(inputOrDefault(options.rewardDestination, "Staked"), [
+    parseChoiceOrExit(inputOrDefault(options.rewardDestination, "Staked"), [
       "Staked",
       "Stash",
       "Controller",
     ])
   );
 
-  const commission = parsePercentAsPerbill(
+  const commission = parsePercentAsPerbillOrExit(
     inputOrDefault(options.commission, "0")
   );
 
