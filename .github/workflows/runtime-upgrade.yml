@@ -16,6 +16,7 @@ jobs:
   setup:
     runs-on: ubuntu-22.04
     outputs:
+      switch_to_pos_already_called: ${{ steps.testnet-env.outputs.switch_to_pos_already_called || steps.mainnet-env.outputs.switch_to_pos_already_called }}
       test_config: ${{ steps.testnet-env.outputs.test_config || steps.mainnet-env.outputs.test_config }}
       target_chain: ${{ steps.testnet-env.outputs.target_chain || steps.mainnet-env.outputs.target_chain }}
       boot_node: ${{ steps.testnet-env.outputs.boot_node || steps.mainnet-env.outputs.boot_node }}
@@ -39,6 +40,7 @@ jobs:
         if: github.base_ref == 'testnet'
         run: |
           # shellcheck disable=SC2129
+          echo "switch_to_pos_already_called=1" >> "$GITHUB_OUTPUT"
           echo "target_chain=test" >> "$GITHUB_OUTPUT"
           echo "test_config=testnet.config.ts" >> "$GITHUB_OUTPUT"
           echo "boot_node=/dns4/testnet-bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWG3eEuYxo37LvU1g6SSESu4i9TQ8FrZmJcjvdys7eA3cH" >> "$GITHUB_OUTPUT"
@@ -53,6 +55,7 @@ jobs:
         if: github.base_ref == 'main'
         run: |
           # shellcheck disable=SC2129
+          echo "switch_to_pos_already_called=0" >> "$GITHUB_OUTPUT"
           echo "target_chain=main" >> "$GITHUB_OUTPUT"
           echo "test_config=mainnet.config.ts" >> "$GITHUB_OUTPUT"
           echo "boot_node=/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" >> "$GITHUB_OUTPUT"
@@ -295,6 +298,7 @@ jobs:
 
   test-against-fork:
     needs:
+      - setup
       - build-sut
       - fork-creditcoin
       - deploy-github-runner
@@ -416,6 +420,7 @@ jobs:
           # Note: this is PoW blocks on the forked chain, not Prod
           LAST_POW_BLOCK_NUMBER: ${{ steps.last-block-info.outputs.last_block_number }}
           LAST_POW_BLOCK_INFO_PATH: fork-last-block-json.log
+          SWITCH_TO_POS_ALREADY_CALLED: ${{ needs.setup.outputs.switch_to_pos_already_called }}
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
