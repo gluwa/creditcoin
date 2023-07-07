@@ -1,13 +1,11 @@
 import { Command, OptionValues } from "commander";
-import { ApiPromise, BN } from "creditcoin-js";
 import { newApi } from "../api";
 import {
   getCallerSeedFromEnvOrPrompt,
   initECDSAKeyringPairFromPK,
   initKeyringPair,
 } from "../utils/account";
-import { getBalance } from "../utils/balance";
-import { signSendAndWatch } from "../utils/tx";
+import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import {
   parseAddresOrExit,
   parseAmountOrExit,
@@ -38,9 +36,9 @@ async function sendAction(options: OptionValues) {
     ? initECDSAKeyringPairFromPK(seed)
     : initKeyringPair(seed);
 
-  await checkEnoughFundsToSend(caller.address, amount, api);
-
   const tx = api.tx.balances.transfer(recipient, amount.toString());
+
+  await requireEnoughFundsToSend(tx, caller.address, api, amount);
 
   const result = await signSendAndWatch(tx, api, caller);
   console.log(result.info);
@@ -60,18 +58,4 @@ function parseOptions(options: OptionValues) {
   const useEcdsa = parseBoolean(options.useEcdsa);
 
   return { amount, recipient, useEcdsa };
-}
-
-async function checkEnoughFundsToSend(
-  address: string,
-  amount: BN,
-  api: ApiPromise
-) {
-  const balance = await getBalance(address, api);
-  if (balance.transferable.lt(amount)) {
-    console.log(
-      `Caller ${address} has insufficient funds to send ${amount.toString()}`
-    );
-    process.exit(1);
-  }
 }
