@@ -6,7 +6,7 @@ import {
 } from "../utils/account";
 import { getBalance } from "../utils/balance";
 import { getStatus, requireStatus } from "../utils/status";
-import { signSendAndWatch } from "../utils/tx";
+import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
 import { parseAmountOrExit, requiredInput } from "../utils/parsing";
@@ -44,6 +44,7 @@ async function unbondAction(options: OptionValues) {
 
   // Unbond transaction
   const tx = api.tx.staking.unbond(amount.toString());
+  await requireEnoughFundsToSend(tx, controllerAddress, api);
 
   const result = await signSendAndWatch(tx, api, controllerKeyring);
 
