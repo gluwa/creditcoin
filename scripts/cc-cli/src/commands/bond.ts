@@ -15,7 +15,6 @@ import {
   parseAddresOrExit,
   parseAmountOrExit,
   parseBoolean,
-  parseChoice,
   parseChoiceOrExit,
   requiredInput,
 } from "../utils/parsing";
