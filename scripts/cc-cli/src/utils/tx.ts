@@ -100,8 +100,8 @@ export async function calcualteBalanceAfterTx(
 export async function requireEnoughFundsToSend(
   tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
   address: string,
-  amount = new BN(0),
-  api: ApiPromise
+  api: ApiPromise,
+  amount = new BN(0)
 ) {
   const balanceAfterSending = await calcualteBalanceAfterTx(
     tx,

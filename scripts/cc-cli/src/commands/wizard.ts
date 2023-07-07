@@ -18,7 +18,11 @@ import { bond, checkRewardDestination } from "../utils/bond";
 import { percentFromPerbill } from "../utils/perbill";
 import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
-import { TxStatus, signSendAndWatch } from "../utils/tx";
+import {
+  TxStatus,
+  requireEnoughFundsToSend,
+  signSendAndWatch,
+} from "../utils/tx";
 import {
   inputOrDefault,
   parseAmountOrExit,
@@ -161,6 +165,7 @@ export function makeWizardCommand() {
     const txs = [setKeysTx, validateTx];
 
     const batchTx = api.tx.utility.batchAll(txs);
+    await requireEnoughFundsToSend(batchTx, controllerAddress, api);
 
     const batchResult = await signSendAndWatch(batchTx, api, controllerKeyring);
 
