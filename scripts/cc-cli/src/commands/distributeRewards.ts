@@ -4,7 +4,7 @@ import {
   getCallerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
-import { signSendAndWatch } from "../utils/tx";
+import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import {
   parseAddresOrExit,
   parseIntegerOrExit,
@@ -31,6 +31,8 @@ async function distributeRewardsAction(options: OptionValues) {
   // Any account can call the distribute_rewards extrinsic
   const callerSeed = await getCallerSeedFromEnvOrPrompt();
   const distributeTx = api.tx.staking.payoutStakers(validator, era);
+
+  await requireEnoughFundsToSend(distributeTx, callerSeed, api);
 
   const result = await signSendAndWatch(
     distributeTx,
