@@ -181,22 +181,18 @@ fn extract_public_key_eth_sign<T: Config>(
 	let message = sp_io::hashing::sha2_256(account_id);
 	let message = &sp_io::hashing::blake2_256(message.as_ref());
 
-	match secp256k1_ecdsa_recover_compressed(&signature, &message) {
+	match secp256k1_ecdsa_recover_compressed(&signature, message) {
 		Ok(public_key) => {
 			match generate_external_address(
-				&blockchain,
-				&address,
+				blockchain,
+				address,
 				sp_core::ecdsa::Public::from_raw(public_key),
 			) {
 				Some(s) => Ok(s),
-				None => {
-					return Err(Error::EthSignExternalAddressGenerationFailed);
-				},
+				None => Err(Error::EthSignExternalAddressGenerationFailed),
 			}
 		},
-		Err(_) => {
-			return Err(Error::EthSignPublicKeyRecoveryFailed);
-		},
+		Err(_) => Err(Error::EthSignPublicKeyRecoveryFailed),
 	}
 }
 
@@ -222,8 +218,8 @@ pub fn extract_public_key_personal_sign<T: Config>(
 	match secp256k1_ecdsa_recover_compressed(&signature, &message) {
 		Ok(public_key) => {
 			match generate_external_address(
-				&blockchain,
-				&address,
+				blockchain,
+				address,
 				sp_core::ecdsa::Public::from_raw(public_key),
 			) {
 				Some(s) => Ok(s),

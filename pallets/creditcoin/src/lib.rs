@@ -1412,7 +1412,7 @@ pub mod pallet {
 						entry.clone(),
 					));
 					<Addresses<T>>::insert(address_id, entry);
-					return Ok(());
+					Ok(())
 				},
 				Err(e) => {
 					fail!(e)
