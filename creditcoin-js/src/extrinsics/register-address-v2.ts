@@ -25,14 +25,14 @@ export const registerAddressV2 = async (
     api: ApiPromise,
     externalAddress: string,
     blockchain: Blockchain,
-    ownershipProof: PalletCreditcoinOwnershipProof,
+    ownershipProof: OwnershipProof,
     signer: KeyringPair,
     onSuccess: TxCallback,
     onFail: TxFailureCallback,
 ) => {
-    api.tx.creditcoin.offchainAddress;
+    const proof = createCreditCoinOwnershipProof(api, ownershipProof);
     const unsubscribe: () => void = await api.tx.creditcoin
-        .registerAddressV2(blockchain, externalAddress, ownershipProof)
+        .registerAddressV2(blockchain, externalAddress, proof)
         .signAndSend(signer, { nonce: -1 }, (result) => handleTransaction(api, unsubscribe, result, onSuccess, onFail));
 };
 
@@ -50,7 +50,7 @@ export const registerAddressV2Async = async (
     api: ApiPromise,
     externalAddress: string,
     blockchain: Blockchain,
-    ownershipProof: PalletCreditcoinOwnershipProof,
+    ownershipProof: OwnershipProof,
     signer: KeyringPair,
 ): Promise<AddressRegisteredV2> => {
     return new Promise<AddressRegisteredV2>((resolve, reject) => {

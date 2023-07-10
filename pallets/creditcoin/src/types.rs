@@ -40,9 +40,6 @@ pub type OtherChain = BoundedVec<u8, OtherChainLen>;
 type OtherTransferKindLen = ConstU32<256>;
 pub type OtherTransferKind = BoundedVec<u8, OtherTransferKindLen>;
 
-type Signature256Len = ConstU32<256>;
-pub type Signature256 = BoundedVec<u8, Signature256Len>;
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum Blockchain {
 	Ethereum,
@@ -60,23 +57,6 @@ impl Blockchain {
 			Blockchain::Luniverse => b"luniverse",
 			Blockchain::Bitcoin => b"bitcoin",
 			Blockchain::Other(chain) => chain.as_slice(),
-		}
-	}
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum SignatureType {
-	PersonalSign([u8; 65]),
-	EthSign([u8; 65]),
-	OtherSignature(Signature256),
-}
-
-impl SignatureType {
-	pub fn as_bytes(&self) -> &[u8] {
-		match self {
-			SignatureType::PersonalSign(data) => data.as_slice(),
-			SignatureType::EthSign(data) => data.as_slice(),
-			SignatureType::OtherSignature(data) => data.as_slice(),
 		}
 	}
 }

@@ -2992,7 +2992,8 @@ fn register_address_v2_should_fail_to_reregister_external_address_to_same_accoun
 			external_address.clone(),
 			ownership_proof.clone()
 		));
-			let proof = OwnershipProof::EthSign(ownership_proof);
+		
+		let proof = OwnershipProof::EthSign(ownership_proof);
 
 		// Try registering again to same account and fail
 		assert_noop!(
@@ -3100,7 +3101,8 @@ fn register_address_v2_should_error_when_signature_is_invalid() {
 		// https://docs.rs/sp-core/2.0.0-rc4/sp_core/ecdsa/struct.Signature.html#method.from_raw
 		let ownership_proof = sp_core::ecdsa::Signature::from_raw([0; 65]);
 
-	let bad_proof = OwnershipProof::EthSign(ownership_proof);
+		let bad_proof = OwnershipProof::EthSign(ownership_proof);
+
 		let blockchain = Blockchain::Rinkeby;
 		assert_noop!(
 			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, bad_proof),

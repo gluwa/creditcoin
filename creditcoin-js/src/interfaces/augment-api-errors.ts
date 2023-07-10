@@ -148,8 +148,13 @@ declare module '@polkadot/api-base/types/errors' {
              * The offer has already been made.
              **/
             DuplicateOffer: AugmentedError<ApiType>;
+            /**
+             * A valid external address could not be generated for the specified blockchain and recovered public key
+             **/
             EthSignExternalAddressGenerationFailed: AugmentedError<ApiType>;
-            EthSignInvalidSignature: AugmentedError<ApiType>;
+            /**
+             * ECDSA public key recovery failed for an ownership proof using EthSign
+             **/
             EthSignPublicKeyRecoveryFailed: AugmentedError<ApiType>;
             /**
              * The specified guid has already been used and cannot be re-used.
@@ -248,13 +253,17 @@ declare module '@polkadot/api-base/types/errors' {
              * The offer order has expired and is no longer valid.
              **/
             OfferExpired: AugmentedError<ApiType>;
-            OtherChainNotSupported: AugmentedError<ApiType>;
             /**
              * The address retrieved from the proof-of-ownership signature did not match the external address being registered.
              **/
             OwnershipNotSatisfied: AugmentedError<ApiType>;
-            PerosnalSignFailedRecovery: AugmentedError<ApiType>;
+            /**
+             * A valid external address could not be generated for the specified blockchain and recovered public key
+             **/
             PersonalSignExternalAddressGenerationFailed: AugmentedError<ApiType>;
+            /**
+             * ECDSA public key recovery failed for an ownership proof using PersonalSign
+             **/
             PersonalSignPublicKeyRecoveryFailed: AugmentedError<ApiType>;
             RepaymentOrderNonZeroGain: AugmentedError<ApiType>;
             /**

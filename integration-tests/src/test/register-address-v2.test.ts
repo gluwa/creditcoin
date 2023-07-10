@@ -50,8 +50,7 @@ describe('RegisterAddressV2', () => {
 
         const lenderWallet = Wallet.createRandom();
         const accountId = signAccountId(api, lenderWallet, lender.address)
-        const ownershipProof = EthSign(accountId);
-        const proof = createCreditCoinOwnershipProof(api, ownershipProof);
+        const proof = EthSign(accountId);
 
         const lenderRegAddr = await registerAddressV2(
             lenderWallet.address,
@@ -77,8 +76,7 @@ describe('RegisterAddressV2', () => {
 
         const lenderWallet = Wallet.createRandom();
         const accountId = await personalSignAccountId(api, lenderWallet, lender.addressRaw);
-        const ownershipProof = PersonalSign(accountId);
-        const proof = createCreditCoinOwnershipProof(api, ownershipProof);
+        const proof = PersonalSign(accountId);
 
         const lenderRegAddr = await registerAddressV2(
             lenderWallet.address,

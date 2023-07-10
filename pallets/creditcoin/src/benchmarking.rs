@@ -334,6 +334,17 @@ benchmarks! {
 		let root = RawOrigin::Root;
 		let contract = GCreContract::default();
 	}: _(root, contract)
+
+	register_address_v2 {
+		let who: T::AccountId = lender_account::<T>(false);
+		let ktypeid = KeyTypeId(*b"dumy");
+		let seed = "//who".as_bytes().to_vec();
+		let pkey = ecdsa_generate(ktypeid, Some(seed));
+		let address = EVMAddress::from_public(&pkey);
+		let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
+		let proof = OwnershipProof::EthSign(signature);
+	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address, proof)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);

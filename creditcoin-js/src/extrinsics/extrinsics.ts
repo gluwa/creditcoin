@@ -20,6 +20,7 @@ import {
     DealOrderId,
     TransferId,
     ExternalAddress,
+    OwnershipProof,
 } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { lockDealOrderAsync } from './lock-deal-order';
@@ -115,7 +116,7 @@ export const extrinsics = (api: ApiPromise) => {
     const registerAddressV2 = (
         externalAddress: string,
         blockchain: Blockchain,
-        ownershipProof: PalletCreditcoinOwnershipProof,
+        ownershipProof: OwnershipProof,
         signer: KeyringPair,
     ) => registerAddressV2Async(api, externalAddress, blockchain, ownershipProof, signer);
 

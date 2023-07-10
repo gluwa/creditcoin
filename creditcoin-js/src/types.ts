@@ -20,6 +20,7 @@ import {
     TransferKind,
     TransferProcessed,
     SignatureType,
+    OwnershipProof,
 } from './model';
 import { AddressRegistered } from './extrinsics/register-address';
 import { AddressRegisteredV2 } from './extrinsics/register-address-v2';
@@ -62,7 +63,7 @@ export interface Extrinsics {
     registerAddressV2: (
         externalAddress: string,
         blockchain: Blockchain,
-        ownershipProof: PalletCreditcoinOwnershipProof,
+        ownershipProof: OwnershipProof,
         signer: KeyringPair,
     ) => Promise<AddressRegisteredV2>;
     addAskOrder: (

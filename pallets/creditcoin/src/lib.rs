@@ -39,8 +39,8 @@ pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
 	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
 	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
-	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, SignatureType, Task, TaskId, TaskOutput,
-	Transfer, TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
+	TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
@@ -495,15 +495,17 @@ pub mod pallet {
 		/// The currency has already been registered.
 		CurrencyAlreadyRegistered,
 
+		/// A valid external address could not be generated for the specified blockchain and recovered public key
 		EthSignExternalAddressGenerationFailed,
-		EthSignInvalidSignature,
+
+		/// ECDSA public key recovery failed for an ownership proof using EthSign
 		EthSignPublicKeyRecoveryFailed,
 
-		PerosnalSignFailedRecovery,
+		/// A valid external address could not be generated for the specified blockchain and recovered public key
 		PersonalSignExternalAddressGenerationFailed,
-		PersonalSignPublicKeyRecoveryFailed,
 
-		OtherChainNotSupported,
+		/// ECDSA public key recovery failed for an ownership proof using PersonalSign
+		PersonalSignPublicKeyRecoveryFailed,
 	}
 
 	#[pallet::genesis_config]

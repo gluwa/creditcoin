@@ -2544,12 +2544,9 @@ export default {
             'OwnershipNotSatisfied',
             'CurrencyAlreadyRegistered',
             'EthSignExternalAddressGenerationFailed',
-            'EthSignInvalidSignature',
             'EthSignPublicKeyRecoveryFailed',
-            'PerosnalSignFailedRecovery',
             'PersonalSignExternalAddressGenerationFailed',
             'PersonalSignPublicKeyRecoveryFailed',
-            'OtherChainNotSupported',
         ],
     },
     /**

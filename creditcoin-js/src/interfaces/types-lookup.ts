@@ -2776,12 +2776,9 @@ declare module '@polkadot/types/lookup' {
         readonly isOwnershipNotSatisfied: boolean;
         readonly isCurrencyAlreadyRegistered: boolean;
         readonly isEthSignExternalAddressGenerationFailed: boolean;
-        readonly isEthSignInvalidSignature: boolean;
         readonly isEthSignPublicKeyRecoveryFailed: boolean;
-        readonly isPerosnalSignFailedRecovery: boolean;
         readonly isPersonalSignExternalAddressGenerationFailed: boolean;
         readonly isPersonalSignPublicKeyRecoveryFailed: boolean;
-        readonly isOtherChainNotSupported: boolean;
         readonly type:
             | 'AddressAlreadyRegistered'
             | 'AddressAlreadyRegisteredByCaller'
@@ -2837,12 +2834,9 @@ declare module '@polkadot/types/lookup' {
             | 'OwnershipNotSatisfied'
             | 'CurrencyAlreadyRegistered'
             | 'EthSignExternalAddressGenerationFailed'
-            | 'EthSignInvalidSignature'
             | 'EthSignPublicKeyRecoveryFailed'
-            | 'PerosnalSignFailedRecovery'
             | 'PersonalSignExternalAddressGenerationFailed'
-            | 'PersonalSignPublicKeyRecoveryFailed'
-            | 'OtherChainNotSupported';
+            | 'PersonalSignPublicKeyRecoveryFailed';
     }
 
     /** @name PalletDifficultyDifficultyAndTimestamp (332) */
