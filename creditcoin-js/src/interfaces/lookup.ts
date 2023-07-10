@@ -1877,8 +1877,7 @@ export default {
             register_address_v2: {
                 blockchain: 'PalletCreditcoinBlockchain',
                 address: 'Bytes',
-                ownershipProof: 'SpCoreEcdsaSignature',
-                signatureType: 'PalletCreditcoinSignatureType',
+                ownershipProof: 'PalletCreditcoinOwnershipProof',
             },
         },
     },
@@ -1929,10 +1928,13 @@ export default {
         },
     },
     /**
-     * Lookup270: pallet_creditcoin::types::SignatureType
+     * Lookup270: pallet_creditcoin::types::OwnershipProof
      **/
-    PalletCreditcoinSignatureType: {
-        _enum: ['PersonalSign', 'EthSign'],
+    PalletCreditcoinOwnershipProof: {
+        _enum: {
+            PersonalSign: 'SpCoreEcdsaSignature',
+            EthSign: 'SpCoreEcdsaSignature',
+        },
     },
     /**
      * Lookup271: pallet_scheduler::pallet::Call<T>
@@ -2547,6 +2549,7 @@ export default {
             'PerosnalSignFailedRecovery',
             'PersonalSignExternalAddressGenerationFailed',
             'PersonalSignPublicKeyRecoveryFailed',
+            'OtherChainNotSupported',
         ],
     },
     /**

@@ -2137,8 +2137,7 @@ declare module '@polkadot/types/lookup' {
         readonly asRegisterAddressV2: {
             readonly blockchain: PalletCreditcoinBlockchain;
             readonly address: Bytes;
-            readonly ownershipProof: SpCoreEcdsaSignature;
-            readonly signatureType: PalletCreditcoinSignatureType;
+            readonly ownershipProof: PalletCreditcoinOwnershipProof;
         } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
@@ -2209,10 +2208,12 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'VerifyTransfer' | 'CollectCoins';
     }
 
-    /** @name PalletCreditcoinSignatureType (270) */
-    interface PalletCreditcoinSignatureType extends Enum {
+    /** @name PalletCreditcoinOwnershipProof (270) */
+    interface PalletCreditcoinOwnershipProof extends Enum {
         readonly isPersonalSign: boolean;
+        readonly asPersonalSign: SpCoreEcdsaSignature;
         readonly isEthSign: boolean;
+        readonly asEthSign: SpCoreEcdsaSignature;
         readonly type: 'PersonalSign' | 'EthSign';
     }
 
@@ -2780,6 +2781,7 @@ declare module '@polkadot/types/lookup' {
         readonly isPerosnalSignFailedRecovery: boolean;
         readonly isPersonalSignExternalAddressGenerationFailed: boolean;
         readonly isPersonalSignPublicKeyRecoveryFailed: boolean;
+        readonly isOtherChainNotSupported: boolean;
         readonly type:
             | 'AddressAlreadyRegistered'
             | 'AddressAlreadyRegisteredByCaller'
@@ -2839,7 +2841,8 @@ declare module '@polkadot/types/lookup' {
             | 'EthSignPublicKeyRecoveryFailed'
             | 'PerosnalSignFailedRecovery'
             | 'PersonalSignExternalAddressGenerationFailed'
-            | 'PersonalSignPublicKeyRecoveryFailed';
+            | 'PersonalSignPublicKeyRecoveryFailed'
+            | 'OtherChainNotSupported';
     }
 
     /** @name PalletDifficultyDifficultyAndTimestamp (332) */

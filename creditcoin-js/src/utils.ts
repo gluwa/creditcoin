@@ -13,7 +13,7 @@ export const signAccountId = (api: ApiPromise, signer: Wallet, accountId: Accoun
 };
 
 export const personalSignAccountId = async (api: ApiPromise, signer: Wallet, accountId: Uint8Array) => {
-    return joinSignature(await signer.signMessage(blake2AsU8a(accountId)))
+    return joinSignature(await signer.signMessage(blake2AsU8a(accountId)));
 };
 
 type OldWeight = BN;

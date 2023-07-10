@@ -4,7 +4,7 @@ use crate::{
 		non_paying_error, EVMAddress, PublicToAddress,
 	},
 	mock::{RuntimeOrigin as Origin, *},
-	types::DoubleMapExt,
+	types::{DoubleMapExt, OwnershipProof},
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
 	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,
 	Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
@@ -2946,4 +2946,165 @@ fn add_and_remove_authority_works_for_root() {
 		assert_ok!(Creditcoin::remove_authority(Origin::from(root), account.clone()));
 		assert!(!TaskScheduler::is_authority(&account));
 	});
+}
+
+#[test]
+fn register_address_v2_should_work() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+		
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			address.clone(),
+			proof,
+		));
+		let address_id = crate::AddressId::new::<Test>(&blockchain, &address);
+		let address = crate::Address { blockchain, value: address, owner: who };
+		assert_eq!(Creditcoin::addresses(address_id.clone()), Some(address.clone()));
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+
+		assert_matches!(
+			event,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+				assert_eq!(registered_address_id, address_id);
+				assert_eq!(registered_address, address);
+			}
+		);
+	});
+}
+
+#[test]
+fn register_address_v2_should_fail_to_reregister_external_address_to_same_account() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+		// Register external address to account
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			external_address.clone(),
+			ownership_proof.clone()
+		));
+			let proof = OwnershipProof::EthSign(ownership_proof);
+
+		// Try registering again to same account and fail
+		assert_noop!(
+			Creditcoin::register_address_v2(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				proof,
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_fail_to_reregister_external_address_to_new_account() {
+	ExtBuilder::default().build_and_execute(|| {
+		let who_first = account_from_keypair(generate_keypair_from_seed("first account"));
+		let who_second = account_from_keypair(generate_keypair_from_seed("second account"));
+		let external_keypair = generate_keypair_from_seed("external account");
+		let external_address = external_address_from_keypair(external_keypair.clone());
+		let blockchain = Blockchain::Rinkeby;
+
+		// Register external address to first account
+		let first_ownership_proof =
+			build_proof_of_ownership(who_first.clone(), external_keypair.clone());
+
+		let proof = OwnershipProof::EthSign(first_ownership_proof);
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who_first),
+			blockchain.clone(),
+			external_address.clone(),
+			proof,
+		));
+		// Try registering to a second account and fail
+		let second_ownership_proof = build_proof_of_ownership(who_second.clone(), external_keypair);
+
+		let second_proof = OwnershipProof::EthSign(second_ownership_proof);
+		assert_noop!(
+			Creditcoin::register_address_v2(
+				Origin::signed(who_second),
+				blockchain,
+				external_address,
+				second_proof
+			),
+			crate::Error::<Test>::AddressAlreadyRegistered
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (_who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		let proof = OwnershipProof::EthSign(ownership_proof);
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::none(), blockchain, address, proof),
+			BadOrigin,
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_using_wrong_ownership_proof() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+		let (_who2, _address2, ownership_proof2, _) = generate_address_with_proof("bogus");
+
+		let blockchain = Blockchain::Rinkeby;
+		let bad_proof = OwnershipProof::EthSign(ownership_proof2);
+		assert_noop!(
+			Creditcoin::register_address_v2(
+				Origin::signed(who),
+				blockchain,
+				address,
+				bad_proof,
+			),
+			crate::Error::<Test>::OwnershipNotSatisfied
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_address_too_long() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
+		let blockchain = Blockchain::Rinkeby;
+		let proof = OwnershipProof::EthSign(ownership_proof);
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof),
+			crate::Error::<Test>::EthSignExternalAddressGenerationFailed
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_signature_is_invalid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+
+		// NOTE: No checking goes on to ensure this is a real signature! See
+		// https://docs.rs/sp-core/2.0.0-rc4/sp_core/ecdsa/struct.Signature.html#method.from_raw
+		let ownership_proof = sp_core::ecdsa::Signature::from_raw([0; 65]);
+
+	let bad_proof = OwnershipProof::EthSign(ownership_proof);
+		let blockchain = Blockchain::Rinkeby;
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, bad_proof),
+			crate::Error::<Test>::EthSignPublicKeyRecoveryFailed
+		);
+	})
 }

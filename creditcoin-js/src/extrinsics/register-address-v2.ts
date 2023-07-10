@@ -6,6 +6,8 @@ import { TxCallback, TxFailureCallback } from '../types';
 import { createAddress } from '../transforms';
 import { u8aConcat, u8aToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
+import { PalletCreditcoinOwnershipProof } from '@polkadot/types/lookup';
+import { OwnershipProof } from '../model';
 
 export type AddressRegisteredV2 = EventReturnJoinType<AddressId, Address>;
 
@@ -23,15 +25,14 @@ export const registerAddressV2 = async (
     api: ApiPromise,
     externalAddress: string,
     blockchain: Blockchain,
-    ownershipProof: string,
-    signatureType: SignatureType,
+    ownershipProof: PalletCreditcoinOwnershipProof,
     signer: KeyringPair,
     onSuccess: TxCallback,
     onFail: TxFailureCallback,
 ) => {
     api.tx.creditcoin.offchainAddress;
     const unsubscribe: () => void = await api.tx.creditcoin
-        .registerAddressV2(blockchain, externalAddress, ownershipProof, signatureType)
+        .registerAddressV2(blockchain, externalAddress, ownershipProof)
         .signAndSend(signer, { nonce: -1 }, (result) => handleTransaction(api, unsubscribe, result, onSuccess, onFail));
 };
 
@@ -49,21 +50,37 @@ export const registerAddressV2Async = async (
     api: ApiPromise,
     externalAddress: string,
     blockchain: Blockchain,
-    ownershipProof: string,
-    signatureType: SignatureType,
+    ownershipProof: PalletCreditcoinOwnershipProof,
     signer: KeyringPair,
 ): Promise<AddressRegisteredV2> => {
     return new Promise<AddressRegisteredV2>((resolve, reject) => {
         const onSuccess = (result: SubmittableResult) => resolve(processAddressRegisteredV2(api, result));
-        registerAddressV2(
-            api,
-            externalAddress,
-            blockchain,
-            ownershipProof,
-            signatureType,
-            signer,
-            onSuccess,
-            reject,
-        ).catch((reason) => reject(reason));
+        registerAddressV2(api, externalAddress, blockchain, ownershipProof, signer, onSuccess, reject).catch((reason) =>
+            reject(reason),
+        );
     });
+};
+
+export const createCreditCoinOwnershipProof = (
+    api: ApiPromise,
+    proof: OwnershipProof,
+): PalletCreditcoinOwnershipProof => {
+    const toType = (): unknown => {
+        switch (proof.kind) {
+            case 'PersonalSign':
+                return { PersonalSign: proof.signature }; // eslint-disable-line  @typescript-eslint/naming-convention
+            case 'EthSign':
+                return { EthSign: proof.signature }; // eslint-disable-line  @typescript-eslint/naming-convention
+        }
+    };
+
+    return api.createType('PalletCreditcoinOwnershipProof', toType());
+};
+
+export const EthSign = (signature: string): OwnershipProof => {
+    return { kind: 'EthSign', signature: signature };
+};
+
+export const PersonalSign = (signature: string): OwnershipProof => {
+    return { kind: 'PersonalSign', signature: signature };
 };

@@ -248,6 +248,7 @@ declare module '@polkadot/api-base/types/errors' {
              * The offer order has expired and is no longer valid.
              **/
             OfferExpired: AugmentedError<ApiType>;
+            OtherChainNotSupported: AugmentedError<ApiType>;
             /**
              * The address retrieved from the proof-of-ownership signature did not match the external address being registered.
              **/

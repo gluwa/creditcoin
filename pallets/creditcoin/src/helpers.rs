@@ -1,16 +1,13 @@
 mod external_address;
 mod register_transfer;
 
-use alloc::string::String;
 pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub use external_address::{EVMAddress, PublicToAddress};
-use parity_scale_codec::Encode;
-use sp_core::hexdisplay::AsBytesRef;
 
 use crate::{
 	pallet::*,
-	types::{Address, AddressId, SignatureType},
+	types::{Address, AddressId, OwnershipProof},
 	Blockchain, DealOrderId, Error, ExternalAddress, Guid, Id, TransferId,
 };
 use frame_support::ensure;
@@ -158,20 +155,19 @@ use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 /// Try to extract an external address for a particular blockchain through a signature and an account id which acts as a message.
 /// This function supports the older and insecure EthSign signing method and the new PersonalSign standard that is supported by Metamask.
 pub fn try_extract_address<T: Config>(
-	signature_type: SignatureType,
-	signature: [u8; 65],
+	ownership_proof: OwnershipProof,
 	account_id: &[u8],
 	blockchain: &Blockchain,
 	address: &ExternalAddress,
 ) -> Result<ExternalAddress, crate::Error<T>> {
-	match signature_type {
+	match ownership_proof {
 		// Old insecure signing method
-		SignatureType::EthSign => {
-			extract_public_key_eth_sign(signature, account_id, blockchain, address)
+		OwnershipProof::EthSign(signature) => {
+			extract_public_key_eth_sign(signature.into(), account_id, blockchain, address)
 		},
 		// New Way
-		SignatureType::PersonalSign => {
-			extract_public_key_personal_sign(signature, account_id, blockchain, address)
+		OwnershipProof::PersonalSign(signature) => {
+			extract_public_key_personal_sign(signature.into(), account_id, blockchain, address)
 		},
 	}
 }

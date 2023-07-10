@@ -55,10 +55,8 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
 #[frame_support::pallet]
 pub mod pallet {
 
-	use core::borrow::BorrowMut;
-
 	use super::*;
-	use crate::helpers::non_paying_error;
+	use crate::{helpers::non_paying_error, types::OwnershipProof};
 	use frame_support::{
 		dispatch::{DispatchResult, PostDispatchInfo},
 		fail,
@@ -504,6 +502,8 @@ pub mod pallet {
 		PerosnalSignFailedRecovery,
 		PersonalSignExternalAddressGenerationFailed,
 		PersonalSignPublicKeyRecoveryFailed,
+
+		OtherChainNotSupported,
 	}
 
 	#[pallet::genesis_config]
@@ -1372,21 +1372,15 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			blockchain: Blockchain,
 			address: ExternalAddress,
-			ownership_proof: sp_core::ecdsa::Signature,
-			signature_type: SignatureType,
+			ownership_proof: OwnershipProof,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let signature = ownership_proof.into();
+
 			let encoded = who.encode();
 			let account = encoded.as_slice();
 
-			match helpers::try_extract_address::<T>(
-				signature_type,
-				signature,
-				account,
-				&blockchain,
-				&address,
-			) {
+			match helpers::try_extract_address::<T>(ownership_proof, account, &blockchain, &address)
+			{
 				Ok(recreated_address) => {
 					// Check if external address of keypair used to sign AccountID
 					// is the same one mentioned in this call to register_address
