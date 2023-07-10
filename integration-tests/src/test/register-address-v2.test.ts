@@ -1,10 +1,14 @@
 import { Blockchain, KeyringPair, Wallet, creditcoinApi } from 'creditcoin-js';
-import { createAddressId, ethSignSignature, personalSignSignature, createCreditCoinOwnershipProof } from 'creditcoin-js/lib/extrinsics/register-address-v2';
+import {
+    createAddressId,
+    ethSignSignature,
+    personalSignSignature,
+    createCreditCoinOwnershipProof,
+} from 'creditcoin-js/lib/extrinsics/register-address-v2';
 import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { signAccountId, personalSignAccountId } from 'creditcoin-js/lib/utils';
 import { extractFee } from '../utils';
-
 
 describe('RegisterAddressV2', () => {
     let ccApi: CreditcoinApi;
@@ -27,7 +31,7 @@ describe('RegisterAddressV2', () => {
 
         return new Promise((resolve, reject) => {
             const wallet = Wallet.createRandom();
-            const accountId = signAccountId(api, wallet, lender.address)
+            const accountId = signAccountId(api, wallet, lender.address);
             const ownershipProof = ethSignSignature(accountId);
             const proof = createCreditCoinOwnershipProof(api, ownershipProof);
 
@@ -49,15 +53,10 @@ describe('RegisterAddressV2', () => {
         } = ccApi;
 
         const lenderWallet = Wallet.createRandom();
-        const accountId = signAccountId(api, lenderWallet, lender.address)
+        const accountId = signAccountId(api, lenderWallet, lender.address);
         const proof = ethSignSignature(accountId);
 
-        const lenderRegAddr = await registerAddressV2(
-            lenderWallet.address,
-            blockchain,
-            proof,
-            lender,
-        );
+        const lenderRegAddr = await registerAddressV2(lenderWallet.address, blockchain, proof, lender);
 
         // manually constructed address is the same as returned by Creditcoin
         const addressId = createAddressId(blockchain, lenderWallet.address);
@@ -78,12 +77,7 @@ describe('RegisterAddressV2', () => {
         const accountId = await personalSignAccountId(api, lenderWallet, lender.addressRaw);
         const proof = personalSignSignature(accountId);
 
-        const lenderRegAddr = await registerAddressV2(
-            lenderWallet.address,
-            blockchain,
-            proof,
-            lender,
-        );
+        const lenderRegAddr = await registerAddressV2(lenderWallet.address, blockchain, proof, lender);
 
         // manually constructed address is the same as returned by Creditcoin
         const addressId = createAddressId(blockchain, lenderWallet.address);
@@ -92,6 +86,5 @@ describe('RegisterAddressV2', () => {
         // manually constructed address should be reported as registered
         const result = await checkAddress(ccApi, addressId);
         expect(result).toBeDefined();
-    },);
-
+    });
 });
