@@ -2955,7 +2955,7 @@ fn register_address_v2_should_work() {
 
 		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
-		
+
 		let proof = OwnershipProof::EthSign(ownership_proof);
 
 		assert_ok!(Creditcoin::register_address_v2(
@@ -2992,7 +2992,7 @@ fn register_address_v2_should_fail_to_reregister_external_address_to_same_accoun
 			external_address.clone(),
 			ownership_proof.clone()
 		));
-		
+
 		let proof = OwnershipProof::EthSign(ownership_proof);
 
 		// Try registering again to same account and fail

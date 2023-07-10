@@ -2736,7 +2736,7 @@ export default {
         _enum: ['NotController', 'AlreadyQueued', 'NotFullyBonded', 'NotQueued', 'AlreadyHead', 'CallNotAllowed'],
     },
     /**
-     * Lookup372: pallet_nomination_pools::PoolMember<T>    
+     * Lookup372: pallet_nomination_pools::PoolMember<T>
      **/
     PalletNominationPoolsPoolMember: {
         poolId: 'u32',
@@ -2745,7 +2745,7 @@ export default {
         unbondingEras: 'BTreeMap<u32, u128>',
     },
     /**
-    
+
      * Lookup377: pallet_nomination_pools::BondedPoolInner<T>
      **/
     PalletNominationPoolsBondedPoolInner: {

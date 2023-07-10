@@ -3222,7 +3222,7 @@ declare module '@polkadot/types/lookup' {
             | 'SubPoolsNotFound'
             | 'BondedStashKilledPrematurely';
     }
-  
+
     /** @name FrameSystemExtensionsCheckNonZeroSender (395) */
     type FrameSystemExtensionsCheckNonZeroSender = Null;
 
