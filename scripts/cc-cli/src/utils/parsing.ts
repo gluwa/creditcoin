@@ -2,11 +2,13 @@ import { validateAddress } from "@polkadot/util-crypto/address";
 import { BN, parseUnits } from "creditcoin-js";
 
 // Parse valid or exit with error
-export const parseAddresOrExit = parseOrExit(parseAddress);
-export const parseAmountOrExit = parseOrExit(parseAmount);
-export const parseHexStringOrExit = parseOrExit(parseHexString);
-export const parseIntegerOrExit = parseOrExit(parseInteger);
-export const parsePercentAsPerbillOrExit = parseOrExit(parsePercentAsPerbill);
+export const parseAddresOrExit = parseOrExit(parseAddressInternal);
+export const parseAmountOrExit = parseOrExit(parseAmountInternal);
+export const parseHexStringOrExit = parseOrExit(parseHexStringInternal);
+export const parseIntegerOrExit = parseOrExit(parseIntegerInternal);
+export const parsePercentAsPerbillOrExit = parseOrExit(
+  parsePercentAsPerbillInternal
+);
 export const parseChoiceOrExit = parseChoiceOrExitFn;
 
 // A function that takes a parsing function and returns a new function that does tries to parse or prints the error and exits
@@ -23,14 +25,14 @@ function parseOrExit<T>(parse: (input: string) => T): (input: string) => T {
 
 function parseChoiceOrExitFn(input: string, choices: string[]): string | never {
   try {
-    return parseChoice(input, choices);
+    return parseChoiceInternal(input, choices);
   } catch (e: any) {
     console.error(`Unable to parse input. ${e.message as string}`);
     process.exit(1);
   }
 }
 
-export function parseAddress(input: string): string {
+export function parseAddressInternal(input: string): string {
   try {
     validateAddress(input);
   } catch (e: any) {
@@ -39,7 +41,7 @@ export function parseAddress(input: string): string {
   return input;
 }
 
-export function parseAmount(input: string): BN {
+export function parseAmountInternal(input: string): BN {
   try {
     const parsed = positiveBigNumberFromString(input);
     return new BN(parsed.toString());
@@ -49,7 +51,7 @@ export function parseAmount(input: string): BN {
 }
 
 // Choices must be in Capitalized form: ['Staked', 'Stash', 'Controller']
-export function parseChoice(input: string, choices: string[]): string {
+export function parseChoiceInternal(input: string, choices: string[]): string {
   const styled = input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
   if (!choices.includes(styled)) {
     throw new Error(
@@ -63,7 +65,7 @@ export function parseBoolean(input: true | undefined): boolean {
   return input ? true : false;
 }
 
-export function parseInteger(input: string): number {
+export function parseIntegerInternal(input: string): number {
   const float = Number.parseFloat(input);
   if (float % 1 !== 0) {
     throw new Error("Must be an integer");
@@ -72,14 +74,14 @@ export function parseInteger(input: string): number {
   return int;
 }
 
-export function parseHexString(input: string): string {
+export function parseHexStringInternal(input: string): string {
   if (!input.match(/^0x[\da-f]+$/i)) {
     throw new Error("Must be a valid hexadecimal number");
   }
   return input;
 }
 
-export function parsePercentAsPerbill(input: string): number {
+export function parsePercentAsPerbillInternal(input: string): number {
   if (input.match(/[^0-9.]/)) {
     throw new Error("Percent value must be a number");
   }
