@@ -4,7 +4,7 @@ import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { bond, checkRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
 import {
-  Balance,
+  AccountBalance,
   getBalance,
   toCTCString,
   checkAmount,
@@ -77,7 +77,7 @@ async function checkBalance(amount: BN, api: any, address: string) {
   checkBalanceAgainstBondAmount(balance, amount);
 }
 
-function checkBalanceAgainstBondAmount(balance: Balance, amount: BN) {
+function checkBalanceAgainstBondAmount(balance: AccountBalance, amount: BN) {
   const available = balance.free.sub(balance.miscFrozen);
   if (available.lt(amount)) {
     console.error(
