@@ -7,7 +7,7 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import {
-  Balance,
+  AccountBalance,
   getBalance,
   parseCTCString,
   printBalance,
@@ -175,7 +175,11 @@ export function makeWizardCommand() {
   return cmd;
 }
 
-function checkControllerBalance(address: string, balance: Balance, amount: BN) {
+function checkControllerBalance(
+  address: string,
+  balance: AccountBalance,
+  amount: BN
+) {
   if (balance.free.lt(amount)) {
     console.log(
       "Controller account does not have enough funds to pay transaction fees"
@@ -190,7 +194,11 @@ function checkControllerBalance(address: string, balance: Balance, amount: BN) {
   }
 }
 
-function checkStashBalance(address: string, balance: Balance, amount: BN) {
+function checkStashBalance(
+  address: string,
+  balance: AccountBalance,
+  amount: BN
+) {
   if (balance.free.sub(balance.miscFrozen).lt(amount)) {
     console.log(
       `Stash account does not have enough funds to bond ${toCTCString(amount)}`
@@ -201,7 +209,7 @@ function checkStashBalance(address: string, balance: Balance, amount: BN) {
   }
 }
 
-function checkIfAlreadyBonded(balance: Balance) {
+function checkIfAlreadyBonded(balance: AccountBalance) {
   if (balance.miscFrozen.gt(new BN(0))) {
     return true;
   } else {
