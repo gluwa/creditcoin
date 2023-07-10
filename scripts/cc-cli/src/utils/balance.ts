@@ -27,7 +27,7 @@ export function readAmountFromHex(amount: string): BN {
   return new BN(amount.slice(2), 16);
 }
 
-export interface Balance {
+export interface AccountBalance {
   free: BN;
   reserved: BN;
   miscFrozen: BN;
@@ -39,7 +39,7 @@ export async function getBalance(address: string, api: any) {
   return balanceFromData(account.data);
 }
 
-function balanceFromData(data: any): Balance {
+function balanceFromData(data: any): AccountBalance {
   return {
     free: data.free,
     reserved: data.reserved,
@@ -48,7 +48,7 @@ function balanceFromData(data: any): Balance {
   };
 }
 
-export function printBalance(balance: Balance) {
+export function printBalance(balance: AccountBalance) {
   console.log("Available:", toCTCString(balance.free.sub(balance.miscFrozen)));
   console.log("Free:", toCTCString(balance.free));
   console.log("Reserved:", toCTCString(balance.reserved));
