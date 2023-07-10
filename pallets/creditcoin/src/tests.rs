@@ -3067,12 +3067,7 @@ fn register_address_v2_should_error_when_using_wrong_ownership_proof() {
 		let blockchain = Blockchain::Rinkeby;
 		let bad_proof = OwnershipProof::EthSign(ownership_proof2);
 		assert_noop!(
-			Creditcoin::register_address_v2(
-				Origin::signed(who),
-				blockchain,
-				address,
-				bad_proof,
-			),
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, bad_proof),
 			crate::Error::<Test>::OwnershipNotSatisfied
 		);
 	})

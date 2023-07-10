@@ -77,10 +77,10 @@ export const createCreditCoinOwnershipProof = (
     return api.createType('PalletCreditcoinOwnershipProof', toType());
 };
 
-export const EthSign = (signature: string): OwnershipProof => {
+export const ethSignSignature = (signature: string): OwnershipProof => {
     return { kind: 'EthSign', signature: signature };
 };
 
-export const PersonalSign = (signature: string): OwnershipProof => {
+export const personalSignSignature = (signature: string): OwnershipProof => {
     return { kind: 'PersonalSign', signature: signature };
 };

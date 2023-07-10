@@ -1,5 +1,5 @@
 import { Blockchain, KeyringPair, Wallet, creditcoinApi } from 'creditcoin-js';
-import { createAddressId, EthSign, PersonalSign, createCreditCoinOwnershipProof } from 'creditcoin-js/lib/extrinsics/register-address-v2';
+import { createAddressId, ethSignSignature, personalSignSignature, createCreditCoinOwnershipProof } from 'creditcoin-js/lib/extrinsics/register-address-v2';
 import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { signAccountId, personalSignAccountId } from 'creditcoin-js/lib/utils';
@@ -28,7 +28,7 @@ describe('RegisterAddressV2', () => {
         return new Promise((resolve, reject) => {
             const wallet = Wallet.createRandom();
             const accountId = signAccountId(api, wallet, lender.address)
-            const ownershipProof = EthSign(accountId);
+            const ownershipProof = ethSignSignature(accountId);
             const proof = createCreditCoinOwnershipProof(api, ownershipProof);
 
             const unsubscribe = api.tx.creditcoin
@@ -50,7 +50,7 @@ describe('RegisterAddressV2', () => {
 
         const lenderWallet = Wallet.createRandom();
         const accountId = signAccountId(api, lenderWallet, lender.address)
-        const proof = EthSign(accountId);
+        const proof = ethSignSignature(accountId);
 
         const lenderRegAddr = await registerAddressV2(
             lenderWallet.address,
@@ -76,7 +76,7 @@ describe('RegisterAddressV2', () => {
 
         const lenderWallet = Wallet.createRandom();
         const accountId = await personalSignAccountId(api, lenderWallet, lender.addressRaw);
-        const proof = PersonalSign(accountId);
+        const proof = personalSignSignature(accountId);
 
         const lenderRegAddr = await registerAddressV2(
             lenderWallet.address,
