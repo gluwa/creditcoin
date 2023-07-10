@@ -506,7 +506,10 @@ jobs:
           chmod a+x ./target/release/creditcoin-node
           ./target/release/creditcoin-node --version
 
+          # WARNING: using different port b/c the network remembers there was a node
+          # at this address previously. We don't want to be connected to the chain !!!
           ./target/release/creditcoin-node \
+            --port 44444 \
             --name "test-node-disconnected-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
             --validator --alice --pruning archive \
