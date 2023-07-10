@@ -28,7 +28,6 @@ import { closeDealOrderAsync } from './close-deal-order';
 import { exemptLoanAsync } from './exempt';
 import { requestCollectCoinsAsync } from './request-collect-coins';
 import { registerAddressV2Async } from './register-address-v2';
-import { PalletCreditcoinOwnershipProof } from '@polkadot/types/lookup';
 
 export const extrinsics = (api: ApiPromise) => {
     const registerAddress = (

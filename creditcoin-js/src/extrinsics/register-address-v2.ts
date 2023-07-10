@@ -1,5 +1,5 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
-import { Address, AddressId, Blockchain, EventReturnJoinType, SignatureType } from '../model';
+import { Address, AddressId, Blockchain, EventReturnJoinType } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction, processEvents } from './common';
 import { TxCallback, TxFailureCallback } from '../types';
@@ -78,9 +78,9 @@ export const createCreditCoinOwnershipProof = (
 };
 
 export const ethSignSignature = (signature: string): OwnershipProof => {
-    return { kind: 'EthSign', signature: signature };
+    return { kind: 'EthSign', signature };
 };
 
 export const personalSignSignature = (signature: string): OwnershipProof => {
-    return { kind: 'PersonalSign', signature: signature };
+    return { kind: 'PersonalSign', signature };
 };
