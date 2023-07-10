@@ -11,7 +11,7 @@ use frame_election_provider_support::{
 };
 pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
-	traits::{ConstU32, ConstU8, Currency, U128CurrencyToVote},
+	traits::{ConstU32, ConstU8, OnRuntimeUpgrade, U128CurrencyToVote},
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 	PalletId,
 };
@@ -25,10 +25,10 @@ pub use pallet_grandpa::{
 };
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
+use pallet_pos_switch::InitialValidator;
 use pallet_session::historical as session_historical;
 use pallet_staking::UseValidatorsMap;
 pub use pallet_staking_substrate::{self, StakerStatus};
-use parity_scale_codec::Decode;
 use sp_api::impl_runtime_apis;
 use sp_consensus_babe as babe_primitives;
 use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata};
@@ -425,10 +425,12 @@ parameter_types! {
 	pub MinAnnualInflation : Perquintill = Perquintill::from_rational(25u64, 1000u64);
 }
 
-pub struct HackyUpgrade;
+pub struct InitPosPallets;
 
-impl pallet_pos_switch::OnSwitch for HackyUpgrade {
-	fn on_switch() {
+impl pallet_pos_switch::OnSwitch for InitPosPallets {
+	type Config = Runtime;
+
+	fn on_switch(initial_validators: pallet_pos_switch::InitialValidators<Runtime>) {
 		fn make_session_keys(
 			grandpa: GrandpaId,
 			babe: BabeId,
@@ -436,58 +438,65 @@ impl pallet_pos_switch::OnSwitch for HackyUpgrade {
 		) -> SessionKeys {
 			SessionKeys { grandpa, babe, im_online }
 		}
-		type AuthorityKeys = (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId);
-		const STASH: u128 = 1_000_000 * CTC;
 
-		// Generated via the `encode_keys_hack` test in `chain_spec.rs`
-		const KEYS_ENC: &[u8] = &[
-			4, 190, 93, 219, 21, 121, 183, 46, 132, 82, 79, 194, 158, 120, 96, 158, 60, 175, 66,
-			232, 90, 161, 24, 235, 254, 11, 10, 212, 4, 181, 189, 210, 95, 212, 53, 147, 199, 21,
-			253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44, 133, 88, 133, 76, 205, 227,
-			154, 86, 132, 231, 165, 109, 162, 125, 136, 220, 52, 23, 213, 5, 142, 196, 180, 80, 62,
-			12, 18, 234, 26, 10, 137, 190, 32, 15, 233, 137, 34, 66, 61, 67, 52, 1, 79, 166, 176,
-			238, 212, 53, 147, 199, 21, 253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44,
-			133, 88, 133, 76, 205, 227, 154, 86, 132, 231, 165, 109, 162, 125, 212, 53, 147, 199,
-			21, 253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44, 133, 88, 133, 76, 205,
-			227, 154, 86, 132, 231, 165, 109, 162, 125,
-		];
-		let mut enc = KEYS_ENC;
-		let initial_authorities = Vec::<AuthorityKeys>::decode(&mut enc).unwrap();
+		log::info!("Initial validators: {:?}", initial_validators);
 
-		let keys: Vec<_> = initial_authorities
+		let keys = initial_validators
 			.iter()
-			.cloned()
-			.map(|(stash, _acct, grandpa, babe, im_online)| {
-				(stash.clone(), stash, make_session_keys(grandpa, babe, im_online))
+			.map(|InitialValidator { stash, controller, grandpa, babe, im_online, .. }| {
+				(
+					stash.clone(),
+					controller.clone(),
+					make_session_keys(grandpa.clone(), babe.clone(), im_online.clone()),
+				)
 			})
-			.collect();
-
-		for (a, b, _, _, _) in initial_authorities.iter() {
-			let _ = Balances::make_free_balance_be(a, STASH);
-			let _ = Balances::make_free_balance_be(b, STASH);
-		}
+			.collect::<sp_std::vec::Vec<_>>();
 
 		let config = pallet_staking_substrate::InitConfig {
-			validator_count: initial_authorities.len() as u32,
+			validator_count: initial_validators.len() as u32,
 			minimum_validator_count: 1,
-			stakers: initial_authorities
+			stakers: initial_validators
 				.iter()
-				.map(|(stash, controller, _, _, _)| {
+				// The staking pallet assumes that all `stakers` listed here are not yet bonded (and will panic otherwise).
+				// So here we filter out validators that are already bonded.
+				.filter(|validator| Staking::bonded(&validator.stash).is_none())
+				.map(|validator| {
 					(
-						stash.clone(),
-						controller.clone(),
-						STASH,
+						validator.stash.clone(),
+						validator.controller.clone(),
+						validator.bonded,
 						pallet_staking_substrate::StakerStatus::Validator,
 					)
 				})
 				.collect(),
-			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+			invulnerables: initial_validators
+				.iter()
+				.filter_map(|validator| validator.invulnerable.then_some(validator.stash.clone()))
+				.collect(),
 			force_era: pallet_staking_substrate::Forcing::NotForcing,
 			slash_reward_fraction: Perbill::from_percent(10),
 			..Default::default()
 		};
-		Staking::genesis_init(config);
 		Session::genesis_init(&keys);
+		Staking::genesis_init(config);
+	}
+}
+
+pub struct InitBabe;
+
+impl OnRuntimeUpgrade for InitBabe {
+	fn on_runtime_upgrade() -> Weight {
+		if Babe::epoch_config().is_none() {
+			log::debug!("Initializing BABE");
+			let babe_config = pallet_babe::InitConfig {
+				authorities: Vec::new(),
+				epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
+			};
+			Babe::genesis_init(babe_config);
+			<Runtime as frame_system::Config>::DbWeight::get().writes(3)
+		} else {
+			Weight::zero()
+		}
 	}
 }
 
@@ -673,7 +682,8 @@ impl pallet_rewards::Config for Runtime {
 impl pallet_pos_switch::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeBlockNumber = BlockNumber;
-	type OnSwitch = HackyUpgrade;
+	type OnSwitch = InitPosPallets;
+	type Balance = Balance;
 }
 
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
@@ -783,6 +793,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
+	(InitBabe,),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]

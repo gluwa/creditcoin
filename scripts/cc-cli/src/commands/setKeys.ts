@@ -5,6 +5,7 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { signSendAndWatch } from "../utils/tx";
+import { parseHexStringOrExit } from "../utils/parsing";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
@@ -29,10 +30,15 @@ async function setKeysAction(options: OptionValues) {
       "Must specify keys to set or generate new ones using the --rotate flag"
     );
     process.exit(1);
+  } else if (options.keys && options.rotate) {
+    console.error(
+      "Must either specify keys or rotate to generate new ones, can not do both"
+    );
+    process.exit(1);
   } else if (options.rotate) {
     keys = (await api.rpc.author.rotateKeys()).toString();
   } else {
-    keys = options.keys;
+    keys = parseHexStringOrExit(options.keys);
   }
 
   const tx = api.tx.session.setKeys(keys, "");

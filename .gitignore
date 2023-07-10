@@ -28,3 +28,6 @@ justfile
 docs/dev-guide/book
 
 **/.yarn/cache
+integration-tests/csub-552/chaindata/*
+!integration-tests/csub-552/chaindata/.gitkeep
+scripts/cc-cli/coverage/

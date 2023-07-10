@@ -1,9 +1,9 @@
-import { creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi, Keyring } from 'creditcoin-js';
 import { createOverrideWeight } from 'creditcoin-js/lib/utils';
-import { Keyring } from '@polkadot/api';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { promisify } from 'util';
+import { u8aToHex } from './common';
 
 // From https://github.com/chevdor/subwasm/blob/c2e5b62384537875bfd0497c2b2d706265699798/lib/src/runtime_info.rs#L8-L20
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -80,11 +80,6 @@ async function doRuntimeUpgrade(
         // read the wasm blob from the give path
         const wasmBlob = await readFile(wasmBlobPath);
 
-        const u8aToHex = (bytes: Uint8Array | Buffer): string => {
-            const byteArray = Uint8Array.from(bytes);
-            return byteArray.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
-        };
-
         const hexBlob = u8aToHex(wasmBlob);
         let callback = api.tx.system.setCode(hexBlob);
         if (scheduleDelay > 0) {
@@ -113,33 +108,6 @@ async function doRuntimeUpgrade(
                     }
                 });
         });
-
-        // WARNING: only used during fork-and-migrate testing
-        if (scheduleDelay === 0) {
-            callback = api.tx.posSwitch.switchToPos();
-
-            await new Promise<void>((resolve, reject) => {
-                const unsubscribe = api.tx.sudo
-                    .sudoUncheckedWeight(callback, overrideWeight)
-                    .signAndSend(keyring, { nonce: -1 }, (result) => {
-                        const finish = (fn: () => void) => {
-                            unsubscribe
-                                .then((unsub) => {
-                                    unsub();
-                                    fn();
-                                })
-                                .catch(reject);
-                        };
-                        if (result.isInBlock && !result.isError) {
-                            console.log('switchToPos called');
-                            finish(resolve);
-                        } else if (result.isError) {
-                            const error = new Error(`Failed calling switchToPos: ${result.toString()}`);
-                            finish(() => reject(error));
-                        }
-                    });
-            });
-        }
     } finally {
         await api.disconnect();
     }

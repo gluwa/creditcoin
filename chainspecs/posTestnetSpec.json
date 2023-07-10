@@ -11,6 +11,9 @@
     "tokenDecimals": 18,
     "tokenSymbol": "CTC"
   },
+  "grandpaInitialAuthorities": [
+    "5FA9nQDVg267DEd8m1ZypXLBnvN7SFxYwV7ndqSYGiN9TTpu"
+  ],
   "codeSubstitutes": {},
   "genesis": {
     "raw": {

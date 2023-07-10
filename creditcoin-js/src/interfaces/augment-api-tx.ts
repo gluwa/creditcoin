@@ -57,6 +57,7 @@ import type {
     PalletNominationPoolsConfigOpU128,
     PalletNominationPoolsConfigOpU32,
     PalletNominationPoolsPoolState,
+    PalletPosSwitchInitialValidator,
     PalletStakingPalletConfigOpPerbill,
     PalletStakingPalletConfigOpPercent,
     PalletStakingPalletConfigOpU128,
@@ -1703,7 +1704,28 @@ declare module '@polkadot/api-base/types/submittable' {
             /**
              * Switch to PoS
              **/
-            switchToPos: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            switchToPos: AugmentedSubmittable<
+                (
+                    initialValidators:
+                        | Vec<PalletPosSwitchInitialValidator>
+                        | (
+                              | PalletPosSwitchInitialValidator
+                              | {
+                                    stash?: any;
+                                    controller?: any;
+                                    bonded?: any;
+                                    controllerBalance?: any;
+                                    babe?: any;
+                                    grandpa?: any;
+                                    imOnline?: any;
+                                    invulnerable?: any;
+                                }
+                              | string
+                              | Uint8Array
+                          )[],
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<PalletPosSwitchInitialValidator>]
+            >;
             /**
              * Generic tx
              **/

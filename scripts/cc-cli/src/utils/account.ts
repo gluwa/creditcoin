@@ -1,5 +1,5 @@
 import { mnemonicValidate } from "@polkadot/util-crypto";
-import { ApiPromise, Keyring } from "creditcoin-js";
+import { Keyring } from "creditcoin-js";
 import prompts from "prompts";
 
 export function initKeyringPair(seed: string) {
@@ -62,26 +62,4 @@ async function getSeedFromEnvOrPrompt(
   }
   console.log("Error: Could not retrieve seed phrase.");
   process.exit(1);
-}
-
-export function checkAddress(
-  address: string,
-  api: ApiPromise,
-  action = "interact with."
-) {
-  if (!address) {
-    console.log(`Must specify address to ${action}`);
-    process.exit(1);
-  } else {
-    checkIfAddressIsValid(address, api);
-  }
-}
-
-function checkIfAddressIsValid(address: string, api: ApiPromise) {
-  try {
-    api.createType("Address", address);
-  } catch (e) {
-    console.log("Invalid controller address");
-    process.exit(1);
-  }
 }

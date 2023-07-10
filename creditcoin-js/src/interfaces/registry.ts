@@ -139,6 +139,7 @@ import type {
     PalletPosSwitchCall,
     PalletPosSwitchError,
     PalletPosSwitchEvent,
+    PalletPosSwitchInitialValidator,
     PalletProxyAnnouncement,
     PalletProxyCall,
     PalletProxyError,
@@ -357,6 +358,7 @@ declare module '@polkadot/types/types/registry' {
         PalletPosSwitchCall: PalletPosSwitchCall;
         PalletPosSwitchError: PalletPosSwitchError;
         PalletPosSwitchEvent: PalletPosSwitchEvent;
+        PalletPosSwitchInitialValidator: PalletPosSwitchInitialValidator;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
         PalletProxyError: PalletProxyError;
