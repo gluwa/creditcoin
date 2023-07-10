@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
+#![recursion_limit = "256"]
 
 #[macro_export]
 macro_rules! warn_or_panic {

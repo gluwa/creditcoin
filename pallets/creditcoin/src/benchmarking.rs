@@ -6,7 +6,10 @@ use crate::migrations::Migrate;
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::Pallet as Creditcoin;
-use crate::{types::Blockchain, Duration};
+use crate::{
+	types::{Blockchain, OwnershipProof},
+	Duration,
+};
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
