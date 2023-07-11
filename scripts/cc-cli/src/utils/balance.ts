@@ -1,4 +1,5 @@
 import { BN, parseUnits } from "creditcoin-js";
+import Table from "cli-table3";
 
 export const MICROUNITS_PER_CTC = new BN("1000000000000000000");
 
@@ -12,10 +13,13 @@ export function parseCTCString(amount: string): BN {
   }
 }
 
-export function toCTCString(amount: BN): string {
+export function toCTCString(amount: BN, decimals = 18): string {
   const CTC = amount.div(MICROUNITS_PER_CTC);
   const remainder = amount.mod(MICROUNITS_PER_CTC);
-  const remainderString = remainder.toString().padStart(18, "0");
+  const remainderString = remainder
+    .toString()
+    .padStart(18, "0")
+    .slice(0, decimals);
   return `${CTC.toString()}.${remainderString} CTC`;
 }
 
@@ -28,32 +32,61 @@ export function readAmountFromHex(amount: string): BN {
 }
 
 export interface AccountBalance {
-  free: BN;
-  reserved: BN;
-  miscFrozen: BN;
-  feeFrozen: BN;
+  address: string;
+  transferable: BN;
+  locked: BN;
+  bonded: BN;
+  total: BN;
 }
 
 export async function getBalance(address: string, api: any) {
   const account = await api.query.system.account(address);
-  return balanceFromData(account.data);
+  return balanceFromData(account.data, address);
 }
 
-function balanceFromData(data: any): AccountBalance {
+function balanceFromData(data: any, address: string): AccountBalance {
   return {
-    free: data.free,
-    reserved: data.reserved,
-    miscFrozen: data.miscFrozen,
-    feeFrozen: data.feeFrozen,
+    address,
+    transferable: data.free.sub(data.miscFrozen),
+    bonded: data.miscFrozen,
+    locked: data.reserved,
+    total: data.free,
   };
 }
 
+export function logBalance(balance: AccountBalance, human = true) {
+  if (human) {
+    printBalance(balance);
+  } else {
+    printJsonBalance(balance);
+  }
+}
+
 export function printBalance(balance: AccountBalance) {
-  console.log("Available:", toCTCString(balance.free.sub(balance.miscFrozen)));
-  console.log("Free:", toCTCString(balance.free));
-  console.log("Reserved:", toCTCString(balance.reserved));
-  console.log("Misc Frozen:", toCTCString(balance.miscFrozen));
-  console.log("Fee Frozen:", toCTCString(balance.feeFrozen));
+  const table = new Table({});
+
+  table.push(
+    ["Transferable", toCTCString(balance.transferable, 4)],
+    ["Locked", toCTCString(balance.locked, 4)],
+    ["Bonded", toCTCString(balance.bonded, 4)],
+    ["Total", toCTCString(balance.total, 4)]
+  );
+
+  console.log(`Address: ${balance.address}`);
+  console.log(table.toString());
+}
+
+export function printJsonBalance(balance: AccountBalance) {
+  const jsonBalance = {
+    balance: {
+      address: balance.address,
+      transferable: balance.transferable.toString(),
+      bonded: balance.bonded.toString(),
+      locked: balance.locked.toString(),
+      total: balance.total.toString(),
+    },
+  };
+  console.log(JSON.stringify(jsonBalance, null, 2));
 }
 
 export function checkAmount(amount: BN) {
