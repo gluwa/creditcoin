@@ -180,7 +180,7 @@ function checkControllerBalance(
   balance: AccountBalance,
   amount: BN
 ) {
-  if (balance.free.lt(amount)) {
+  if (balance.transferable.lt(amount)) {
     console.log(
       "Controller account does not have enough funds to pay transaction fees"
     );
@@ -199,7 +199,7 @@ function checkStashBalance(
   balance: AccountBalance,
   amount: BN
 ) {
-  if (balance.free.sub(balance.miscFrozen).lt(amount)) {
+  if (balance.transferable.lt(amount)) {
     console.log(
       `Stash account does not have enough funds to bond ${toCTCString(amount)}`
     );
@@ -210,7 +210,7 @@ function checkStashBalance(
 }
 
 function checkIfAlreadyBonded(balance: AccountBalance) {
-  if (balance.miscFrozen.gt(new BN(0))) {
+  if (balance.bonded.gt(new BN(0))) {
     return true;
   } else {
     return false;
