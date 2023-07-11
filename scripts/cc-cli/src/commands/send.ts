@@ -68,7 +68,7 @@ async function checkEnoughFundsToSend(
   api: ApiPromise
 ) {
   const balance = await getBalance(address, api);
-  if (balance.free.sub(balance.miscFrozen).lt(amount)) {
+  if (balance.transferable.lt(amount)) {
     console.log(
       `Caller ${address} has insufficient funds to send ${amount.toString()}`
     );

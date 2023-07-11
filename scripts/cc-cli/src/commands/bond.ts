@@ -78,11 +78,10 @@ async function checkBalance(amount: BN, api: any, address: string) {
 }
 
 function checkBalanceAgainstBondAmount(balance: AccountBalance, amount: BN) {
-  const available = balance.free.sub(balance.miscFrozen);
-  if (available.lt(amount)) {
+  if (balance.transferable.lt(amount)) {
     console.error(
       `Insufficient funds to bond ${toCTCString(amount)}, only ${toCTCString(
-        available
+        balance.transferable
       )} available`
     );
     process.exit(1);
