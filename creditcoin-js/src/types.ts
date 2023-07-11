@@ -19,8 +19,11 @@ import {
     TransferId,
     TransferKind,
     TransferProcessed,
+    SignatureType,
+    OwnershipProof,
 } from './model';
 import { AddressRegistered } from './extrinsics/register-address';
+import { AddressRegisteredV2 } from './extrinsics/register-address-v2';
 import { AskOrderAdded } from './extrinsics/add-ask-order';
 import { BidOrderAdded } from './extrinsics/add-bid-order';
 import { OfferAdded } from './extrinsics/add-offer';
@@ -29,7 +32,10 @@ import { TransferEvent } from './extrinsics/register-transfers';
 import { LoanExempted } from './extrinsics/exempt';
 import { Wallet } from 'ethers';
 import { CollectCoinsEvent } from './extrinsics/request-collect-coins';
-import { PalletCreditcoinOcwErrorsVerificationFailureCause } from '@polkadot/types/lookup';
+import {
+    PalletCreditcoinOcwErrorsVerificationFailureCause,
+    PalletCreditcoinOwnershipProof,
+} from '@polkadot/types/lookup';
 
 export type TxCallback = (result: SubmittableResult) => void;
 export type TxFailureCallback = (error?: Error) => void;
@@ -54,6 +60,12 @@ export interface Extrinsics {
         ownershipProof: string,
         signer: KeyringPair,
     ) => Promise<AddressRegistered>;
+    registerAddressV2: (
+        externalAddress: string,
+        blockchain: Blockchain,
+        ownershipProof: OwnershipProof,
+        signer: KeyringPair,
+    ) => Promise<AddressRegisteredV2>;
     addAskOrder: (
         lenderAddressId: AddressId,
         loanTerms: LoanTerms,
