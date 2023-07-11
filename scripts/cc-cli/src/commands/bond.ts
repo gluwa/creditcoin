@@ -59,7 +59,7 @@ async function bondAction(options: OptionValues) {
 
   await promptContinue();
 
-  const bondTxHash = await bond(
+  const bondTxResult = await bond(
     stashSeed,
     controller,
     amount,
@@ -68,7 +68,7 @@ async function bondAction(options: OptionValues) {
     extra
   );
 
-  console.log("Bond transaction sent with hash:", bondTxHash);
+  console.log(bondTxResult.info);
   process.exit(0);
 }
 
