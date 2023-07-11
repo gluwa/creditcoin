@@ -149,6 +149,14 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             DuplicateOffer: AugmentedError<ApiType>;
             /**
+             * A valid external address could not be generated for the specified blockchain and recovered public key
+             **/
+            EthSignExternalAddressGenerationFailed: AugmentedError<ApiType>;
+            /**
+             * ECDSA public key recovery failed for an ownership proof using EthSign
+             **/
+            EthSignPublicKeyRecoveryFailed: AugmentedError<ApiType>;
+            /**
              * The specified guid has already been used and cannot be re-used.
              **/
             GuidAlreadyUsed: AugmentedError<ApiType>;
@@ -249,6 +257,14 @@ declare module '@polkadot/api-base/types/errors' {
              * The address retrieved from the proof-of-ownership signature did not match the external address being registered.
              **/
             OwnershipNotSatisfied: AugmentedError<ApiType>;
+            /**
+             * A valid external address could not be generated for the specified blockchain and recovered public key
+             **/
+            PersonalSignExternalAddressGenerationFailed: AugmentedError<ApiType>;
+            /**
+             * ECDSA public key recovery failed for an ownership proof using PersonalSign
+             **/
+            PersonalSignPublicKeyRecoveryFailed: AugmentedError<ApiType>;
             RepaymentOrderNonZeroGain: AugmentedError<ApiType>;
             /**
              * Repayment orders are not currently supported.
