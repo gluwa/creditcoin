@@ -62,6 +62,12 @@ impl Blockchain {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum OwnershipProof {
+	PersonalSign(sp_core::ecdsa::Signature),
+	EthSign(sp_core::ecdsa::Signature),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TransferKind {
 	Erc20(ExternalAddress),
 	Ethless(ExternalAddress),

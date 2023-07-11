@@ -6,7 +6,10 @@ use crate::migrations::Migrate;
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::Pallet as Creditcoin;
-use crate::{types::Blockchain, Duration};
+use crate::{
+	types::{Blockchain, OwnershipProof},
+	Duration,
+};
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
@@ -334,6 +337,17 @@ benchmarks! {
 		let root = RawOrigin::Root;
 		let contract = GCreContract::default();
 	}: _(root, contract)
+
+	register_address_v2 {
+		let who: T::AccountId = lender_account::<T>(false);
+		let ktypeid = KeyTypeId(*b"dumy");
+		let seed = "//who".as_bytes().to_vec();
+		let pkey = ecdsa_generate(ktypeid, Some(seed));
+		let address = EVMAddress::from_public(&pkey);
+		let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
+		let proof = OwnershipProof::EthSign(signature);
+	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address, proof)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);

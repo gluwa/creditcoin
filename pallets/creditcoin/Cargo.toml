@@ -49,6 +49,7 @@ strum = { version = "0.24.1", features = ["derive"], default-features = false }
 tracing = { workspace = true }
 pallet-offchain-task-scheduler = { workspace = true }
 
+
 [dev-dependencies]
 assert_matches = { workspace = true }
 bstr = { version = "1.5.0", default-features = false }
@@ -77,5 +78,6 @@ std = [
     'serde/std',
     'serde_json/std',
     'hex/std',
+
 ]
 try-runtime = ['frame-support/try-runtime']

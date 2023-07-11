@@ -40,6 +40,7 @@ import type {
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
     PalletCreditcoinOfferId,
+    PalletCreditcoinOwnershipProof,
     PalletCreditcoinTaskId,
     PalletCreditcoinTaskOutput,
     PalletCreditcoinTransferKind,
@@ -462,6 +463,32 @@ declare module '@polkadot/api-base/types/submittable' {
                     ownershipProof: SpCoreEcdsaSignature | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinBlockchain, Bytes, SpCoreEcdsaSignature]
+            >;
+            /**
+             * Registers an address on an external blockchain as the property of an onchain address.
+             * To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
+             * The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
+             **/
+            registerAddressV2: AugmentedSubmittable<
+                (
+                    blockchain:
+                        | PalletCreditcoinBlockchain
+                        | { Ethereum: any }
+                        | { Rinkeby: any }
+                        | { Luniverse: any }
+                        | { Bitcoin: any }
+                        | { Other: any }
+                        | string
+                        | Uint8Array,
+                    address: Bytes | string | Uint8Array,
+                    ownershipProof:
+                        | PalletCreditcoinOwnershipProof
+                        | { PersonalSign: any }
+                        | { EthSign: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinBlockchain, Bytes, PalletCreditcoinOwnershipProof]
             >;
             registerDealOrder: AugmentedSubmittable<
                 (

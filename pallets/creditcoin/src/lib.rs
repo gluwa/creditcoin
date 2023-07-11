@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
+#![recursion_limit = "256"]
 
 #[macro_export]
 macro_rules! warn_or_panic {
@@ -56,7 +57,7 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
 pub mod pallet {
 
 	use super::*;
-	use crate::helpers::non_paying_error;
+	use crate::{helpers::non_paying_error, types::OwnershipProof};
 	use frame_support::{
 		dispatch::{DispatchResult, PostDispatchInfo},
 		fail,
@@ -142,6 +143,7 @@ pub mod pallet {
 		fn fail_collect_coins() -> Weight;
 		fn remove_authority() -> Weight;
 		fn set_collect_coins_contract() -> Weight;
+		fn register_address_v2() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -493,6 +495,18 @@ pub mod pallet {
 
 		/// The currency has already been registered.
 		CurrencyAlreadyRegistered,
+
+		/// A valid external address could not be generated for the specified blockchain and recovered public key
+		EthSignExternalAddressGenerationFailed,
+
+		/// ECDSA public key recovery failed for an ownership proof using EthSign
+		EthSignPublicKeyRecoveryFailed,
+
+		/// A valid external address could not be generated for the specified blockchain and recovered public key
+		PersonalSignExternalAddressGenerationFailed,
+
+		/// ECDSA public key recovery failed for an ownership proof using PersonalSign
+		PersonalSignPublicKeyRecoveryFailed,
 	}
 
 	#[pallet::genesis_config]
@@ -1350,6 +1364,60 @@ pub mod pallet {
 			T::TaskScheduler::remove_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
+		/// Registers an address on an external blockchain as the property of an onchain address.
+		/// To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
+		/// The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
+		#[pallet::call_index(22)]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
+		pub fn register_address_v2(
+			origin: OriginFor<T>,
+			blockchain: Blockchain,
+			address: ExternalAddress,
+			ownership_proof: OwnershipProof,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let encoded = who.encode();
+			let account = encoded.as_slice();
+
+			match helpers::try_extract_address::<T>(ownership_proof, account, &blockchain, &address)
+			{
+				Ok(recreated_address) => {
+					// Check if external address of keypair used to sign AccountID
+					// is the same one mentioned in this call to register_address
+					ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
+					let address_id = AddressId::new::<T>(&blockchain, &address);
+
+					if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
+						// Already registered, let's figure out who owns it so we can
+						// return a nice error
+						if who == account_id.owner {
+							fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+						}
+						fail!(Error::<T>::AddressAlreadyRegistered);
+					}
+
+					// note: this error condition is unreachable!
+					// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
+					ensure!(
+						helpers::address_is_well_formed(&blockchain, &address),
+						Error::<T>::MalformedExternalAddress
+					);
+
+					let entry = Address { blockchain, value: address, owner: who };
+					Self::deposit_event(Event::<T>::AddressRegistered(
+						address_id.clone(),
+						entry.clone(),
+					));
+					<Addresses<T>>::insert(address_id, entry);
+					Ok(())
+				},
+				Err(e) => {
+					fail!(e)
+				},
+			}
 		}
 	}
 }
