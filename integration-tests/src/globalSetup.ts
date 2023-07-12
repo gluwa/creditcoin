@@ -35,6 +35,10 @@ const setup = async () => {
         (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
     }
 
+    if ((global as any).CREDITCOIN_USES_FAST_RUNTIME === undefined) {
+        (global as any).CREDITCOIN_USES_FAST_RUNTIME = true;
+    }
+
     if ((global as any).CREDITCOIN_MINIMUM_TXN_FEE === undefined) {
         (global as any).CREDITCOIN_MINIMUM_TXN_FEE = POINT_01_CTC;
     }
