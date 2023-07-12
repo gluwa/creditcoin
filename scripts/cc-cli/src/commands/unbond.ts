@@ -33,7 +33,9 @@ async function unbondAction(options: OptionValues) {
 
   const controllerStatus = await getStatus(controllerAddress, api);
   if (!controllerStatus.stash) {
-    console.error(`Cannot unbond, ${controllerAddress} is not staked`);
+    console.error(
+      `Cannot unbond, ${controllerAddress} is not a controller account`
+    );
     process.exit(1);
   }
   const stashStatus = await getStatus(controllerStatus.stash, api);
