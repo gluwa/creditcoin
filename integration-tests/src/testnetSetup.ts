@@ -20,6 +20,7 @@ const createWallet = (who: 'lender' | 'borrower') => {
 
 const setup = async () => {
     (global as any).CREDITCOIN_API_URL = 'wss://rpc.testnet.creditcoin.network/ws';
+    (global as any).CREDITCOIN_USES_FAST_RUNTIME = false;
     (global as any).CREDITCOIN_CREATE_WALLET = createWallet;
 
     (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL = false;
