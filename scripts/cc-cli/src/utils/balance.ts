@@ -1,5 +1,7 @@
-import { BN, parseUnits } from "creditcoin-js";
+import { ApiPromise, BN, parseUnits } from "creditcoin-js";
 import Table from "cli-table3";
+
+import type { DeriveStakingAccount } from "@polkadot/api-derive/types";
 
 export const MICROUNITS_PER_CTC = new BN("1000000000000000000");
 
@@ -37,21 +39,49 @@ export interface AccountBalance {
   locked: BN;
   bonded: BN;
   total: BN;
+  unbonding: BN;
 }
 
 export async function getBalance(address: string, api: any) {
-  const account = await api.query.system.account(address);
-  return balanceFromData(account.data, address);
+  const balacesAll = await getBalancesAll(address, api);
+  const stakingInfo = await getStakingInfo(address, api);
+
+  const balance: AccountBalance = {
+    address,
+    transferable: balacesAll.availableBalance,
+    bonded: stakingInfo?.stakingLedger.active?.unwrap() || new BN(0),
+    locked: balacesAll.lockedBalance,
+    total: balacesAll.freeBalance.add(balacesAll.reservedBalance),
+    unbonding: calcUnbonding(stakingInfo),
+  };
+
+  return balance;
 }
 
-function balanceFromData(data: any, address: string): AccountBalance {
-  return {
-    address,
-    transferable: data.free.sub(data.miscFrozen),
-    bonded: data.miscFrozen,
-    locked: data.reserved,
-    total: data.free,
-  };
+async function getBalancesAll(address: string, api: ApiPromise) {
+  const balance = await api.derive.balances.all(address);
+  return balance;
+}
+
+async function getStakingInfo(address: string, api: ApiPromise) {
+  const stakingInfo = await api.derive.staking.account(address);
+  return stakingInfo;
+}
+
+function calcUnbonding(stakingInfo?: DeriveStakingAccount) {
+  if (!stakingInfo?.unlocking) {
+    return new BN(0);
+  }
+
+  const filtered = stakingInfo.unlocking
+    .filter(
+      ({ remainingEras, value }) =>
+        value.gt(new BN(0)) && remainingEras.gt(new BN(0))
+    )
+    .map((unlock) => unlock.value);
+  const total = filtered.reduce((total, value) => total.iadd(value), new BN(0));
+
+  return total;
 }
 
 export function logBalance(balance: AccountBalance, human = true) {
@@ -69,6 +99,7 @@ export function printBalance(balance: AccountBalance) {
     ["Transferable", toCTCString(balance.transferable, 4)],
     ["Locked", toCTCString(balance.locked, 4)],
     ["Bonded", toCTCString(balance.bonded, 4)],
+    ["Unbonding", toCTCString(balance.unbonding, 4)],
     ["Total", toCTCString(balance.total, 4)]
   );
 
@@ -83,6 +114,7 @@ export function printJsonBalance(balance: AccountBalance) {
       transferable: balance.transferable.toString(),
       bonded: balance.bonded.toString(),
       locked: balance.locked.toString(),
+      unbonding: balance.unbonding.toString(),
       total: balance.total.toString(),
     },
   };
