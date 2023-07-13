@@ -77,7 +77,7 @@ describeIf((global as any).CREDITCOIN_SWITCH_TO_POS_ALREADY_CALLED !== true, 'sw
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        root = keyring.addFromUri('//Alice');
+        root = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo');
     });
 
     afterAll(async () => {

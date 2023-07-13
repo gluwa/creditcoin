@@ -21,7 +21,7 @@ describe('AddAskOrder', (): void => {
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
     });
 
     afterAll(async () => {
