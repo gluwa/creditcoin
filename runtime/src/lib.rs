@@ -318,7 +318,7 @@ impl pallet_babe::Config for Runtime {
 	type EquivocationReportSystem =
 		pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<256>;
+	type MaxAuthorities = ConstU32<128>;
 	type DisabledValidators = (); // TODO: Consider whether to use this (through the session pallet)
 }
 
