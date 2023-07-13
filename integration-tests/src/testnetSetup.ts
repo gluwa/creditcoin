@@ -1,5 +1,24 @@
-import { providers, Wallet } from 'ethers';
+import { providers, Keyring, KeyringPair, Wallet } from 'creditcoin-js';
 import { default as globalSetup } from './globalSetup';
+
+const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
+    switch (who) {
+        case 'lender':
+            const lenderSeed = process.env.LENDER_SEED;
+            if (lenderSeed === undefined) {
+                throw new Error('LENDER_SEED environment variable is required');
+            }
+            return keyring.addFromUri(lenderSeed!); // eslint-disable-line
+        case 'borrower':
+            const borrowerSeed = process.env.BORROWER_SEED;
+            if (borrowerSeed === undefined) {
+                throw new Error('BORROWER_SEED environment variable is required');
+            }
+            return keyring.addFromUri(borrowerSeed!); // eslint-disable-line
+        default:
+            throw new Error(`Unexpected value "${who}"`); // eslint-disable-line
+    }
+};
 
 const createWallet = (who: 'lender' | 'borrower') => {
     const lenderPrivateKey = process.env.LENDER_PRIVATE_KEY;
@@ -22,6 +41,7 @@ const setup = async () => {
     (global as any).CREDITCOIN_SWITCH_TO_POS_ALREADY_CALLED = true;
     (global as any).CREDITCOIN_API_URL = 'wss://rpc.testnet.creditcoin.network/ws';
     (global as any).CREDITCOIN_USES_FAST_RUNTIME = false;
+    (global as any).CREDITCOIN_CREATE_SIGNER = createSigner;
     (global as any).CREDITCOIN_CREATE_WALLET = createWallet;
 
     (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL = false;
