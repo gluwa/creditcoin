@@ -287,7 +287,7 @@ impl pallet_grandpa::Config for Runtime {
 		pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<32>; // Q: maximum number of grandpa authorities?
+	type MaxAuthorities = ConstU32<100>;
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
@@ -318,8 +318,7 @@ impl pallet_babe::Config for Runtime {
 	type EquivocationReportSystem =
 		pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<128>; // Q: maximum authority set size?
-									 //TODO: ^^^ actually consider what to set this to, I just picked a number
+	type MaxAuthorities = ConstU32<256>;
 	type DisabledValidators = (); // TODO: Consider whether to use this (through the session pallet)
 }
 
