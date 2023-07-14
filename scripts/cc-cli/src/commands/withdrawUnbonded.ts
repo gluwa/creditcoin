@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStatus, requireStatus } from "../utils/status";
+import { getStatus, requireStatus } from "../utils/validatorStatus";
 import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,

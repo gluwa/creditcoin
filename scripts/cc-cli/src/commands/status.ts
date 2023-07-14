@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStatus, printValidatorStatus } from "../utils/status";
+import { getStatus, printValidatorStatus } from "../utils/validatorStatus";
 import { parseAddressOrExit, parseBoolean } from "../utils/parsing";
 import { getChainStatus, printChainStatus } from "../utils/chainStatus";
 

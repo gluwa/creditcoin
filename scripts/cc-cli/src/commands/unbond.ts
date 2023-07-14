@@ -5,11 +5,12 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { getBalance } from "../utils/balance";
-import { getStatus, requireStatus } from "../utils/status";
-import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
+
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
 import { parseAmountOrExit, requiredInput } from "../utils/parsing";
+import { getStatus, requireStatus } from "../utils/validatorStatus";
+import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");

@@ -5,7 +5,7 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { chill } from "../utils/validate";
-import { getStatus, requireStatus } from "../utils/status";
+import { getStatus, requireStatus } from "../utils/validatorStatus";
 
 export function makeChillCommand() {
   const cmd = new Command("chill");
