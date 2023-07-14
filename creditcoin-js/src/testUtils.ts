@@ -60,9 +60,9 @@ export const addAskAndBidOrder = async (
         utils: { signAccountId },
     } = ccApi;
 
-    const { blockchain, expirationBlock } = testingData;
-    const lenderWallet = Wallet.createRandom();
-    const borrowerWallet = Wallet.createRandom();
+    const { blockchain, expirationBlock, createWallet } = testingData;
+    const lenderWallet = createWallet('lender');
+    const borrowerWallet = createWallet('borrower');
 
     const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
         registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
