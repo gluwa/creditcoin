@@ -79,9 +79,12 @@ function calcUnbonding(stakingInfo?: DeriveStakingAccount) {
         value.gt(new BN(0)) && remainingEras.gt(new BN(0))
     )
     .map((unlock) => unlock.value);
-  const total = filtered.reduce((total, value) => total.iadd(value), new BN(0));
+  const unbonding = filtered.reduce(
+    (total, value) => total.iadd(value),
+    new BN(0)
+  );
 
-  return total;
+  return unbonding;
 }
 
 export function logBalance(balance: AccountBalance, human = true) {
