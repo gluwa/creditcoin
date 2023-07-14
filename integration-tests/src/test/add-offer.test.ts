@@ -29,7 +29,14 @@ describe('AddOffer', (): void => {
     });
 
     beforeEach(async () => {
-        [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms, testingData);
+        [askOrderId, bidOrderId] = await addAskAndBidOrder(
+            ccApi,
+            lender,
+            borrower,
+            loanTerms,
+            testingData,
+            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+        );
     }, 210000);
 
     afterEach(async () => {

@@ -54,9 +54,10 @@ export const addAskAndBidOrder = async (
     borrower: KeyringPair,
     loanTerms: LoanTerms,
     testingData: TestData,
+    checkForExistingAddress = false,
 ) => {
     const {
-        extrinsics: { addAskOrder, addBidOrder, registerAddress },
+        extrinsics: { addAskOrder, addBidOrder },
         utils: { signAccountId },
     } = ccApi;
 
@@ -65,8 +66,22 @@ export const addAskAndBidOrder = async (
     const borrowerWallet = createWallet('borrower');
 
     const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
-        registerAddress(lenderWallet.address, blockchain, signAccountId(lenderWallet, lender.address), lender),
-        registerAddress(borrowerWallet.address, blockchain, signAccountId(borrowerWallet, borrower.address), borrower),
+        tryRegisterAddress(
+            ccApi,
+            lenderWallet.address,
+            blockchain,
+            signAccountId(lenderWallet, lender.address),
+            lender,
+            checkForExistingAddress,
+        ),
+        tryRegisterAddress(
+            ccApi,
+            borrowerWallet.address,
+            blockchain,
+            signAccountId(borrowerWallet, borrower.address),
+            borrower,
+            checkForExistingAddress,
+        ),
     ]);
     const askGuid = Guid.newGuid();
     const bidGuid = Guid.newGuid();
