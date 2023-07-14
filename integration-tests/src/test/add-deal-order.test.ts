@@ -28,7 +28,14 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower, loanTerms, testingData);
+        const [askOrderId, bidOrderId] = await addAskAndBidOrder(
+            ccApi,
+            lender,
+            borrower,
+            loanTerms,
+            testingData,
+            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+        );
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;
     }, 210000);
