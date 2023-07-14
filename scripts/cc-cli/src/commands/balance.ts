@@ -2,7 +2,7 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getBalance, logBalance } from "../utils/balance";
 import {
-  parseAddresOrExit,
+  parseAddressOrExit,
   parseBoolean,
   requiredInput,
 } from "../utils/parsing";
@@ -20,7 +20,7 @@ async function balanceAction(options: OptionValues) {
   const json = parseBoolean(options.json);
   const { api } = await newApi(options.url);
 
-  const address = parseAddresOrExit(
+  const address = parseAddressOrExit(
     requiredInput(
       options.address,
       "Failed to show balance: Must specify an address"
