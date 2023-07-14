@@ -19,7 +19,7 @@ function formatDaysHoursMinutes(ms: number) {
   return `${daysString}${hoursString}${minutesString}${secString}`;
 }
 
-export async function getStatus(address: string, api: ApiPromise) {
+export async function getValidatorStatus(address: string, api: ApiPromise) {
   const res = await api.derive.staking.account(address);
   const totalStaked = readAmount(res.stakingLedger.total.toString());
   const bonded = totalStaked.gt(new BN(0));

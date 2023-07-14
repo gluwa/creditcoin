@@ -1,6 +1,9 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStatus, printValidatorStatus } from "../utils/validatorStatus";
+import {
+  getValidatorStatus,
+  printValidatorStatus,
+} from "../utils/validatorStatus";
 import { parseAddressOrExit, parseBoolean } from "../utils/parsing";
 import { getChainStatus, printChainStatus } from "../utils/chainStatus";
 
@@ -33,7 +36,7 @@ async function statusAction(options: OptionValues) {
 
   if (showValidatorStatus) {
     const validator = parseAddressOrExit(options.validator);
-    const validatorStatus = await getStatus(validator, api);
+    const validatorStatus = await getValidatorStatus(validator, api);
     console.log(`Validator ${validator}:`);
     await printValidatorStatus(validatorStatus, api);
   }
