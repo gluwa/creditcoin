@@ -2,7 +2,7 @@ import { validateAddress } from "@polkadot/util-crypto/address";
 import { BN, parseUnits } from "creditcoin-js";
 
 // Parse valid or exit with error
-export const parseAddresOrExit = parseOrExit(parseAddressInternal);
+export const parseAddressOrExit = parseOrExit(parseAddressInternal);
 export const parseAmountOrExit = parseOrExit(parseAmountInternal);
 export const parseHexStringOrExit = parseOrExit(parseHexStringInternal);
 export const parseIntegerOrExit = parseOrExit(parseIntegerInternal);
