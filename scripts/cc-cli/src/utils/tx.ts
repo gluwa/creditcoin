@@ -103,7 +103,7 @@ export async function requireEnoughFundsToSend(
   api: ApiPromise,
   amount = new BN(0)
 ) {
-  const balanceAfterSending = await calcualteBalanceAfterTx(
+  const balanceAfterSending = await calculateBalanceAfterTx(
     tx,
     address,
     amount,
