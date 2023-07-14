@@ -1,7 +1,7 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getStatus, printValidatorStatus } from "../utils/status";
-import { parseAddresOrExit, requiredInput } from "../utils/parsing";
+import { parseAddressOrExit, requiredInput } from "../utils/parsing";
 
 export function makeStatusCommand() {
   const cmd = new Command("status");
@@ -15,7 +15,7 @@ async function statusAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   // Check options
-  const address = parseAddresOrExit(
+  const address = parseAddressOrExit(
     requiredInput(
       options.address,
       "Failed to show validator status: Must specify an address"
