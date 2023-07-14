@@ -596,9 +596,9 @@ jobs:
           LAST_POW_BLOCK_INFO_PATH: last-block.json
           ETHEREUM_NODE_URL: ${{ secrets.TESTNET_ETHEREUM_NODE_URL }}
           LENDER_PRIVATE_KEY: ${{ secrets.TESTNET_LENDER_PRIVATE_KEY }}
-          LENDER_SEED: ${{ secrets.TESTNET_LENDER_SEED }}
+          LENDER_SEED: "${{ secrets.TESTNET_LENDER_SEED }}"
           BORROWER_PRIVATE_KEY: ${{ secrets.TESTNET_BORROWER_PRIVATE_KEY }}
-          BORROWER_SEED: ${{ secrets.TESTNET_BORROWER_SEED }}
+          BORROWER_SEED: "${{ secrets.TESTNET_BORROWER_SEED }}"
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
