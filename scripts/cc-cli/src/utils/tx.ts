@@ -84,7 +84,7 @@ export async function getTxFee(
   return fee.partialFee.toBn();
 }
 
-export async function calcualteBalanceAfterTx(
+export async function calculateBalanceAfterTx(
   tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
   callerAddress: string,
   amount: BN,
