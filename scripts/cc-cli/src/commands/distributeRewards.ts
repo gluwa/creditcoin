@@ -6,7 +6,7 @@ import {
 } from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import {
-  parseAddresOrExit,
+  parseAddressOrExit,
   parseIntegerOrExit,
   requiredInput,
 } from "../utils/parsing";
@@ -45,7 +45,7 @@ async function distributeRewardsAction(options: OptionValues) {
 }
 
 function parseOptions(options: OptionValues) {
-  const validator = parseAddresOrExit(
+  const validator = parseAddressOrExit(
     requiredInput(
       options.validatorId,
       "Failed to distribute rewards: Must specify a validator address"
