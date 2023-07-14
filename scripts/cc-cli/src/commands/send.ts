@@ -7,7 +7,7 @@ import {
 } from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import {
-  parseAddresOrExit,
+  parseAddressOrExit,
   parseAmountOrExit,
   parseBoolean,
   requiredInput,
@@ -51,7 +51,7 @@ function parseOptions(options: OptionValues) {
     requiredInput(options.amount, "Failed to send CTC: Must specify an amount")
   );
 
-  const recipient = parseAddresOrExit(
+  const recipient = parseAddressOrExit(
     requiredInput(options.to, "Failed to send CTC: Must specify a recipient")
   );
 

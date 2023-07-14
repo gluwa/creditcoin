@@ -12,7 +12,7 @@ import {
 import { BN } from "creditcoin-js";
 import {
   inputOrDefault,
-  parseAddresOrExit,
+  parseAddressOrExit,
   parseAmountOrExit,
   parseBoolean,
   parseChoiceOrExit,
@@ -97,7 +97,7 @@ function parseOptions(options: OptionValues) {
   );
   checkAmount(amount);
 
-  const controller = parseAddresOrExit(
+  const controller = parseAddressOrExit(
     requiredInput(
       options.controller,
       "Failed to bond: Must specify a controller address"
