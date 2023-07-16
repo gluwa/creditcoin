@@ -92,7 +92,7 @@ export async function calculateBalanceAfterTx(
 ): Promise<BN> {
   const balance = await getBalance(callerAddress, api);
   const fee = await getTxFee(tx, callerAddress);
-  const availableBalance = balance.free.sub(balance.miscFrozen);
+  const availableBalance = balance.transferable;
   const balanceAfterSending = availableBalance.sub(amount).sub(fee);
   return balanceAfterSending;
 }
