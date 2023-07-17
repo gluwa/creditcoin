@@ -51,11 +51,9 @@ export async function promptContinueOrSkip(
 }
 
 export function setInteractivity(options: OptionValues) {
-  if (options.noInput === true) {
-    return false;
-  } else if (tty.isatty(process.stdin.fd)) {
-    return true;
-  } else {
-    return false;
-  }
+  const interactive = process.stdin.isTTY && options.input;
+
+  console.log(options);
+  console.log("Interactive mode:", interactive);
+  return interactive;
 }
