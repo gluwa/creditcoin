@@ -7,6 +7,7 @@ import {
   parseBoolean,
   parsePercentAsPerbillOrExit,
 } from "../utils/parsing";
+import { setInteractivity } from "../utils/interactive";
 
 export function makeValidateCommand() {
   const cmd = new Command("validate");
@@ -24,14 +25,15 @@ export function makeValidateCommand() {
 }
 
 async function validateAction(options: OptionValues) {
+  const interactive = setInteractivity(options);
   const { api } = await newApi(options.url);
+
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
 
   // Default commission is 0%
   const commission = parsePercentAsPerbillOrExit(
     inputOrDefault(options.commission, "0")
   );
-
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
 
   const blocked = parseBoolean(options.blocked);
 

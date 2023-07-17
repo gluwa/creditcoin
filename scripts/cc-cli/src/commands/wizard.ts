@@ -16,7 +16,11 @@ import {
 } from "../utils/balance";
 import { bond, checkRewardDestination } from "../utils/bond";
 import { percentFromPerbill } from "../utils/perbill";
-import { promptContinue, promptContinueOrSkip } from "../utils/interactive";
+import {
+  promptContinue,
+  promptContinueOrSkip,
+  setInteractivity,
+} from "../utils/interactive";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
 import {
   TxStatus,
@@ -50,19 +54,19 @@ export function makeWizardCommand() {
   cmd.action(async (options: OptionValues) => {
     console.log("🧙 Running staking wizard...");
 
-    const { amount, rewardDestination, commission, blocked } =
+    const { amount, rewardDestination, commission, blocked, interactive } =
       parseOptions(options);
 
     // Create new API instance
     const { api } = await newApi(options.url);
 
     // Generate stash keyring
-    const stashSeed = await getStashSeedFromEnvOrPrompt();
+    const stashSeed = await getStashSeedFromEnvOrPrompt(interactive);
     const stashKeyring = initKeyringPair(stashSeed);
     const stashAddress = stashKeyring.address;
 
     // Generate controller keyring
-    const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+    const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
     const controllerKeyring = initKeyringPair(controllerSeed);
     const controllerAddress = controllerKeyring.address;
 
@@ -83,7 +87,7 @@ export function makeWizardCommand() {
     console.log(`🔐 Blocked: ${blocked ? "Yes" : "No"}`);
 
     // Prompt continue
-    await promptContinue();
+    await promptContinue(interactive);
 
     // get balances.
     const stashBalance = await getBalance(stashAddress, api);
@@ -112,7 +116,12 @@ export function makeWizardCommand() {
       console.log(
         "⚠️  Warning: Stash account already bonded. This will increase the amount bonded."
       );
-      if (await promptContinueOrSkip(`Continue or skip bonding extra funds?`)) {
+      if (
+        await promptContinueOrSkip(
+          `Continue or skip bonding extra funds?`,
+          interactive
+        )
+      ) {
         checkStashBalance(stashAddress, stashBalance, amount);
         // Bond extra
         console.log("Sending bond transaction...");
@@ -223,6 +232,8 @@ function checkIfAlreadyBonded(balance: AccountBalance) {
 }
 
 function parseOptions(options: OptionValues) {
+  const interactive = setInteractivity(options);
+
   const amount = parseAmountOrExit(
     requiredInput(
       options.amount,
@@ -248,5 +259,5 @@ function parseOptions(options: OptionValues) {
 
   const blocked = parseBoolean(options.blocked);
 
-  return { amount, rewardDestination, commission, blocked };
+  return { amount, rewardDestination, commission, blocked, interactive };
 }
