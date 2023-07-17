@@ -6,7 +6,7 @@ import {
 } from "../utils/account";
 import { getBalance } from "../utils/balance";
 import { ApiPromise, BN } from "creditcoin-js";
-import { promptContinue } from "../utils/promptContinue";
+import { promptContinue } from "../utils/interactive";
 import { parseAmountOrExit, requiredInput } from "../utils/parsing";
 import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
