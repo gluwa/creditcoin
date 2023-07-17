@@ -2564,6 +2564,7 @@ export default {
             'EthSignPublicKeyRecoveryFailed',
             'PersonalSignExternalAddressGenerationFailed',
             'PersonalSignPublicKeyRecoveryFailed',
+            'UnsupportedBlockchain',
         ],
     },
     /**

@@ -2794,6 +2794,7 @@ declare module '@polkadot/types/lookup' {
         readonly isEthSignPublicKeyRecoveryFailed: boolean;
         readonly isPersonalSignExternalAddressGenerationFailed: boolean;
         readonly isPersonalSignPublicKeyRecoveryFailed: boolean;
+        readonly isUnsupportedBlockchain: boolean;
         readonly type:
             | 'AddressAlreadyRegistered'
             | 'AddressAlreadyRegisteredByCaller'
@@ -2851,7 +2852,8 @@ declare module '@polkadot/types/lookup' {
             | 'EthSignExternalAddressGenerationFailed'
             | 'EthSignPublicKeyRecoveryFailed'
             | 'PersonalSignExternalAddressGenerationFailed'
-            | 'PersonalSignPublicKeyRecoveryFailed';
+            | 'PersonalSignPublicKeyRecoveryFailed'
+            | 'UnsupportedBlockchain';
     }
 
     /** @name PalletDifficultyDifficultyAndTimestamp (334) */
