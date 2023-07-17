@@ -1,9 +1,10 @@
 import { cryptoWaitReady } from "@polkadot/util-crypto";
-import { Command } from "commander";
+import { Command, OptionValues } from "commander";
 import {
   getCallerSeedFromEnvOrPrompt,
   initKeyringPair,
 } from "../utils/account";
+import { setInteractivity } from "../utils/interactive";
 
 export function makeShowAddressCommand() {
   const cmd = new Command("show-address");
@@ -12,9 +13,10 @@ export function makeShowAddressCommand() {
   return cmd;
 }
 
-async function showAddressAction() {
+async function showAddressAction(options: OptionValues) {
+  const interactive = setInteractivity(options);
   await cryptoWaitReady();
-  const callerSeed = await getCallerSeedFromEnvOrPrompt();
+  const callerSeed = await getCallerSeedFromEnvOrPrompt(interactive);
   const pair = initKeyringPair(callerSeed);
   const address = pair.address;
 

@@ -6,6 +6,7 @@ import {
 } from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import { parseHexStringOrExit } from "../utils/parsing";
+import { setInteractivity } from "../utils/interactive";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
@@ -18,10 +19,12 @@ export function makeSetKeysCommand() {
 }
 
 async function setKeysAction(options: OptionValues) {
+  const interactive = setInteractivity(options);
+
   const { api } = await newApi(options.url);
 
   // Build account
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
   const controller = initKeyringPair(controllerSeed);
 
   let keys;

@@ -2,7 +2,7 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { bond, checkRewardDestination } from "../utils/bond";
-import { promptContinue } from "../utils/interactive";
+import { promptContinue, setInteractivity } from "../utils/interactive";
 import {
   AccountBalance,
   getBalance,
@@ -39,10 +39,10 @@ export function makeBondCommand() {
 async function bondAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const { amount, controller, rewardDestination, extra } =
+  const { amount, controller, rewardDestination, extra, interactive } =
     parseOptions(options);
 
-  const stashSeed = await getStashSeedFromEnvOrPrompt();
+  const stashSeed = await getStashSeedFromEnvOrPrompt(interactive);
   const stashKeyring = initKeyringPair(stashSeed);
   const stashAddress = stashKeyring.address;
 
@@ -57,7 +57,7 @@ async function bondAction(options: OptionValues) {
     console.log("Bonding as 'extra'; funds will be added to existing bond");
   }
 
-  await promptContinue();
+  await promptContinue(interactive);
 
   const bondTxResult = await bond(
     stashSeed,
@@ -114,5 +114,7 @@ function parseOptions(options: OptionValues) {
 
   const extra = parseBoolean(options.extra);
 
-  return { amount, controller, rewardDestination, extra };
+  const interactive = setInteractivity(options);
+
+  return { amount, controller, rewardDestination, extra, interactive };
 }

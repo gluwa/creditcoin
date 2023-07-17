@@ -13,19 +13,37 @@ export function initECDSAKeyringPairFromPK(pk: string) {
   return pair;
 }
 
-export async function getStashSeedFromEnvOrPrompt() {
+export async function getStashSeedFromEnvOrPrompt(interactive: boolean) {
+  if (!interactive && !process.env.CC_STASH_SEED) {
+    console.error(
+      "Error: Must specify a seed phrase for the Stash account in the environment variable CC_STASH_SEED or use an interactive shell."
+    );
+    process.exit(1);
+  }
   return await getSeedFromEnvOrPrompt(
     process.env.CC_STASH_SEED,
     "Specify a seed phrase for the Stash account"
   );
 }
-export async function getControllerSeedFromEnvOrPrompt() {
+export async function getControllerSeedFromEnvOrPrompt(interactive: boolean) {
+  if (!interactive && !process.env.CC_CONTROLLER_SEED) {
+    console.error(
+      "Error: Must specify a seed phrase for the Controller account in the environment variable CC_CONTROLLER_SEED or use an interactive shell."
+    );
+    process.exit(1);
+  }
   return await getSeedFromEnvOrPrompt(
     process.env.CC_CONTROLLER_SEED,
     "Specify a seed phrase for the Controller account"
   );
 }
-export async function getCallerSeedFromEnvOrPrompt() {
+export async function getCallerSeedFromEnvOrPrompt(interactive: boolean) {
+  if (!interactive && !process.env.CC_SEED) {
+    console.error(
+      "Error: Must specify a seed phrase for the Caller account in the environment variable CC_SEED or use an interactive shell."
+    );
+    process.exit(1);
+  }
   return await getSeedFromEnvOrPrompt(
     process.env.CC_SEED,
     "Specify caller's seed phrase"
