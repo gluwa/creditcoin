@@ -677,9 +677,12 @@ jobs:
           echo "INFO: $SSH_USER_AT_HOSTNAME"
 
           export LC_RUNNER_VM_NAME="${{ env.RUNNER_VM_NAME }}"
-          ssh -i ~/.ssh/id_rsa \
+          until ssh -i ~/.ssh/id_rsa \
               -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME \
-              -o StrictHostKeyChecking=no "$SSH_USER_AT_HOSTNAME" < ./scripts/provision-github-runner.sh
+              -o StrictHostKeyChecking=no "$SSH_USER_AT_HOSTNAME" < ./scripts/provision-github-runner.sh; do
+            echo "DEBUG: retrying ssh connection ..."
+            sleep 30
+          done
         env:
           LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
           LC_RUNNER_EPHEMERAL: false
