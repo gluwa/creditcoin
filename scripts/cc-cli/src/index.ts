@@ -50,4 +50,8 @@ program.commands.forEach((cmd) => {
   );
 });
 
+program.commands.forEach((cmd) => {
+  cmd.option("--no-input", "Disable interactive prompts", false);
+});
+
 program.parse(process.argv);

@@ -6,6 +6,7 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
+import { setInteractivity } from "../utils/interactive";
 
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");
@@ -15,9 +16,11 @@ export function makeWithdrawUnbondedCommand() {
 }
 
 async function withdrawUnbondedAction(options: OptionValues) {
+  const interactive = setInteractivity(options);
+
   const { api } = await newApi(options.url);
 
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
   const controller = initKeyringPair(controllerSeed);
 
   const controllerStatus = await getValidatorStatus(controller.address, api);

@@ -12,6 +12,7 @@ import {
   parseBoolean,
   requiredInput,
 } from "../utils/parsing";
+import { setInteractivity } from "../utils/interactive";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
@@ -29,9 +30,9 @@ export function makeSendCommand() {
 async function sendAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const { amount, recipient, useEcdsa } = parseOptions(options);
+  const { amount, recipient, useEcdsa, interactive } = parseOptions(options);
 
-  const seed = await getCallerSeedFromEnvOrPrompt();
+  const seed = await getCallerSeedFromEnvOrPrompt(interactive);
   const caller = useEcdsa
     ? initECDSAKeyringPairFromPK(seed)
     : initKeyringPair(seed);
@@ -57,5 +58,7 @@ function parseOptions(options: OptionValues) {
 
   const useEcdsa = parseBoolean(options.useEcdsa);
 
-  return { amount, recipient, useEcdsa };
+  const interactive = setInteractivity(options);
+
+  return { amount, recipient, useEcdsa, interactive };
 }
