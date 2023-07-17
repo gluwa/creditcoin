@@ -16,7 +16,7 @@ import {
 } from "../utils/balance";
 import { bond, checkRewardDestination } from "../utils/bond";
 import { percentFromPerbill } from "../utils/perbill";
-import { promptContinue, promptContinueOrSkip } from "../utils/promptContinue";
+import { promptContinue, promptContinueOrSkip } from "../utils/interactive";
 import { StakingPalletValidatorPrefs } from "../utils/validate";
 import {
   TxStatus,
