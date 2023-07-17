@@ -6,7 +6,7 @@ import {
 } from "../utils/account";
 import { getBalance } from "../utils/balance";
 import { ApiPromise, BN } from "creditcoin-js";
-import { promptContinue } from "../utils/interactive";
+import { promptContinue, setInteractivity } from "../utils/interactive";
 import { parseAmountOrExit, requiredInput } from "../utils/parsing";
 import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
@@ -22,12 +22,14 @@ export function makeUnbondCommand() {
 async function unbondAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
+  const interactive = setInteractivity(options);
+
   const amount = parseAmountOrExit(
     requiredInput(options.amount, "Failed to unbond: Must specify an amount")
   );
 
   // Build account
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
   const controller = initKeyringPair(controllerSeed);
 
   const controllerStatus = await getValidatorStatus(controller.address, api);
@@ -41,7 +43,7 @@ async function unbondAction(options: OptionValues) {
   requireStatus(stashStatus, "bonded");
 
   // Check if amount specified exceeds total bonded funds
-  await checkIfUnbodingMax(controllerStatus.stash, amount, api);
+  await checkIfUnbodingMax(controllerStatus.stash, amount, api, interactive);
 
   // Unbond transaction
   const tx = api.tx.staking.unbond(amount.toString());
@@ -56,13 +58,14 @@ async function unbondAction(options: OptionValues) {
 async function checkIfUnbodingMax(
   address: string,
   unbondAmount: BN,
-  api: ApiPromise
+  api: ApiPromise,
+  interactive: boolean
 ) {
   const balance = await getBalance(address, api);
   if (balance.bonded.lt(unbondAmount)) {
     console.error(
       "Warning: amount specified exceeds total bonded funds, will unbond all funds"
     );
-    await promptContinue();
+    await promptContinue(interactive);
   }
 }

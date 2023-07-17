@@ -1,6 +1,12 @@
+import { OptionValues } from "commander";
 import prompts from "prompts";
+import tty from "tty";
 
-export async function promptContinue() {
+export async function promptContinue(interactive: boolean) {
+  if (!interactive) {
+    return true;
+  }
+
   const promptResult = await prompts({
     type: "confirm",
     name: "confirm",
@@ -19,7 +25,13 @@ export async function promptContinue() {
   return promptResult.confirm;
 }
 
-export async function promptContinueOrSkip(prompt: string) {
+export async function promptContinueOrSkip(
+  prompt: string,
+  interactive: boolean
+) {
+  if (!interactive) {
+    return true;
+  }
   const promptResult = await prompts({
     type: "select",
     name: "continue",
@@ -36,4 +48,14 @@ export async function promptContinueOrSkip(prompt: string) {
   }
 
   return promptResult.continue;
+}
+
+export function setInteractivity(options: OptionValues) {
+  if (options.noInput === true) {
+    return false;
+  } else if (tty.isatty(process.stdin.fd)) {
+    return true;
+  } else {
+    return false;
+  }
 }
