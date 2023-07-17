@@ -3197,7 +3197,7 @@ fn register_address_v2_should_work_personal_sign() {
 		let (who, address, ownership_proof, _) = generate_address_with_proof_personal_sign("owner");
 		let blockchain = Blockchain::Rinkeby;
 
-		let proof = OwnershipProof::EthSign(ownership_proof);
+		let proof = OwnershipProof::PersonalSign(ownership_proof);
 
 		assert_ok!(Creditcoin::register_address_v2(
 			Origin::signed(who.clone()),
