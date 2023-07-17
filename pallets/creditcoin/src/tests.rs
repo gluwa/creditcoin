@@ -1,5 +1,6 @@
 use crate::{
 	helpers::{
+		eth_message,
 		extensions::{HexToAddress, IntoBounded},
 		non_paying_error, EVMAddress, PublicToAddress,
 	},
@@ -114,6 +115,18 @@ pub(crate) fn build_proof_of_ownership(
 	external_keypair.sign(message.as_slice())
 }
 
+pub(crate) fn build_proof_of_ownership_personal_sign(
+	who: AccountId32,
+	external_keypair: sp_core::ecdsa::Pair,
+) -> sp_core::ecdsa::Signature {
+	let message = get_register_address_message_personal_sign(who);
+	external_keypair.sign(message.as_slice())
+}
+
+pub fn get_register_address_message_personal_sign(who: AccountId) -> [u8; 32] {
+	eth_message(&sp_io::hashing::blake2_256(who.encode().as_slice()))
+}
+
 /// Generates an account, an external address, and proof of account ownership
 /// using the **same keypair** for the external address, and cc account.
 pub(crate) fn generate_address_with_proof(
@@ -123,6 +136,18 @@ pub(crate) fn generate_address_with_proof(
 	let external_address = external_address_from_keypair(key_pair.clone());
 	let who = account_from_keypair(key_pair.clone());
 	let ownership_proof = build_proof_of_ownership(who.clone(), key_pair.clone());
+	(who, external_address, ownership_proof, key_pair)
+}
+
+/// Generates an account, an external address, and proof of account ownership
+/// using the **same keypair** for the external address, and cc account.
+pub(crate) fn generate_address_with_proof_personal_sign(
+	seed: &str,
+) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
+	let key_pair = generate_keypair_from_seed(seed);
+	let external_address = external_address_from_keypair(key_pair.clone());
+	let who = account_from_keypair(key_pair.clone());
+	let ownership_proof = build_proof_of_ownership_personal_sign(who.clone(), key_pair.clone());
 	(who, external_address, ownership_proof, key_pair)
 }
 
@@ -2949,7 +2974,7 @@ fn add_and_remove_authority_works_for_root() {
 }
 
 #[test]
-fn register_address_v2_should_work() {
+fn register_address_v2_should_work_eth_sign() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
@@ -2985,15 +3010,15 @@ fn register_address_v2_should_fail_to_reregister_external_address_to_same_accoun
 	ExtBuilder::default().build_and_execute(|| {
 		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
 		// Register external address to account
-		assert_ok!(Creditcoin::register_address(
+		assert_ok!(Creditcoin::register_address_v2(
 			Origin::signed(who.clone()),
 			blockchain.clone(),
 			external_address.clone(),
-			ownership_proof.clone()
+			proof.clone(),
 		));
-
-		let proof = OwnershipProof::EthSign(ownership_proof);
 
 		// Try registering again to same account and fail
 		assert_noop!(
@@ -3001,7 +3026,7 @@ fn register_address_v2_should_fail_to_reregister_external_address_to_same_accoun
 				Origin::signed(who),
 				blockchain,
 				external_address,
-				proof,
+				proof.clone(),
 			),
 			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
 		);
@@ -3082,13 +3107,13 @@ fn register_address_v2_should_error_when_address_too_long() {
 		let proof = OwnershipProof::EthSign(ownership_proof);
 		assert_noop!(
 			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof),
-			crate::Error::<Test>::EthSignExternalAddressGenerationFailed
+			crate::Error::<Test>::MalformedExternalAddress
 		);
 	})
 }
 
 #[test]
-fn register_address_v2_should_error_when_signature_is_invalid() {
+fn try_extract_address_should_error_when_signature_is_invalid() {
 	ExtBuilder::default().build_and_execute(|| {
 		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
 
@@ -3104,4 +3129,94 @@ fn register_address_v2_should_error_when_signature_is_invalid() {
 			crate::Error::<Test>::EthSignPublicKeyRecoveryFailed
 		);
 	})
+}
+
+#[test]
+fn register_address_v2_should_fail_after_v1_registration_with_same_addres() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		// Register external address to account
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			external_address.clone(),
+			ownership_proof.clone(),
+		));
+
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
+		// Try registering again to same account and fail
+		assert_noop!(
+			Creditcoin::register_address_v2(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				proof.clone(),
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+fn register_address_v1_should_fail_after_v2_registration_with_same_addres() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+		let proof = OwnershipProof::EthSign(ownership_proof.clone());
+
+		// Register external address to account
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			external_address.clone(),
+			proof,
+		));
+
+		// Try registering again to same account and fail
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				ownership_proof.clone(),
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+#[ignore]
+fn register_address_v2_should_work_personal_sign() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (who, address, ownership_proof, _) = generate_address_with_proof_personal_sign("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		let proof = OwnershipProof::PersonalSign(ownership_proof);
+
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			address.clone(),
+			proof,
+		));
+		let address_id = crate::AddressId::new::<Test>(&blockchain, &address);
+		let address = crate::Address { blockchain, value: address, owner: who };
+		assert_eq!(Creditcoin::addresses(address_id.clone()), Some(address.clone()));
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+
+		assert_matches!(
+			event,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+				assert_eq!(registered_address_id, address_id);
+				assert_eq!(registered_address, address);
+			}
+		);
+	});
 }
