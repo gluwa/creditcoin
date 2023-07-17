@@ -2,7 +2,7 @@ import { ISubmittableResult } from "@polkadot/types/types";
 import { ApiPromise, BN, KeyringPair } from "creditcoin-js";
 
 import { SubmittableExtrinsic } from "@polkadot/api/types";
-import { getBalance } from "./balance";
+import { AccountBalance, getBalance, toCTCString } from "./balance";
 
 export async function signSendAndWatch(
   tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
@@ -84,17 +84,14 @@ export async function getTxFee(
   return fee.partialFee.toBn();
 }
 
-export async function calculateBalanceAfterTx(
-  tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
-  callerAddress: string,
+export function canPay(
+  balance: AccountBalance,
   amount: BN,
-  api: ApiPromise
-): Promise<BN> {
-  const balance = await getBalance(callerAddress, api);
-  const fee = await getTxFee(tx, callerAddress);
+  existentialDeposit = new BN(1)
+) {
   const availableBalance = balance.transferable;
-  const balanceAfterSending = availableBalance.sub(amount).sub(fee);
-  return balanceAfterSending;
+  const availableAfter = availableBalance.sub(amount);
+  return availableAfter.gte(existentialDeposit);
 }
 
 export async function requireEnoughFundsToSend(
@@ -103,15 +100,15 @@ export async function requireEnoughFundsToSend(
   api: ApiPromise,
   amount = new BN(0)
 ) {
-  const balanceAfterSending = await calculateBalanceAfterTx(
-    tx,
-    address,
-    amount,
-    api
-  );
-  if (balanceAfterSending.lt(new BN(1))) {
+  const balance = await getBalance(address, api);
+  const txFee = await getTxFee(tx, address);
+  const totalCost = amount.add(txFee);
+
+  if (!canPay(balance, totalCost)) {
     console.error(
-      `Caller ${address} has insufficient funds to send the transaction and maintain existential deposit; transaction cancelled.`
+      `Caller ${address} has insufficient funds to send the transaction (requires ${toCTCString(
+        totalCost
+      )}); transaction cancelled.`
     );
     process.exit(1);
   }
