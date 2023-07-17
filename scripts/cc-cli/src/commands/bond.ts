@@ -2,7 +2,7 @@ import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { bond, checkRewardDestination } from "../utils/bond";
-import { promptContinue } from "../utils/promptContinue";
+import { promptContinue } from "../utils/interactive";
 import {
   AccountBalance,
   getBalance,
