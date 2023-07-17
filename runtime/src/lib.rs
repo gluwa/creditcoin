@@ -278,6 +278,8 @@ parameter_types! {
 			BondingDuration::get() as u64 * SessionsPerEra::get() as u64 * EpochDuration::get();
 }
 
+type MaxAuthorties = ConstU32<256>;
+
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
@@ -287,7 +289,7 @@ impl pallet_grandpa::Config for Runtime {
 		pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<256>;
+	type MaxAuthorities = MaxAuthorties;
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
@@ -318,7 +320,7 @@ impl pallet_babe::Config for Runtime {
 	type EquivocationReportSystem =
 		pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<128>;
+	type MaxAuthorities = MaxAuthorties;
 	type DisabledValidators = (); // TODO: Consider whether to use this (through the session pallet)
 }
 
