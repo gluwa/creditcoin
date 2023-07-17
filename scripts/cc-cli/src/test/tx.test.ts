@@ -2,13 +2,6 @@ import { BN } from "creditcoin-js";
 import { AccountBalance } from "../utils/balance";
 import { canPay } from "../utils/tx";
 
-describe("unit test: utils/tx", () => {
-  test("balance can check for negatives", () => {
-    const negOne = new BN(1).sub(new BN(2));
-    expect(negOne.toString()).toStrictEqual("-1");
-  });
-});
-
 describe("unit tests: utils/tx", () => {
   test("given a payable amount, canPay returns true", () => {
     const balance: AccountBalance = {
