@@ -507,6 +507,9 @@ pub mod pallet {
 
 		/// ECDSA public key recovery failed for an ownership proof using PersonalSign
 		PersonalSignPublicKeyRecoveryFailed,
+
+		/// An unsupported blockchain was specified to register_address_v2
+		UnsupportedBlockchain,
 	}
 
 	#[pallet::genesis_config]
@@ -1378,9 +1381,18 @@ pub mod pallet {
 			ownership_proof: OwnershipProof,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-
 			let encoded = who.encode();
 			let account = encoded.as_slice();
+
+			ensure!(
+				helpers::blockchain_is_supported(&blockchain),
+				Error::<T>::UnsupportedBlockchain
+			);
+
+			ensure!(
+				helpers::address_is_well_formed(&blockchain, &address),
+				Error::<T>::MalformedExternalAddress
+			);
 
 			match helpers::try_extract_address::<T>(ownership_proof, account, &blockchain, &address)
 			{
@@ -1398,13 +1410,6 @@ pub mod pallet {
 						}
 						fail!(Error::<T>::AddressAlreadyRegistered);
 					}
-
-					// note: this error condition is unreachable!
-					// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
-					ensure!(
-						helpers::address_is_well_formed(&blockchain, &address),
-						Error::<T>::MalformedExternalAddress
-					);
 
 					let entry = Address { blockchain, value: address, owner: who };
 					Self::deposit_event(Event::<T>::AddressRegistered(

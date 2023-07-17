@@ -3026,7 +3026,7 @@ fn register_address_v2_should_fail_to_reregister_external_address_to_same_accoun
 				Origin::signed(who),
 				blockchain,
 				external_address,
-				proof.clone(),
+				proof,
 			),
 			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
 		);
@@ -3126,7 +3126,7 @@ fn try_extract_address_should_error_when_signature_is_invalid() {
 		let blockchain = Blockchain::Rinkeby;
 		assert_noop!(
 			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, bad_proof),
-			crate::Error::<Test>::EthSignPublicKeyRecoveryFailed
+			crate::Error::<Test>::InvalidSignature
 		);
 	})
 }
@@ -3153,7 +3153,7 @@ fn register_address_v2_should_fail_after_v1_registration_with_same_addres() {
 				Origin::signed(who),
 				blockchain,
 				external_address,
-				proof.clone(),
+				proof,
 			),
 			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
 		);
@@ -3181,7 +3181,7 @@ fn register_address_v1_should_fail_after_v2_registration_with_same_addres() {
 				Origin::signed(who),
 				blockchain,
 				external_address,
-				ownership_proof.clone(),
+				ownership_proof,
 			),
 			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
 		);
@@ -3217,6 +3217,22 @@ fn register_address_v2_should_work_personal_sign() {
 				assert_eq!(registered_address_id, address_id);
 				assert_eq!(registered_address, address);
 			}
+		);
+	});
+}
+
+#[test]
+fn register_address_v2_should_error_with_unsupported_blockchain() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Bitcoin;
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof,),
+			crate::Error::<Test>::UnsupportedBlockchain
 		);
 	});
 }
