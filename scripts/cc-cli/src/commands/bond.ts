@@ -4,7 +4,7 @@ import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { bond, checkRewardDestination } from "../utils/bond";
 import { promptContinue } from "../utils/promptContinue";
 import {
-  Balance,
+  AccountBalance,
   getBalance,
   toCTCString,
   checkAmount,
@@ -59,7 +59,7 @@ async function bondAction(options: OptionValues) {
 
   await promptContinue();
 
-  const bondTxHash = await bond(
+  const bondTxResult = await bond(
     stashSeed,
     controller,
     amount,
@@ -68,7 +68,7 @@ async function bondAction(options: OptionValues) {
     extra
   );
 
-  console.log("Bond transaction sent with hash:", bondTxHash);
+  console.log(bondTxResult.info);
   process.exit(0);
 }
 
@@ -77,12 +77,11 @@ async function checkBalance(amount: BN, api: any, address: string) {
   checkBalanceAgainstBondAmount(balance, amount);
 }
 
-function checkBalanceAgainstBondAmount(balance: Balance, amount: BN) {
-  const available = balance.free.sub(balance.miscFrozen);
-  if (available.lt(amount)) {
+function checkBalanceAgainstBondAmount(balance: AccountBalance, amount: BN) {
+  if (balance.transferable.lt(amount)) {
     console.error(
       `Insufficient funds to bond ${toCTCString(amount)}, only ${toCTCString(
-        available
+        balance.transferable
       )} available`
     );
     process.exit(1);

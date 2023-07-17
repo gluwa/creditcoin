@@ -57,7 +57,7 @@ async function checkIfUnbodingMax(
   api: ApiPromise
 ) {
   const balance = await getBalance(address, api);
-  if (balance.miscFrozen.lt(unbondAmount)) {
+  if (balance.bonded.lt(unbondAmount)) {
     console.error(
       "Warning: amount specified exceeds total bonded funds, will unbond all funds"
     );
