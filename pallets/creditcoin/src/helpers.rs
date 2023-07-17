@@ -189,7 +189,7 @@ fn extract_public_key_eth_sign<T: Config>(
 				sp_core::ecdsa::Public::from_raw(public_key),
 			) {
 				Some(s) => Ok(s),
-				None => Err(Error::EthSignExternalAddressGenerationFailed),
+				None => Err(Error::MalformedExternalAddress),
 			}
 		},
 		Err(_) => Err(Error::EthSignPublicKeyRecoveryFailed),
@@ -212,6 +212,7 @@ pub fn extract_public_key_personal_sign<T: Config>(
 	blockchain: &Blockchain,
 	address: &ExternalAddress,
 ) -> Result<ExternalAddress, Error<T>> {
+	log::warn!("{:?}", account_id);
 	let message = sp_io::hashing::blake2_256(account_id);
 	let message = eth_message(&message);
 
@@ -223,7 +224,7 @@ pub fn extract_public_key_personal_sign<T: Config>(
 				sp_core::ecdsa::Public::from_raw(public_key),
 			) {
 				Some(s) => Ok(s),
-				None => Err(Error::PersonalSignExternalAddressGenerationFailed),
+				None => Err(Error::MalformedExternalAddress),
 			}
 		},
 		Err(_) => Err(Error::PersonalSignPublicKeyRecoveryFailed),
