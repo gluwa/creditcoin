@@ -3113,7 +3113,7 @@ fn register_address_v2_should_error_when_address_too_long() {
 }
 
 #[test]
-fn try_extract_address_should_error_when_signature_is_invalid() {
+fn register_address_v2_should_error_when_signature_is_invalid() {
 	ExtBuilder::default().build_and_execute(|| {
 		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
 
