@@ -287,7 +287,7 @@ impl pallet_grandpa::Config for Runtime {
 		pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 
 	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<100>;
+	type MaxAuthorities = ConstU32<256>;
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
