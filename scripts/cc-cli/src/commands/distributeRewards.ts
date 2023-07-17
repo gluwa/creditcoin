@@ -11,6 +11,7 @@ import {
   requiredInput,
 } from "../utils/parsing";
 import { checkEraIsInHistory } from "../utils/era";
+import { setInteractivity } from "../utils/interactive";
 
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
@@ -27,7 +28,7 @@ export function makeDistributeRewardsCommand() {
 async function distributeRewardsAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const { validator, era } = parseOptions(options);
+  const { validator, era, interactive } = parseOptions(options);
 
   const eraIsValid = await checkEraIsInHistory(era, api);
   if (!eraIsValid) {
@@ -38,8 +39,9 @@ async function distributeRewardsAction(options: OptionValues) {
   }
 
   // Any account can call the distribute_rewards extrinsic
-  const callerSeed = await getCallerSeedFromEnvOrPrompt();
+  const callerSeed = await getCallerSeedFromEnvOrPrompt(interactive);
   const caller = initKeyringPair(callerSeed);
+
   const distributeTx = api.tx.staking.payoutStakers(validator, era);
 
   await requireEnoughFundsToSend(distributeTx, caller.address, api);
@@ -72,5 +74,7 @@ function parseOptions(options: OptionValues) {
     process.exit(1);
   }
 
-  return { validator, era };
+  const interactive = setInteractivity(options);
+
+  return { validator, era, interactive };
 }

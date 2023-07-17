@@ -6,6 +6,7 @@ import {
 } from "../utils/account";
 import { chill } from "../utils/validate";
 import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
+import { setInteractivity } from "../utils/interactive";
 
 export function makeChillCommand() {
   const cmd = new Command("chill");
@@ -17,9 +18,10 @@ export function makeChillCommand() {
 }
 
 async function chillAction(options: OptionValues) {
+  const interactive = setInteractivity(options);
   const { api } = await newApi(options.url);
 
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt();
+  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
   const controllerKeyring = initKeyringPair(controllerSeed);
   const controllerAddress = controllerKeyring.address;
 
