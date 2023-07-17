@@ -189,10 +189,10 @@ fn extract_public_key_eth_sign<T: Config>(
 				sp_core::ecdsa::Public::from_raw(public_key),
 			) {
 				Some(s) => Ok(s),
-				None => Err(Error::MalformedExternalAddress),
+				None => Err(Error::EthSignExternalAddressGenerationFailed),
 			}
 		},
-		Err(_) => Err(Error::EthSignPublicKeyRecoveryFailed),
+		Err(_) => Err(Error::InvalidSignature),
 	}
 }
 
@@ -224,10 +224,10 @@ pub fn extract_public_key_personal_sign<T: Config>(
 				sp_core::ecdsa::Public::from_raw(public_key),
 			) {
 				Some(s) => Ok(s),
-				None => Err(Error::MalformedExternalAddress),
+				None => Err(Error::PersonalSignExternalAddressGenerationFailed),
 			}
 		},
-		Err(_) => Err(Error::PersonalSignPublicKeyRecoveryFailed),
+		Err(_) => Err(Error::InvalidSignature),
 	}
 }
 
@@ -244,4 +244,13 @@ fn test_extract_public_key_personal_sign() {
 	let message = eth_message(&raw_address);
 
 	assert_eq!(message.as_slice(), expected_hash.as_slice());
+}
+
+pub fn blockchain_is_supported(blockchain: &Blockchain) -> bool {
+	match blockchain {
+		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => true,
+		Blockchain::Bitcoin => false,
+		Blockchain::Other(_) => false,
+		_ => false,
+	}
 }
