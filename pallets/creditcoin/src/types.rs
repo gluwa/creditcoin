@@ -65,6 +65,7 @@ impl Blockchain {
 pub enum OwnershipProof {
 	PersonalSign(sp_core::ecdsa::Signature),
 	EthSign(sp_core::ecdsa::Signature),
+	Other,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]

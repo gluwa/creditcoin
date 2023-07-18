@@ -44,6 +44,8 @@ pub use types::{
 	TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
 
+mod address_registrar;
+
 pub(crate) use types::{DoubleMapExt, Id};
 
 #[cfg(test)]
@@ -510,6 +512,9 @@ pub mod pallet {
 
 		/// An unsupported blockchain was specified to register_address_v2
 		UnsupportedBlockchain,
+
+		/// An unsupported proof type was supplied to register address.
+		UnsupportedProofType,
 	}
 
 	#[pallet::genesis_config]
