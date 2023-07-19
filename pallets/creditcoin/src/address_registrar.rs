@@ -7,6 +7,7 @@ use sp_core::ecdsa::Public;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::hashing::{keccak_256, sha2_256};
 use sp_runtime::BoundedVec;
+use sp_std::prelude::*;
 
 /// The length of a bitcoin address in bytes
 const BTC_MIN_LENGTH: usize = 25;
@@ -27,7 +28,7 @@ pub trait ExternalAddressRegistrar {
 	fn verify_proof<T: crate::Config>(
 		&self,
 		proof: OwnershipProof,
-		account_id: &[u8; 32],
+		account_id: &[u8],
 		blockchain: &Blockchain,
 		address: &ExternalAddress,
 	) -> Option<crate::Error<T>>;
@@ -50,7 +51,6 @@ impl Registrar {
 			Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => true,
 			Blockchain::Bitcoin => false,
 			Blockchain::Other(_) => false,
-			_ => false,
 		}
 	}
 
@@ -141,8 +141,11 @@ impl Registrar {
 			return Some(Error::AddressAlreadyRegistered);
 		}
 
-		let entry = Address { blockchain: blockchain.clone(), value: address.clone(), owner: who };
-		<Addresses<T>>::insert(address_id, entry);
+		<Addresses<T>>::insert(
+			address_id,
+			Address { blockchain: blockchain.clone(), value: address.clone(), owner: who },
+		);
+
 		None
 	}
 }
@@ -186,7 +189,7 @@ fn eth_address_is_well_formed(address: &[u8]) -> bool {
 }
 
 pub fn eth_message(message: &[u8; 32]) -> [u8; 32] {
-	let mut bytes: Vec<u8> = vec![];
+	let mut bytes: crate::Vec<u8> = vec![];
 	let salt = b"\x19Ethereum Signed Message:\n32";
 
 	bytes.extend_from_slice(salt);
@@ -225,7 +228,7 @@ impl PublicToAddress for EVMAddress {
 
 #[cfg(test)]
 mod tests {
-	use core::convert::{TryFrom, TryInto};
+	use crate::mock::*;
 	use frame_support::BoundedVec;
 	use sp_core::Pair;
 
@@ -344,5 +347,24 @@ mod tests {
 		assert_eq!(r.is_blockchain_supported(&Blockchain::Rinkeby), true);
 		assert_eq!(r.is_blockchain_supported(&Blockchain::Bitcoin), false);
 		assert_eq!(r.is_blockchain_supported(&Blockchain::Other(BoundedVec::default())), false);
+	}
+
+	#[test]
+	fn verify_proof_should_fail_unsupported_proof() {
+		let r = Registrar::default();
+
+		let unsupported_proof = OwnershipProof::Other;
+		let account_id: &[u8] = &[];
+		let blockchain = Blockchain::Ethereum;
+		let address = ExternalAddress::default();
+
+		let result = r.verify_proof::<Test>(&unsupported_proof, account_id, &blockchain, &address);
+
+		assert!(result.is_some(), "Verify proof should not work with this proof type");
+		assert_eq!(
+			result.unwrap(),
+			crate::Error::UnsupportedProofType,
+			"Unexpected error returned"
+		);
 	}
 }

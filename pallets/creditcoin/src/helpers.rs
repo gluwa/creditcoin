@@ -169,6 +169,7 @@ pub fn try_extract_address<T: Config>(
 		OwnershipProof::PersonalSign(signature) => {
 			extract_public_key_personal_sign(signature.into(), account_id, blockchain, address)
 		},
+		OwnershipProof::Other => Err(crate::Error::UnsupportedProofType),
 	}
 }
 

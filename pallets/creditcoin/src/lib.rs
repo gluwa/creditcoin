@@ -1374,9 +1374,62 @@ pub mod pallet {
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		/// Registers an address on an external blockchain as the property of an onchain address.
-		/// To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
-		/// The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
+		// /// Registers an address on an external blockchain as the property of an onchain address.
+		// /// To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
+		// /// The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
+		// #[pallet::call_index(22)]
+		// #[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
+		// pub fn register_address_v2(
+		// 	origin: OriginFor<T>,
+		// 	blockchain: Blockchain,
+		// 	address: ExternalAddress,
+		// 	ownership_proof: OwnershipProof,
+		// ) -> DispatchResult {
+		// 	let who = ensure_signed(origin)?;
+		// 	let encoded = who.encode();
+		// 	let account = encoded.as_slice();
+
+		// 	ensure!(
+		// 		helpers::blockchain_is_supported(&blockchain),
+		// 		Error::<T>::UnsupportedBlockchain
+		// 	);
+
+		// 	ensure!(
+		// 		helpers::address_is_well_formed(&blockchain, &address),
+		// 		Error::<T>::MalformedExternalAddress
+		// 	);
+
+		// 	match helpers::try_extract_address::<T>(ownership_proof, account, &blockchain, &address)
+		// 	{
+		// 		Ok(recreated_address) => {
+		// 			// Check if external address of keypair used to sign AccountID
+		// 			// is the same one mentioned in this call to register_address
+		// 			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
+		// 			let address_id = AddressId::new::<T>(&blockchain, &address);
+
+		// 			if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
+		// 				// Already registered, let's figure out who owns it so we can
+		// 				// return a nice error
+		// 				if who == account_id.owner {
+		// 					fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+		// 				}
+		// 				fail!(Error::<T>::AddressAlreadyRegistered);
+		// 			}
+
+		// 			let entry = Address { blockchain, value: address, owner: who };
+		// 			Self::deposit_event(Event::<T>::AddressRegistered(
+		// 				address_id.clone(),
+		// 				entry.clone(),
+		// 			));
+		// 			<Addresses<T>>::insert(address_id, entry);
+		// 			Ok(())
+		// 		},
+		// 		Err(e) => {
+		// 			fail!(e)
+		// 		},
+		// 	}
+		// }
+
 		#[pallet::call_index(22)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
 		pub fn register_address_v2(
@@ -1386,70 +1439,15 @@ pub mod pallet {
 			ownership_proof: OwnershipProof,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let encoded = who.encode();
-			let account = encoded.as_slice();
-
-			ensure!(
-				helpers::blockchain_is_supported(&blockchain),
-				Error::<T>::UnsupportedBlockchain
-			);
-
-			ensure!(
-				helpers::address_is_well_formed(&blockchain, &address),
-				Error::<T>::MalformedExternalAddress
-			);
-
-			match helpers::try_extract_address::<T>(ownership_proof, account, &blockchain, &address)
-			{
-				Ok(recreated_address) => {
-					// Check if external address of keypair used to sign AccountID
-					// is the same one mentioned in this call to register_address
-					ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
-					let address_id = AddressId::new::<T>(&blockchain, &address);
-
-					if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
-						// Already registered, let's figure out who owns it so we can
-						// return a nice error
-						if who == account_id.owner {
-							fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
-						}
-						fail!(Error::<T>::AddressAlreadyRegistered);
-					}
-
-					let entry = Address { blockchain, value: address, owner: who };
-					Self::deposit_event(Event::<T>::AddressRegistered(
-						address_id.clone(),
-						entry.clone(),
-					));
-					<Addresses<T>>::insert(address_id, entry);
-					Ok(())
-				},
-				Err(e) => {
-					fail!(e)
-				},
-			}
-		}
-
-		#[pallet::call_index(23)]
-		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
-		pub fn register_address_v3(
-			origin: OriginFor<T>,
-			blockchain: Blockchain,
-			address: ExternalAddress,
-			ownership_proof: OwnershipProof,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
 			let registrar = address_registrar::Registrar::default();
 
-			ensure!(
-				registrar.is_blockchain_supported(&blockchain),
-				Error::<T>::UnsupportedBlockchain,
-			);
+			if !registrar.is_blockchain_supported(&blockchain) {
+				fail!(Error::<T>::UnsupportedBlockchain);
+			}
 
-			ensure!(
-				registrar.is_address_well_formed(&blockchain, &address),
-				Error::<T>::MalformedExternalAddress,
-			);
+			if !registrar.is_address_well_formed(&blockchain, &address) {
+				fail!(Error::<T>::MalformedExternalAddress);
+			}
 
 			let encoded = who.encode();
 			let account = encoded.as_slice();
@@ -1460,7 +1458,7 @@ pub mod pallet {
 				fail!(error);
 			};
 
-			if let Some(error) = registrar.insert_address::<T>(who, &blockchain, &address) {
+			if let Some(error) = registrar.insert_address::<T>(who.clone(), &blockchain, &address) {
 				fail!(error);
 			}
 
