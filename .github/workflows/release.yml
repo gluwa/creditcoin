@@ -11,6 +11,7 @@ permissions: read-all
 jobs:
   build-native-runtime:
     strategy:
+      fail-fast: false
       matrix:
         operating-system: [ubuntu-22.04, windows-2022, macos-11]
     runs-on: ${{ matrix.operating-system }}
