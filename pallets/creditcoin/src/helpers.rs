@@ -212,7 +212,6 @@ pub fn extract_public_key_personal_sign<T: Config>(
 	blockchain: &Blockchain,
 	address: &ExternalAddress,
 ) -> Result<ExternalAddress, Error<T>> {
-	log::warn!("{:?}", account_id);
 	let message = sp_io::hashing::blake2_256(account_id);
 	let message = eth_message(&message);
 
@@ -251,6 +250,5 @@ pub fn blockchain_is_supported(blockchain: &Blockchain) -> bool {
 		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => true,
 		Blockchain::Bitcoin => false,
 		Blockchain::Other(_) => false,
-		_ => false,
 	}
 }
