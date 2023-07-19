@@ -209,6 +209,8 @@ jobs:
           if-no-files-found: error
 
   create-release:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     needs:
       - build-native-runtime
