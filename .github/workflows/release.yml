@@ -29,6 +29,8 @@ jobs:
 
       - name: Install protobuf
         uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure rustc version
         shell: bash
