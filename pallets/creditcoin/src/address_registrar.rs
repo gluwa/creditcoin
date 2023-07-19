@@ -1,9 +1,8 @@
 use crate::{
 	helpers::generate_external_address, types::OwnershipProof, Blockchain, Error, ExternalAddress,
 };
-use crate::{AddressId, Addresses};
+use crate::{Address, AddressId, Addresses};
 use base58::FromBase58;
-use libsecp256k1::PublicKey;
 use sp_core::ecdsa::Public;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
 use sp_io::hashing::{keccak_256, sha2_256};
@@ -71,31 +70,40 @@ impl Registrar {
 
 	pub fn verify_proof<T: crate::Config>(
 		&self,
-		signature: [u8; 65],
 		proof: &OwnershipProof,
-		account_id: &[u8; 32],
+		account_id: &[u8],
 		blockchain: &Blockchain,
 		address: &ExternalAddress,
 	) -> Option<crate::Error<T>> {
 		let Some(response) = self.generate_response_proof(account_id, proof) else {
-			return Some(Error::UnsupportedProofType);
+			return Some(Error::UnsupportedProofType)
 		};
 
-		match secp256k1_ecdsa_recover_compressed(&signature, &response) {
-			Err(_) => Some(Error::InvalidSignature),
-			Ok(public_key) => {
-				match generate_external_address(
-					blockchain,
-					address,
-					sp_core::ecdsa::Public::from_raw(public_key),
-				) {
-					Some(recreated_address) => {
-						if &recreated_address == address {
-							return None;
-						}
-						return Some(Error::OwnershipNotSatisfied);
-					},
-					None => Some(Error::EthSignExternalAddressGenerationFailed),
+		let Some(public_key) = self.recover_public_key(proof.clone(), &response) else {
+			return Some(Error::InvalidSignature);
+		};
+
+		let public_key = sp_core::ecdsa::Public::from_raw(public_key);
+		let recreated_address = generate_external_address(blockchain, address, public_key);
+
+		let Some(recreated_address) = recreated_address else {
+			return Some(Error::EthSignExternalAddressGenerationFailed);
+		};
+
+		if &recreated_address != address {
+			return Some(Error::OwnershipNotSatisfied);
+		}
+
+		None
+	}
+
+	fn recover_public_key(&self, proof: OwnershipProof, message: &[u8; 32]) -> Option<[u8; 33]> {
+		match proof {
+			OwnershipProof::Other => return None,
+			OwnershipProof::EthSign(signature) | OwnershipProof::PersonalSign(signature) => {
+				match secp256k1_ecdsa_recover_compressed(&signature.into(), &message) {
+					Ok(public_key) => return Some(public_key),
+					Err(_) => return None,
 				}
 			},
 		}
@@ -103,7 +111,7 @@ impl Registrar {
 
 	fn generate_response_proof(
 		&self,
-		account_id: &[u8; 32],
+		account_id: &[u8],
 		challenge_proof: &OwnershipProof,
 	) -> Option<[u8; 32]> {
 		match challenge_proof {
@@ -133,6 +141,8 @@ impl Registrar {
 			return Some(Error::AddressAlreadyRegistered);
 		}
 
+		let entry = Address { blockchain: blockchain.clone(), value: address.clone(), owner: who };
+		<Addresses<T>>::insert(address_id, entry);
 		None
 	}
 }

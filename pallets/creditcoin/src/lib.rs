@@ -1429,5 +1429,48 @@ pub mod pallet {
 				},
 			}
 		}
+
+		#[pallet::call_index(23)]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
+		pub fn register_address_v3(
+			origin: OriginFor<T>,
+			blockchain: Blockchain,
+			address: ExternalAddress,
+			ownership_proof: OwnershipProof,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let registrar = address_registrar::Registrar::default();
+
+			ensure!(
+				registrar.is_blockchain_supported(&blockchain),
+				Error::<T>::UnsupportedBlockchain,
+			);
+
+			ensure!(
+				registrar.is_address_well_formed(&blockchain, &address),
+				Error::<T>::MalformedExternalAddress,
+			);
+
+			let encoded = who.encode();
+			let account = encoded.as_slice();
+
+			if let Some(error) =
+				registrar.verify_proof::<T>(&ownership_proof, account, &blockchain, &address)
+			{
+				fail!(error);
+			};
+
+			if let Some(error) = registrar.insert_address::<T>(who, &blockchain, &address) {
+				fail!(error);
+			}
+
+			let address_id = AddressId::new::<T>(&blockchain, &address);
+			let entry =
+				Address { blockchain: blockchain.clone(), value: address.clone(), owner: who };
+
+			Self::deposit_event(Event::<T>::AddressRegistered(address_id.clone(), entry.clone()));
+
+			Ok(())
+		}
 	}
 }
