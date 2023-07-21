@@ -45,6 +45,8 @@ pub use types::{
 };
 
 mod address_registrar;
+mod context;
+mod extrinsics;
 
 pub(crate) use types::{DoubleMapExt, Id};
 
@@ -1438,34 +1440,25 @@ pub mod pallet {
 			address: ExternalAddress,
 			ownership_proof: OwnershipProof,
 		) -> DispatchResult {
+			// Create an prepare the initial context
+			let ctx = &context::DefaultContext::default();
+
+			// Call the extrinsic through its wrapper and pass in the current context
+			if let Err(e) = extrinsics::register_address_v2::<T>(
+				ctx,
+				origin,
+				blockchain,
+				address,
+				ownership_proof,
+			) {
+				fail!(e);
+			}
+
+			// not sure what to do with this yet
 			let who = ensure_signed(origin)?;
-			let registrar = address_registrar::Registrar::default();
-
-			if !registrar.is_blockchain_supported(&blockchain) {
-				fail!(Error::<T>::UnsupportedBlockchain);
-			}
-
-			if !registrar.is_address_well_formed(&blockchain, &address) {
-				fail!(Error::<T>::MalformedExternalAddress);
-			}
-
-			let encoded = who.encode();
-			let account = encoded.as_slice();
-
-			if let Some(error) =
-				registrar.verify_proof::<T>(&ownership_proof, account, &blockchain, &address)
-			{
-				fail!(error);
-			};
-
-			if let Some(error) = registrar.insert_address::<T>(who.clone(), &blockchain, &address) {
-				fail!(error);
-			}
-
 			let address_id = AddressId::new::<T>(&blockchain, &address);
 			let entry =
 				Address { blockchain: blockchain.clone(), value: address.clone(), owner: who };
-
 			Self::deposit_event(Event::<T>::AddressRegistered(address_id.clone(), entry.clone()));
 
 			Ok(())

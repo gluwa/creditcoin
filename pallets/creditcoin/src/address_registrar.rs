@@ -9,6 +9,9 @@ use sp_io::hashing::{keccak_256, sha2_256};
 use sp_runtime::BoundedVec;
 use sp_std::prelude::*;
 
+#[cfg(test)]
+use mockall::{automock, mock, predicate::*};
+
 /// The length of a bitcoin address in bytes
 const BTC_MIN_LENGTH: usize = 25;
 
@@ -17,6 +20,7 @@ const ETH_ADDRESS_LENGTH: usize = 20;
 
 /// ExternalAddressRegistrar is a generic type that allows users to crpyotgraphically verify ownership of off-chain addresses.
 /// To register an external address you will need to supply an external address of variable length, specify a variant of the blockchain enumeration type, and supply a cryptographic proof that matches one of the supported signing methods.
+#[cfg_attr(test, automock)]
 pub trait ExternalAddressRegistrar {
 	/// Check if the specified blockchain is supported by this registrar
 	fn is_blockchain_supported(&self, blockchain: &Blockchain) -> bool;
