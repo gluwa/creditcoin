@@ -300,6 +300,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             TransferDealOrderMismatch: AugmentedError<ApiType>;
             /**
+             * An unsupported blockchain was specified to register_address_v2
+             **/
+            UnsupportedBlockchain: AugmentedError<ApiType>;
+            /**
              * The specified transfer type is not currently supported by
              * the blockchain the loan is executed on.
              **/
