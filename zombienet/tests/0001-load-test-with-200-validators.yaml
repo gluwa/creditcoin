@@ -1,0 +1,19 @@
+settings:
+  enable_tracing: false
+  jaeger_agent: ''
+  provider: 'native'
+relaychain:
+  default_command: '../target/release/creditcoin-node'
+  default_args: []
+  chain: 'dev'
+  max_nominations: 1000
+  random_nominators_count: 1000
+  nodes:
+    # a single node
+    - name: 'first' # the name doesn't really matter aside from being unique
+      validator: true
+      balance: 100000000000000000000000
+  node_groups:
+    # note: node groups are always validator nodes
+    - name: 'validators'
+      count: 200
