@@ -41,7 +41,7 @@ There is a base network specification ([docs](https://paritytech.github.io/zombi
     spawn a network with
 
     ```bash
-    ./zombienet spawn network.yaml
+    ./zombienet --dir /var/tmp/zombinet spawn network.yaml
     ```
 
     This will start up a new network, and will print out all of the info
@@ -55,7 +55,7 @@ There is a base network specification ([docs](https://paritytech.github.io/zombi
     You can run a test with
 
     ```bash
-    ./zombienet test ./tests/test.zndsl
+    ./zombienet --dir /var/tmp/zombienet test ./tests/test.zndsl
     ```
 
     This will bring up the network, run the specified test, then
