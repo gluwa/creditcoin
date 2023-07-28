@@ -149,14 +149,14 @@ pub(crate) fn new_partial(
 
 	let algorithm = Sha3Algorithm::new(client.clone());
 
-	let initial_authorities = sc_chain_spec::get_extension::<
-		super::chain_spec::GrandpaInitialAuthorities,
-	>(config.chain_spec.extensions())
+	let chainspec_extensions = sc_chain_spec::get_extension::<super::chain_spec::Extensions>(
+		config.chain_spec.extensions(),
+	)
 	.unwrap();
 
-	log::debug!("initial grandpa authorities: {initial_authorities:?}");
+	log::debug!("chainspec extensions: {chainspec_extensions:?}");
 	let auth_provider = {
-		let grandpa_authorities = initial_authorities
+		let grandpa_authorities = chainspec_extensions
 			.grandpa_initial_authorities
 			.clone()
 			.expect("No initial authorities configured for GRANDPA");
