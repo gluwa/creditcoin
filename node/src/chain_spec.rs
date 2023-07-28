@@ -251,7 +251,6 @@ fn testnet_genesis(
 			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
 			force_era: pallet_staking_substrate::Forcing::NotForcing,
 			slash_reward_fraction: Perbill::from_percent(10),
-			// min_validator_bond: 1000 * CTC,
 			..Default::default()
 		},
 		session: SessionConfig {
