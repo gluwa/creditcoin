@@ -326,6 +326,11 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		.extra_sets
 		.push(sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
 
+	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
+		backend.clone(),
+		grandpa_link.shared_authority_set().clone(),
+		Vec::default(),
+	));
 	let shared_voter_state = sc_consensus_grandpa::SharedVoterState::empty();
 
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
@@ -336,7 +341,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			spawn_handle: task_manager.spawn_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
-			warp_sync_params: None, // TODO: figure out if it's possible to use warp sync only after switched to pos
+			warp_sync_params: Some(sc_service::WarpSyncParams::WithProvider(warp_sync)),
 		})?;
 
 	if config.offchain_worker.enabled {
