@@ -9,6 +9,7 @@ ephemeral networks.
 - Kubectl: [docs](https://kubernetes.io/releases/download/#kubectl)
 - Kind: [docs](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - Zombienet binary: [releases](https://github.com/paritytech/zombienet/releases). Download the appropriate binary and put it somewhere accessible.
+- (optional) Caddy: [install](https://caddyserver.com/docs/install)
 
 ### How to use
 
@@ -83,3 +84,17 @@ There is a base network specification ([docs](https://paritytech.github.io/zombi
 
     Then configure the network specification to use that image
     (there is a commented out line in the included `network.yaml` that does this).
+
+### Using native provider on a VM
+
+In case you are using the native provider (on a VM) you will have to reverse proxy the
+WebSockets RPC because Polakdot JS Apps will refuse plain/text connections outside of
+`127.0.0.1`.
+
+- (Possibly) adjust DNS configuration for the domain name used to access your VM
+- Edit the port mappings [and domain name] in `Caddyfile.rpc-proxy`
+- Execute `caddy`
+
+    ```bash
+    sudo caddy run --config Caddyfile.rpc-proxy
+    ```
