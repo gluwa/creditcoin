@@ -1,0 +1,21 @@
+# IMPORTANT: use wss://zombinet.creditcoin.network with Polkadot JS Apps to
+# inspect the network b/c it doesn't like plain/text WebSockets connections
+
+
+# INFO: DNS name is needed to issue a Let's Encrypt SSL certificate
+# WARNING: make sure this DNS record points to the IP address of the current VM
+# ALT: set DNS label on the Azure VM and use <label>.westus.cloudapp.azure.com
+zombienet.creditcoin.network {
+	@websockets {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	log {
+		output stdout
+	}
+
+	# WARNING: these ports will change when you restart zombienet
+	reverse_proxy @websockets 127.0.0.1:46323
+	reverse_proxy 127.0.0.1:35471
+}
