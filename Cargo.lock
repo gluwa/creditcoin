@@ -1253,6 +1253,7 @@ dependencies = [
  "sc-consensus",
  "sc-consensus-babe",
  "sc-consensus-grandpa",
+ "sc-consensus-grandpa-rpc",
  "sc-consensus-pow",
  "sc-consensus-slots",
  "sc-executor",
@@ -1260,6 +1261,7 @@ dependencies = [
  "sc-network",
  "sc-network-sync",
  "sc-offchain",
+ "sc-rpc",
  "sc-rpc-api",
  "sc-service",
  "sc-telemetry",
@@ -6796,6 +6798,26 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "substrate-prometheus-endpoint",
+ "thiserror",
+]
+
+[[package]]
+name = "sc-consensus-grandpa-rpc"
+version = "0.10.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+dependencies = [
+ "finality-grandpa",
+ "futures",
+ "jsonrpsee",
+ "log",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-consensus-grandpa",
+ "sc-rpc",
+ "serde",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
  "thiserror",
 ]
 

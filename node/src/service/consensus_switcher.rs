@@ -324,6 +324,7 @@ pub(crate) struct BabeAuthorshipParams {
 	pub(crate) sync_service: SyncService,
 	pub(crate) enable_grandpa: bool,
 	pub(crate) prometheus_registry: Option<substrate_prometheus_endpoint::Registry>,
+	pub(crate) shared_voter_state: SharedVoterState,
 }
 
 async fn start_babe_authorship(
@@ -348,6 +349,7 @@ async fn start_babe_authorship(
 		sync_service,
 		enable_grandpa,
 		prometheus_registry,
+		shared_voter_state,
 	} = params;
 
 	if is_authority {
@@ -429,7 +431,7 @@ async fn start_babe_authorship(
 			network,
 			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry,
-			shared_voter_state: SharedVoterState::empty(),
+			shared_voter_state,
 			telemetry: None,
 			sync: sync_service,
 		};
