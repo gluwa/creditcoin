@@ -293,7 +293,7 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ConstU64<0>; // used for equivocation
 }
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = prod_or_fast!(12 * HOURS, 15);
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = prod_or_fast!(12 * HOURS, 45);
 
 parameter_types! {
 	pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64; // Q: how long to make an epoch
