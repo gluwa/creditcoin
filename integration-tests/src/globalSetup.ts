@@ -32,7 +32,13 @@ const setup = async () => {
     // configured to have a true or false value in different environments!
 
     if ((global as any).CREDITCOIN_API_URL === undefined) {
-        (global as any).CREDITCOIN_API_URL = 'ws://127.0.0.1:9944';
+        const wsPort = process.env.CREDITCOIN_WS_PORT || '9944';
+        (global as any).CREDITCOIN_API_URL = `ws://127.0.0.1:${wsPort}`;
+    }
+
+    if ((global as any).CREDITCOIN_METRICS_BASE === undefined) {
+        const metricsPort = process.env.CREDITCOIN_METRICS_PORT || '9615';
+        (global as any).CREDITCOIN_METRICS_BASE = `http://127.0.0.1:${metricsPort}`;
     }
 
     if ((global as any).CREDITCOIN_USES_FAST_RUNTIME === undefined) {
@@ -68,10 +74,6 @@ const setup = async () => {
 
     if ((global as any).CREDITCOIN_NETWORK_SHORT_NAME === undefined) {
         (global as any).CREDITCOIN_NETWORK_SHORT_NAME = 'dev';
-    }
-
-    if ((global as any).CREDITCOIN_METRICS_BASE === undefined) {
-        (global as any).CREDITCOIN_METRICS_BASE = 'http://127.0.0.1:9615';
     }
 
     if ((global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES === undefined) {
