@@ -121,7 +121,7 @@ jobs:
             --chain local \
             --validator --alice  --pruning archive \
             --node-key d182d503b7dd97e7c055f33438c7717145840fd66b2a055284ee8d768241a463 \
-            --base-path ./alice-data \
+            --base-path ./alice-data &
 
       - name: Start Node 2
         run: |
@@ -129,7 +129,7 @@ jobs:
             --chain local \
             --validator --bob --pruning archive \
             --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWKEKymnBDKfa8MkMWiLE6DYbC4aAUciqmYucm7xFKK3Au \
-            --port 30334 --ws-port 9945 --rpc-port 9934
+            --port 30334 --ws-port 9945 --rpc-port 9934 &
 
       - name: Run integration tests
         run: |
