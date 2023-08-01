@@ -3,7 +3,11 @@ import { newApi } from "../api";
 import { initKeyringPair } from "../utils/account";
 import { signSendAndWatch } from "../utils/tx";
 import { execSync } from "child_process";
-import { parseAddress, parseAmount, parseHexString } from "../utils/parsing";
+import {
+  parseAddressInternal,
+  parseAmountInternal,
+  parseHexStringInternal,
+} from "../utils/parsing";
 import { getStatus, printValidatorStatus } from "../utils/status";
 import { getBalance, printBalance } from "../utils/balance";
 import { mnemonicGenerate, mnemonicValidate } from "@polkadot/util-crypto";
@@ -34,7 +38,9 @@ async function fundAccounts(amount: BN) {
 describe.skip("integration test: validator wizard setup", () => {
   test("new validator should appear as waiting after using the wizard setup", async () => {
     // Fund stash and controller
-    const { stash, controller } = await fundAccounts(parseAmount("10000"));
+    const { stash, controller } = await fundAccounts(
+      parseAmountInternal("10000")
+    );
     // Run wizard setup with 1k ctc ang to pair with node Bob
     const out = execa.commandSync(
       `creditcoin-cli wizard --amount 1000 --url ws://localhost:9945`,
@@ -95,7 +101,7 @@ describe("integration test: validator manual setup", () => {
     expect(mnemonicValidate(controllerSeed)).toBe(true);
 
     // Getting the addresses using `show-address` should return two valid addresses
-    const stashAddress = parseAddress(
+    const stashAddress = parseAddressInternal(
       execa
         .commandSync(`creditcoin-cli show-address`, {
           env: {
@@ -105,7 +111,7 @@ describe("integration test: validator manual setup", () => {
         .stdout.split("Account address: ")[1]
     );
 
-    const controllerAddress = parseAddress(
+    const controllerAddress = parseAddressInternal(
       execa
         .commandSync(`creditcoin-cli show-address`, {
           env: {
@@ -116,7 +122,7 @@ describe("integration test: validator manual setup", () => {
     );
 
     // Funding the stash account should make its balance equal to the amount funded
-    const fundAmount = parseAmount("10000");
+    const fundAmount = parseAmountInternal("10000");
 
     const fundTx = await fundFromSudo(stashAddress, fundAmount);
     await signSendAndWatch(fundTx, aliceApi, initKeyringPair("//Alice"));
@@ -138,7 +144,7 @@ describe("integration test: validator manual setup", () => {
     const controllerBalance = (await getBalance(controllerAddress, aliceApi))
       .transferable;
     expect(controllerBalance.toString()).toBe(
-      parseAmount(sendAmount).toString()
+      parseAmountInternal(sendAmount).toString()
     );
 
     // Bonding 1k ctc from stash and setting the controller should
@@ -165,11 +171,11 @@ describe("integration test: validator manual setup", () => {
     const stashBondedBalance = (await getBalance(stashAddress, aliceApi))
       .bonded;
     expect(stashBondedBalance.toString()).toBe(
-      parseAmount(bondAmount).toString()
+      parseAmountInternal(bondAmount).toString()
     );
 
     // Rotating session keys for the node should return a valid hex string
-    const newKeys = parseHexString(
+    const newKeys = parseHexStringInternal(
       execa
         .commandSync(`creditcoin-cli rotate-keys --url ws://localhost:9945`)
         .stdout.split("New keys: ")[1]
@@ -320,7 +326,7 @@ describe("integration test: validator manual setup", () => {
     await new Promise((resolve) => setTimeout(resolve, 5000));
     const balanceAfterWithdraw = await getBalance(stashAddress, aliceApi);
     printBalance(balanceAfterWithdraw);
-    const stashAmount = fundAmount.sub(parseAmount(sendAmount));
+    const stashAmount = fundAmount.sub(parseAmountInternal(sendAmount));
     expect(balanceAfterWithdraw.transferable.gte(stashAmount)).toBe(true);
   }, 2000000);
 });
