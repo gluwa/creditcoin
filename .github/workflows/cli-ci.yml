@@ -42,3 +42,103 @@ jobs:
           files: scripts/cc-cli/coverage/lcov.info
           fail_ci_if_error: true
           verbose: true
+  build-fast-creditcoin-node:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build creditcoin-node
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features fast-runtime
+
+      - name: Upload creditcoin-node binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release/creditcoin-node
+
+      - name: Upload WASM runtime
+        uses: actions/upload-artifact@v3
+        with:
+          name: creditcoin_node_runtime.compact.compressed.wasm
+          path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
+
+  cli-integration-test:
+    needs:
+      - build-creditcoin-node
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download creditcoin-node binary
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release
+
+      - name: Download runtime
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin_node_runtime.compact.compressed.wasm
+          path: target/release
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
+
+      - name: Install Creditcoin CLI
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && npm install -g . && popd
+
+      - name: Start Node 1
+        run: |
+          ./target/release/creditcoin-node \
+            --chain local \
+            --validator --alice  --pruning archive \
+            --node-key d182d503b7dd97e7c055f33438c7717145840fd66b2a055284ee8d768241a463 \
+            --base-path ./alice-data \
+
+      - name: Start Node 2
+        run: |
+          ./target/release/creditcoin-node \
+            --chain local \
+            --validator --bob --pruning archive \
+            --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWKEKymnBDKfa8MkMWiLE6DYbC4aAUciqmYucm7xFKK3Au \
+            --port 30334 --ws-port 9945 --rpc-port 9934
+
+      - name: Run integration tests
+        run: |
+          pushd scripts/cc-cli
+          jest integration --forceExit
+          popd
+
+      - name: Kill nodes
+        run: |
+          # if all went well kill the node. Otherwise GitHub Actions would exit on the
+          # previous step killing everything and we don't have to worry about
+          # dangling processes
+          killall -9 creditcoin-node
