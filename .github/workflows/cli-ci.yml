@@ -116,6 +116,7 @@ jobs:
 
       - name: Start Node 1
         run: |
+          chmod a+x ./target/release/creditcoin-node
           ./target/release/creditcoin-node \
             --chain local \
             --validator --alice  --pruning archive \
