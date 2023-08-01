@@ -116,7 +116,7 @@ jobs:
 
       - name: Check Creditcoin-CLI is installed
         run: |
-          creditcoin-cli --version
+          creditcoin-cli
 
       - name: Start Node 1
         run: |
