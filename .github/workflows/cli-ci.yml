@@ -42,7 +42,7 @@ jobs:
           files: scripts/cc-cli/coverage/lcov.info
           fail_ci_if_error: true
           verbose: true
-  build-fast-creditcoin-node:
+  build-creditcoin-node:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
