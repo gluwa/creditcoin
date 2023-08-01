@@ -112,7 +112,7 @@ jobs:
       - name: Install Creditcoin CLI
         run: |
           pushd creditcoin-js/ && yarn install && yarn pack && popd
-          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && npm install -g . && popd
+          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && yarn build && npm install -g . && popd
 
       - name: Check Creditcoin-CLI is installed
         run: |
