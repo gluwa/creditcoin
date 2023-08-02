@@ -114,10 +114,6 @@ jobs:
           pushd creditcoin-js/ && yarn install && yarn pack && popd
           pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && yarn build && npm install -g . && popd
 
-      - name: Check Creditcoin-CLI is installed
-        run: |
-          creditcoin-cli
-
       - name: Start Node 1
         run: |
           chmod a+x ./target/release/creditcoin-node
