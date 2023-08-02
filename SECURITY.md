@@ -36,4 +36,4 @@ As above, please DO NOT include attachments or provide detail regarding the secu
     1. Validate the issue.
     2. Determine the criticality of the issue.
     3. If this is a bug and not a security issue, recommend to the submitter to create an issue.
-4. Resolve by building new docker containers and binaries that contain the fix and deploying to affected entities.
+4. Release a new version resolving the issue
