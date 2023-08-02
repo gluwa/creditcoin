@@ -10,6 +10,7 @@ import {
   parseIntegerOrExit,
   requiredInput,
 } from "../utils/parsing";
+import { ApiPromise } from "creditcoin-js";
 
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
@@ -27,6 +28,8 @@ async function distributeRewardsAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
   const { validator, era } = parseOptions(options);
+
+  await checkEraToBeValid(era, api);
 
   // Any account can call the distribute_rewards extrinsic
   const callerSeed = await getCallerSeedFromEnvOrPrompt();
@@ -60,4 +63,19 @@ function parseOptions(options: OptionValues) {
   );
 
   return { validator, era };
+}
+
+async function checkEraToBeValid(era: number, api: ApiPromise) {
+  const currentEra = (await api.query.staking.currentEra()).value.toNumber();
+  const historyDepth = api.consts.staking.historyDepth.toNumber();
+  const minEra = currentEra - historyDepth;
+  if (era < minEra) {
+    console.log(`Era ${era} is too old to distribute rewards for`);
+    process.exit(1);
+  } else if (era >= currentEra) {
+    console.log(
+      `Era ${era} is in the future or has not ended, can only distribute rewards for past eras`
+    );
+    process.exit(1);
+  }
 }
