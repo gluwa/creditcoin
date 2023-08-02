@@ -58,16 +58,42 @@ pub(crate) type OneshotSender<T> = tokio::sync::oneshot::Sender<T>;
 pub(crate) type MpscSender<T> = tokio::sync::mpsc::Sender<T>;
 
 pub(crate) struct GrandpaAuthorityProvider {
+	#[cfg(feature = "fast-runtime")]
+	client: Arc<FullClient>,
 	initial_authorities: Vec<sp_consensus_grandpa::AuthorityId>,
 }
 impl GrandpaAuthorityProvider {
+	#[cfg(not(feature = "fast-runtime"))]
 	pub(crate) fn new(initial_authorities: Vec<sp_consensus_grandpa::AuthorityId>) -> Self {
 		Self { initial_authorities }
+	}
+	#[cfg(feature = "fast-runtime")]
+	pub(crate) fn with_client(
+		client: Arc<FullClient>,
+		initial_authorities: Vec<sp_consensus_grandpa::AuthorityId>,
+	) -> Self {
+		Self { client, initial_authorities }
 	}
 }
 
 impl sc_consensus_grandpa::GenesisAuthoritySetProvider<BlockTy> for GrandpaAuthorityProvider {
 	fn get(&self) -> Result<runtime::GrandpaAuthorityList, sp_blockchain::Error> {
+		#[cfg(feature = "fast-runtime")]
+		{
+			use sc_client_api::UsageProvider;
+			use sp_api::ProvideRuntimeApi;
+			use sp_consensus_grandpa::GrandpaApi;
+			let at_hash = if self.client.usage_info().chain.finalized_state.is_some() {
+				self.client.usage_info().chain.best_hash
+			} else {
+				log::debug!("No finalized state is available. Reading config from genesis");
+				self.client.usage_info().chain.genesis_hash
+			};
+			if let Ok(authorities) = self.client.runtime_api().grandpa_authorities(at_hash) {
+				log::debug!("successfully read grandpa authorities from runtime");
+				return Ok(authorities);
+			}
+		}
 		if self.initial_authorities.is_empty() {
 			log::warn!("No initial grandpa authorities provided. Make sure this is configured correctly in the chain spec. Using a dummy authority for now.");
 			return Ok(vec![(
