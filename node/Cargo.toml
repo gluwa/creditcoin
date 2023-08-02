@@ -102,3 +102,4 @@ try-runtime = [
     "try-runtime-cli/try-runtime",
     "sp-io",
 ]
+fast-runtime = ["creditcoin-node-runtime/fast-runtime"]
