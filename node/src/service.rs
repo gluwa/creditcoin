@@ -154,12 +154,23 @@ pub(crate) fn new_partial(
 	.unwrap();
 
 	log::debug!("initial grandpa authorities: {initial_authorities:?}");
-	let auth_provider = consensus_switcher::GrandpaAuthorityProvider::new(
-		initial_authorities
+	let auth_provider = {
+		let grandpa_authorities = initial_authorities
 			.grandpa_initial_authorities
 			.clone()
-			.expect("No initial authorities configured for GRANDPA"),
-	);
+			.expect("No initial authorities configured for GRANDPA");
+		#[cfg(feature = "fast-runtime")]
+		{
+			consensus_switcher::GrandpaAuthorityProvider::with_client(
+				client.clone(),
+				grandpa_authorities,
+			)
+		}
+		#[cfg(not(feature = "fast-runtime"))]
+		{
+			consensus_switcher::GrandpaAuthorityProvider::new(grandpa_authorities)
+		}
+	};
 	let (grandpa_import, grandpa_link) = sc_consensus_grandpa::block_import(
 		client.clone(),
 		&auth_provider,
