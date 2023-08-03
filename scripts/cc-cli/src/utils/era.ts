@@ -32,14 +32,14 @@ export async function checkEraIsInHistory(
 }
 
 export function eraIsInHistory(
-  era: number,
+  eraToCheck: number,
   historyDepth: number,
   currentEra: number
 ): boolean {
   // The oldest era in history is currentEra - historyDepth
   // https://polkadot.js.org/docs/kusama/constants/#historydepth-u32
   const oldestEraInHistory = currentEra - historyDepth;
-  if (era < oldestEraInHistory || era >= currentEra) {
+  if (eraToCheck < oldestEraInHistory || eraToCheck >= currentEra) {
     return false;
   } else {
     return true;
