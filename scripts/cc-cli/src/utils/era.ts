@@ -21,3 +21,27 @@ export async function timeTillEra(api: ApiPromise, era: number) {
 
   return timeTillTargetEra;
 }
+
+export async function checkEraIsInHistory(
+  era: number,
+  api: ApiPromise
+): Promise<boolean> {
+  const currentEra = (await api.query.staking.currentEra()).value.toNumber();
+  const historyDepth = api.consts.staking.historyDepth.toNumber();
+  return eraIsInHistory(era, historyDepth, currentEra);
+}
+
+export function eraIsInHistory(
+  era: number,
+  historyDepth: number,
+  currentEra: number
+): boolean {
+  // The oldest era in history is currentEra - historyDepth
+  // https://polkadot.js.org/docs/kusama/constants/#historydepth-u32
+  const oldestEraInHistory = currentEra - historyDepth;
+  if (era < oldestEraInHistory || era >= currentEra) {
+    return false;
+  } else {
+    return true;
+  }
+}
