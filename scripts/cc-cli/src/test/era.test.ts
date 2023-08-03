@@ -11,7 +11,7 @@ describe("eraIsInHistory", () => {
     expect(eraIsInHistory(1, historyDepth, 2)).toBe(true);
   });
 
-  it("should return false when checking anera past the history depth", () => {
+  it("should return false when checking an era past the history depth", () => {
     expect(eraIsInHistory(1, historyDepth, 86)).toBe(false);
   });
 
