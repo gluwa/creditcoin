@@ -68,5 +68,12 @@ function parseOptions(options: OptionValues) {
     )
   );
 
+  if (era < 0) {
+    console.error(
+      `Failed to distribute rewards: Era ${era} is invalid; must be a positive integer`
+    );
+    process.exit(1);
+  }
+
   return { validator, era };
 }
