@@ -32,7 +32,7 @@ async function distributeRewardsAction(options: OptionValues) {
   const eraIsValid = await checkEraIsInHistory(era, api);
   if (!eraIsValid) {
     console.error(
-      `Failed to distribute rewards: Era ${era} is not included in history; only the past 84 eras are elegible`
+      `Failed to distribute rewards: Era ${era} is not included in history; only the past 84 eras are eligible`
     );
     process.exit(1);
   }
