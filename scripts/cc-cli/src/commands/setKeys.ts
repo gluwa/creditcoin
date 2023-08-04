@@ -43,7 +43,7 @@ async function setKeysAction(options: OptionValues) {
 
   const tx = api.tx.session.setKeys(keys, "");
 
-  await requireEnoughFundsToSend(tx, controllerSeed, api);
+  await requireEnoughFundsToSend(tx, controller.address, api);
 
   const result = await signSendAndWatch(tx, api, controller);
 
