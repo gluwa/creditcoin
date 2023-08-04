@@ -129,7 +129,7 @@ jobs:
             --chain local \
             --validator --bob --pruning archive \
             --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWKEKymnBDKfa8MkMWiLE6DYbC4aAUciqmYucm7xFKK3Au \
-            --port 30334 --ws-port 9945 --rpc-port 9934 &
+            --port 30335 --ws-port 9945 --rpc-port 9935 &
 
       - name: Run integration tests
         run: |
