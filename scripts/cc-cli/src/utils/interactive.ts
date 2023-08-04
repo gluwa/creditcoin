@@ -1,6 +1,7 @@
 import { OptionValues } from "commander";
 import prompts from "prompts";
 import tty from "tty";
+import { parseBoolean } from "./parsing";
 
 export async function promptContinue(interactive: boolean) {
   if (!interactive) {
@@ -51,6 +52,7 @@ export async function promptContinueOrSkip(
 }
 
 export function setInteractivity(options: OptionValues) {
-  const interactive = process.stdin.isTTY && options.input;
+  const input = parseBoolean(options.input);
+  const interactive = process.stdin.isTTY && input;
   return interactive;
 }
