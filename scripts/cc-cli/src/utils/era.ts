@@ -36,6 +36,9 @@ export function eraIsInHistory(
   historyDepth: number,
   currentEra: number
 ): boolean {
+  if (eraToCheck < 0) {
+    return false;
+  }
   // The oldest era in history is currentEra - historyDepth
   // https://polkadot.js.org/docs/kusama/constants/#historydepth-u32
   const oldestEraInHistory = currentEra - historyDepth;
