@@ -6,7 +6,7 @@ import {
   parseHexStringInternal,
   parseIntegerInternal,
   parsePercentAsPerbillInternal,
-} from "../utils/parsing";
+} from "../../utils/parsing";
 
 describe("parseAddress", () => {
   test("with valid argument returns the same address", () => {
