@@ -1,6 +1,6 @@
 import { BN } from "creditcoin-js";
-import { AccountBalance } from "../utils/balance";
-import { canPay } from "../utils/tx";
+import { AccountBalance } from "../../utils/balance";
+import { canPay } from "../../utils/tx";
 
 describe("unit tests: utils/tx", () => {
   test("given a payable amount, canPay returns true", () => {
