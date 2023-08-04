@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStatus, requireStatus } from "../utils/status";
+import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
 import {
   getControllerSeedFromEnvOrPrompt,
   initKeyringPair,
@@ -20,7 +20,7 @@ async function withdrawUnbondedAction(options: OptionValues) {
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
   const controller = initKeyringPair(controllerSeed);
 
-  const controllerStatus = await getStatus(controller.address, api);
+  const controllerStatus = await getValidatorStatus(controller.address, api);
 
   if (!controllerStatus.stash) {
     console.error(
@@ -29,7 +29,7 @@ async function withdrawUnbondedAction(options: OptionValues) {
     process.exit(1);
   }
 
-  const status = await getStatus(controllerStatus.stash, api);
+  const status = await getValidatorStatus(controllerStatus.stash, api);
   requireStatus(
     status,
     "canWithdraw",
