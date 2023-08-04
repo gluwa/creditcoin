@@ -34,7 +34,7 @@ jobs:
           pushd scripts/cc-cli
 
           yarn upgrade 'creditcoin-js'
-          yarn test
+          yarn test:unit
           popd
 
       - uses: codecov/codecov-action@v3
@@ -139,7 +139,7 @@ jobs:
       - name: Run integration tests
         run: |
           pushd scripts/cc-cli
-          jest integration --forceExit
+          yarn test:integration
           popd
 
       - name: Kill nodes
