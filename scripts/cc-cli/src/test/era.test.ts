@@ -18,4 +18,8 @@ describe("eraIsInHistory", () => {
   it("should return false when checking an era in the future", () => {
     expect(eraIsInHistory(2, historyDepth, 1)).toBe(false);
   });
+
+  it("should return false if era is negative", () => {
+    expect(eraIsInHistory(-1, historyDepth, 1)).toBe(false);
+  });
 });
