@@ -1,6 +1,5 @@
 import { OptionValues } from "commander";
 import prompts from "prompts";
-import tty from "tty";
 import { parseBoolean } from "./parsing";
 
 export async function promptContinue(interactive: boolean) {
