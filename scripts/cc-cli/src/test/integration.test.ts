@@ -92,10 +92,12 @@ describe("integration test: validator manual setup", () => {
     const stashSeed = execa
       .commandSync("creditcoin-cli new")
       .stdout.split("Seed phrase: ")[1];
+    console.log("Stash seed: ", stashSeed);
 
     const controllerSeed = execa
       .commandSync("creditcoin-cli new")
       .stdout.split("Seed phrase: ")[1];
+    console.log("Controller seed: ", controllerSeed);
 
     expect(mnemonicValidate(stashSeed)).toBe(true);
     expect(mnemonicValidate(controllerSeed)).toBe(true);
