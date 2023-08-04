@@ -42,7 +42,7 @@ describe.skip("integration test: validator wizard setup", () => {
       parseAmountInternal("10000")
     );
     // Run wizard setup with 1k ctc ang to pair with node Bob
-    const out = execa.commandSync(
+    execa.commandSync(
       `creditcoin-cli wizard --amount 1000 --url ws://localhost:9945`,
       {
         env: {
@@ -134,7 +134,7 @@ describe("integration test: validator manual setup", () => {
 
     // Sending 1k ctc from stash to controller should make the controller balance equal to 1k ctc
     const sendAmount = "1000";
-    const sendResult = execa.commandSync(
+    execa.commandSync(
       // CLI commands are sent through Bob's node
       `creditcoin-cli send --amount ${sendAmount} --to ${controllerAddress} --url ws://localhost:9945`,
       {
@@ -154,7 +154,7 @@ describe("integration test: validator manual setup", () => {
     // - make the stash's controller be the controller address
     // - make controller's stash be the stash address
     const bondAmount = "1000";
-    const bondResult = execa.commandSync(
+    execa.commandSync(
       `creditcoin-cli bond --controller ${controllerAddress} --amount ${bondAmount} --url ws://localhost:9945`,
       {
         env: {
@@ -189,7 +189,7 @@ describe("integration test: validator manual setup", () => {
     // Setting session keys for the controller should
     // - make the validator (stash) next session keys equal to the new keys
     // - make the new keys appear as the node's session keys
-    const setKeysResult = execa.commandSync(
+    execa.commandSync(
       `creditcoin-cli set-keys --keys ${newKeys} --url ws://localhost:9945`,
       {
         env: {
@@ -208,7 +208,7 @@ describe("integration test: validator manual setup", () => {
     expect(nodeHasKeys).toBe(true);
 
     // Signaling intention to validate should make the validator (stash) appear as waiting
-    const signalResult = execa.commandSync(
+    execa.commandSync(
       `creditcoin-cli validate --commission 1 --url ws://localhost:9945`,
       {
         env: {
@@ -259,7 +259,7 @@ describe("integration test: validator manual setup", () => {
     const balanceBeforeRewards = await getBalance(stashAddress, aliceApi);
     console.log(balanceBeforeRewards.bonded.toString());
 
-    const distributeCommand = execa.commandSync(
+    execa.commandSync(
       `creditcoin-cli distribute-rewards --url ws://localhost:9945 --validator-id ${stashAddress} --era ${startingEra}`,
       {
         env: {
@@ -278,14 +278,11 @@ describe("integration test: validator manual setup", () => {
     expect(balanceIncreased).toBe(true);
 
     // After executing the chill commmand, the validator should no longer be active nor waiting
-    const chillCommand = execa.commandSync(
-      `creditcoin-cli chill --url ws://localhost:9945`,
-      {
-        env: {
-          CC_CONTROLLER_SEED: controllerSeed,
-        },
-      }
-    );
+    execa.commandSync(`creditcoin-cli chill --url ws://localhost:9945`, {
+      env: {
+        CC_CONTROLLER_SEED: controllerSeed,
+      },
+    });
     // wait 5 seconds for nodes to sync
     await waitEras(2, aliceApi);
     const stashStatusAfterChill = await getValidatorStatus(
@@ -296,7 +293,7 @@ describe("integration test: validator manual setup", () => {
     expect(stashStatusAfterChill.waiting).toBe(false);
 
     // After unbonding, the validator should no longer be bonded
-    const unbondCommand = execa.commandSync(
+    execa.commandSync(
       // Unbonding defaults to max if it exceeds the bonded amount
       `creditcoin-cli unbond --url ws://localhost:9945 -a 100000`,
       {
@@ -324,7 +321,7 @@ describe("integration test: validator manual setup", () => {
     console.log("Unbonding period: ", unbondingPeriod);
     await waitEras(unbondingPeriod + 1, aliceApi, true);
 
-    const withdrawCommand = execa.commandSync(
+    execa.commandSync(
       `creditcoin-cli withdraw-unbonded --url ws://localhost:9945`,
       {
         env: {
