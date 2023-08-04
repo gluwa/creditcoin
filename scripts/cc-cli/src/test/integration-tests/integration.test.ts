@@ -1,17 +1,17 @@
 import { ApiPromise, BN } from "creditcoin-js";
-import { newApi } from "../api";
-import { initKeyringPair } from "../utils/account";
-import { signSendAndWatch } from "../utils/tx";
+import { newApi } from "../../api";
+import { initKeyringPair } from "../../utils/account";
+import { signSendAndWatch } from "../../utils/tx";
 import { execSync } from "child_process";
 import {
   parseAddressInternal,
   parseAmountInternal,
   parseHexStringInternal,
-} from "../utils/parsing";
-import { getBalance, printBalance } from "../utils/balance";
+} from "../../utils/parsing";
+import { getBalance, printBalance } from "../../utils/balance";
 import { mnemonicGenerate, mnemonicValidate } from "@polkadot/util-crypto";
 import execa from "execa";
-import { getValidatorStatus } from "../utils/validatorStatus";
+import { getValidatorStatus } from "../../utils/validatorStatus";
 
 function randomAccount() {
   const seed = mnemonicGenerate();
