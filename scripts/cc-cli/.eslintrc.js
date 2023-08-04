@@ -26,9 +26,7 @@ module.exports = {
     project: "tsconfig.json",
     sourceType: "module",
   },
-  plugins: [
-    "@typescript-eslint",
-  ],
+  plugins: ["@typescript-eslint"],
   rules: {
     "@typescript-eslint/adjacent-overload-signatures": "error",
     "@typescript-eslint/array-type": [
@@ -45,7 +43,8 @@ module.exports = {
             message: "Avoid using the `Object` type. Did you mean `object`?",
           },
           Function: {
-            message: "Avoid using the `Function` type. Prefer a specific function type, like `() => void`.",
+            message:
+              "Avoid using the `Function` type. Prefer a specific function type, like `() => void`.",
           },
           Boolean: {
             message: "Avoid using the `Boolean` type. Did you mean `boolean`?",
@@ -80,7 +79,18 @@ module.exports = {
         },
       },
     ],
-    "@typescript-eslint/naming-convention": "error",
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        selector: "property",
+        format: ["strictCamelCase"],
+        filter: {
+          // you can expand this regex to add more allowed names
+          regex: "^(CC_SEED|CC_CONTROLLER_SEED|CC_STASH_SEED)$",
+          match: false,
+        },
+      },
+    ],
     "@typescript-eslint/no-empty-function": "error",
     "@typescript-eslint/no-empty-interface": "error",
     "@typescript-eslint/no-explicit-any": "off",
