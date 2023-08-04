@@ -28,13 +28,12 @@ async function unbondAction(options: OptionValues) {
 
   // Build account
   const controllerSeed = await getControllerSeedFromEnvOrPrompt();
-  const controllerKeyring = initKeyringPair(controllerSeed);
-  const controllerAddress = controllerKeyring.address;
+  const controller = initKeyringPair(controllerSeed);
 
-  const controllerStatus = await getValidatorStatus(controllerAddress, api);
+  const controllerStatus = await getValidatorStatus(controller.address, api);
   if (!controllerStatus.stash) {
     console.error(
-      `Cannot unbond, ${controllerAddress} is not a controller account`
+      `Cannot unbond, ${controller.address} is not a controller account`
     );
     process.exit(1);
   }
@@ -46,9 +45,9 @@ async function unbondAction(options: OptionValues) {
 
   // Unbond transaction
   const tx = api.tx.staking.unbond(amount.toString());
-  await requireEnoughFundsToSend(tx, controllerAddress, api);
+  await requireEnoughFundsToSend(tx, controller.address, api);
 
-  const result = await signSendAndWatch(tx, api, controllerKeyring);
+  const result = await signSendAndWatch(tx, api, controller);
 
   console.log(result.info);
   process.exit(0);
