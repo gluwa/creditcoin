@@ -234,7 +234,7 @@ describe("integration test: validator manual setup", () => {
       aliceApi,
       initKeyringPair("//Alice")
     );
-    const validatorCount = await (
+    const validatorCount = (
       await aliceApi.query.staking.validatorCount()
     ).toNumber();
     expect(validatorCount).toBe(2);
@@ -339,8 +339,8 @@ describe("integration test: validator manual setup", () => {
   }, 2000000);
 });
 
-describe.skip("integration test: queries", () => {
-  test("alice balance should be 1m ctc", async () => {
+describe("integration test: queries", () => {
+  test("alice balance should be 1m ctc", () => {
     const out = execSync(
       `creditcoin-cli balance --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --json`
     );
@@ -376,12 +376,12 @@ async function fundAddressesFromSudo(
 
 async function waitEras(eras: number, api: ApiPromise, force = true) {
   if (force) {
-    forceNewEra(api);
+    await forceNewEra(api);
   }
   let eraInfo = await api.derive.session.info();
   let currentEra = eraInfo.currentEra.toNumber();
-  let targetEra = currentEra + eras;
-  let blockTime = api.consts.babe.expectedBlockTime.toNumber();
+  const targetEra = currentEra + eras;
+  const blockTime = api.consts.babe.expectedBlockTime.toNumber();
   while (currentEra < targetEra) {
     console.log(`Waiting for era ${targetEra}, currently at ${currentEra}`);
     await new Promise((resolve) => setTimeout(resolve, blockTime));
@@ -390,23 +390,8 @@ async function waitEras(eras: number, api: ApiPromise, force = true) {
   }
 }
 
-async function waitSessions(sessions: number, api: ApiPromise) {
-  let sessionInfo = await api.derive.session.info();
-  let currentSession = sessionInfo.currentIndex.toNumber();
-  let targetSession = currentSession + sessions;
-  let blockTime = api.consts.babe.expectedBlockTime.toNumber();
-  while (currentSession < targetSession) {
-    console.log(
-      `Waiting for session ${targetSession}, currently at ${currentSession}`
-    );
-    await new Promise((resolve) => setTimeout(resolve, blockTime));
-    sessionInfo = await api.derive.session.info();
-    currentSession = sessionInfo.currentIndex.toNumber();
-  }
-}
-
 async function forceNewEra(api: ApiPromise) {
   const tx = api.tx.staking.forceNewEra();
   const sudoTx = api.tx.sudo.sudo(tx);
-  signSendAndWatch(sudoTx, api, initKeyringPair("//Alice"));
+  await signSendAndWatch(sudoTx, api, initKeyringPair("//Alice"));
 }
