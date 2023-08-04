@@ -39,15 +39,12 @@ async function distributeRewardsAction(options: OptionValues) {
 
   // Any account can call the distribute_rewards extrinsic
   const callerSeed = await getCallerSeedFromEnvOrPrompt();
+  const caller = initKeyringPair(callerSeed);
   const distributeTx = api.tx.staking.payoutStakers(validator, era);
 
-  await requireEnoughFundsToSend(distributeTx, callerSeed, api);
+  await requireEnoughFundsToSend(distributeTx, caller.address, api);
 
-  const result = await signSendAndWatch(
-    distributeTx,
-    api,
-    initKeyringPair(callerSeed)
-  );
+  const result = await signSendAndWatch(distributeTx, api, caller);
 
   console.log(result.info);
   process.exit(0);
