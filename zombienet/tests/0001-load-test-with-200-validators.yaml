@@ -7,7 +7,8 @@ relaychain:
   default_args: []
   chain: 'dev'
   max_nominations: 1000
-  random_nominators_count: 1000
+  # disabled b/c of https://github.com/paritytech/zombienet/issues/1225
+  # random_nominators_count: 1000
   nodes:
     # a single node
     - name: 'first' # the name doesn't really matter aside from being unique
