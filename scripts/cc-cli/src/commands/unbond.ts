@@ -5,11 +5,11 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { getBalance } from "../utils/balance";
-import { getStatus, requireStatus } from "../utils/status";
-import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue } from "../utils/promptContinue";
 import { parseAmountOrExit, requiredInput } from "../utils/parsing";
+import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
+import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 
 export function makeUnbondCommand() {
   const cmd = new Command("unbond");
@@ -31,14 +31,14 @@ async function unbondAction(options: OptionValues) {
   const controllerKeyring = initKeyringPair(controllerSeed);
   const controllerAddress = controllerKeyring.address;
 
-  const controllerStatus = await getStatus(controllerAddress, api);
+  const controllerStatus = await getValidatorStatus(controllerAddress, api);
   if (!controllerStatus.stash) {
     console.error(
       `Cannot unbond, ${controllerAddress} is not a controller account`
     );
     process.exit(1);
   }
-  const stashStatus = await getStatus(controllerStatus.stash, api);
+  const stashStatus = await getValidatorStatus(controllerStatus.stash, api);
   requireStatus(stashStatus, "bonded");
 
   // Check if amount specified exceeds total bonded funds

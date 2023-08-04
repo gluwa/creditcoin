@@ -5,7 +5,7 @@ import {
   initKeyringPair,
 } from "../utils/account";
 import { chill } from "../utils/validate";
-import { getStatus, requireStatus } from "../utils/status";
+import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
 
 export function makeChillCommand() {
   const cmd = new Command("chill");
@@ -23,13 +23,13 @@ async function chillAction(options: OptionValues) {
   const controllerKeyring = initKeyringPair(controllerSeed);
   const controllerAddress = controllerKeyring.address;
 
-  const controllerStatus = await getStatus(controllerAddress, api);
+  const controllerStatus = await getValidatorStatus(controllerAddress, api);
 
   if (!controllerStatus.stash) {
     console.error(`Cannot chill, ${controllerAddress} is not staked`);
     process.exit(1);
   }
-  const stashStatus = await getStatus(controllerStatus.stash, api);
+  const stashStatus = await getValidatorStatus(controllerStatus.stash, api);
 
   requireStatus(stashStatus, "validating");
 
