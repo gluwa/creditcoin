@@ -8,10 +8,10 @@ import {
   parseAmountInternal,
   parseHexStringInternal,
 } from "../utils/parsing";
-import { getStatus, printValidatorStatus } from "../utils/status";
 import { getBalance, printBalance } from "../utils/balance";
 import { mnemonicGenerate, mnemonicValidate } from "@polkadot/util-crypto";
 import execa from "execa";
+import { getValidatorStatus } from "../utils/validatorStatus";
 
 function randomAccount() {
   const seed = mnemonicGenerate();
@@ -53,7 +53,7 @@ describe.skip("integration test: validator wizard setup", () => {
     );
 
     const { api } = await newApi("ws://localhost:9944");
-    const validatorStatus = await getStatus(stash.address, api);
+    const validatorStatus = await getValidatorStatus(stash.address, api);
 
     expect(validatorStatus.waiting).toBe(true);
   }, 100000);
@@ -164,10 +164,13 @@ describe("integration test: validator manual setup", () => {
     );
     // wait 5 seconds for nodes to sync
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    const stashStatus = await getStatus(stashAddress, aliceApi);
+    const stashStatus = await getValidatorStatus(stashAddress, aliceApi);
     expect(stashStatus.bonded).toBe(true);
 
-    const controllerStatus = await getStatus(controllerAddress, aliceApi);
+    const controllerStatus = await getValidatorStatus(
+      controllerAddress,
+      aliceApi
+    );
     expect(controllerStatus.stash).toBe(stashAddress);
 
     const stashBondedBalance = (await getBalance(stashAddress, aliceApi))
@@ -214,7 +217,10 @@ describe("integration test: validator manual setup", () => {
       }
     );
 
-    const stashStatusAfterValidating = await getStatus(stashAddress, bobApi);
+    const stashStatusAfterValidating = await getValidatorStatus(
+      stashAddress,
+      bobApi
+    );
     expect(stashStatusAfterValidating.waiting).toBe(true);
 
     // After increasing the validator count, (forcing an era- currently not) and waiting for the next era,
@@ -233,7 +239,7 @@ describe("integration test: validator manual setup", () => {
     ).toNumber();
     expect(validatorCount).toBe(2);
     await waitEras(2, aliceApi);
-    const stashStatusAfterEra = await getStatus(stashAddress, bobApi);
+    const stashStatusAfterEra = await getValidatorStatus(stashAddress, bobApi);
     expect(stashStatusAfterEra.active).toBe(true);
 
     // After waiting for another era, the validator should have accumulated era rewards to distribute
@@ -282,7 +288,10 @@ describe("integration test: validator manual setup", () => {
     );
     // wait 5 seconds for nodes to sync
     await waitEras(2, aliceApi);
-    const stashStatusAfterChill = await getStatus(stashAddress, bobApi);
+    const stashStatusAfterChill = await getValidatorStatus(
+      stashAddress,
+      bobApi
+    );
     expect(stashStatusAfterChill.active).toBe(false);
     expect(stashStatusAfterChill.waiting).toBe(false);
 
