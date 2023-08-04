@@ -1,6 +1,7 @@
 import { ApiPromise, BN } from "creditcoin-js";
 import { readAmount, readAmountFromHex, toCTCString } from "./balance";
 import { timeTillEra } from "./era";
+import Table from "cli-table3";
 
 function formatDaysHoursMinutes(ms: number) {
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
@@ -19,7 +20,7 @@ function formatDaysHoursMinutes(ms: number) {
   return `${daysString}${hoursString}${minutesString}${secString}`;
 }
 
-export async function getStatus(address: string, api: ApiPromise) {
+export async function getValidatorStatus(address: string, api: ApiPromise) {
   const res = await api.derive.staking.account(address);
   const totalStaked = readAmount(res.stakingLedger.total.toString());
   const bonded = totalStaked.gt(new BN(0));
@@ -94,23 +95,22 @@ export async function getStatus(address: string, api: ApiPromise) {
 }
 
 export async function printValidatorStatus(status: Status, api: ApiPromise) {
-  console.log("Bonded: ", status.bonded);
-  if (status.stash) console.log("Stash: ", status.stash);
-  console.log("Controller: ", status.controller);
-  console.log("Validating: ", status.validating);
-  console.log("Waiting: ", status.waiting);
-  console.log("Active: ", status.active);
+  const table = new Table({
+    head: ["Status"],
+  });
 
-  console.log("Can withdraw: ", status.canWithdraw);
+  table.push(["Bonded", status.bonded ? "Yes" : "No"]);
+  table.push(["Stash", status.stash ? status.stash : "None"]);
+  table.push(["Controller", status.controller]);
+  table.push(["Validating", status.validating ? "Yes" : "No"]);
+  table.push(["Waiting", status.waiting ? "Yes" : "No"]);
+  table.push(["Active", status.active ? "Yes" : "No"]);
+  table.push(["Can withdraw", status.canWithdraw ? "Yes" : "No"]);
   if (status.canWithdraw) {
-    console.log("Unlocked chunks: ");
     status.readyForWithdraw.forEach((chunk) => {
-      console.log(
-        `  ${toCTCString(chunk.value)} unlocked since era ${chunk.era}`
-      );
+      table.push([`Unlocked since era ${chunk.era}`, toCTCString(chunk.value)]);
     });
   }
-
   let nextUnlocking = "None";
   if (status.nextUnbondingAmount && status.nextUnbondingAmount.eq(new BN(0))) {
     nextUnlocking = "None";
@@ -121,7 +121,9 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
       nextUnbondingDate.toNumber()
     )}`;
   }
-  console.log(`Next unbonding chunk: ${nextUnlocking}`);
+  table.push(["Next unlocking", nextUnlocking]);
+
+  console.log(table.toString());
 }
 
 export function requireStatus(
