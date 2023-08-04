@@ -42,6 +42,7 @@ jobs:
           files: scripts/cc-cli/coverage/lcov.info
           fail_ci_if_error: true
           verbose: true
+
   build-creditcoin-node:
     runs-on: ubuntu-22.04
     steps:
