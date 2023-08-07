@@ -18,6 +18,6 @@ describe('Grandpa RPC sanity test', (): void => {
 
     it('rpc.grandpa.roundState() works', async (): Promise<void> => {
         const result = await api.rpc.grandpa.roundState();
-        expect(result).toEqual(expect.anything());
+        expect(result.best.round.toNumber()).toBeGreaterThanOrEqual(0);
     });
 });
