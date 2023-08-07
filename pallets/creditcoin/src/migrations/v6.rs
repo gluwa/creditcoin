@@ -74,6 +74,7 @@ pub mod tests {
 				to: [0u8; 256].into_bounded(),
 				tx_id: [0u8; 256].into_bounded(),
 				contract: Default::default(),
+				contract_type: crate::ContractType::GCRE,
 			};
 			let id = TaskV2::<Test>::to_id(&pending);
 

@@ -44,6 +44,7 @@ benchmarks! {
 			to: [0u8; 256].into_bounded(),
 			tx_id: [0u8; 256].into_bounded(),
 			contract: Default::default(),
+			contract_type: ContractType::GCRE,
 		};
 		for t in 0..t {
 			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
@@ -322,7 +323,7 @@ benchmarks! {
 		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 		let amount = T::Balance::unique_saturated_from(Balances::<T>::minimum_balance());
 		let collected_coins =
-			crate::types::CollectedCoinsStruct::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };
+			crate::types::CollectedCoinsStruct::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id, contract_type: ContractType::GCRE };
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
@@ -335,7 +336,7 @@ benchmarks! {
 
 	set_collect_coins_contract {
 		let root = RawOrigin::Root;
-		let contract = GCreContract::default();
+		let contract = DeployedContract::default();
 	}: _(root, contract)
 
 	register_address_v2 {
@@ -348,6 +349,28 @@ benchmarks! {
 		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 		let proof = OwnershipProof::EthSign(signature);
 	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address, proof)
+
+	set_burn_gate_contract {
+		let root = RawOrigin::Root;
+		let contract = DeployedContract::default();
+	}: _(root, contract)
+
+	set_burn_gate_faucet_address {
+		let root = RawOrigin::Root;
+		let addr: T::AccountId = lender_account::<T>(false);
+	}: _(root, addr)
+
+	request_collect_coins_v2 {
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let collector: T::AccountId = lender_account::<T>(true);
+		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
+		let address = Creditcoin::<T>::addresses(collector_addr_id).unwrap();
+		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
+			.as_bytes()
+			.into_bounded();
+
+		let contract = crate::TokenContract::GCRE(address.value, tx_id);
+	}: _( RawOrigin::Signed(collector), contract)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);

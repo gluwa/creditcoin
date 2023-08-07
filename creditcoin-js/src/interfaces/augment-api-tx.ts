@@ -35,10 +35,11 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
+    PalletCreditcoinCollectCoinsTokenContract,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
-    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+    PalletCreditcoinOcwTasksCollectCoinsDeployedContract,
     PalletCreditcoinOfferId,
     PalletCreditcoinOwnershipProof,
     PalletCreditcoinTaskId,
@@ -417,6 +418,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'InvalidAddress'
                         | 'UnsupportedMethod'
                         | 'TransactionNotFound'
+                        | 'InsufficientFaucetBalance'
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
@@ -570,15 +572,40 @@ declare module '@polkadot/api-base/types/submittable' {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Bytes, Bytes]
             >;
-            setCollectCoinsContract: AugmentedSubmittable<
+            requestCollectCoinsV2: AugmentedSubmittable<
                 (
                     contract:
-                        | PalletCreditcoinOcwTasksCollectCoinsGCreContract
+                        | PalletCreditcoinCollectCoinsTokenContract
+                        | { GCRE: any }
+                        | { GATE: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinCollectCoinsTokenContract]
+            >;
+            setBurnGateContract: AugmentedSubmittable<
+                (
+                    contract:
+                        | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
                         | { address?: any; chain?: any }
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinOcwTasksCollectCoinsGCreContract]
+                [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
+            >;
+            setBurnGateFaucetAddress: AugmentedSubmittable<
+                (address: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            setCollectCoinsContract: AugmentedSubmittable<
+                (
+                    contract:
+                        | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
+                        | { address?: any; chain?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
             >;
             /**
              * Generic tx

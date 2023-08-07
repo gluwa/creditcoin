@@ -1,5 +1,5 @@
 use crate::types::{
-	AddressId, Blockchain, ExternalAddress, ExternalTxId, GCreContract, SystemConfig,
+	AddressId, Blockchain, DeployedContract, ExternalAddress, ExternalTxId, SystemConfig,
 };
 use frame_support::RuntimeDebug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -10,13 +10,15 @@ pub struct CollectedCoins<Hash, Balance> {
 	pub to: AddressId<Hash>,
 	pub amount: Balance,
 	pub tx_id: ExternalTxId,
+	pub contract_type: ContractType,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct UnverifiedCollectedCoins {
 	pub to: ExternalAddress,
 	pub tx_id: ExternalTxId,
-	pub contract: GCreContract,
+	pub contract: DeployedContract,
+	pub contract_type: ContractType,
 }
 
 impl UnverifiedCollectedCoins {
@@ -24,9 +26,9 @@ impl UnverifiedCollectedCoins {
 	where
 		T: Config,
 	{
-		let Self { to, tx_id, contract: GCreContract { chain, .. } } = self;
+		let Self { to, tx_id, contract: DeployedContract { chain, .. }, contract_type } = self;
 		let to = crate::AddressId::new::<T>(&chain, to.as_slice());
-		CollectedCoins { amount, to, tx_id }
+		CollectedCoins { amount, to, tx_id, contract_type }
 	}
 }
 
@@ -125,4 +127,16 @@ where
 		let id = CollectedCoinsId::from(*id);
 		crate::pallet::CollectedCoins::<T>::contains_key(id)
 	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum TokenContract {
+	GCRE(ExternalAddress, ExternalTxId),
+	GATE(ExternalAddress, ExternalTxId),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum ContractType {
+	GCRE,
+	GATE,
 }

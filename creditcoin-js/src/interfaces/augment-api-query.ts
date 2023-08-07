@@ -41,7 +41,7 @@ import type {
     PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
-    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+    PalletCreditcoinOcwTasksCollectCoinsDeployedContract,
     PalletCreditcoinOffer,
     PalletCreditcoinTask,
     PalletCreditcoinTransfer,
@@ -333,9 +333,17 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            burnGATEConract: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletCreditcoinOcwTasksCollectCoinsDeployedContract>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            burnGATEFaucetAddress: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             collectCoinsContract: AugmentedQuery<
                 ApiType,
-                () => Observable<PalletCreditcoinOcwTasksCollectCoinsGCreContract>,
+                () => Observable<PalletCreditcoinOcwTasksCollectCoinsDeployedContract>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;

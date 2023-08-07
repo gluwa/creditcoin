@@ -20,6 +20,7 @@ import {
     TransferKind,
     TransferProcessed,
     OwnershipProof,
+    CollectCoinsContract,
 } from './model';
 import { AddressRegistered } from './extrinsics/register-address';
 import { AddressRegisteredV2 } from './extrinsics/register-address-v2';
@@ -124,6 +125,7 @@ export interface Extrinsics {
         collector: KeyringPair,
         txHash: string,
     ) => Promise<CollectCoinsEvent>;
+    requestCollectCoinsV2: (contract: CollectCoinsContract, signer: KeyringPair) => Promise<CollectCoinsEvent>;
 }
 
 export interface CreditcoinApi {

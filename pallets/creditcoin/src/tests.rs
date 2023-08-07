@@ -5,10 +5,11 @@ use crate::{
 		non_paying_error, EVMAddress, PublicToAddress,
 	},
 	mock::{RuntimeOrigin as Origin, *},
-	types::{DoubleMapExt, OwnershipProof},
+	types::{DeployedContract, DoubleMapExt, OwnershipProof},
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
-	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,
-	Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
+	DealOrders, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, Id, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, TokenContract, Transfer, TransferId, TransferKind,
+	Transfers, WeightInfo,
 };
 use assert_matches::assert_matches;
 use bstr::B;
@@ -3234,5 +3235,83 @@ fn register_address_v2_should_error_with_unsupported_blockchain() {
 			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof,),
 			crate::Error::<Test>::UnsupportedBlockchain
 		);
+	});
+}
+
+#[test]
+fn request_collect_coins_gate_should_error_when_faucet_not_set() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let who = AccountId::new([0; 32]);
+
+		let external_addr = ExternalAddress::default();
+		let tx_id = ExternalTxId::default();
+		let who = Origin::signed(who);
+
+		let contract = TokenContract::GATE(external_addr, tx_id);
+
+		assert_noop!(
+			Creditcoin::request_collect_coins_v2(who, contract),
+			crate::Error::<Test>::BurnGATEFaucetNotSet
+		);
+	});
+}
+
+#[test]
+fn set_burn_gate_contract_fails_with_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+		let gate_contract = DeployedContract::default();
+
+		assert_noop!(
+			Creditcoin::set_burn_gate_contract(Origin::signed(acct), gate_contract),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn set_burn_gate_faucet_address_fails_with_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		assert_noop!(
+			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct.clone()), acct),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn set_burn_gate_contract_passes_and_storage_is_updated() {
+	ExtBuilder::default().build_and_execute(|| {
+		let fake_address =
+			sp_core::H160([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+
+		let gate_contract =
+			DeployedContract { address: fake_address, chain: Blockchain::Luniverse };
+
+		assert_ok!(Creditcoin::set_burn_gate_contract(RawOrigin::Root.into(), gate_contract));
+
+		let stored_contract = Creditcoin::gate_contract();
+
+		assert_eq!(stored_contract.address, fake_address);
+		assert_eq!(stored_contract.chain, Blockchain::Luniverse);
+	});
+}
+
+#[test]
+fn set_burn_gate_faucet_address_passes_and_storage_is_updated() {
+	ExtBuilder::default().build_and_execute(|| {
+		let addr: AccountId = AccountId::new([0; 32]);
+
+		assert!(Creditcoin::burn_gate_faucet_address().is_none());
+		assert_ok!(Creditcoin::set_burn_gate_faucet_address(RawOrigin::Root.into(), addr.clone()));
+
+		let faucet_addr: Option<AccountId32> = Creditcoin::burn_gate_faucet_address();
+
+		assert!(faucet_addr.is_some());
+		assert_eq!(faucet_addr.unwrap(), addr)
 	});
 }
