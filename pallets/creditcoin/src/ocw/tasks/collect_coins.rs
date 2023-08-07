@@ -6,10 +6,10 @@ use crate::ocw::{
 };
 use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
-	types::{Blockchain, UnverifiedCollectedCoins},
+	types::{Blockchain, UnverifiedCollectedCoins, UnverifiedBurnGATE},
 	ExternalAddress, ExternalAmount,
 };
-use core::default::Default;
+use core::{default::Default, ops::Div};
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::U64;
 use frame_support::{ensure, RuntimeDebug};
@@ -131,6 +131,21 @@ impl<T: CreditcoinConfig> Pallet<T> {
 
 		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip, address)?;
 
+		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
+
+		Ok(amount)
+	}
+
+	pub fn verify_burn_GATE_ocw(u_cc: &UnverifiedBurnGATE) -> VerificationResult<T::Balance> {
+		log::debug!("verifying OCW burn GATE");
+		let UnverifiedBurnGATE { to, tx_id, contract: GATEContract { address, chain } } = u_cc;
+		let rpc_url = &chain.rpc_url()?;
+		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
+		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
+		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
+
+		let amount = validate_burn_GATE(to, &tx_receipt, &tx, eth_tip, address)?;
+		let amount = amount.div(sp_core::U256::from_dec_str("2").unwrap());
 		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
 
 		Ok(amount)
@@ -1154,5 +1169,101 @@ pub(crate) mod tests {
 			assert_ok!(c.dispatch(RuntimeOrigin::signed(auth)));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
 		});
+	}
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct GATEContract {
+	pub address: sp_core::H160,
+	pub chain: Blockchain,
+}
+
+impl GATEContract {
+	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
+}
+
+impl Default for GATEContract {
+	fn default() -> Self {
+		let contract_chain: Blockchain = GATEContract::DEFAULT_CHAIN;
+		let contract_address: H160 =
+		 	// Link to contract on ether scan
+			// https://goerli.etherscan.io/address/0x543793d4d576238869ee19b471029e85b53845e9#writeProxyContract#F2
+			sp_core::H160(hex!("543793D4d576238869Ee19b471029e85b53845e9"));
+		Self { address: contract_address, chain: contract_chain }
+	}
+}
+
+impl GATEContract {
+	fn burn_vested_cc_abi() -> Function {
+		#[allow(deprecated)]
+		Function {
+			name: "burn".into(),
+			inputs: vec![Param {
+				name: "value".into(),
+				kind: ParamType::Uint(256),
+				internal_type: None,
+			}],
+			outputs: vec![Param {
+				name: "success".into(),
+				kind: ParamType::Bool,
+				internal_type: None,
+			}],
+			constant: Some(false),
+			state_mutability: StateMutability::NonPayable,
+		}
+	}
+}
+
+pub fn validate_burn_GATE(
+	to: &ExternalAddress,
+	receipt: &EthTransactionReceipt,
+	transaction: &EthTransaction,
+	eth_tip: U64,
+	contract_address: &H160,
+) -> OffchainResult<ExternalAmount> {
+	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
+
+	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
+
+	let diff = (eth_tip)
+		.checked_sub(block_number)
+		.ok_or(VerificationFailureCause::TaskInFuture)?;
+	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
+
+	if let Some(to) = &transaction.to {
+		ensure!(to == contract_address, VerificationFailureCause::IncorrectContract);
+	} else {
+		return Err(VerificationFailureCause::MissingReceiver.into());
+	}
+
+	if let Some(from) = &transaction.from {
+		ensure!(from[..] == to[..], VerificationFailureCause::IncorrectSender)
+	} else {
+		return Err(VerificationFailureCause::MissingSender.into());
+	}
+
+	let transfer_fn = GATEContract::burn_vested_cc_abi();
+	ensure!(!transaction.is_input_empty(), VerificationFailureCause::EmptyInput);
+
+	{
+		let selector = transaction.selector();
+		if selector != transfer_fn.short_signature() {
+			log::error!(
+				"function selector mismatch, expected: {}, got: {}",
+				hex::encode(transfer_fn.short_signature()),
+				hex::encode(selector)
+			);
+			return Err(VerificationFailureCause::AbiMismatch.into());
+		}
+	}
+
+	let inputs = transfer_fn.decode_input(transaction.input()).map_err(|e| {
+		log::error!("failed to decode inputs: {:?}", e);
+		VerificationFailureCause::AbiMismatch
+	})?;
+
+	match inputs.get(0) {
+		Some(Token::Uint(value)) => Ok(ExternalAmount::from(value)),
+		_ => Err(VerificationFailureCause::IncorrectInputType.into()),
 	}
 }

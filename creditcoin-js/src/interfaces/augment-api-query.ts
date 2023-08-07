@@ -22,7 +22,7 @@ import type {
     u64,
 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, H256, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, H160, H256, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
 import type {
     CreditcoinNodeRuntimeOpaqueSessionKeys,
     FrameSupportDispatchPerDispatchClassWeight,
@@ -42,6 +42,7 @@ import type {
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+    PalletCreditcoinOcwTasksCollectCoinsGateContract,
     PalletCreditcoinOffer,
     PalletCreditcoinTask,
     PalletCreditcoinTransfer,
@@ -333,6 +334,14 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            burnGATEConract: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletCreditcoinOcwTasksCollectCoinsGateContract>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            burnGATEFaucetAddress: AugmentedQuery<ApiType, () => Observable<Option<H160>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             collectCoinsContract: AugmentedQuery<
                 ApiType,
                 () => Observable<PalletCreditcoinOcwTasksCollectCoinsGCreContract>,

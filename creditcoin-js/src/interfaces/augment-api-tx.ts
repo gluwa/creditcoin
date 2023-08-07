@@ -28,7 +28,7 @@ import type {
     u8,
 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, Call, H256, MultiAddress, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, Call, H160, H256, MultiAddress, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
 import type {
     CreditcoinNodeRuntimeOpaqueSessionKeys,
     CreditcoinNodeRuntimeOriginCaller,
@@ -39,6 +39,7 @@ import type {
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+    PalletCreditcoinOcwTasksCollectCoinsGateContract,
     PalletCreditcoinOfferId,
     PalletCreditcoinOwnershipProof,
     PalletCreditcoinTaskId,
@@ -569,6 +570,20 @@ declare module '@polkadot/api-base/types/submittable' {
                     txId: Bytes | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [Bytes, Bytes]
+            >;
+            setBurnGateContract: AugmentedSubmittable<
+                (
+                    contract:
+                        | PalletCreditcoinOcwTasksCollectCoinsGateContract
+                        | { address?: any; chain?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinOcwTasksCollectCoinsGateContract]
+            >;
+            setBurnGateFaucetAddress: AugmentedSubmittable<
+                (address: H160 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [H160]
             >;
             setCollectCoinsContract: AugmentedSubmittable<
                 (

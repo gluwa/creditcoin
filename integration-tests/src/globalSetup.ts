@@ -86,6 +86,7 @@ const setup = async () => {
             '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe';
     }
 
+    console.log((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS);
     // Note: in case address is defined will attach to already deployed contract
     await deployCtcContract((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS);
     (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS;
