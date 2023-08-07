@@ -38,6 +38,10 @@ where
 			CollectCoins(unverified) => {
 				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
 			},
+
+			BurnGATE(unverified) => {
+				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
+			},
 		}
 	}
 }

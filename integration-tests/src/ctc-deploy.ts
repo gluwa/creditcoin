@@ -3,6 +3,9 @@ import { GluwaCreditVestingToken } from './ethereum/ctc/typechain';
 import CtcArtifact from './ethereum/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
+import GATEArtifact from './ethereum/ctc/contracts/GluwaGateToken.sol/GluwaGateToken.json';
+import { BigNumber } from 'creditcoin-js';
+
 const deployCtcToken = async (deployer: Signer, existingAddress: string | undefined) => {
     const factory = new ContractFactory(CtcArtifact.abi, CtcArtifact.bytecode, deployer);
     let ctcToken: GluwaCreditVestingToken;
@@ -21,6 +24,15 @@ const deployCtcToken = async (deployer: Signer, existingAddress: string | undefi
     return ctcToken;
 };
 
+export const deployGATEToken = async (deployer: Signer) => {
+    const factory = new ContractFactory(GATEArtifact.abi, GATEArtifact.bytecode, deployer);
+    const gateToken = await factory.deploy();
+    console.log('Deployed GATE Token to', gateToken.address);
+
+    process.env.CREDITCOIN_CTC_GATE_ADDRESS = gateToken.address;
+
+    return gateToken;
+};
 const burnCtc = async (ctcToken: GluwaCreditVestingToken) => {
     // Burn 1 Credo == 10^-18 CTC
     const tx = await ctcToken.burn(1);

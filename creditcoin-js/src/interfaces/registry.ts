@@ -76,6 +76,7 @@ import type {
     PalletCreditcoinLoanTermsInterestType,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+    PalletCreditcoinOcwTasksCollectCoinsGateContract,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
     PalletCreditcoinOrderId,
@@ -295,6 +296,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinLoanTermsInterestType: PalletCreditcoinLoanTermsInterestType;
         PalletCreditcoinOcwErrorsVerificationFailureCause: PalletCreditcoinOcwErrorsVerificationFailureCause;
         PalletCreditcoinOcwTasksCollectCoinsGCreContract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
+        PalletCreditcoinOcwTasksCollectCoinsGateContract: PalletCreditcoinOcwTasksCollectCoinsGateContract;
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;
         PalletCreditcoinOrderId: PalletCreditcoinOrderId;

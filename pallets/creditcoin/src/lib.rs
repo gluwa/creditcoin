@@ -35,13 +35,14 @@ pub mod migrations;
 pub mod ocw;
 mod types;
 
-use ocw::tasks::collect_coins::GCreContract;
+use ocw::tasks::collect_coins::{GATEContract, GCreContract};
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
-	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
-	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
-	TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+	Blockchain, BurnGATEId, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId,
+	Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType,
+	LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput,
+	Transfer, TransferId, TransferKind, UnverifiedBurnGATE, UnverifiedCollectedCoins,
+	UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
@@ -144,6 +145,11 @@ pub mod pallet {
 		fn remove_authority() -> Weight;
 		fn set_collect_coins_contract() -> Weight;
 		fn register_address_v2() -> Weight;
+		fn set_burn_gate_contract() -> Weight;
+		fn set_burn_gate_faucet_address() -> Weight;
+		fn request_burn_gate() -> Weight;
+		fn persist_burn_gate() -> Weight;
+		fn fail_burn_gate() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -230,6 +236,19 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn collect_coins_contract)]
 	pub type CollectCoinsContract<T: Config> = StorageValue<_, GCreContract, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn GATE_Contract)]
+	pub type BurnGATEConract<T: Config> = StorageValue<_, GATEContract, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn burn_gate_faucet_address)]
+	pub type BurnGATEFaucetAddress<T: Config> = StorageValue<_, sp_core::H160, OptionQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn burned_GATE)]
+	pub type BurnedGATE<T: Config> =
+		StorageMap<_, Identity, BurnGATEId<T::Hash>, types::BurnGATEStruct<T::Hash, T::Balance>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -326,6 +345,10 @@ pub mod pallet {
 		/// exchanging vested ERC-20 CC for native CC failed.
 		/// [collected_coins_id, cause]
 		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
+
+		BurnGATERegistered(BurnGATEId<T::Hash>, types::UnverifiedBurnGATE),
+		BurnGATEFailedVerification(BurnGATEId<T::Hash>, VerificationFailureCause),
+		BurnedGATEMinted(types::BurnGATEId<T::Hash>, types::BurnGATEStruct<T::Hash, T::Balance>),
 	}
 
 	// Errors inform users that something went wrong.
@@ -510,6 +533,9 @@ pub mod pallet {
 
 		/// An unsupported blockchain was specified to register_address_v2
 		UnsupportedBlockchain,
+
+		/// A burn GATE transaction with matching parameters has already been registered
+		BurnGATEAlreadyRegistered,
 	}
 
 	#[pallet::genesis_config]
@@ -1235,6 +1261,7 @@ pub mod pallet {
 		#[pallet::weight(match &task_output {
 			crate::TaskOutput::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
 			crate::TaskOutput::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
+			crate::TaskOutput::BurnGATE(..) => <T as Config>::WeightInfo::persist_burn_gate(),
 		})]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
@@ -1275,6 +1302,27 @@ pub mod pallet {
 					CollectedCoins::<T>::insert(&id, collected_coins.clone());
 					(id.clone().into_inner(), Event::<T>::CollectedCoinsMinted(id, collected_coins))
 				},
+				TaskOutput::BurnGATE(id, burned_coins) => {
+					ensure!(
+						!BurnedGATE::<T>::contains_key(&id),
+						non_paying_error(Error::<T>::BurnGATEAlreadyRegistered)
+					);
+
+					let address =
+						Self::addresses(&burned_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
+
+					let ctc_treasury_address = &T::BurnGATECTCWalletAddress::get();
+
+					<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
+						ctc_treasury_address,
+						&address.owner,
+						burned_coins.amount,
+						ExistenceRequirement::AllowDeath,
+					);
+
+					BurnedGATE::<T>::insert(&id, burned_coins.clone());
+					(id.clone().into_inner(), Event::<T>::BurnedGATEMinted(id, burned_coins))
+				},
 			};
 			T::TaskScheduler::remove(&deadline, &task_id);
 
@@ -1287,6 +1335,7 @@ pub mod pallet {
 		#[pallet::weight(match &task_id {
 			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::fail_transfer(),
 			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::fail_collect_coins(),
+			crate::TaskId::BurnGATE(..) => <T as Config>::WeightInfo::fail_burn_gate()
 		})]
 		pub fn fail_task(
 			origin: OriginFor<T>,
@@ -1317,6 +1366,16 @@ pub mod pallet {
 					(
 						collected_coins_id.clone().into_inner(),
 						Event::<T>::CollectCoinsFailedVerification(collected_coins_id, cause),
+					)
+				},
+				TaskId::BurnGATE(burn_gate_id) => {
+					ensure!(
+						!BurnedGATE::<T>::contains_key(&burn_gate_id),
+						Error::<T>::BurnGATEAlreadyRegistered
+					);
+					(
+						burn_gate_id.clone().into_inner(),
+						Event::<T>::BurnGATEFailedVerification(burn_gate_id, cause),
 					)
 				},
 			};
@@ -1423,6 +1482,65 @@ pub mod pallet {
 					fail!(e)
 				},
 			}
+		}
+
+		#[transactional]
+		#[pallet::call_index(25)]
+		#[pallet::weight(<T as Config>::WeightInfo::set_burn_gate_contract())]
+		pub fn set_burn_gate_contract(
+			origin: OriginFor<T>,
+			contract: GATEContract,
+		) -> DispatchResult {
+			ensure_root(origin)?;
+			BurnGATEConract::<T>::put(contract);
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::call_index(26)]
+		#[pallet::weight(<T as Config>::WeightInfo::set_burn_gate_faucet_address())]
+		pub fn set_burn_gate_faucet_address(
+			origin: OriginFor<T>,
+			address: sp_core::H160,
+		) -> DispatchResult {
+			ensure_root(origin)?;
+			BurnGATEFaucetAddress::<T>::put(address);
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::call_index(27)]
+		#[pallet::weight(<T as Config>::WeightInfo::request_burn_gate())]
+		pub fn request_burn_gate(
+			origin: OriginFor<T>,
+			evm_address: ExternalAddress,
+			tx_id: ExternalTxId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let contract = Self::GATE_Contract();
+			let pending = types::UnverifiedBurnGATE { to: evm_address, tx_id, contract };
+			let burn_gate_id = TaskV2::<T>::to_id(&pending);
+			let deadline = T::TaskScheduler::deadline();
+
+			ensure!(
+				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&burn_gate_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			ensure!(
+				!T::TaskScheduler::is_scheduled(&deadline, &burn_gate_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
+			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			T::TaskScheduler::insert(&deadline, &burn_gate_id, Task::from(pending.clone()));
+
+			Self::deposit_event(Event::<T>::BurnGATERegistered(burn_gate_id.into(), pending));
+
+			Ok(())
 		}
 	}
 }
