@@ -475,5 +475,5 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 		Weight::from_parts(0,0)
 	}
 
-	
+
 }
