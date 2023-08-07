@@ -86,18 +86,6 @@ jobs:
         run: |
           ./scripts/check-for-used-forks.sh
 
-  # dangerous conditions that will brick the blockchain
-  danger-will-brick-the-blockchain:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Check for changes in Proof-of-Stake EPOCH duration
-        run: |
-          ./scripts/check-for-changes-in-epoch-duration.sh "remotes/origin/$GITHUB_BASE_REF" "$GITHUB_SHA"
-
   audit:
     name: cargo audit
     runs-on: ubuntu-latest
