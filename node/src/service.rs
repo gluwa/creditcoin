@@ -385,8 +385,6 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 
 		let mining_metrics = mining_metrics.clone();
 
-		let shared_authority_set = shared_authority_set.clone();
-		let finality_provider = finality_provider.clone();
 		let justification_stream = grandpa_link.justification_stream();
 		let shared_voter_state = shared_voter_state.clone();
 
