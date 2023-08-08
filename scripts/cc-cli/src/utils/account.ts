@@ -44,9 +44,9 @@ export async function getCallerSeedFromEnvOrPrompt(interactive: boolean) {
 }
 
 async function getSeedFromEnvOrPrompt(
-  envVar: string = "CC_SEED",
-  accountRole: string = "caller",
-  interactive: boolean = true
+  envVar = "CC_SEED",
+  accountRole = "caller",
+  interactive = true
 ) {
   if (!interactive && !process.env[envVar]) {
     throw new Error(
