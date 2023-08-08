@@ -28,6 +28,7 @@ import { closeDealOrderAsync } from './close-deal-order';
 import { exemptLoanAsync } from './exempt';
 import { requestCollectCoinsAsync } from './request-collect-coins';
 import { registerAddressV2Async } from './register-address-v2';
+import { requestSwapGATEAsync } from './request-swap-gate';
 
 export const extrinsics = (api: ApiPromise) => {
     const registerAddress = (
@@ -119,6 +120,9 @@ export const extrinsics = (api: ApiPromise) => {
         signer: KeyringPair,
     ) => registerAddressV2Async(api, externalAddress, blockchain, ownershipProof, signer);
 
+    const requestSwapGATE = (evmAddress: ExternalAddress, collector: KeyringPair, txHash: string) =>
+        requestSwapGATEAsync(api, evmAddress, collector, txHash);
+
     return {
         registerAddress,
         registerAddressV2,
@@ -134,5 +138,6 @@ export const extrinsics = (api: ApiPromise) => {
         closeDealOrder,
         exemptLoan,
         requestCollectCoins,
+        requestSwapGATE,
     };
 };

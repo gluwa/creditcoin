@@ -105,6 +105,11 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             BidOrderExpired: AugmentedError<ApiType>;
             /**
+             * A burn GATE transaction with matching parameters has already been registered
+             **/
+            BurnGATEAlreadyRegistered: AugmentedError<ApiType>;
+            BurnGATEFaucetNotSet: AugmentedError<ApiType>;
+            /**
              * The coin collection has already been registered.
              **/
             CollectCoinsAlreadyRegistered: AugmentedError<ApiType>;

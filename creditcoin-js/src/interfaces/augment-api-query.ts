@@ -22,7 +22,7 @@ import type {
     u64,
 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, H160, H256, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, H256, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
 import type {
     CreditcoinNodeRuntimeOpaqueSessionKeys,
     FrameSupportDispatchPerDispatchClassWeight,
@@ -38,6 +38,7 @@ import type {
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinBidOrder,
+    PalletCreditcoinCollectCoinsBurnGATE,
     PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
@@ -79,6 +80,7 @@ import type {
     SpConsensusBabeDigestsNextConfigDescriptor,
     SpConsensusBabeDigestsPreDigest,
     SpCoreCryptoKeyTypeId,
+    SpCoreEcdsaPublic,
     SpRuntimeDigest,
     SpStakingOffenceOffenceDetails,
 } from '@polkadot/types/lookup';
@@ -334,13 +336,19 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            burnedGATE: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCreditcoinCollectCoinsBurnGATE>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
             burnGATEConract: AugmentedQuery<
                 ApiType,
                 () => Observable<PalletCreditcoinOcwTasksCollectCoinsGateContract>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
-            burnGATEFaucetAddress: AugmentedQuery<ApiType, () => Observable<Option<H160>>, []> &
+            burnGATEFaucetAddress: AugmentedQuery<ApiType, () => Observable<Option<U8aFixed>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             collectCoinsContract: AugmentedQuery<
                 ApiType,

@@ -11,6 +11,7 @@ import { Signer, Wallet, Contract } from 'ethers';
 import { mnemonicGenerate } from '@polkadot/util-crypto';
 import { personalSignAccountId, signAccountId } from 'creditcoin-js/lib/utils';
 import { ethSignSignature, personalSignSignature } from 'creditcoin-js/lib/extrinsics/register-address-v2';
+import { requestCollectCoins } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
 
 describe('Test GATE Token', (): void => {
     let ccApi: CreditcoinApi;
@@ -48,7 +49,7 @@ describe('Test GATE Token', (): void => {
     });
 
     test('End to end', async () => {
-        const { api, extrinsics: { registerAddressV2 } } = ccApi;
+        const { api, extrinsics: { registerAddressV2, requestSwapGATE } } = ccApi;
 
         // transfer some CTC to the on-chain burn GATE faucet
         await api.tx.sudo
@@ -57,7 +58,7 @@ describe('Test GATE Token', (): void => {
 
         // Set the on chain location for the burn contract to be the address of the deployer wallet
         const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGateContract', {
-            address: deployer.address,
+            address: gateToken.address,
             chain: testingData.blockchain,
         });
         await api.tx.sudo
@@ -66,27 +67,33 @@ describe('Test GATE Token', (): void => {
 
 
         // Set the faucet address in onchain storage to the one that we transfered ctc to earlier
+        // The sp_core::ecsda::Public type exposed by the extrinsic expects a buffer of size 33. Probably a better way to do this
+        let addr_buffer = new Uint8Array(gateFaucet.addressRaw.length + 1);
+        addr_buffer.set(gateFaucet.addressRaw)
         await api.tx.sudo
-            .sudo(api.tx.creditcoin.setBurnGateFaucetAddress(gateFaucet.addressRaw))
+            .sudo(api.tx.creditcoin.setBurnGateFaucetAddress(addr_buffer))
             .signAndSend(sudoSigner, { nonce: -1 })
 
-
-        const mintTx = await gateToken.mint(burnerWallet.address, 1000)
+        const mintTx = await gateToken.mint(deployer.address, 1000)
         await mintTx.wait(3);
-        const balance = await gateToken.balanceOf(burnerWallet.address);
+        const balance = await gateToken.balanceOf(deployer.address);
         expect(balance.eq(1000)).toBe(true);
 
 
-        let burnerGateToken = gateToken.attach(burnerWallet.address);
-        const burnTx = await burnerGateToken.burn(200);
+        const burnTx = await gateToken.burn(200);
         await burnTx.wait(3);
 
-        const accountId = await signAccountId(api, burnerWallet, sudoSigner.address);
+        const accountId = await signAccountId(api, deployer, sudoSigner.address);
         const proof = ethSignSignature(accountId);
-        const lenderRegisteredAddress = await registerAddressV2(burnerWallet.address, testingData.blockchain, proof, sudoSigner);
+        const lenderRegisteredAddress = await registerAddressV2(deployer.address, testingData.blockchain, proof, sudoSigner);
 
 
-    })
+        const swapGATEEvent = await requestSwapGATE(lenderRegisteredAddress.item.externalAddress, sudoSigner, burnTx.hash)
+        const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
+
+        expect(swapGATEVerified).toBeTruthy();
+
+    }, 900_000)
 });
 
 

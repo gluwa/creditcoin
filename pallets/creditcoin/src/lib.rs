@@ -243,7 +243,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn burn_gate_faucet_address)]
-	pub type BurnGATEFaucetAddress<T: Config> = StorageValue<_, sp_core::H160, OptionQuery>;
+	pub type BurnGATEFaucetAddress<T: Config> =
+		StorageValue<_, sp_core::ecdsa::Public, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn burned_GATE)]
@@ -536,6 +537,11 @@ pub mod pallet {
 
 		/// A burn GATE transaction with matching parameters has already been registered
 		BurnGATEAlreadyRegistered,
+
+		// The onchain faucet address for the GATE swap mechanism has not been set using the set_burn_gate_faucet_address extrinsic
+		BurnGATEFaucetNotSet,
+
+		BurnGATEInsufficientFaucetBalance,
 	}
 
 	#[pallet::genesis_config]
@@ -1308,20 +1314,34 @@ pub mod pallet {
 						non_paying_error(Error::<T>::BurnGATEAlreadyRegistered)
 					);
 
-					let address =
+					let faucet_address =
+						Self::burn_gate_faucet_address().ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
+
+					let dest =
 						Self::addresses(&burned_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
 
-					let ctc_treasury_address = &T::BurnGATECTCWalletAddress::get();
+					let src = T::Signer::from(faucet_address).into_account();
 
-					<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
-						ctc_treasury_address,
-						&address.owner,
-						burned_coins.amount,
-						ExistenceRequirement::AllowDeath,
-					);
+					let transfer =
+						<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
+							&src,
+							&dest.owner,
+							burned_coins.amount,
+							ExistenceRequirement::AllowDeath,
+						);
 
-					BurnedGATE::<T>::insert(&id, burned_coins.clone());
-					(id.clone().into_inner(), Event::<T>::BurnedGATEMinted(id, burned_coins))
+					match transfer {
+						Ok(_) => {
+							BurnedGATE::<T>::insert(&id, burned_coins.clone());
+							(
+								id.clone().into_inner(),
+								Event::<T>::BurnedGATEMinted(id, burned_coins),
+							)
+						},
+						Err(_) => {
+							fail!(non_paying_error(Error::<T>::BurnGATEInsufficientFaucetBalance));
+						},
+					}
 				},
 			};
 			T::TaskScheduler::remove(&deadline, &task_id);
@@ -1501,7 +1521,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::set_burn_gate_faucet_address())]
 		pub fn set_burn_gate_faucet_address(
 			origin: OriginFor<T>,
-			address: sp_core::H160,
+			address: sp_core::ecdsa::Public,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			BurnGATEFaucetAddress::<T>::put(address);

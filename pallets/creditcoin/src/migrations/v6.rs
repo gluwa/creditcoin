@@ -40,6 +40,7 @@ impl<T: Config> Migrate for Migration<T> {
 			let id: T::Hash = match &v {
 				Task::CollectCoins(pending) => TaskV2::<T>::to_id(pending),
 				Task::VerifyTransfer(pending) => TaskV2::<T>::to_id(pending),
+				Task::BurnGATE(pending) => TaskV2::<T>::to_id(pending),
 			};
 
 			T::TaskScheduler::insert(&k1, &id, v);
