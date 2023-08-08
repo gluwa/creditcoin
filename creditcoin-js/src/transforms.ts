@@ -13,6 +13,8 @@ import {
     PalletCreditcoinTransferKind,
     PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
+    PalletCreditcoinCollectCoinsBurnGATE,
+    PalletCreditcoinCollectCoinsUnverifiedBurnGATE,
 } from '@polkadot/types/lookup';
 import {
     Address,
@@ -31,6 +33,8 @@ import {
     TransferKind,
     UnverifiedCollectedCoins,
     CollectedCoins,
+    UnverifiedSwapGATE,
+    SwappedGATE,
 } from './model';
 
 export const createAddress = ({ value, blockchain, owner }: PalletCreditcoinAddress): Address => ({
@@ -211,6 +215,25 @@ export const createUnverifiedCollectedCoins = (
 
 export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectCoinsCollectedCoins): CollectedCoins => {
     const { to, txId, amount } = collectedCoins;
+    return {
+        to: to.toString(),
+        txHash: txId.toString(),
+        amount: amount as BN,
+    };
+};
+
+export const createUnverifiedBurnGATE = (
+    burnedGATE: PalletCreditcoinCollectCoinsUnverifiedBurnGATE,
+): UnverifiedSwapGATE => {
+    const { to, txId } = burnedGATE;
+    return {
+        to: to.toString(),
+        txHash: txId.toString(),
+    };
+};
+
+export const createBurnedGATE = (burnedGate: PalletCreditcoinCollectCoinsBurnGATE): SwappedGATE => {
+    const { to, txId, amount } = burnedGate;
     return {
         to: to.toString(),
         txHash: txId.toString(),

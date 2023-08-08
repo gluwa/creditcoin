@@ -28,7 +28,7 @@ import type {
     u8,
 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, Call, H160, H256, MultiAddress, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, Call, H256, MultiAddress, Perbill, Percent } from '@polkadot/types/interfaces/runtime';
 import type {
     CreditcoinNodeRuntimeOpaqueSessionKeys,
     CreditcoinNodeRuntimeOriginCaller,
@@ -395,6 +395,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | PalletCreditcoinTaskId
                         | { VerifyTransfer: any }
                         | { CollectCoins: any }
+                        | { BurnGATE: any }
                         | string
                         | Uint8Array,
                     cause:
@@ -441,6 +442,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | PalletCreditcoinTaskOutput
                         | { VerifyTransfer: any }
                         | { CollectCoins: any }
+                        | { BurnGATE: any }
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
@@ -564,6 +566,13 @@ declare module '@polkadot/api-base/types/submittable' {
                 (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [AccountId32]
             >;
+            requestBurnGate: AugmentedSubmittable<
+                (
+                    evmAddress: Bytes | string | Uint8Array,
+                    txId: Bytes | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [Bytes, Bytes]
+            >;
             requestCollectCoins: AugmentedSubmittable<
                 (
                     evmAddress: Bytes | string | Uint8Array,
@@ -582,8 +591,8 @@ declare module '@polkadot/api-base/types/submittable' {
                 [PalletCreditcoinOcwTasksCollectCoinsGateContract]
             >;
             setBurnGateFaucetAddress: AugmentedSubmittable<
-                (address: H160 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [H160]
+                (address: SpCoreEcdsaPublic | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [SpCoreEcdsaPublic]
             >;
             setCollectCoinsContract: AugmentedSubmittable<
                 (

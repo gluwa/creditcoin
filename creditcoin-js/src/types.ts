@@ -36,6 +36,7 @@ import {
     PalletCreditcoinOcwErrorsVerificationFailureCause,
     PalletCreditcoinOwnershipProof,
 } from '@polkadot/types/lookup';
+import { SwapGATEEvent } from './extrinsics/request-swap-gate';
 
 export type TxCallback = (result: SubmittableResult) => void;
 export type TxFailureCallback = (error?: Error) => void;
@@ -128,6 +129,7 @@ export interface Extrinsics {
         collector: KeyringPair,
         txHash: string,
     ) => Promise<CollectCoinsEvent>;
+    requestSwapGATE: (evmAddress: ExternalAddress, collector: KeyringPair, txHash: string) => Promise<SwapGATEEvent>;
 }
 
 export interface CreditcoinApi {

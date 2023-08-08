@@ -141,3 +141,15 @@ export type Signature = string;
 export type PersonalSign = { kind: 'PersonalSign'; signature: Signature };
 export type EthSign = { kind: 'EthSign'; signature: Signature };
 export type OwnershipProof = PersonalSign | EthSign;
+
+export type SwapGATEId = string;
+export type SwappedGATE = {
+    to: ExternalAddress;
+    txHash: string;
+    amount: BN;
+};
+
+export type UnverifiedSwapGATE = {
+    to: ExternalAddress;
+    txHash: string;
+};
