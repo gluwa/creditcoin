@@ -1,6 +1,7 @@
 import { mnemonicValidate } from "@polkadot/util-crypto";
 import { Keyring } from "creditcoin-js";
 import prompts from "prompts";
+import { getErrorMessage } from "./error";
 
 export function initKeyringPair(seed: string) {
   const keyring = new Keyring({ type: "sr25519" });
@@ -14,70 +15,68 @@ export function initECDSAKeyringPairFromPK(pk: string) {
 }
 
 export async function getStashSeedFromEnvOrPrompt(interactive: boolean) {
-  if (!interactive && !process.env.CC_STASH_SEED) {
-    console.error(
-      "Error: Must specify a seed phrase for the Stash account in the environment variable CC_STASH_SEED or use an interactive shell."
-    );
+  try {
+    return await getSeedFromEnvOrPrompt("CC_STASH_SEED", "stash", interactive);
+  } catch (e) {
+    console.error(getErrorMessage(e));
     process.exit(1);
   }
-  return await getSeedFromEnvOrPrompt(
-    process.env.CC_STASH_SEED,
-    "Specify a seed phrase for the Stash account"
-  );
 }
 export async function getControllerSeedFromEnvOrPrompt(interactive: boolean) {
-  if (!interactive && !process.env.CC_CONTROLLER_SEED) {
-    console.error(
-      "Error: Must specify a seed phrase for the Controller account in the environment variable CC_CONTROLLER_SEED or use an interactive shell."
+  try {
+    return await getSeedFromEnvOrPrompt(
+      "CC_CONTROLLER_SEED",
+      "controller",
+      interactive
     );
+  } catch (e) {
+    console.error(getErrorMessage(e));
     process.exit(1);
   }
-  return await getSeedFromEnvOrPrompt(
-    process.env.CC_CONTROLLER_SEED,
-    "Specify a seed phrase for the Controller account"
-  );
 }
 export async function getCallerSeedFromEnvOrPrompt(interactive: boolean) {
-  if (!interactive && !process.env.CC_SEED) {
-    console.error(
-      "Error: Must specify a seed phrase for the Caller account in the environment variable CC_SEED or use an interactive shell."
-    );
+  try {
+    return await getSeedFromEnvOrPrompt("CC_SEED", "caller", interactive);
+  } catch (e) {
+    console.error(getErrorMessage(e));
     process.exit(1);
   }
-  return await getSeedFromEnvOrPrompt(
-    process.env.CC_SEED,
-    "Specify caller's seed phrase"
-  );
 }
 
 async function getSeedFromEnvOrPrompt(
-  envVar?: string | undefined,
-  promptStr?: string | null
+  envVar: string = "CC_SEED",
+  accountRole: string = "caller",
+  interactive: boolean = true
 ) {
-  if (envVar) {
-    if (mnemonicValidate(envVar)) {
-      return envVar;
+  if (!interactive && !process.env[envVar]) {
+    throw new Error(
+      `Error: Must specify a seed phrase for the ${accountRole} account in the environment variable ${envVar} or use an interactive shell.`
+    );
+  }
+
+  if (typeof process.env[envVar] === "string") {
+    const seedFromEnv = process.env[envVar];
+    if (mnemonicValidate(seedFromEnv!)) {
+      return seedFromEnv;
     } else {
-      console.log(
-        "Error: Seed phrase provided in environment variable is invalid."
+      throw new Error(
+        `Error: Seed phrase provided in environment variable ${envVar} is invalid.`
       );
-      process.exit(1);
+    }
+  } else if (interactive) {
+    const seedPromptResult = await prompts([
+      {
+        type: "password",
+        name: "seed",
+        message: `Specify a seed phrase for the ${accountRole} account`,
+        validate: (seed) => mnemonicValidate(seed),
+      },
+    ]);
+    // If SIGTERM is issued while prompting, it will log a bogus address anyways and exit without error.
+    // To avoid this, we check if prompt was successful, before returning.
+    if (seedPromptResult.seed) {
+      return seedPromptResult.seed;
     }
   }
-  const seedPromptResult = await prompts([
-    {
-      type: "password",
-      name: "seed",
-      message: promptStr ? promptStr : "Enter seed phrase",
-      validate: (seed) => mnemonicValidate(seed),
-    },
-  ]);
-
-  // If SIGTERM is issued while prompting, it will log a bogus address anyways and exit without error.
-  // To avoid this, we check if prompt was successful, before returning.
-  if (seedPromptResult.seed) {
-    return seedPromptResult.seed;
-  }
-  console.log("Error: Could not retrieve seed phrase.");
-  process.exit(1);
+  throw new Error("Error: Could not retrieve seed phrase.");
 }
