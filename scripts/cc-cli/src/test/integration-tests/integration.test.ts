@@ -360,7 +360,7 @@ async function waitEras(eras: number, api: ApiPromise, force = true) {
 }
 
 async function forceNewEra(api: ApiPromise) {
-  const tx = api.tx.staking.forceNewEra();
+  const tx = api.tx.staking.forceNewEraAlways();
   const sudoTx = api.tx.sudo.sudo(tx);
   await signSendAndWatch(sudoTx, api, initKeyringPair("//Alice"));
 }
