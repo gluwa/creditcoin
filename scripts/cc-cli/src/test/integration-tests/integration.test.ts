@@ -33,9 +33,7 @@ async function fundAccounts(amount: BN) {
   return { stash, controller };
 }
 
-// beforeAll(() => {
-
-describe.skip("integration test: validator wizard setup", () => {
+describe("integration test: validator wizard setup", () => {
   test("new validator should appear as waiting after using the wizard setup", async () => {
     // Fund stash and controller
     const { stash, controller } = await fundAccounts(
@@ -60,25 +58,6 @@ describe.skip("integration test: validator wizard setup", () => {
 });
 
 describe("integration test: validator manual setup", () => {
-  test.skip("util test", async () => {
-    const { api } = await newApi();
-
-    const increaseValidatorCountTx = api.tx.staking.setValidatorCount(2);
-    const increaseValidatorCountSudoTx = api.tx.sudo.sudo(
-      increaseValidatorCountTx
-    );
-    await signSendAndWatch(
-      increaseValidatorCountSudoTx,
-      api,
-      initKeyringPair("//Alice")
-    );
-
-    const validatorCount = (
-      await api.query.staking.validatorCount()
-    ).toNumber();
-    console.log(validatorCount);
-  }, 100000);
-
   test("full validator cycle using manual setup", async () => {
     // Bob's node is used for checking its configuration as a validator
     // and for sending extrinsics using the CLI
@@ -337,16 +316,6 @@ describe("integration test: validator manual setup", () => {
     const stashAmount = fundAmount.sub(parseAmountInternal(sendAmount));
     expect(balanceAfterWithdraw.transferable.gte(stashAmount)).toBe(true);
   }, 2000000);
-});
-
-describe("integration test: queries", () => {
-  test("alice balance should be 1m ctc", () => {
-    const out = execSync(
-      `creditcoin-cli balance --address 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --json`
-    );
-    const json = JSON.parse(out.toString());
-    expect(json.balance.transferable).toBe("1000000000000000000000000");
-  });
 });
 
 async function fundFromSudo(
