@@ -2,7 +2,6 @@ import { ApiPromise, BN } from "creditcoin-js";
 import { newApi } from "../../api";
 import { initKeyringPair } from "../../utils/account";
 import { signSendAndWatch } from "../../utils/tx";
-import { execSync } from "child_process";
 import {
   parseAddressInternal,
   parseAmountInternal,
