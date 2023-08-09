@@ -1,4 +1,4 @@
-import { ApiPromise, BN } from "creditcoin-js";
+import { BN } from "creditcoin-js";
 import { newApi } from "../../api";
 import { initKeyringPair } from "../../utils/account";
 import { signSendAndWatch } from "../../utils/tx";
@@ -8,63 +8,23 @@ import {
   parseHexStringInternal,
 } from "../../utils/parsing";
 import { getBalance, printBalance } from "../../utils/balance";
-import { mnemonicGenerate, mnemonicValidate } from "@polkadot/util-crypto";
+import { mnemonicValidate } from "@polkadot/util-crypto";
 import execa from "execa";
 import { getValidatorStatus } from "../../utils/validatorStatus";
+import { fundFromSudo, waitEras } from "./helpers";
 
-function randomAccount() {
-  const seed = mnemonicGenerate();
-  const keyring = initKeyringPair(seed);
-  const address = keyring.address;
-  return { seed, keyring, address };
-}
-
-async function fundAccounts(amount: BN) {
-  const { api } = await newApi("ws://localhost:9944");
-  const stash = randomAccount();
-  const controller = randomAccount();
-  const tx = await fundAddressesFromSudo(
-    [stash.address, controller.address],
-    amount
-  );
-  await signSendAndWatch(tx, api, initKeyringPair("//Alice"));
-
-  return { stash, controller };
-}
-
-describe("integration test: validator wizard setup", () => {
-  test("new validator should appear as waiting after using the wizard setup", async () => {
-    // Fund stash and controller
-    const { stash, controller } = await fundAccounts(
-      parseAmountInternal("10000")
-    );
-    // Run wizard setup with 1k ctc ang to pair with node Bob
-    execa.commandSync(
-      `creditcoin-cli wizard --amount 1000 --url ws://localhost:9945`,
-      {
-        env: {
-          CC_STASH_SEED: stash.seed,
-          CC_CONTROLLER_SEED: controller.seed,
-        },
-      }
-    );
-
-    const { api } = await newApi("ws://localhost:9944");
-    const validatorStatus = await getValidatorStatus(stash.address, api);
-
-    expect(validatorStatus.waiting).toBe(true);
-  }, 100000);
-});
+const ALICE_NODE_URL = "ws://localhost:9944";
+const BOB_NODE_URL = "ws://localhost:9945";
 
 describe("integration test: validator manual setup", () => {
   test("full validator cycle using manual setup", async () => {
     // Bob's node is used for checking its configuration as a validator
     // and for sending extrinsics using the CLI
-    const bobApi = (await newApi("ws://localhost:9945")).api;
+    const bobApi = (await newApi(BOB_NODE_URL)).api;
 
     // While CLI commands always send extrinsics through Bob's node,
     // sudo calls and state checks both use Alice's node
-    const aliceApi = (await newApi("ws://localhost:9944")).api;
+    const aliceApi = (await newApi(ALICE_NODE_URL)).api;
 
     // Creating two accounts using `new` should return two valid mnemonic seeds
     const stashSeed = execa
@@ -114,7 +74,7 @@ describe("integration test: validator manual setup", () => {
     const sendAmount = "1000";
     execa.commandSync(
       // CLI commands are sent through Bob's node
-      `creditcoin-cli send --amount ${sendAmount} --to ${controllerAddress} --url ws://localhost:9945`,
+      `creditcoin-cli send --amount ${sendAmount} --to ${controllerAddress} --url ${BOB_NODE_URL}`,
       {
         env: {
           CC_SEED: stashSeed,
@@ -133,7 +93,7 @@ describe("integration test: validator manual setup", () => {
     // - make controller's stash be the stash address
     const bondAmount = "1000";
     execa.commandSync(
-      `creditcoin-cli bond --controller ${controllerAddress} --amount ${bondAmount} --url ws://localhost:9945`,
+      `creditcoin-cli bond --controller ${controllerAddress} --amount ${bondAmount} --url ${BOB_NODE_URL}`,
       {
         env: {
           CC_STASH_SEED: stashSeed,
@@ -160,7 +120,7 @@ describe("integration test: validator manual setup", () => {
     // Rotating session keys for the node should return a valid hex string
     const newKeys = parseHexStringInternal(
       execa
-        .commandSync(`creditcoin-cli rotate-keys --url ws://localhost:9945`)
+        .commandSync(`creditcoin-cli rotate-keys --url ${BOB_NODE_URL}`)
         .stdout.split("New keys: ")[1]
     );
 
@@ -168,7 +128,7 @@ describe("integration test: validator manual setup", () => {
     // - make the validator (stash) next session keys equal to the new keys
     // - make the new keys appear as the node's session keys
     execa.commandSync(
-      `creditcoin-cli set-keys --keys ${newKeys} --url ws://localhost:9945`,
+      `creditcoin-cli set-keys --keys ${newKeys} --url ${BOB_NODE_URL}`,
       {
         env: {
           CC_CONTROLLER_SEED: controllerSeed,
@@ -187,7 +147,7 @@ describe("integration test: validator manual setup", () => {
 
     // Signaling intention to validate should make the validator (stash) appear as waiting
     execa.commandSync(
-      `creditcoin-cli validate --commission 1 --url ws://localhost:9945`,
+      `creditcoin-cli validate --commission 1 --url ${BOB_NODE_URL}`,
       {
         env: {
           CC_CONTROLLER_SEED: controllerSeed,
@@ -227,18 +187,13 @@ describe("integration test: validator manual setup", () => {
     console.log("Starting era: ", startingEra);
     await waitEras(1, aliceApi);
 
-    // const eraRewards = await aliceApi.query.staking.erasRewardPoints(
-    //   startingEra
-    // );
-    // expect(eraRewards.individual.entries()).toBeGreaterThan(0);
-
     // After distributing rewards, the validator staked balance should increase
     // (because it was set to staked)
     const balanceBeforeRewards = await getBalance(stashAddress, aliceApi);
     console.log(balanceBeforeRewards.bonded.toString());
 
     execa.commandSync(
-      `creditcoin-cli distribute-rewards --url ws://localhost:9945 --validator-id ${stashAddress} --era ${startingEra}`,
+      `creditcoin-cli distribute-rewards --url ${BOB_NODE_URL} --validator-id ${stashAddress} --era ${startingEra}`,
       {
         env: {
           CC_SEED: stashSeed,
@@ -256,7 +211,7 @@ describe("integration test: validator manual setup", () => {
     expect(balanceIncreased).toBe(true);
 
     // After executing the chill commmand, the validator should no longer be active nor waiting
-    execa.commandSync(`creditcoin-cli chill --url ws://localhost:9945`, {
+    execa.commandSync(`creditcoin-cli chill --url ${BOB_NODE_URL}`, {
       env: {
         CC_CONTROLLER_SEED: controllerSeed,
       },
@@ -273,7 +228,7 @@ describe("integration test: validator manual setup", () => {
     // After unbonding, the validator should no longer be bonded
     execa.commandSync(
       // Unbonding defaults to max if it exceeds the bonded amount
-      `creditcoin-cli unbond --url ws://localhost:9945 -a 100000`,
+      `creditcoin-cli unbond --url ${BOB_NODE_URL} -a 100000`,
       {
         env: {
           CC_CONTROLLER_SEED: controllerSeed,
@@ -282,7 +237,6 @@ describe("integration test: validator manual setup", () => {
     );
     // wait 5 seconds for nodes to sync
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    // const stashStatusAfterUnbonding = await getStatus(stashAddress, bobApi);
     const balanceAfterUnbonding = await getBalance(stashAddress, aliceApi);
     const isUnbonding = balanceAfterUnbonding.unbonding.gt(new BN(0));
     printBalance(balanceAfterRewards);
@@ -300,7 +254,7 @@ describe("integration test: validator manual setup", () => {
     await waitEras(unbondingPeriod + 1, aliceApi, true);
 
     execa.commandSync(
-      `creditcoin-cli withdraw-unbonded --url ws://localhost:9945`,
+      `creditcoin-cli withdraw-unbonded --url ${BOB_NODE_URL}`,
       {
         env: {
           CC_CONTROLLER_SEED: controllerSeed,
@@ -316,50 +270,3 @@ describe("integration test: validator manual setup", () => {
     expect(balanceAfterWithdraw.transferable.gte(stashAmount)).toBe(true);
   }, 2000000);
 });
-
-async function fundFromSudo(
-  address: string,
-  amount: BN,
-  url = "ws://localhost:9944"
-) {
-  const { api } = await newApi(url);
-  const call = api.tx.balances.setBalance(address, amount.toString(), "0");
-  const tx = api.tx.sudo.sudo(call);
-  return tx;
-}
-
-async function fundAddressesFromSudo(
-  addresses: string[],
-  amount: BN,
-  url = "ws://localhost:9944"
-) {
-  const { api } = await newApi(url);
-  const txs = addresses.map((address) => {
-    const fundTx = api.tx.balances.setBalance(address, amount.toString(), "0");
-    return api.tx.sudo.sudo(fundTx);
-  });
-  const tx = api.tx.utility.batchAll(txs);
-  return tx;
-}
-
-async function waitEras(eras: number, api: ApiPromise, force = true) {
-  if (force) {
-    await forceNewEra(api);
-  }
-  let eraInfo = await api.derive.session.info();
-  let currentEra = eraInfo.currentEra.toNumber();
-  const targetEra = currentEra + eras;
-  const blockTime = api.consts.babe.expectedBlockTime.toNumber();
-  while (currentEra < targetEra) {
-    console.log(`Waiting for era ${targetEra}, currently at ${currentEra}`);
-    await new Promise((resolve) => setTimeout(resolve, blockTime));
-    eraInfo = await api.derive.session.info();
-    currentEra = eraInfo.currentEra.toNumber();
-  }
-}
-
-async function forceNewEra(api: ApiPromise) {
-  const tx = api.tx.staking.forceNewEraAlways();
-  const sudoTx = api.tx.sudo.sudo(tx);
-  await signSendAndWatch(sudoTx, api, initKeyringPair("//Alice"));
-}
