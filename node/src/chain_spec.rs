@@ -20,11 +20,14 @@ use sp_runtime::{
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, GrandpaInitialAuthorities>;
+pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
 #[derive(Clone, Debug, Deserialize, Serialize, ChainSpecExtension)]
 #[serde(rename_all = "camelCase")]
-pub struct GrandpaInitialAuthorities {
+pub struct Extensions {
+	/// Known bad block hashes.
+	pub bad_blocks: sc_client_api::BadBlocks<creditcoin_node_runtime::Block>,
+	/// The public keys for the authorities of the initial round of GRANDPA.
 	pub grandpa_initial_authorities: Option<Vec<GrandpaId>>,
 }
 
@@ -80,10 +83,11 @@ pub fn development_config() -> Result<ChainSpec, String> {
 
 	let initial_authorities = vec![get_authority_keys_from_seed("Alice")];
 
-	let grandpa_initial_authorities = GrandpaInitialAuthorities {
+	let extensions = Extensions {
 		grandpa_initial_authorities: Some(
 			initial_authorities.clone().into_iter().map(|x| x.2).collect(),
 		),
+		bad_blocks: None,
 	};
 
 	Ok(ChainSpec::from_genesis(
@@ -121,7 +125,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Properties
 		Some(chain_properties()),
 		// Extensions
-		grandpa_initial_authorities,
+		extensions,
 	))
 }
 
@@ -129,10 +133,11 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 	let initial_authorities = vec![get_authority_keys_from_seed("Alice")];
 
-	let grandpa_initial_authorities = GrandpaInitialAuthorities {
+	let extensions = Extensions {
 		grandpa_initial_authorities: Some(
 			initial_authorities.clone().into_iter().map(|x| x.2).collect(),
 		),
+		bad_blocks: None,
 	};
 
 	Ok(ChainSpec::from_genesis(
@@ -178,7 +183,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Properties
 		Some(chain_properties()),
 		// Extensions
-		grandpa_initial_authorities,
+		extensions,
 	))
 }
 
@@ -246,7 +251,6 @@ fn testnet_genesis(
 			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
 			force_era: pallet_staking_substrate::Forcing::NotForcing,
 			slash_reward_fraction: Perbill::from_percent(10),
-			// min_validator_bond: 1000 * CTC,
 			..Default::default()
 		},
 		session: SessionConfig {
@@ -262,13 +266,3 @@ fn testnet_genesis(
 		nomination_pools: Default::default(),
 	}
 }
-
-// #[test]
-// fn encode_keys_hack() {
-// 	use parity_scale_codec::Encode;
-// 	let keys = vec![get_authority_keys_from_seed("Alice")];
-
-// 	let encoded = keys.encode();
-
-// 	panic!("Encoded: {:?}", encoded);
-// }
