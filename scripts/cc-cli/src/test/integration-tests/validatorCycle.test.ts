@@ -11,10 +11,12 @@ import { getBalance, printBalance } from "../../utils/balance";
 import { mnemonicValidate } from "@polkadot/util-crypto";
 import execa from "execa";
 import { getValidatorStatus } from "../../utils/validatorStatus";
-import { fundFromSudo, waitEras } from "./helpers";
-
-const ALICE_NODE_URL = "ws://localhost:9944";
-const BOB_NODE_URL = "ws://localhost:9945";
+import {
+  ALICE_NODE_URL,
+  BOB_NODE_URL,
+  fundFromSudo,
+  waitEras,
+} from "./helpers";
 
 describe("integration test: validator manual setup", () => {
   test("full validator cycle using manual setup", async () => {
