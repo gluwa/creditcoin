@@ -1,7 +1,7 @@
 import { newApi } from "../../api";
 import { parseAmountInternal } from "../../utils/parsing";
 import { getValidatorStatus } from "../../utils/validatorStatus";
-import { fundAccounts } from "./helpers";
+import { ALICE_NODE_URL, BOB_NODE_URL, fundAccounts } from "./helpers";
 import execa from "execa";
 
 describe("integration test: validator wizard setup", () => {
@@ -12,7 +12,7 @@ describe("integration test: validator wizard setup", () => {
     );
     // Run wizard setup with 1k ctc ang to pair with node Bob
     execa.commandSync(
-      `creditcoin-cli wizard --amount 1000 --url ws://localhost:9945`,
+      `creditcoin-cli wizard --amount 1000 --url ${BOB_NODE_URL}`,
       {
         env: {
           CC_STASH_SEED: stash.seed,
@@ -21,7 +21,7 @@ describe("integration test: validator wizard setup", () => {
       }
     );
 
-    const { api } = await newApi("ws://localhost:9944");
+    const { api } = await newApi(ALICE_NODE_URL);
     const validatorStatus = await getValidatorStatus(stash.address, api);
 
     expect(validatorStatus.waiting).toBe(true);
