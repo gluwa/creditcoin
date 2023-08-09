@@ -243,8 +243,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn burn_gate_faucet_address)]
-	pub type BurnGATEFaucetAddress<T: Config> =
-		StorageValue<_, sp_core::ecdsa::Public, OptionQuery>;
+	pub type BurnGATEFaucetAddress<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn burned_GATE)]
@@ -1320,11 +1319,9 @@ pub mod pallet {
 					let dest =
 						Self::addresses(&burned_coins.to).ok_or(Error::<T>::NonExistentAddress)?;
 
-					let src = T::Signer::from(faucet_address).into_account();
-
 					let transfer =
 						<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
-							&src,
+							&faucet_address,
 							&dest.owner,
 							burned_coins.amount,
 							ExistenceRequirement::AllowDeath,
@@ -1338,9 +1335,13 @@ pub mod pallet {
 								Event::<T>::BurnedGATEMinted(id, burned_coins),
 							)
 						},
-						Err(_) => {
-							fail!(non_paying_error(Error::<T>::BurnGATEInsufficientFaucetBalance));
-						},
+						Err(_) => (
+							id.clone().into_inner(),
+							Event::<T>::BurnGATEFailedVerification(
+								id,
+								VerificationFailureCause::InsufficientFaucetBallance,
+							),
+						),
 					}
 				},
 			};
@@ -1521,7 +1522,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::set_burn_gate_faucet_address())]
 		pub fn set_burn_gate_faucet_address(
 			origin: OriginFor<T>,
-			address: sp_core::ecdsa::Public,
+			address: T::AccountId,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			BurnGATEFaucetAddress::<T>::put(address);
