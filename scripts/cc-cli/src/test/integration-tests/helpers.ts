@@ -4,6 +4,9 @@ import { newApi } from "../../api";
 import { signSendAndWatch } from "../../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 
+export const ALICE_NODE_URL = "ws://localhost:9944";
+export const BOB_NODE_URL = "ws://localhost:9945";
+
 export function randomAccount() {
   const seed = mnemonicGenerate();
   const keyring = initKeyringPair(seed);
