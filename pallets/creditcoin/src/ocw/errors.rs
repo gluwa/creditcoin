@@ -44,16 +44,31 @@ pub enum VerificationFailureCause {
 	InvalidAddress,
 	UnsupportedMethod,
 	TransactionNotFound,
+	InsufficientFaucetBallance,
 }
 
 impl VerificationFailureCause {
 	pub fn is_fatal(self) -> bool {
 		use VerificationFailureCause::*;
 		match self {
-			TaskFailed | IncorrectContract | MissingSender | MissingReceiver | AbiMismatch
-			| IncorrectInputLength | IncorrectInputType | IncorrectAmount | IncorrectNonce
-			| InvalidAddress | UnsupportedMethod | TaskInFuture | IncorrectSender | EmptyInput
-			| IncorrectReceiver | TaskNonexistent | TransactionNotFound => true,
+			TaskFailed
+			| IncorrectContract
+			| MissingSender
+			| MissingReceiver
+			| AbiMismatch
+			| IncorrectInputLength
+			| IncorrectInputType
+			| IncorrectAmount
+			| IncorrectNonce
+			| InvalidAddress
+			| UnsupportedMethod
+			| TaskInFuture
+			| IncorrectSender
+			| EmptyInput
+			| IncorrectReceiver
+			| TaskNonexistent
+			| TransactionNotFound
+			| InsufficientFaucetBallance => true,
 			TaskPending | TaskUnconfirmed => false,
 		}
 	}
