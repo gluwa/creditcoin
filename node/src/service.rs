@@ -13,6 +13,7 @@ use sc_client_api::{Backend, BlockBackend};
 
 use sc_consensus_babe as babe;
 
+use sc_consensus_grandpa::FinalityProofProvider;
 use sc_consensus_pow::PowVerifier;
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_keystore::LocalKeystore;
@@ -148,14 +149,14 @@ pub(crate) fn new_partial(
 
 	let algorithm = Sha3Algorithm::new(client.clone());
 
-	let initial_authorities = sc_chain_spec::get_extension::<
-		super::chain_spec::GrandpaInitialAuthorities,
-	>(config.chain_spec.extensions())
+	let chainspec_extensions = sc_chain_spec::get_extension::<super::chain_spec::Extensions>(
+		config.chain_spec.extensions(),
+	)
 	.unwrap();
 
-	log::debug!("initial grandpa authorities: {initial_authorities:?}");
+	log::debug!("chainspec extensions: {chainspec_extensions:?}");
 	let auth_provider = {
-		let grandpa_authorities = initial_authorities
+		let grandpa_authorities = chainspec_extensions
 			.grandpa_initial_authorities
 			.clone()
 			.expect("No initial authorities configured for GRANDPA");
@@ -325,6 +326,13 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		.extra_sets
 		.push(sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
 
+	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
+		backend.clone(),
+		grandpa_link.shared_authority_set().clone(),
+		Vec::default(),
+	));
+	let shared_voter_state = sc_consensus_grandpa::SharedVoterState::empty();
+
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
@@ -333,7 +341,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			spawn_handle: task_manager.spawn_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
-			warp_sync_params: None, // TODO: figure out if it's possible to use warp sync only after switched to pos
+			warp_sync_params: Some(sc_service::WarpSyncParams::WithProvider(warp_sync)),
 		})?;
 
 	if config.offchain_worker.enabled {
@@ -358,13 +366,6 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 		}
 	}
 
-	if std::env::var("GRANDPA_HACK").is_ok() {
-		// const AUTH_SET_KEY: &[u8] = b"grandpa_voters";
-		// sc_finality_grandpa::AuthoritySet::<runtime::Hash, runtime::BlockNumber>::decode(input)
-
-		// backend
-		// 	.insert_aux(insert, delete)
-	}
 	let role = config.role.clone();
 	let force_authoring = config.force_authoring;
 	let backoff_authoring_blocks: Option<()> = None;
@@ -374,17 +375,32 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 	let tokio_handle = config.tokio_handle.clone();
 	let mining_metrics = primitives::metrics::MiningMetrics::new(prometheus_registry.as_ref())?;
 
+	let shared_authority_set = grandpa_link.shared_authority_set().clone();
+	let finality_provider =
+		FinalityProofProvider::new_for_service(backend.clone(), Some(shared_authority_set.clone()));
+
 	let rpc_extensions_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
 
 		let mining_metrics = mining_metrics.clone();
-		Box::new(move |deny_unsafe, _| {
+
+		let justification_stream = grandpa_link.justification_stream();
+		let shared_voter_state = shared_voter_state.clone();
+
+		Box::new(move |deny_unsafe, subscription_executor| {
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
 				deny_unsafe,
 				mining_metrics: mining_metrics.clone(),
+				grandpa: crate::rpc::GrandpaDeps {
+					justification_stream: justification_stream.clone(),
+					shared_voter_state: shared_voter_state.clone(),
+					subscription_executor,
+					shared_authority_set: shared_authority_set.clone(),
+					finality_provider: finality_provider.clone(),
+				},
 			};
 
 			crate::rpc::create_full(deps).map_err(Into::into)
@@ -464,6 +480,7 @@ pub fn new_full(mut config: Configuration, cli: Cli) -> Result<TaskManager, Serv
 			sync_service,
 			enable_grandpa,
 			prometheus_registry,
+			shared_voter_state,
 		},
 		switch_notif,
 	}

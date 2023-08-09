@@ -23,7 +23,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = '2.225.0'
+version = '2.225.1'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2021'
 license = 'Unlicense'
@@ -133,6 +133,7 @@ sp-keyring = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://gith
 sc-consensus-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 sp-consensus-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 sc-consensus-grandpa = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-consensus-grandpa-rpc = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 sp-consensus-grandpa = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-grandpa = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
