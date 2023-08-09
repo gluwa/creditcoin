@@ -1522,13 +1522,15 @@ pub mod pallet {
 
 			ensure!(
 				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&burn_gate_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
+				Error::<T>::BurnGATEAlreadyRegistered
 			);
 
 			ensure!(
 				!T::TaskScheduler::is_scheduled(&deadline, &burn_gate_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
+				Error::<T>::BurnGATEAlreadyRegistered
 			);
+
+			Self::burn_gate_faucet_address().ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
 
 			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
 			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;

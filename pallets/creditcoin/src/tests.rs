@@ -7,8 +7,8 @@ use crate::{
 	mock::{RuntimeOrigin as Origin, *},
 	types::{DoubleMapExt, OwnershipProof},
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
-	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,
-	Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
+	DealOrders, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, Id, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
 use assert_matches::assert_matches;
 use bstr::B;
@@ -3233,6 +3233,24 @@ fn register_address_v2_should_error_with_unsupported_blockchain() {
 		assert_noop!(
 			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof,),
 			crate::Error::<Test>::UnsupportedBlockchain
+		);
+	});
+}
+
+#[test]
+fn request_burn_gate_should_error_when_faucet_not_set() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (who, _, _, _) = generate_address_with_proof("owner");
+
+		let external_addr = ExternalAddress::default();
+		let tx_id = ExternalTxId::default();
+		let who = Origin::signed(who);
+
+		assert_noop!(
+			Creditcoin::request_burn_gate(who, external_addr, tx_id),
+			crate::Error::<Test>::BurnGATEFaucetNotSet
 		);
 	});
 }
