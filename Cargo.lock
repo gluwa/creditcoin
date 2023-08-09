@@ -1228,7 +1228,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
@@ -1253,6 +1253,7 @@ dependencies = [
  "sc-consensus",
  "sc-consensus-babe",
  "sc-consensus-grandpa",
+ "sc-consensus-grandpa-rpc",
  "sc-consensus-pow",
  "sc-consensus-slots",
  "sc-executor",
@@ -1260,6 +1261,7 @@ dependencies = [
  "sc-network",
  "sc-network-sync",
  "sc-offchain",
+ "sc-rpc",
  "sc-rpc-api",
  "sc-service",
  "sc-telemetry",
@@ -1294,7 +1296,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "assert_matches",
  "creditcoin-node-runtime",
@@ -1313,7 +1315,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-runtime"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "assert_matches",
  "frame-benchmarking",
@@ -1344,7 +1346,7 @@ dependencies = [
  "pallet-rewards",
  "pallet-scheduler",
  "pallet-session",
- "pallet-staking 2.225.0",
+ "pallet-staking 2.225.1",
  "pallet-staking 4.0.0-dev",
  "pallet-staking-reward-fn",
  "pallet-sudo",
@@ -4853,7 +4855,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-creditcoin"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "assert_matches",
  "base58",
@@ -4891,7 +4893,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5081,7 +5083,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-pos-switch"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5115,7 +5117,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5172,7 +5174,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-staking"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -5715,7 +5717,7 @@ dependencies = [
 
 [[package]]
 name = "primitives"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "merlin",
  "num",
@@ -6800,6 +6802,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "sc-consensus-grandpa-rpc"
+version = "0.10.0-dev"
+source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
+dependencies = [
+ "finality-grandpa",
+ "futures",
+ "jsonrpsee",
+ "log",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-consensus-grandpa",
+ "sc-rpc",
+ "serde",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "thiserror",
+]
+
+[[package]]
 name = "sc-consensus-pow"
 version = "0.10.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#ee4ee9538baf02e920639b98e6026c0ed010f300"
@@ -7804,7 +7826,7 @@ dependencies = [
 
 [[package]]
 name = "sha3pow"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "assert_matches",
  "pallet-difficulty",
@@ -8980,7 +9002,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test-client"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "creditcoin-node-runtime",
  "sc-chain-spec",
@@ -8994,7 +9016,7 @@ dependencies = [
 
 [[package]]
 name = "test-runtime-utils"
-version = "2.225.0"
+version = "2.225.1"
 dependencies = [
  "frame-support",
  "frame-system",

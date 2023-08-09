@@ -11,6 +11,7 @@
   },
   "grandpaInitialAuthorities": [],
   "codeSubstitutes": {},
+  "badBlocks": null,
   "genesis": {
     "raw": {
       "top": {
