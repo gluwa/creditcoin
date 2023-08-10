@@ -26,11 +26,11 @@ export function makeBondCommand() {
   cmd.option("-c, --controller [controller]", "Specify controller address");
   cmd.option(
     "-r, --reward-destination [reward-destination]",
-    "Specify reward destination account to use for new account"
+    "Specify reward destination account to use for new account",
   );
   cmd.option(
     "-x, --extra",
-    "Bond as extra, adding more funds to an existing bond"
+    "Bond as extra, adding more funds to an existing bond",
   );
   cmd.action(bondAction);
   return cmd;
@@ -65,7 +65,7 @@ async function bondAction(options: OptionValues) {
     amount,
     rewardDestination,
     api,
-    extra
+    extra,
   );
 
   console.log(bondTxResult.info);
@@ -81,8 +81,8 @@ function checkBalanceAgainstBondAmount(balance: AccountBalance, amount: BN) {
   if (balance.transferable.lt(amount)) {
     console.error(
       `Insufficient funds to bond ${toCTCString(amount)}, only ${toCTCString(
-        balance.transferable
-      )} available`
+        balance.transferable,
+      )} available`,
     );
     process.exit(1);
   }
@@ -92,16 +92,16 @@ function parseOptions(options: OptionValues) {
   const amount = parseAmountOrExit(
     requiredInput(
       options.amount,
-      "Failed to bond: Must specify an amount to bond"
-    )
+      "Failed to bond: Must specify an amount to bond",
+    ),
   );
   checkAmount(amount);
 
   const controller = parseAddressOrExit(
     requiredInput(
       options.controller,
-      "Failed to bond: Must specify a controller address"
-    )
+      "Failed to bond: Must specify a controller address",
+    ),
   );
 
   const rewardDestination = checkRewardDestination(
@@ -109,7 +109,7 @@ function parseOptions(options: OptionValues) {
       "Staked",
       "Stash",
       "Controller",
-    ])
+    ]),
   );
 
   const extra = parseBoolean(options.extra);

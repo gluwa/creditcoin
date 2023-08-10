@@ -7,7 +7,7 @@ import { AccountBalance, getBalance, toCTCString } from "./balance";
 export async function signSendAndWatch(
   tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
   api: ApiPromise,
-  signer: KeyringPair
+  signer: KeyringPair,
 ): Promise<TxResult> {
   return new Promise((resolve, reject) => {
     console.log("Sending transaction...");
@@ -78,7 +78,7 @@ export interface TxResult {
 
 export async function getTxFee(
   tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
-  callerAddress: string
+  callerAddress: string,
 ): Promise<BN> {
   const fee = await tx.paymentInfo(callerAddress);
   return fee.partialFee.toBn();
@@ -87,7 +87,7 @@ export async function getTxFee(
 export function canPay(
   balance: AccountBalance,
   amount: BN,
-  existentialDeposit = new BN(1)
+  existentialDeposit = new BN(1),
 ) {
   const availableBalance = balance.transferable;
   const availableAfter = availableBalance.sub(amount);
@@ -98,7 +98,7 @@ export async function requireEnoughFundsToSend(
   tx: SubmittableExtrinsic<"promise", ISubmittableResult>,
   address: string,
   api: ApiPromise,
-  amount = new BN(0)
+  amount = new BN(0),
 ) {
   const balance = await getBalance(address, api);
   const txFee = await getTxFee(tx, address);
@@ -107,8 +107,8 @@ export async function requireEnoughFundsToSend(
   if (!canPay(balance, totalCost)) {
     console.error(
       `Caller ${address} has insufficient funds to send the transaction (requires ${toCTCString(
-        totalCost
-      )}); transaction cancelled.`
+        totalCost,
+      )}); transaction cancelled.`,
     );
     process.exit(1);
   }
