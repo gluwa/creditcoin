@@ -98,7 +98,7 @@ declare module "@polkadot/api-base/types/calls" {
         ApiType,
         (
           slot: Slot | AnyNumber | Uint8Array,
-          authorityId: AuthorityId | string | Uint8Array
+          authorityId: AuthorityId | string | Uint8Array,
         ) => Observable<Option<OpaqueKeyOwnershipProof>>
       >;
       /**
@@ -121,7 +121,7 @@ declare module "@polkadot/api-base/types/calls" {
               }
             | string
             | Uint8Array,
-          keyOwnerProof: OpaqueKeyOwnershipProof | string | Uint8Array
+          keyOwnerProof: OpaqueKeyOwnershipProof | string | Uint8Array,
         ) => Observable<Option<Null>>
       >;
       /**
@@ -137,7 +137,7 @@ declare module "@polkadot/api-base/types/calls" {
       applyExtrinsic: AugmentedCall<
         ApiType,
         (
-          extrinsic: Extrinsic | IExtrinsic | string | Uint8Array
+          extrinsic: Extrinsic | IExtrinsic | string | Uint8Array,
         ) => Observable<ApplyExtrinsicResult>
       >;
       /**
@@ -151,7 +151,7 @@ declare module "@polkadot/api-base/types/calls" {
             | { header?: any; extrinsics?: any }
             | string
             | Uint8Array,
-          data: InherentData | { data?: any } | string | Uint8Array
+          data: InherentData | { data?: any } | string | Uint8Array,
         ) => Observable<CheckInherentsResult>
       >;
       /**
@@ -164,7 +164,7 @@ declare module "@polkadot/api-base/types/calls" {
       inherentExtrinsics: AugmentedCall<
         ApiType,
         (
-          inherent: InherentData | { data?: any } | string | Uint8Array
+          inherent: InherentData | { data?: any } | string | Uint8Array,
         ) => Observable<Vec<Extrinsic>>
       >;
       /**
@@ -184,7 +184,7 @@ declare module "@polkadot/api-base/types/calls" {
             | Block
             | { header?: any; extrinsics?: any }
             | string
-            | Uint8Array
+            | Uint8Array,
         ) => Observable<Null>
       >;
       /**
@@ -203,7 +203,7 @@ declare module "@polkadot/api-base/types/calls" {
                 digest?: any;
               }
             | string
-            | Uint8Array
+            | Uint8Array,
         ) => Observable<Null>
       >;
       /**
@@ -239,7 +239,7 @@ declare module "@polkadot/api-base/types/calls" {
         ApiType,
         (
           setId: SetId | AnyNumber | Uint8Array,
-          authorityId: AuthorityId | string | Uint8Array
+          authorityId: AuthorityId | string | Uint8Array,
         ) => Observable<Option<OpaqueKeyOwnershipProof>>
       >;
       /**
@@ -260,7 +260,7 @@ declare module "@polkadot/api-base/types/calls" {
             | { setId?: any; equivocation?: any }
             | string
             | Uint8Array,
-          keyOwnerProof: OpaqueKeyOwnershipProof | string | Uint8Array
+          keyOwnerProof: OpaqueKeyOwnershipProof | string | Uint8Array,
         ) => Observable<Option<Null>>
       >;
       /**
@@ -297,7 +297,7 @@ declare module "@polkadot/api-base/types/calls" {
                 digest?: any;
               }
             | string
-            | Uint8Array
+            | Uint8Array,
         ) => Observable<Null>
       >;
       /**
@@ -313,7 +313,7 @@ declare module "@polkadot/api-base/types/calls" {
       decodeSessionKeys: AugmentedCall<
         ApiType,
         (
-          encoded: Bytes | string | Uint8Array
+          encoded: Bytes | string | Uint8Array,
         ) => Observable<Option<Vec<ITuple<[Bytes, KeyTypeId]>>>>
       >;
       /**
@@ -322,7 +322,7 @@ declare module "@polkadot/api-base/types/calls" {
       generateSessionKeys: AugmentedCall<
         ApiType,
         (
-          seed: Option<Bytes> | null | Uint8Array | Bytes | string
+          seed: Option<Bytes> | null | Uint8Array | Bytes | string,
         ) => Observable<Bytes>
       >;
       /**
@@ -346,7 +346,7 @@ declare module "@polkadot/api-base/types/calls" {
             | number
             | Uint8Array,
           tx: Extrinsic | IExtrinsic | string | Uint8Array,
-          blockHash: BlockHash | string | Uint8Array
+          blockHash: BlockHash | string | Uint8Array,
         ) => Observable<TransactionValidity>
       >;
       /**
@@ -374,7 +374,7 @@ declare module "@polkadot/api-base/types/calls" {
         ApiType,
         (
           uxt: Extrinsic | IExtrinsic | string | Uint8Array,
-          len: u32 | AnyNumber | Uint8Array
+          len: u32 | AnyNumber | Uint8Array,
         ) => Observable<FeeDetails>
       >;
       /**
@@ -384,7 +384,7 @@ declare module "@polkadot/api-base/types/calls" {
         ApiType,
         (
           uxt: Extrinsic | IExtrinsic | string | Uint8Array,
-          len: u32 | AnyNumber | Uint8Array
+          len: u32 | AnyNumber | Uint8Array,
         ) => Observable<RuntimeDispatchInfo>
       >;
       /**
@@ -404,7 +404,7 @@ declare module "@polkadot/api-base/types/calls" {
             | Weight
             | { refTime?: any; proofSize?: any }
             | string
-            | Uint8Array
+            | Uint8Array,
         ) => Observable<Balance>
       >;
       /**

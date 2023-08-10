@@ -109,7 +109,7 @@ declare module "@polkadot/api-base/types/events" {
           from: AccountId32,
           to: AccountId32,
           amount: u128,
-          destinationStatus: FrameSupportTokensMiscBalanceStatus
+          destinationStatus: FrameSupportTokensMiscBalanceStatus,
         ],
         {
           from: AccountId32;
@@ -551,7 +551,7 @@ declare module "@polkadot/api-base/types/events" {
         [
           root: Option<AccountId32>,
           bouncer: Option<AccountId32>,
-          nominator: Option<AccountId32>
+          nominator: Option<AccountId32>,
         ],
         {
           root: Option<AccountId32>;
@@ -587,7 +587,7 @@ declare module "@polkadot/api-base/types/events" {
           poolId: u32,
           balance: u128,
           points: u128,
-          era: u32
+          era: u32,
         ],
         {
           member: AccountId32;
@@ -667,7 +667,7 @@ declare module "@polkadot/api-base/types/events" {
           delegator: AccountId32,
           delegatee: AccountId32,
           proxyType: Null,
-          delay: u32
+          delay: u32,
         ],
         {
           delegator: AccountId32;
@@ -693,7 +693,7 @@ declare module "@polkadot/api-base/types/events" {
           delegator: AccountId32,
           delegatee: AccountId32,
           proxyType: Null,
-          delay: u32
+          delay: u32,
         ],
         {
           delegator: AccountId32;
@@ -712,7 +712,7 @@ declare module "@polkadot/api-base/types/events" {
           pure: AccountId32,
           who: AccountId32,
           proxyType: Null,
-          disambiguationIndex: u16
+          disambiguationIndex: u16,
         ],
         {
           pure: AccountId32;
@@ -761,7 +761,7 @@ declare module "@polkadot/api-base/types/events" {
         [
           task: ITuple<[u32, u32]>,
           id: Option<U8aFixed>,
-          result: Result<Null, SpRuntimeDispatchError>
+          result: Result<Null, SpRuntimeDispatchError>,
         ],
         {
           task: ITuple<[u32, u32]>;
@@ -980,7 +980,7 @@ declare module "@polkadot/api-base/types/events" {
         ApiType,
         [
           dispatchError: SpRuntimeDispatchError,
-          dispatchInfo: FrameSupportDispatchDispatchInfo
+          dispatchInfo: FrameSupportDispatchDispatchInfo,
         ],
         {
           dispatchError: SpRuntimeDispatchError;
