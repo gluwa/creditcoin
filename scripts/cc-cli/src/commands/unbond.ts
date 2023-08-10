@@ -25,7 +25,7 @@ async function unbondAction(options: OptionValues) {
   const interactive = setInteractivity(options);
 
   const amount = parseAmountOrExit(
-    requiredInput(options.amount, "Failed to unbond: Must specify an amount")
+    requiredInput(options.amount, "Failed to unbond: Must specify an amount"),
   );
 
   // Build account
@@ -35,7 +35,7 @@ async function unbondAction(options: OptionValues) {
   const controllerStatus = await getValidatorStatus(controller.address, api);
   if (!controllerStatus.stash) {
     console.error(
-      `Cannot unbond, ${controller.address} is not a controller account`
+      `Cannot unbond, ${controller.address} is not a controller account`,
     );
     process.exit(1);
   }
@@ -59,12 +59,12 @@ async function checkIfUnbodingMax(
   address: string,
   unbondAmount: BN,
   api: ApiPromise,
-  interactive: boolean
+  interactive: boolean,
 ) {
   const balance = await getBalance(address, api);
   if (balance.bonded.lt(unbondAmount)) {
     console.error(
-      "Warning: amount specified exceeds total bonded funds, will unbond all funds"
+      "Warning: amount specified exceeds total bonded funds, will unbond all funds",
     );
     await promptContinue(interactive);
   }

@@ -19,7 +19,7 @@ export function makeSendCommand() {
   cmd.description("Send CTC from an account");
   cmd.option(
     "--use-ecdsa",
-    "Use ECDSA signature scheme and a private key instead of a mnemonic phrase"
+    "Use ECDSA signature scheme and a private key instead of a mnemonic phrase",
   );
   cmd.option("-a, --amount [amount]", "Amount to send");
   cmd.option("-t, --to [to]", "Specify recipient address");
@@ -49,11 +49,11 @@ async function sendAction(options: OptionValues) {
 
 function parseOptions(options: OptionValues) {
   const amount = parseAmountOrExit(
-    requiredInput(options.amount, "Failed to send CTC: Must specify an amount")
+    requiredInput(options.amount, "Failed to send CTC: Must specify an amount"),
   );
 
   const recipient = parseAddressOrExit(
-    requiredInput(options.to, "Failed to send CTC: Must specify a recipient")
+    requiredInput(options.to, "Failed to send CTC: Must specify a recipient"),
   );
 
   const useEcdsa = parseBoolean(options.useEcdsa);
