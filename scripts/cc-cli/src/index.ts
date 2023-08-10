@@ -46,7 +46,7 @@ program.commands.forEach((cmd) => {
   cmd.option(
     "-u, --url [url]",
     "URL for the Substrate node",
-    "ws://localhost:9944"
+    "ws://localhost:9944",
   );
 });
 

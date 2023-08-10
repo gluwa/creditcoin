@@ -30,12 +30,12 @@ async function setKeysAction(options: OptionValues) {
   let keys;
   if (!options.keys && !options.rotate) {
     console.log(
-      "Must specify keys to set or generate new ones using the --rotate flag"
+      "Must specify keys to set or generate new ones using the --rotate flag",
     );
     process.exit(1);
   } else if (options.keys && options.rotate) {
     console.error(
-      "Must either specify keys or rotate to generate new ones, can not do both"
+      "Must either specify keys or rotate to generate new ones, can not do both",
     );
     process.exit(1);
   } else if (options.rotate) {
