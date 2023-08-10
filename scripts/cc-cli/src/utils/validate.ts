@@ -12,7 +12,7 @@ export interface StakingPalletValidatorPrefs {
 export async function validate(
   controllerSeed: string,
   prefs: StakingPalletValidatorPrefs,
-  api: ApiPromise
+  api: ApiPromise,
 ) {
   const controller = initKeyringPair(controllerSeed);
 

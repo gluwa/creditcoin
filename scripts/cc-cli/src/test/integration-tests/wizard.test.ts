@@ -8,7 +8,7 @@ describe("integration test: validator wizard setup", () => {
   test("new validator should appear as waiting after using the wizard setup", async () => {
     // Fund stash and controller
     const { stash, controller } = await fundAccounts(
-      parseAmountInternal("10000")
+      parseAmountInternal("10000"),
     );
     // Run wizard setup with 1k ctc ang to pair with node Bob
     execa.commandSync(
@@ -18,7 +18,7 @@ describe("integration test: validator wizard setup", () => {
           CC_STASH_SEED: stash.seed,
           CC_CONTROLLER_SEED: controller.seed,
         },
-      }
+      },
     );
 
     const { api } = await newApi(ALICE_NODE_URL);

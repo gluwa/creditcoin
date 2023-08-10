@@ -27,7 +27,7 @@ export async function getControllerSeedFromEnvOrPrompt(interactive: boolean) {
     return await getSeedFromEnvOrPrompt(
       "CC_CONTROLLER_SEED",
       "controller",
-      interactive
+      interactive,
     );
   } catch (e) {
     console.error(getErrorMessage(e));
@@ -46,11 +46,11 @@ export async function getCallerSeedFromEnvOrPrompt(interactive: boolean) {
 async function getSeedFromEnvOrPrompt(
   envVar = "CC_SEED",
   accountRole = "caller",
-  interactive = true
+  interactive = true,
 ) {
   if (!interactive && !process.env[envVar]) {
     throw new Error(
-      `Error: Must specify a seed phrase for the ${accountRole} account in the environment variable ${envVar} or use an interactive shell.`
+      `Error: Must specify a seed phrase for the ${accountRole} account in the environment variable ${envVar} or use an interactive shell.`,
     );
   }
 
@@ -60,7 +60,7 @@ async function getSeedFromEnvOrPrompt(
       return seedFromEnv;
     } else {
       throw new Error(
-        `Error: Seed phrase provided in environment variable ${envVar} is invalid.`
+        `Error: Seed phrase provided in environment variable ${envVar} is invalid.`,
       );
     }
   } else if (interactive) {

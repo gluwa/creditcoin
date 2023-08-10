@@ -12,7 +12,7 @@ export function makeStatusCommand() {
   cmd.description("Get staking status for an address");
   cmd.option(
     "--validator [address]",
-    "Validator stash address to get status for"
+    "Validator stash address to get status for",
   );
   cmd.option("--chain", "Show chain status");
   cmd.action(statusAction);
