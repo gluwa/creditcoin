@@ -88,6 +88,9 @@ default = ['std']
 # faster block time & epoch duration for NPoS
 # WARNING: should be used only for testing purposes
 fast-runtime = []
+# uses 3x the number of blocks compared to fast-runtime only
+# WARNING: should be used only for testing purposes
+zombienet = []
 runtime-benchmarks = [
     'frame-benchmarking/runtime-benchmarks',
     'frame-support/runtime-benchmarks',
