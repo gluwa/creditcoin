@@ -5,7 +5,6 @@ import { initCallerKeyring } from "../utils/account";
 export function makeShowAddressCommand() {
   const cmd = new Command("show-address");
   cmd.description("Show account address");
-  cmd.option("--ecdsa", "Show address using ECDSA PK");
   cmd.action(showAddressAction);
   return cmd;
 }

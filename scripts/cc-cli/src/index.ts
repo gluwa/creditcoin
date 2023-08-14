@@ -42,16 +42,15 @@ program
   .addCommand(makeWithdrawUnbondedCommand())
   .addCommand(makeWizardCommand());
 
+// Set global options
 program.commands.forEach((cmd) => {
+  cmd.option("--no-input", "Disable interactive prompts");
+  cmd.option("--ecdsa", "Use ECDSA keys instead of sr25519 seed phrase");
   cmd.option(
     "-u, --url [url]",
     "URL for the Substrate node",
-    "ws://localhost:9944",
+    "ws://localhost:9944"
   );
-});
-
-program.commands.forEach((cmd) => {
-  cmd.option("--no-input", "Disable interactive prompts");
 });
 
 program.parse(process.argv);
