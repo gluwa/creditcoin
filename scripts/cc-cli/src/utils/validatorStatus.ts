@@ -66,7 +66,7 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
 
   const activeValidatorsRes = await api.derive.staking.validators();
   const activeValidators: string[] = activeValidatorsRes.validators.map((v) =>
-    v.toString(),
+    v.toString()
   );
 
   const waitingValidators = validatorEntries.filter((v) => {
@@ -118,7 +118,7 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
     const nextUnbondingAmount = toCTCString(status.nextUnbondingAmount);
     const nextUnbondingDate = await timeTillEra(api, status.nextUnbondingDate);
     nextUnlocking = `${nextUnbondingAmount} in ${formatDaysHoursMinutes(
-      nextUnbondingDate.toNumber(),
+      nextUnbondingDate.toNumber()
     )}`;
   }
   table.push(["Next unlocking", nextUnlocking]);
@@ -129,13 +129,13 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
 export function requireStatus(
   status: Status,
   condition: keyof Status,
-  message?: string,
+  message?: string
 ) {
   if (!status[condition]) {
     console.error(
       message
         ? message
-        : `Cannot perform action, validator is not ${condition.toString()}`,
+        : `Cannot perform action, validator is not ${condition.toString()}`
     );
     process.exit(1);
   }

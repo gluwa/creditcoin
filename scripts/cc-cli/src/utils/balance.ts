@@ -76,12 +76,12 @@ function calcUnbonding(stakingInfo?: DeriveStakingAccount) {
   const filtered = stakingInfo.unlocking
     .filter(
       ({ remainingEras, value }) =>
-        value.gt(new BN(0)) && remainingEras.gt(new BN(0)),
+        value.gt(new BN(0)) && remainingEras.gt(new BN(0))
     )
     .map((unlock) => unlock.value);
   const unbonding = filtered.reduce(
     (total, value) => total.iadd(value),
-    new BN(0),
+    new BN(0)
   );
 
   return unbonding;
@@ -103,7 +103,7 @@ export function printBalance(balance: AccountBalance) {
     ["Locked", toCTCString(balance.locked, 4)],
     ["Bonded", toCTCString(balance.bonded, 4)],
     ["Unbonding", toCTCString(balance.unbonding, 4)],
-    ["Total", toCTCString(balance.total, 4)],
+    ["Total", toCTCString(balance.total, 4)]
   );
 
   console.log(`Address: ${balance.address}`);

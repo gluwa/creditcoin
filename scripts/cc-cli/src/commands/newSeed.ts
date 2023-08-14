@@ -27,7 +27,7 @@ function parseLength(length: string): 12 | 15 | 18 | 21 | 24 {
     parsed !== 24
   ) {
     console.error(
-      "Failed to create new seed phrase: Invalid length, must be one of 12, 15, 18, 21 or 24",
+      "Failed to create new seed phrase: Invalid length, must be one of 12, 15, 18, 21 or 24"
     );
     process.exit(1);
   }

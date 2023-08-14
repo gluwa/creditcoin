@@ -23,8 +23,8 @@ async function balanceAction(options: OptionValues) {
   const address = parseAddressOrExit(
     requiredInput(
       options.address,
-      "Failed to show balance: Must specify an address",
-    ),
+      "Failed to show balance: Must specify an address"
+    )
   );
 
   const balance = await getBalance(address, api);

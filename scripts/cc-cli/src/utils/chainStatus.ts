@@ -46,7 +46,7 @@ export function printChainStatus(status: ChainStatus) {
     ["Best Block", status.bestNumber],
     ["Best Finalized Block", status.bestFinalizedNumber],
     ["Era", eraInfo.era],
-    ["Session", `${eraInfo.currentSession}/${eraInfo.sessionsPerEra}`],
+    ["Session", `${eraInfo.currentSession}/${eraInfo.sessionsPerEra}`]
   );
   console.log("Chain status:");
   console.log(table.toString());

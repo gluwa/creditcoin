@@ -8,7 +8,7 @@ export async function timeTillEra(api: ApiPromise, era: number) {
   const slotsPerEpoch = new BN(api.consts.babe.epochDuration.toString());
   const slotsPerEra = eraLength.mul(slotsPerEpoch);
   const eraProgress = new BN(
-    (await api.derive.session.eraProgress()).toString(),
+    (await api.derive.session.eraProgress()).toString()
   );
   const blocksTillNextEra = slotsPerEra.sub(eraProgress);
   const minBlockTime = new BN(api.consts.babe.expectedBlockTime.toString());
@@ -24,7 +24,7 @@ export async function timeTillEra(api: ApiPromise, era: number) {
 
 export async function checkEraIsInHistory(
   era: number,
-  api: ApiPromise,
+  api: ApiPromise
 ): Promise<boolean> {
   const currentEra = (await api.query.staking.currentEra()).value.toNumber();
   const historyDepth = api.consts.staking.historyDepth.toNumber();
@@ -34,7 +34,7 @@ export async function checkEraIsInHistory(
 export function eraIsInHistory(
   eraToCheck: number,
   historyDepth: number,
-  currentEra: number,
+  currentEra: number
 ): boolean {
   if (eraToCheck < 0) {
     return false;

@@ -7,7 +7,7 @@ export const parseAmountOrExit = parseOrExit(parseAmountInternal);
 export const parseHexStringOrExit = parseOrExit(parseHexStringInternal);
 export const parseIntegerOrExit = parseOrExit(parseIntegerInternal);
 export const parsePercentAsPerbillOrExit = parseOrExit(
-  parsePercentAsPerbillInternal,
+  parsePercentAsPerbillInternal
 );
 export const parseChoiceOrExit = parseChoiceOrExitFn;
 
@@ -55,7 +55,7 @@ export function parseChoiceInternal(input: string, choices: string[]): string {
   const styled = input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
   if (!choices.includes(styled)) {
     throw new Error(
-      `Invalid choice: ${input}, must be one of ${choices.toString()}`,
+      `Invalid choice: ${input}, must be one of ${choices.toString()}`
     );
   }
   return styled;
@@ -108,7 +108,7 @@ function positiveBigNumberFromString(amount: string) {
 
 export function inputOrDefault(
   input: string | undefined,
-  defaultValue: string,
+  defaultValue: string
 ): string {
   if (input === undefined) {
     return defaultValue;
@@ -118,7 +118,7 @@ export function inputOrDefault(
 
 export function requiredInput(
   input: string | undefined,
-  message: string,
+  message: string
 ): string {
   if (input === undefined) {
     console.error(message);

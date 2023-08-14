@@ -27,7 +27,7 @@ export async function promptContinue(interactive: boolean) {
 
 export async function promptContinueOrSkip(
   prompt: string,
-  interactive: boolean,
+  interactive: boolean
 ) {
   if (!interactive) {
     return true;
