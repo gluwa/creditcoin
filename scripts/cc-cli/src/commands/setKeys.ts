@@ -1,12 +1,8 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import {
-  getControllerSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import { parseHexStringOrExit } from "../utils/parsing";
-import { setInteractivity } from "../utils/interactive";
+import { initControllerKeyring } from "../utils/account";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
@@ -19,23 +15,20 @@ export function makeSetKeysCommand() {
 }
 
 async function setKeysAction(options: OptionValues) {
-  const interactive = setInteractivity(options);
-
   const { api } = await newApi(options.url);
 
   // Build account
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
-  const controller = initKeyringPair(controllerSeed);
+  const controller = await initControllerKeyring(options);
 
   let keys;
   if (!options.keys && !options.rotate) {
     console.log(
-      "Must specify keys to set or generate new ones using the --rotate flag",
+      "Must specify keys to set or generate new ones using the --rotate flag"
     );
     process.exit(1);
   } else if (options.keys && options.rotate) {
     console.error(
-      "Must either specify keys or rotate to generate new ones, can not do both",
+      "Must either specify keys or rotate to generate new ones, can not do both"
     );
     process.exit(1);
   } else if (options.rotate) {
