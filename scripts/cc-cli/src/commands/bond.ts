@@ -17,7 +17,7 @@ import {
   parseChoiceOrExit,
   requiredInput,
 } from "../utils/parsing";
-import { initKeyringFromEnvOrPrompt, initStashKeyring } from "../utils/account";
+import { initStashKeyring } from "../utils/account";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");

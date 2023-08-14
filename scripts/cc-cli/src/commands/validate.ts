@@ -6,7 +6,6 @@ import {
   parseBoolean,
   parsePercentAsPerbillOrExit,
 } from "../utils/parsing";
-import { setInteractivity } from "../utils/interactive";
 import { initControllerKeyring } from "../utils/account";
 
 export function makeValidateCommand() {

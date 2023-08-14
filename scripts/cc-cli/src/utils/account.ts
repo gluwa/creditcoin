@@ -2,7 +2,7 @@ import { mnemonicValidate } from "@polkadot/util-crypto";
 import { Keyring, KeyringPair } from "creditcoin-js";
 import prompts from "prompts";
 import { getErrorMessage } from "./error";
-import { CommandOptions, OptionValues } from "commander";
+import { OptionValues } from "commander";
 
 export function initKeyringPair(seed: string) {
   const keyring = new Keyring({ type: "sr25519" });

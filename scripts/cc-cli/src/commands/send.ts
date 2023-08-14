@@ -4,10 +4,8 @@ import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import {
   parseAddressOrExit,
   parseAmountOrExit,
-  parseBoolean,
   requiredInput,
 } from "../utils/parsing";
-import { setInteractivity } from "../utils/interactive";
 import { initCallerKeyring } from "../utils/account";
 
 export function makeSendCommand() {

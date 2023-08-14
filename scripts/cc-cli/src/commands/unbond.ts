@@ -1,6 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { initControllerKeyring, initKeyringPair } from "../utils/account";
+import { initControllerKeyring } from "../utils/account";
 import { getBalance } from "../utils/balance";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue, setInteractivity } from "../utils/interactive";
