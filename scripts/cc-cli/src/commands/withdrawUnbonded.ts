@@ -1,12 +1,8 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
 import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
-import {
-  getControllerSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
-import { setInteractivity } from "../utils/interactive";
+import { initControllerKeyring } from "../utils/account";
 
 export function makeWithdrawUnbondedCommand() {
   const cmd = new Command("withdraw-unbonded");
@@ -16,18 +12,14 @@ export function makeWithdrawUnbondedCommand() {
 }
 
 async function withdrawUnbondedAction(options: OptionValues) {
-  const interactive = setInteractivity(options);
-
   const { api } = await newApi(options.url);
 
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
-  const controller = initKeyringPair(controllerSeed);
-
+  const controller = await initControllerKeyring(options);
   const controllerStatus = await getValidatorStatus(controller.address, api);
 
   if (!controllerStatus.stash) {
     console.error(
-      `Could not find stash account associated with the provided controller address: ${controller.address}. Please ensure the address is actually a controller.`,
+      `Could not find stash account associated with the provided controller address: ${controller.address}. Please ensure the address is actually a controller.`
     );
     process.exit(1);
   }
@@ -36,11 +28,11 @@ async function withdrawUnbondedAction(options: OptionValues) {
   requireStatus(
     status,
     "canWithdraw",
-    "Cannot perform action, there are no unlocked funds to withdraw",
+    "Cannot perform action, there are no unlocked funds to withdraw"
   );
 
   const slashingSpans = await api.query.staking.slashingSpans(
-    controller.address,
+    controller.address
   );
   const slashingSpansCount = slashingSpans.isSome
     ? slashingSpans.unwrap().lastNonzeroSlash
