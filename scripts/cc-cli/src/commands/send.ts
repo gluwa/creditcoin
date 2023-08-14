@@ -1,10 +1,5 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import {
-  getCallerSeedFromEnvOrPrompt,
-  initECDSAKeyringPairFromPK,
-  initKeyringPair,
-} from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import {
   parseAddressOrExit,
@@ -13,13 +8,14 @@ import {
   requiredInput,
 } from "../utils/parsing";
 import { setInteractivity } from "../utils/interactive";
+import { initCallerKeyring } from "../utils/account";
 
 export function makeSendCommand() {
   const cmd = new Command("send");
   cmd.description("Send CTC from an account");
   cmd.option(
     "--use-ecdsa",
-    "Use ECDSA signature scheme and a private key instead of a mnemonic phrase",
+    "Use ECDSA signature scheme and a private key instead of a mnemonic phrase"
   );
   cmd.option("-a, --amount [amount]", "Amount to send");
   cmd.option("-t, --to [to]", "Specify recipient address");
@@ -30,12 +26,9 @@ export function makeSendCommand() {
 async function sendAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const { amount, recipient, useEcdsa, interactive } = parseOptions(options);
+  const { amount, recipient } = parseOptions(options);
 
-  const seed = await getCallerSeedFromEnvOrPrompt(interactive);
-  const caller = useEcdsa
-    ? initECDSAKeyringPairFromPK(seed)
-    : initKeyringPair(seed);
+  const caller = await initCallerKeyring(options);
 
   const tx = api.tx.balances.transfer(recipient, amount.toString());
 
@@ -49,16 +42,12 @@ async function sendAction(options: OptionValues) {
 
 function parseOptions(options: OptionValues) {
   const amount = parseAmountOrExit(
-    requiredInput(options.amount, "Failed to send CTC: Must specify an amount"),
+    requiredInput(options.amount, "Failed to send CTC: Must specify an amount")
   );
 
   const recipient = parseAddressOrExit(
-    requiredInput(options.to, "Failed to send CTC: Must specify a recipient"),
+    requiredInput(options.to, "Failed to send CTC: Must specify a recipient")
   );
 
-  const useEcdsa = parseBoolean(options.useEcdsa);
-
-  const interactive = setInteractivity(options);
-
-  return { amount, recipient, useEcdsa, interactive };
+  return { amount, recipient };
 }
