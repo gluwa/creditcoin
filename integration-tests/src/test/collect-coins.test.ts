@@ -88,8 +88,6 @@ describe('CollectCoins', (): void => {
             const collectCoinsVerified = await collectCoinsEvent.waitForVerification(800_000).catch();
             expect(collectCoinsVerified).toBeTruthy();
 
-            console.log(collectCoinsVerified.amount.toNumber());
-
             // try again - should fail
             await expect(
                 requestCollectCoins(

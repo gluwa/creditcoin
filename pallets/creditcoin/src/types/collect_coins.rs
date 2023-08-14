@@ -1,8 +1,6 @@
 use crate::types::{
-	AddressId, Blockchain, DeployedContract, ExternalAddress, ExternalTxId, GATEContract,
-	SystemConfig,
+	AddressId, Blockchain, DeployedContract, ExternalAddress, ExternalTxId, SystemConfig,
 };
-use ethabi::Contract;
 use frame_support::RuntimeDebug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
