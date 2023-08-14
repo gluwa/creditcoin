@@ -20,7 +20,7 @@ export async function fundAccounts(amount: BN) {
   const controller = randomAccount();
   const tx = await fundAddressesFromSudo(
     [stash.address, controller.address],
-    amount,
+    amount
   );
   await signSendAndWatch(tx, api, initKeyringPair("//Alice"));
 
@@ -30,7 +30,7 @@ export async function fundAccounts(amount: BN) {
 export async function fundFromSudo(
   address: string,
   amount: BN,
-  url = "ws://localhost:9944",
+  url = "ws://localhost:9944"
 ) {
   const { api } = await newApi(url);
   const call = api.tx.balances.setBalance(address, amount.toString(), "0");
@@ -41,7 +41,7 @@ export async function fundFromSudo(
 export async function fundAddressesFromSudo(
   addresses: string[],
   amount: BN,
-  url = "ws://localhost:9944",
+  url = "ws://localhost:9944"
 ) {
   const { api } = await newApi(url);
   const txs = addresses.map((address) => {
