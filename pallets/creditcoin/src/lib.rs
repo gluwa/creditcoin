@@ -571,30 +571,7 @@ pub mod pallet {
 			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
 			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).backend;
 
-			let mut deals_count = 0u32;
-			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
-				.filter_map(|(hash, deal)| {
-					deals_count = deals_count.saturating_add(1);
-					if deal.funding_transfer_id.is_some() {
-						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
-					} else {
-						None
-					}
-				})
-				.collect();
-			let funded_deals_count = deals_to_keep.len().unique_saturated_into();
-			let deals_count = deals_count.saturating_sub(funded_deals_count);
-			for (key, deal) in deals_to_keep {
-				DealOrders::<T>::insert_id(key, deal);
-			}
-
-			<T as Config>::WeightInfo::on_initialize(
-				ask_count,
-				bid_count,
-				offer_count,
-				deals_count,
-				funded_deals_count,
-			)
+			<T as Config>::WeightInfo::on_initialize(ask_count, bid_count, offer_count, 0, 0)
 		}
 
 		fn on_runtime_upgrade() -> Weight {
