@@ -484,4 +484,8 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn persist_burn_gate() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn request_collect_coins_v2() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }

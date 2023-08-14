@@ -3,13 +3,14 @@ pub mod loan_terms;
 mod transfer;
 
 pub use collect_coins::{
-	BurnGATE as BurnGATEStruct, BurnGATEId, CollectedCoins as CollectedCoinsStruct,
-	CollectedCoinsId, UnverifiedBurnGATE, UnverifiedCollectedCoins,
+	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
 };
 pub use loan_terms::*;
 pub use transfer::*;
 
-pub use crate::ocw::tasks::collect_coins::{GATEContract, GCreContract};
+pub use collect_coins::{ContractType, TokenContract};
+
+pub use crate::ocw::tasks::collect_coins::{DeployedContract, GATEContract};
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
 use extend::ext;
@@ -471,7 +472,6 @@ impl<'de> serde::Deserialize<'de> for LegacySighash {
 pub enum Task<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
 	CollectCoins(UnverifiedCollectedCoins),
-	BurnGATE(UnverifiedBurnGATE),
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -507,19 +507,10 @@ impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCollectedCoins>
 	}
 }
 
-impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedBurnGATE>
-	for Task<AccountId, BlockNum, Hash, Moment>
-{
-	fn from(coins: UnverifiedBurnGATE) -> Self {
-		Task::BurnGATE(coins)
-	}
-}
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskId<Hash> {
 	VerifyTransfer(TransferId<Hash>),
 	CollectCoins(CollectedCoinsId<Hash>),
-	BurnGATE(BurnGATEId<Hash>),
 }
 
 impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
@@ -534,17 +525,10 @@ impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
 	}
 }
 
-impl<Hash> From<BurnGATEId<Hash>> for TaskId<Hash> {
-	fn from(id: BurnGATEId<Hash>) -> Self {
-		TaskId::BurnGATE(id)
-	}
-}
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
 	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
 	CollectCoins(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>),
-	BurnGATE(BurnGATEId<Hash>, BurnGATEStruct<Hash, Balance>),
 }
 
 impl<AccountId, Balance, BlockNum, Hash, Moment>
@@ -564,15 +548,6 @@ impl<AccountId, Balance, BlockNum, Hash, Moment>
 {
 	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)) -> Self {
 		Self::CollectCoins(id, coins)
-	}
-}
-
-impl<AccountId, Balance, BlockNum, Hash, Moment>
-	From<(BurnGATEId<Hash>, BurnGATEStruct<Hash, Balance>)>
-	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
-{
-	fn from((id, coins): (BurnGATEId<Hash>, BurnGATEStruct<Hash, Balance>)) -> Self {
-		Self::BurnGATE(id, coins)
 	}
 }
 
@@ -693,6 +668,7 @@ pub(crate) mod test {
 			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
 			amount: 1000,
 			tx_id: TX_HASH.hex_to_address(),
+			contract_type: ContractType::GCRE,
 		}
 	}
 
@@ -701,6 +677,7 @@ pub(crate) mod test {
 			to: b"baba".to_vec().try_into().unwrap(),
 			tx_id: TX_HASH.hex_to_address(),
 			contract: Default::default(),
+			contract_type: ContractType::GCRE,
 		}
 	}
 

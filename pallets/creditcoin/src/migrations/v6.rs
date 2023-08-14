@@ -40,7 +40,6 @@ impl<T: Config> Migrate for Migration<T> {
 			let id: T::Hash = match &v {
 				Task::CollectCoins(pending) => TaskV2::<T>::to_id(pending),
 				Task::VerifyTransfer(pending) => TaskV2::<T>::to_id(pending),
-				Task::BurnGATE(pending) => TaskV2::<T>::to_id(pending),
 			};
 
 			T::TaskScheduler::insert(&k1, &id, v);
@@ -75,6 +74,7 @@ pub mod tests {
 				to: [0u8; 256].into_bounded(),
 				tx_id: [0u8; 256].into_bounded(),
 				contract: Default::default(),
+				contract_type: crate::ContractType::GCRE,
 			};
 			let id = TaskV2::<Test>::to_id(&pending);
 

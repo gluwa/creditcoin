@@ -109,6 +109,7 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             BurnGATEAlreadyRegistered: AugmentedError<ApiType>;
             BurnGATEFaucetNotSet: AugmentedError<ApiType>;
+            BurnGATEInsufficientFaucetBalance: AugmentedError<ApiType>;
             /**
              * The coin collection has already been registered.
              **/

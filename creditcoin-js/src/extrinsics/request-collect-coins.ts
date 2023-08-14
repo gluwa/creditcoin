@@ -68,7 +68,7 @@ const persistedCollectCoins = (api: ApiPromise, collectedCoinsId: CollectedCoins
     );
 };
 
-const createCollectCoinsRegisteredEvent = (
+export const createCollectCoinsRegisteredEvent = (
     api: ApiPromise,
     result: SubmittableResult,
     kind: CollectCoinsEventKind,

@@ -6,7 +6,7 @@ use crate::ocw::{
 };
 use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
-	types::{Blockchain, UnverifiedBurnGATE, UnverifiedCollectedCoins},
+	types::{Blockchain, ContractType, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
 use core::{default::Default, ops::Div};
@@ -22,25 +22,25 @@ use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct GCreContract {
+pub struct DeployedContract {
 	pub address: sp_core::H160,
 	pub chain: Blockchain,
 }
 
-impl GCreContract {
+impl DeployedContract {
 	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
 }
 
-impl Default for GCreContract {
+impl Default for DeployedContract {
 	fn default() -> Self {
-		let contract_chain: Blockchain = GCreContract::DEFAULT_CHAIN;
+		let contract_chain: Blockchain = DeployedContract::DEFAULT_CHAIN;
 		let contract_address: H160 =
 			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
 		Self { address: contract_address, chain: contract_chain }
 	}
 }
 
-impl GCreContract {
+impl DeployedContract {
 	///exchange has been deprecated, use burn instead
 	fn burn_vested_cc_abi() -> Function {
 		#[allow(deprecated)]
@@ -90,7 +90,7 @@ pub fn validate_collect_coins(
 		return Err(VerificationFailureCause::MissingSender.into());
 	}
 
-	let transfer_fn = GCreContract::burn_vested_cc_abi();
+	let transfer_fn = DeployedContract::burn_vested_cc_abi();
 	ensure!(!transaction.is_input_empty(), VerificationFailureCause::EmptyInput);
 
 	{
@@ -122,48 +122,41 @@ impl<T: CreditcoinConfig> Pallet<T> {
 		u_cc: &UnverifiedCollectedCoins,
 	) -> VerificationResult<T::Balance> {
 		log::debug!("verifying OCW Collect Coins");
-		let UnverifiedCollectedCoins { to, tx_id, contract: GCreContract { address, chain } } =
-			u_cc;
+		let UnverifiedCollectedCoins {
+			to,
+			tx_id,
+			contract: DeployedContract { address, chain },
+			contract_type,
+		} = u_cc;
 		let rpc_url = &chain.rpc_url()?;
 		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
 
-		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip, address)?;
+		let mut amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip, address)?;
+
+		// GATE -> CTC is swapped 2:1
+		if *contract_type == ContractType::GATE {
+			amount = amount.div(sp_core::U256::from_dec_str("2").unwrap());
+		}
 
 		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
-
-		Ok(amount)
-	}
-
-	pub fn verify_burn_GATE_ocw(u_cc: &UnverifiedBurnGATE) -> VerificationResult<T::Balance> {
-		log::debug!("verifying OCW burn GATE");
-		let UnverifiedBurnGATE { to, tx_id, contract: GATEContract { address, chain } } = u_cc;
-		let rpc_url = &chain.rpc_url()?;
-		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
-		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
-		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
-
-		let amount = validate_burn_GATE(to, &tx_receipt, &tx, eth_tip, address)?;
-		let amount = amount.div(sp_core::U256::from_dec_str("2").unwrap());
-		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
-
 		Ok(amount)
 	}
 }
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub(crate) mod testing_constants {
-	use super::{Blockchain, GCreContract};
+	use super::{Blockchain, DeployedContract};
 
-	pub const CHAIN: Blockchain = GCreContract::DEFAULT_CHAIN;
+	pub const CHAIN: Blockchain = DeployedContract::DEFAULT_CHAIN;
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
 
 	use super::*;
-	use crate::mock::{PendingRequestExt, RuntimeCall};
+	use crate::mock::{self, PendingRequestExt, RuntimeCall};
 	use std::collections::HashMap;
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
@@ -215,7 +208,7 @@ pub(crate) mod tests {
 	});
 
 	pub(crate) static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
-		let transfer_fn = GCreContract::burn_vested_cc_abi();
+		let transfer_fn = DeployedContract::burn_vested_cc_abi();
 
 		let inputs = transfer_fn.decode_input(&(INPUT.0)[4..]).unwrap();
 
@@ -248,8 +241,8 @@ pub(crate) mod tests {
 	use assert_matches::assert_matches;
 	use frame_support::dispatch::Dispatchable;
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
-	use frame_system::Pallet as System;
 	use frame_system::RawOrigin;
+	use frame_system::{Account, Pallet as System};
 	use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 	use pallet_offchain_task_scheduler::Pallet as TaskSchedulerPallet;
 	use parity_scale_codec::Decode;
@@ -297,7 +290,7 @@ pub(crate) mod tests {
 				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
 				transaction,
 				eth_tip: (base_height + ETH_CONFIRMATIONS),
-				contract_address: GCreContract::default().address,
+				contract_address: DeployedContract::default().address,
 			}
 		}
 	}
@@ -305,10 +298,47 @@ pub(crate) mod tests {
 	impl PassingCollectCoins {
 		fn validate(self) -> OffchainResult<ExternalAmount> {
 			let PassingCollectCoins { to, receipt, transaction, eth_tip, contract_address } = self;
-			super::validate_collect_coins(&to, &receipt, &transaction, eth_tip, &contract_address)
+			super::validate_burn_GATE(&to, &receipt, &transaction, eth_tip, &contract_address)
 		}
 	}
 
+	struct PassingSwapGATE {
+		to: ExternalAddress,
+		receipt: EthTransactionReceipt,
+		transaction: EthTransaction,
+		eth_tip: U64,
+		contract_address: H160,
+	}
+
+	impl Default for PassingSwapGATE {
+		fn default() -> Self {
+			let base_height = *BLOCK_NUMBER;
+			let GATE_contract = *VESTING_CONTRACT;
+			let to = FROM.hex_to_address();
+			let tx_from = H160::from(<[u8; 20]>::try_from(to.as_slice()).unwrap());
+
+			let mut transaction = EthTransaction::default();
+			transaction.block_number = Some(base_height);
+			transaction.from = Some(tx_from);
+			transaction.to = Some(GATE_contract);
+			transaction.set_input(&INPUT.0);
+
+			Self {
+				to,
+				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
+				transaction,
+				eth_tip: (base_height + ETH_CONFIRMATIONS),
+				contract_address: GATEContract::default().address,
+			}
+		}
+	}
+
+	impl PassingSwapGATE {
+		fn validate(self) -> OffchainResult<ExternalAmount> {
+			let PassingSwapGATE { to, receipt, transaction, eth_tip, contract_address } = self;
+			super::validate_burn_GATE(&to, &receipt, &transaction, eth_tip, &contract_address)
+		}
+	}
 	fn assert_invalid(res: OffchainResult<ExternalAmount>, cause: VerificationFailureCause) {
 		assert_matches!(res, Err(OffchainError::InvalidTask(c)) =>{ assert_eq!(c,cause); });
 	}
@@ -460,6 +490,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id =
 				crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &collected_coins.tx_id);
@@ -561,6 +592,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
@@ -604,6 +636,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -646,6 +679,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: u128::MAX,
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 
 			assert_noop!(
@@ -678,6 +712,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -805,6 +840,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -851,6 +887,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -885,6 +922,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -952,6 +990,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -1006,7 +1045,7 @@ pub(crate) mod tests {
 		let acct_pubkey = ext.generate_authority();
 		let _auth = AccountId::from(acct_pubkey.into_account().0);
 		ext.build_and_execute(|| {
-			let contract = GCreContract {
+			let contract = DeployedContract {
 				address: sp_core::H160(hex!("aaaaabbbbbcccccdddddeeeeefffff08F3820419")),
 				chain: Blockchain::Rinkeby,
 			};
@@ -1016,7 +1055,7 @@ pub(crate) mod tests {
 			));
 			let from_storage = Creditcoin::<Test>::collect_coins_contract();
 			assert_eq!(contract, from_storage);
-			assert_ne!(from_storage, GCreContract::default());
+			assert_ne!(from_storage, DeployedContract::default());
 
 			let (acc, ..) = generate_address_with_proof("somebody");
 
@@ -1037,7 +1076,7 @@ pub(crate) mod tests {
 
 	#[test]
 	fn gcrecontract_value_query_is_default() {
-		let contract = GCreContract::default();
+		let contract = DeployedContract::default();
 		let ext = ExtBuilder::default();
 		ext.build_and_execute(|| {
 			let value_query = Creditcoin::<Test>::collect_coins_contract();
@@ -1057,6 +1096,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: 1u128,
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -1091,7 +1131,8 @@ pub(crate) mod tests {
 			let cc = UnverifiedCollectedCoins {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
-				contract: GCreContract::default(),
+				contract: DeployedContract::default(),
+				contract_type: ContractType::GCRE,
 			};
 			assert_matches!(
 				Creditcoin::<Test>::verify_collect_coins_ocw(&cc),
@@ -1115,7 +1156,8 @@ pub(crate) mod tests {
 			let cc = UnverifiedCollectedCoins {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
-				contract: GCreContract::default(),
+				contract: DeployedContract::default(),
+				contract_type: ContractType::GATE,
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);
@@ -1153,7 +1195,8 @@ pub(crate) mod tests {
 			let cc = UnverifiedCollectedCoins {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
-				contract: GCreContract::default(),
+				contract: DeployedContract::default(),
+				contract_type: ContractType::GCRE,
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);
@@ -1168,6 +1211,66 @@ pub(crate) mod tests {
 
 			assert_ok!(c.dispatch(RuntimeOrigin::signed(auth)));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
+		});
+	}
+
+	#[test]
+	fn request_swap_gate_owner_credited() {
+		let mut ext = ExtBuilder::default();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+
+		let gate_faucet_pubkey = ext.generate_authority();
+		let gate_faucet = AccountId::from(gate_faucet_pubkey.into_account().0);
+
+		ext.build_offchain_and_execute_with_state(|_, _| {
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			let burned_gate = CollectedCoinsStruct {
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GATE,
+			};
+			let burned_gate_id = CollectedCoinsId::new::<Test>(&CHAIN, &burned_gate.tx_id);
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				RuntimeOrigin::signed(acc.clone()),
+				CHAIN,
+				addr,
+				sign
+			));
+
+			assert_ok!(Creditcoin::<Test>::set_burn_gate_faucet_address(
+				RawOrigin::Root.into(),
+				gate_faucet,
+			));
+
+			let gate_faucet2 = AccountId::from(gate_faucet_pubkey.into_account().0);
+
+			let _ = <pallet_balances::Pallet<Test> as Currency<
+				<mock::Test as frame_system::Config>::AccountId,
+			>>::deposit_creating(&gate_faucet2, 1000000000000000000);
+
+			assert_eq!(
+				frame_system::pallet::Account::<Test>::get(&gate_faucet2).data.free,
+				1000000000000000000
+			);
+
+			assert_ok!(Creditcoin::<Test>::persist_task_output(
+				RuntimeOrigin::signed(auth.clone()),
+				Test::unverified_transfer_deadline(),
+				(burned_gate_id, burned_gate.clone()).into(),
+			));
+
+			// GATE->CTC is swapped in a 2:1 ratio, this division happens in an earlier function before persist task is called
+			// In this test, which skips the division function, we expect the input and output amounts to correspond 1:1
+			assert_eq!(
+				frame_system::pallet::Account::<Test>::get(&acc).data.free,
+				burned_gate.amount,
+			);
+
+			assert_eq!(RPC_RESPONSE_AMOUNT.as_u128(), burned_gate.amount,)
 		});
 	}
 }

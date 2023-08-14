@@ -153,3 +153,7 @@ export type UnverifiedSwapGATE = {
     to: ExternalAddress;
     txHash: string;
 };
+
+export type GCREContract = { kind: 'GCRE'; evmAddress: ExternalAddress; txHash: string };
+export type GATEContract = { kind: 'GATE'; evmAddress: ExternalAddress; txHash: string };
+export type CollectCoinsContract = GCREContract | GATEContract;
