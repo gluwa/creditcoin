@@ -1,4 +1,4 @@
-import { ApiPromise, Keyring } from '@polkadot/api';
+import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
 import { Guid } from 'js-guid';
 import { addAskOrderAsync } from './add-ask-order';
@@ -29,7 +29,6 @@ import { closeDealOrderAsync } from './close-deal-order';
 import { exemptLoanAsync } from './exempt';
 import { requestCollectCoinsAsync } from './request-collect-coins';
 import { registerAddressV2Async } from './register-address-v2';
-import { requestSwapGATEAsync } from './request-swap-gate';
 import { requestCollectCoinvsV2Async } from './request-collect-coins-v2';
 
 export const extrinsics = (api: ApiPromise) => {
@@ -122,9 +121,6 @@ export const extrinsics = (api: ApiPromise) => {
         signer: KeyringPair,
     ) => registerAddressV2Async(api, externalAddress, blockchain, ownershipProof, signer);
 
-    const requestSwapGATE = (evmAddress: ExternalAddress, collector: KeyringPair, txHash: string) =>
-        requestSwapGATEAsync(api, evmAddress, collector, txHash);
-
     const requestCollectCoinsV2 = (contract: CollectCoinsContract, signer: KeyringPair) =>
         requestCollectCoinvsV2Async(api, contract, signer);
 
@@ -143,7 +139,6 @@ export const extrinsics = (api: ApiPromise) => {
         closeDealOrder,
         exemptLoan,
         requestCollectCoins,
-        requestSwapGATE,
         requestCollectCoinsV2,
     };
 };

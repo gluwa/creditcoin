@@ -154,9 +154,6 @@ pub mod pallet {
 		fn register_address_v2() -> Weight;
 		fn set_burn_gate_contract() -> Weight;
 		fn set_burn_gate_faucet_address() -> Weight;
-		fn request_burn_gate() -> Weight;
-		fn persist_burn_gate() -> Weight;
-		fn fail_burn_gate() -> Weight;
 		fn request_collect_coins_v2() -> Weight;
 	}
 

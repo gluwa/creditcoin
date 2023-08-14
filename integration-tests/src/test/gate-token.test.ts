@@ -1,6 +1,6 @@
-import { KeyringPair, creditcoinApi, Keyring, BN } from 'creditcoin-js';
-import { Blockchain } from 'creditcoin-js/lib/model';
-import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { KeyringPair, creditcoinApi, Keyring, BN, Balance } from 'creditcoin-js';
+import { AccountId, Blockchain } from 'creditcoin-js/lib/model';
+import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
 import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
 
 import { extractFee, testIf } from '../utils';
@@ -33,6 +33,9 @@ describe('Test GATE Token', (): void => {
     let gateKeyring = new Keyring({ type: 'ed25519', ss58Format: 3 });
     let gateFaucet = gateKeyring.addFromUri(mnemonicGenerate(12));
 
+    let gateKeyring2 = new Keyring({ type: 'ed25519', ss58Format: 3 });
+    let gateFaucet2 = gateKeyring2.addFromUri(mnemonicGenerate(12));
+
     // the eth wallet that initiates the burn transaction on its own supply of GATE
     const burnerWallet = Wallet.createRandom({ provider: provider });
 
@@ -54,7 +57,6 @@ describe('Test GATE Token', (): void => {
 
         const { api, extrinsics: { registerAddressV2, requestCollectCoinsV2 } } = ccApi;
 
-        // transfer some CTC to the on-chain burn GATE faucet
         await api.tx.sudo
             .sudo(api.tx.balances.setBalance(gateFaucet.address, 1000, 0))
             .signAndSend(sudoSigner, { nonce: -1 });
@@ -69,10 +71,10 @@ describe('Test GATE Token', (): void => {
             .signAndSend(sudoSigner, { nonce: -1 });
 
 
-        const mintTx = await gateToken.mint(deployer.address, 1500)
+        const mintTx = await gateToken.mint(deployer.address, 2500)
         await mintTx.wait(3);
         const balance = await gateToken.balanceOf(deployer.address);
-        expect(balance.eq(1500)).toBe(true);
+        expect(balance.eq(2500)).toBe(true);
 
 
         const burnTx = await gateToken.burn(burnAmount);
@@ -98,7 +100,6 @@ describe('Test GATE Token', (): void => {
             .sudo(api.tx.creditcoin.setBurnGateFaucetAddress(gateFaucet.address))
             .signAndSend(sudoSigner, { nonce: -1 })
 
-
         const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);
         const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
 
@@ -117,7 +118,6 @@ describe('Test GATE Token', (): void => {
         ).rejects.toThrow(
             'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
         );
-
     }, 900_000)
 });
 
