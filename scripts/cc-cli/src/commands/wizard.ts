@@ -2,11 +2,6 @@ import { Command, OptionValues } from "commander";
 import { BN } from "creditcoin-js";
 import { newApi } from "../api";
 import {
-  getControllerSeedFromEnvOrPrompt,
-  getStashSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
-import {
   AccountBalance,
   getBalance,
   parseCTCString,
@@ -35,21 +30,22 @@ import {
   parsePercentAsPerbillOrExit,
   requiredInput,
 } from "../utils/parsing";
+import { initControllerKeyring, initStashKeyring } from "../utils/account";
 
 export function makeWizardCommand() {
   const cmd = new Command("wizard");
   cmd.description(
-    "Run the validator setup wizard. Only requires funded stash and controller accounts.",
+    "Run the validator setup wizard. Only requires funded stash and controller accounts."
   );
   cmd.option(
     "-r, --reward-destination [reward-destination]",
-    "Specify reward destination account to use for new account",
+    "Specify reward destination account to use for new account"
   );
   cmd.option("-a, --amount [amount]", "Amount to bond");
   cmd.option("--commission [commission]", "Specify commission for validator");
   cmd.option(
     "--blocked",
-    "Specify if validator is blocked for new nominations",
+    "Specify if validator is blocked for new nominations"
   );
   cmd.action(async (options: OptionValues) => {
     console.log("🧙 Running staking wizard...");
@@ -61,13 +57,11 @@ export function makeWizardCommand() {
     const { api } = await newApi(options.url);
 
     // Generate stash keyring
-    const stashSeed = await getStashSeedFromEnvOrPrompt(interactive);
-    const stashKeyring = initKeyringPair(stashSeed);
+    const stashKeyring = await initStashKeyring(options);
     const stashAddress = stashKeyring.address;
 
     // Generate controller keyring
-    const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
-    const controllerKeyring = initKeyringPair(controllerSeed);
+    const controllerKeyring = await initControllerKeyring(options);
     const controllerAddress = controllerKeyring.address;
 
     // Validate prefs
@@ -106,7 +100,7 @@ export function makeWizardCommand() {
       checkControllerBalance(
         controllerAddress,
         controllerBalance,
-        grosslyEstimatedFee,
+        grosslyEstimatedFee
       );
     }
 
@@ -114,24 +108,24 @@ export function makeWizardCommand() {
 
     if (bondExtra) {
       console.log(
-        "⚠️  Warning: Stash account already bonded. This will increase the amount bonded.",
+        "⚠️  Warning: Stash account already bonded. This will increase the amount bonded."
       );
       if (
         await promptContinueOrSkip(
           `Continue or skip bonding extra funds?`,
-          interactive,
+          interactive
         )
       ) {
         checkStashBalance(stashAddress, stashBalance, amount);
         // Bond extra
         console.log("Sending bond transaction...");
         const bondTxResult = await bond(
-          stashSeed,
+          stashKeyring,
           controllerAddress,
           amount,
           rewardDestination,
           api,
-          bondExtra,
+          bondExtra
         );
         console.log(bondTxResult.info);
         if (bondTxResult.status === TxStatus.failed) {
@@ -143,11 +137,11 @@ export function makeWizardCommand() {
       // Bond
       console.log("Sending bond transaction...");
       const bondTxResult = await bond(
-        stashSeed,
+        stashKeyring,
         controllerAddress,
         amount,
         rewardDestination,
-        api,
+        api
       );
       console.log(bondTxResult.info);
       if (bondTxResult.status === TxStatus.failed) {
@@ -192,17 +186,17 @@ export function makeWizardCommand() {
 function checkControllerBalance(
   address: string,
   balance: AccountBalance,
-  amount: BN,
+  amount: BN
 ) {
   if (balance.transferable.lt(amount)) {
     console.log(
-      "Controller account does not have enough funds to pay transaction fees",
+      "Controller account does not have enough funds to pay transaction fees"
     );
     printBalance(balance);
     console.log(
       `Please send at least ${toCTCString(
-        amount,
-      )} to controller address ${address} and try again.`,
+        amount
+      )} to controller address ${address} and try again.`
     );
     process.exit(1);
   }
@@ -211,11 +205,11 @@ function checkControllerBalance(
 function checkStashBalance(
   address: string,
   balance: AccountBalance,
-  amount: BN,
+  amount: BN
 ) {
   if (balance.transferable.lt(amount)) {
     console.log(
-      `Stash account does not have enough funds to bond ${toCTCString(amount)}`,
+      `Stash account does not have enough funds to bond ${toCTCString(amount)}`
     );
     printBalance(balance);
     console.log(`Please send funds to stash address ${address} and try again.`);
@@ -237,8 +231,8 @@ function parseOptions(options: OptionValues) {
   const amount = parseAmountOrExit(
     requiredInput(
       options.amount,
-      "Failed to setup wizard: Bond amount required",
-    ),
+      "Failed to setup wizard: Bond amount required"
+    )
   );
   if (amount.lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
     console.log("Failed to setup wizard: Bond amount must be at least 1 CTC");
@@ -250,11 +244,11 @@ function parseOptions(options: OptionValues) {
       "Staked",
       "Stash",
       "Controller",
-    ]),
+    ])
   );
 
   const commission = parsePercentAsPerbillOrExit(
-    inputOrDefault(options.commission, "0"),
+    inputOrDefault(options.commission, "0")
   );
 
   const blocked = parseBoolean(options.blocked);
