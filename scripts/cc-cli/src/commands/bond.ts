@@ -1,6 +1,5 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { bond, checkRewardDestination } from "../utils/bond";
 import { promptContinue, setInteractivity } from "../utils/interactive";
 import {
@@ -18,6 +17,7 @@ import {
   parseChoiceOrExit,
   requiredInput,
 } from "../utils/parsing";
+import { initKeyringFromEnvOrPrompt, initStashKeyring } from "../utils/account";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");
@@ -26,11 +26,11 @@ export function makeBondCommand() {
   cmd.option("-c, --controller [controller]", "Specify controller address");
   cmd.option(
     "-r, --reward-destination [reward-destination]",
-    "Specify reward destination account to use for new account",
+    "Specify reward destination account to use for new account"
   );
   cmd.option(
     "-x, --extra",
-    "Bond as extra, adding more funds to an existing bond",
+    "Bond as extra, adding more funds to an existing bond"
   );
   cmd.action(bondAction);
   return cmd;
@@ -42,8 +42,7 @@ async function bondAction(options: OptionValues) {
   const { amount, controller, rewardDestination, extra, interactive } =
     parseOptions(options);
 
-  const stashSeed = await getStashSeedFromEnvOrPrompt(interactive);
-  const stashKeyring = initKeyringPair(stashSeed);
+  const stashKeyring = await initStashKeyring(api);
   const stashAddress = stashKeyring.address;
 
   // Check if stash has enough balance
@@ -60,12 +59,12 @@ async function bondAction(options: OptionValues) {
   await promptContinue(interactive);
 
   const bondTxResult = await bond(
-    stashSeed,
+    stashKeyring,
     controller,
     amount,
     rewardDestination,
     api,
-    extra,
+    extra
   );
 
   console.log(bondTxResult.info);
@@ -81,8 +80,8 @@ function checkBalanceAgainstBondAmount(balance: AccountBalance, amount: BN) {
   if (balance.transferable.lt(amount)) {
     console.error(
       `Insufficient funds to bond ${toCTCString(amount)}, only ${toCTCString(
-        balance.transferable,
-      )} available`,
+        balance.transferable
+      )} available`
     );
     process.exit(1);
   }
@@ -92,16 +91,16 @@ function parseOptions(options: OptionValues) {
   const amount = parseAmountOrExit(
     requiredInput(
       options.amount,
-      "Failed to bond: Must specify an amount to bond",
-    ),
+      "Failed to bond: Must specify an amount to bond"
+    )
   );
   checkAmount(amount);
 
   const controller = parseAddressOrExit(
     requiredInput(
       options.controller,
-      "Failed to bond: Must specify a controller address",
-    ),
+      "Failed to bond: Must specify a controller address"
+    )
   );
 
   const rewardDestination = checkRewardDestination(
@@ -109,7 +108,7 @@ function parseOptions(options: OptionValues) {
       "Staked",
       "Stash",
       "Controller",
-    ]),
+    ])
   );
 
   const extra = parseBoolean(options.extra);
