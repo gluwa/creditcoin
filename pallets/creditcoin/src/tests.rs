@@ -5,16 +5,17 @@ use crate::{
 		non_paying_error, EVMAddress, PublicToAddress,
 	},
 	mock::{RuntimeOrigin as Origin, *},
-	types::{DoubleMapExt, OwnershipProof},
+	types::{DeployedContract, DoubleMapExt, GATEContract, OwnershipProof},
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
 	DealOrders, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, Id, LegacySighash,
-	LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
+	LoanTerms, Offer, OfferId, OrderId, TokenContract, Transfer, TransferId, TransferKind,
+	Transfers, WeightInfo,
 };
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok, BoundedVec};
-use frame_system::RawOrigin;
+use frame_system::{Account, RawOrigin};
 use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
 use sp_core::Pair;
@@ -3238,19 +3239,49 @@ fn register_address_v2_should_error_with_unsupported_blockchain() {
 }
 
 #[test]
-fn request_burn_gate_should_error_when_faucet_not_set() {
+fn request_collect_coins_gate_should_error_when_faucet_not_set() {
 	ExtBuilder::default().build_and_execute(|| {
 		System::set_block_number(1);
 
-		let (who, _, _, _) = generate_address_with_proof("owner");
+		let who = AccountId::new([0; 32]);
 
 		let external_addr = ExternalAddress::default();
 		let tx_id = ExternalTxId::default();
 		let who = Origin::signed(who);
 
+		let contract = TokenContract::GATE(external_addr, tx_id);
+
 		assert_noop!(
-			Creditcoin::request_burn_gate(who, external_addr, tx_id),
+			Creditcoin::request_collect_coins_v2(who, contract),
 			crate::Error::<Test>::BurnGATEFaucetNotSet
 		);
 	});
 }
+
+#[test]
+fn set_burn_gate_contract_fails_with_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+		let gate_contract = DeployedContract::default();
+
+		assert_noop!(
+			Creditcoin::set_burn_gate_contract(Origin::signed(acct.clone()), gate_contract),
+			BadOrigin
+		);
+	});
+}
+
+#[test]
+fn set_burn_gate_faucet_address_fails_with_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+		let addr: AccountId = AccountId::new([0; 32]);
+
+		assert_noop!(
+			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct.clone()), addr),
+			BadOrigin
+		);
+	});
+}
+
+#[test]

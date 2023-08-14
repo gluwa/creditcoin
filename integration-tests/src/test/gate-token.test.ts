@@ -1,4 +1,4 @@
-import { KeyringPair, creditcoinApi, Keyring } from 'creditcoin-js';
+import { KeyringPair, creditcoinApi, Keyring, BN } from 'creditcoin-js';
 import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
@@ -12,6 +12,7 @@ import { mnemonicGenerate } from '@polkadot/util-crypto';
 import { personalSignAccountId, signAccountId } from 'creditcoin-js/lib/utils';
 import { ethSignSignature, personalSignSignature } from 'creditcoin-js/lib/extrinsics/register-address-v2';
 import { requestCollectCoins } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
+import { GATEContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
 
 describe('Test GATE Token', (): void => {
     let ccApi: CreditcoinApi;
@@ -25,6 +26,7 @@ describe('Test GATE Token', (): void => {
     const { keyring } = testingData;
     const provider = new JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
     const deployer = new Wallet((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY, provider);
+    const burnAmount = 200;
 
     // Holds the reference to the deployed GATE contract
     let gateToken: any;
@@ -49,17 +51,16 @@ describe('Test GATE Token', (): void => {
     });
 
     test('End to end', async () => {
-        const { api, extrinsics: { registerAddressV2, requestSwapGATE } } = ccApi;
+
+        const { api, extrinsics: { registerAddressV2, requestCollectCoinsV2 } } = ccApi;
 
         // transfer some CTC to the on-chain burn GATE faucet
-        let res = await api.tx.sudo
-            .sudo(api.tx.balances.setBalance(gateFaucet.address, 10000, 0))
+        await api.tx.sudo
+            .sudo(api.tx.balances.setBalance(gateFaucet.address, 1000, 0))
             .signAndSend(sudoSigner, { nonce: -1 });
 
-        console.log(gateFaucet.address);
-
         // Set the on chain location for the burn contract to be the address of the deployer wallet
-        const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGateContract', {
+        const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
             address: gateToken.address,
             chain: testingData.blockchain,
         });
@@ -68,30 +69,54 @@ describe('Test GATE Token', (): void => {
             .signAndSend(sudoSigner, { nonce: -1 });
 
 
-        // Set the faucet address in onchain storage to the one that we transfered ctc to earlier
-        // The sp_core::ecsda::Public type exposed by the extrinsic expects a buffer of size 33. Probably a better way to do this
-        await api.tx.sudo
-            .sudo(api.tx.creditcoin.setBurnGateFaucetAddress(gateFaucet.address))
-            .signAndSend(sudoSigner, { nonce: -1 })
-
-        const mintTx = await gateToken.mint(deployer.address, 1000)
+        const mintTx = await gateToken.mint(deployer.address, 1500)
         await mintTx.wait(3);
         const balance = await gateToken.balanceOf(deployer.address);
-        expect(balance.eq(1000)).toBe(true);
+        expect(balance.eq(1500)).toBe(true);
 
 
-        const burnTx = await gateToken.burn(200);
+        const burnTx = await gateToken.burn(burnAmount);
         await burnTx.wait(3);
 
         const accountId = await signAccountId(api, deployer, sudoSigner.address);
         const proof = ethSignSignature(accountId);
         const lenderRegisteredAddress = await registerAddressV2(deployer.address, testingData.blockchain, proof, sudoSigner);
 
+        const gateContract = GATEContract(lenderRegisteredAddress.item.externalAddress, burnTx.hash);
 
-        const swapGATEEvent = await requestSwapGATE(lenderRegisteredAddress.item.externalAddress, sudoSigner, burnTx.hash)
+        // Test #1: The extrinsic should erorr when the faucet address has not been set
+        await expect(
+            requestCollectCoinsV2(
+                gateContract,
+                sudoSigner,
+            ),
+        ).rejects.toThrow(
+            'creditcoin.BurnGATEFaucetNotSet',
+        );
+
+        await api.tx.sudo
+            .sudo(api.tx.creditcoin.setBurnGateFaucetAddress(gateFaucet.address))
+            .signAndSend(sudoSigner, { nonce: -1 })
+
+
+        const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);
         const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
 
+        // Test #2: This is a successful transfer and should proceed normally
         expect(swapGATEVerified).toBeTruthy();
+
+        // Test #3: GATE -> CTC should be swapped in a 2:1 ratio
+        expect(swapGATEVerified.amount.toNumber()).toEqual(burnAmount / 2);
+
+        // Test #4: You cannot resubmit previously used burn transactions 
+        await expect(
+            requestCollectCoinsV2(
+                gateContract,
+                sudoSigner,
+            ),
+        ).rejects.toThrow(
+            'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
+        );
 
     }, 900_000)
 });

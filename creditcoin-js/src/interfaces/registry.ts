@@ -63,6 +63,8 @@ import type {
     PalletCreditcoinCall,
     PalletCreditcoinCollectCoinsBurnGATE,
     PalletCreditcoinCollectCoinsCollectedCoins,
+    PalletCreditcoinCollectCoinsContractType,
+    PalletCreditcoinCollectCoinsTokenContract,
     PalletCreditcoinCollectCoinsUnverifiedBurnGATE,
     PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
     PalletCreditcoinDealOrder,
@@ -77,7 +79,7 @@ import type {
     PalletCreditcoinLoanTermsInterestRate,
     PalletCreditcoinLoanTermsInterestType,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
-    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+    PalletCreditcoinOcwTasksCollectCoinsDeployedContract,
     PalletCreditcoinOcwTasksCollectCoinsGateContract,
     PalletCreditcoinOffer,
     PalletCreditcoinOfferId,
@@ -285,6 +287,8 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinCall: PalletCreditcoinCall;
         PalletCreditcoinCollectCoinsBurnGATE: PalletCreditcoinCollectCoinsBurnGATE;
         PalletCreditcoinCollectCoinsCollectedCoins: PalletCreditcoinCollectCoinsCollectedCoins;
+        PalletCreditcoinCollectCoinsContractType: PalletCreditcoinCollectCoinsContractType;
+        PalletCreditcoinCollectCoinsTokenContract: PalletCreditcoinCollectCoinsTokenContract;
         PalletCreditcoinCollectCoinsUnverifiedBurnGATE: PalletCreditcoinCollectCoinsUnverifiedBurnGATE;
         PalletCreditcoinCollectCoinsUnverifiedCollectedCoins: PalletCreditcoinCollectCoinsUnverifiedCollectedCoins;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
@@ -299,7 +303,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinLoanTermsInterestRate: PalletCreditcoinLoanTermsInterestRate;
         PalletCreditcoinLoanTermsInterestType: PalletCreditcoinLoanTermsInterestType;
         PalletCreditcoinOcwErrorsVerificationFailureCause: PalletCreditcoinOcwErrorsVerificationFailureCause;
-        PalletCreditcoinOcwTasksCollectCoinsGCreContract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
+        PalletCreditcoinOcwTasksCollectCoinsDeployedContract: PalletCreditcoinOcwTasksCollectCoinsDeployedContract;
         PalletCreditcoinOcwTasksCollectCoinsGateContract: PalletCreditcoinOcwTasksCollectCoinsGateContract;
         PalletCreditcoinOffer: PalletCreditcoinOffer;
         PalletCreditcoinOfferId: PalletCreditcoinOfferId;

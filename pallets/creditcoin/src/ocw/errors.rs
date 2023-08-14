@@ -44,7 +44,7 @@ pub enum VerificationFailureCause {
 	InvalidAddress,
 	UnsupportedMethod,
 	TransactionNotFound,
-	InsufficientFaucetBallance,
+	InsufficientFaucetBalance,
 }
 
 impl VerificationFailureCause {
@@ -68,7 +68,7 @@ impl VerificationFailureCause {
 			| IncorrectReceiver
 			| TaskNonexistent
 			| TransactionNotFound
-			| InsufficientFaucetBallance => true,
+			| InsufficientFaucetBalance => true,
 			TaskPending | TaskUnconfirmed => false,
 		}
 	}
