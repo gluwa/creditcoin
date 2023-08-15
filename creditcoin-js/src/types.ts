@@ -32,9 +32,7 @@ import { TransferEvent } from './extrinsics/register-transfers';
 import { LoanExempted } from './extrinsics/exempt';
 import { Wallet } from 'ethers';
 import { CollectCoinsEvent } from './extrinsics/request-collect-coins';
-import {
-    PalletCreditcoinOcwErrorsVerificationFailureCause,
-} from '@polkadot/types/lookup';
+import { PalletCreditcoinOcwErrorsVerificationFailureCause } from '@polkadot/types/lookup';
 
 export type TxCallback = (result: SubmittableResult) => void;
 export type TxFailureCallback = (error?: Error) => void;

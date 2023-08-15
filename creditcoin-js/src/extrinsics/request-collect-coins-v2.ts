@@ -1,11 +1,8 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
-import {
-    ExternalAddress,
-    CollectCoinsContract,
-} from '../model';
+import { ExternalAddress, CollectCoinsContract } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, } from './common';
-import { TxCallback, TxFailureCallback, } from '..';
+import { handleTransaction } from './common';
+import { TxCallback, TxFailureCallback } from '..';
 import { PalletCreditcoinCollectCoinsTokenContract } from '@polkadot/types/lookup';
 import { CollectCoinsEvent, createCollectCoinsRegisteredEvent } from './request-collect-coins';
 
@@ -16,20 +13,24 @@ export const createTokenContract = (
     const toType = () => {
         switch (contract.kind) {
             case 'GCRE':
-                return { GCRE: [contract.evmAddress, contract.txHash] }; // eslint-disable-line @typescript-eslint/naming-convention
+                // eslint-disable-next-line @typescript-eslint/naming-convention
+                return { GCRE: [contract.evmAddress, contract.txHash] };
             case 'GATE':
-                return { GATE: [contract.evmAddress, contract.txHash] }; // eslint-disable-line @typescript-eslint/naming-convention 
+                // eslint-disable-next-line @typescript-eslint/naming-convention
+                return { GATE: [contract.evmAddress, contract.txHash] };
         }
     };
 
     return api.createType('PalletCreditcoinCollectCoinsTokenContract', toType());
 };
 
-export const GATEContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => { // eslint-disable-line @typescript-eslint/naming-convention
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const GATEContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => {
     return { kind: 'GATE', evmAddress, txHash };
 };
 
-export const GCREContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => { // eslint-disable-line @typescript-eslint/naming-convention
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const GCREContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => {
     return { kind: 'GCRE', evmAddress, txHash };
 };
 

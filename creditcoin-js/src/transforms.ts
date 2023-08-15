@@ -31,8 +31,6 @@ import {
     TransferKind,
     UnverifiedCollectedCoins,
     CollectedCoins,
-    UnverifiedSwapGATE,
-    SwappedGATE,
 } from './model';
 
 export const createAddress = ({ value, blockchain, owner }: PalletCreditcoinAddress): Address => ({
@@ -219,4 +217,3 @@ export const createCollectedCoins = (collectedCoins: PalletCreditcoinCollectCoin
         amount: amount as BN,
     };
 };
-
