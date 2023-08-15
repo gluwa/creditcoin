@@ -17,9 +17,7 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
-    PalletCreditcoinCollectCoinsBurnGATE,
     PalletCreditcoinCollectCoinsCollectedCoins,
-    PalletCreditcoinCollectCoinsUnverifiedBurnGATE,
     PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
@@ -138,12 +136,6 @@ declare module '@polkadot/api-base/types/events' {
              * [bid_order_id, bid_order]
              **/
             BidOrderAdded: AugmentedEvent<ApiType, [PalletCreditcoinBidOrderId, PalletCreditcoinBidOrder]>;
-            BurnedGATEMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectCoinsBurnGATE]>;
-            BurnGATEFailedVerification: AugmentedEvent<
-                ApiType,
-                [H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
-            >;
-            BurnGATERegistered: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectCoinsUnverifiedBurnGATE]>;
             /**
              * exchanging vested ERC-20 CC for native CC failed.
              * [collected_coins_id, cause]

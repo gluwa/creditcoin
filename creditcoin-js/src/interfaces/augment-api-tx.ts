@@ -395,7 +395,6 @@ declare module '@polkadot/api-base/types/submittable' {
                         | PalletCreditcoinTaskId
                         | { VerifyTransfer: any }
                         | { CollectCoins: any }
-                        | { BurnGATE: any }
                         | string
                         | Uint8Array,
                     cause:
@@ -419,7 +418,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'InvalidAddress'
                         | 'UnsupportedMethod'
                         | 'TransactionNotFound'
-                        | 'InsufficientFaucetBallance'
+                        | 'InsufficientFaucetBalance'
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
@@ -443,7 +442,6 @@ declare module '@polkadot/api-base/types/submittable' {
                         | PalletCreditcoinTaskOutput
                         | { VerifyTransfer: any }
                         | { CollectCoins: any }
-                        | { BurnGATE: any }
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
