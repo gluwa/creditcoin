@@ -11,7 +11,7 @@ ephemeral networks.
 - Zombienet binary: [releases](https://github.com/paritytech/zombienet/releases). Download the appropriate binary and put it somewhere accessible.
 - (optional) Caddy: [install](https://caddyserver.com/docs/install)
 
-Build `creditcoin-node` using `--features "fast-runtime zombienet`!
+Build `creditcoin-node` using `--features "fast-runtime zombienet"`!
 That affects block time and epoch duration!
 
 ### How to use
