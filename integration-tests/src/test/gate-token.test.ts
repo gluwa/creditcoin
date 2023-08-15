@@ -33,11 +33,6 @@ describe('Test GATE Token', (): void => {
     let gateKeyring = new Keyring({ type: 'ed25519', ss58Format: 3 });
     let gateFaucet = gateKeyring.addFromUri(mnemonicGenerate(12));
 
-    let gateKeyring2 = new Keyring({ type: 'ed25519', ss58Format: 3 });
-
-    // the eth wallet that initiates the burn transaction on its own supply of GATE
-    const burnerWallet = Wallet.createRandom({ provider: provider });
-
     beforeAll(async () => {
         gateToken = await deployGATEToken(deployer);
 
@@ -54,7 +49,7 @@ describe('Test GATE Token', (): void => {
 
     test('End to end', async () => {
 
-        const { api, extrinsics: { registerAddressV2, requestCollectCoinsV2 } } = ccApi;
+        const { api, extrinsics: { requestCollectCoinsV2 } } = ccApi;
 
         await api.tx.sudo
             .sudo(api.tx.balances.setBalance(gateFaucet.address, 1000, 0))
@@ -86,7 +81,7 @@ describe('Test GATE Token', (): void => {
             testingData.blockchain,
             signAccountId(api, deployer, sudoSigner.address),
             sudoSigner,
-            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            true,
         );
         const gateContract = GATEContract(deployer.address, burnTx.hash);
 
