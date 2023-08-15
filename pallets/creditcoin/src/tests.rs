@@ -5,7 +5,7 @@ use crate::{
 		non_paying_error, EVMAddress, PublicToAddress,
 	},
 	mock::{RuntimeOrigin as Origin, *},
-	types::{DeployedContract, DoubleMapExt, GATEContract, OwnershipProof},
+	types::{DeployedContract, DoubleMapExt, OwnershipProof},
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
 	DealOrders, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, Id, LegacySighash,
 	LoanTerms, Offer, OfferId, OrderId, TokenContract, Transfer, TransferId, TransferKind,
@@ -15,7 +15,7 @@ use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
 use frame_support::{assert_noop, assert_ok, BoundedVec};
-use frame_system::{Account, RawOrigin};
+use frame_system::RawOrigin;
 use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
 use sp_core::Pair;
@@ -3283,5 +3283,3 @@ fn set_burn_gate_faucet_address_fails_with_non_root() {
 		);
 	});
 }
-
-#[test]

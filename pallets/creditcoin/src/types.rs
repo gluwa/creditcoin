@@ -10,7 +10,7 @@ pub use transfer::*;
 
 pub use collect_coins::{ContractType, TokenContract};
 
-pub use crate::ocw::tasks::collect_coins::{DeployedContract, GATEContract};
+pub use crate::ocw::tasks::collect_coins::DeployedContract;
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
 use extend::ext;

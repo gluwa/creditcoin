@@ -246,7 +246,7 @@ pub(crate) mod tests {
 	use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 	use pallet_offchain_task_scheduler::Pallet as TaskSchedulerPallet;
 	use parity_scale_codec::Decode;
-	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
+	use sp_runtime::traits::{BadOrigin, IdentifyAccount, Scale};
 	use sp_runtime::{ArithmeticError, TokenError};
 	use std::convert::TryFrom;
 
@@ -1120,7 +1120,7 @@ pub(crate) mod tests {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
 				contract: DeployedContract::default(),
-				contract_type: ContractType::GATE,
+				contract_type: ContractType::GCRE,
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);
@@ -1178,104 +1178,66 @@ pub(crate) mod tests {
 	}
 
 	#[test]
-	fn request_swap_gate_owner_credited() {
+	fn collect_coins_gate_token_persist_is_submitted_and_amount_is_2_to_1() {
 		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
 		let acct_pubkey = ext.generate_authority();
 		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, pool| {
+			mock_rpc_for_collect_coins(&state);
 
-		let gate_faucet_pubkey = ext.generate_authority();
-		let gate_faucet = AccountId::from(gate_faucet_pubkey.into_account().0);
-
-		ext.build_offchain_and_execute_with_state(|_, _| {
 			let (acc, addr, sign, _) = generate_address_with_proof("collector");
 
-			let burned_gate = CollectedCoinsStruct {
-				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
-				amount: RPC_RESPONSE_AMOUNT.as_u128(),
-				tx_id: TX_HASH.hex_to_address(),
-				contract_type: ContractType::GATE,
-			};
-			let burned_gate_id = CollectedCoinsId::new::<Test>(&CHAIN, &burned_gate.tx_id);
+			let _ = <pallet_balances::Pallet<Test> as Currency<
+				<mock::Test as frame_system::Config>::AccountId,
+			>>::deposit_creating(&auth, 1000000000000000000); // I hope this is enough
+
+			assert_ok!(Creditcoin::<Test>::set_burn_gate_faucet_address(
+				RawOrigin::Root.into(),
+				auth
+			));
 
 			assert_ok!(Creditcoin::<Test>::register_address(
 				RuntimeOrigin::signed(acc.clone()),
 				CHAIN,
-				addr,
+				addr.clone(),
 				sign
 			));
 
-			assert_ok!(Creditcoin::<Test>::set_burn_gate_faucet_address(
-				RawOrigin::Root.into(),
-				gate_faucet,
+			let gate_contract = crate::TokenContract::GATE(addr.clone(), TX_HASH.hex_to_address());
+
+			assert_ok!(Creditcoin::<Test>::request_collect_coins_v2(
+				RuntimeOrigin::signed(acc),
+				gate_contract
 			));
 
-			let gate_faucet2 = AccountId::from(gate_faucet_pubkey.into_account().0);
+			let deadline = Test::unverified_transfer_deadline();
 
-			let _ = <pallet_balances::Pallet<Test> as Currency<
-				<mock::Test as frame_system::Config>::AccountId,
-			>>::deposit_creating(&gate_faucet2, 1000000000000000000);
+			roll_by_with_ocw(1);
 
-			assert_eq!(
-				frame_system::pallet::Account::<Test>::get(&gate_faucet2).data.free,
-				1000000000000000000
-			);
+			assert!(!pool.read().transactions.is_empty());
 
-			assert_ok!(Creditcoin::<Test>::persist_task_output(
-				RuntimeOrigin::signed(auth.clone()),
-				Test::unverified_transfer_deadline(),
-				(burned_gate_id, burned_gate.clone()).into(),
-			));
+			// The only important part of this test
+			let amount = RPC_RESPONSE_AMOUNT.as_u128();
+			let amount = amount.saturating_div(2);
 
-			// GATE->CTC is swapped in a 2:1 ratio, this division happens in an earlier function before persist task is called
-			// In this test, which skips the division function, we expect the input and output amounts to correspond 1:1
-			assert_eq!(
-				frame_system::pallet::Account::<Test>::get(&acc).data.free,
-				burned_gate.amount,
-			);
+			let collected_coins = CollectedCoinsStruct {
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
+				amount,
+				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GATE,
+			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
-			assert_eq!(RPC_RESPONSE_AMOUNT.as_u128(), burned_gate.amount,)
+			let call = crate::Call::<crate::mock::Test>::persist_task_output {
+				task_output: (collected_coins_id, collected_coins).into(),
+				deadline,
+			};
+
+			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+				let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
+				assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
+			});
 		});
-	}
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct GATEContract {
-	pub address: sp_core::H160,
-	pub chain: Blockchain,
-}
-
-impl GATEContract {
-	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
-}
-
-impl Default for GATEContract {
-	fn default() -> Self {
-		let contract_chain: Blockchain = GATEContract::DEFAULT_CHAIN;
-		let contract_address: H160 =
-		 	// Link to contract on ether scan
-			// https://goerli.etherscan.io/address/0x543793d4d576238869ee19b471029e85b53845e9#writeProxyContract#F2
-			sp_core::H160(hex!("543793D4d576238869Ee19b471029e85b53845e9"));
-		Self { address: contract_address, chain: contract_chain }
-	}
-}
-
-impl GATEContract {
-	fn burn_vested_cc_abi() -> Function {
-		#[allow(deprecated)]
-		Function {
-			name: "burn".into(),
-			inputs: vec![Param {
-				name: "value".into(),
-				kind: ParamType::Uint(256),
-				internal_type: None,
-			}],
-			outputs: vec![Param {
-				name: "success".into(),
-				kind: ParamType::Bool,
-				internal_type: None,
-			}],
-			constant: Some(false),
-			state_mutability: StateMutability::NonPayable,
-		}
 	}
 }

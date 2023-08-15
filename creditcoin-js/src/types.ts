@@ -19,7 +19,6 @@ import {
     TransferId,
     TransferKind,
     TransferProcessed,
-    SignatureType,
     OwnershipProof,
     CollectCoinsContract,
 } from './model';
@@ -35,9 +34,7 @@ import { Wallet } from 'ethers';
 import { CollectCoinsEvent } from './extrinsics/request-collect-coins';
 import {
     PalletCreditcoinOcwErrorsVerificationFailureCause,
-    PalletCreditcoinOwnershipProof,
 } from '@polkadot/types/lookup';
-import { SwapGATEEvent } from './extrinsics/request-swap-gate';
 
 export type TxCallback = (result: SubmittableResult) => void;
 export type TxFailureCallback = (error?: Error) => void;
@@ -130,7 +127,6 @@ export interface Extrinsics {
         collector: KeyringPair,
         txHash: string,
     ) => Promise<CollectCoinsEvent>;
-    requestSwapGATE: (evmAddress: ExternalAddress, collector: KeyringPair, txHash: string) => Promise<SwapGATEEvent>;
     requestCollectCoinsV2: (contract: CollectCoinsContract, signer: KeyringPair) => Promise<CollectCoinsEvent>;
 }
 
