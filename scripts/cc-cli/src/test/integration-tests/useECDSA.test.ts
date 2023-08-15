@@ -20,7 +20,7 @@ describe("Using an ECDSA PK", () => {
     });
 
     expect(result.stdout.split("Account address: ")[1]).toContain(
-      expectedAddress
+      expectedAddress,
     );
   });
 
@@ -32,7 +32,7 @@ describe("Using an ECDSA PK", () => {
 
     const fundTx = await fundAddressesFromSudo(
       ["5HDRB6edmWwwh6aCDKrRSbisV8iFHdP7jDy18U2mt9w2wEkq"],
-      parseAmountInternal("10000")
+      parseAmountInternal("10000"),
     );
 
     await signSendAndWatch(fundTx, api, initKeyringPair("//Alice"));
@@ -43,7 +43,7 @@ describe("Using an ECDSA PK", () => {
         env: {
           CC_PK: pk,
         },
-      }
+      },
     );
 
     expect(result.stdout).toContain("Transaction included");

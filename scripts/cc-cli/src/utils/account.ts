@@ -16,7 +16,7 @@ export function initECDSAKeyringPairFromPK(pk: string) {
 }
 
 export async function initStashKeyring(
-  options: OptionValues
+  options: OptionValues,
 ): Promise<KeyringPair> {
   try {
     return await initKeyringFromEnvOrPrompt("CC_STASH_SEED", "stash", options);
@@ -27,13 +27,13 @@ export async function initStashKeyring(
 }
 
 export async function initControllerKeyring(
-  options: OptionValues
+  options: OptionValues,
 ): Promise<KeyringPair> {
   try {
     return await initKeyringFromEnvOrPrompt(
       "CC_CONTROLLER_SEED",
       "controller",
-      options
+      options,
     );
   } catch (e) {
     console.error(getErrorMessage(e));
@@ -42,7 +42,7 @@ export async function initControllerKeyring(
 }
 
 export async function initCallerKeyring(
-  options: OptionValues
+  options: OptionValues,
 ): Promise<KeyringPair> {
   try {
     return await initKeyringFromEnvOrPrompt("CC_SEED", "caller", options);
@@ -55,7 +55,7 @@ export async function initCallerKeyring(
 export async function initKeyringFromEnvOrPrompt(
   envVar: string,
   accountRole: string,
-  options: OptionValues
+  options: OptionValues,
 ): Promise<KeyringPair> {
   const interactive = options.input;
   const ecdsa = options.ecdsa;
@@ -66,7 +66,7 @@ export async function initKeyringFromEnvOrPrompt(
 
   if (!interactive && !process.env[envVar]) {
     throw new Error(
-      `Error: Must specify a ${inputName} for the ${accountRole} account in the environment variable ${envVar} or use an interactive shell.`
+      `Error: Must specify a ${inputName} for the ${accountRole} account in the environment variable ${envVar} or use an interactive shell.`,
     );
   }
 
@@ -75,7 +75,7 @@ export async function initKeyringFromEnvOrPrompt(
       return generateKeyring(process.env[envVar]!);
     } else {
       throw new Error(
-        `Error: Seed phrase provided in environment variable ${envVar} is invalid.`
+        `Error: Seed phrase provided in environment variable ${envVar} is invalid.`,
       );
     }
   } else if (interactive) {

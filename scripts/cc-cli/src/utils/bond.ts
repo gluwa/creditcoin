@@ -8,7 +8,7 @@ export async function bond(
   amount: BN,
   rewardDestination: "Staked" | "Stash" | "Controller",
   api: ApiPromise,
-  extra = false
+  extra = false,
 ) {
   if (amount.lt(new BN(1).mul(MICROUNITS_PER_CTC))) {
     throw new Error("Amount to bond must be at least 1");
@@ -24,7 +24,7 @@ export async function bond(
     bondTx = api.tx.staking.bond(
       controllerAddress,
       amountInMicroUnits.toString(),
-      rewardDestination
+      rewardDestination,
     );
   }
 
@@ -36,7 +36,7 @@ export async function bond(
 }
 
 export function parseRewardDestination(
-  rewardDestinationRaw: string
+  rewardDestinationRaw: string,
 ): "Staked" | "Stash" | "Controller" {
   // Capitalize first letter and lowercase the rest
   const rewardDestination =
@@ -49,7 +49,7 @@ export function parseRewardDestination(
     rewardDestination !== "Controller"
   ) {
     throw new Error(
-      "Invalid reward destination, must be one of 'Staked', 'Stash', or 'Controller'"
+      "Invalid reward destination, must be one of 'Staked', 'Stash', or 'Controller'",
     );
   } else {
     return rewardDestination;
@@ -57,7 +57,7 @@ export function parseRewardDestination(
 }
 
 export function checkRewardDestination(
-  rewardDestinationRaw: string
+  rewardDestinationRaw: string,
 ): "Staked" | "Stash" | "Controller" {
   // Capitalize first letter and lowercase the rest
   const rewardDestination =
@@ -70,7 +70,7 @@ export function checkRewardDestination(
     rewardDestination !== "Controller"
   ) {
     throw new Error(
-      "Invalid reward destination, must be one of 'Staked', 'Stash', or 'Controller'"
+      "Invalid reward destination, must be one of 'Staked', 'Stash', or 'Controller'",
     );
   } else {
     return rewardDestination;

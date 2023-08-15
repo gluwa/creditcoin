@@ -19,7 +19,7 @@ async function withdrawUnbondedAction(options: OptionValues) {
 
   if (!controllerStatus.stash) {
     console.error(
-      `Could not find stash account associated with the provided controller address: ${controller.address}. Please ensure the address is actually a controller.`
+      `Could not find stash account associated with the provided controller address: ${controller.address}. Please ensure the address is actually a controller.`,
     );
     process.exit(1);
   }
@@ -28,11 +28,11 @@ async function withdrawUnbondedAction(options: OptionValues) {
   requireStatus(
     status,
     "canWithdraw",
-    "Cannot perform action, there are no unlocked funds to withdraw"
+    "Cannot perform action, there are no unlocked funds to withdraw",
   );
 
   const slashingSpans = await api.query.staking.slashingSpans(
-    controller.address
+    controller.address,
   );
   const slashingSpansCount = slashingSpans.isSome
     ? slashingSpans.unwrap().lastNonzeroSlash

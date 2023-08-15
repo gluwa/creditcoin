@@ -11,7 +11,7 @@ export interface StakingPalletValidatorPrefs {
 export async function validate(
   controller: KeyringPair,
   prefs: StakingPalletValidatorPrefs,
-  api: ApiPromise
+  api: ApiPromise,
 ) {
   console.log("Creating validate transaction with params:");
 

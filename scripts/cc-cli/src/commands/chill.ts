@@ -7,7 +7,7 @@ import { getValidatorStatus, requireStatus } from "../utils/validatorStatus";
 export function makeChillCommand() {
   const cmd = new Command("chill");
   cmd.description(
-    "Signal intention to stop validating from a Controller account"
+    "Signal intention to stop validating from a Controller account",
   );
   cmd.action(chillAction);
   return cmd;
