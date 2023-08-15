@@ -530,12 +530,10 @@ pub mod pallet {
 		/// An unsupported blockchain was specified to register_address_v2
 		UnsupportedBlockchain,
 
-		/// A burn GATE transaction with matching parameters has already been registered
-		BurnGATEAlreadyRegistered,
-
 		// The onchain faucet address for the GATE swap mechanism has not been set using the set_burn_gate_faucet_address extrinsic
 		BurnGATEFaucetNotSet,
 
+		// The faucet has insufficient funds to complete this swap, please retry when the faucet has been reloaded
 		BurnGATEInsufficientFaucetBalance,
 	}
 
