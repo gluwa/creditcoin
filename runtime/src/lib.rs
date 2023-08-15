@@ -734,41 +734,6 @@ where
 	}
 }
 
-// Create the runtime by composing the FRAME pallets that were previously configured.
-construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
-	{
-		System: frame_system,
-		Timestamp: pallet_timestamp,
-		PosSwitch: pallet_pos_switch,
-		Babe: pallet_babe,
-		Balances: pallet_balances,
-		Authorship: pallet_authorship,
-		Staking: pallet_staking_substrate,
-		Offences: pallet_offences,
-		Historical: session_historical,
-		Session: pallet_session,
-		Grandpa: pallet_grandpa,
-		ImOnline: pallet_im_online,
-		VoterList: pallet_bags_list::<Instance1>,
-		TransactionPayment: pallet_transaction_payment,
-		Sudo: pallet_sudo,
-		Creditcoin: pallet_creditcoin,
-		Difficulty: pallet_difficulty,
-		Rewards: pallet_rewards,
-		Scheduler: pallet_scheduler,
-		TaskScheduler: pallet_offchain_task_scheduler,
-		Identity: pallet_identity,
-		Utility: pallet_utility,
-		Proxy: pallet_proxy,
-		FastUnstake: pallet_fast_unstake,
-		NominationPools: pallet_nomination_pools,
-	}
-);
-
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
@@ -1187,3 +1152,38 @@ impl pallet_nomination_pools::Config for Runtime {
 	type MaxMetadataLen = ();
 	type MaxUnbonding = MaxUnbonding;
 }
+
+// Create the runtime by composing the FRAME pallets that were previously configured.
+construct_runtime!(
+	pub enum Runtime where
+		Block = Block,
+		NodeBlock = opaque::Block,
+		UncheckedExtrinsic = UncheckedExtrinsic
+	{
+		System: frame_system,
+		Timestamp: pallet_timestamp,
+		PosSwitch: pallet_pos_switch,
+		Babe: pallet_babe,
+		Balances: pallet_balances,
+		Authorship: pallet_authorship,
+		Staking: pallet_staking_substrate,
+		Offences: pallet_offences,
+		Historical: session_historical,
+		Session: pallet_session,
+		Grandpa: pallet_grandpa,
+		ImOnline: pallet_im_online,
+		VoterList: pallet_bags_list::<Instance1>,
+		TransactionPayment: pallet_transaction_payment,
+		Sudo: pallet_sudo,
+		Creditcoin: pallet_creditcoin,
+		Difficulty: pallet_difficulty,
+		Rewards: pallet_rewards,
+		Scheduler: pallet_scheduler,
+		TaskScheduler: pallet_offchain_task_scheduler,
+		Identity: pallet_identity,
+		Utility: pallet_utility,
+		Proxy: pallet_proxy,
+		FastUnstake: pallet_fast_unstake,
+		NominationPools: pallet_nomination_pools,
+	}
+);
