@@ -298,47 +298,10 @@ pub(crate) mod tests {
 	impl PassingCollectCoins {
 		fn validate(self) -> OffchainResult<ExternalAmount> {
 			let PassingCollectCoins { to, receipt, transaction, eth_tip, contract_address } = self;
-			super::validate_burn_GATE(&to, &receipt, &transaction, eth_tip, &contract_address)
+			super::validate_collect_coins(&to, &receipt, &transaction, eth_tip, &contract_address)
 		}
 	}
 
-	struct PassingSwapGATE {
-		to: ExternalAddress,
-		receipt: EthTransactionReceipt,
-		transaction: EthTransaction,
-		eth_tip: U64,
-		contract_address: H160,
-	}
-
-	impl Default for PassingSwapGATE {
-		fn default() -> Self {
-			let base_height = *BLOCK_NUMBER;
-			let GATE_contract = *VESTING_CONTRACT;
-			let to = FROM.hex_to_address();
-			let tx_from = H160::from(<[u8; 20]>::try_from(to.as_slice()).unwrap());
-
-			let mut transaction = EthTransaction::default();
-			transaction.block_number = Some(base_height);
-			transaction.from = Some(tx_from);
-			transaction.to = Some(GATE_contract);
-			transaction.set_input(&INPUT.0);
-
-			Self {
-				to,
-				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
-				transaction,
-				eth_tip: (base_height + ETH_CONFIRMATIONS),
-				contract_address: GATEContract::default().address,
-			}
-		}
-	}
-
-	impl PassingSwapGATE {
-		fn validate(self) -> OffchainResult<ExternalAmount> {
-			let PassingSwapGATE { to, receipt, transaction, eth_tip, contract_address } = self;
-			super::validate_burn_GATE(&to, &receipt, &transaction, eth_tip, &contract_address)
-		}
-	}
 	fn assert_invalid(res: OffchainResult<ExternalAmount>, cause: VerificationFailureCause) {
 		assert_matches!(res, Err(OffchainError::InvalidTask(c)) =>{ assert_eq!(c,cause); });
 	}
@@ -1314,59 +1277,5 @@ impl GATEContract {
 			constant: Some(false),
 			state_mutability: StateMutability::NonPayable,
 		}
-	}
-}
-
-pub fn validate_burn_GATE(
-	to: &ExternalAddress,
-	receipt: &EthTransactionReceipt,
-	transaction: &EthTransaction,
-	eth_tip: U64,
-	contract_address: &H160,
-) -> OffchainResult<ExternalAmount> {
-	ensure!(receipt.is_success(), VerificationFailureCause::TaskFailed);
-
-	let block_number = transaction.block_number.ok_or(VerificationFailureCause::TaskPending)?;
-
-	let diff = (eth_tip)
-		.checked_sub(block_number)
-		.ok_or(VerificationFailureCause::TaskInFuture)?;
-	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
-
-	if let Some(to) = &transaction.to {
-		ensure!(to == contract_address, VerificationFailureCause::IncorrectContract);
-	} else {
-		return Err(VerificationFailureCause::MissingReceiver.into());
-	}
-
-	if let Some(from) = &transaction.from {
-		ensure!(from[..] == to[..], VerificationFailureCause::IncorrectSender)
-	} else {
-		return Err(VerificationFailureCause::MissingSender.into());
-	}
-
-	let transfer_fn = GATEContract::burn_vested_cc_abi();
-	ensure!(!transaction.is_input_empty(), VerificationFailureCause::EmptyInput);
-
-	{
-		let selector = transaction.selector();
-		if selector != transfer_fn.short_signature() {
-			log::error!(
-				"function selector mismatch, expected: {}, got: {}",
-				hex::encode(transfer_fn.short_signature()),
-				hex::encode(selector)
-			);
-			return Err(VerificationFailureCause::AbiMismatch.into());
-		}
-	}
-
-	let inputs = transfer_fn.decode_input(transaction.input()).map_err(|e| {
-		log::error!("failed to decode inputs: {:?}", e);
-		VerificationFailureCause::AbiMismatch
-	})?;
-
-	match inputs.get(0) {
-		Some(Token::Uint(value)) => Ok(ExternalAmount::from(value)),
-		_ => Err(VerificationFailureCause::IncorrectInputType.into()),
 	}
 }
