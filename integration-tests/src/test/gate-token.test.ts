@@ -109,7 +109,7 @@ describe('Test GATE Token', (): void => {
         // Test #3: GATE -> CTC should be swapped in a 2:1 ratio
         expect(swapGATEVerified.amount.toNumber()).toEqual(burnAmount / 2);
 
-        // Test #4: You cannot resubmit previously used burn transactions 
+        // Test #4: You cannot resubmit previously used burn transactions
         await expect(
             requestCollectCoinsV2(
                 gateContract,
@@ -120,5 +120,3 @@ describe('Test GATE Token', (): void => {
         );
     }, 900_000)
 });
-
-
