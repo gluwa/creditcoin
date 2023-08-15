@@ -1,4 +1,3 @@
-import { mnemonicGenerate } from "@polkadot/util-crypto";
 import execa from "execa";
 import { fundAddressesFromSudo } from "./helpers";
 import { parseAmountInternal } from "../../utils/parsing";
