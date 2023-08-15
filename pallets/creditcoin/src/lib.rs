@@ -239,7 +239,7 @@ pub mod pallet {
 	pub type CollectCoinsContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn GATE_Contract)]
+	#[pallet::getter(fn gate_contract)]
 	pub type BurnGATEConract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::storage]
@@ -1512,7 +1512,7 @@ pub mod pallet {
 					evm_address = ext_addr;
 				},
 				TokenContract::GATE(ext_addr, tx_hash) => {
-					deployed_contract = Self::GATE_Contract();
+					deployed_contract = Self::gate_contract();
 					contract_type = ContractType::GATE;
 					tx_id = tx_hash;
 					evm_address = ext_addr;

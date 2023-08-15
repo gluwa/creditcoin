@@ -1301,7 +1301,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
 			ts.account_id = AccountId::new([4; 32]);
@@ -1328,7 +1328,7 @@ fn fund_deal_order_should_error_when_transfer_has_been_processed() {
 
 		// modify transfer in order to cause an error
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
 			ts.is_processed = true;
@@ -2135,7 +2135,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
 			ts.block = Creditcoin::block_number() + 1;
@@ -2173,7 +2173,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			ts.account_id = AccountId::new([44; 32]);
 		});
 
@@ -2209,7 +2209,7 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.is_processed = true;
 		});
@@ -2262,7 +2262,7 @@ fn close_deal_order_should_succeed() {
 
 		// modify transfer to make sure we have transfered enough funds
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 
 			ts.amount = deal_order.terms.amount + 1u64;
 		});
@@ -3265,7 +3265,7 @@ fn set_burn_gate_contract_fails_with_non_root() {
 		let gate_contract = DeployedContract::default();
 
 		assert_noop!(
-			Creditcoin::set_burn_gate_contract(Origin::signed(acct.clone()), gate_contract),
+			Creditcoin::set_burn_gate_contract(Origin::signed(acct), gate_contract),
 			BadOrigin
 		);
 	});
@@ -3278,7 +3278,7 @@ fn set_burn_gate_faucet_address_fails_with_non_root() {
 		let addr: AccountId = AccountId::new([0; 32]);
 
 		assert_noop!(
-			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct.clone()), addr),
+			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct), addr),
 			BadOrigin
 		);
 	});

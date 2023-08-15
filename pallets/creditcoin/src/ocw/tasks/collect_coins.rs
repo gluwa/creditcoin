@@ -241,12 +241,12 @@ pub(crate) mod tests {
 	use assert_matches::assert_matches;
 	use frame_support::dispatch::Dispatchable;
 	use frame_support::{assert_noop, assert_ok, once_cell::sync::Lazy, traits::Currency};
+	use frame_system::Pallet as System;
 	use frame_system::RawOrigin;
-	use frame_system::{Account, Pallet as System};
 	use pallet_offchain_task_scheduler::tasks::TaskScheduler as TaskSchedulerT;
 	use pallet_offchain_task_scheduler::Pallet as TaskSchedulerPallet;
 	use parity_scale_codec::Decode;
-	use sp_runtime::traits::{BadOrigin, IdentifyAccount, Scale};
+	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 	use sp_runtime::{ArithmeticError, TokenError};
 	use std::convert::TryFrom;
 

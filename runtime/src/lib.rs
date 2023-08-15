@@ -1166,13 +1166,6 @@ impl pallet_fast_unstake::Config for Runtime {
 	type MaxErasToCheckPerBlock = MaxErasToCheckPerBlock;
 }
 
-parameter_types! {
-	pub const NomPoolsPalletId: PalletId = PalletId(*b"creditco");
-	pub const MaxPointsToBalance: u8 = 100;
-	pub const MaxUnbonding: u32 = 100;
-	pub const PostUnbondingPoolsWindow: u32 = 10;
-}
-
 impl pallet_nomination_pools::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
@@ -1186,4 +1179,11 @@ impl pallet_nomination_pools::Config for Runtime {
 	type PostUnbondingPoolsWindow = PostUnbondingPoolsWindow;
 	type MaxMetadataLen = ();
 	type MaxUnbonding = MaxUnbonding;
+}
+
+parameter_types! {
+	pub const NomPoolsPalletId: PalletId = PalletId(*b"creditco");
+	pub const MaxPointsToBalance: u8 = 100;
+	pub const MaxUnbonding: u32 = 100;
+	pub const PostUnbondingPoolsWindow: u32 = 10;
 }
