@@ -1,7 +1,7 @@
 import { KeyringPair, creditcoinApi, Keyring, BN, Balance } from 'creditcoin-js';
 import { AccountId, Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
-import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
+import { checkAddress, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 
 import { extractFee, testIf } from '../utils';
 
@@ -34,7 +34,6 @@ describe('Test GATE Token', (): void => {
     let gateFaucet = gateKeyring.addFromUri(mnemonicGenerate(12));
 
     let gateKeyring2 = new Keyring({ type: 'ed25519', ss58Format: 3 });
-    let gateFaucet2 = gateKeyring2.addFromUri(mnemonicGenerate(12));
 
     // the eth wallet that initiates the burn transaction on its own supply of GATE
     const burnerWallet = Wallet.createRandom({ provider: provider });
@@ -80,11 +79,16 @@ describe('Test GATE Token', (): void => {
         const burnTx = await gateToken.burn(burnAmount);
         await burnTx.wait(3);
 
-        const accountId = await signAccountId(api, deployer, sudoSigner.address);
-        const proof = ethSignSignature(accountId);
-        const lenderRegisteredAddress = await registerAddressV2(deployer.address, testingData.blockchain, proof, sudoSigner);
-
-        const gateContract = GATEContract(lenderRegisteredAddress.item.externalAddress, burnTx.hash);
+        // We are using the same deployer address as GCRE so the address may already be registered
+        await tryRegisterAddress(
+            ccApi,
+            deployer.address,
+            testingData.blockchain,
+            signAccountId(api, deployer, sudoSigner.address),
+            sudoSigner,
+            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+        );
+        const gateContract = GATEContract(deployer.address, burnTx.hash);
 
         // Test #1: The extrinsic should erorr when the faucet address has not been set
         await expect(

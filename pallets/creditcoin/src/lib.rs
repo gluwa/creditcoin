@@ -1101,7 +1101,7 @@ pub mod pallet {
 				to: evm_address,
 				tx_id,
 				contract,
-				contract_type: ContractType::GATE,
+				contract_type: ContractType::GCRE, // Default for the old endpoint is the ERC20 CTC wrapper
 			};
 
 			let collect_coins_id = TaskV2::<T>::to_id(&pending);
