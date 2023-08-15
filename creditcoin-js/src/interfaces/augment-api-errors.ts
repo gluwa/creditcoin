@@ -104,10 +104,6 @@ declare module '@polkadot/api-base/types/errors' {
              * The bid order has expired and is no longer valid.
              **/
             BidOrderExpired: AugmentedError<ApiType>;
-            /**
-             * A burn GATE transaction with matching parameters has already been registered
-             **/
-            BurnGATEAlreadyRegistered: AugmentedError<ApiType>;
             BurnGATEFaucetNotSet: AugmentedError<ApiType>;
             BurnGATEInsufficientFaucetBalance: AugmentedError<ApiType>;
             /**
