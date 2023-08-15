@@ -3265,7 +3265,7 @@ fn set_burn_gate_contract_fails_with_non_root() {
 		let gate_contract = DeployedContract::default();
 
 		assert_noop!(
-			Creditcoin::set_burn_gate_contract(Origin::signed(acct.clone()), gate_contract),
+			Creditcoin::set_burn_gate_contract(Origin::signed(acct), gate_contract),
 			BadOrigin
 		);
 	});
@@ -3278,7 +3278,7 @@ fn set_burn_gate_faucet_address_fails_with_non_root() {
 		let addr: AccountId = AccountId::new([0; 32]);
 
 		assert_noop!(
-			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct.clone()), addr),
+			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct), addr),
 			BadOrigin
 		);
 	});
