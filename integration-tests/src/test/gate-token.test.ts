@@ -30,8 +30,8 @@ describe('Test GATE Token', (): void => {
 
     // Holds the reference to the deployed GATE contract
     let gateToken: any;
-    let gateKeyring = new Keyring({ type: 'ed25519', ss58Format: 3 });
-    let gateFaucet = gateKeyring.addFromUri(mnemonicGenerate(12));
+    const gateKeyring = new Keyring({ type: 'ed25519', ss58Format: 3 });
+    const gateFaucet = gateKeyring.addFromUri(mnemonicGenerate(12));
 
     beforeAll(async () => {
         gateToken = await deployGATEToken(deployer);
@@ -40,7 +40,6 @@ describe('Test GATE Token', (): void => {
         if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
             sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
         }
-
     });
 
     afterAll(async () => {
@@ -48,8 +47,10 @@ describe('Test GATE Token', (): void => {
     });
 
     test('End to end', async () => {
-
-        const { api, extrinsics: { requestCollectCoinsV2 } } = ccApi;
+        const {
+            api,
+            extrinsics: { requestCollectCoinsV2 },
+        } = ccApi;
 
         await api.tx.sudo
             .sudo(api.tx.balances.setBalance(gateFaucet.address, 1000, 0))
@@ -60,16 +61,12 @@ describe('Test GATE Token', (): void => {
             address: gateToken.address,
             chain: testingData.blockchain,
         });
-        await api.tx.sudo
-            .sudo(api.tx.creditcoin.setBurnGateContract(contract))
-            .signAndSend(sudoSigner, { nonce: -1 });
+        await api.tx.sudo.sudo(api.tx.creditcoin.setBurnGateContract(contract)).signAndSend(sudoSigner, { nonce: -1 });
 
-
-        const mintTx = await gateToken.mint(deployer.address, 2500)
+        const mintTx = await gateToken.mint(deployer.address, 2500);
         await mintTx.wait(3);
         const balance = await gateToken.balanceOf(deployer.address);
         expect(balance.eq(2500)).toBe(true);
-
 
         const burnTx = await gateToken.burn(burnAmount);
         await burnTx.wait(3);
@@ -86,18 +83,13 @@ describe('Test GATE Token', (): void => {
         const gateContract = GATEContract(deployer.address, burnTx.hash);
 
         // Test #1: The extrinsic should erorr when the faucet address has not been set
-        await expect(
-            requestCollectCoinsV2(
-                gateContract,
-                sudoSigner,
-            ),
-        ).rejects.toThrow(
+        await expect(requestCollectCoinsV2(gateContract, sudoSigner)).rejects.toThrow(
             'creditcoin.BurnGATEFaucetNotSet',
         );
 
         await api.tx.sudo
             .sudo(api.tx.creditcoin.setBurnGateFaucetAddress(gateFaucet.address))
-            .signAndSend(sudoSigner, { nonce: -1 })
+            .signAndSend(sudoSigner, { nonce: -1 });
 
         const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);
         const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
@@ -109,13 +101,8 @@ describe('Test GATE Token', (): void => {
         expect(swapGATEVerified.amount.toNumber()).toEqual(burnAmount / 2);
 
         // Test #4: You cannot resubmit previously used burn transactions
-        await expect(
-            requestCollectCoinsV2(
-                gateContract,
-                sudoSigner,
-            ),
-        ).rejects.toThrow(
+        await expect(requestCollectCoinsV2(gateContract, sudoSigner)).rejects.toThrow(
             'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
         );
-    }, 900_000)
+    }, 900_000);
 });
