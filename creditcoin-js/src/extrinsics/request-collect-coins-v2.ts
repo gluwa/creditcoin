@@ -1,20 +1,13 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import {
-    CollectedCoins,
-    UnverifiedCollectedCoins,
-    CollectedCoinsId,
     ExternalAddress,
-    EventReturnJoinType,
     CollectCoinsContract,
 } from '../model';
-import { u8aConcat, u8aToU8a } from '@polkadot/util';
-import { blake2AsHex } from '@polkadot/util-crypto';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction, processEvents, listenForVerificationOutcome } from './common';
-import { TxCallback, TxFailureCallback, VerificationError } from '..';
-import { createCollectedCoins, createUnverifiedCollectedCoins } from '../transforms';
+import { handleTransaction, } from './common';
+import { TxCallback, TxFailureCallback, } from '..';
 import { PalletCreditcoinCollectCoinsTokenContract } from '@polkadot/types/lookup';
-import { CollectCoinsEvent, CollectCoinsEventKind, createCollectCoinsRegisteredEvent } from './request-collect-coins';
+import { CollectCoinsEvent, createCollectCoinsRegisteredEvent } from './request-collect-coins';
 
 export const createTokenContract = (
     api: ApiPromise,
@@ -23,20 +16,20 @@ export const createTokenContract = (
     const toType = () => {
         switch (contract.kind) {
             case 'GCRE':
-                return { GCRE: [contract.evmAddress, contract.txHash] };
+                return { GCRE: [contract.evmAddress, contract.txHash] }; // eslint-disable-line @typescript-eslint/naming-convention
             case 'GATE':
-                return { GATE: [contract.evmAddress, contract.txHash] };
+                return { GATE: [contract.evmAddress, contract.txHash] }; // eslint-disable-line @typescript-eslint/naming-convention 
         }
     };
 
     return api.createType('PalletCreditcoinCollectCoinsTokenContract', toType());
 };
 
-export const GATEContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => {
+export const GATEContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => { // eslint-disable-line @typescript-eslint/naming-convention
     return { kind: 'GATE', evmAddress, txHash };
 };
 
-export const GCREContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => {
+export const GCREContract = (evmAddress: ExternalAddress, txHash: string): CollectCoinsContract => { // eslint-disable-line @typescript-eslint/naming-convention
     return { kind: 'GCRE', evmAddress, txHash };
 };
 
@@ -47,10 +40,10 @@ export const requestCollectCoinsV2 = async (
     onSuccess: TxCallback,
     onFail: TxFailureCallback,
 ) => {
-    const formatted_contract = createTokenContract(api, contract);
+    const formattedContract = createTokenContract(api, contract);
 
     const unsubscribe: () => void = await api.tx.creditcoin
-        .requestCollectCoinsV2(formatted_contract)
+        .requestCollectCoinsV2(formattedContract)
         .signAndSend(signer, { nonce: -1 }, (result) => handleTransaction(api, unsubscribe, result, onSuccess, onFail));
 };
 
