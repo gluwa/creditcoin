@@ -62,15 +62,11 @@ pub mod pallet {
 		helpers::non_paying_error,
 		types::{ContractType, OwnershipProof},
 	};
-	use ethabi::Contract;
 	use frame_support::{
 		dispatch::{DispatchResult, PostDispatchInfo},
 		fail,
 		pallet_prelude::*,
-		traits::{
-			nonfungibles::InspectEnumerable,
-			tokens::{currency::Currency as CurrencyT, fungible::Mutate, ExistenceRequirement},
-		},
+		traits::tokens::{currency::Currency as CurrencyT, fungible::Mutate, ExistenceRequirement},
 		transactional,
 	};
 	use frame_system::{ensure_signed, offchain::CreateSignedTransaction, pallet_prelude::*};
