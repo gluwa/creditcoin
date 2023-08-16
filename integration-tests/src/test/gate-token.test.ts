@@ -106,5 +106,3 @@ describe('Test GATE Token', (): void => {
         );
     }, 900_000);
 });
-
-
