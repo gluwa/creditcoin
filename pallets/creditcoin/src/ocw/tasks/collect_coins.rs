@@ -645,6 +645,23 @@ pub(crate) mod tests {
 	}
 
 	#[test]
+	fn request_collect_coins_should_fail_when_not_signed() {
+		let ext = ExtBuilder::default();
+		ext.build_offchain_and_execute_with_state(|_, _pool| {
+			let (_, addr, _, _) = generate_address_with_proof("collector");
+
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins(
+					RuntimeOrigin::none(),
+					addr,
+					TX_HASH.hex_to_address(),
+				),
+				BadOrigin
+			);
+		});
+	}
+
+	#[test]
 	fn request_persisted_not_reentrant() {
 		let mut ext = ExtBuilder::default();
 		let acct_pubkey = ext.generate_authority();
