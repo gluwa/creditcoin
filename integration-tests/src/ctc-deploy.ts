@@ -24,12 +24,19 @@ const deployCtcToken = async (deployer: Signer, existingAddress: string | undefi
     return ctcToken;
 };
 
-export const deployGATEToken = async (deployer: Signer) => {
+export const deployGATEToken = async (deployer: Signer, existingAddress: string | undefined) => {
     const factory = new ContractFactory(GATEArtifact.abi, GATEArtifact.bytecode, deployer);
-    const gateToken = await factory.deploy();
-    console.log('Deployed GATE Token to', gateToken.address);
+    let gateToken: any;
 
-    process.env.CREDITCOIN_CTC_GATE_ADDRESS = gateToken.address;
+    if (existingAddress !== undefined) {
+        gateToken = factory.attach(existingAddress);
+        console.log("Using existing contract", gateToken.address)
+    } else {
+        gateToken = await factory.deploy();
+        console.log('Deployed GATE Token to', gateToken.address);
+    }
+
+    process.env.CREDITCOIN_GATE_CONTRACT_ADDRESS = gateToken.address;
 
     return gateToken;
 };
