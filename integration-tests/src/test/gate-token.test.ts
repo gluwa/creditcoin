@@ -1,17 +1,14 @@
-import { KeyringPair, creditcoinApi, Keyring, BN, Balance } from 'creditcoin-js';
-import { AccountId, Blockchain } from 'creditcoin-js/lib/model';
-import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
-import { checkAddress, testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+import { KeyringPair, creditcoinApi, Keyring, } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
+import { CreditcoinApi } from 'creditcoin-js/lib/types';
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 
-import { extractFee, testIf } from '../utils';
 
 import { deployGATEToken } from '../ctc-deploy';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { Signer, Wallet, Contract } from 'ethers';
+import { Wallet } from 'ethers';
 import { mnemonicGenerate } from '@polkadot/util-crypto';
-import { personalSignAccountId, signAccountId } from 'creditcoin-js/lib/utils';
-import { ethSignSignature, personalSignSignature } from 'creditcoin-js/lib/extrinsics/register-address-v2';
-import { requestCollectCoins } from 'creditcoin-js/lib/extrinsics/request-collect-coins';
+import { signAccountId } from 'creditcoin-js/lib/utils';
 import { GATEContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
 
 describe('Test GATE Token', (): void => {
