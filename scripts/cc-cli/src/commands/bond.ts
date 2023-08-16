@@ -42,7 +42,7 @@ async function bondAction(options: OptionValues) {
   const { amount, controller, rewardDestination, extra, interactive } =
     parseOptions(options);
 
-  const stashKeyring = await initStashKeyring(api);
+  const stashKeyring = await initStashKeyring(options);
   const stashAddress = stashKeyring.address;
 
   // Check if stash has enough balance
