@@ -1,39 +1,29 @@
 import execa from "execa";
-import {
-  initECDSAKeyringPairFromPK,
-  initKeyringPair,
-} from "../../utils/account";
-import { cryptoWaitReady, mnemonicGenerate } from "@polkadot/util-crypto";
+import { cryptoWaitReady } from "@polkadot/util-crypto";
+import { randomTestAccount } from "./helpers";
 
 describe("Show address command", () => {
   it.each([
-    ["using a seed phrase", false, mnemonicGenerate(12)],
-    [
-      "using an ecdsa pk",
-      true,
-      "0x657f8717980b9265d6a2114763468705588a7a8046a672b94ce8d427ee16a382",
-    ],
+    ["using a seed phrase", false],
+    ["using an ecdsa pk", true],
   ])(
     "should return the correct address when %s",
-    async (text, ecdsa, secret) => {
+    async (text, ecdsa) => {
       await cryptoWaitReady();
 
-      const keyring = ecdsa
-        ? initECDSAKeyringPairFromPK(secret)
-        : initKeyringPair(secret);
-      const address = keyring.address;
+      const caller = randomTestAccount(ecdsa);
 
       const result = execa.commandSync(
         `creditcoin-cli show-address ${ecdsa ? "--ecdsa" : ""}`,
         {
           env: {
-            CC_SECRET: secret,
+            CC_SECRET: caller.secret,
           },
         }
       );
 
       expect(result.stdout.split("Account address: ")[1]).toEqual(
-        address.toString()
+        caller.address.toString()
       );
     },
     60000
