@@ -1413,9 +1413,9 @@
     ws "^8.8.1"
 
 "@substrate/ss58-registry@^1.38.0":
-  version "1.41.0"
-  resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.41.0.tgz#dd18e132f44b73c3cd31cf0db489c10af70bef36"
-  integrity sha512-TLz5VkEaJRNFzf1Oiix9gqknKer3aKbLfjK9XHBFCIhdxlQpI+S6lZGu3wT4DHAGXPakYfXb8+9ZIOtWLcQ/2Q==
+  version "1.43.0"
+  resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.43.0.tgz#93108e45cb7ef6d82560c153e3692c2aa1c711b3"
+  integrity sha512-USEkXA46P9sqClL7PZv0QFsit4S8Im97wchKG0/H/9q3AT/S76r40UHfCr4Un7eBJPE23f7fU9BZ0ITpP9MCsA==
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.9"
@@ -1525,9 +1525,9 @@
     form-data "^3.0.0"
 
 "@types/node@*":
-  version "20.4.9"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.4.9.tgz#c7164e0f8d3f12dfae336af0b1f7fdec8c6b204f"
-  integrity sha512-8e2HYcg7ohnTUbHk8focoklEQYvemQmu9M/f43DZVx43kHn0tE3BY/6gSDxS7k0SprtS0NHvj+L80cGLnoOUcQ==
+  version "20.5.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.5.0.tgz#7fc8636d5f1aaa3b21e6245e97d56b7f56702313"
+  integrity sha512-Mgq7eCtoTjT89FqNoTzzXg2XvCi5VMhRV6+I2aYanc6kQCBImeNaAYRs/DyoVqk1YEUJK5gN9VO7HRIdz4Wo3Q==
 
 "@types/prettier@^2.1.5":
   version "2.7.3"
@@ -2074,7 +2074,7 @@ create-require@^1.1.0:
 
 "creditcoin-js@file:../../creditcoin-js/creditcoin-js-v0.9.5.tgz":
   version "0.9.5"
-  resolved "file:../../creditcoin-js/creditcoin-js-v0.9.5.tgz#238a001404289b42e40244024e6ad27549460579"
+  resolved "file:../../creditcoin-js/creditcoin-js-v0.9.5.tgz#e8f074ba0b072811ed04e4e0f6a1bb84839cd810"
   dependencies:
     "@polkadot/api" "9.14.2"
     ethers "^5.7.1"

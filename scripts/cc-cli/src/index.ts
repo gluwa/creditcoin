@@ -17,7 +17,7 @@ import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
 import { makeUnbondCommand } from "./commands/unbond";
 import { makeStatusCommand } from "./commands/status";
 import { makeWithdrawUnbondedCommand } from "./commands/withdrawUnbonded";
-
+import { makeMapControllerCommand } from "./commands/mapController";
 const program = new Command();
 
 program.description("Creditcoin Staking Tool");
@@ -40,7 +40,8 @@ program
   .addCommand(makeUnbondCommand())
   .addCommand(makeValidateCommand())
   .addCommand(makeWithdrawUnbondedCommand())
-  .addCommand(makeWizardCommand());
+  .addCommand(makeWizardCommand())
+  .addCommand(makeMapControllerCommand());
 
 program.commands.forEach((cmd) => {
   cmd.option(
