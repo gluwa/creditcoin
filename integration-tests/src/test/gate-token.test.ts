@@ -10,6 +10,7 @@ import { Wallet } from 'ethers';
 import { mnemonicGenerate } from '@polkadot/util-crypto';
 import { signAccountId } from 'creditcoin-js/lib/utils';
 import { GATEContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
+import { testIf } from '../utils';
 
 describe('Test GATE Token', (): void => {
     let ccApi: CreditcoinApi;
@@ -43,7 +44,7 @@ describe('Test GATE Token', (): void => {
         await ccApi.api.disconnect();
     });
 
-    test((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'End to end', async () => {
+    testIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'End to end', async () => {
         const {
             api,
             extrinsics: { requestCollectCoinsV2 },
