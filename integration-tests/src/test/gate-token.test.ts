@@ -34,7 +34,7 @@ describe('Test GATE Token', (): void => {
     const gateFaucet = gateKeyring.addFromUri(mnemonicGenerate(12));
 
     beforeAll(async () => {
-        gateToken = await deployGATEToken(deployer);
+        gateToken = await deployGATEToken(deployer, undefined);
 
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
@@ -78,7 +78,7 @@ describe('Test GATE Token', (): void => {
             testingData.blockchain,
             signAccountId(api, deployer, sudoSigner.address),
             sudoSigner,
-            true,
+            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
         );
         const gateContract = GATEContract(deployer.address, burnTx.hash);
 
