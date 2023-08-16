@@ -46,7 +46,7 @@ describe('Test GATE Token', (): void => {
         await ccApi.api.disconnect();
     });
 
-    test('End to end', async () => {
+    test((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'End to end', async () => {
         const {
             api,
             extrinsics: { requestCollectCoinsV2 },
