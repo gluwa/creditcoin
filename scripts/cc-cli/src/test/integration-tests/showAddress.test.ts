@@ -1,13 +1,9 @@
 import execa from "execa";
-import { fundAddressesFromSudo } from "./helpers";
-import { parseAmountInternal } from "../../utils/parsing";
-import { signSendAndWatch } from "../../utils/tx";
 import {
   initECDSAKeyringPairFromPK,
   initKeyringPair,
 } from "../../utils/account";
-import { newApi } from "../../api";
-import { mnemonicGenerate } from "@polkadot/util-crypto";
+import { cryptoWaitReady, mnemonicGenerate } from "@polkadot/util-crypto";
 
 describe("Show address command", () => {
   it.each([
@@ -20,7 +16,7 @@ describe("Show address command", () => {
   ])(
     "should return the correct address when %s",
     async (text, ecdsa, secret) => {
-      const { api } = await newApi();
+      await cryptoWaitReady();
 
       const keyring = ecdsa
         ? initECDSAKeyringPairFromPK(secret)
@@ -33,13 +29,13 @@ describe("Show address command", () => {
           env: {
             CC_SECRET: secret,
           },
-        },
+        }
       );
 
       expect(result.stdout.split("Account address: ")[1]).toEqual(
-        address.toString(),
+        address.toString()
       );
     },
-    60000,
+    60000
   );
 });
