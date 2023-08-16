@@ -30,7 +30,7 @@ export const deployGATEToken = async (deployer: Signer, existingAddress: string 
 
     if (existingAddress !== undefined) {
         gateToken = factory.attach(existingAddress);
-        console.log("Using existing contract", gateToken.address)
+        console.log('Using existing contract', gateToken.address);
     } else {
         gateToken = await factory.deploy();
         console.log('Deployed GATE Token to', gateToken.address);
