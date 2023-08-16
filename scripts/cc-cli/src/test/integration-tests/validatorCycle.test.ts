@@ -47,20 +47,20 @@ describe("integration test: validator manual setup", () => {
       execa
         .commandSync(`creditcoin-cli show-address`, {
           env: {
-            CC_SEED: stashSeed,
+            CC_SECRET: stashSeed,
           },
         })
-        .stdout.split("Account address: ")[1],
+        .stdout.split("Account address: ")[1]
     );
 
     const controllerAddress = parseAddressInternal(
       execa
         .commandSync(`creditcoin-cli show-address`, {
           env: {
-            CC_SEED: controllerSeed,
+            CC_SECRET: controllerSeed,
           },
         })
-        .stdout.split("Account address: ")[1],
+        .stdout.split("Account address: ")[1]
     );
 
     // Funding the stash account should make its balance equal to the amount funded
@@ -79,14 +79,14 @@ describe("integration test: validator manual setup", () => {
       `creditcoin-cli send --amount ${sendAmount} --to ${controllerAddress} --url ${BOB_NODE_URL}`,
       {
         env: {
-          CC_SEED: stashSeed,
+          CC_SECRET: stashSeed,
         },
-      },
+      }
     );
     const controllerBalance = (await getBalance(controllerAddress, aliceApi))
       .transferable;
     expect(controllerBalance.toString()).toBe(
-      parseAmountInternal(sendAmount).toString(),
+      parseAmountInternal(sendAmount).toString()
     );
 
     // Bonding 1k ctc from stash and setting the controller should
@@ -98,9 +98,9 @@ describe("integration test: validator manual setup", () => {
       `creditcoin-cli bond --controller ${controllerAddress} --amount ${bondAmount} --url ${BOB_NODE_URL}`,
       {
         env: {
-          CC_STASH_SEED: stashSeed,
+          CC_STASH_SECRET: stashSeed,
         },
-      },
+      }
     );
     // wait 5 seconds for nodes to sync
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -109,21 +109,21 @@ describe("integration test: validator manual setup", () => {
 
     const controllerStatus = await getValidatorStatus(
       controllerAddress,
-      aliceApi,
+      aliceApi
     );
     expect(controllerStatus.stash).toBe(stashAddress);
 
     const stashBondedBalance = (await getBalance(stashAddress, aliceApi))
       .bonded;
     expect(stashBondedBalance.toString()).toBe(
-      parseAmountInternal(bondAmount).toString(),
+      parseAmountInternal(bondAmount).toString()
     );
 
     // Rotating session keys for the node should return a valid hex string
     const newKeys = parseHexStringInternal(
       execa
         .commandSync(`creditcoin-cli rotate-keys --url ${BOB_NODE_URL}`)
-        .stdout.split("New keys: ")[1],
+        .stdout.split("New keys: ")[1]
     );
 
     // Setting session keys for the controller should
@@ -133,14 +133,14 @@ describe("integration test: validator manual setup", () => {
       `creditcoin-cli set-keys --keys ${newKeys} --url ${BOB_NODE_URL}`,
       {
         env: {
-          CC_CONTROLLER_SEED: controllerSeed,
+          CC_CONTROLLER_SECRET: controllerSeed,
         },
-      },
+      }
     );
     // wait 5 seconds for nodes to sync
     await new Promise((resolve) => setTimeout(resolve, 5000));
     const validatorSessionKeys = await aliceApi.query.session.nextKeys(
-      stashAddress,
+      stashAddress
     );
     expect(validatorSessionKeys.toHex()).toBe(newKeys);
     const nodeHasKeys = (await bobApi.rpc.author.hasSessionKeys(newKeys))
@@ -152,14 +152,14 @@ describe("integration test: validator manual setup", () => {
       `creditcoin-cli validate --commission 1 --url ${BOB_NODE_URL}`,
       {
         env: {
-          CC_CONTROLLER_SEED: controllerSeed,
+          CC_CONTROLLER_SECRET: controllerSeed,
         },
-      },
+      }
     );
 
     const stashStatusAfterValidating = await getValidatorStatus(
       stashAddress,
-      bobApi,
+      bobApi
     );
     expect(stashStatusAfterValidating.waiting).toBe(true);
 
@@ -167,12 +167,12 @@ describe("integration test: validator manual setup", () => {
     // the validator should become elected & active.
     const increaseValidatorCountTx = aliceApi.tx.staking.setValidatorCount(2);
     const increaseValidatorCountSudoTx = aliceApi.tx.sudo.sudo(
-      increaseValidatorCountTx,
+      increaseValidatorCountTx
     );
     await signSendAndWatch(
       increaseValidatorCountSudoTx,
       aliceApi,
-      initKeyringPair("//Alice"),
+      initKeyringPair("//Alice")
     );
     const validatorCount = (
       await aliceApi.query.staking.validatorCount()
@@ -198,9 +198,9 @@ describe("integration test: validator manual setup", () => {
       `creditcoin-cli distribute-rewards --url ${BOB_NODE_URL} --validator-id ${stashAddress} --era ${startingEra}`,
       {
         env: {
-          CC_SEED: stashSeed,
+          CC_SECRET: stashSeed,
         },
-      },
+      }
     );
 
     // wait 5 seconds for nodes to sync
@@ -208,21 +208,21 @@ describe("integration test: validator manual setup", () => {
     const balanceAfterRewards = await getBalance(stashAddress, aliceApi);
     console.log(balanceAfterRewards.bonded.toString());
     const balanceIncreased = balanceAfterRewards.bonded.gt(
-      balanceBeforeRewards.bonded,
+      balanceBeforeRewards.bonded
     );
     expect(balanceIncreased).toBe(true);
 
     // After executing the chill commmand, the validator should no longer be active nor waiting
     execa.commandSync(`creditcoin-cli chill --url ${BOB_NODE_URL}`, {
       env: {
-        CC_CONTROLLER_SEED: controllerSeed,
+        CC_CONTROLLER_SECRET: controllerSeed,
       },
     });
     // wait 5 seconds for nodes to sync
     await waitEras(2, aliceApi);
     const stashStatusAfterChill = await getValidatorStatus(
       stashAddress,
-      bobApi,
+      bobApi
     );
     expect(stashStatusAfterChill.active).toBe(false);
     expect(stashStatusAfterChill.waiting).toBe(false);
@@ -233,9 +233,9 @@ describe("integration test: validator manual setup", () => {
       `creditcoin-cli unbond --url ${BOB_NODE_URL} -a 100000`,
       {
         env: {
-          CC_CONTROLLER_SEED: controllerSeed,
+          CC_CONTROLLER_SECRET: controllerSeed,
         },
-      },
+      }
     );
     // wait 5 seconds for nodes to sync
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -244,7 +244,7 @@ describe("integration test: validator manual setup", () => {
     printBalance(balanceAfterRewards);
     printBalance(balanceAfterUnbonding);
     const isUnbondingAll = balanceAfterUnbonding.unbonding.eq(
-      balanceAfterRewards.bonded,
+      balanceAfterRewards.bonded
     );
     expect(isUnbonding).toBe(true);
     expect(isUnbondingAll).toBe(true);
@@ -259,9 +259,9 @@ describe("integration test: validator manual setup", () => {
       `creditcoin-cli withdraw-unbonded --url ${BOB_NODE_URL}`,
       {
         env: {
-          CC_CONTROLLER_SEED: controllerSeed,
+          CC_CONTROLLER_SECRET: controllerSeed,
         },
-      },
+      }
     );
 
     // wait 5 seconds for nodes to sync
