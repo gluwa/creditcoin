@@ -61,7 +61,7 @@ describe('CollectCoins', (): void => {
                 blockchain,
                 signAccountId(deployerWallet, collector.address),
                 collector,
-                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+                true,
             );
         }, 300_000);
 
