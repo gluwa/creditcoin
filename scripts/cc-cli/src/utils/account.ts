@@ -99,7 +99,7 @@ export async function initKeyringFromEnvOrPrompt(
   throw new Error(`Error: Could not retrieve ${inputName}`);
 }
 
-function validateECDSAKey(pk: string): boolean {
+export function validateECDSAKey(pk: string): boolean {
   const keyring = initECDSAKeyringPairFromPK(pk);
   const msg = "";
   const sig = keyring.sign(msg);
