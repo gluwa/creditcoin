@@ -28,7 +28,7 @@ describe("Send command", () => {
 
       const fundTx = await fundAddressesFromSudo(
         [address],
-        parseAmountInternal("10000")
+        parseAmountInternal("10000"),
       );
       await signSendAndWatch(fundTx, api, initKeyringPair("//Alice"));
 
@@ -40,11 +40,11 @@ describe("Send command", () => {
           env: {
             CC_SECRET: secret,
           },
-        }
+        },
       );
 
       expect(result.stdout).toContain("Transaction included");
     },
-    60000
+    60000,
   );
 });

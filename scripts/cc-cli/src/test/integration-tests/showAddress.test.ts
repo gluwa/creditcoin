@@ -33,13 +33,13 @@ describe("Show address command", () => {
           env: {
             CC_SECRET: secret,
           },
-        }
+        },
       );
 
       expect(result.stdout.split("Account address: ")[1]).toEqual(
-        address.toString()
+        address.toString(),
       );
     },
-    60000
+    60000,
   );
 });
