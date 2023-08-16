@@ -1,33 +1,28 @@
 import { newApi } from "../../api";
 import {
-  initECDSAKeyringPairFromPK,
   initKeyringPair,
 } from "../../utils/account";
 import { parseAmountInternal } from "../../utils/parsing";
 import { signSendAndWatch } from "../../utils/tx";
-import { fundAddressesFromSudo } from "./helpers";
-import { mnemonicGenerate } from "@polkadot/util-crypto";
+import { fundAddressesFromSudo, randomTestAccount } from "./helpers";
 import execa from "execa";
 
 describe("Send command", () => {
   it.each([
-    ["using a seed phrase", false, mnemonicGenerate(12)],
+    ["using a seed phrase", false],
     [
       "using an ecdsa pk",
       true,
-      "0x657f8717980b9265d6a2114763468705588a7a8046a672b94ce8d427ee16a382",
     ],
   ])(
     "should be able to send CTC when %s",
-    async (text, ecdsa, secret) => {
+    async (text, ecdsa) => {
       const { api } = await newApi();
-      const keyring = ecdsa
-        ? initECDSAKeyringPairFromPK(secret)
-        : initKeyringPair(secret);
-      const address = keyring.address;
+
+      const caller = randomTestAccount(ecdsa);
 
       const fundTx = await fundAddressesFromSudo(
-        [address],
+        [caller.address],
         parseAmountInternal("10000"),
       );
       await signSendAndWatch(fundTx, api, initKeyringPair("//Alice"));
@@ -38,7 +33,7 @@ describe("Send command", () => {
         }`,
         {
           env: {
-            CC_SECRET: secret,
+            CC_SECRET: caller.secret,
           },
         },
       );
