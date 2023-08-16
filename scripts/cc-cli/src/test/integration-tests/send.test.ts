@@ -1,7 +1,5 @@
 import { newApi } from "../../api";
-import {
-  initKeyringPair,
-} from "../../utils/account";
+import { initKeyringPair } from "../../utils/account";
 import { parseAmountInternal } from "../../utils/parsing";
 import { signSendAndWatch } from "../../utils/tx";
 import { fundAddressesFromSudo, randomTestAccount } from "./helpers";
@@ -10,10 +8,7 @@ import execa from "execa";
 describe("Send command", () => {
   it.each([
     ["using a seed phrase", false],
-    [
-      "using an ecdsa pk",
-      true,
-    ],
+    ["using an ecdsa pk", true],
   ])(
     "should be able to send CTC when %s",
     async (text, ecdsa) => {
