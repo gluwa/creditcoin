@@ -64,7 +64,7 @@ export async function initKeyringFromEnvOrPrompt(
   const interactive = options.input;
   const ecdsa = options.ecdsa;
   const inputName = ecdsa ? "private key" : "seed phrase";
-  const validateInput = ecdsa ? () => true : mnemonicValidate;
+  const validateInput = ecdsa ? validateECDSAKey : mnemonicValidate;
   const generateKeyring = ecdsa ? initECDSAKeyringPairFromPK : initKeyringPair;
 
   if (!interactive && !process.env[envVar]) {
@@ -97,4 +97,11 @@ export async function initKeyringFromEnvOrPrompt(
     }
   }
   throw new Error(`Error: Could not retrieve ${inputName}`);
+}
+
+function validateECDSAKey(pk: string): boolean {
+  const keyring = initECDSAKeyringPairFromPK(pk);
+  const msg = "";
+  const sig = keyring.sign(msg);
+  return keyring.verify(msg, sig, keyring.publicKey);
 }
