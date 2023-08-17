@@ -24,7 +24,7 @@ describe("integration test: validator manual setup", () => {
     ["using a seed phrase", false],
     ["using an ecdsa key", true],
   ])(
-    "full validator cycle using manual setup",
+    "full validator cycle %s",
     async (text, ecdsa) => {
       // Bob's node is used for checking its configuration as a validator
       // and for sending extrinsics using the CLI
