@@ -9,8 +9,8 @@
   "scripts": {
     "test": "yarn test:unit",
     "test:unit": "jest --runInBand --coverage --collectCoverageFrom=src/**/*.ts src/test/unit-tests",
-    "test:integration": "jest --runInBand --coverage --collectCoverageFrom=src/**/*.ts --forceExit src/test/integration-tests",
-    "lint": "eslint -c .eslintrc.js --ext .ts ./src",
+    "test:integration": "jest --silent --runInBand --coverage --collectCoverageFrom=src/**/*.ts --forceExit src/test/integration-tests",
+    "lint": "eslint -c .eslintrc.js --max-warnings 0 --ext .ts ./src",
     "format": "prettier --write \"src/**/*.ts\"",
     "build:types": "yarn generate:defs && yarn generate:meta",
     "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package sample-polkadotjs-typegen/interfaces --input ./src/interfaces --endpoint ./edgeware.json",
