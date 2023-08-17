@@ -18,7 +18,6 @@ import {
   randomTestAccount,
   waitEras,
 } from "./helpers";
-import * as secp from "@noble/secp256k1";
 
 describe("integration test: validator manual setup", () => {
   it.each([
