@@ -74,8 +74,9 @@ export async function initKeyringFromEnvOrPrompt(
   }
 
   if (typeof process.env[envVar] === "string") {
-    if (validateInput(process.env[envVar]!)) {
-      return generateKeyring(process.env[envVar]!);
+    const input = getStringFromEnvVar(process.env[envVar]);
+    if (validateInput(input)) {
+      return generateKeyring(input);
     } else {
       throw new Error(
         `Error: Seed phrase provided in environment variable ${envVar} is invalid.`,
@@ -104,4 +105,15 @@ export function validateECDSAKey(pk: string): boolean {
   const msg = "";
   const sig = keyring.sign(msg);
   return keyring.verify(msg, sig, keyring.publicKey);
+}
+
+function getStringFromEnvVar(envVar: string | undefined): string {
+  switch (typeof envVar) {
+    case "string":
+      return envVar;
+    case "undefined":
+      throw new Error(
+        "Error: Unexpected type; could not retrieve seed phrase or PK from environment variable.",
+      );
+  }
 }
