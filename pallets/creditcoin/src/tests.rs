@@ -14,7 +14,7 @@ use crate::{
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, BoundedVec};
+use frame_support::{assert_noop, assert_ok, pallet_prelude::OptionQuery, BoundedVec};
 use frame_system::RawOrigin;
 use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
@@ -3275,11 +3275,43 @@ fn set_burn_gate_contract_fails_with_non_root() {
 fn set_burn_gate_faucet_address_fails_with_non_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: AccountId = AccountId::new([0; 32]);
-		let addr: AccountId = AccountId::new([0; 32]);
 
 		assert_noop!(
-			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct), addr),
+			Creditcoin::set_burn_gate_faucet_address(Origin::signed(acct.clone()), acct),
 			BadOrigin
 		);
+	});
+}
+
+#[test]
+fn set_burn_gate_contract_passes_and_storage_is_updated() {
+	ExtBuilder::default().build_and_execute(|| {
+		let fake_address =
+			sp_core::H160([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+
+		let gate_contract =
+			DeployedContract { address: fake_address, chain: Blockchain::Luniverse };
+
+		assert_ok!(Creditcoin::set_burn_gate_contract(RawOrigin::Root.into(), gate_contract));
+
+		let stored_contract = Creditcoin::gate_contract();
+
+		assert_eq!(stored_contract.address, fake_address);
+		assert_eq!(stored_contract.chain, Blockchain::Luniverse);
+	});
+}
+
+#[test]
+fn set_burn_gate_faucet_address_passes_and_storage_is_updated() {
+	ExtBuilder::default().build_and_execute(|| {
+		let addr: AccountId = AccountId::new([0; 32]);
+
+		assert!(Creditcoin::burn_gate_faucet_address().is_none());
+		assert_ok!(Creditcoin::set_burn_gate_faucet_address(RawOrigin::Root.into(), addr.clone()));
+
+		let faucet_addr: Option<AccountId32> = Creditcoin::burn_gate_faucet_address();
+
+		assert!(faucet_addr.is_some());
+		assert_eq!(faucet_addr.unwrap(), addr)
 	});
 }
