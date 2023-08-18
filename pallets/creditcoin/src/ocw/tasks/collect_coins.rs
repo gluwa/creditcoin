@@ -1178,7 +1178,7 @@ pub(crate) mod tests {
 	}
 
 	#[test]
-	fn collect_coins_gate_token_persist_is_submitted_and_amount_is_2_to_1() {
+	fn collect_coins_v2_gate_token_persist_is_submitted_and_amount_is_2_to_1() {
 		let mut ext = ExtBuilder::default();
 		ext.generate_authority();
 		let acct_pubkey = ext.generate_authority();
