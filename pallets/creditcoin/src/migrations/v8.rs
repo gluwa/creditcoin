@@ -1,14 +1,21 @@
 use super::Migrate;
 use super::{vec, Vec};
+use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 
-use crate::mock::ExtBuilder;
-use crate::types::CollectedCoinsStruct;
+use crate::mock::{Balance, ExtBuilder};
+use crate::types::{CollectedCoinsStruct, DeployedContract};
 
-use crate::{AddressId, Config};
-use crate::{CollectedCoinsId, ExternalTxId};
+use crate::{
+	loan_terms::{Decimals, Duration},
+	AddressId, Blockchain, Config, ExternalAmount, OfferId, RatePerPeriod, TransferId,
+};
+use crate::{CollectedCoins, CollectedCoinsId, ExternalTxId};
 use frame_support::weights::Weight;
 use frame_support::{pallet_prelude::*, traits::Get};
+use frame_support::{storage_alias, Identity, Twox64Concat};
+use frame_system::Pallet;
 use parity_scale_codec::{Decode, Encode};
+use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
 
 #[derive(Clone, Encode, Decode)]
 pub struct OldCollectedCoinsStruct<Hash, Balance> {
