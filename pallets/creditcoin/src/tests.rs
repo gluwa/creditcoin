@@ -2936,10 +2936,16 @@ fn exercise_weightinfo_functions() {
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
 	assert!(result.ref_time() > 0);
 
+	let result = super::weights::WeightInfo::<Test>::register_address_v2();
+	assert!(result.ref_time() > 0);
+
 	let result = super::weights::WeightInfo::<Test>::set_gate_contract();
 	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::set_gate_faucet();
+	assert!(result.ref_time() > 0);
+
+	let result = super::weights::WeightInfo::<Test>::request_collect_coins_v2();
 	assert!(result.ref_time() > 0);
 }
 
