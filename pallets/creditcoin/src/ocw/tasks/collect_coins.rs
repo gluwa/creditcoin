@@ -237,7 +237,7 @@ pub(crate) mod tests {
 	};
 	use crate::tests::generate_address_with_proof;
 	use crate::types::{AddressId, CollectedCoinsId, CollectedCoinsStruct};
-	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress};
+	use crate::{ocw::rpc::JsonRpcResponse, ExternalAddress, ExternalTxId, TokenContract};
 	use crate::{Pallet as Creditcoin, Task};
 	use alloc::sync::Arc;
 	use assert_matches::assert_matches;
@@ -1254,6 +1254,39 @@ pub(crate) mod tests {
 				let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
 				assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
 			});
+		});
+	}
+
+	#[test]
+	fn request_collect_coins_v2_should_error_when_not_signed() {
+		ExtBuilder::default().build_and_execute(|| {
+			System::<Test>::set_block_number(1);
+
+			let external_addr = ExternalAddress::default();
+			let tx_id = ExternalTxId::default();
+			let contract = TokenContract::GATE(external_addr, tx_id);
+
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins_v2(RuntimeOrigin::none(), contract),
+				BadOrigin
+			);
+		});
+	}
+
+	#[test]
+	fn request_collect_coins_v2_should_error_when_faucet_not_set() {
+		ExtBuilder::default().build_and_execute(|| {
+			System::<Test>::set_block_number(1);
+
+			let who = AccountId::new([0; 32]);
+			let external_addr = ExternalAddress::default();
+			let tx_id = ExternalTxId::default();
+			let contract = TokenContract::GATE(external_addr, tx_id);
+
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins_v2(RuntimeOrigin::signed(who), contract),
+				crate::Error::<Test>::BurnGATEFaucetNotSet
+			);
 		});
 	}
 }
