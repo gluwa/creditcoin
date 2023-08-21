@@ -2,20 +2,13 @@ use super::Migrate;
 use super::{vec, Vec};
 use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 
-use crate::mock::{Balance, ExtBuilder};
-use crate::types::{CollectedCoinsStruct, DeployedContract};
+use crate::types::CollectedCoinsStruct;
 
-use crate::{
-	loan_terms::{Decimals, Duration},
-	AddressId, Blockchain, Config, ExternalAmount, OfferId, RatePerPeriod, TransferId,
-};
-use crate::{CollectedCoins, CollectedCoinsId, ExternalTxId};
+use crate::{AddressId, Config};
+use crate::{CollectedCoinsId, ExternalTxId};
 use frame_support::weights::Weight;
 use frame_support::{pallet_prelude::*, traits::Get};
-use frame_support::{storage_alias, Identity, Twox64Concat};
-use frame_system::Pallet;
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime::traits::{Saturating, UniqueSaturatedInto};
 
 #[derive(Clone, Encode, Decode)]
 pub struct OldCollectedCoinsStruct<Hash, Balance> {
@@ -69,7 +62,7 @@ impl<T: Config> Migrate for Migration<T> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::mock::{self, Test};
+	use crate::mock::{self, ExtBuilder, Test};
 
 	#[frame_support::storage_alias]
 	type CollectedCoins<T: crate::Config> = StorageMap<
@@ -89,19 +82,21 @@ mod tests {
 		ExtBuilder::default().build_and_execute(|| {
 			let tx_id = BoundedVec::default();
 
-			let storage_id =
-				crate::CollectedCoinsId::new::<crate::mock::Test>(&Blockchain::Bitcoin, &tx_id);
+			let storage_id = crate::CollectedCoinsId::new::<crate::mock::Test>(
+				&crate::Blockchain::Ethereum,
+				&tx_id,
+			);
 
 			let address: [u8; 20] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 
-			let to = AddressId::new::<crate::mock::Test>(&Blockchain::Ethereum, &address);
+			let to = AddressId::new::<crate::mock::Test>(&crate::Blockchain::Ethereum, &address);
 			let old = OldCollectedCoinsStruct { to, amount: 100, tx_id };
 
 			OldCollectedCoinsStorage::insert(&storage_id, &old);
 
 			super::Migration::<Test>::new().migrate();
 
-			let new = super::CollectedCoins::<Test>::try_get(&storage_id).unwrap();
+			let new = crate::CollectedCoins::<Test>::try_get(&storage_id).unwrap();
 
 			assert_eq!(old.to, new.to);
 			assert_eq!(old.amount, new.amount);
