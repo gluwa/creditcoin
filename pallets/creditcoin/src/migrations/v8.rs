@@ -32,7 +32,7 @@ impl<T: Config> Migrate for Migration<T> {
 	fn post_upgrade(&self, _blob: Vec<u8>) {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
-			9,
+			8,
 			"expected storage version to be 1 after migrations complete"
 		);
 	}
