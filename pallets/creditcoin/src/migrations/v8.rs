@@ -1,6 +1,5 @@
 use super::Migrate;
 use super::{vec, Vec};
-use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
 
 use crate::types::CollectedCoinsStruct;
 
@@ -43,7 +42,7 @@ impl<T: Config> Migrate for Migration<T> {
 		let weight_each = T::DbWeight::get().reads_writes(1, 1);
 
 		crate::CollectedCoins::<T>::translate::<OldCollectedCoinsStruct<T::Hash, T::Balance>, _>(
-			|k: CollectedCoinsId<T::Hash>, y: OldCollectedCoinsStruct<T::Hash, T::Balance>| {
+			|_k: CollectedCoinsId<T::Hash>, y: OldCollectedCoinsStruct<T::Hash, T::Balance>| {
 				weight = weight.saturating_add(weight_each);
 
 				Some(CollectedCoinsStruct {
