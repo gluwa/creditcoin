@@ -461,6 +461,6 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	}
 
 	fn request_collect_coins_v2() -> Weight {
-		Weight::from_parts(0,0)
+		Weight::from_parts(1,1)
 	}
 }
