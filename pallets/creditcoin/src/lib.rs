@@ -52,7 +52,7 @@ pub(crate) use types::test;
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
-pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
 
 #[frame_support::pallet]
 pub mod pallet {
