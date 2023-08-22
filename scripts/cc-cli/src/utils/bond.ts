@@ -1,10 +1,9 @@
-import { ApiPromise, BN } from "creditcoin-js";
-import { initKeyringPair } from "./account";
+import { ApiPromise, BN, KeyringPair } from "creditcoin-js";
 import { MICROUNITS_PER_CTC } from "./balance";
 import { requireEnoughFundsToSend, signSendAndWatch } from "./tx";
 
 export async function bond(
-  stashSeed: string,
+  stashKeyring: KeyringPair,
   controllerAddress: string,
   amount: BN,
   rewardDestination: "Staked" | "Stash" | "Controller",
@@ -28,8 +27,6 @@ export async function bond(
       rewardDestination,
     );
   }
-
-  const stashKeyring = initKeyringPair(stashSeed);
 
   await requireEnoughFundsToSend(bondTx, stashKeyring.address, api, amount);
 

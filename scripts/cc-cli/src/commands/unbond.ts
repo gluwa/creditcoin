@@ -1,9 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import {
-  getControllerSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
+import { initControllerKeyring } from "../utils/account";
 import { getBalance } from "../utils/balance";
 import { ApiPromise, BN } from "creditcoin-js";
 import { promptContinue, setInteractivity } from "../utils/interactive";
@@ -29,9 +26,7 @@ async function unbondAction(options: OptionValues) {
   );
 
   // Build account
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
-  const controller = initKeyringPair(controllerSeed);
-
+  const controller = await initControllerKeyring(options);
   const controllerStatus = await getValidatorStatus(controller.address, api);
   if (!controllerStatus.stash) {
     console.error(

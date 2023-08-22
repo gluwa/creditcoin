@@ -1,6 +1,5 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getStashSeedFromEnvOrPrompt, initKeyringPair } from "../utils/account";
 import { bond, checkRewardDestination } from "../utils/bond";
 import { promptContinue, setInteractivity } from "../utils/interactive";
 import {
@@ -18,6 +17,7 @@ import {
   parseChoiceOrExit,
   requiredInput,
 } from "../utils/parsing";
+import { initStashKeyring } from "../utils/account";
 
 export function makeBondCommand() {
   const cmd = new Command("bond");
@@ -42,8 +42,7 @@ async function bondAction(options: OptionValues) {
   const { amount, controller, rewardDestination, extra, interactive } =
     parseOptions(options);
 
-  const stashSeed = await getStashSeedFromEnvOrPrompt(interactive);
-  const stashKeyring = initKeyringPair(stashSeed);
+  const stashKeyring = await initStashKeyring(options);
   const stashAddress = stashKeyring.address;
 
   // Check if stash has enough balance
@@ -60,7 +59,7 @@ async function bondAction(options: OptionValues) {
   await promptContinue(interactive);
 
   const bondTxResult = await bond(
-    stashSeed,
+    stashKeyring,
     controller,
     amount,
     rewardDestination,

@@ -1,9 +1,6 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import {
-  getCallerSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
+import { initCallerKeyring } from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import {
   parseAddressOrExit,
@@ -11,7 +8,6 @@ import {
   requiredInput,
 } from "../utils/parsing";
 import { checkEraIsInHistory } from "../utils/era";
-import { setInteractivity } from "../utils/interactive";
 
 export function makeDistributeRewardsCommand() {
   const cmd = new Command("distribute-rewards");
@@ -28,7 +24,7 @@ export function makeDistributeRewardsCommand() {
 async function distributeRewardsAction(options: OptionValues) {
   const { api } = await newApi(options.url);
 
-  const { validator, era, interactive } = parseOptions(options);
+  const { validator, era } = parseOptions(options);
 
   const eraIsValid = await checkEraIsInHistory(era, api);
   if (!eraIsValid) {
@@ -39,8 +35,7 @@ async function distributeRewardsAction(options: OptionValues) {
   }
 
   // Any account can call the distribute_rewards extrinsic
-  const callerSeed = await getCallerSeedFromEnvOrPrompt(interactive);
-  const caller = initKeyringPair(callerSeed);
+  const caller = await initCallerKeyring(options);
 
   const distributeTx = api.tx.staking.payoutStakers(validator, era);
 
@@ -74,7 +69,5 @@ function parseOptions(options: OptionValues) {
     process.exit(1);
   }
 
-  const interactive = setInteractivity(options);
-
-  return { validator, era, interactive };
+  return { validator, era };
 }

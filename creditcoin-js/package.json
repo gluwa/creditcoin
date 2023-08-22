@@ -15,7 +15,7 @@
         "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --package creditcoin-js/interfaces  --endpoint ./creditcoin.json --output ./src/interfaces",
         "format": "prettier --write \"src/**/*.ts\"",
         "check-format": "prettier --check \"src/**/*.ts\"",
-        "lint": "eslint -c .eslintrc.js --ext .ts ./src",
+        "lint": "eslint -c .eslintrc.js --max-warnings 0 --ext .ts ./src",
         "typecheck": "tsc --noEmit",
         "prepare": "yarn build",
         "test": "$npm_execpath example"

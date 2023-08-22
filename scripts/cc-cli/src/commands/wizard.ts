@@ -2,11 +2,6 @@ import { Command, OptionValues } from "commander";
 import { BN } from "creditcoin-js";
 import { newApi } from "../api";
 import {
-  getControllerSeedFromEnvOrPrompt,
-  getStashSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
-import {
   AccountBalance,
   getBalance,
   parseCTCString,
@@ -35,6 +30,7 @@ import {
   parsePercentAsPerbillOrExit,
   requiredInput,
 } from "../utils/parsing";
+import { initControllerKeyring, initStashKeyring } from "../utils/account";
 
 export function makeWizardCommand() {
   const cmd = new Command("wizard");
@@ -61,13 +57,11 @@ export function makeWizardCommand() {
     const { api } = await newApi(options.url);
 
     // Generate stash keyring
-    const stashSeed = await getStashSeedFromEnvOrPrompt(interactive);
-    const stashKeyring = initKeyringPair(stashSeed);
+    const stashKeyring = await initStashKeyring(options);
     const stashAddress = stashKeyring.address;
 
     // Generate controller keyring
-    const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
-    const controllerKeyring = initKeyringPair(controllerSeed);
+    const controllerKeyring = await initControllerKeyring(options);
     const controllerAddress = controllerKeyring.address;
 
     // Validate prefs
@@ -126,7 +120,7 @@ export function makeWizardCommand() {
         // Bond extra
         console.log("Sending bond transaction...");
         const bondTxResult = await bond(
-          stashSeed,
+          stashKeyring,
           controllerAddress,
           amount,
           rewardDestination,
@@ -143,7 +137,7 @@ export function makeWizardCommand() {
       // Bond
       console.log("Sending bond transaction...");
       const bondTxResult = await bond(
-        stashSeed,
+        stashKeyring,
         controllerAddress,
         amount,
         rewardDestination,

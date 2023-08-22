@@ -6,7 +6,7 @@
     "scripts": {
         "test:comments": "--runInBand avoids race conditions with global setup",
         "test": "jest --silent --runInBand",
-        "lint": "eslint -c .eslintrc.js --ext .ts ./src",
+        "lint": "eslint -c .eslintrc.js --max-warnings 0 --ext .ts ./src",
         "format": "prettier --write \"src/**/*.ts\"",
         "check-format": "prettier --check \"src/**/*.ts\"",
         "typecheck": "tsc --noEmit"

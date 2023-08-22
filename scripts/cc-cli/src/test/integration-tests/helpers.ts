@@ -1,8 +1,12 @@
 import { mnemonicGenerate } from "@polkadot/util-crypto/mnemonic/generate";
-import { initKeyringPair } from "../../utils/account";
+import {
+  initECDSAKeyringPairFromPK,
+  initKeyringPair,
+} from "../../utils/account";
 import { newApi } from "../../api";
 import { signSendAndWatch } from "../../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
+import * as secp from "@noble/secp256k1";
 
 export const ALICE_NODE_URL = "ws://localhost:9944";
 export const BOB_NODE_URL = "ws://localhost:9945";
@@ -72,4 +76,15 @@ export async function forceNewEra(api: ApiPromise) {
   const tx = api.tx.staking.forceNewEraAlways();
   const sudoTx = api.tx.sudo.sudo(tx);
   await signSendAndWatch(sudoTx, api, initKeyringPair("//Alice"));
+}
+
+export function randomTestAccount(ecdsa = false) {
+  const secret = ecdsa
+    ? "0x".concat(Buffer.from(secp.utils.randomPrivateKey()).toString("hex"))
+    : mnemonicGenerate();
+  const keyring = ecdsa
+    ? initECDSAKeyringPairFromPK(secret)
+    : initKeyringPair(secret);
+  const address = keyring.address;
+  return { secret, keyring, address };
 }
