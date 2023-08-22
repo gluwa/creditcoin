@@ -1,13 +1,12 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import { getControllerSeedFromEnvOrPrompt } from "../utils/account";
 import { StakingPalletValidatorPrefs, validate } from "../utils/validate";
 import {
   inputOrDefault,
   parseBoolean,
   parsePercentAsPerbillOrExit,
 } from "../utils/parsing";
-import { setInteractivity } from "../utils/interactive";
+import { initControllerKeyring } from "../utils/account";
 
 export function makeValidateCommand() {
   const cmd = new Command("validate");
@@ -25,10 +24,9 @@ export function makeValidateCommand() {
 }
 
 async function validateAction(options: OptionValues) {
-  const interactive = setInteractivity(options);
   const { api } = await newApi(options.url);
 
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
+  const controller = await initControllerKeyring(options);
 
   // Default commission is 0%
   const commission = parsePercentAsPerbillOrExit(
@@ -41,7 +39,7 @@ async function validateAction(options: OptionValues) {
 
   console.log("Creating validate transaction...");
 
-  const result = await validate(controllerSeed, preferences, api);
+  const result = await validate(controller, preferences, api);
 
   console.log(result.info);
   process.exit(0);

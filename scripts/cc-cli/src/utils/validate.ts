@@ -1,5 +1,4 @@
-import { ApiPromise } from "creditcoin-js";
-import { initKeyringPair } from "./account";
+import { ApiPromise, KeyringPair } from "creditcoin-js";
 import { requireEnoughFundsToSend, signSendAndWatch } from "./tx";
 
 export interface StakingPalletValidatorPrefs {
@@ -10,17 +9,16 @@ export interface StakingPalletValidatorPrefs {
 }
 
 export async function validate(
-  controllerSeed: string,
+  controller: KeyringPair,
   prefs: StakingPalletValidatorPrefs,
   api: ApiPromise,
 ) {
-  const controller = initKeyringPair(controllerSeed);
-
   console.log("Creating validate transaction with params:");
 
-  const preferences: StakingPalletValidatorPrefs = prefs
-    ? prefs
-    : { commission: 0, blocked: false };
+  const preferences: StakingPalletValidatorPrefs = prefs || {
+    commission: 0,
+    blocked: false,
+  };
 
   console.log(`Comission: ${preferences.commission}`);
   console.log(`Blocked for new nominators: ${preferences.blocked.toString()}`);
@@ -34,14 +32,12 @@ export async function validate(
   return result;
 }
 
-export async function chill(controllerSeed: string, api: ApiPromise) {
-  const account = initKeyringPair(controllerSeed);
-
+export async function chill(controllerKeyring: KeyringPair, api: ApiPromise) {
   const chillTx = api.tx.staking.chill();
 
-  await requireEnoughFundsToSend(chillTx, account.address, api);
+  await requireEnoughFundsToSend(chillTx, controllerKeyring.address, api);
 
-  const result = await signSendAndWatch(chillTx, api, account);
+  const result = await signSendAndWatch(chillTx, api, controllerKeyring);
 
   return result;
 }
