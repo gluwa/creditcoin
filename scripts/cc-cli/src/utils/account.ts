@@ -108,12 +108,10 @@ export function validateECDSAKey(pk: string): boolean {
 }
 
 function getStringFromEnvVar(envVar: string | undefined): string {
-  switch (typeof envVar) {
-    case "string":
-      return envVar;
-    case "undefined":
-      throw new Error(
-        "Error: Unexpected type; could not retrieve seed phrase or PK from environment variable.",
-      );
+  if (envVar === undefined) {
+    throw new Error(
+      "Error: Unexpected type; could not retrieve seed phrase or PK from environment variable.",
+    );
   }
+  return envVar;
 }
