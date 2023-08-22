@@ -732,6 +732,7 @@ jobs:
             --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --prometheus-external \
+            -lrpc=trace \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
             --public-addr "/dns4/$IP_ADDRESS/tcp/30333" >creditcoin-node-used-for-try-runtime.log 2>&1 &
 
