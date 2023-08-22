@@ -1,12 +1,8 @@
 import { Command, OptionValues } from "commander";
 import { newApi } from "../api";
-import {
-  getControllerSeedFromEnvOrPrompt,
-  initKeyringPair,
-} from "../utils/account";
 import { requireEnoughFundsToSend, signSendAndWatch } from "../utils/tx";
 import { parseHexStringOrExit } from "../utils/parsing";
-import { setInteractivity } from "../utils/interactive";
+import { initControllerKeyring } from "../utils/account";
 
 export function makeSetKeysCommand() {
   const cmd = new Command("set-keys");
@@ -19,13 +15,10 @@ export function makeSetKeysCommand() {
 }
 
 async function setKeysAction(options: OptionValues) {
-  const interactive = setInteractivity(options);
-
   const { api } = await newApi(options.url);
 
   // Build account
-  const controllerSeed = await getControllerSeedFromEnvOrPrompt(interactive);
-  const controller = initKeyringPair(controllerSeed);
+  const controller = await initControllerKeyring(options);
 
   let keys;
   if (!options.keys && !options.rotate) {
