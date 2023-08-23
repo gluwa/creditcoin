@@ -100,7 +100,6 @@ jobs:
           path: "last-block*"
           if-no-files-found: error
 
-
   build-sut:
     runs-on: ubuntu-22.04
 
@@ -131,7 +130,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --features "fast-runtime try-runtime"
+          args: --release --features try-runtime
 
       - name: Upload creditcoin-node binary
         uses: actions/upload-artifact@v3
