@@ -698,6 +698,30 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+          sudo apt install -y unzip jq
+
+      - name: Configure rustc version
+        run: |
+          source ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install try-runtime cli
+        run: |
+          cargo install --git https://github.com/paritytech/try-runtime-cli --locked
+
       - name: Download creditcoin-node binary from current PR
         uses: actions/download-artifact@v3
         with:
@@ -738,13 +762,13 @@ jobs:
 
       - name: Wait for creditcoin-node to initialize
         run: |
-          ./integration-tests/wait-for-creditcoin.sh
+          ./scripts/wait-for-sync.sh ${{ steps.last-block-info.outputs.last_block_number }} http://127.0.0.1:9944
 
       - name: Try-runtime migrations
         run: |
-          ./target/release/creditcoin-node try-runtime \
+          try-runtime \
               --runtime ./target/release/creditcoin_node_runtime.compact.compressed.wasm \
-              --dev on-runtime-upgrade live --uri ws://127.0.0.1:9944 \
+              on-runtime-upgrade live --uri ws://127.0.0.1:9944 \
               --at ${{ needs.setup.outputs.last_block_hash }}
 
       - name: TERM creditcoin-node
