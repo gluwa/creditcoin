@@ -734,7 +734,7 @@ jobs:
             --rpc-max-response-size 100000 \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
-            --public-addr "/dns4/$IP_ADDRESS/tcp/30333" >creditcoin-node-used-for-try-runtime.log 2>&1 & \
+            --public-addr "/dns4/$IP_ADDRESS/tcp/30333" >creditcoin-node-used-for-try-runtime.log 2>&1 &
 
       - name: Wait for creditcoin-node to initialize
         run: |
