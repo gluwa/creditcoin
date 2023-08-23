@@ -739,6 +739,7 @@ jobs:
       - name: Wait for creditcoin-node to initialize
         run: |
           ./integration-tests/wait-for-creditcoin.sh
+          ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
 
       - name: Try-runtime migrations
         run: |
