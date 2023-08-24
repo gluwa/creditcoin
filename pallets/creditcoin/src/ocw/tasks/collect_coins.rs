@@ -63,7 +63,7 @@ impl DeployedContract {
 }
 
 pub fn validate_collect_coins(
-	to: &ExternalAddress,
+	external_address: &ExternalAddress,
 	receipt: &EthTransactionReceipt,
 	transaction: &EthTransaction,
 	eth_tip: U64,
@@ -85,7 +85,7 @@ pub fn validate_collect_coins(
 	}
 
 	if let Some(from) = &transaction.from {
-		ensure!(from[..] == to[..], VerificationFailureCause::IncorrectSender)
+		ensure!(from[..] == external_address[..], VerificationFailureCause::IncorrectSender)
 	} else {
 		return Err(VerificationFailureCause::MissingSender.into());
 	}
