@@ -29,7 +29,7 @@ describe('SetCollectCoinsContract', (): void => {
         const { api } = ccApi;
 
         /* eslint-disable @typescript-eslint/naming-convention */
-        const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
+        const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
             address: '0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419',
             chain: testingData.blockchain,
         });
