@@ -1,5 +1,5 @@
 use crate::types::{
-	AddressId, Blockchain, ExternalAddress, ExternalTxId, GCreContract, SystemConfig,
+	AddressId, Blockchain, DeployedContract, ExternalAddress, ExternalTxId, SystemConfig,
 };
 use frame_support::RuntimeDebug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -16,7 +16,7 @@ pub struct CollectedCoins<Hash, Balance> {
 pub struct UnverifiedCollectedCoins {
 	pub to: ExternalAddress,
 	pub tx_id: ExternalTxId,
-	pub contract: GCreContract,
+	pub contract: DeployedContract,
 }
 
 impl UnverifiedCollectedCoins {
@@ -24,7 +24,7 @@ impl UnverifiedCollectedCoins {
 	where
 		T: Config,
 	{
-		let Self { to, tx_id, contract: GCreContract { chain, .. } } = self;
+		let Self { to, tx_id, contract: DeployedContract { chain, .. } } = self;
 		let to = crate::AddressId::new::<T>(&chain, to.as_slice());
 		CollectedCoins { amount, to, tx_id }
 	}
