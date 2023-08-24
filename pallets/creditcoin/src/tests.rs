@@ -7,9 +7,9 @@ use crate::{
 	mock::{RuntimeOrigin as Origin, *},
 	ocw::tasks::collect_coins::DeployedContract,
 	types::{DoubleMapExt, OwnershipProof},
-	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, BurnGATEConract, DealOrder,
-	DealOrderId, DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash,
-	LoanTerms, Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
+	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,
+	Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
 use assert_matches::assert_matches;
 use bstr::B;
@@ -3244,28 +3244,12 @@ fn register_address_v2_should_error_with_unsupported_blockchain() {
 	});
 }
 
-<<<<<<< HEAD
 #[test]
 fn gate_contract_storage_should_return_default_goerli_contract_when_not_set() {
 	ExtBuilder::default().build_and_execute(|| {
 		let contract: DeployedContract = Creditcoin::gate_contract();
 
 		assert_eq!(contract, DeployedContract::default());
-=======
-use hex_literal::hex;
-
-#[test]
-fn set_burn_gate_contract_should_return_default_goerli_contract_when_not_set() {
-	ExtBuilder::default().build_and_execute(|| {
-		let contract: DeployedContract = Creditcoin::gate_contract();
-
-		assert_eq!(
-			contract.address,
-			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"))
-		);
-
-		assert_eq!(contract.chain, Blockchain::Ethereum);
->>>>>>> ed8998d1 (introduced set_burn_gate_contract extrinsic in preparation for request_collect_coins_v2)
 	});
 }
 
