@@ -35,7 +35,7 @@ pub mod migrations;
 pub mod ocw;
 mod types;
 
-use ocw::tasks::collect_coins::GCreContract;
+use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
 	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
@@ -144,6 +144,7 @@ pub mod pallet {
 		fn remove_authority() -> Weight;
 		fn set_collect_coins_contract() -> Weight;
 		fn register_address_v2() -> Weight;
+		fn set_gate_contract() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -229,7 +230,11 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn collect_coins_contract)]
-	pub type CollectCoinsContract<T: Config> = StorageValue<_, GCreContract, ValueQuery>;
+	pub type CollectCoinsContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn gate_contract)]
+	pub type GATEConract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -1323,7 +1328,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::set_collect_coins_contract())]
 		pub fn set_collect_coins_contract(
 			origin: OriginFor<T>,
-			contract: GCreContract,
+			contract: DeployedContract,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			CollectCoinsContract::<T>::put(contract);
@@ -1400,6 +1405,20 @@ pub mod pallet {
 					fail!(e)
 				},
 			}
+		}
+
+		/// Set the onchain details for the Gluwa GATE Contract, including its address and the blockchain where it is deployed.
+		/// This extrinsic expects the caller to have root permissions.
+		#[transactional]
+		#[pallet::call_index(23)]
+		#[pallet::weight(<T as Config>::WeightInfo::set_gate_contract())]
+		pub fn set_gate_contract(
+			origin: OriginFor<T>,
+			contract: DeployedContract,
+		) -> DispatchResult {
+			ensure_root(origin)?;
+			GATEConract::<T>::put(contract);
+			Ok(())
 		}
 	}
 }
