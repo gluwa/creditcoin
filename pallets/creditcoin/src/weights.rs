@@ -451,4 +451,8 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+
+	fn set_gate_contract() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }

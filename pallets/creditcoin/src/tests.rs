@@ -7,6 +7,7 @@ use crate::{
 		non_paying_error, EVMAddress, PublicToAddress,
 	},
 	mock::{RuntimeOrigin as Origin, *},
+	ocw::tasks::collect_coins::DeployedContract,
 	types::{DoubleMapExt, OwnershipProof},
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
 	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,
@@ -3236,5 +3237,49 @@ fn register_address_v2_should_error_with_unsupported_blockchain() {
 			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof,),
 			crate::Error::<Test>::UnsupportedBlockchain
 		);
+	});
+}
+
+use hex_literal::hex;
+
+#[test]
+fn set_burn_gate_contract_should_return_default_goerli_contract_when_not_set() {
+	ExtBuilder::default().build_and_execute(|| {
+		let contract: DeployedContract = Creditcoin::gate_contract();
+
+		assert_eq!(
+			contract.address,
+			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"))
+		);
+
+		assert_eq!(contract.chain, Blockchain::Ethereum);
+	});
+}
+
+#[test]
+fn set_burn_gate_contract_fails_with_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+		let gate_contract = DeployedContract::default();
+
+		assert_noop!(Creditcoin::set_gate_contract(Origin::signed(acct), gate_contract), BadOrigin);
+	});
+}
+
+#[test]
+fn set_burn_gate_contract_passes_and_storage_is_updated() {
+	ExtBuilder::default().build_and_execute(|| {
+		let fake_address =
+			sp_core::H160([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+
+		let gate_contract =
+			DeployedContract { address: fake_address, chain: Blockchain::Luniverse };
+
+		assert_ok!(Creditcoin::set_gate_contract(RawOrigin::Root.into(), gate_contract));
+
+		let stored_contract = Creditcoin::gate_contract();
+
+		assert_eq!(stored_contract.address, fake_address);
+		assert_eq!(stored_contract.chain, Blockchain::Luniverse);
 	});
 }
