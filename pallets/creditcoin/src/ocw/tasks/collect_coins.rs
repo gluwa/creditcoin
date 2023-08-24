@@ -22,25 +22,25 @@ use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct GCreContract {
+pub struct DeployedContract {
 	pub address: sp_core::H160,
 	pub chain: Blockchain,
 }
 
-impl GCreContract {
+impl DeployedContract {
 	const DEFAULT_CHAIN: Blockchain = Blockchain::Ethereum;
 }
 
-impl Default for GCreContract {
+impl Default for DeployedContract {
 	fn default() -> Self {
-		let contract_chain: Blockchain = GCreContract::DEFAULT_CHAIN;
+		let contract_chain: Blockchain = DeployedContract::DEFAULT_CHAIN;
 		let contract_address: H160 =
 			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"));
 		Self { address: contract_address, chain: contract_chain }
 	}
 }
 
-impl GCreContract {
+impl DeployedContract {
 	///exchange has been deprecated, use burn instead
 	fn burn_vested_cc_abi() -> Function {
 		#[allow(deprecated)]
@@ -90,7 +90,7 @@ pub fn validate_collect_coins(
 		return Err(VerificationFailureCause::MissingSender.into());
 	}
 
-	let transfer_fn = GCreContract::burn_vested_cc_abi();
+	let transfer_fn = DeployedContract::burn_vested_cc_abi();
 	ensure!(!transaction.is_input_empty(), VerificationFailureCause::EmptyInput);
 
 	{
@@ -122,7 +122,7 @@ impl<T: CreditcoinConfig> Pallet<T> {
 		u_cc: &UnverifiedCollectedCoins,
 	) -> VerificationResult<T::Balance> {
 		log::debug!("verifying OCW Collect Coins");
-		let UnverifiedCollectedCoins { to, tx_id, contract: GCreContract { address, chain } } =
+		let UnverifiedCollectedCoins { to, tx_id, contract: DeployedContract { address, chain } } =
 			u_cc;
 		let rpc_url = &chain.rpc_url()?;
 		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
@@ -139,9 +139,9 @@ impl<T: CreditcoinConfig> Pallet<T> {
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub(crate) mod testing_constants {
-	use super::{Blockchain, GCreContract};
+	use super::{Blockchain, DeployedContract};
 
-	pub const CHAIN: Blockchain = GCreContract::DEFAULT_CHAIN;
+	pub const CHAIN: Blockchain = DeployedContract::DEFAULT_CHAIN;
 }
 
 #[cfg(test)]
@@ -200,7 +200,7 @@ pub(crate) mod tests {
 	});
 
 	pub(crate) static RPC_RESPONSE_AMOUNT: Lazy<sp_core::U256> = Lazy::new(|| {
-		let transfer_fn = GCreContract::burn_vested_cc_abi();
+		let transfer_fn = DeployedContract::burn_vested_cc_abi();
 
 		let inputs = transfer_fn.decode_input(&(INPUT.0)[4..]).unwrap();
 
@@ -282,7 +282,7 @@ pub(crate) mod tests {
 				receipt: EthTransactionReceipt { status: Some(1u64.into()), ..Default::default() },
 				transaction,
 				eth_tip: (base_height + ETH_CONFIRMATIONS),
-				contract_address: GCreContract::default().address,
+				contract_address: DeployedContract::default().address,
 			}
 		}
 	}
@@ -1008,7 +1008,7 @@ pub(crate) mod tests {
 		let acct_pubkey = ext.generate_authority();
 		let _auth = AccountId::from(acct_pubkey.into_account().0);
 		ext.build_and_execute(|| {
-			let contract = GCreContract {
+			let contract = DeployedContract {
 				address: sp_core::H160(hex!("aaaaabbbbbcccccdddddeeeeefffff08F3820419")),
 				chain: Blockchain::Rinkeby,
 			};
@@ -1018,7 +1018,7 @@ pub(crate) mod tests {
 			));
 			let from_storage = Creditcoin::<Test>::collect_coins_contract();
 			assert_eq!(contract, from_storage);
-			assert_ne!(from_storage, GCreContract::default());
+			assert_ne!(from_storage, DeployedContract::default());
 
 			let (acc, ..) = generate_address_with_proof("somebody");
 
@@ -1039,7 +1039,7 @@ pub(crate) mod tests {
 
 	#[test]
 	fn gcrecontract_value_query_is_default() {
-		let contract = GCreContract::default();
+		let contract = DeployedContract::default();
 		let ext = ExtBuilder::default();
 		ext.build_and_execute(|| {
 			let value_query = Creditcoin::<Test>::collect_coins_contract();
@@ -1093,7 +1093,7 @@ pub(crate) mod tests {
 			let cc = UnverifiedCollectedCoins {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
-				contract: GCreContract::default(),
+				contract: DeployedContract::default(),
 			};
 			assert_matches!(
 				Creditcoin::<Test>::verify_collect_coins_ocw(&cc),
@@ -1117,7 +1117,7 @@ pub(crate) mod tests {
 			let cc = UnverifiedCollectedCoins {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
-				contract: GCreContract::default(),
+				contract: DeployedContract::default(),
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);
@@ -1155,7 +1155,7 @@ pub(crate) mod tests {
 			let cc = UnverifiedCollectedCoins {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
-				contract: GCreContract::default(),
+				contract: DeployedContract::default(),
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);

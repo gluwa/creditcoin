@@ -44,7 +44,7 @@ describe('CollectCoins', (): void => {
             collector = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
 
             /* eslint-disable @typescript-eslint/naming-convention */
-            const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsGCreContract', {
+            const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
                 address: (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
                 chain: blockchain,
             });

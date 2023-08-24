@@ -335,7 +335,7 @@ benchmarks! {
 
 	set_collect_coins_contract {
 		let root = RawOrigin::Root;
-		let contract = GCreContract::default();
+		let contract = DeployedContract::default();
 	}: _(root, contract)
 
 	register_address_v2 {
@@ -348,6 +348,11 @@ benchmarks! {
 		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 		let proof = OwnershipProof::EthSign(signature);
 	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address, proof)
+
+	set_gate_contract {
+		let root = RawOrigin::Root;
+		let contract = DeployedContract::default();
+	}: _(root, contract)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
