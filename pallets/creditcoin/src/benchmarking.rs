@@ -354,6 +354,12 @@ benchmarks! {
 		let root = RawOrigin::Root;
 		let contract = DeployedContract::default();
 	}: _(root, contract)
+
+
+	set_gate_faucet {
+		let root = RawOrigin::Root;
+		let addr: T::AccountId = lender_account::<T>(false);
+	}: _(root, addr)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);

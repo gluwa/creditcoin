@@ -3281,3 +3281,36 @@ fn set_gate_contract_passes_and_storage_is_updated() {
 		assert_eq!(stored_contract.chain, Blockchain::Luniverse);
 	});
 }
+
+#[test]
+fn set_gate_faucet_fails_with_non_root() {
+	ExtBuilder::default().build_and_execute(|| {
+		let acct: AccountId = AccountId::new([0; 32]);
+
+		assert_noop!(Creditcoin::set_gate_faucet(Origin::signed(acct.clone()), acct), BadOrigin);
+	});
+}
+
+#[test]
+fn gate_faucet_returns_none_when_not_set() {
+	ExtBuilder::default().build_and_execute(|| {
+		let gate_faucet = Creditcoin::gate_faucet_address();
+
+		assert!(gate_faucet.is_none());
+	});
+}
+
+#[test]
+fn set_gate_faucet_passes_and_storage_is_updated() {
+	ExtBuilder::default().build_and_execute(|| {
+		let addr: AccountId = AccountId::new([0; 32]);
+
+		assert!(Creditcoin::gate_faucet_address().is_none());
+		assert_ok!(Creditcoin::set_gate_faucet(RawOrigin::Root.into(), addr.clone()));
+
+		let faucet_addr: Option<AccountId32> = Creditcoin::gate_faucet_address();
+
+		assert!(faucet_addr.is_some());
+		assert_eq!(faucet_addr.unwrap(), addr)
+	});
+}

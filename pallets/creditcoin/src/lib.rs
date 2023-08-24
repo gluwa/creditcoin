@@ -152,6 +152,7 @@ pub mod pallet {
 		fn set_collect_coins_contract() -> Weight;
 		fn register_address_v2() -> Weight;
 		fn set_gate_contract() -> Weight;
+		fn set_gate_faucet() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -242,6 +243,9 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn gate_contract)]
 	pub type GATEContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
+
+	#[pallet::getter(fn gate_faucet_address)]
+	pub type GATEFaucetAddress<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
 	#[pallet::storage]
 	pub type CleanupState<T: Config> =
@@ -1492,6 +1496,15 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			GATEContract::<T>::put(contract);
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::call_index(24)]
+		#[pallet::weight(<T as Config>::WeightInfo::set_gate_faucet())]
+		pub fn set_gate_faucet(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
+			ensure_root(origin)?;
+			GATEFaucetAddress::<T>::put(address);
 			Ok(())
 		}
 	}
