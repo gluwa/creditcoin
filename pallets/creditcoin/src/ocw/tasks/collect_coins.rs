@@ -78,14 +78,14 @@ pub fn validate_collect_coins(
 		.ok_or(VerificationFailureCause::TaskInFuture)?;
 	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
-	if let Some(to) = &transaction.to {
-		ensure!(to == contract_address, VerificationFailureCause::IncorrectContract);
+	if let Some(recipient) = &transaction.recipient {
+		ensure!(recipient == contract_address, VerificationFailureCause::IncorrectContract);
 	} else {
 		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
 
-	if let Some(from) = &transaction.from {
-		ensure!(from[..] == external_address[..], VerificationFailureCause::IncorrectSender)
+	if let Some(sender) = &transaction.sender {
+		ensure!(sender[..] == external_address[..], VerificationFailureCause::IncorrectSender)
 	} else {
 		return Err(VerificationFailureCause::MissingSender.into());
 	}
@@ -273,8 +273,8 @@ pub(crate) mod tests {
 
 			let mut transaction = EthTransaction::default();
 			transaction.block_number = Some(base_height);
-			transaction.from = Some(tx_from);
-			transaction.to = Some(vesting_contract);
+			transaction.sender = Some(tx_from);
+			transaction.recipient = Some(vesting_contract);
 			transaction.set_input(&INPUT.0);
 
 			Self {
@@ -334,7 +334,7 @@ pub(crate) mod tests {
 	#[test]
 	fn missing_receiver() {
 		let mut pcc = PassingCollectCoins::default();
-		pcc.transaction.to = None;
+		pcc.transaction.recipient = None;
 		assert_invalid(pcc.validate(), Cause::MissingReceiver);
 	}
 
@@ -343,14 +343,14 @@ pub(crate) mod tests {
 		let mut pcc = PassingCollectCoins::default();
 		let address = [0u8; 20];
 		let address = H160::from(<[u8; 20]>::try_from(address.as_slice()).unwrap());
-		pcc.transaction.to = Some(address);
+		pcc.transaction.recipient = Some(address);
 		assert_invalid(pcc.validate(), Cause::IncorrectContract);
 	}
 
 	#[test]
 	fn missing_sender() {
 		let mut pcc = PassingCollectCoins::default();
-		pcc.transaction.from = None;
+		pcc.transaction.sender = None;
 		assert_invalid(pcc.validate(), Cause::MissingSender);
 	}
 
@@ -359,7 +359,7 @@ pub(crate) mod tests {
 		let mut pcc = PassingCollectCoins::default();
 		let address = [0u8; 20];
 		let address = H160::from(<[u8; 20]>::try_from(address.as_slice()).unwrap());
-		pcc.transaction.from = Some(address);
+		pcc.transaction.sender = Some(address);
 		assert_invalid(pcc.validate(), Cause::IncorrectSender);
 	}
 

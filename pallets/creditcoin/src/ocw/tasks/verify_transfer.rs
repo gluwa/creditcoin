@@ -56,8 +56,8 @@ pub(in crate::ocw) fn validate_ethless_transfer(
 
 	ensure!(diff.as_u64() >= ETH_CONFIRMATIONS, VerificationFailureCause::TaskUnconfirmed);
 
-	if let Some(to) = &transaction.to {
-		ensure!(to == contract, VerificationFailureCause::IncorrectContract);
+	if let Some(recipient) = &transaction.recipient {
+		ensure!(recipient == contract, VerificationFailureCause::IncorrectContract);
 	} else {
 		return Err(VerificationFailureCause::MissingReceiver.into());
 	}
