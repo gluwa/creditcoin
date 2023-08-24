@@ -1082,7 +1082,12 @@ pub mod pallet {
 
 			let contract = Self::collect_coins_contract();
 
-			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id, contract };
+			let pending = types::UnverifiedCollectedCoins {
+				to: evm_address,
+				tx_id,
+				contract,
+				contract_type: crate::types::ContractType::GCRE,
+			};
 
 			let collect_coins_id = TaskV2::<T>::to_id(&pending);
 

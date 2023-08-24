@@ -64,6 +64,7 @@ pub mod tests {
 	use crate::mock::Test;
 	use crate::test::create_unverified_transfer;
 	use crate::types;
+	use crate::types::ContractType;
 	use crate::CollectedCoinsId;
 	use crate::TransferId;
 
@@ -74,6 +75,7 @@ pub mod tests {
 				to: [0u8; 256].into_bounded(),
 				tx_id: [0u8; 256].into_bounded(),
 				contract: Default::default(),
+				contract_type: ContractType::GCRE,
 			};
 			let id = TaskV2::<Test>::to_id(&pending);
 
