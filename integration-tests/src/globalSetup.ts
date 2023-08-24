@@ -77,7 +77,7 @@ const setup = async () => {
     }
 
     if ((global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES === undefined) {
-        (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = false;
+        (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = true;
     }
 
     if ((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY === undefined) {
