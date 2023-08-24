@@ -2,6 +2,7 @@ import { ContractFactory, Signer, Wallet } from 'ethers';
 import { GluwaCreditVestingToken } from './examples/ctc/typechain';
 import CtcArtifact from './examples/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
+import GATEArtifact from './ethereum/ctc/contracts/GluwaGateToken.sol/GluwaGateToken.json';
 
 export const CREDO_PER_CTC = 1_000_000_000_000_000_000;
 
@@ -45,4 +46,25 @@ export const deployCtcContract = async (
     const ctcToken = await deployCtcToken(deployer, existingAddress);
 
     await burnCtc(ctcToken, howMuchToBurn);
+};
+
+if (require.main === module) {
+    main(undefined).catch(console.error);
+}
+
+export const deployGATEToken = async (deployer: Signer, existingAddress: string | undefined) => {
+    const factory = new ContractFactory(GATEArtifact.abi, GATEArtifact.bytecode, deployer);
+    let gateToken: any;
+
+    if (existingAddress !== undefined) {
+        gateToken = factory.attach(existingAddress);
+        console.log('Using existing contract', gateToken.address);
+    } else {
+        gateToken = await factory.deploy();
+        console.log('Deployed GATE Token to', gateToken.address);
+    }
+
+    process.env.CREDITCOIN_GATE_CONTRACT_ADDRESS = gateToken.address;
+
+    return gateToken;
 };

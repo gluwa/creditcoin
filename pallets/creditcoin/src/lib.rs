@@ -38,10 +38,11 @@ mod types;
 use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
-	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
-	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
-	TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+	Blockchain, CollectedCoinsId, CollectedCoinsStruct, ContractType, DealOrder, DealOrderId,
+	Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType,
+	LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput,
+	TokenContract, Transfer, TransferId, TransferKind, UnverifiedCollectedCoins,
+	UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
@@ -146,6 +147,7 @@ pub mod pallet {
 		fn register_address_v2() -> Weight;
 		fn set_gate_contract() -> Weight;
 		fn set_gate_faucet() -> Weight;
+		fn request_collect_coins_v2() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -524,6 +526,12 @@ pub mod pallet {
 
 		/// An unsupported blockchain was specified to register_address_v2
 		UnsupportedBlockchain,
+
+		/// The onchain faucet address for the GATE swap mechanism has not been set using the set_burn_gate_faucet_address extrinsic
+		BurnGATEFaucetNotSet,
+
+		/// The faucet has insufficient funds to complete this swap, please retry when the faucet has been reloaded
+		BurnGATEInsufficientFaucetBalance,
 	}
 
 	#[pallet::genesis_config]
@@ -1263,13 +1271,52 @@ pub mod pallet {
 					let address = Self::addresses(&collected_coins.to)
 						.ok_or(Error::<T>::NonExistentAddress)?;
 
-					<pallet_balances::Pallet<T> as Mutate<T::AccountId>>::mint_into(
-						&address.owner,
-						collected_coins.amount,
-					)?;
+					match collected_coins.contract_type {
+						ContractType::GCRE => {
+							<pallet_balances::Pallet<T> as Mutate<T::AccountId>>::mint_into(
+								&address.owner,
+								collected_coins.amount,
+							)?;
 
-					CollectedCoins::<T>::insert(&id, collected_coins.clone());
-					(id.clone().into_inner(), Event::<T>::CollectedCoinsMinted(id, collected_coins))
+							CollectedCoins::<T>::insert(&id, collected_coins.clone());
+							(
+								id.clone().into_inner(),
+								Event::<T>::CollectedCoinsMinted(id, collected_coins),
+							)
+						},
+						ContractType::GATE => {
+							let faucet_address = Self::gate_faucet_address()
+								.ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
+
+							let dest = Self::addresses(&collected_coins.to)
+								.ok_or(Error::<T>::NonExistentAddress)?;
+
+							let transfer =
+								<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
+									&faucet_address,
+									&dest.owner,
+									collected_coins.amount,
+									ExistenceRequirement::AllowDeath,
+								);
+
+							match transfer {
+								Ok(_) => {
+									CollectedCoins::<T>::insert(&id, collected_coins.clone());
+									(
+										id.clone().into_inner(),
+										Event::<T>::CollectedCoinsMinted(id, collected_coins),
+									)
+								},
+								Err(_) => (
+									id.clone().into_inner(),
+									Event::<T>::CollectCoinsFailedVerification(
+										id,
+										VerificationFailureCause::InsufficientFaucetBalance,
+									),
+								),
+							}
+						},
+					}
 				},
 			};
 			T::TaskScheduler::remove(&deadline, &task_id);
@@ -1448,6 +1495,70 @@ pub mod pallet {
 		pub fn set_gate_faucet(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
 			ensure_root(origin)?;
 			GATEFaucetAddress::<T>::put(address);
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::call_index(25)]
+		#[pallet::weight(<T as Config>::WeightInfo::request_collect_coins_v2())]
+		pub fn request_collect_coins_v2(
+			origin: OriginFor<T>,
+			contract: TokenContract,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let contract_type;
+			let deployed_contract;
+			let tx_id;
+			let evm_address;
+
+			match contract {
+				TokenContract::GCRE(ext_addr, tx_hash) => {
+					deployed_contract = Self::collect_coins_contract();
+					contract_type = ContractType::GCRE;
+					tx_id = tx_hash;
+					evm_address = ext_addr;
+				},
+				TokenContract::GATE(ext_addr, tx_hash) => {
+					deployed_contract = Self::gate_contract();
+					contract_type = ContractType::GATE;
+					tx_id = tx_hash;
+					evm_address = ext_addr;
+					Self::gate_faucet_address().ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
+				},
+			}
+
+			let pending = types::UnverifiedCollectedCoins {
+				to: evm_address,
+				tx_id,
+				contract: deployed_contract,
+				contract_type,
+			};
+
+			let collect_coins_id = TaskV2::<T>::to_id(&pending);
+
+			ensure!(
+				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let deadline = T::TaskScheduler::deadline();
+
+			ensure!(
+				!T::TaskScheduler::is_scheduled(&deadline, &collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
+			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			T::TaskScheduler::insert(&deadline, &collect_coins_id, Task::from(pending.clone()));
+
+			Self::deposit_event(Event::<T>::CollectCoinsRegistered(
+				collect_coins_id.into(),
+				pending,
+			));
+
 			Ok(())
 		}
 	}

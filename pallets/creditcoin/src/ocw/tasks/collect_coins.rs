@@ -9,7 +9,7 @@ use crate::{
 	types::{Blockchain, ContractType, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
-use core::default::Default;
+use core::{default::Default, ops::Div};
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::U64;
 use frame_support::{ensure, RuntimeDebug};
@@ -126,14 +126,19 @@ impl<T: CreditcoinConfig> Pallet<T> {
 			to,
 			tx_id,
 			contract: DeployedContract { address, chain },
-			contract_type: _,
+			contract_type,
 		} = u_cc;
 		let rpc_url = &chain.rpc_url()?;
 		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
 		let eth_tip = rpc::eth_get_block_number(rpc_url)?;
 
-		let amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip, address)?;
+		let mut amount = validate_collect_coins(to, &tx_receipt, &tx, eth_tip, address)?;
+
+		// GATE -> CTC is swapped 2:1
+		if *contract_type == ContractType::GATE {
+			amount = amount.div(sp_core::U256::from_dec_str("2").unwrap());
+		}
 
 		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
 
@@ -152,7 +157,7 @@ pub(crate) mod testing_constants {
 pub(crate) mod tests {
 
 	use super::*;
-	use crate::mock::{PendingRequestExt, RuntimeCall};
+	use crate::mock::{self, PendingRequestExt, RuntimeCall};
 	use crate::types::ContractType;
 	use std::collections::HashMap;
 
@@ -1188,6 +1193,67 @@ pub(crate) mod tests {
 
 			assert_ok!(c.dispatch(RuntimeOrigin::signed(auth)));
 			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
+		});
+	}
+
+	#[test]
+	fn collect_coins_v2_gate_token_persist_is_submitted_and_amount_is_2_to_1() {
+		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
+		let acct_pubkey = ext.generate_authority();
+		let auth = AccountId::from(acct_pubkey.into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, pool| {
+			mock_rpc_for_collect_coins(&state);
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			let _ = <pallet_balances::Pallet<Test> as Currency<
+				<mock::Test as frame_system::Config>::AccountId,
+			>>::deposit_creating(&auth, 1000000000000000000); // I hope this is enough
+
+			assert_ok!(Creditcoin::<Test>::set_gate_faucet(RawOrigin::Root.into(), auth));
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				RuntimeOrigin::signed(acc.clone()),
+				CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			let gate_contract = crate::TokenContract::GATE(addr.clone(), TX_HASH.hex_to_address());
+
+			assert_ok!(Creditcoin::<Test>::request_collect_coins_v2(
+				RuntimeOrigin::signed(acc),
+				gate_contract
+			));
+
+			let deadline = Test::unverified_transfer_deadline();
+
+			roll_by_with_ocw(1);
+
+			assert!(!pool.read().transactions.is_empty());
+
+			// The only important part of this test
+			let amount = RPC_RESPONSE_AMOUNT.as_u128();
+			let amount = amount.saturating_div(2);
+
+			let collected_coins = CollectedCoinsStruct {
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
+				amount,
+				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GATE,
+			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
+
+			let call = crate::Call::<crate::mock::Test>::persist_task_output {
+				task_output: (collected_coins_id, collected_coins).into(),
+				deadline,
+			};
+
+			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+				let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
+				assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
+			});
 		});
 	}
 }
