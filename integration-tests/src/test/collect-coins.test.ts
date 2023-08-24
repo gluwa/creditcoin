@@ -33,6 +33,7 @@ describe('CollectCoins', (): void => {
 
     describe('request', (): void => {
         let collector: KeyringPair;
+        let deployerWallet: Wallet;
         let deployerRegAddr: AddressRegistered;
 
         beforeAll(async () => {
@@ -54,7 +55,7 @@ describe('CollectCoins', (): void => {
                 .signAndSend(collector, { nonce: -1 });
 
             const provider = new providers.JsonRpcProvider((global as any).CREDITCOIN_ETHEREUM_NODE_URL);
-            const deployerWallet = new Wallet((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY, provider);
+            deployerWallet = new Wallet((global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY, provider);
             deployerRegAddr = await tryRegisterAddress(
                 ccApi,
                 deployerWallet.address,
@@ -74,7 +75,43 @@ describe('CollectCoins', (): void => {
             expect(partialFee.toBigInt()).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
 
-        it('end-to-end', async (): Promise<void> => {
+        it('000 - with mixed up Ethereum addresses should throw IncorrectSender error', async (): Promise<void> => {
+            const {
+                extrinsics: { requestCollectCoins },
+                utils: { signAccountId },
+            } = ccApi;
+
+            // register a second Ethereum Wallet with the same Creditcoin account
+            const secondWallet = Wallet.createRandom();
+            const secondRegAddr = await tryRegisterAddress(
+                ccApi,
+                secondWallet.address,
+                blockchain,
+                signAccountId(secondWallet, collector.address),
+                collector,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            );
+            // the two external addresses must be different
+            expect(secondRegAddr.item.externalAddress).not.toBe(deployerRegAddr.item.externalAddress);
+
+            // send a collect coins transaction using the 2nd Ethereum address
+            // and the burn tx hash from the 1st Ethereum address.
+            // IMPORTANT: Both Ethereum wallets are registered to collector on Creditcoin.
+            const collectCoinsEvent = await requestCollectCoins(
+                secondRegAddr.item.externalAddress,
+                collector,
+                (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
+            );
+
+            // eventhough collector (a Creditcoin account) has control over both Ethereum wallets
+            // they can't collect coins using a burn tx hash which was sent from a their 1st wallet
+            await expect(collectCoinsEvent.waitForVerification(800_000)).rejects.toThrow(/IncorrectSender/);
+        }, 900_000);
+
+        // WARNING: this scenario should always be executed *AFTER* the one above because
+        // they use the same burn tx hash value ! If this is executed first the above one
+        // will fail with CollectCoinsAlreadyRegistered instead of the expected IncorrectSender !!!
+        it('001 - end-to-end', async (): Promise<void> => {
             const {
                 extrinsics: { requestCollectCoins },
             } = ccApi;
