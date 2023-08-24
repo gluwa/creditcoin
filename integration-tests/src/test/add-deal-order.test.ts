@@ -1,9 +1,8 @@
 import { KeyringPair } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-import { OfferId } from 'creditcoin-js/lib/model';
+import { Blockchain, OfferId } from 'creditcoin-js/lib/model';
 import { creditcoinApi } from 'creditcoin-js';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { addAskAndBidOrder, testData } from './common';
+import { addAskAndBidOrder, testData } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
 
 describe('AddDealOrder', (): void => {
@@ -12,12 +11,16 @@ describe('AddDealOrder', (): void => {
     let lender: KeyringPair;
     let offerId: OfferId;
 
-    const { expirationBlock, keyring } = testData;
+    const testingData = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
+    const { expirationBlock, keyring, loanTerms } = testingData;
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob', { name: 'Bob' });
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -25,7 +28,14 @@ describe('AddDealOrder', (): void => {
     });
 
     beforeEach(async () => {
-        const [askOrderId, bidOrderId] = await addAskAndBidOrder(ccApi, lender, borrower);
+        const [askOrderId, bidOrderId] = await addAskAndBidOrder(
+            ccApi,
+            lender,
+            borrower,
+            loanTerms,
+            testingData,
+            (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+        );
         const offer = await ccApi.extrinsics.addOffer(askOrderId, bidOrderId, expirationBlock, lender);
         offerId = offer.itemId;
     }, 210000);
@@ -44,7 +54,7 @@ describe('AddDealOrder', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 240000);
 });

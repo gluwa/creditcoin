@@ -77,7 +77,7 @@ const createCollectCoinsRegisteredEvent = (
         api,
         result,
         kind,
-        'PalletCreditcoinUnverifiedCollectedCoins',
+        'PalletCreditcoinCollectCoinsUnverifiedCollectedCoins',
         createUnverifiedCollectedCoins,
     ) as CollectCoinsRegisteredEvent;
 

@@ -1,31 +1,48 @@
 [package]
 name = "primitives"
-version = "2.0.0-beta.8"
-edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
 [dependencies]
+sp-core = { workspace = true }
+substrate-prometheus-endpoint = { optional = true, workspace = true }
+merlin = { version = "2.0.1", default-features = false }
+num = { version = "0.4.0", default-features = false, features = [
+    "num-bigint",
+    "alloc",
+] }
+parity-scale-codec = { workspace = true }
+schnorrkel = { version = "0.9", default-features = false }
+sp-arithmetic = { workspace = true }
+sp-consensus-vrf = { branch = "pos-keep-history-polkadot-v0.9.41", default-features = false, git = "https://github.com/gluwa/substrate.git" }
+sp-externalities = { workspace = true }
+sp-keystore = { workspace = true, optional = true }
+sp-runtime-interface = { workspace = true }
+sp-std = { workspace = true }
+tracing.workspace = true
 
-[dependencies.substrate-prometheus-endpoint]
-git = "https://github.com/gluwa/substrate.git"
-version = "0.10.0-dev"
-optional = true
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dependencies.sp-core]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.1.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
-
-[dev-dependencies.sp-tracing]
-default-features = false
-git = "https://github.com/gluwa/substrate.git"
-version = '4.0.0-dev'
-rev = "973dd744f5f7c6322799bbfa29366588e0267b0a"
+[dev-dependencies]
+tracing = { workspace = true }
+proptest = "1.2.0"
+rand = "0.8.5"
+runtime-utils = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std", "prometheus"]
-std = ["sp-core/std"]
+std = [
+    "sp-core/std",
+    "sp-arithmetic/std",
+    "merlin/std",
+    "sp-keystore/std",
+    "schnorrkel/std",
+    "sp-externalities/std",
+    "sp-consensus-vrf/std",
+    "sp-std/std",
+    "sp-runtime-interface/std",
+]
 prometheus = ["substrate-prometheus-endpoint"]

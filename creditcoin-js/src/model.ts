@@ -134,3 +134,10 @@ export type UnverifiedCollectedCoins = {
     to: ExternalAddress;
     txHash: string;
 };
+
+export type SignatureType = 'PersonalSign' | 'EthSign';
+
+export type Signature = string;
+export type PersonalSign = { kind: 'PersonalSign'; signature: Signature };
+export type EthSign = { kind: 'EthSign'; signature: Signature };
+export type OwnershipProof = PersonalSign | EthSign;

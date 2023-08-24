@@ -2,20 +2,17 @@
 
 use frame_support::{pallet_prelude::*, sp_runtime, traits::OnTimestampSet};
 pub use pallet::*;
-use primitives::Difficulty;
 use sp_arithmetic::traits::BaseArithmetic;
+use sp_core::U256;
 use sp_runtime::traits::{SaturatedConversion, UniqueSaturatedInto};
+
+pub type Difficulty = U256;
 
 #[cfg(test)]
 mod mock;
 
-#[allow(clippy::unnecessary_cast)]
-pub mod weights;
-
 #[cfg(test)]
 mod tests;
-
-mod benchmarking;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DifficultyAndTimestamp<Moment> {
@@ -25,13 +22,12 @@ pub struct DifficultyAndTimestamp<Moment> {
 
 #[frame_support::pallet]
 pub mod pallet {
+	use super::Difficulty;
 	use frame_support::{
 		pallet_prelude::*,
 		sp_runtime::traits::{MaybeSerializeDeserialize, SaturatedConversion},
 	};
-	use frame_system::pallet_prelude::*;
-	use primitives::Difficulty;
-	use sp_arithmetic::traits::{BaseArithmetic, UniqueSaturatedInto, Zero};
+	use sp_arithmetic::traits::{BaseArithmetic, UniqueSaturatedInto};
 
 	use crate::DifficultyAndTimestamp;
 
@@ -46,17 +42,9 @@ pub mod pallet {
 			+ BaseArithmetic
 			+ UniqueSaturatedInto<i64>
 			+ MaybeSerializeDeserialize;
-
-		type WeightInfo: WeightInfo;
-	}
-
-	pub trait WeightInfo {
-		fn set_target_block_time() -> Weight;
-		fn set_adjustment_period() -> Weight;
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::genesis_config]
@@ -110,34 +98,6 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type DifficultyAdjustmentPeriod<T: Config> = StorageValue<_, i64, ValueQuery>;
-
-	#[pallet::call]
-	impl<T: Config> Pallet<T> {
-		#[pallet::weight(<T as Config>::WeightInfo::set_target_block_time())]
-		pub fn set_target_block_time(
-			origin: OriginFor<T>,
-			target_time: T::Moment,
-		) -> DispatchResult {
-			ensure_root(origin)?;
-
-			ensure!(!target_time.is_zero(), Error::<T>::ZeroTargetTime);
-
-			TargetBlockTime::<T>::put(target_time);
-
-			Ok(())
-		}
-		#[pallet::weight(<T as Config>::WeightInfo::set_adjustment_period())]
-		pub fn set_adjustment_period(origin: OriginFor<T>, period: i64) -> DispatchResult {
-			ensure_root(origin)?;
-
-			ensure!(period != 0, Error::<T>::ZeroAdjustmentPeriod);
-			ensure!(period > 0, Error::<T>::NegativeAdjustmentPeriod);
-
-			DifficultyAdjustmentPeriod::<T>::put(period);
-
-			Ok(())
-		}
-	}
 }
 
 // Adapted from zawy12's Simple EMA difficulty algorithm, license follows:

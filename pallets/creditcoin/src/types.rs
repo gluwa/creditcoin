@@ -1,11 +1,16 @@
+mod collect_coins;
 pub mod loan_terms;
-pub mod platform;
+mod transfer;
 
+pub use collect_coins::{
+	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
+};
 pub use loan_terms::*;
-pub use platform::*;
+pub use transfer::*;
 
 use crate::ocw::tasks::collect_coins::GCreContract;
-use codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
+use crate::ocw::VerificationFailureCause;
+use crate::ocw::VerificationResult;
 use extend::ext;
 use frame_support::{
 	storage::types::QueryKindTrait,
@@ -13,9 +18,13 @@ use frame_support::{
 	BoundedVec, RuntimeDebug, StorageHasher,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::Config as SystemConfig;
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_timestamp::Config as TimestampConfig;
 use scale_info::TypeInfo;
 use sha2::Digest;
 use sp_core::ecdsa;
+use sp_runtime::codec::{Decode, Encode, EncodeLike, FullCodec, MaxEncodedLen};
 use sp_runtime::traits::Hash;
 use sp_std::prelude::*;
 
@@ -53,6 +62,12 @@ impl Blockchain {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum OwnershipProof {
+	PersonalSign(sp_core::ecdsa::Signature),
+	EthSign(sp_core::ecdsa::Signature),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TransferKind {
 	Erc20(ExternalAddress),
 	Ethless(ExternalAddress),
@@ -71,43 +86,6 @@ impl<AccountId> Address<AccountId> {
 	pub fn matches_chain_of(&self, other: &Address<AccountId>) -> bool {
 		self.blockchain == other.blockchain
 	}
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectedCoins<Hash, Balance> {
-	pub to: AddressId<Hash>,
-	pub amount: Balance,
-	pub tx_id: ExternalTxId,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct Transfer<AccountId, BlockNum, Hash, Moment> {
-	pub blockchain: Blockchain,
-	pub kind: TransferKind,
-	pub from: AddressId<Hash>,
-	pub to: AddressId<Hash>,
-	pub order_id: OrderId<BlockNum, Hash>,
-	pub amount: ExternalAmount,
-	pub tx_id: ExternalTxId,
-	pub block: BlockNum,
-	pub is_processed: bool,
-	pub account_id: AccountId,
-	pub timestamp: Option<Moment>,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct UnverifiedCollectedCoins {
-	pub to: ExternalAddress,
-	pub tx_id: ExternalTxId,
-	pub contract: GCreContract,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
-	pub transfer: Transfer<AccountId, BlockNum, Hash, Moment>,
-	pub from_external: ExternalAddress,
-	pub to_external: ExternalAddress,
-	pub deadline: BlockNum,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -184,14 +162,14 @@ pub enum OrderId<BlockNum, Hash> {
 	Repayment(RepaymentOrderId<BlockNum, Hash>),
 }
 
+impl<BlockNum, Hash> From<DealOrderId<BlockNum, Hash>> for OrderId<BlockNum, Hash> {
+	fn from(id: DealOrderId<BlockNum, Hash>) -> Self {
+		Self::Deal(id)
+	}
+}
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct OfferId<BlockNum, Hash>(BlockNum, Hash);
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct TransferId<Hash>(Hash);
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectedCoinsId<Hash>(Hash);
 
 fn bytes_to_hex(bytes: &[u8]) -> Vec<u8> {
 	const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
@@ -209,7 +187,7 @@ macro_rules! concatenate {
 	};
 	($($bytes: expr),+) => {
 		{
-			let mut buf = Vec::with_capacity($crate::types::concatenate!(@strip_plus $(+ $bytes.len())+));
+			let mut buf = ::sp_std::prelude::Vec::with_capacity($crate::types::concatenate!(@strip_plus $(+ $bytes.len())+));
 			$(buf.extend($bytes);)+
 			buf
 		}
@@ -268,28 +246,6 @@ impl<B, H> RepaymentOrderId<B, H> {
 		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
 	{
 		RepaymentOrderId(expiration_block, Config::Hashing::hash(guid))
-	}
-}
-
-impl<H> TransferId<H> {
-	pub fn new<Config>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> TransferId<H>
-	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		let key = concatenate!(blockchain.as_bytes(), blockchain_tx_id);
-		TransferId(Config::Hashing::hash(&key))
-	}
-}
-
-impl<H> CollectedCoinsId<H> {
-	pub fn new<Config>(contract_chain: &Blockchain, blockchain_tx_id: &[u8]) -> CollectedCoinsId<H>
-	where
-		Config: frame_system::Config,
-		<Config as frame_system::Config>::Hashing: Hash<Output = H>,
-	{
-		let key = concatenate!(contract_chain.as_bytes(), blockchain_tx_id);
-		CollectedCoinsId(Config::Hashing::hash(&key))
 	}
 }
 
@@ -356,6 +312,7 @@ macro_rules! impl_id {
 		}
 
 		impl<BlockNum, H> $id<BlockNum, H> {
+			#[allow(clippy::extra_unused_type_parameters)]
 			pub fn with_expiration_hash<Config>(expiration_block: BlockNum, hash: H) -> Self
 			where
 				Config: frame_system::Config<BlockNumber = BlockNum>,
@@ -461,7 +418,7 @@ impl From<&ecdsa::Public> for LegacySighash {
 		let mut hasher = sha2::Sha512::new();
 		hasher.update(compressed_key_hex.as_bytes());
 		let key_hash = hasher.finalize();
-		let key_hash_hex = hex::encode(&key_hash);
+		let key_hash_hex = hex::encode(key_hash);
 
 		const SKIP_TO_GET_60: usize = 512 / 8 * 2 - 60; // 512 - hash size in bits, 8 - bits in byte, 2 - hex digits for byte, 60 - merkle address length (70) without creditcoin namespace length (6) and prefix length (4)
 
@@ -515,6 +472,23 @@ pub enum Task<AccountId, BlockNum, Hash, Moment> {
 	CollectCoins(UnverifiedCollectedCoins),
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: SystemConfig + TimestampConfig + crate::Config>
+	pallet_offchain_task_scheduler::benchmarking::TaskDefault<T>
+	for Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
+{
+	fn generate_from_seed(seed: u32) -> Self {
+		use crate::benchmarking::generate_fake_unverified_transfer;
+		use frame_benchmarking::{account, whitelist};
+		use sp_runtime::traits::One;
+		let who = account("{seed}", 0, 0);
+		whitelist!(who);
+		let pending_transfer =
+			generate_fake_unverified_transfer::<T>(&who, T::BlockNumber::one(), seed);
+		pending_transfer.into()
+	}
+}
+
 impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
 	for Task<AccountId, BlockNum, Hash, Moment>
 {
@@ -552,7 +526,7 @@ impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
 	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>),
+	CollectCoins(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>),
 }
 
 impl<AccountId, Balance, BlockNum, Hash, Moment>
@@ -567,27 +541,22 @@ impl<AccountId, Balance, BlockNum, Hash, Moment>
 }
 
 impl<AccountId, Balance, BlockNum, Hash, Moment>
-	From<(CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)>
+	From<(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)>
 	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
 {
-	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoins<Hash, Balance>)) -> Self {
+	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)) -> Self {
 		Self::CollectCoins(id, coins)
 	}
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum TaskData<AccountId, Balance, BlockNum, Hash, Moment> {
-	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>, Option<Moment>),
-	CollectCoins(UnverifiedCollectedCoins, Balance),
-}
-
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
 	use crate::{
-		helpers::RefstrExt, mock, ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
+		helpers::extensions::HexToAddress, loan_terms::InvalidTermLengthError, mock,
+		ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
 	};
-	use codec::{Decode, Encode};
 	use frame_support::BoundedVec;
+	use parity_scale_codec::{Decode, Encode};
 	use sp_runtime::testing::H256;
 
 	type AccountId = mock::AccountId;
@@ -617,7 +586,7 @@ mod test {
 
 	macro_rules! trait_tests {
 	($($name:ident: $type:ty: $default_value:expr,)*) => {
-		use codec::MaxEncodedLen;
+		use parity_scale_codec::MaxEncodedLen;
 		use scale_info::TypeInfo;
 	$(
 		mod $name {
@@ -692,8 +661,8 @@ mod test {
 		test_info.create_funding_transfer(&deal_order_id)
 	}
 
-	fn create_collected_coins() -> CollectedCoins<Hash, Balance> {
-		CollectedCoins {
+	fn create_collected_coins() -> CollectedCoinsStruct<Hash, Balance> {
+		CollectedCoinsStruct {
 			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
 			amount: 1000,
 			tx_id: TX_HASH.hex_to_address(),
@@ -708,8 +677,11 @@ mod test {
 		}
 	}
 
-	fn create_unverified_transfer() -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
-		let (_, transfer) = create_funding_transfer();
+	pub(crate) fn create_unverified_transfer(
+	) -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
+		let test_info = TestInfo::new_defaults();
+		let (deal_order_id, _) = test_info.create_deal_order();
+		let (_, transfer) = test_info.create_funding_transfer(&deal_order_id);
 		UnverifiedTransfer {
 			transfer,
 			from_external: b"lender".to_vec().try_into().unwrap(),
@@ -733,7 +705,7 @@ mod test {
 	blockchain: Blockchain : Blockchain::Bitcoin,
 	transfer_kind: TransferKind : TransferKind::Native,
 	address: Address<AccountId> : create_address(),
-	collected_coins: CollectedCoins<Hash, Balance> : create_collected_coins(),
+	collected_coins: CollectedCoinsStruct<Hash, Balance> : create_collected_coins(),
 	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
 	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
 	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
@@ -755,9 +727,6 @@ mod test {
 	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
 		create_funding_transfer()
 	),
-	task_data: TaskData<AccountId, Balance, BlockNum, Hash, Moment> : TaskData::<AccountId, Balance, BlockNum, Hash, Moment>::CollectCoins(
-		create_unverified_collected_coins(), 2000
-	),
 
 	// from types/loan_terms.rs
 	duration: Duration : Duration::from_millis(100),
@@ -766,18 +735,6 @@ mod test {
 	loan_terms: LoanTerms : TestInfo::new_defaults().loan_terms,
 	ask_terms: AskTerms : AskTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
 	bid_terms: BidTerms : BidTerms::try_from(TestInfo::new_defaults().loan_terms).unwrap(),
-
-	// from types/platform.rs
-	evm_chain_id: EvmChainId : EvmChainId::from(44),
-	evm_info: EvmInfo : EvmInfo { chain_id: 0.into() },
-	new_blockchain: NewBlockchain : NewBlockchain::Evm(EvmInfo { chain_id: 0.into() }),
-	evm_transfer_kind: EvmTransferKind : EvmTransferKind::Erc20,
-	evm_currency_type: EvmCurrencyType : match Currency::default() {
-		Currency::Evm(currency_type, _) => currency_type,
-	},
-	currency: Currency : Currency::default(),
-	new_transfer_kind: NewTransferKind : NewTransferKind::Evm(EvmTransferKind::Erc20),
-	currency_id: CurrencyId<Hash> : CurrencyId::new::<mock::Test>(&Currency::default()),
 	}
 
 	#[test]
@@ -867,15 +824,10 @@ mod test {
 	}
 
 	#[test]
-	fn test_evmchainid_new() {
-		assert_eq!(EvmChainId::new(46), EvmChainId::from(46),);
-	}
-
-	#[test]
 	#[allow(clippy::clone_on_copy)]
 	fn exercise_invalid_term_length_error_clone_and_runtime_debug() {
 		let value = InvalidTermLengthError;
 		let new_value = value.clone();
-		format!("{:?}", new_value);
+		format!("{new_value:?}");
 	}
 }

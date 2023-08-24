@@ -1,15 +1,15 @@
-import { KeyringPair } from 'creditcoin-js';
+import { KeyringPair, TransferKind, creditcoinApi } from 'creditcoin-js';
 
 import { Guid } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
 
 import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 import { TransferEvent } from 'creditcoin-js/lib/extrinsics/register-transfers';
-import { creditcoinApi } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, lendOnEth, tryRegisterAddress } from './common';
+import { testData, lendOnEth, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
 import { Wallet } from 'creditcoin-js';
+import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
 
 describe('CloseDealOrder', (): void => {
     let ccApi: CreditcoinApi;
@@ -20,12 +20,15 @@ describe('CloseDealOrder', (): void => {
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
 
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -66,6 +69,18 @@ describe('CloseDealOrder', (): void => {
         ]);
         const askGuid = Guid.newGuid();
         const bidGuid = Guid.newGuid();
+
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+        );
+
+        const ethless: TransferKind = {
+            kind: 'Ethless',
+            contractAddress: eth.testTokenAddress,
+        };
+
         const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
 
         dealOrder = await registerDealOrder(
@@ -80,18 +95,8 @@ describe('CloseDealOrder', (): void => {
             lender,
         );
 
-        const [fundingTokenAddress, fundingTxHash] = await lendOnEth(
-            lenderWallet,
-            borrowerWallet,
-            dealOrder.dealOrder.itemId,
-            loanTerms,
-        );
-        const fundingEvent = await registerFundingTransfer(
-            { kind: 'Ethless', contractAddress: fundingTokenAddress },
-            dealOrder.dealOrder.itemId,
-            fundingTxHash,
-            lender,
-        );
+        const fundingTxHash = await lendOnEth(lenderWallet, borrowerWallet, dealOrder.dealOrder.itemId, loanTerms, eth);
+        const fundingEvent = await registerFundingTransfer(ethless, dealOrder.dealOrder.itemId, fundingTxHash, lender);
         const fundingTransferVerified = await fundingEvent.waitForVerification().catch();
         expect(fundingTransferVerified).toBeTruthy();
 
@@ -99,18 +104,16 @@ describe('CloseDealOrder', (): void => {
         await lockDealOrder(dealOrder.dealOrder.itemId, borrower);
 
         // borrower repays the money on Ethereum
-        const [repaymentTokenAddress, repaymentTxHash] = await lendOnEth(
+        const repaymentTxHash = await lendOnEth(
             borrowerWallet,
             lenderWallet,
             dealOrder.dealOrder.itemId,
             loanTerms,
+            eth,
         );
 
         repaymentEvent = await registerRepaymentTransfer(
-            {
-                kind: 'Ethless',
-                contractAddress: repaymentTokenAddress,
-            },
+            ethless,
             loanTerms.amount,
             dealOrder.dealOrder.itemId,
             repaymentTxHash,
@@ -131,7 +134,7 @@ describe('CloseDealOrder', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 600000);
 });

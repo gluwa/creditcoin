@@ -125,4 +125,4 @@ main().catch(console.error);
 
 ### More Examples
 
-More examples can be found in the [polkadotjs-examples](../polkadotjs-examples) project.
+More examples can be found in the [creditcoin-js](../creditcoin-js) project.

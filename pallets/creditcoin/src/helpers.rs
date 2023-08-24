@@ -1,4 +1,5 @@
 mod external_address;
+mod register_transfer;
 
 pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -6,15 +7,12 @@ pub use external_address::{EVMAddress, PublicToAddress};
 
 use crate::{
 	pallet::*,
-	types::{Address, AddressId},
-	DealOrderId, Error, ExternalAmount, ExternalTxId, Guid, Id, OrderId, Task, TaskId, Transfer,
-	TransferId, TransferKind, UnverifiedTransfer,
+	types::{Address, AddressId, OwnershipProof},
+	Blockchain, DealOrderId, Error, ExternalAddress, Guid, Id, TransferId,
 };
-use frame_support::{ensure, traits::Get};
+use frame_support::ensure;
 use frame_system::pallet_prelude::*;
-use sp_runtime::{traits::Saturating, RuntimeAppPublic};
 use sp_std::prelude::*;
-use sp_tracing as log;
 
 #[allow(unused_macros)]
 macro_rules! try_get {
@@ -23,12 +21,13 @@ macro_rules! try_get {
 	};
 }
 
+#[macro_export]
 macro_rules! try_get_id {
 	($storage: ident <$t: ident>, $key: expr, $err: ident) => {
-		<crate::pallet::$storage<$t> as DoubleMapExt<_, _, _, _, _, _, _, _, _, _>>::try_get_id(
+		<$crate::pallet::$storage<$t> as DoubleMapExt<_, _, _, _, _, _, _, _, _, _>>::try_get_id(
 			$key,
 		)
-		.map_err(|()| crate::pallet::Error::<$t>::$err)
+		.map_err(|()| $crate::pallet::Error::<$t>::$err)
 	};
 }
 
@@ -53,21 +52,7 @@ impl<T: Config> Pallet<T> {
 		<pallet_timestamp::Pallet<T>>::get()
 	}
 	pub fn get_address(address_id: &AddressId<T::Hash>) -> Result<Address<T::AccountId>, Error<T>> {
-		Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)
-	}
-
-	pub fn authority_id() -> Option<T::AccountId> {
-		let local_keys = crate::crypto::Public::all()
-			.into_iter()
-			.map(|p| sp_core::sr25519::Public::from(p).into())
-			.collect::<Vec<T::FromAccountId>>();
-
-		log::trace!(target: "OCW", "local keys {local_keys:?}");
-
-		Authorities::<T>::iter_keys().find_map(|auth| {
-			let acct = auth.clone().into();
-			local_keys.contains(&acct).then_some(auth)
-		})
+		Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)
 	}
 
 	pub fn try_mutate_deal_order_and_transfer(
@@ -117,61 +102,6 @@ impl<T: Config> Pallet<T> {
 		UsedGuids::<T>::insert(guid, ());
 		Ok(())
 	}
-
-	pub fn register_transfer_internal(
-		who: T::AccountId,
-		from_id: AddressId<T::Hash>,
-		to_id: AddressId<T::Hash>,
-		transfer_kind: TransferKind,
-		amount: ExternalAmount,
-		order_id: OrderId<T::BlockNumber, T::Hash>,
-		blockchain_tx_id: ExternalTxId,
-	) -> Result<
-		(TransferId<T::Hash>, Transfer<T::AccountId, BlockNumberFor<T>, T::Hash, T::Moment>),
-		crate::Error<T>,
-	> {
-		let from = Self::get_address(&from_id)?;
-		let to = Self::get_address(&to_id)?;
-
-		ensure!(from.owner == who, Error::<T>::NotAddressOwner);
-
-		ensure!(from.blockchain == to.blockchain, Error::<T>::AddressPlatformMismatch);
-
-		ensure!(from.blockchain.supports(&transfer_kind), Error::<T>::UnsupportedTransferKind);
-
-		let transfer_id = TransferId::new::<T>(&from.blockchain, &blockchain_tx_id);
-		ensure!(!Transfers::<T>::contains_key(&transfer_id), Error::<T>::TransferAlreadyRegistered);
-
-		let block = Self::block_number();
-
-		let transfer = Transfer {
-			blockchain: from.blockchain,
-			kind: transfer_kind,
-			amount,
-			block,
-			from: from_id,
-			to: to_id,
-			order_id,
-			is_processed: false,
-			account_id: who,
-			tx_id: blockchain_tx_id,
-			timestamp: None,
-		};
-
-		let deadline = block.saturating_add(T::UnverifiedTaskTimeout::get());
-
-		let pending = UnverifiedTransfer {
-			from_external: from.value,
-			to_external: to.value,
-			transfer: transfer.clone(),
-			deadline,
-		};
-		let task_id = TaskId::from(transfer_id.clone());
-		let pending = Task::from(pending);
-		PendingTasks::<T>::insert(&deadline, &task_id, &pending);
-
-		Ok((transfer_id, transfer))
-	}
 }
 
 pub fn non_paying_error<T: Config>(
@@ -181,30 +111,144 @@ pub fn non_paying_error<T: Config>(
 		error: error.into(),
 		post_info: frame_support::dispatch::PostDispatchInfo {
 			actual_weight: None,
-			pays_fee: frame_support::weights::Pays::No,
+			pays_fee: frame_support::dispatch::Pays::No,
 		},
 	}
 }
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-#[extend::ext]
-pub(crate) impl<'a> &'a str {
-	fn hex_to_address(self) -> crate::ExternalAddress {
-		hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+pub mod extensions {
+
+	#[cfg(any(test, feature = "runtime-benchmarks"))]
+	#[extend::ext(name = HexToAddress)]
+	pub(crate) impl<'a> &'a str {
+		fn hex_to_address(self) -> crate::ExternalAddress {
+			use sp_std::convert::TryInto;
+			hex::decode(self.trim_start_matches("0x")).unwrap().try_into().unwrap()
+		}
+		fn into_bounded<S>(self) -> frame_support::BoundedVec<u8, S>
+		where
+			S: frame_support::pallet_prelude::Get<u32>,
+		{
+			self.as_bytes().into_bounded()
+		}
+	}
+
+	#[cfg(any(test, feature = "runtime-benchmarks"))]
+	#[extend::ext(name = IntoBounded)]
+	pub(crate) impl<'a, S, T> &'a [T]
+	where
+		S: frame_support::pallet_prelude::Get<u32>,
+		T: Clone + alloc::fmt::Debug,
+	{
+		fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, crate::Vec<T>> {
+			core::convert::TryFrom::try_from(self.to_vec())
+		}
+
+		fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
+			self.try_into_bounded().unwrap()
+		}
 	}
 }
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-#[extend::ext]
-pub(crate) impl<'a, S, T> &'a [T]
-where
-	S: Get<u32>,
-	T: Clone,
-{
-	fn try_into_bounded(self) -> Result<frame_support::BoundedVec<T, S>, ()> {
-		core::convert::TryFrom::try_from(self.to_vec())
+use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
+
+/// Try to extract an external address for a particular blockchain through a signature and an account id which acts as a message.
+/// This function supports the older and insecure EthSign signing method and the new PersonalSign standard that is supported by Metamask.
+pub fn try_extract_address<T: Config>(
+	ownership_proof: OwnershipProof,
+	account_id: &[u8],
+	blockchain: &Blockchain,
+	address: &ExternalAddress,
+) -> Result<ExternalAddress, crate::Error<T>> {
+	match ownership_proof {
+		// Old insecure signing method
+		OwnershipProof::EthSign(signature) => {
+			extract_public_key_eth_sign(signature.into(), account_id, blockchain, address)
+		},
+		// New Way
+		OwnershipProof::PersonalSign(signature) => {
+			extract_public_key_personal_sign(signature.into(), account_id, blockchain, address)
+		},
 	}
-	fn into_bounded(self) -> frame_support::BoundedVec<T, S> {
-		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
+}
+
+fn extract_public_key_eth_sign<T: Config>(
+	signature: [u8; 65],
+	account_id: &[u8],
+	blockchain: &Blockchain,
+	address: &ExternalAddress,
+) -> Result<ExternalAddress, Error<T>> {
+	let message = sp_io::hashing::sha2_256(account_id);
+	let message = &sp_io::hashing::blake2_256(message.as_ref());
+
+	match secp256k1_ecdsa_recover_compressed(&signature, message) {
+		Ok(public_key) => {
+			match generate_external_address(
+				blockchain,
+				address,
+				sp_core::ecdsa::Public::from_raw(public_key),
+			) {
+				Some(s) => Ok(s),
+				None => Err(Error::EthSignExternalAddressGenerationFailed),
+			}
+		},
+		Err(_) => Err(Error::InvalidSignature),
+	}
+}
+
+pub fn eth_message(message: &[u8; 32]) -> [u8; 32] {
+	let mut bytes: Vec<u8> = vec![];
+	let salt = b"\x19Ethereum Signed Message:\n32";
+
+	bytes.extend_from_slice(salt);
+	bytes.extend_from_slice(message);
+
+	sp_io::hashing::keccak_256(&bytes)
+}
+
+pub fn extract_public_key_personal_sign<T: Config>(
+	signature: [u8; 65],
+	account_id: &[u8],
+	blockchain: &Blockchain,
+	address: &ExternalAddress,
+) -> Result<ExternalAddress, Error<T>> {
+	let message = sp_io::hashing::blake2_256(account_id);
+	let message = eth_message(&message);
+
+	match secp256k1_ecdsa_recover_compressed(&signature, &message) {
+		Ok(public_key) => {
+			match generate_external_address(
+				blockchain,
+				address,
+				sp_core::ecdsa::Public::from_raw(public_key),
+			) {
+				Some(s) => Ok(s),
+				None => Err(Error::PersonalSignExternalAddressGenerationFailed),
+			}
+		},
+		Err(_) => Err(Error::InvalidSignature),
+	}
+}
+
+#[test]
+fn test_extract_public_key_personal_sign() {
+	let expected_hash =
+		hex::decode("cc2da28afbc18b601ee75cebaea68b70189c6eaae842c8971b31cd181dceda8c").unwrap();
+
+	let raw_address: [u8; 32] = [
+		136, 220, 52, 23, 213, 5, 142, 196, 180, 80, 62, 12, 18, 234, 26, 10, 137, 190, 32, 15,
+		233, 137, 34, 66, 61, 67, 52, 1, 79, 166, 176, 238,
+	];
+
+	let message = eth_message(&raw_address);
+
+	assert_eq!(message.as_slice(), expected_hash.as_slice());
+}
+
+pub fn blockchain_is_supported(blockchain: &Blockchain) -> bool {
+	match blockchain {
+		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby => true,
+		Blockchain::Bitcoin => false,
+		Blockchain::Other(_) => false,
 	}
 }

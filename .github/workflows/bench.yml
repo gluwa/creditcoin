@@ -1,34 +1,64 @@
+---
 name: BENCHMARK
 
 # Controls when the action will run.
 on:
   pull_request:
-    branches: testnet
+    branches: [testnet]
+
+env:
+  RUNNER_VM_NAME: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
+  RESOURCE_GROUP: "github-runner-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT"
+  AZ_LOCATION: "westus3"
 
 jobs:
+  check-if-needed:
+    # To avoid endless loop in CI skip this job on the commit which
+    # auto-updates the weights and is generated further below.
+    if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'notaturkey' }}
+    runs-on: ubuntu-22.04
+    outputs:
+      needs-bench: ${{ steps.version-check.outputs.needs_bench }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check versions
+        id: version-check
+        run: |
+          ./scripts/check-spec-increase.sh "remotes/origin/$GITHUB_BASE_REF" "HEAD"
+
   build-benchmarks:
-      runs-on: ubuntu-20.04
-      steps:
+    runs-on: ubuntu-22.04
+    needs: check-if-needed
+    if: needs.check-if-needed.outputs.needs-bench == 1
+    steps:
       - uses: actions/checkout@v3
 
       - name: Inspect benchmark CI config
         run: |
+          # WARNING: Command below may differ depending on which workflow config file
+          # your job is defined in !!! Don't copy&paste it blindly !!!
           PALLETS_IN_CI_CONFIG=$(grep "PALLET:" .github/workflows/bench.yml | grep -v PALLETS_IN_CI_CONFIG | tr -d ' ' | cut -f2 -d: | sort | xargs)
-          PALLETS_IN_SOURCE=$(ls -1 pallets/ | sort | xargs)
+
+          PALLETS_IN_SOURCE=$(./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets)
           if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
               echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              echo "INFO: in source: '$PALLETS_IN_SOURCE'"
+              echo "INFO: CI config: '$PALLETS_IN_CI_CONFIG'"
               exit 1
           fi
 
       - name: Set-Up
         run: |
           sudo apt-get update
-          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
 
       - name: Configure rustc version
         run: |
           source ci/env
-          echo "RUSTC_VERSION=$RUSTC_VERSION" >> $GITHUB_ENV
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -37,7 +67,7 @@ jobs:
           target: wasm32-unknown-unknown
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build benchmarks
         uses: actions-rs/cargo@v1
@@ -51,20 +81,90 @@ jobs:
           name: creditcoin-node
           path: target/release/creditcoin-node
 
-  hardware-benchmarks:
-    runs-on: self-hosted
-    permissions: write-all
+  deploy-github-runner:
+    runs-on: ubuntu-22.04
     needs: build-benchmarks
+    outputs:
+      runner_vm_name: ${{ steps.get-env.outputs.runner_vm_name }}
+      resource_group: ${{ steps.get-env.outputs.resource_group }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install azure-cli
+        run: |
+          sudo apt remove azure-cli -y && sudo apt autoremove -y
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          sudo apt install -y jq
+          az version
+
+      - name: Authorize hosted-runner
+        run: |
+          mkdir -p ~/.ssh/
+          ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa
+          cat ~/.ssh/id_rsa.pub >> .github/authorized_keys
+
+      - name: Evaluate env vars
+        id: get-env
+        run: |
+          # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
+          # doesn't evaluate the $GITHUB_RUN_ID reference
+          echo "runner_vm_name=${{ env.RUNNER_VM_NAME }}" >> "$GITHUB_OUTPUT"
+          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> "$GITHUB_OUTPUT"
+
+      - name: Provision VM
+        if: env.LC_GITHUB_REPO_ADMIN_TOKEN
+        run: |
+          echo "INFO: From ENVs: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
+          echo "INFO: From Step: RUNNER_VM_NAME=${{ steps.get-env.outputs.runner_vm_name }}"
+
+          az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
+          az account set --subscription "Playground Subscription"
+          ## az account set -s "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+
+          # create resource group
+          echo "INFO: ${{ steps.get-env.outputs.resource_group }}"
+          az group create -n "${{ steps.get-env.outputs.resource_group }}" --location "${{ env.AZ_LOCATION }}"
+
+          # RG Creditcoin-Test is in WestUS and the CPU quota is already full
+          # that's why specify a different region here
+          az deployment group create -g "${{ steps.get-env.outputs.resource_group }}" -f .github/runner.bicep \
+              --parameters location="${{ env.AZ_LOCATION }}" \
+              --parameters vmName="${{ steps.get-env.outputs.runner_vm_name }}" \
+              --parameters adminPasswordOrKey="$(cat .github/authorized_keys)" > output.json
+
+          # provision the GitHub Runner binary on the VM
+          # passing additional ENV values
+          SSH_USER_AT_HOSTNAME=$(jq -r '.properties.outputs.sshUserAtHostname.value' < output.json)
+          echo "INFO: $SSH_USER_AT_HOSTNAME"
+
+          export LC_RUNNER_VM_NAME="${{ env.RUNNER_VM_NAME }}"
+          ssh -i ~/.ssh/id_rsa \
+              -o SendEnv=LC_GITHUB_REPO_ADMIN_TOKEN,LC_RUNNER_VM_NAME \
+              -o StrictHostKeyChecking=no "$SSH_USER_AT_HOSTNAME" < ./scripts/provision-github-runner.sh
+        env:
+          LC_GITHUB_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+
+  hardware-benchmarks:
+    # see https://gist.github.com/jonico/a94d03cac7a858e0613926d9f1bc7f2b
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
+    # checkov:skip=CKV2_GHA_1:We need this for weights auto-update
+    permissions: write-all
+    needs:
+      - deploy-github-runner
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 10
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Set env
         run: |
-          echo "HOME=/home/actions" >> $GITHUB_ENV
+          echo "HOME=/home/actions" >> "$GITHUB_ENV"
 
       - name: Download benchmark binary
         uses: actions/download-artifact@v3
@@ -76,21 +176,10 @@ jobs:
         run: |
           chmod a+x ./target/release/creditcoin-node
 
-      - name: Difficulty
-        shell: bash
-        continue-on-error: false
-        env:
-          PALLET: difficulty
+      - name: Check if runner machine meets chain's requirements
+        continue-on-error: true
         run: |
-          ./scripts/bench.sh -p $PALLET -b
-
-      - name: Rewards
-        shell: bash
-        continue-on-error: false
-        env:
-          PALLET: rewards
-        run: |
-          ./scripts/bench.sh -p $PALLET -b
+          ./scripts/check-hardware.sh
 
       # Run creditcoin pallet with lesser steps
       - name: Creditcoin
@@ -101,30 +190,45 @@ jobs:
           REPEAT: 8
           PALLET: creditcoin
         run: |
-          ./scripts/bench.sh -p $PALLET -b -r $REPEAT -s $STEPS
+          ./scripts/bench.sh -p "$PALLET" -b -r "$REPEAT" -s "$STEPS"
+
+      - name: Offchain Task Scheduler
+        shell: bash
+        continue-on-error: false
+        env:
+          PALLET: offchain_task_scheduler
+        run: |
+          ./scripts/bench.sh -p "$PALLET" -b
+
+      - name: Rewards
+        shell: bash
+        continue-on-error: false
+        env:
+          PALLET: rewards
+        run: |
+          ./scripts/bench.sh -p "$PALLET" -b
 
       - name: Commit changes to current branch
         uses: EndBug/add-and-commit@v9
         with:
-          author_name: hardwareBenchmark
+          author_name: gluwa-bot
           author_email: creditcoin@gluwa.com
-          message: 'Auto-update pallet weights'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          message: "Auto-update pallet weights"
 
       - name: Prepare commit for PR against dev
         run: |
           LAST_COMMIT=$(git rev-parse HEAD)
           BRANCH_NAME=auto-update-weights-for-dev-${{ github.sha }}
 
-          git checkout -b $BRANCH_NAME origin/dev
-          git cherry-pick $LAST_COMMIT
-          git push origin $BRANCH_NAME
+          git checkout -b "$BRANCH_NAME" origin/dev
+          git cherry-pick "$LAST_COMMIT"
+          git push origin "$BRANCH_NAME"
 
       - name: Open PR against dev
         id: open_pr
         uses: rematocorp/open-pull-request-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
           from-branch: auto-update-weights-for-dev-${{ github.sha }}
           to-branch: dev
           repository-owner: gluwa
@@ -132,3 +236,41 @@ jobs:
 
       - name: PR number against dev
         run: echo ${{ steps.open_pr.outputs.pull_number }}
+
+  remove-github-runner:
+    runs-on: ubuntu-22.04
+    needs:
+      - deploy-github-runner
+      - hardware-benchmarks
+    if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Evaluate env vars
+        id: get-env
+        run: |
+          # WARNING: using env.RUNNER_VM_NAME directly in job outputs above
+          # doesn't evaluate the $GITHUB_RUN_ID reference
+          echo "resource_group=${{ env.RESOURCE_GROUP }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install azure-cli
+        run: |
+          sudo apt remove azure-cli -y && sudo apt autoremove -y
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az version
+
+      - name: Remove VM
+        run: |
+          echo "INFO: RUNNER_VM_NAME=${{ env.RUNNER_VM_NAME }}"
+
+          az login --service-principal --username "${{ secrets.AZURE_APP_ID }}" --password "${{ secrets.AZURE_APP_PASSWORD }}" --tenant "${{ secrets.AZURE_TENANT_ID }}"
+          az account set --subscription "Playground Subscription"
+          az group delete --yes -n "${{ steps.get-env.outputs.resource_group }}"
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: "Azure resources"
+          path: azure_resource_list.json

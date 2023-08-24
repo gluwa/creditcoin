@@ -4,16 +4,27 @@
 
 - Working [Docker](https://www.docker.com) installation
 
+**Notes:**
+
+For testing runtime upgrade/migrations Gluwa is using a 4 vCPU, 32 GiB RAM,
+Memory optimized virtual machine in Azure. The size spec is `Standard_E4as_v4`.
+See the `vmSize` parameter in
+[.github/runner.bicep](https://github.com/gluwa/creditcoin/blob/dev/.github/runner.bicep)
+for reference.
+
 ## Setup Steps
 
-1) In order to receive mining rewards you will need an account on the Creditcoin network. Each account has an address and a balance associated with it. The account is backed by a keypair. You can use an existing ECDSA keypair (e.g. from pre-Creditcoin 2.0) or you can generate a new keypair. You can use [subkey](https://docs.substrate.io/v3/tools/subkey/) to retrieve the account address from an existing private key (e.g. from pre-Creditcoin 2.0) or to generate a new keypair.
+1) In order to receive mining rewards you will need an account on the Creditcoin network. Each account has an address and a balance associated with it.
+   The account is backed by a keypair. You can use an existing ECDSA keypair (e.g. from pre-Creditcoin 2.0) or you can generate a new keypair.
+   You can use [subkey](https://docs.substrate.io/v3/tools/subkey/) to retrieve the account address from an existing private key
+   (e.g. from pre-Creditcoin 2.0) or to generate a new keypair.
 
     - Using an existing ECDSA keypair:
         - Your private key should be formatted as hex and start with `0x`, for example `0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774`
           - Note: if your existing private key starts with `00`, remove the leading `00` first.
         - Run `docker run -it docker.io/parity/subkey inspect --scheme Ecdsa <private key>` which will display the account information fot the keypair. For example:
 
-            ```
+            ```bash
             Secret Key URI `0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774` is account:
             Secret seed:       0x3351b11eca7b5c78c0f55c681d9a2e8a0630bcc7a95a35a4a87615c916771774
             Public key (hex):  0x02abf7befd96f80ce3a27772e7903f45a930c54ede2f0b9e052bfb21e90e0a4b40
@@ -26,7 +37,7 @@
     - Generate a new keypair
         - Run `docker run -it docker.io/parity/subkey:latest generate`. This will generate a new keypair and print the account information, for example:
 
-            ```
+            ```bash
             Secret phrase:       toss frown run relief book lift aunt guard reduce shell genuine alarm
             Network ID:        substrate
             Secret seed:       0x5ad92bddf82eae47f5c9cc77a749fd175d9d80aadeab6555e3126a087f5eb5f1
@@ -45,7 +56,7 @@
 
         ```bash
 
-        docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-beta-7 \
+        docker run -p 30333:30333 -v <your local data path>:/data gluwa/creditcoin:2.0.0-runtime-210 \
             # running a mining node
             --validator \
             # (optional) REPLACE <nodename> with a name for your node, to make it easier to identify
@@ -62,8 +73,6 @@
             --chain mainnet \
             # REPLACE <SS58Address> with your mining public key/address to receive rewards at
             --mining-key <SS58Address> \
-            # the base path to store the node's data
-            --base-path /data \
             # the port to use for node-to-node communication
             --port 30333
         ```

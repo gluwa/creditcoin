@@ -1,41 +1,29 @@
 use crate::{
-	helpers::{non_paying_error, EVMAddress, PublicToAddress, RefstrExt},
-	mock::*,
-	types::DoubleMapExt,
-	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, Currency, CurrencyId,
-	DealOrder, DealOrderId, DealOrders, Duration, EvmInfo, EvmTransferKind, ExternalAddress,
-	ExternalAmount, Guid, Id, LegacySighash, LoanTerms, Offer, OfferId, OrderId, Transfer,
-	TransferId, TransferKind, Transfers, WeightInfo,
+	helpers::{
+		eth_message,
+		extensions::{HexToAddress, IntoBounded},
+		non_paying_error, EVMAddress, PublicToAddress,
+	},
+	mock::{RuntimeOrigin as Origin, *},
+	types::{DoubleMapExt, OwnershipProof},
+	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
+	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,
+	Offer, OfferId, OrderId, Transfer, TransferId, TransferKind, Transfers, WeightInfo,
 };
-
 use assert_matches::assert_matches;
 use bstr::B;
-use codec::Encode;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
+use frame_support::{assert_noop, assert_ok, BoundedVec};
 use frame_system::RawOrigin;
+use pallet_offchain_task_scheduler::authority::AuthorityController;
+use parity_scale_codec::Encode;
 use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
-	MultiSigner,
+	AccountId32, MultiSigner,
 };
 use std::convert::{TryFrom, TryInto};
-
-//Duplicated code; pallet_creditcoin::benchmarking.rs
-#[extend::ext]
-impl<'a, S, T> &'a [T]
-where
-	S: Get<u32>,
-	T: Clone,
-{
-	fn try_into_bounded(self) -> Result<BoundedVec<T, S>, ()> {
-		core::convert::TryFrom::try_from(self.to_vec())
-	}
-	fn into_bounded(self) -> BoundedVec<T, S> {
-		core::convert::TryFrom::try_from(self.to_vec()).unwrap()
-	}
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RegisteredAddress {
@@ -72,7 +60,7 @@ impl RegisteredAddress {
 		signature: sp_core::ecdsa::Signature,
 	) -> RegisteredAddress {
 		let signer = public_key.into();
-		let address = if let MultiSigner::Ecdsa(pkey) = signer.clone() {
+		let address = if let MultiSigner::Ecdsa(pkey) = signer {
 			EVMAddress::from_public(&pkey)
 		} else {
 			unimplemented!();
@@ -102,18 +90,65 @@ impl RegisteredAddress {
 	}
 }
 
+pub(crate) fn generate_keypair_from_seed(seed: &str) -> sp_core::ecdsa::Pair {
+	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
+	sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap()
+}
+
+/// Generates an external EVM address from an ecdsa keypair
+pub(crate) fn external_address_from_keypair(key_pair: sp_core::ecdsa::Pair) -> ExternalAddress {
+	EVMAddress::from_public(&key_pair.public())
+}
+
+/// Generates an account from an ecdsa keypair
+pub(crate) fn account_from_keypair(key_pair: sp_core::ecdsa::Pair) -> AccountId {
+	let signer: MultiSigner = key_pair.public().into();
+	signer.into_account()
+}
+
+/// Generates proof of ownership for given account and external address
+pub(crate) fn build_proof_of_ownership(
+	who: AccountId32,
+	external_keypair: sp_core::ecdsa::Pair,
+) -> sp_core::ecdsa::Signature {
+	let message = get_register_address_message(who);
+	external_keypair.sign(message.as_slice())
+}
+
+pub(crate) fn build_proof_of_ownership_personal_sign(
+	who: AccountId32,
+	external_keypair: sp_core::ecdsa::Pair,
+) -> sp_core::ecdsa::Signature {
+	let message = get_register_address_message_personal_sign(who);
+	external_keypair.sign(message.as_slice())
+}
+
+pub fn get_register_address_message_personal_sign(who: AccountId) -> [u8; 32] {
+	eth_message(&sp_io::hashing::blake2_256(who.encode().as_slice()))
+}
+
+/// Generates an account, an external address, and proof of account ownership
+/// using the **same keypair** for the external address, and cc account.
 pub(crate) fn generate_address_with_proof(
 	seed: &str,
 ) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
-	let seed = seed.bytes().cycle().take(32).collect::<Vec<_>>();
-	let key_pair = sp_core::ecdsa::Pair::from_seed_slice(seed.as_slice()).unwrap();
-	let pkey = key_pair.public();
-	let signer: MultiSigner = pkey.clone().into();
-	let who = signer.into_account();
-	let message = get_register_address_message(who.clone());
-	let ownership_proof = key_pair.sign(message.as_slice());
-	let address = EVMAddress::from_public(&pkey);
-	(who, address, ownership_proof, key_pair)
+	let key_pair = generate_keypair_from_seed(seed);
+	let external_address = external_address_from_keypair(key_pair.clone());
+	let who = account_from_keypair(key_pair.clone());
+	let ownership_proof = build_proof_of_ownership(who.clone(), key_pair.clone());
+	(who, external_address, ownership_proof, key_pair)
+}
+
+/// Generates an account, an external address, and proof of account ownership
+/// using the **same keypair** for the external address, and cc account.
+pub(crate) fn generate_address_with_proof_personal_sign(
+	seed: &str,
+) -> (AccountId, ExternalAddress, sp_core::ecdsa::Signature, sp_core::ecdsa::Pair) {
+	let key_pair = generate_keypair_from_seed(seed);
+	let external_address = external_address_from_keypair(key_pair.clone());
+	let who = account_from_keypair(key_pair.clone());
+	let ownership_proof = build_proof_of_ownership_personal_sign(who.clone(), key_pair.clone());
+	(who, external_address, ownership_proof, key_pair)
 }
 
 type TestAskOrder = (AskOrderId<BlockNumber, Hash>, AskOrder<AccountId, BlockNumber, Hash>);
@@ -133,18 +168,6 @@ pub struct TestInfo {
 	pub(crate) ask_guid: Guid,
 	pub(crate) bid_guid: Guid,
 	pub(crate) expiration_block: u64,
-}
-
-impl Default for Currency {
-	fn default() -> Self {
-		Currency::Evm(
-			crate::EvmCurrencyType::SmartContract(
-				"0x0000000000000000000000000000000000000000".hex_to_address(),
-				[EvmTransferKind::Ethless].into_bounded(),
-			),
-			EvmInfo { chain_id: 0.into() },
-		)
-	}
 }
 
 impl Default for TestInfo {
@@ -357,7 +380,7 @@ fn register_address_should_work() {
 
 		assert_matches!(
 			event,
-			crate::mock::Event::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
 				assert_eq!(registered_address_id, address_id);
 				assert_eq!(registered_address, address);
 			}
@@ -366,19 +389,57 @@ fn register_address_should_work() {
 }
 
 #[test]
-fn register_address_pre_existing() {
+fn register_address_should_fail_to_reregister_external_address_to_same_account() {
 	ExtBuilder::default().build_and_execute(|| {
-		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
 		let blockchain = Blockchain::Rinkeby;
+		// Register external address to account
 		assert_ok!(Creditcoin::register_address(
 			Origin::signed(who.clone()),
 			blockchain.clone(),
-			address.clone(),
+			external_address.clone(),
 			ownership_proof.clone()
 		));
-
+		// Try registering again to same account and fail
 		assert_noop!(
-			Creditcoin::register_address(Origin::signed(who), blockchain, address, ownership_proof),
+			Creditcoin::register_address(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				ownership_proof
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+fn register_address_should_fail_to_reregister_external_address_to_new_account() {
+	ExtBuilder::default().build_and_execute(|| {
+		let who_first = account_from_keypair(generate_keypair_from_seed("first account"));
+		let who_second = account_from_keypair(generate_keypair_from_seed("second account"));
+		let external_keypair = generate_keypair_from_seed("external account");
+		let external_address = external_address_from_keypair(external_keypair.clone());
+		let blockchain = Blockchain::Rinkeby;
+
+		// Register external address to first account
+		let first_ownership_proof =
+			build_proof_of_ownership(who_first.clone(), external_keypair.clone());
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(who_first),
+			blockchain.clone(),
+			external_address.clone(),
+			first_ownership_proof
+		));
+		// Try registering to a second account and fail
+		let second_ownership_proof = build_proof_of_ownership(who_second.clone(), external_keypair);
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who_second),
+				blockchain,
+				external_address,
+				second_ownership_proof
+			),
 			crate::Error::<Test>::AddressAlreadyRegistered
 		);
 	})
@@ -477,70 +538,6 @@ fn verify_ethless_transfer() {
 			&amount,
 			&tx_id,
 		));
-	});
-}
-
-#[test]
-#[tracing_test::traced_test]
-fn register_transfer_ocw_fail_to_send() {
-	let mut ext = ExtBuilder::default();
-	ext.generate_authority();
-	ext.build_offchain_and_execute_with_state(|state, _| {
-		let dummy_url = "dummy";
-		let tx_hash = get_mock_tx_hash();
-		let contract = get_mock_contract().hex_to_address();
-		let tx_block_num = get_mock_tx_block_num();
-		let blockchain = Blockchain::Rinkeby;
-
-		// we're going to verify a transfer twice:
-		// First when we expect failure, which means we won't make all of the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-			.mock_get_block_number(&mut state.write());
-		// Second when we expect success, where we'll do all the requests
-		MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
-			.mock_all(&mut state.write());
-
-		set_rpc_uri(&Blockchain::Rinkeby, &dummy_url);
-
-		let loan_amount = get_mock_amount();
-		let terms = LoanTerms { amount: loan_amount, ..Default::default() };
-
-		let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
-
-		let (deal_order_id, _) = test_info.create_deal_order();
-
-		let lender = test_info.lender.account_id;
-
-		// exercise when we try to send a fail_transfer but tx send fails
-		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer(
-				Origin::signed(lender.clone()),
-				TransferKind::Ethless(contract.clone()),
-				deal_order_id.clone(),
-				tx_hash.hex_to_address(),
-			));
-
-			roll_by_with_ocw(1);
-
-			assert!(logs_contain("Failed to send fail dispatchable transaction"));
-		});
-
-		crate::PendingTasks::<Test>::remove_all(None);
-
-		let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
-
-		// exercise when we try to send a verify_transfer but tx send fails
-		with_failing_create_transaction(|| {
-			assert_ok!(Creditcoin::register_funding_transfer(
-				Origin::signed(lender.clone()),
-				TransferKind::Ethless(contract.clone()),
-				fake_deal_order_id.clone(),
-				tx_hash.hex_to_address(),
-			));
-
-			roll_by_with_ocw(1);
-			assert!(logs_contain("Failed to send persist dispatchable transaction"));
-		});
 	});
 }
 
@@ -826,17 +823,13 @@ fn add_offer_should_error_when_blockchain_differs_between_ask_and_bid_order() {
 		let Offer { expiration_block, ask_id, bid_id, lender, .. } = offer;
 
 		// simulate deal transfer
-		crate::AskOrders::<Test>::mutate(
-			&ask_id.expiration(),
-			&ask_id.hash(),
-			|ask_order_storage| {
-				ask_order_storage.as_mut().unwrap().blockchain = Blockchain::Bitcoin;
-			},
-		);
+		crate::AskOrders::<Test>::mutate(ask_id.expiration(), ask_id.hash(), |ask_order_storage| {
+			ask_order_storage.as_mut().unwrap().blockchain = Blockchain::Bitcoin;
+		});
 
 		assert_noop!(
 			Creditcoin::add_offer(Origin::signed(lender), ask_id, bid_id, expiration_block,),
-			crate::Error::<Test>::AddressPlatformMismatch
+			crate::Error::<Test>::AddressBlockchainMismatch
 		);
 	})
 }
@@ -902,8 +895,8 @@ fn lock_deal_order_should_emit_deal_order_locked_event() {
 		let (deal_order_id, deal_order) = test_info.create_deal_order();
 
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
@@ -916,7 +909,7 @@ fn lock_deal_order_should_emit_deal_order_locked_event() {
 		));
 		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
 
-		assert_matches!(event, crate::mock::Event::Creditcoin(crate::Event::DealOrderLocked(id))=>{
+		assert_matches!(event, crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderLocked(id))=>{
 			assert_eq!(id,deal_order_id);
 		});
 	});
@@ -976,8 +969,8 @@ fn lock_deal_order_should_fail_for_non_borrower() {
 
 		// simulate deal transfer
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
@@ -1000,8 +993,8 @@ fn lock_deal_order_should_fail_if_already_locked() {
 
 		// simulate deal transfer
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
@@ -1032,8 +1025,8 @@ fn lock_deal_order_locks_by_borrower() {
 
 		// simulate deal transfer
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
@@ -1074,8 +1067,8 @@ fn fund_deal_order_should_error_when_address_not_registered() {
 
 		// simulate deal with an address that isn't registered
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				let blockchain = Blockchain::Rinkeby;
 
@@ -1122,8 +1115,8 @@ fn fund_deal_order_should_error_when_timestamp_is_in_the_future() {
 
 		// simulate deal with a timestamp in the future
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().timestamp = Creditcoin::timestamp() + 99999;
 			},
@@ -1149,8 +1142,8 @@ fn fund_deal_order_should_error_when_deal_is_funded() {
 
 		// simulate a funded deal
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().funding_transfer_id =
 					Some(TransferId::new::<Test>(&deal_order.blockchain, b"12345678"));
@@ -1179,8 +1172,8 @@ fn fund_deal_order_should_error_when_deal_has_expired() {
 
 		// simulate an expired deal by setting expiration_block < head
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().expiration_block = 0;
 			},
@@ -1267,8 +1260,8 @@ fn fund_deal_order_should_error_when_transfer_amount_doesnt_match() {
 
 		// modify deal amount in order to cause transfer mismatch
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				// note: the transfer above has amount of 0 b/c it is an exemption!
 				deal_order_storage.as_mut().unwrap().terms.amount = ExternalAmount::from(4444u64);
@@ -1307,7 +1300,7 @@ fn fund_deal_order_should_error_when_transfer_sighash_doesnt_match_lender() {
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
 			ts.account_id = AccountId::new([4; 32]);
@@ -1334,7 +1327,7 @@ fn fund_deal_order_should_error_when_transfer_has_been_processed() {
 
 		// modify transfer in order to cause an error
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
 			ts.is_processed = true;
@@ -1389,7 +1382,7 @@ fn fund_deal_order_works() {
 		let event2 = all_events.pop().expect("Second EventRecord").event;
 		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::TransferProcessed(id)) =>{
 				assert_eq!(transfer_id, id)
 
 			}
@@ -1398,7 +1391,7 @@ fn fund_deal_order_works() {
 		let event1 = all_events.pop().expect("First EventRecord").event;
 		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderFunded(id))=>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderFunded(id))=>{
 				assert_eq!(deal_order_id, id)
 			}
 		);
@@ -1416,7 +1409,7 @@ fn claim_legacy_wallet_works() {
 		&hex::decode("0399d6e7c784494fd7edc26fc9ca460a68c97cc64c49c85dfbb68148f0607893bf").unwrap(),
 	)
 	.unwrap();
-	let claimer = MultiSigner::from(pub_key.clone()).into_account();
+	let claimer = MultiSigner::from(pub_key).into_account();
 
 	let mut ext = ExtBuilder::default();
 	ext.fund(keeper.clone(), legacy_amount)
@@ -1432,7 +1425,7 @@ fn claim_legacy_wallet_works() {
 		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
 		assert!(matches!(
 			event,
-			crate::mock::Event::Creditcoin(crate::Event::LegacyWalletClaimed(..))
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::LegacyWalletClaimed(..))
 		));
 		assert_eq!(frame_system::pallet::Account::<Test>::get(&claimer).data.free, 1000000);
 	});
@@ -1454,28 +1447,15 @@ fn add_authority_should_fail_when_authority_already_exists() {
 		let acct: AccountId = AccountId::new([0; 32]);
 
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root.clone()),
+			crate::mock::RuntimeOrigin::from(root.clone()),
 			acct.clone(),
 		));
 
 		// try again
 		assert_noop!(
-			Creditcoin::add_authority(crate::mock::Origin::from(root), acct,),
+			Creditcoin::add_authority(crate::mock::RuntimeOrigin::from(root), acct,),
 			crate::Error::<Test>::AlreadyAuthority,
 		);
-	});
-}
-
-#[test]
-fn add_authority_works_for_root() {
-	ExtBuilder::default().build_and_execute(|| {
-		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
-
-		assert_ok!(Creditcoin::add_authority(crate::mock::Origin::from(root), acct.clone(),));
-
-		let value = crate::Pallet::<Test>::authorities(acct);
-		assert_eq!(value, Some(()))
 	});
 }
 
@@ -1600,11 +1580,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 
 		let test_info = TestInfo {
 			lender: RegisteredAddress::new("lender2", Blockchain::Ethereum),
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1623,7 +1599,7 @@ fn register_deal_order_should_error_when_lender_and_borrower_are_on_different_ch
 				pub_key.into(),
 				compliance_proof.into(),
 			),
-			crate::Error::<Test>::AddressPlatformMismatch
+			crate::Error::<Test>::AddressBlockchainMismatch
 		);
 	});
 }
@@ -1635,11 +1611,7 @@ fn register_deal_order_should_error_when_ask_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 		// create AskOrder which will use-up the default ID
@@ -1706,11 +1678,7 @@ fn register_deal_order_should_error_when_offer_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1760,11 +1728,7 @@ fn register_deal_order_should_error_when_deal_order_id_exists() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1824,11 +1788,7 @@ fn register_deal_order_should_succeed() {
 		let pub_key = key_pair.public();
 
 		let test_info = TestInfo {
-			borrower: RegisteredAddress::from_pubkey(
-				pub_key.clone(),
-				Blockchain::Rinkeby,
-				ownership_proof,
-			),
+			borrower: RegisteredAddress::from_pubkey(pub_key, Blockchain::Rinkeby, ownership_proof),
 			..TestInfo::new_defaults()
 		};
 
@@ -1850,16 +1810,28 @@ fn register_deal_order_should_succeed() {
 		// assert events in reversed order
 		let mut all_events = <frame_system::Pallet<Test>>::events();
 		let event4 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event4, crate::mock::Event::Creditcoin(crate::Event::DealOrderAdded(..))));
+		assert!(matches!(
+			event4,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderAdded(..))
+		));
 
 		let event3 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event3, crate::mock::Event::Creditcoin(crate::Event::OfferAdded(..))));
+		assert!(matches!(
+			event3,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::OfferAdded(..))
+		));
 
 		let event2 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event2, crate::mock::Event::Creditcoin(crate::Event::BidOrderAdded(..))));
+		assert!(matches!(
+			event2,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::BidOrderAdded(..))
+		));
 
 		let event1 = all_events.pop().expect("Expected at least one EventRecord to be found").event;
-		assert!(matches!(event1, crate::mock::Event::Creditcoin(crate::Event::AskOrderAdded(..))));
+		assert!(matches!(
+			event1,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::AskOrderAdded(..))
+		));
 	});
 }
 
@@ -1972,8 +1944,8 @@ fn close_deal_order_should_error_when_borrower_address_is_not_registered() {
 
 		// simulate deal with an address that isn't registered
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				let blockchain = Blockchain::Rinkeby;
 
@@ -2021,8 +1993,8 @@ fn close_deal_order_should_error_when_deal_timestamp_is_in_the_future() {
 
 		// simulate deal with a timestamp in the future
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().timestamp = Creditcoin::timestamp() + 99999;
 			},
@@ -2048,8 +2020,8 @@ fn close_deal_order_should_error_when_deal_order_has_already_been_repaid() {
 
 		// simulate DealOrder which has been repaid
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().repayment_transfer_id =
 					Some(TransferId::new::<Test>(&deal_order.blockchain, b"4444"));
@@ -2076,8 +2048,8 @@ fn close_deal_order_should_error_when_deal_isnt_locked() {
 
 		// simulate deal which is not locked
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock = None;
 			},
@@ -2102,8 +2074,8 @@ fn close_deal_order_should_error_when_transfer_order_id_doesnt_match_deal_order_
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2149,8 +2121,8 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2162,7 +2134,7 @@ fn close_deal_order_should_error_when_transfer_block_is_greater_than_current_blo
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.amount = deal_order.terms.amount;
 			ts.block = Creditcoin::block_number() + 1;
@@ -2187,8 +2159,8 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2200,7 +2172,7 @@ fn close_deal_order_should_error_when_transfer_sighash_doesnt_match_borrower() {
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			ts.account_id = AccountId::new([44; 32]);
 		});
 
@@ -2223,8 +2195,8 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2236,7 +2208,7 @@ fn close_deal_order_should_error_when_transfer_has_already_been_processed() {
 
 		// modify transfer in order to cause transfer mismatch
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 			// b/c amount above is 0
 			ts.is_processed = true;
 		});
@@ -2262,8 +2234,8 @@ fn close_deal_order_should_succeed() {
 
 		// lock DealOrder
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().lock =
 					Some(test_info.borrower.account_id.clone());
@@ -2289,7 +2261,7 @@ fn close_deal_order_should_succeed() {
 
 		// modify transfer to make sure we have transfered enough funds
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
-			let mut ts = transfer_storage.as_mut().unwrap();
+			let ts = transfer_storage.as_mut().unwrap();
 
 			ts.amount = deal_order.terms.amount + 1u64;
 		});
@@ -2312,7 +2284,7 @@ fn close_deal_order_should_succeed() {
 		let event2 = all_events.pop().expect("Second EventRecord").event;
 		assert_matches!(
 			event2,
-			crate::mock::Event::Creditcoin(crate::Event::TransferProcessed(id)) =>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::TransferProcessed(id)) =>{
 				assert_eq!(id,transfer_id);
 			}
 		);
@@ -2320,7 +2292,7 @@ fn close_deal_order_should_succeed() {
 		let event1 = all_events.pop().expect("First EventRecord").event;
 		assert_matches!(
 			event1,
-			crate::mock::Event::Creditcoin(crate::Event::DealOrderClosed(id)) =>{
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::DealOrderClosed(id)) =>{
 				assert_eq!(id,deal_order_id);
 			}
 		);
@@ -2345,8 +2317,8 @@ fn exempt_should_error_when_deal_order_has_already_been_repaid() {
 
 		// simulate DealOrder which has been repaid
 		crate::DealOrders::<Test>::mutate(
-			&deal_order_id.expiration(),
-			&deal_order_id.hash(),
+			deal_order_id.expiration(),
+			deal_order_id.hash(),
 			|deal_order_storage| {
 				deal_order_storage.as_mut().unwrap().repayment_transfer_id =
 					Some(TransferId::new::<Test>(&deal_order.blockchain, b"4444"));
@@ -2397,7 +2369,7 @@ fn exempt_should_succeed() {
 		let event = all_events.pop().expect("Expected at least one EventRecord to be found").event;
 		assert_eq!(
 			event,
-			crate::mock::Event::Creditcoin(crate::Event::LoanExempted(deal_order_id))
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::LoanExempted(deal_order_id))
 		);
 	});
 }
@@ -2446,7 +2418,7 @@ fn verify_transfer_should_error_when_transfer_has_already_been_registered() {
 		// authorize lender
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2475,7 +2447,7 @@ fn verify_transfer_should_work() {
 		// authorize lender
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2511,7 +2483,7 @@ fn verify_transfer_should_work() {
 		let last_event = all_events.pop().expect("At least one EventRecord").event;
 		assert_matches!(
 			last_event,
-			crate::mock::Event::Creditcoin(crate::Event::TransferVerified(id)) => {
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::TransferVerified(id)) => {
 				assert_eq!(transfer_id, id)
 			}
 		);
@@ -2529,7 +2501,7 @@ fn fail_transfer_should_work() {
 
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2552,7 +2524,7 @@ fn fail_transfer_should_work() {
 
 		assert_matches!(
 			all_events.pop().unwrap().event,
-			crate::mock::Event::Creditcoin(crate::Event::<Test>::TransferFailedVerification(id, cause)) => {
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::TransferFailedVerification(id, cause)) => {
 				assert_eq!(id, transfer_id);
 				assert_eq!(cause, failure_cause);
 			}
@@ -2622,7 +2594,7 @@ fn fail_transfer_should_error_when_transfer_registered() {
 
 		let root = RawOrigin::Root;
 		assert_ok!(Creditcoin::add_authority(
-			crate::mock::Origin::from(root),
+			crate::mock::RuntimeOrigin::from(root),
 			test_info.lender.account_id.clone(),
 		));
 
@@ -2831,52 +2803,6 @@ fn register_transfer_internal_should_error_with_non_existent_lender_address() {
 }
 
 #[test]
-fn register_transfer_internal_should_error_with_non_existent_borrower_address() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-		let bogus_address =
-			AddressId::new::<Test>(&Blockchain::Rinkeby, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
-
-		let result = Creditcoin::register_transfer_internal(
-			test_info.lender.account_id,
-			deal_order.lender_address_id,
-			bogus_address,
-			TransferKind::Native,
-			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::NonExistentAddress);
-	})
-}
-
-#[test]
-fn register_transfer_internal_should_error_when_signer_doesnt_own_from_address() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::new_defaults();
-		let (deal_order_id, deal_order) = test_info.create_deal_order();
-		let tx = "0xabcabcabc";
-
-		let result = Creditcoin::register_transfer_internal(
-			test_info.lender.account_id,
-			deal_order.borrower_address_id, // should match 1st argument
-			deal_order.lender_address_id,
-			TransferKind::Native,
-			deal_order.terms.amount,
-			OrderId::Deal(deal_order_id),
-			tx.as_bytes().into_bounded(),
-		)
-		.unwrap_err();
-
-		assert_eq!(result, crate::Error::<Test>::NotAddressOwner);
-	})
-}
-
-#[test]
 fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_blockchain() {
 	ExtBuilder::default().build_and_execute(|| {
 		let test_info = TestInfo::new_defaults();
@@ -2895,7 +2821,7 @@ fn register_transfer_internal_should_error_when_addresses_are_not_on_the_same_bl
 		)
 		.unwrap_err();
 
-		assert_eq!(result, crate::Error::<Test>::AddressPlatformMismatch);
+		assert_eq!(result, crate::Error::<Test>::AddressBlockchainMismatch);
 	})
 }
 
@@ -2945,113 +2871,69 @@ fn register_transfer_internal_should_error_when_transfer_is_already_registered()
 }
 
 #[test]
-fn register_currency_should_error_when_not_sudo() {
-	ExtBuilder::default().build_and_execute(|| {
-		let test_info = TestInfo::default();
-
-		assert_noop!(
-			Creditcoin::register_currency(
-				Origin::signed(test_info.lender.account_id),
-				Currency::default(),
-			),
-			BadOrigin
-		);
-	});
-}
-
-#[test]
-fn register_currency_works() {
-	ExtBuilder::default().build_and_execute(|| {
-		let currency = Currency::default();
-
-		assert_ok!(Creditcoin::register_currency(Origin::root(), currency.clone()));
-
-		let id = CurrencyId::new::<Test>(&currency);
-		assert_eq!(crate::Currencies::<Test>::get(&id), Some(currency));
-	})
-}
-
-#[test]
-fn register_currency_should_error_when_currency_already_registered() {
-	ExtBuilder::default().build_and_execute(|| {
-		let currency = Currency::default();
-
-		assert_ok!(Creditcoin::register_currency(Origin::root(), currency.clone()));
-
-		assert_noop!(
-			Creditcoin::register_currency(Origin::root(), currency),
-			crate::Error::<Test>::CurrencyAlreadyRegistered
-		);
-	})
-}
-
-#[test]
 fn exercise_weightinfo_functions() {
 	let result = super::weights::WeightInfo::<Test>::register_address();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::claim_legacy_wallet();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_ask_order();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_bid_order();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_offer();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_deal_order();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::add_authority();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::persist_transfer();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::fail_transfer();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::fund_deal_order();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::lock_deal_order();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_funding_transfer();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_repayment_transfer();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::close_deal_order();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::exempt();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_deal_order();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::request_collect_coins();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::fail_collect_coins();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::remove_authority();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
-	assert!(result > 0);
-
-	let result = super::weights::WeightInfo::<Test>::register_currency();
-	assert!(result > 0);
+	assert!(result.ref_time() > 0);
 }
 
 #[test]
@@ -3070,26 +2952,287 @@ fn remove_authority_should_fail_when_authority_does_not_exist() {
 		let acct: AccountId = AccountId::new([0; 32]);
 
 		assert_noop!(
-			Creditcoin::remove_authority(crate::mock::Origin::from(root), acct),
+			Creditcoin::remove_authority(crate::mock::RuntimeOrigin::from(root), acct),
 			crate::Error::<Test>::NotAnAuthority,
 		);
 	});
 }
 
 #[test]
-fn remove_authority_works_for_root() {
+fn add_and_remove_authority_works_for_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let root = RawOrigin::Root;
-		let acct: AccountId = AccountId::new([0; 32]);
+		let account: AccountId = AccountId::new([0; 32]);
 
-		crate::Authorities::<Test>::insert(acct.clone(), ());
+		assert!(!TaskScheduler::is_authority(&account));
+		TaskScheduler::insert_authority(&account);
+		assert!(TaskScheduler::is_authority(&account));
 
-		let value = crate::Pallet::<Test>::authorities(&acct);
-		assert_eq!(value, Some(()));
+		assert_ok!(Creditcoin::remove_authority(Origin::from(root), account.clone()));
+		assert!(!TaskScheduler::is_authority(&account));
+	});
+}
 
-		assert_ok!(Creditcoin::remove_authority(crate::mock::Origin::from(root), acct.clone()));
+#[test]
+fn register_address_v2_should_work_eth_sign() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
 
-		let value = crate::Pallet::<Test>::authorities(acct);
-		assert_eq!(value, None)
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			address.clone(),
+			proof,
+		));
+		let address_id = crate::AddressId::new::<Test>(&blockchain, &address);
+		let address = crate::Address { blockchain, value: address, owner: who };
+		assert_eq!(Creditcoin::addresses(address_id.clone()), Some(address.clone()));
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+
+		assert_matches!(
+			event,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+				assert_eq!(registered_address_id, address_id);
+				assert_eq!(registered_address, address);
+			}
+		);
+	});
+}
+
+#[test]
+fn register_address_v2_should_fail_to_reregister_external_address_to_same_account() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
+		// Register external address to account
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			external_address.clone(),
+			proof.clone(),
+		));
+
+		// Try registering again to same account and fail
+		assert_noop!(
+			Creditcoin::register_address_v2(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				proof,
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_fail_to_reregister_external_address_to_new_account() {
+	ExtBuilder::default().build_and_execute(|| {
+		let who_first = account_from_keypair(generate_keypair_from_seed("first account"));
+		let who_second = account_from_keypair(generate_keypair_from_seed("second account"));
+		let external_keypair = generate_keypair_from_seed("external account");
+		let external_address = external_address_from_keypair(external_keypair.clone());
+		let blockchain = Blockchain::Rinkeby;
+
+		// Register external address to first account
+		let first_ownership_proof =
+			build_proof_of_ownership(who_first.clone(), external_keypair.clone());
+
+		let proof = OwnershipProof::EthSign(first_ownership_proof);
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who_first),
+			blockchain.clone(),
+			external_address.clone(),
+			proof,
+		));
+		// Try registering to a second account and fail
+		let second_ownership_proof = build_proof_of_ownership(who_second.clone(), external_keypair);
+
+		let second_proof = OwnershipProof::EthSign(second_ownership_proof);
+		assert_noop!(
+			Creditcoin::register_address_v2(
+				Origin::signed(who_second),
+				blockchain,
+				external_address,
+				second_proof
+			),
+			crate::Error::<Test>::AddressAlreadyRegistered
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (_who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		let proof = OwnershipProof::EthSign(ownership_proof);
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::none(), blockchain, address, proof),
+			BadOrigin,
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_using_wrong_ownership_proof() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+		let (_who2, _address2, ownership_proof2, _) = generate_address_with_proof("bogus");
+
+		let blockchain = Blockchain::Rinkeby;
+		let bad_proof = OwnershipProof::EthSign(ownership_proof2);
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, bad_proof),
+			crate::Error::<Test>::OwnershipNotSatisfied
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_address_too_long() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let address = format!("0xff{}", hex::encode(address)).hex_to_address();
+		let blockchain = Blockchain::Rinkeby;
+		let proof = OwnershipProof::EthSign(ownership_proof);
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof),
+			crate::Error::<Test>::MalformedExternalAddress
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_error_when_signature_is_invalid() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, address, _ownership_proof, _) = generate_address_with_proof("owner");
+
+		// NOTE: No checking goes on to ensure this is a real signature! See
+		// https://docs.rs/sp-core/2.0.0-rc4/sp_core/ecdsa/struct.Signature.html#method.from_raw
+		let ownership_proof = sp_core::ecdsa::Signature::from_raw([0; 65]);
+
+		let bad_proof = OwnershipProof::EthSign(ownership_proof);
+
+		let blockchain = Blockchain::Rinkeby;
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, bad_proof),
+			crate::Error::<Test>::InvalidSignature
+		);
+	})
+}
+
+#[test]
+fn register_address_v2_should_fail_after_v1_registration_with_same_addres() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		// Register external address to account
+		assert_ok!(Creditcoin::register_address(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			external_address.clone(),
+			ownership_proof.clone(),
+		));
+
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
+		// Try registering again to same account and fail
+		assert_noop!(
+			Creditcoin::register_address_v2(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				proof,
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+fn register_address_v1_should_fail_after_v2_registration_with_same_addres() {
+	ExtBuilder::default().build_and_execute(|| {
+		let (who, external_address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Rinkeby;
+		let proof = OwnershipProof::EthSign(ownership_proof.clone());
+
+		// Register external address to account
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			external_address.clone(),
+			proof,
+		));
+
+		// Try registering again to same account and fail
+		assert_noop!(
+			Creditcoin::register_address(
+				Origin::signed(who),
+				blockchain,
+				external_address,
+				ownership_proof,
+			),
+			crate::Error::<Test>::AddressAlreadyRegisteredByCaller
+		);
+	})
+}
+
+#[test]
+#[ignore]
+fn register_address_v2_should_work_personal_sign() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (who, address, ownership_proof, _) = generate_address_with_proof_personal_sign("owner");
+		let blockchain = Blockchain::Rinkeby;
+
+		let proof = OwnershipProof::PersonalSign(ownership_proof);
+
+		assert_ok!(Creditcoin::register_address_v2(
+			Origin::signed(who.clone()),
+			blockchain.clone(),
+			address.clone(),
+			proof,
+		));
+		let address_id = crate::AddressId::new::<Test>(&blockchain, &address);
+		let address = crate::Address { blockchain, value: address, owner: who };
+		assert_eq!(Creditcoin::addresses(address_id.clone()), Some(address.clone()));
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("an event").event;
+
+		assert_matches!(
+			event,
+			crate::mock::RuntimeEvent::Creditcoin(crate::Event::<Test>::AddressRegistered(registered_address_id, registered_address)) => {
+				assert_eq!(registered_address_id, address_id);
+				assert_eq!(registered_address, address);
+			}
+		);
+	});
+}
+
+#[test]
+fn register_address_v2_should_error_with_unsupported_blockchain() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let (who, address, ownership_proof, _) = generate_address_with_proof("owner");
+		let blockchain = Blockchain::Bitcoin;
+		let proof = OwnershipProof::EthSign(ownership_proof);
+
+		assert_noop!(
+			Creditcoin::register_address_v2(Origin::signed(who), blockchain, address, proof,),
+			crate::Error::<Test>::UnsupportedBlockchain
+		);
 	});
 }

@@ -1,0 +1,17 @@
+---
+ACTION_ACTIONLINT_ARGUMENTS: -ignore 'property "https_rpc_url" is not defined in object type'
+DISABLE_LINTERS:
+  - BASH_SHFMT
+  - COPYPASTE_JSCPD
+  - EDITORCONFIG_EDITORCONFIG_CHECKER
+  - JSON_PRETTIER
+  - RUST_CLIPPY
+  - SPELL_CSPELL
+  - SPELL_MISSPELL
+  # https://gluwa.atlassian.net/browse/CSUB-459
+  - MARKDOWN_MARKDOWN_LINK_CHECK
+  # https://gluwa.atlassian.net/browse/CSUB-460
+  - REPOSITORY_TRIVY
+  # https://gluwa.atlassian.net/browse/CSUB-461
+  - REPOSITORY_SECRETLINT
+JSON_JSONLINT_ARGUMENTS: --comments

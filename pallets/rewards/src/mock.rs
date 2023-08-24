@@ -1,10 +1,10 @@
 use crate as pallet_rewards;
-use codec::Encode;
 use frame_support::{
 	parameter_types,
 	traits::{ConstU32, Hooks},
 };
 use frame_system as system;
+use parity_scale_codec::Encode;
 use sp_core::H256;
 use sp_runtime::{
 	testing::{Digest, DigestItem, Header},
@@ -38,8 +38,8 @@ impl system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
 	type Hash = H256;
@@ -47,7 +47,7 @@ impl system::Config for Test {
 	type AccountId = u64;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -74,7 +74,7 @@ impl pallet_balances::Config for Test {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -82,14 +82,36 @@ impl pallet_balances::Config for Test {
 }
 
 impl pallet_rewards::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type WeightInfo = super::weights::WeightInfo<Test>;
+	type RewardsEnabled = TestRewardsEnabled;
+}
+
+thread_local! {
+	static REWARDS_ENABLED: std::cell::RefCell<bool> = std::cell::RefCell::new(true);
+}
+
+pub struct TestRewardsEnabled;
+
+impl TestRewardsEnabled {
+	pub fn with_disabled<R>(f: impl FnOnce() -> R) -> R {
+		REWARDS_ENABLED.with(|v| *v.borrow_mut() = false);
+		let res = f();
+		REWARDS_ENABLED.with(|v| *v.borrow_mut() = true);
+		res
+	}
+}
+
+impl crate::RewardsEnabled for TestRewardsEnabled {
+	fn should_issue_rewards() -> bool {
+		REWARDS_ENABLED.with(|v| *v.borrow())
+	}
 }
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	sp_tracing::try_init_simple();
+	tracing::try_init_simple();
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	// accounts 1 to 5 have initial balances
 	pallet_balances::GenesisConfig::<Test> {

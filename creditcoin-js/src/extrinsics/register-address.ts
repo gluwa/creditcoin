@@ -9,8 +9,12 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 
 export type AddressRegistered = EventReturnJoinType<AddressId, Address>;
 
+const blockchainToString = (blockchain: Blockchain): string => {
+    return blockchain.toLowerCase();
+};
+
 export const createAddressId = (blockchain: Blockchain, externalAddress: string) => {
-    const blockchainBytes = Buffer.from(blockchain.toString().toLowerCase());
+    const blockchainBytes = Buffer.from(blockchainToString(blockchain));
     const key = u8aConcat(blockchainBytes, u8aToU8a(externalAddress));
     return blake2AsHex(key);
 };

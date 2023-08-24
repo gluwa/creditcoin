@@ -1,14 +1,9 @@
-import { KeyringPair } from 'creditcoin-js';
-
-import { Guid } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { creditcoinApi } from 'creditcoin-js';
+import { KeyringPair, Guid, Wallet, creditcoinApi } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData, tryRegisterAddress } from './common';
+import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
+import { DealOrderRegistered, signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
 
 describe('Exempt', (): void => {
     let ccApi: CreditcoinApi;
@@ -18,12 +13,15 @@ describe('Exempt', (): void => {
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
 
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -84,7 +82,7 @@ describe('Exempt', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     }, 60000);
 });

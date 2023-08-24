@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_core::U256;
-
-pub type Difficulty = U256;
+pub mod vrf;
 
 #[cfg(all(feature = "std", feature = "prometheus"))]
 pub mod metrics {

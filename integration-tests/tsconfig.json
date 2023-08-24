@@ -11,6 +11,6 @@
             "@polkadot/api/augment": ["../creditcoin-js/src/interfaces/augment-api.ts"],
             "@polkadot/types/augment": ["../creditcoin-js/src/interfaces/augment-types.ts"],
             "@polkadot/types/lookup": ["../creditcoin-js/src/interfaces/types-lookup.ts"]
-        },
+        }
     }
 }

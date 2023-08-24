@@ -30,7 +30,7 @@ pub(crate) fn ethless_transfer_function_abi() -> Function {
 			Param { name: "_sig".into(), kind: ParamType::Bytes, internal_type: None },
 		],
 		outputs: vec![Param { name: "success".into(), kind: ParamType::Bool, internal_type: None }],
-		constant: false,
+		constant: Some(false),
 		state_mutability: StateMutability::NonPayable,
 	}
 }
@@ -168,5 +168,124 @@ impl<T: Config> crate::Pallet<T> {
 		};
 
 		Ok(timestamp)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::helpers::extensions::HexToAddress;
+	use crate::mock::AccountId;
+	use crate::mock::RuntimeCall;
+	use crate::mock::RuntimeOrigin as Origin;
+	use crate::mock::{
+		get_mock_amount, get_mock_contract, get_mock_nonce, get_mock_tx_block_num,
+		get_mock_tx_hash, roll_to_with_ocw, set_rpc_uri, with_failing_create_transaction,
+		Creditcoin, ExtBuilder, MockedRpcRequests, PendingRequestExt, TaskScheduler,
+		TaskSchedulerT, Test, ETHLESS_RESPONSES,
+	};
+	use crate::ocw::tasks::Task;
+	use crate::ocw::tasks::TaskV2;
+	use crate::ocw::tests::set_up_verify_transfer_env;
+	use crate::tests::{adjust_deal_order_to_nonce, TestInfo};
+	use crate::{Blockchain, LoanTerms, TransferKind};
+	use frame_support::assert_ok;
+	use frame_support::dispatch::Dispatchable;
+	use sp_runtime::traits::IdentifyAccount;
+
+	#[test]
+	fn register_transfer_ocw_fail_to_send() {
+		let logs = traced_test::trace();
+		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let dummy_url = "dummy";
+			let tx_hash = get_mock_tx_hash();
+			let contract = get_mock_contract().hex_to_address();
+			let tx_block_num = get_mock_tx_block_num();
+			let blockchain = Blockchain::Rinkeby;
+
+			// we're going to verify a transfer twice:
+			// First when we expect failure, which means we won't make all of the requests
+			MockedRpcRequests::new(dummy_url, &tx_hash, &tx_block_num, &ETHLESS_RESPONSES)
+				.mock_all(&mut state.write());
+
+			set_rpc_uri(&Blockchain::Rinkeby, dummy_url);
+
+			let loan_amount = get_mock_amount();
+			let terms = LoanTerms { amount: loan_amount, ..Default::default() };
+
+			let test_info = TestInfo { blockchain, loan_terms: terms, ..Default::default() };
+
+			let (deal_order_id, _) = test_info.create_deal_order();
+
+			let lender = test_info.lender.account_id;
+
+			let _ =
+				pallet_offchain_task_scheduler::pallet::PendingTasks::<Test>::clear(u32::MAX, None);
+
+			let fake_deal_order_id = adjust_deal_order_to_nonce(&deal_order_id, get_mock_nonce());
+
+			// exercise when we try to send a verify_transfer but tx send fails
+			with_failing_create_transaction(|| {
+				assert_ok!(Creditcoin::register_funding_transfer(
+					Origin::signed(lender.clone()),
+					TransferKind::Ethless(contract.clone()),
+					fake_deal_order_id.clone(),
+					tx_hash.hex_to_address(),
+				));
+
+				roll_to_with_ocw(1);
+				assert!(logs.contain("Failed to send a dispatchable transaction"));
+			});
+		});
+	}
+
+	#[test]
+	fn unverified_transfer_is_removed_after_failing_the_task() {
+		let mut ext = ExtBuilder::default();
+		let auth = AccountId::from(ext.generate_authority().into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let (unverified, mut requests) = set_up_verify_transfer_env(false);
+			requests.get_transaction.set_empty_response();
+			requests.mock_get_transaction(&mut state.write());
+
+			let id = TaskV2::<Test>::to_id(&unverified);
+			let deadline = TaskScheduler::deadline();
+
+			TaskScheduler::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
+
+			let call =
+				TaskV2::<Test>::persistence_call(&unverified, TaskScheduler::deadline(), &id)
+					.unwrap();
+			assert!(matches!(call, crate::Call::fail_task { .. }));
+			let c = RuntimeCall::from(call);
+
+			assert_ok!(c.dispatch(Origin::signed(auth)));
+			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
+		});
+	}
+
+	#[test]
+	fn unverified_transfer_is_removed_after_persisting_the_task() {
+		let mut ext = ExtBuilder::default();
+		let auth = AccountId::from(ext.generate_authority().into_account().0);
+		ext.build_offchain_and_execute_with_state(|state, _| {
+			let (unverified, requests) = set_up_verify_transfer_env(false);
+			requests.mock_all(&mut state.write());
+
+			let id = TaskV2::<Test>::to_id(&unverified);
+			let deadline = TaskScheduler::deadline();
+
+			TaskScheduler::insert(&deadline, &id, Task::VerifyTransfer(unverified.clone()));
+
+			let call =
+				TaskV2::<Test>::persistence_call(&unverified, TaskScheduler::deadline(), &id)
+					.unwrap();
+			assert!(matches!(call, crate::Call::persist_task_output { .. }));
+			let c = RuntimeCall::from(call);
+
+			assert_ok!(c.dispatch(Origin::signed(auth)));
+			assert!(!TaskScheduler::is_scheduled(&TaskScheduler::deadline(), &id));
+		});
 	}
 }

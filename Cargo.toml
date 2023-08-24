@@ -8,9 +8,147 @@ members = [
     'pallets/rewards',
     'pallets/difficulty',
     'pallets/creditcoin',
-    'pallets/creditcoin/runtime-api',
+    'pallets/offchain-task-scheduler/runtime-api',
+    'pallets/offchain-task-scheduler',
+    'pallets/staking',
+    'pallets/pos-switch',
     'runtime',
     "sha3pow",
     "primitives",
     "test/client",
+    "test/runtime-utils",
+    "test/traced-test",
 ]
+
+resolver = "2"
+
+[workspace.package]
+version = '2.230.0'
+authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
+edition = '2021'
+license = 'Unlicense'
+publish = false
+repository = 'https://github.com/gluwa/creditcoin-substrate/'
+
+[workspace.dependencies]
+
+# Crates.io Dependencies
+assert_matches = { version = "1.5.0" }
+hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
+hex-literal = { version = "0.3.4" }
+jsonrpc-core = { version = "18.0.0" }
+jsonrpsee = { version = "0.16.2" }
+log = { version = "0.4.18" }
+parity-scale-codec = { version = "3.2.1", default-features = false, features = [
+    "derive",
+] }
+serde = { version = "1.0.163", default-features = false, features = ["derive"] }
+scale-info = { version = "2.7", default-features = false, features = [
+    "derive",
+] }
+
+# Project Local Dependencies
+creditcoin-node-runtime = { path = "runtime" }
+pallet-creditcoin = { path = "pallets/creditcoin", default-features = false }
+pallet-difficulty = { path = "pallets/difficulty", default-features = false }
+pallet-offchain-task-scheduler = { path = "pallets/offchain-task-scheduler", default-features = false }
+pallet-rewards = { path = "pallets/rewards", default-features = false }
+pallet-staking = { path = "pallets/staking", default-features = false }
+primitives = { path = "primitives", default-features = false }
+runtime-utils = { package = "test-runtime-utils", path = "test/runtime-utils", default-features = false }
+task-scheduler-runtime-api = { path = "pallets/offchain-task-scheduler/runtime-api", default-features = false }
+traced-test = { path = "test/traced-test" }
+pallet-pos-switch = { path = "pallets/pos-switch", default-features = false }
+
+# Substrate Dependencies
+frame-benchmarking-cli = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+frame-benchmarking = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+frame-executive = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+frame-election-provider-support = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+frame-support = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+frame-system = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+frame-system-benchmarking = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+frame-system-rpc-runtime-api = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-balances = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-session = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-staking-substrate = { package = "pallet-staking", branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-scheduler = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-sudo = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-timestamp = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-transaction-payment = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-transaction-payment-rpc = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+pallet-transaction-payment-rpc-runtime-api = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sc-basic-authorship = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-chain-spec = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-cli = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-client-api = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-client-db = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", features = [
+    "test-helpers",
+] }
+sc-consensus = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-consensus-pow = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-consensus-slots = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-network = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-executor = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-keystore = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-offchain = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-rpc = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-rpc-api = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-telemetry = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-transaction-pool = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-transaction-pool-api = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-service = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", features = [
+    "test-helpers",
+] }
+sp-api = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-arithmetic = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-block-builder = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-blockchain = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sp-consensus = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-consensus-pow = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-core = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-inherents = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-io = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-keystore = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-offchain = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-runtime = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-runtime-interface = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-session = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-state-machine = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-staking = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-std = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-timestamp = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sp-transaction-pool = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-version = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+substrate-build-script-utils = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+substrate-frame-rpc-system = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+substrate-prometheus-endpoint = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+substrate-test-client = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+tracing = { package = "sp-tracing", branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+frame-try-runtime = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sp-externalities = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+substrate-wasm-builder = "10.0.0"
+try-runtime-cli = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sp-keyring = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-consensus-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sp-consensus-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sc-consensus-grandpa = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sc-consensus-grandpa-rpc = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+sp-consensus-grandpa = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-grandpa = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-election-provider-multi-phase = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-im-online = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-bags-list = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-authorship = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-staking-reward-fn = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-offences = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+sc-network-sync = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+
+# Pallets necessary for use with the Staking Dashboard
+# CSUB-503 https://gluwa.atlassian.net/browse/CSUB-503?atlOrigin=eyJpIjoiODY0NGFjOTkzZjE1NGFkYTg1OTNkZmYxZGU1NjlmYjIiLCJwIjoiaiJ9
+pallet-utility = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-proxy = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-fast-unstake = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-nomination-pools = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+pallet-identity = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }

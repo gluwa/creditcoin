@@ -1,17 +1,25 @@
-version: "3.2"
+version: "3.7"
+
+volumes:
+  state:
 
 services:
-  dev:
-    container_name: creditcoin-node
-    image: paritytech/ci-linux:c4f0daf3-20220113
-    working_dir: /var/www/creditcoin-node
-    ports:
-      - "9944:9944"
-    environment:
-      - CARGO_HOME=/var/www/creditcoin-node/.cargo
+  creditcoin:
+    container_name: creditcoin-validator
     volumes:
-      - .:/var/www/creditcoin-node
-      - type: bind
-        source: ./.local
-        target: /root/.local
-    command: bash -c "cargo build --release && ./target/release/creditcoin-node --dev --ws-external"
+      - state:/creditcoin-node/data
+    image: gluwa/creditcoin
+    command:
+      - --name
+      - validator
+      - --validator
+      - --chain
+      - test
+      - --telemetry-url
+      - "wss://telemetry.creditcoin.network/submit 0"
+      - --base-path
+      - /creditcoin-node/data
+    expose:
+      - 30333
+    ports:
+      - 30333:30333

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-export RUSTC_VERSION=nightly-2022-09-01
+export RUSTC_VERSION=nightly-2023-06-06

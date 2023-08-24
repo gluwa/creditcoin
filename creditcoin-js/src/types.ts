@@ -19,8 +19,10 @@ import {
     TransferId,
     TransferKind,
     TransferProcessed,
+    OwnershipProof,
 } from './model';
 import { AddressRegistered } from './extrinsics/register-address';
+import { AddressRegisteredV2 } from './extrinsics/register-address-v2';
 import { AskOrderAdded } from './extrinsics/add-ask-order';
 import { BidOrderAdded } from './extrinsics/add-bid-order';
 import { OfferAdded } from './extrinsics/add-offer';
@@ -54,6 +56,12 @@ export interface Extrinsics {
         ownershipProof: string,
         signer: KeyringPair,
     ) => Promise<AddressRegistered>;
+    registerAddressV2: (
+        externalAddress: string,
+        blockchain: Blockchain,
+        ownershipProof: OwnershipProof,
+        signer: KeyringPair,
+    ) => Promise<AddressRegisteredV2>;
     addAskOrder: (
         lenderAddressId: AddressId,
         loanTerms: LoanTerms,

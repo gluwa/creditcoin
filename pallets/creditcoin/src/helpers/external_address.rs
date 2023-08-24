@@ -8,12 +8,14 @@ use sp_io::hashing::sha2_256;
 
 pub fn generate_external_address(
 	blockchain: &Blockchain,
+	// TODO: refactor: remove `reference` as a parameter for generate_external_address
+	// It's very suspicious to be giving the external address to the function that's meant to generate it.
 	reference: &ExternalAddress,
 	public_key: Public,
 ) -> Option<ExternalAddress> {
 	match blockchain {
 		Blockchain::Luniverse | Blockchain::Ethereum | Blockchain::Rinkeby
-			if EVMAddress::try_extract_addresss_type(reference).is_some() =>
+			if EVMAddress::try_extract_address_type(reference).is_some() =>
 		{
 			Some(EVMAddress::from_public(&public_key))
 		},
@@ -25,7 +27,7 @@ pub fn generate_external_address(
 
 pub trait PublicToAddress {
 	type AddressType;
-	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType>;
+	fn try_extract_address_type(addr: &ExternalAddress) -> Option<Self::AddressType>;
 	fn from_public(pkey: &Public) -> ExternalAddress;
 }
 
@@ -33,7 +35,7 @@ pub struct EVMAddress;
 
 impl PublicToAddress for EVMAddress {
 	type AddressType = ();
-	fn try_extract_addresss_type(addr: &ExternalAddress) -> Option<Self::AddressType> {
+	fn try_extract_address_type(addr: &ExternalAddress) -> Option<Self::AddressType> {
 		if eth_address_is_well_formed(addr) {
 			Some(())
 		} else {

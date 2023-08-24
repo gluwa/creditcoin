@@ -1,8 +1,8 @@
 use core::ops::Deref;
 
 use super::ExternalAmount;
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::RuntimeDebug;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::convert::TryFrom;
 

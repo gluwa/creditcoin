@@ -1,17 +1,20 @@
-import { KeyringPair } from 'creditcoin-js';
+import { creditcoinApi, KeyringPair } from 'creditcoin-js';
 import { AUTHORITY_SURI } from 'creditcoin-js/lib/examples/setup-authority';
 import { createFundingTransferId } from 'creditcoin-js/lib/extrinsics/register-transfers';
-import { POINT_01_CTC } from '../constants';
-import { creditcoinApi } from 'creditcoin-js';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { testData } from './common';
+import { testData } from 'creditcoin-js/lib/testUtils';
+
 import { extractFee, testIf } from '../utils';
 
 describe('FailTransfer', (): void => {
     let ccApi: CreditcoinApi;
     let authority: KeyringPair;
 
-    const { blockchain, keyring } = testData;
+    const { blockchain, keyring } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
@@ -40,7 +43,7 @@ describe('FailTransfer', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
     });
 });

@@ -1,23 +1,29 @@
+---
 name: Build WASM Runtime
 
 on:
   push:
     branches: [main, testnet, dev]
+  pull_request:
+    branches: [testnet, dev]
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
-  srtool:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Srtool build
         id: srtool_build
-        uses: chevdor/srtool-actions@v0.5.0
+        uses: chevdor/srtool-actions@v0.6.0
         with:
           chain: "creditcoin"
           runtime_dir: runtime
           package: creditcoin-node-runtime
           workdir: ${{ github.workspace }}
+          tag: "1.66.1" # FIXME: remove this option (use the latest) once we're building w/ stable rust
       - name: Summary
         run: |
           echo '${{ steps.srtool_build.outputs.json }}' | jq . > creditcoin-srtool-digest.json
@@ -31,9 +37,9 @@ jobs:
             ${{ steps.srtool_build.outputs.wasm_compressed }}
             creditcoin-srtool-digest.json
 
-  update-qa-wasm:
+  update-wasm-on-devnet:
     runs-on: ubuntu-latest
-    needs: srtool
+    needs: build
     if: github.ref == 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v3
@@ -63,5 +69,5 @@ jobs:
           CTCQA_URL: ${{ secrets.CTCQA_URL }}
           QA_SUDO_KEY: ${{ secrets.QA_SUDO_KEY }}
         run: |
-          yarn runtimeUpgrade $CTCQA_URL \
-          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm $QA_SUDO_KEY
+          yarn runtimeUpgrade "$CTCQA_URL" \
+          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm "$QA_SUDO_KEY"

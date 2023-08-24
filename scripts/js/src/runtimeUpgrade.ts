@@ -1,8 +1,9 @@
-import { creditcoinApi } from 'creditcoin-js';
-import { Keyring } from '@polkadot/api';
+import { creditcoinApi, Keyring } from 'creditcoin-js';
+import { createOverrideWeight } from 'creditcoin-js/lib/utils';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { promisify } from 'util';
+import { u8aToHex } from './common';
 
 // From https://github.com/chevdor/subwasm/blob/c2e5b62384537875bfd0497c2b2d706265699798/lib/src/runtime_info.rs#L8-L20
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -41,6 +42,7 @@ async function doRuntimeUpgrade(
     wasmBlobPath: string,
     sudoKeyUri: string,
     hasSubwasm = false,
+    scheduleDelay = 50,
 ): Promise<void> {
     // init the api client
     const { api } = await creditcoinApi(wsUrl);
@@ -58,12 +60,11 @@ async function doRuntimeUpgrade(
             if (output.stderr.length > 0) {
                 throw new Error(`subwasm info failed: ${output.stderr}`);
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const info = JSON.parse(output.stdout) as WasmRuntimeInfo;
             // should probably do some checks here to see that the runtime is right
             // e.g. the core version is reasonable, it's compressed, etc.
-            const [version, _] = info.core_version.split(' ');
-            const [_wholeMatch, versionNumString] = version.match(/(?:\w+\-)+(\d+)/);
+            const [version] = info.core_version.split(' ');
+            const [, versionNumString] = version.match(/(?:\w+\-)+(\d+)/);
             const versionNum = Number(versionNumString);
 
             if (versionNum <= specVersion.toNumber()) {
@@ -79,23 +80,34 @@ async function doRuntimeUpgrade(
         // read the wasm blob from the give path
         const wasmBlob = await readFile(wasmBlobPath);
 
-        const u8aToHex = (bytes: Uint8Array | Buffer): string => {
-            const byteArray = Uint8Array.from(bytes);
-            return byteArray.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
-        };
-
-        // submit the upgrade transaction
-        const unsub = await api.tx.sudo
-            .sudoUncheckedWeight(api.tx.system.setCode(u8aToHex(wasmBlob)), 1)
-            .signAndSend(keyring, { nonce: -1 }, (result) => {
-                if (result.isInBlock && !result.isError) {
-                    console.log('Runtime upgrade successful');
-                    unsub();
-                } else if (result.isError) {
-                    console.error(`Runtime upgrade failed: ${result.toString()}`);
-                    unsub();
-                }
-            });
+        const hexBlob = u8aToHex(wasmBlob);
+        let callback = api.tx.system.setCode(hexBlob);
+        if (scheduleDelay > 0) {
+            callback = api.tx.scheduler.scheduleAfter(scheduleDelay, null, 0, callback);
+        }
+        const overrideWeight = createOverrideWeight(api);
+        // schedule the upgrade
+        await new Promise<void>((resolve, reject) => {
+            const unsubscribe = api.tx.sudo
+                .sudoUncheckedWeight(callback, overrideWeight)
+                .signAndSend(keyring, { nonce: -1 }, (result) => {
+                    const finish = (fn: () => void) => {
+                        unsubscribe
+                            .then((unsub) => {
+                                unsub();
+                                fn();
+                            })
+                            .catch(reject);
+                    };
+                    if (result.isInBlock && !result.isError) {
+                        console.log('Runtime upgrade successfully scheduled');
+                        finish(resolve);
+                    } else if (result.isError) {
+                        const error = new Error(`Failed to schedule runtime upgrade: ${result.toString()}`);
+                        finish(() => reject(error));
+                    }
+                });
+        });
     } finally {
         await api.disconnect();
     }
@@ -109,5 +121,9 @@ if (process.argv.length < 5) {
 const inputWsUrl = process.argv[2];
 const inputWasmBlobPath = process.argv[3];
 const inputSudoKeyUri = process.argv[4];
+const explicitDelay = Number(process.argv[5] || 50);
 
-doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true).catch(console.error);
+doRuntimeUpgrade(inputWsUrl, inputWasmBlobPath, inputSudoKeyUri, true, explicitDelay).catch((reason) => {
+    console.error(reason);
+    process.exit(1);
+});

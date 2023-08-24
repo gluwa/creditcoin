@@ -15,7 +15,7 @@ use crate::ExternalTxId;
 
 pub mod errors {
 	use super::JsonRpcError;
-	use crate::ocw::errors::impl_from_error;
+	use pallet_offchain_task_scheduler::impl_enum_from_variant;
 	use sp_runtime::offchain::{http::PendingRequest, HttpError};
 
 	#[derive(Debug)]
@@ -29,7 +29,7 @@ pub mod errors {
 		Timeout(PendingRequest),
 	}
 
-	impl_from_error!(
+	impl_enum_from_variant!(
 		RpcError,
 		JsonRpcError => FailureResponse,
 		serde_json::Error => SerdeError,
@@ -127,7 +127,7 @@ impl<'a> Visitor<'a> for BytesVisitor {
 	{
 		if value.len() >= 2 && &value[0..2] == "0x" {
 			let bytes = hex::decode(&value[2..])
-				.map_err(|e| Error::custom(alloc::format!("Invalid hex: {}", e)))?;
+				.map_err(|e| Error::custom(alloc::format!("Invalid hex: {e}")))?;
 			Ok(Bytes(bytes))
 		} else {
 			Err(Error::invalid_value(Unexpected::Str(value), &"0x prefix"))
@@ -322,7 +322,7 @@ fn to_json_hex(bytes: &[u8]) -> String {
 }
 
 fn format_as_hex<T: sp_std::fmt::LowerHex>(value: T) -> String {
-	alloc::format!("0x{:x}", value)
+	alloc::format!("0x{value:x}")
 }
 
 pub fn eth_get_transaction(

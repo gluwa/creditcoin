@@ -1,11 +1,11 @@
+---
 version: 2
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      time: "04:00"
+      interval: "monthly"
     open-pull-requests-limit: 5
     rebase-strategy: "disabled"
 
@@ -13,8 +13,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "weekly"
-      time: "05:00"
+      interval: "monthly"
     open-pull-requests-limit: 5
     rebase-strategy: "disabled"
 
@@ -23,59 +22,106 @@ updates:
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/node"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/node/rpc"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/creditcoin"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/difficulty"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/offchain-task-scheduler"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/offchain-task-scheduler/runtime-api"
+    schedule:
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/pallets/rewards"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
+    directory: "/pallets/pos-switch"
+    schedule:
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/primitives"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/runtime"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "cargo"
     directory: "/sha3pow"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
+    directory: "/test/client"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
+    directory: "/test/runtime-utils"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "cargo"
+    directory: "/test/traced-test"
+    schedule:
+      interval: "monthly"
 
   - package-ecosystem: "npm"
     directory: "/integration-tests"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
     directory: "/creditcoin-js"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "npm"
     directory: "/scripts/js"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/scripts/cc-cli"
+    schedule:
+      interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]

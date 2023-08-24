@@ -1,22 +1,45 @@
 // address registration now verifies ownership, so removed existing addresses
-
-use frame_support::dispatch::Weight;
-use frame_support::traits::Get;
+use super::{vec, Vec};
+use super::{Migrate, PhantomData};
+use crate::Config;
+use frame_support::{
+	dispatch::Weight,
+	traits::{Get, StorageVersion},
+};
 use sp_runtime::SaturatedConversion;
 
-use crate::Config;
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData)
+	}
+}
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let count_removed = match crate::Addresses::<T>::remove_all(None) {
-		sp_io::KillStorageResult::AllRemoved(count) => count,
-		sp_io::KillStorageResult::SomeRemaining(count) => count,
-	};
+pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
 
-	T::DbWeight::get().writes(count_removed.saturated_into())
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
+	}
+
+	fn migrate(&self) -> Weight {
+		let sp_io::MultiRemovalResults { unique: count_removed, .. } =
+			crate::Addresses::<T>::clear(u32::MAX, None);
+
+		T::DbWeight::get().writes(count_removed.saturated_into())
+	}
+
+	fn post_upgrade(&self, _ctx: Vec<u8>) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			4,
+			"expected storage version to be 4 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 mod tests {
+	use super::Migrate;
 	use crate::{
 		mock::{AccountId, ExtBuilder, Test},
 		Address, AddressId,
@@ -40,7 +63,7 @@ mod tests {
 				ids.push(id);
 			}
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			for id in ids {
 				assert!(!crate::Addresses::<Test>::contains_key(id));

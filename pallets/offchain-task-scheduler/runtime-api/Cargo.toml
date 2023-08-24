@@ -1,0 +1,20 @@
+[package]
+name = "task-scheduler-runtime-api"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+parity-scale-codec = { workspace = true }
+sp-api = { workspace = true }
+scale-info = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["sp-api/std", "parity-scale-codec/std"]

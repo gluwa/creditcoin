@@ -22,7 +22,8 @@ const deployCtcToken = async (deployer: Signer, existingAddress: string | undefi
 };
 
 const burnCtc = async (ctcToken: GluwaCreditVestingToken) => {
-    const tx = await ctcToken.burn(500);
+    // Burn 1 Credo == 10^-18 CTC
+    const tx = await ctcToken.burn(1);
     const txHash = tx.hash;
 
     // wait for tx to be mined and get receipt

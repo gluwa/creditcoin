@@ -1,13 +1,22 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
+#![recursion_limit = "256"]
+
+#[macro_export]
+macro_rules! warn_or_panic {
+	($($arg:tt)*) => {
+		log::warn!($($arg)*);
+		if cfg!(feature = "try-runtime") {
+			panic!()
+		}
+	};
+}
 
 extern crate alloc;
 
 use frame_support::traits::StorageVersion;
 pub use pallet::*;
 use sp_io::crypto::secp256k1_ecdsa_recover_compressed;
-use sp_io::KillStorageResult;
-use sp_runtime::KeyTypeId;
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -22,65 +31,46 @@ mod tests;
 
 #[macro_use]
 mod helpers;
-mod migrations;
+pub mod migrations;
 pub mod ocw;
 mod types;
 
 use ocw::tasks::collect_coins::GCreContract;
-pub use types::*;
+pub use types::{
+	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
+	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
+	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
+	TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+};
 
-pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"ctcs");
+pub(crate) use types::{DoubleMapExt, Id};
 
-pub mod crypto {
-	use crate::KEY_TYPE;
-	use sp_runtime::{
-		app_crypto::{app_crypto, sr25519},
-		MultiSignature, MultiSigner,
-	};
-
-	app_crypto!(sr25519, KEY_TYPE);
-
-	pub struct CtcAuthId;
-
-	impl frame_system::offchain::AppCrypto<MultiSigner, MultiSignature> for CtcAuthId {
-		type RuntimeAppPublic = Public;
-
-		type GenericPublic = sp_core::sr25519::Public;
-
-		type GenericSignature = sp_core::sr25519::Signature;
-	}
-}
+#[cfg(test)]
+pub(crate) use types::test;
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
-pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
 
 #[frame_support::pallet]
 pub mod pallet {
 
-	use crate::helpers::non_paying_error;
-
 	use super::*;
+	use crate::{helpers::non_paying_error, types::OwnershipProof};
 	use frame_support::{
-		dispatch::DispatchResult,
+		dispatch::{DispatchResult, PostDispatchInfo},
+		fail,
 		pallet_prelude::*,
 		traits::tokens::{currency::Currency as CurrencyT, fungible::Mutate, ExistenceRequirement},
 		transactional,
-		weights::PostDispatchInfo,
 	};
-	use frame_system::{
-		ensure_signed,
-		offchain::{AppCrypto, CreateSignedTransaction},
-		pallet_prelude::*,
-	};
+	use frame_system::{ensure_signed, offchain::CreateSignedTransaction, pallet_prelude::*};
 	use ocw::errors::VerificationFailureCause;
-	use sp_runtime::offchain::storage_lock::{BlockAndTime, StorageLock};
-	use sp_runtime::offchain::Duration;
-	use sp_runtime::traits::{
-		IdentifyAccount, SaturatedConversion, Saturating, UniqueSaturatedFrom, UniqueSaturatedInto,
-		Verify,
-	};
-	use sp_tracing as log;
+	use pallet_offchain_task_scheduler::authority::AuthorityController;
+	use pallet_offchain_task_scheduler::tasks::{TaskScheduler, TaskV2};
+	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
+	use tracing as log;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -95,14 +85,9 @@ pub mod pallet {
 			UniqueSaturatedInto<u64> + UniqueSaturatedFrom<u64>,
 	{
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		type Call: From<Call<Self>>;
-
-		type AuthorityId: AppCrypto<
-			Self::Public,
-			<Self as frame_system::offchain::SigningTypes>::Signature,
-		>;
 
 		type Signer: From<sp_core::ecdsa::Public>
 			+ IdentifyAccount<AccountId = <Self as frame_system::Config>::AccountId>
@@ -111,17 +96,6 @@ pub mod pallet {
 		type SignerSignature: Verify<Signer = Self::Signer>
 			+ From<sp_core::ecdsa::Signature>
 			+ Parameter;
-
-		type FromAccountId: From<sp_core::sr25519::Public>
-			+ IsType<Self::AccountId>
-			+ Clone
-			+ core::fmt::Debug
-			+ PartialEq<Self::FromAccountId>
-			+ AsRef<[u8; 32]>;
-
-		type InternalPublic: sp_core::crypto::UncheckedFrom<[u8; 32]>;
-
-		type PublicSigning: From<Self::InternalPublic> + Into<Self::Public>;
 
 		// in order to turn a `Hash` into a U256 for checking the nonces on
 		// ethless transfers we need the `Hash` type to implement
@@ -136,10 +110,18 @@ pub mod pallet {
 		type UnverifiedTaskTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
+
+		type TaskScheduler: TaskScheduler<
+				BlockNumber = Self::BlockNumber,
+				Hash = Self::Hash,
+				Task = Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
+			> + AuthorityController<AccountId = Self::AccountId>;
 	}
 
 	pub trait WeightInfo {
-		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32, u: u32, c: u32) -> Weight;
+		fn migration_v6(t: u32) -> Weight;
+		fn migration_v7(t: u32) -> Weight;
+		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
 		fn register_address() -> Weight;
 		fn claim_legacy_wallet() -> Weight;
 		fn add_ask_order() -> Weight;
@@ -161,34 +143,18 @@ pub mod pallet {
 		fn fail_collect_coins() -> Weight;
 		fn remove_authority() -> Weight;
 		fn set_collect_coins_contract() -> Weight;
-		fn register_currency() -> Weight;
+		fn register_address_v2() -> Weight;
 	}
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
-
-	#[pallet::storage]
-	#[pallet::getter(fn authorities)]
-	pub type Authorities<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, ()>;
 
 	#[pallet::storage]
 	pub type LegacyWallets<T: Config> = StorageMap<_, Twox128, LegacySighash, T::Balance>;
 
 	#[pallet::storage]
 	pub type LegacyBalanceKeeper<T: Config> = StorageValue<_, T::AccountId>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn pending_tasks)]
-	pub type PendingTasks<T: Config> = StorageDoubleMap<
-		_,
-		Identity,
-		T::BlockNumber,
-		Identity,
-		TaskId<T::Hash>,
-		Task<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
-	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn deal_orders)]
@@ -258,11 +224,8 @@ pub mod pallet {
 		_,
 		Identity,
 		CollectedCoinsId<T::Hash>,
-		types::CollectedCoins<T::Hash, T::Balance>,
+		types::CollectedCoinsStruct<T::Hash, T::Balance>,
 	>;
-
-	#[pallet::storage]
-	pub type Currencies<T: Config> = StorageMap<_, Identity, CurrencyId<T::Hash>, Currency>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn collect_coins_contract)]
@@ -294,7 +257,7 @@ pub mod pallet {
 		/// [collected_coins_id, collected_coins]
 		CollectedCoinsMinted(
 			types::CollectedCoinsId<T::Hash>,
-			types::CollectedCoins<T::Hash, T::Balance>,
+			types::CollectedCoinsStruct<T::Hash, T::Balance>,
 		),
 
 		/// An external transfer has been processed and marked as part of a loan.
@@ -369,8 +332,11 @@ pub mod pallet {
 	#[derive(PartialEq, Eq)]
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The specified address has already been registered to another account
+		/// The specified address has already been registered to another account.
 		AddressAlreadyRegistered,
+
+		/// The specified address has already been registered to this account.
+		AddressAlreadyRegisteredByCaller,
 
 		/// The specified address does not exist.
 		NonExistentAddress,
@@ -440,7 +406,7 @@ pub mod pallet {
 		RepaymentOrderNonZeroGain,
 
 		/// The addresses specified are not on compatible external chains.
-		AddressPlatformMismatch,
+		AddressBlockchainMismatch,
 
 		/// The account is already an authority.
 		AlreadyAuthority,
@@ -529,11 +495,25 @@ pub mod pallet {
 
 		/// The currency has already been registered.
 		CurrencyAlreadyRegistered,
+
+		/// A valid external address could not be generated for the specified blockchain and recovered public key
+		EthSignExternalAddressGenerationFailed,
+
+		/// ECDSA public key recovery failed for an ownership proof using EthSign
+		EthSignPublicKeyRecoveryFailed,
+
+		/// A valid external address could not be generated for the specified blockchain and recovered public key
+		PersonalSignExternalAddressGenerationFailed,
+
+		/// ECDSA public key recovery failed for an ownership proof using PersonalSign
+		PersonalSignPublicKeyRecoveryFailed,
+
+		/// An unsupported blockchain was specified to register_address_v2
+		UnsupportedBlockchain,
 	}
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub authorities: Vec<T::AccountId>,
 		pub legacy_wallets: Vec<(LegacySighash, T::Balance)>,
 		pub legacy_balance_keeper: Option<T::AccountId>,
 	}
@@ -541,20 +521,13 @@ pub mod pallet {
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			Self {
-				authorities: Vec::new(),
-				legacy_wallets: Vec::new(),
-				legacy_balance_keeper: None,
-			}
+			Self { legacy_wallets: Vec::new(), legacy_balance_keeper: None }
 		}
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			for authority in &self.authorities {
-				Authorities::<T>::insert(authority.clone(), ());
-			}
 			for (sighash, balance) in &self.legacy_wallets {
 				LegacyWallets::<T>::insert(sighash, balance);
 			}
@@ -569,120 +542,11 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
 
-			let unverified_task_count = match PendingTasks::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
+			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
+			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
+			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).backend;
 
-			let ask_count = match AskOrders::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
-			let bid_count = match BidOrders::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
-			let offer_count = match Offers::<T>::remove_prefix(block_number, None) {
-				KillStorageResult::SomeRemaining(u) | KillStorageResult::AllRemoved(u) => u,
-			};
-
-			let mut deals_count = 0u32;
-			let deals_to_keep: Vec<_> = DealOrders::<T>::drain_prefix(block_number)
-				.filter_map(|(hash, deal)| {
-					deals_count = deals_count.saturating_add(1);
-					if deal.funding_transfer_id.is_some() {
-						Some((DealOrderId::with_expiration_hash::<T>(block_number, hash), deal))
-					} else {
-						None
-					}
-				})
-				.collect();
-			let funded_deals_count = deals_to_keep.len().unique_saturated_into();
-			let deals_count = deals_count.saturating_sub(funded_deals_count);
-			for (key, deal) in deals_to_keep {
-				DealOrders::<T>::insert_id(key, deal);
-			}
-
-			<T as Config>::WeightInfo::on_initialize(
-				ask_count,
-				bid_count,
-				offer_count,
-				deals_count,
-				funded_deals_count,
-				unverified_task_count,
-				0,
-			)
-		}
-
-		fn offchain_worker(block_number: T::BlockNumber) {
-			let auth_id = match Self::authority_id() {
-				None => {
-					log::debug!(target: "OCW", "Not authority, skipping off chain work");
-					return;
-				},
-				Some(auth) => T::FromAccountId::from(auth),
-			};
-
-			for (deadline, id, task) in PendingTasks::<T>::iter() {
-				let storage_key = crate::ocw::tasks::storage_key(&id);
-				let offset =
-					T::UnverifiedTaskTimeout::get().saturated_into::<u32>().saturating_sub(2u32);
-
-				let mut lock = StorageLock::<BlockAndTime<frame_system::Pallet<T>>>::with_block_and_time_deadline(
-					&storage_key,
-					offset,
-					Duration::from_millis(0),
-				);
-
-				let guard = match lock.try_lock() {
-					Ok(g) => g,
-					Err(_) => continue,
-				};
-
-				if match &id {
-					TaskId::VerifyTransfer(id) => Transfers::<T>::contains_key(id),
-					TaskId::CollectCoins(id) => CollectedCoins::<T>::contains_key(id),
-				} {
-					log::debug!("Already handled Task ({:?}, {:?})", deadline, id);
-					guard.forget();
-					continue;
-				}
-
-				let result = task.verify_ocw::<T>();
-
-				log::trace!(target: "OCW", "@{block_number:?} Task {:8?}", id);
-
-				match result {
-					Ok(task_data) => {
-						let output = task_data.into_output::<T>();
-						match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
-							Call::persist_task_output { deadline, task_output: output.clone() }
-						}) {
-							Ok(_) => guard.forget(),
-							Err(e) => {
-								log::error!(
-									"Failed to send persist dispatchable transaction: {:?}",
-									e
-								)
-							},
-						}
-					},
-					Err((task, ocw::OffchainError::InvalidTask(cause))) => {
-						log::warn!("Failed to verify pending task {:?} : {:?}", task, cause);
-						if cause.is_fatal() {
-							match Self::submit_txn_with_synced_nonce(auth_id.clone(), |_| {
-								Call::fail_task { deadline, task_id: id.clone(), cause }
-							}) {
-								Err(e) => log::error!(
-									"Failed to send fail dispatchable transaction: {:?}",
-									e
-								),
-								Ok(_) => guard.forget(),
-							}
-						}
-					},
-					Err(error) => {
-						log::error!("Task verification encountered an error {:?}", error);
-					},
-				}
-			}
+			<T as Config>::WeightInfo::on_initialize(ask_count, bid_count, offer_count, 0, 0)
 		}
 
 		fn on_runtime_upgrade() -> Weight {
@@ -693,13 +557,14 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Claims legacy wallet and transfers the balance to the sender's account.
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as Config>::WeightInfo::claim_legacy_wallet())]
 		pub fn claim_legacy_wallet(
 			origin: OriginFor<T>,
 			public_key: sp_core::ecdsa::Public,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
-			let account_id_of_key = T::Signer::from(public_key.clone()).into_account();
+			let account_id_of_key = T::Signer::from(public_key).into_account();
 			ensure!(account_id_of_key == who, Error::<T>::NotLegacyWalletOwner);
 
 			let sighash = LegacySighash::from(&public_key);
@@ -723,6 +588,7 @@ pub mod pallet {
 		}
 
 		/// Registers an external address on `blockchain` and `network` with value `address`
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_address())]
 		pub fn register_address(
 			origin: OriginFor<T>,
@@ -730,26 +596,40 @@ pub mod pallet {
 			address: ExternalAddress,
 			ownership_proof: sp_core::ecdsa::Signature,
 		) -> DispatchResult {
+			// Get `origin` to look like the message to which the `ownership_proof` signature corresponds.
+			// TODO: Why do we hash twice? I presume signed blake2 digest should be sufficient.
+			// The signing happens here: https://github.com/gluwa/creditcoin/blob/d1918252b27069afccbca290f35e4ecd8fce0640/creditcoin-js/src/utils.ts#L9
 			let who = ensure_signed(origin)?;
-
 			let message = sp_io::hashing::sha2_256(who.encode().as_slice());
+			// Prep message for public key recovery/extraction
 			let message = &sp_io::hashing::blake2_256(message.as_ref());
+
+			// Extract public key of keypair used to sign the address of the caller
 			let signature = <[u8; 65]>::from(ownership_proof);
 			let raw_pubkey = secp256k1_ecdsa_recover_compressed(&signature, message)
 				.map_err(|_| Error::<T>::InvalidSignature)?;
+
+			// Build the external address from the public key
 			let recreated_address = helpers::generate_external_address(
 				&blockchain,
 				&address,
 				sp_core::ecdsa::Public::from_raw(raw_pubkey),
 			)
 			.ok_or(Error::<T>::AddressFormatNotSupported)?;
+			// Check if external address of keypair used to sign AccountID
+			// is the same one mentioned in this call to register_address
 			ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
 
 			let address_id = AddressId::new::<T>(&blockchain, &address);
-			ensure!(
-				!Addresses::<T>::contains_key(&address_id),
-				Error::<T>::AddressAlreadyRegistered
-			);
+
+			if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
+				// Already registered, let's figure out who owns it so we can
+				// return a nice error
+				if who == account_id.owner {
+					fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+				}
+				fail!(Error::<T>::AddressAlreadyRegistered);
+			}
 
 			// note: this error condition is unreachable!
 			// AddressFormatNotSupported or OwnershipNotSatisfied will error out first
@@ -765,6 +645,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_ask_order())]
 		pub fn add_ask_order(
 			origin: OriginFor<T>,
@@ -800,6 +681,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_bid_order())]
 		pub fn add_bid_order(
 			origin: OriginFor<T>,
@@ -835,6 +717,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_offer())]
 		pub fn add_offer(
 			origin: OriginFor<T>,
@@ -860,7 +743,7 @@ pub mod pallet {
 
 			ensure!(
 				ask_order.blockchain == bid_order.blockchain,
-				Error::<T>::AddressPlatformMismatch
+				Error::<T>::AddressBlockchainMismatch
 			);
 
 			ensure!(ask_order.terms.match_with(&bid_order.terms), Error::<T>::AskBidMismatch);
@@ -884,6 +767,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_deal_order())]
 		pub fn add_deal_order(
 			origin: OriginFor<T>,
@@ -936,6 +820,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::lock_deal_order())]
 		pub fn lock_deal_order(
 			origin: OriginFor<T>,
@@ -962,6 +847,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(7)]
 		#[pallet::weight(<T as Config>::WeightInfo::fund_deal_order())]
 		pub fn fund_deal_order(
 			origin: OriginFor<T>,
@@ -1014,6 +900,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(8)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_deal_order())]
 		pub fn register_deal_order(
 			origin: OriginFor<T>,
@@ -1048,7 +935,7 @@ pub mod pallet {
 			let lender = Self::get_address(&lender_address_id)?;
 			ensure!(lender.owner == lender_account, Error::<T>::NotAddressOwner);
 
-			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressPlatformMismatch);
+			ensure!(lender.matches_chain_of(&borrower), Error::<T>::AddressBlockchainMismatch);
 
 			let ask_order_id = AskOrderId::new::<T>(expiration_block, &ask_guid);
 			ensure!(!AskOrders::<T>::contains_id(&ask_order_id), Error::<T>::DuplicateId);
@@ -1120,6 +1007,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(9)]
 		#[pallet::weight(<T as Config>::WeightInfo::close_deal_order())]
 		pub fn close_deal_order(
 			origin: OriginFor<T>,
@@ -1173,6 +1061,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
+		#[pallet::call_index(10)]
 		#[pallet::weight(<T as Config>::WeightInfo::request_collect_coins())]
 		pub fn request_collect_coins(
 			origin: OriginFor<T>,
@@ -1182,39 +1071,39 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let contract = Self::collect_coins_contract();
-			let contract_chain = &contract.chain;
-
-			let collect_coins_id = CollectedCoinsId::new::<T>(contract_chain, &tx_id);
-			ensure!(
-				!CollectedCoins::<T>::contains_key(&collect_coins_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let deadline = Self::block_number().saturating_add(T::UnverifiedTaskTimeout::get());
-
-			ensure!(
-				!PendingTasks::<T>::contains_key(deadline, &TaskId::from(collect_coins_id.clone())),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let address_id = AddressId::new::<T>(contract_chain, &evm_address);
-			let address = Self::addresses(&address_id).ok_or(Error::<T>::NonExistentAddress)?;
-			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
 
 			let pending = types::UnverifiedCollectedCoins { to: evm_address, tx_id, contract };
 
-			PendingTasks::<T>::insert(
-				deadline,
-				TaskId::from(collect_coins_id.clone()),
-				Task::from(pending.clone()),
+			let collect_coins_id = TaskV2::<T>::to_id(&pending);
+
+			ensure!(
+				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
 			);
 
-			Self::deposit_event(Event::<T>::CollectCoinsRegistered(collect_coins_id, pending));
+			let deadline = T::TaskScheduler::deadline();
+
+			ensure!(
+				!T::TaskScheduler::is_scheduled(&deadline, &collect_coins_id),
+				Error::<T>::CollectCoinsAlreadyRegistered
+			);
+
+			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
+			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;
+			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
+
+			T::TaskScheduler::insert(&deadline, &collect_coins_id, Task::from(pending.clone()));
+
+			Self::deposit_event(Event::<T>::CollectCoinsRegistered(
+				collect_coins_id.into(),
+				pending,
+			));
 
 			Ok(())
 		}
 
 		#[transactional]
+		#[pallet::call_index(11)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer())]
 		pub fn register_funding_transfer(
 			origin: OriginFor<T>,
@@ -1241,6 +1130,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
+		#[pallet::call_index(12)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_repayment_transfer())]
 		pub fn register_repayment_transfer(
 			origin: OriginFor<T>,
@@ -1267,6 +1157,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(13)]
 		#[pallet::weight(<T as Config>::WeightInfo::exempt())]
 		pub fn exempt(
 			origin: OriginFor<T>,
@@ -1275,8 +1166,8 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			DealOrders::<T>::try_mutate(
-				&deal_order_id.expiration(),
-				&deal_order_id.hash(),
+				deal_order_id.expiration(),
+				deal_order_id.hash(),
 				|value| -> DispatchResult {
 					let deal_order =
 						value.as_mut().ok_or(crate::Error::<T>::NonExistentDealOrder)?;
@@ -1317,6 +1208,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
+		#[pallet::call_index(16)]
 		#[pallet::weight(match &task_output {
 			crate::TaskOutput::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
 			crate::TaskOutput::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
@@ -1328,7 +1220,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
 
 			let (task_id, event) = match task_output {
 				TaskOutput::VerifyTransfer(id, transfer) => {
@@ -1341,7 +1233,7 @@ pub mod pallet {
 					transfer.block = frame_system::Pallet::<T>::block_number();
 
 					Transfers::<T>::insert(&id, transfer);
-					(TaskId::from(id.clone()), Event::<T>::TransferVerified(id))
+					(id.clone().into_inner(), Event::<T>::TransferVerified(id))
 				},
 				TaskOutput::CollectCoins(id, collected_coins) => {
 					ensure!(
@@ -1358,20 +1250,17 @@ pub mod pallet {
 					)?;
 
 					CollectedCoins::<T>::insert(&id, collected_coins.clone());
-					(
-						TaskId::from(id.clone()),
-						Event::<T>::CollectedCoinsMinted(id, collected_coins),
-					)
+					(id.clone().into_inner(), Event::<T>::CollectedCoinsMinted(id, collected_coins))
 				},
 			};
-
-			PendingTasks::<T>::remove(&deadline, &task_id);
+			T::TaskScheduler::remove(&deadline, &task_id);
 
 			Self::deposit_event(event);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
+		#[pallet::call_index(17)]
 		#[pallet::weight(match &task_id {
 			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::fail_transfer(),
 			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::fail_collect_coins(),
@@ -1384,30 +1273,37 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::InsufficientAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::InsufficientAuthority);
 
-			let event = match &task_id {
+			let (task_id, event) = match task_id {
 				TaskId::VerifyTransfer(transfer_id) => {
 					ensure!(
 						!Transfers::<T>::contains_key(&transfer_id),
 						Error::<T>::TransferAlreadyRegistered
 					);
-					Event::<T>::TransferFailedVerification(transfer_id.clone(), cause)
+					(
+						transfer_id.clone().into_inner(),
+						Event::<T>::TransferFailedVerification(transfer_id, cause),
+					)
 				},
 				TaskId::CollectCoins(collected_coins_id) => {
 					ensure!(
 						!CollectedCoins::<T>::contains_key(&collected_coins_id),
 						Error::<T>::CollectCoinsAlreadyRegistered
 					);
-					Event::<T>::CollectCoinsFailedVerification(collected_coins_id.clone(), cause)
+					(
+						collected_coins_id.clone().into_inner(),
+						Event::<T>::CollectCoinsFailedVerification(collected_coins_id, cause),
+					)
 				},
 			};
-			PendingTasks::<T>::remove(&deadline, &task_id);
+			T::TaskScheduler::remove(&deadline, &task_id);
 			Self::deposit_event(event);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
+		#[pallet::call_index(18)]
 		#[pallet::weight(<T as Config>::WeightInfo::add_authority())]
 		pub fn add_authority(
 			origin: OriginFor<T>,
@@ -1415,27 +1311,15 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			ensure!(!Authorities::<T>::contains_key(&who), Error::<T>::AlreadyAuthority);
+			ensure!(!T::TaskScheduler::is_authority(&who), Error::<T>::AlreadyAuthority);
 
-			Authorities::<T>::insert(who, ());
+			T::TaskScheduler::insert_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
 		}
 
-		#[pallet::weight(<T as Config>::WeightInfo::register_currency())]
-		pub fn register_currency(origin: OriginFor<T>, currency: Currency) -> DispatchResult {
-			ensure_root(origin)?;
-
-			let id = CurrencyId::new::<T>(&currency);
-
-			ensure!(!Currencies::<T>::contains_key(&id), Error::<T>::CurrencyAlreadyRegistered);
-
-			Currencies::<T>::insert(&id, &currency);
-
-			Ok(())
-		}
-
 		#[transactional]
+		#[pallet::call_index(20)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_collect_coins_contract())]
 		pub fn set_collect_coins_contract(
 			origin: OriginFor<T>,
@@ -1447,6 +1331,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
+		#[pallet::call_index(21)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_authority())]
 		pub fn remove_authority(
 			origin: OriginFor<T>,
@@ -1454,11 +1339,67 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			ensure!(Authorities::<T>::contains_key(&who), Error::<T>::NotAnAuthority);
+			ensure!(T::TaskScheduler::is_authority(&who), Error::<T>::NotAnAuthority);
 
-			Authorities::<T>::remove(&who);
+			T::TaskScheduler::remove_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
+		}
+
+		/// Registers an address on an external blockchain as the property of an onchain address.
+		/// To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
+		/// The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
+		#[pallet::call_index(22)]
+		#[pallet::weight(<T as Config>::WeightInfo::register_address_v2())]
+		pub fn register_address_v2(
+			origin: OriginFor<T>,
+			blockchain: Blockchain,
+			address: ExternalAddress,
+			ownership_proof: OwnershipProof,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let encoded = who.encode();
+			let account = encoded.as_slice();
+
+			ensure!(
+				helpers::blockchain_is_supported(&blockchain),
+				Error::<T>::UnsupportedBlockchain
+			);
+
+			ensure!(
+				helpers::address_is_well_formed(&blockchain, &address),
+				Error::<T>::MalformedExternalAddress
+			);
+
+			match helpers::try_extract_address::<T>(ownership_proof, account, &blockchain, &address)
+			{
+				Ok(recreated_address) => {
+					// Check if external address of keypair used to sign AccountID
+					// is the same one mentioned in this call to register_address
+					ensure!(recreated_address == address, Error::<T>::OwnershipNotSatisfied);
+					let address_id = AddressId::new::<T>(&blockchain, &address);
+
+					if let Ok(account_id) = Addresses::<T>::try_get(&address_id) {
+						// Already registered, let's figure out who owns it so we can
+						// return a nice error
+						if who == account_id.owner {
+							fail!(Error::<T>::AddressAlreadyRegisteredByCaller);
+						}
+						fail!(Error::<T>::AddressAlreadyRegistered);
+					}
+
+					let entry = Address { blockchain, value: address, owner: who };
+					Self::deposit_event(Event::<T>::AddressRegistered(
+						address_id.clone(),
+						entry.clone(),
+					));
+					<Addresses<T>>::insert(address_id, entry);
+					Ok(())
+				},
+				Err(e) => {
+					fail!(e)
+				},
+			}
 		}
 	}
 }

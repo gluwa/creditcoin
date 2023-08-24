@@ -1,85 +1,128 @@
 // task storage moved from UnverifiedTransfers + UnverifiedCollectedCoins to PendingTasks
+use super::{vec, Vec};
+use super::{AccountIdOf, BlockNumberOf, HashOf, MomentOf};
+use super::{Migrate, PhantomData};
 use crate::{
-	types::{self, ExternalAddress, ExternalTxId},
+	types::{ExternalAddress, ExternalTxId, TaskId},
 	CollectedCoinsId, Config, TransferId, UnverifiedTransfer,
 };
-use codec::{Decode, Encode};
+use frame_support::{pallet_prelude::*, storage_alias, Identity};
+use parity_scale_codec::{Decode, Encode};
 
-use frame_support::{generate_storage_alias, migration, pallet_prelude::*, Identity};
+#[derive(Encode, Decode)]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct UnverifiedCollectedCoinsStruct {
+	pub to: ExternalAddress,
+	pub tx_id: ExternalTxId,
+}
 
-mod old_type {
-	use super::*;
+#[derive(Encode, Decode)]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub enum Task<AccountId, BlockNum, Hash, Moment> {
+	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(UnverifiedCollectedCoinsStruct),
+}
 
-	#[derive(Encode, Decode)]
-	pub struct UnverifiedCollectedCoins {
-		pub to: ExternalAddress,
-		pub tx_id: ExternalTxId,
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+		Task::VerifyTransfer(transfer)
 	}
 }
 
-generate_storage_alias!(
-	Creditcoin,
-	UnverifiedTransfers<T: Config> => DoubleMap<
-		(Identity, T::BlockNumber),
-		(Identity, TransferId<T::Hash>),
-		UnverifiedTransfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>
-	>
-);
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCollectedCoinsStruct>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(coins: UnverifiedCollectedCoinsStruct) -> Self {
+		Task::CollectCoins(coins)
+	}
+}
 
-generate_storage_alias!(
-	Creditcoin,
-	UnverifiedCollectedCoins<T: Config> => DoubleMap<
-		(Identity, T::BlockNumber),
-		(Identity, CollectedCoinsId<T::Hash>),
-		old_type::UnverifiedCollectedCoins
-	>
-);
+#[storage_alias]
+type UnverifiedTransfers<T: Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	TransferId<HashOf<T>>,
+	UnverifiedTransfer<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
-pub(crate) fn migrate<T: Config>() -> Weight {
-	let mut weight: Weight = 0;
-	let weight_each = T::DbWeight::get().reads_writes(1, 1);
+#[storage_alias]
+type UnverifiedCollectedCoins<T: Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	CollectedCoinsId<HashOf<T>>,
+	UnverifiedCollectedCoinsStruct,
+>;
 
-	for (deadline, id, transfer) in UnverifiedTransfers::<T>::iter() {
-		weight = weight.saturating_add(weight_each);
+#[storage_alias]
+pub type PendingTasks<T: Config> = StorageDoubleMap<
+	crate::Pallet<T>,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	TaskId<HashOf<T>>,
+	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
 
-		crate::PendingTasks::<T>::insert(
-			deadline,
-			crate::TaskId::from(id),
-			crate::Task::from(transfer),
-		);
+pub(super) struct Migration<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> Migration<Runtime> {
+	pub(super) fn new() -> Self {
+		Self(PhantomData)
+	}
+}
+
+impl<T: Config> Migrate for Migration<T> {
+	fn pre_upgrade(&self) -> Vec<u8> {
+		vec![]
 	}
 
-	for (deadline, id, collect_coins) in UnverifiedCollectedCoins::<T>::iter() {
-		weight = weight.saturating_add(weight_each);
+	fn migrate(&self) -> Weight {
+		let mut weight: Weight = Weight::zero();
+		let weight_each = T::DbWeight::get().reads_writes(1, 1);
 
-		let old_type::UnverifiedCollectedCoins { to, tx_id } = collect_coins;
-		let new_item = types::UnverifiedCollectedCoins { contract: Default::default(), to, tx_id };
+		for (deadline, id, transfer) in UnverifiedTransfers::<T>::iter() {
+			weight = weight.saturating_add(weight_each);
 
-		crate::PendingTasks::<T>::insert(
-			deadline,
-			crate::TaskId::from(id),
-			crate::Task::from(new_item),
-		);
+			PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(transfer));
+		}
+
+		for (deadline, id, collect_coins) in UnverifiedCollectedCoins::<T>::iter() {
+			weight = weight.saturating_add(weight_each);
+
+			PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(collect_coins));
+		}
+
+		let _results = UnverifiedTransfers::<T>::clear(u32::MAX, None);
+		let _results = UnverifiedCollectedCoins::<T>::clear(u32::MAX, None);
+		weight
 	}
 
-	let module = crate::Pallet::<T>::name().as_bytes();
-	migration::remove_storage_prefix(module, b"UnverifiedTransfers", b"");
-	migration::remove_storage_prefix(module, b"UnverifiedCollectedCoins", b"");
-
-	weight
+	fn post_upgrade(&self, _ctx: Vec<u8>) {
+		assert_eq!(
+			StorageVersion::get::<crate::Pallet<T>>(),
+			5,
+			"expected storage version to be 5 after migrations complete"
+		);
+	}
 }
 
 #[cfg(test)]
 mod tests {
 	use core::{convert::TryInto, ops::Not};
 
+	use super::*;
 	use crate::{
 		mock::{ExtBuilder, Test},
 		tests::TestInfo,
 		ExternalTxId, TransferId,
 	};
-
-	use super::*;
+	use sp_runtime::traits::Hash;
 
 	#[test]
 	fn unverified_transfer_migrates() {
@@ -111,14 +154,14 @@ mod tests {
 			UnverifiedTransfers::<Test>::insert(deadline, &transfer_id, &transfer);
 			assert!(UnverifiedTransfers::<Test>::contains_key(deadline, &transfer_id));
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			assert_eq!(
-				crate::PendingTasks::<Test>::get(
+				PendingTasks::<Test>::get(
 					deadline,
 					crate::TaskId::VerifyTransfer(transfer_id.clone())
 				),
-				Some(crate::Task::VerifyTransfer(transfer))
+				Some(Task::VerifyTransfer(transfer))
 			);
 
 			assert!(UnverifiedTransfers::<Test>::contains_key(deadline, transfer_id).not());
@@ -130,36 +173,24 @@ mod tests {
 		ExtBuilder::default().build_and_execute(|| {
 			let deadline = 11;
 			let tx_id: ExternalTxId = b"fafafafafafafa".to_vec().try_into().unwrap();
-			let old_collect_coins = old_type::UnverifiedCollectedCoins {
+			let collect_coins = UnverifiedCollectedCoinsStruct {
 				to: b"baba".to_vec().try_into().unwrap(),
 				tx_id: tx_id.clone(),
 			};
 
-			let new_collect_coins = types::UnverifiedCollectedCoins {
-				to: b"baba".to_vec().try_into().unwrap(),
-				tx_id: tx_id.clone(),
-				contract: Default::default(),
-			};
-
-			let collect_coins_id =
-				crate::CollectedCoinsId::new::<Test>(&new_collect_coins.contract.chain, &tx_id);
-
-			UnverifiedCollectedCoins::<Test>::insert(
-				deadline,
-				&collect_coins_id,
-				&old_collect_coins,
+			let collect_coins_id = crate::CollectedCoinsId::from(
+				<Test as frame_system::Config>::Hashing::hash(&tx_id),
 			);
+
+			UnverifiedCollectedCoins::<Test>::insert(deadline, &collect_coins_id, &collect_coins);
 
 			assert!(UnverifiedCollectedCoins::<Test>::contains_key(deadline, &collect_coins_id));
 
-			super::migrate::<Test>();
+			super::Migration::<Test>::new().migrate();
 
 			assert_eq!(
-				crate::PendingTasks::<Test>::get(
-					deadline,
-					crate::TaskId::CollectCoins(collect_coins_id.clone())
-				),
-				Some(crate::Task::CollectCoins(new_collect_coins))
+				PendingTasks::<Test>::get(deadline, TaskId::CollectCoins(collect_coins_id.clone())),
+				Some(Task::CollectCoins(collect_coins))
 			);
 
 			assert!(

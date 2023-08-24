@@ -1,31 +1,60 @@
-import { KeyringPair } from 'creditcoin-js';
-import { Guid } from 'creditcoin-js';
-import { POINT_01_CTC } from '../constants';
-import { BN } from 'creditcoin-js';
-import { signLoanParams, DealOrderRegistered } from 'creditcoin-js/lib/extrinsics/register-deal-order';
-import { creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi, BN, KeyringPair, Guid, Wallet } from 'creditcoin-js';
+import { signLoanParams } from 'creditcoin-js/lib/extrinsics/register-deal-order';
+import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi, VerificationError } from 'creditcoin-js/lib/types';
 import { createCreditcoinTransferKind } from 'creditcoin-js/lib/transforms';
-import { testData, lendOnEth, tryRegisterAddress } from './common';
+import { testData, lendOnEth, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
+import { ethConnection } from 'creditcoin-js/lib/examples/ethereum';
+import { AddressRegistered } from 'creditcoin-js/lib/extrinsics/register-address';
+
 import { extractFee } from '../utils';
-import { Wallet } from 'creditcoin-js';
 
 describe('RegisterFundingTransfer', (): void => {
     let ccApi: CreditcoinApi;
     let borrower: KeyringPair;
     let lender: KeyringPair;
-    let dealOrder: DealOrderRegistered;
-    let testTokenAddress: string;
-    let txHash: string;
     let lenderWallet: Wallet;
     let borrowerWallet: Wallet;
+    let lenderRegAddr: AddressRegistered;
+    let borrowerRegAddr: AddressRegistered;
 
-    const { blockchain, expirationBlock, loanTerms, createWallet, keyring } = testData;
+    const { blockchain, expirationBlock, createWallet, keyring, loanTerms } = testData(
+        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
+        (global as any).CREDITCOIN_CREATE_WALLET,
+    );
+
+    const setup = async () => {
+        const askGuid = Guid.newGuid();
+        const bidGuid = Guid.newGuid();
+        const eth = await ethConnection(
+            (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+            (global as any).CREDITCOIN_ETHEREUM_DECREASE_MINING_INTERVAL,
+            (global as any).CREDITCOIN_ETHEREUM_USE_HARDHAT_WALLET ? undefined : lenderWallet,
+        );
+        const signedParams = signLoanParams(ccApi.api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
+
+        const dealOrder = await ccApi.extrinsics.registerDealOrder(
+            lenderRegAddr.itemId,
+            borrowerRegAddr.itemId,
+            loanTerms,
+            expirationBlock,
+            askGuid,
+            bidGuid,
+            borrower.publicKey,
+            signedParams,
+            lender,
+        );
+        return {
+            eth,
+            dealOrder,
+            ethless: { kind: 'Ethless' as const, contractAddress: eth.testTokenAddress },
+        };
+    };
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        lender = keyring.addFromUri('//Alice');
-        borrower = keyring.addFromUri('//Bob');
+        lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        borrower = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => {
@@ -34,13 +63,11 @@ describe('RegisterFundingTransfer', (): void => {
 
     beforeEach(async () => {
         const {
-            api,
-            extrinsics: { registerDealOrder },
             utils: { signAccountId },
         } = ccApi;
         lenderWallet = createWallet('lender');
         borrowerWallet = createWallet('borrower');
-        const [lenderRegAddr, borrowerRegAddr] = await Promise.all([
+        [lenderRegAddr, borrowerRegAddr] = await Promise.all([
             tryRegisterAddress(
                 ccApi,
                 lenderWallet.address,
@@ -58,36 +85,14 @@ describe('RegisterFundingTransfer', (): void => {
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             ),
         ]);
-        const askGuid = Guid.newGuid();
-        const bidGuid = Guid.newGuid();
-        const signedParams = signLoanParams(api, borrower, expirationBlock, askGuid, bidGuid, loanTerms);
-
-        dealOrder = await registerDealOrder(
-            lenderRegAddr.itemId,
-            borrowerRegAddr.itemId,
-            loanTerms,
-            expirationBlock,
-            askGuid,
-            bidGuid,
-            borrower.publicKey,
-            signedParams,
-            lender,
-        );
-
-        [testTokenAddress, txHash] = await lendOnEth(
-            lenderWallet,
-            borrowerWallet,
-            dealOrder.dealOrder.itemId,
-            loanTerms,
-        );
     }, 900000);
 
     it('fee is min 0.01 CTC', async (): Promise<void> => {
+        const { dealOrder, eth, ethless } = await setup();
+        const txHash = await lendOnEth(lenderWallet, borrowerWallet, dealOrder.dealOrder.itemId, loanTerms, eth);
         const { api } = ccApi;
-        const ccTransferKind = createCreditcoinTransferKind(api, {
-            kind: 'Ethless',
-            contractAddress: testTokenAddress,
-        });
+
+        const ccTransferKind = createCreditcoinTransferKind(api, ethless);
 
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
@@ -97,24 +102,27 @@ describe('RegisterFundingTransfer', (): void => {
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
-            expect(fee).toBeGreaterThanOrEqual(POINT_01_CTC);
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
-    }, 300000);
+    }, 600000);
 
     it('emits a failure event if transfer is invalid', async (): Promise<void> => {
+        const { dealOrder, eth, ethless } = await setup();
+
         // wrong amount
         const badLoanTerms = { ...loanTerms, amount: new BN(1) };
         const dealOrderId = dealOrder.dealOrder.itemId;
 
-        const [failureTokenAddress, failureTxHash] = await lendOnEth(
+        const failureTxHash = await lendOnEth(
             lenderWallet,
             borrowerWallet,
             dealOrder.dealOrder.itemId,
             badLoanTerms,
+            eth,
         );
 
         const { waitForVerification } = await ccApi.extrinsics.registerFundingTransfer(
-            { kind: 'Ethless', contractAddress: failureTokenAddress },
+            ethless,
             dealOrderId,
             failureTxHash,
             lender,

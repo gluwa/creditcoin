@@ -1,4 +1,7 @@
-use crate::{mock::*, BASE_REWARD_IN_CTC, CREDO_PER_CTC, REWARD_HALF_LIFE, SAWTOOTH_PORT_HEIGHT};
+use crate::{
+	mock::{self, *},
+	BASE_REWARD_IN_CTC, CREDO_PER_CTC, REWARD_HALF_LIFE, SAWTOOTH_PORT_HEIGHT,
+};
 
 #[test]
 fn reward_amount_genesis() {
@@ -51,7 +54,10 @@ fn issue_reward_handling() {
 			.expect("Expected at least one EventRecord to be found")
 			.event;
 
-		assert_eq!(event, crate::mock::Event::Rewards(crate::Event::<Test>::RewardIssued(1, 55)),);
+		assert_eq!(
+			event,
+			crate::mock::RuntimeEvent::Rewards(crate::Event::<Test>::RewardIssued(1, 55)),
+		);
 	});
 }
 
@@ -77,4 +83,19 @@ fn exercise_getter() {
 		let author = crate::Pallet::<Test>::block_author();
 		assert_eq!(author, Some(2));
 	});
+}
+
+#[test]
+fn rewards_not_issued_if_disabled() {
+	new_test_ext().execute_with(|| {
+		let initial_balance = Balances::free_balance(1);
+
+		assert!(initial_balance > 0);
+		mock::TestRewardsEnabled::with_disabled(|| {
+			roll_to(10, 1);
+		});
+
+		let new_balance = Balances::free_balance(1);
+		assert_eq!(new_balance, initial_balance);
+	})
 }
