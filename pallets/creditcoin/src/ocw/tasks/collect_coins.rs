@@ -6,7 +6,7 @@ use crate::ocw::{
 };
 use crate::pallet::{Config as CreditcoinConfig, Pallet};
 use crate::{
-	types::{Blockchain, UnverifiedCollectedCoins},
+	types::{Blockchain, ContractType, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
 use core::default::Default;
