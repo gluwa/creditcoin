@@ -133,8 +133,8 @@ static ETHLESS_TO_ADDR: Lazy<Address> =
 static ETH_TRANSACTION: Lazy<EthTransaction> = Lazy::new(|| {
 	let mut transaction = EthTransaction::default();
 	transaction.block_number = Some(5u64.into());
-	transaction.from = Some(*ETHLESS_FROM_ADDR);
-	transaction.to = Some(*ETHLESS_CONTRACT_ADDR);
+	transaction.sender = Some(*ETHLESS_FROM_ADDR);
+	transaction.recipient = Some(*ETHLESS_CONTRACT_ADDR);
 	transaction.set_input(&hex::decode(&*ETHLESS_INPUT).unwrap());
 	transaction
 });
@@ -214,7 +214,7 @@ fn ethless_transfer_tx_unconfirmed() {
 #[test]
 fn ethless_transfer_tx_missing_to() {
 	let mut transaction = ETH_TRANSACTION.clone();
-	transaction.to = None;
+	transaction.recipient = None;
 	assert_invalid_task(
 		test_validate_ethless_transfer(EthlessTestArgs { transaction, ..Default::default() }),
 		MissingReceiver,
