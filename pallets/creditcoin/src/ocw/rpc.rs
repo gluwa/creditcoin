@@ -239,10 +239,11 @@ pub struct EthTransaction {
 	#[serde(rename = "blockNumber")]
 	pub block_number: Option<U64>,
 	/// Sender
-	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub from: Option<Address>,
+	#[serde(default, rename = "from", skip_serializing_if = "Option::is_none")]
+	pub sender: Option<Address>,
 	/// Recipient (None when contract creation)
-	pub to: Option<Address>,
+	#[serde(rename = "to")]
+	pub recipient: Option<Address>,
 	/// Transfered value
 	pub value: U256,
 	/// Input data
@@ -282,12 +283,12 @@ pub struct EthTransactionReceipt {
 	/// Note: default address if the client did not return this value
 	/// (maintains backwards compatibility for <= 0.7.0 when this field was missing)
 	#[serde(default)]
-	pub from: Address,
+	pub sender: Address,
 	/// Recipient (None when contract creation)
 	/// Note: Also `None` if the client did not return this value
 	/// (maintains backwards compatibility for <= 0.7.0 when this field was missing)
 	#[serde(default)]
-	pub to: Option<Address>,
+	pub recipient: Option<Address>,
 	/// Status: either 1 (success) or 0 (failure).
 	pub status: Option<U64>,
 }
