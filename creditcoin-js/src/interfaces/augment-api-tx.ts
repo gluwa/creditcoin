@@ -38,7 +38,7 @@ import type {
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
-    PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+    PalletCreditcoinOcwTasksCollectCoinsDeployedContract,
     PalletCreditcoinOfferId,
     PalletCreditcoinOwnershipProof,
     PalletCreditcoinTaskId,
@@ -573,12 +573,26 @@ declare module '@polkadot/api-base/types/submittable' {
             setCollectCoinsContract: AugmentedSubmittable<
                 (
                     contract:
-                        | PalletCreditcoinOcwTasksCollectCoinsGCreContract
+                        | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
                         | { address?: any; chain?: any }
                         | string
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinOcwTasksCollectCoinsGCreContract]
+                [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
+            >;
+            /**
+             * Set the onchain details for the Gluwa GATE Contract, including its address and the blockchain where it is deployed.
+             * This extrinsic expects the caller to have root permissions.
+             **/
+            setGateContract: AugmentedSubmittable<
+                (
+                    contract:
+                        | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
+                        | { address?: any; chain?: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
             >;
             /**
              * Generic tx
