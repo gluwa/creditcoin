@@ -469,12 +469,12 @@ export default {
     PalletCreditcoinCollectCoinsUnverifiedCollectedCoins: {
         to: 'Bytes',
         txId: 'Bytes',
-        contract: 'PalletCreditcoinOcwTasksCollectCoinsGCreContract',
+        contract: 'PalletCreditcoinOcwTasksCollectCoinsDeployedContract',
     },
     /**
-     * Lookup68: pallet_creditcoin::ocw::tasks::collect_coins::GCreContract
+     * Lookup68: pallet_creditcoin::ocw::tasks::collect_coins::DeployedContract
      **/
-    PalletCreditcoinOcwTasksCollectCoinsGCreContract: {
+    PalletCreditcoinOcwTasksCollectCoinsDeployedContract: {
         address: 'H160',
         chain: 'PalletCreditcoinBlockchain',
     },
@@ -1886,7 +1886,7 @@ export default {
             },
             __Unused19: 'Null',
             set_collect_coins_contract: {
-                contract: 'PalletCreditcoinOcwTasksCollectCoinsGCreContract',
+                contract: 'PalletCreditcoinOcwTasksCollectCoinsDeployedContract',
             },
             remove_authority: {
                 who: 'AccountId32',
@@ -1895,6 +1895,9 @@ export default {
                 blockchain: 'PalletCreditcoinBlockchain',
                 address: 'Bytes',
                 ownershipProof: 'PalletCreditcoinOwnershipProof',
+            },
+            set_gate_contract: {
+                contract: 'PalletCreditcoinOcwTasksCollectCoinsDeployedContract',
             },
         },
     },
