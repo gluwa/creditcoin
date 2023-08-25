@@ -2937,6 +2937,9 @@ fn exercise_weightinfo_functions() {
 
 	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
 	assert!(result.ref_time() > 0);
+
+	let result = super::weights::WeightInfo::<Test>::set_gate_contract();
+	assert!(result.ref_time() > 0);
 }
 
 #[test]
@@ -3240,24 +3243,17 @@ fn register_address_v2_should_error_with_unsupported_blockchain() {
 	});
 }
 
-use hex_literal::hex;
-
 #[test]
-fn set_burn_gate_contract_should_return_default_goerli_contract_when_not_set() {
+fn gate_contract_storage_should_return_default_goerli_contract_when_not_set() {
 	ExtBuilder::default().build_and_execute(|| {
 		let contract: DeployedContract = Creditcoin::gate_contract();
 
-		assert_eq!(
-			contract.address,
-			sp_core::H160(hex!("a3EE21C306A700E682AbCdfe9BaA6A08F3820419"))
-		);
-
-		assert_eq!(contract.chain, Blockchain::Ethereum);
+		assert_eq!(contract, DeployedContract::default());
 	});
 }
 
 #[test]
-fn set_burn_gate_contract_fails_with_non_root() {
+fn set_gate_contract_should_fail_when_not_signed_by_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: AccountId = AccountId::new([0; 32]);
 		let gate_contract = DeployedContract::default();
@@ -3267,7 +3263,7 @@ fn set_burn_gate_contract_fails_with_non_root() {
 }
 
 #[test]
-fn set_burn_gate_contract_passes_and_storage_is_updated() {
+fn set_gate_contract_passes_and_storage_is_updated() {
 	ExtBuilder::default().build_and_execute(|| {
 		let fake_address =
 			sp_core::H160([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
@@ -3275,6 +3271,8 @@ fn set_burn_gate_contract_passes_and_storage_is_updated() {
 		let gate_contract =
 			DeployedContract { address: fake_address, chain: Blockchain::Luniverse };
 
+		assert_ne!(gate_contract, DeployedContract::default());
+		assert_eq!(Creditcoin::gate_contract(), DeployedContract::default());
 		assert_ok!(Creditcoin::set_gate_contract(RawOrigin::Root.into(), gate_contract));
 
 		let stored_contract = Creditcoin::gate_contract();
