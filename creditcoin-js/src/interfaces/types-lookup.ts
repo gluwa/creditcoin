@@ -594,11 +594,11 @@ declare module '@polkadot/types/lookup' {
     interface PalletCreditcoinCollectCoinsUnverifiedCollectedCoins extends Struct {
         readonly to: Bytes;
         readonly txId: Bytes;
-        readonly contract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
+        readonly contract: PalletCreditcoinOcwTasksCollectCoinsDeployedContract;
     }
 
-    /** @name PalletCreditcoinOcwTasksCollectCoinsGCreContract (68) */
-    interface PalletCreditcoinOcwTasksCollectCoinsGCreContract extends Struct {
+    /** @name PalletCreditcoinOcwTasksCollectCoinsDeployedContract (68) */
+    interface PalletCreditcoinOcwTasksCollectCoinsDeployedContract extends Struct {
         readonly address: H160;
         readonly chain: PalletCreditcoinBlockchain;
     }
@@ -2142,7 +2142,7 @@ declare module '@polkadot/types/lookup' {
         } & Struct;
         readonly isSetCollectCoinsContract: boolean;
         readonly asSetCollectCoinsContract: {
-            readonly contract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
+            readonly contract: PalletCreditcoinOcwTasksCollectCoinsDeployedContract;
         } & Struct;
         readonly isRemoveAuthority: boolean;
         readonly asRemoveAuthority: {
@@ -2153,6 +2153,10 @@ declare module '@polkadot/types/lookup' {
             readonly blockchain: PalletCreditcoinBlockchain;
             readonly address: Bytes;
             readonly ownershipProof: PalletCreditcoinOwnershipProof;
+        } & Struct;
+        readonly isSetGateContract: boolean;
+        readonly asSetGateContract: {
+            readonly contract: PalletCreditcoinOcwTasksCollectCoinsDeployedContract;
         } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
@@ -2174,7 +2178,8 @@ declare module '@polkadot/types/lookup' {
             | 'AddAuthority'
             | 'SetCollectCoinsContract'
             | 'RemoveAuthority'
-            | 'RegisterAddressV2';
+            | 'RegisterAddressV2'
+            | 'SetGateContract';
     }
 
     /** @name SpCoreEcdsaPublic (264) */
