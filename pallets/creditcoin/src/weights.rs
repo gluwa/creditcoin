@@ -457,6 +457,6 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	}
 
 	fn set_gate_faucet() -> Weight {
-		Weight::from_parts(0,0)
+		Weight::from_parts(1,1)
 	}
 }
