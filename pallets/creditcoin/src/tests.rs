@@ -2938,6 +2938,9 @@ fn exercise_weightinfo_functions() {
 
 	let result = super::weights::WeightInfo::<Test>::set_gate_contract();
 	assert!(result.ref_time() > 0);
+
+	let result = super::weights::WeightInfo::<Test>::set_gate_faucet();
+	assert!(result.ref_time() > 0);
 }
 
 #[test]
@@ -3281,20 +3284,11 @@ fn set_gate_contract_passes_and_storage_is_updated() {
 }
 
 #[test]
-fn set_gate_faucet_fails_with_non_root() {
+fn set_gate_faucet_should_fail_when_not_signed_by_root() {
 	ExtBuilder::default().build_and_execute(|| {
 		let acct: AccountId = AccountId::new([0; 32]);
 
 		assert_noop!(Creditcoin::set_gate_faucet(Origin::signed(acct.clone()), acct), BadOrigin);
-	});
-}
-
-#[test]
-fn gate_faucet_returns_none_when_not_set() {
-	ExtBuilder::default().build_and_execute(|| {
-		let gate_faucet = Creditcoin::gate_faucet_address();
-
-		assert!(gate_faucet.is_none());
 	});
 }
 
@@ -3310,5 +3304,14 @@ fn set_gate_faucet_passes_and_storage_is_updated() {
 
 		assert!(faucet_addr.is_some());
 		assert_eq!(faucet_addr.unwrap(), addr)
+	});
+}
+
+#[test]
+fn gate_faucet_address_storage_should_return_none_when_not_set() {
+	ExtBuilder::default().build_and_execute(|| {
+		let gate_faucet = Creditcoin::gate_faucet_address();
+
+		assert!(gate_faucet.is_none());
 	});
 }
