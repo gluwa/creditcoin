@@ -61,7 +61,7 @@ jobs:
           echo "boot_node=/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" >> "$GITHUB_OUTPUT"
           echo "rpc_url=wss://rpc.mainnet.creditcoin.network:443/ws" >> "$GITHUB_OUTPUT"
           echo "https_rpc_url=https://rpc.mainnet.creditcoin.network/rpc" >> "$GITHUB_OUTPUT"
-          RELEASE_TAG=$(./scripts/extract-release-tag.sh "runtime")
+          RELEASE_TAG=$(./scripts/extract-release-tag.sh "mainnet")
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "artifact_name=creditcoin-$RELEASE_TAG-$(uname -m)-unknown-linux-gnu.zip" >> "$GITHUB_OUTPUT"
 
