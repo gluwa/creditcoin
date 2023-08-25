@@ -234,7 +234,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn gate_contract)]
-	pub type GATEConract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
+	pub type GATEContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -1417,7 +1417,7 @@ pub mod pallet {
 			contract: DeployedContract,
 		) -> DispatchResult {
 			ensure_root(origin)?;
-			GATEConract::<T>::put(contract);
+			GATEContract::<T>::put(contract);
 			Ok(())
 		}
 	}
