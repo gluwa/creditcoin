@@ -5,7 +5,7 @@ import { testData } from 'creditcoin-js/lib/testUtils';
 
 import { extractFee, describeIf } from '../utils';
 
-describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'SetGateContract', (): void => {
+describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'SetGateFaucet', (): void => {
     let ccApi: CreditcoinApi;
     let sudoSigner: KeyringPair;
     const testingData = testData(
@@ -26,16 +26,10 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'SetGateContract'
     it('fee is min 0.01 CTC', async (): Promise<void> => {
         const { api } = ccApi;
 
-        /* eslint-disable @typescript-eslint/naming-convention */
-        const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
-            // for testing purposes I can use any address b/c I'm only interested in the transaction fee
-            address: '0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419',
-            chain: testingData.blockchain,
-        });
-
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.sudo
-                .sudo(api.tx.creditcoin.setGateContract(contract))
+                // for testing purposes I can use any address b/c I'm only interested in the transaction fee
+                .sudo(api.tx.creditcoin.setGateFaucet(sudoSigner.address))
                 .signAndSend(sudoSigner, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
