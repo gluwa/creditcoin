@@ -238,8 +238,8 @@ pub mod pallet {
 	pub type GATEContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn gate_faucet_address)]
-	pub type GATEFaucetAddress<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
+	#[pallet::getter(fn gate_faucet_account)]
+	pub type GATEFaucetAccount<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -1414,7 +1414,6 @@ pub mod pallet {
 
 		/// Set the onchain details for the Gluwa GATE Contract, including its address and the blockchain where it is deployed.
 		/// This extrinsic expects the caller to have root permissions.
-		#[transactional]
 		#[pallet::call_index(23)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_gate_contract())]
 		pub fn set_gate_contract(
@@ -1426,12 +1425,11 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[transactional]
 		#[pallet::call_index(24)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_gate_faucet())]
 		pub fn set_gate_faucet(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
 			ensure_root(origin)?;
-			GATEFaucetAddress::<T>::put(address);
+			GATEFaucetAccount::<T>::put(address);
 			Ok(())
 		}
 	}
