@@ -3310,7 +3310,7 @@ fn set_gate_faucet_passes_and_storage_is_updated() {
 }
 
 #[test]
-fn gate_faucet_address_storage_should_return_none_when_not_set() {
+fn gate_faucet_account_storage_should_return_none_when_not_set() {
 	ExtBuilder::default().build_and_execute(|| {
 		let gate_faucet = Creditcoin::gate_faucet_account();
 
