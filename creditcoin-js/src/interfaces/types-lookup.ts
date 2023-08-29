@@ -2158,6 +2158,10 @@ declare module '@polkadot/types/lookup' {
         readonly asSetGateContract: {
             readonly contract: PalletCreditcoinOcwTasksCollectCoinsDeployedContract;
         } & Struct;
+        readonly isSetGateFaucet: boolean;
+        readonly asSetGateFaucet: {
+            readonly address: AccountId32;
+        } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
             | 'RegisterAddress'
@@ -2179,7 +2183,8 @@ declare module '@polkadot/types/lookup' {
             | 'SetCollectCoinsContract'
             | 'RemoveAuthority'
             | 'RegisterAddressV2'
-            | 'SetGateContract';
+            | 'SetGateContract'
+            | 'SetGateFaucet';
     }
 
     /** @name SpCoreEcdsaPublic (264) */

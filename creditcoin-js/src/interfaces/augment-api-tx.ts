@@ -594,6 +594,10 @@ declare module '@polkadot/api-base/types/submittable' {
                 ) => SubmittableExtrinsic<ApiType>,
                 [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
             >;
+            setGateFaucet: AugmentedSubmittable<
+                (address: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
             /**
              * Generic tx
              **/
