@@ -45,8 +45,9 @@ import type {
   PalletCreditcoinDealOrderId,
   PalletCreditcoinLoanTerms,
   PalletCreditcoinOcwErrorsVerificationFailureCause,
-  PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+  PalletCreditcoinOcwTasksCollectCoinsDeployedContract,
   PalletCreditcoinOfferId,
+  PalletCreditcoinOwnershipProof,
   PalletCreditcoinTaskId,
   PalletCreditcoinTaskOutput,
   PalletCreditcoinTransferKind,
@@ -63,6 +64,7 @@ import type {
   PalletNominationPoolsConfigOpU128,
   PalletNominationPoolsConfigOpU32,
   PalletNominationPoolsPoolState,
+  PalletPosSwitchInitialValidator,
   PalletStakingPalletConfigOpPerbill,
   PalletStakingPalletConfigOpPercent,
   PalletStakingPalletConfigOpU128,
@@ -497,6 +499,32 @@ declare module "@polkadot/api-base/types/submittable" {
         ) => SubmittableExtrinsic<ApiType>,
         [PalletCreditcoinBlockchain, Bytes, SpCoreEcdsaSignature]
       >;
+      /**
+       * Registers an address on an external blockchain as the property of an onchain address.
+       * To prove ownership, a signature is provided. To create the signature, the public key of the external address is used to sign a hash of the account_id of whoever is submitting this transaction.
+       * The signature type allows the caller to specify if this address was signed using the older an insecure EthSign method or the new PersonalSign method. See here for details https://docs.metamask.io/wallet/how-to/sign-data/
+       **/
+      registerAddressV2: AugmentedSubmittable<
+        (
+          blockchain:
+            | PalletCreditcoinBlockchain
+            | { Ethereum: any }
+            | { Rinkeby: any }
+            | { Luniverse: any }
+            | { Bitcoin: any }
+            | { Other: any }
+            | string
+            | Uint8Array,
+          address: Bytes | string | Uint8Array,
+          ownershipProof:
+            | PalletCreditcoinOwnershipProof
+            | { PersonalSign: any }
+            | { EthSign: any }
+            | string
+            | Uint8Array,
+        ) => SubmittableExtrinsic<ApiType>,
+        [PalletCreditcoinBlockchain, Bytes, PalletCreditcoinOwnershipProof]
+      >;
       registerDealOrder: AugmentedSubmittable<
         (
           lenderAddressId: H256 | string | Uint8Array,
@@ -582,12 +610,32 @@ declare module "@polkadot/api-base/types/submittable" {
       setCollectCoinsContract: AugmentedSubmittable<
         (
           contract:
-            | PalletCreditcoinOcwTasksCollectCoinsGCreContract
+            | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
             | { address?: any; chain?: any }
             | string
             | Uint8Array,
         ) => SubmittableExtrinsic<ApiType>,
-        [PalletCreditcoinOcwTasksCollectCoinsGCreContract]
+        [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
+      >;
+      /**
+       * Set the onchain details for the Gluwa GATE Contract, including its address and the blockchain where it is deployed.
+       * This extrinsic expects the caller to have root permissions.
+       **/
+      setGateContract: AugmentedSubmittable<
+        (
+          contract:
+            | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
+            | { address?: any; chain?: any }
+            | string
+            | Uint8Array,
+        ) => SubmittableExtrinsic<ApiType>,
+        [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
+      >;
+      setGateFaucet: AugmentedSubmittable<
+        (
+          address: AccountId32 | string | Uint8Array,
+        ) => SubmittableExtrinsic<ApiType>,
+        [AccountId32]
       >;
       /**
        * Generic tx
@@ -1744,8 +1792,26 @@ declare module "@polkadot/api-base/types/submittable" {
        * Switch to PoS
        **/
       switchToPos: AugmentedSubmittable<
-        () => SubmittableExtrinsic<ApiType>,
-        []
+        (
+          initialValidators:
+            | Vec<PalletPosSwitchInitialValidator>
+            | (
+                | PalletPosSwitchInitialValidator
+                | {
+                    stash?: any;
+                    controller?: any;
+                    bonded?: any;
+                    controllerBalance?: any;
+                    babe?: any;
+                    grandpa?: any;
+                    imOnline?: any;
+                    invulnerable?: any;
+                  }
+                | string
+                | Uint8Array
+              )[],
+        ) => SubmittableExtrinsic<ApiType>,
+        [Vec<PalletPosSwitchInitialValidator>]
       >;
       /**
        * Generic tx
