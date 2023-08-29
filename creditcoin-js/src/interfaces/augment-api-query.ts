@@ -354,7 +354,7 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
-            gateConract: AugmentedQuery<
+            gateContract: AugmentedQuery<
                 ApiType,
                 () => Observable<PalletCreditcoinOcwTasksCollectCoinsDeployedContract>,
                 []
