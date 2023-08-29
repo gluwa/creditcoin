@@ -8,7 +8,7 @@ use sp_version::RuntimeVersion;
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("creditcoin-node"),
 	impl_name: create_runtime_str!("creditcoin-node"),
-	authoring_version: 2,
+	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
