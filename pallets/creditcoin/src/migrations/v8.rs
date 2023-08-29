@@ -33,7 +33,7 @@ impl<T: Config> Migrate for Migration<T> {
 		assert_eq!(
 			StorageVersion::get::<crate::Pallet<T>>(),
 			8,
-			"expected storage version to be 1 after migrations complete"
+			"expected storage version to be 8 after migrations complete"
 		);
 	}
 	fn migrate(&self) -> Weight {
