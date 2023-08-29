@@ -1899,6 +1899,9 @@ export default {
             set_gate_contract: {
                 contract: 'PalletCreditcoinOcwTasksCollectCoinsDeployedContract',
             },
+            set_gate_faucet: {
+                address: 'AccountId32',
+            },
         },
     },
     /**
