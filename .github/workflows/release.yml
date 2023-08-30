@@ -9,7 +9,19 @@ on:
 permissions: read-all
 
 jobs:
+  sanity-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Sanity check tag name
+        run: |
+            git describe --tag | grep -E "mainnet|testnet"
+
   build-native-runtime:
+    needs: sanity-check
     strategy:
       fail-fast: false
       matrix:
@@ -113,6 +125,7 @@ jobs:
           if-no-files-found: error
 
   build-wasm-runtime:
+    needs: sanity-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -152,6 +165,7 @@ jobs:
           if-no-files-found: error
 
   docker-build:
+    needs: sanity-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -175,6 +189,7 @@ jobs:
           docker logout
 
   build-creditcoin-js:
+    needs: sanity-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
