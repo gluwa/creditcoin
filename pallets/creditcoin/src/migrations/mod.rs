@@ -18,7 +18,7 @@ mod v4;
 mod v5;
 pub(crate) mod v6;
 pub mod v7;
-pub(crate) mod v8;
+mod v8;
 
 pub(crate) fn migrate<T: Config>() -> Weight {
 	let version = StorageVersion::get::<Pallet<T>>();
