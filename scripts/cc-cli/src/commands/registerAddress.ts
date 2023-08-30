@@ -5,6 +5,7 @@ import { initCallerKeyring } from "../utils/account";
 import { Wallet } from "ethers";
 import { signAccountId } from "creditcoin-js/lib/utils";
 import { AddressRegistered } from "creditcoin-js/lib/extrinsics/register-address";
+import { utils } from "ethers"
 
 const blockchains = ["Ethereum", "Rinkeby", "Luniverse", "Bitcoin", "Other"];
 
@@ -35,10 +36,13 @@ async function registerAddressAction(options: OptionValues) {
         api,
         extrinsics: { registerAddress },
     } = await newApi(options.url);
+
+    // Reads CC_SECRET env variable if it exists or propmpts the user to enter a mneumonic
     const signer = await initCallerKeyring(options);
     const wallet = new Wallet(options.privateKey);
+
+    // create the cryptographic proof of ownership
     const proof = signAccountId(api, wallet, signer.address);
-    console.log(signer.address);
 
     registerAddress(wallet.address, options.blockchain, proof, signer)
         .then(handleSuccess)
@@ -64,6 +68,11 @@ function validateOptsOrExit(options: OptionValues) {
     if (options.privateKey === undefined) {
         fatalErr("ERROR: No external address specified");
     }
+
+
+    if (!isValidPrivateKey(options.privateKey)) {
+        fatalErr(`ERROR: Invalid private key: ${options.privateKey}`)
+    }
 }
 
 export function fatalErr(s: string) {
@@ -73,4 +82,9 @@ export function fatalErr(s: string) {
 
 function errorMsg(s: string) {
     console.log(chalk.red(s));
+}
+
+// https://github.com/ethers-io/ethers.js/discussions/2939
+export function isValidPrivateKey(pk: string): boolean {
+    return utils.isHexString(pk, 32)
 }

@@ -4,6 +4,8 @@ import { newApi } from "../api";
 import { initCallerKeyring } from "../utils/account";
 import { CollectCoinsEvent } from "creditcoin-js/lib/extrinsics/request-collect-coins";
 import chalk from "chalk";
+import { isAddress } from 'web3-validator';
+
 
 export function makeCollectCoinsCmd() {
     const externalAddressOpt = new Option(
@@ -44,6 +46,14 @@ function validateOptsOrExit(options: OptionValues) {
     if (options.burnTxHash === undefined) {
         fatalErr("ERROR: No burn transaction hash specified");
     }
+
+    if (!isTxHashValid(options.burnTxHash)) {
+        fatalErr(`ERROR: The transaction hash is invalid: ${options.burnTxHash}`)
+    }
+
+    if (!isExternalAddressValid(options.externalAddress)) {
+        fatalErr(`ERROR: The external address is invalid: ${options.externalAddress}`)
+    }
 }
 
 async function handleSuccess(value: CollectCoinsEvent) {
@@ -55,4 +65,12 @@ function handleError(reason: any) {
     fatalErr(
         `ERROR: The call to request_collect_coins was unsuccessful: ${reason}`,
     );
+}
+
+export function isTxHashValid(hash: string): boolean {
+    return /^0x([A-Fa-f0-9]{64})$/.test(hash);
+}
+
+export function isExternalAddressValid(addr: string): boolean {
+    return isAddress(addr)
 }
