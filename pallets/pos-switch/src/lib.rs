@@ -65,7 +65,6 @@ pub trait OnSwitch {
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
-	use frame_system::pallet_prelude::*;
 	use sp_core::U256;
 
 	#[pallet::config]
@@ -91,7 +90,6 @@ pub mod pallet {
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
 	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Switched to PoS. []
 		Switched,
@@ -122,34 +120,6 @@ pub mod pallet {
 				let switch_block_number: sp_core::U256 = switch_block_number.clone().into();
 				SwitchBlockNumber::<T>::put(switch_block_number);
 			}
-		}
-	}
-
-	#[pallet::call]
-	impl<T: Config> Pallet<T> {
-		/// Switch to PoS
-		#[pallet::call_index(0)]
-		#[pallet::weight((T::BlockWeights::get().max_block, DispatchClass::Operational))]
-		pub fn switch_to_pos(
-			origin: OriginFor<T>,
-			initial_validators: InitialValidators<T>,
-		) -> DispatchResultWithPostInfo {
-			ensure_root(origin)?;
-
-			ensure!(SwitchBlockNumber::<T>::get().is_none(), Error::<T>::AlreadySwitched);
-
-			let block_number = frame_system::Pallet::<T>::block_number();
-			let block_number: sp_core::U256 =
-				T::RuntimeBlockNumber::from_ref(&block_number).clone().into();
-			SwitchBlockNumber::<T>::put(block_number);
-
-			pallet_difficulty::CurrentDifficulty::<T>::put(U256::MAX);
-
-			Self::deposit_event(Event::Switched);
-
-			T::OnSwitch::on_switch(initial_validators);
-
-			Ok(().into())
 		}
 	}
 }
