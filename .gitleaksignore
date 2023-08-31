@@ -14,3 +14,5 @@ a67944f297a8f4c66b7bb9d0951639f2b2dbef3f:integration-tests/src/ctc-deploy.ts:gen
 2a0208b83047e2f1ea1d748c2c23b1e2aa9abc40:javascript/integration-tests/test-utils.ts:generic-api-key:35
 c2d15de26045be88703d8ef953c9deabefbc7f8b:javascript/integration-tests/test-utils.ts:generic-api-key:33
 c2d15de26045be88703d8ef953c9deabefbc7f8b:javascript/integration-tests/test-utils.ts:generic-api-key:35
+a7c70e52888e67dadb69b82f6056f886b2e83a6c:scripts/cc-cli/src/test/integration-tests/collect-coins.test.ts:generic-api-key:81
+a7c70e52888e67dadb69b82f6056f886b2e83a6c:scripts/cc-cli/src/test/integration-tests/collect-coins.test.ts:generic-api-key:83
