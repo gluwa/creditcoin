@@ -5,6 +5,7 @@ import { initCallerKeyring } from "../utils/account";
 import { CollectCoinsEvent } from "creditcoin-js/lib/extrinsics/request-collect-coins";
 import chalk from "chalk";
 import { isAddress } from "web3-validator";
+import { utils } from "ethers";
 
 export function makeCollectCoinsCmd() {
   const externalAddressOpt = new Option(
@@ -73,7 +74,8 @@ function handleError(reason: any) {
 }
 
 export function isTxHashValid(hash: string): boolean {
-  return /^0x([A-Fa-f0-9]{64})$/.test(hash);
+  // 32 byte hexadecimal, 64 character string, 66 with 0x prefix
+  return utils.isHexString(hash, 32);
 }
 
 export function isExternalAddressValid(addr: string): boolean {

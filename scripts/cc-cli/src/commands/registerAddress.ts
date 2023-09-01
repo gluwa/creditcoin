@@ -22,7 +22,7 @@ export function makeRegisterAddressCmd() {
 
   return new Command("register-address")
     .description(
-      "Register an external off-chain address as belonging to a CreditCoin address",
+      "Link a CreditCoin address to an address from another blockchain",
     )
     .addOption(privateKeyOpt)
     .addOption(blockchainOpt)
