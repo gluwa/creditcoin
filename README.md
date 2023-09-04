@@ -42,13 +42,13 @@ subcommands:
 
 A node can be configured to connect to different Creditcoin networks. Each network has different configurations and use cases.
 
-|                  | Devnet                                        | Testnet                                       | Mainnet                           |
-|------------------|-----------------------------------------------|-----------------------------------------------|-----------------------------------|
-| Overview         | Local/public development environment          | Public testing environment                    | Live production environment       |
-| Users            | Developers                                    | Developers & testers                          | End users                         |
-| Function         | To develop new features & improvements        | To test new features & improvements           | To secure credit history on-chain |
-| Tokens           | Test tokens with no real world economic value | Test tokens with no real world economic value | Real tokens with economic value   |
-| Chain history    | Wiped frequently                              | Wiped occasionally                            | Preserved                         |
+|               | Devnet                                        | Testnet                                       | Mainnet                           |
+|---------------|-----------------------------------------------|-----------------------------------------------|-----------------------------------|
+| Overview      | Local/public development environment          | Public testing environment                    | Live production environment       |
+| Users         | Developers                                    | Developers & testers                          | End users                         |
+| Function      | To develop new features & improvements        | To test new features & improvements           | To secure credit history on-chain |
+| Tokens        | Test tokens with no real world economic value | Test tokens with no real world economic value | Real tokens with economic value   |
+| Chain history | Wiped frequently                              | Wiped occasionally                            | Preserved                         |
 
 The network configuration is specified using the `--chain` flag and the `--bootnodes` flag, which specifies the initial nodes to connect to. Currently, only the `test` network chain specs include bootnodes. The `main` and `dev` networks bootnodes must be specified manually.
 
