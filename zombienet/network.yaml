@@ -1,23 +1,23 @@
 settings:
   enable_tracing: false
-  jaeger_agent: ''
-  provider: 'kubernetes'
+  jaeger_agent: ""
+  provider: "kubernetes"
 relaychain:
-  default_command: '/bin/creditcoin-node'
+  default_command: "/bin/creditcoin-node"
   default_args: []
-  chain: 'local'
-  default_image: 'gluwa/creditcoin:latest' # latest public image
+  chain: "local"
+  default_image: "gluwa/creditcoin:latest" # latest public image
   # default_image: 'localhost:5001/creditcoin-dev:dev' # locally built image (for development)
   nodes:
     # a single node
-    - name: 'first' # the name doesn't really matter aside from being unique
+    - name: "first" # the name doesn't really matter aside from being unique
       validator: true
       balance: 100000000000000000000000
-    - name: 'second'
+    - name: "second"
       validator: false
       # you can override the default args and other config settings
-      args: ['--database', 'rocksdb']
+      args: ["--database", "rocksdb"]
   node_groups:
     # a group of 5 nodes (note: node groups are always validator nodes)
-    - name: 'validators'
+    - name: "validators"
       count: 5

@@ -18,7 +18,7 @@ jobs:
 
       - name: Sanity check tag name
         run: |
-            git describe --tag | grep -E "mainnet|testnet"
+          git describe --tag | grep -E "mainnet|testnet"
 
   build-native-runtime:
     needs: sanity-check
