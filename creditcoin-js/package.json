@@ -33,7 +33,7 @@
     },
     "dependencies": {
         "@polkadot/api": "9.14.2",
-        "ethers": "^5.7.1",
+        "ethers": "^6.7.1",
         "js-guid": "^1.0.0"
     }
 }
