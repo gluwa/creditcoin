@@ -8,7 +8,7 @@ existing tooling developed for the polkadot/substrate ecosystem (such as the pol
 ## Helpful resources
 
 The official substrate documentation provides a good starting point, I would recommend (at a minimum) reading through
-all of the material in the [fundamentals section](https://docs.substrate.io/fundamentals/).
+all of the material in the [Learn section](https://docs.substrate.io/learn/).
 
 That should give you a rough understanding of substrate's architecture, and how the pieces fit together.
 
