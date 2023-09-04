@@ -5,8 +5,6 @@ param vmName string = toLower('github-runner-${uniqueString(resourceGroup().id, 
 @description('Username for the Virtual Machine.')
 param adminUsername string = 'ubuntu'
 
-var authenticationType = 'sshPublicKey'
-
 @description('SSH Key value for the Virtual Machine.')
 @secure()
 param adminPasswordOrKey string
@@ -860,7 +858,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
       computerName: vmName
       adminUsername: adminUsername
       adminPassword: adminPasswordOrKey
-      linuxConfiguration: ((authenticationType == 'password') ? null : linuxConfiguration)
+      linuxConfiguration: linuxConfiguration
     }
   }
 }
