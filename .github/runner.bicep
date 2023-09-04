@@ -766,6 +766,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-05-01' = {
 }
 
 resource nsg 'Microsoft.Network/networkSecurityGroups@2021-05-01' = {
+  # checkov:skip=CKV_AZURE_10:We need unrestricted ssh access
   name: networkSecurityGroupName
   location: location
   properties: {
