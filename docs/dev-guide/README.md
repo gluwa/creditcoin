@@ -17,4 +17,6 @@ mdbook build
 mdbook serve
 ```
 
-Also see [`.github/workflows/deploy-docs.yml`](.github/workflows/deploy-docs.yml) to see how we build and deploy this mdbook.
+Also see
+[`.github/workflows/deploy-docs.yml`](https://github.com/gluwa/creditcoin/blob/dev/.github/workflows/deploy-docs.yml)
+to see how we build and deploy this mdbook.
