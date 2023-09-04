@@ -6,20 +6,20 @@ This tool depends on `creditcoin-js`. Make sure to pack the library using `yarn 
 
 Build using yarn.
 
-```
+```bash
 yarn install
 yarn build
 ```
 
 Install globally using npm.
 
-```
+```bash
 npm install -g .
 ```
 
 Or use with node from the project directory.
 
-```
+```bash
 node dist/index.js
 ```
 
@@ -43,58 +43,58 @@ To view all commands run the tool with the `--help` flag.
 
 From the root of the Creditcoin repository, build and run the image.
 
-```
+```bash
 docker build -t creditcoin-node .
 docker run --name creditcoin creditcoin-node
 ```
 
 Execute the CLI tool with the `exec` Docker command like so:
 
-```
+```bash
 docker exec creditcoin creditcoin-cli --help
 docker exec creditcoin creditcoin-cli new-seed
 ```
 
 ### Create a new seed
 
-```
+```bash
 creditcoin-cli new-seed
 ```
 
 ### Create a new seed and save it to a file
 
-```
+```bash
 creditcoin-cli new-seed --file seed.txt
 ```
 
 ### Show address for a particular account
 
-```
+```bash
 creditcoin-cli receive -f seed.txt
 ```
 
 ### Check the balance of an account
 
-```
+```bash
 creditcoin-cli balance -f seed.txt
 ```
 
 ### Bond CTC tokens using a stash account
 
-```
+```bash
 creditcoin-cli bond -f seed.txt --amount 1000 --controller 5DJ8qkxAbSVfyvorNBKt4BwDR9hUUzH8aqofuTAMTkLZtpv9
 ```
 
 ### Rotate session keys of a particular node
 
-```
+```bash
 creditcoin-cli rotate-keys -u http://localhost:8000
 ```
 
 ### Run the validator setup wizard
 This example asumes seeds are saved in `stashseed` and `controllerseed` files and a node is running on `ws://localhost:9944`.
 
-```
+```bash
 creditcoin-cli wizard -sf stashseed -cf controllerseed -a 1000 -u ws://localhost:9944
 ```
 
