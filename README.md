@@ -17,7 +17,8 @@ For more information, see [creditcoin.org](https://creditcoin.org), or read the 
 
 ### Dependency Setup
 
-First, you must complete the [basic environment setup](/docs/dev-guide/src/getting-started/building.md#build-prerequisites).
+First, you must complete the
+[basic environment setup](https://github.com/gluwa/creditcoin/blob/dev/docs/dev-guide/src/getting-started/building.md#build-prerequisites).
 
 ### Run
 
