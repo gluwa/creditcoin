@@ -35,10 +35,10 @@ jobs:
       - name: MegaLinter
         id: ml
         # You can override MegaLinter flavor used to have faster performances
-        # More info at https://megalinter.io/flavors/
+        # More info at https://megalinter.io/latest/flavors/
         uses: oxsecurity/megalinter/flavors/rust@v7
         env:
-          # All available variables are described at https://megalinter.io/configuration/
+          # All available variables are described at https://megalinter.io/latest/configuration/
           # and configured in .mega-linter.yml
           VALIDATE_ALL_CODEBASE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
