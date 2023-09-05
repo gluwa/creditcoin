@@ -337,7 +337,7 @@ declare module '@polkadot/api-base/types/errors' {
       CallNotAllowed: AugmentedError<ApiType>;
       /**
        * The provided Controller account was not found.
-       * 
+       *
        * This means that the given account is not bonded.
        **/
       NotController: AugmentedError<ApiType>;
@@ -552,7 +552,7 @@ declare module '@polkadot/api-base/types/errors' {
       MetadataExceedsMaxLen: AugmentedError<ApiType>;
       /**
        * The amount does not meet the minimum bond to either join or create a pool.
-       * 
+       *
        * The depositor can never unbond to a value less than
        * `Pallet::depositor_min_bond`. The caller does not have nominating
        * permissions for the pool. Members can never unbond to a value below `MinJoinBond`.
@@ -840,7 +840,7 @@ declare module '@polkadot/api-base/types/errors' {
       CallFiltered: AugmentedError<ApiType>;
       /**
        * Failed to extract the runtime version from the new runtime.
-       * 
+       *
        * Either calling `Core_version` or decoding `RuntimeVersion` failed.
        **/
       FailedToExtractRuntimeVersion: AugmentedError<ApiType>;
