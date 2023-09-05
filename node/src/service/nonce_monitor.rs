@@ -2,9 +2,11 @@ use std::{convert::TryInto, time::Duration};
 
 use creditcoin_node_runtime::AccountId;
 use futures::join;
+use jsonrpsee::types::Response as RpcResponse;
 use parity_scale_codec::Decode;
 use sc_client_api::Backend;
 use sc_service::{Arc, RpcHandlers};
+use serde::de::DeserializeOwned;
 use sp_keystore::CryptoStore;
 use sp_runtime::{
 	app_crypto::Ss58Codec, offchain::OffchainStorage, traits::IdentifyAccount, MultiSigner,
@@ -33,12 +35,18 @@ impl From<jsonrpsee::core::Error> for Error {
 	}
 }
 
-async fn rpc_request(handlers: &RpcHandlers, request: &str) -> Result<serde_json::Value, Error> {
+async fn rpc_request<T: DeserializeOwned>(
+	handlers: &RpcHandlers,
+	request: &str,
+) -> Result<Option<T>, Error> {
 	let (response, _stream) = handlers.rpc_query(request).await?;
 
-	let result = serde_json::from_str(&response).map_err(Error::Serde)?;
+	log::trace!(target: "nonce-monitor", "Got response: {:?}", response);
 
-	Ok(result)
+	let result: RpcResponse<'_, Option<T>> =
+		serde_json::from_str(&response).map_err(Error::Serde)?;
+
+	Ok(result.result)
 }
 
 async fn get_on_chain_nonce(handlers: &RpcHandlers, acct: &AccountId) -> Result<u64, Error> {
@@ -52,9 +60,9 @@ async fn get_on_chain_nonce(handlers: &RpcHandlers, acct: &AccountId) -> Result<
 		acct.to_ss58check()
 	);
 
-	let result = rpc_request(handlers, &request).await?;
+	let result = rpc_request::<u64>(handlers, &request).await?;
 
-	result.as_u64().ok_or_else(|| Error::Rpc("expected u64 response".into()))
+	result.ok_or_else(|| Error::Rpc("expected u64 response".into()))
 }
 
 async fn get_off_chain_nonce_key(
@@ -71,9 +79,11 @@ async fn get_off_chain_nonce_key(
 		acct.to_ss58check()
 	);
 
-	let result = rpc_request(handlers, &request).await?;
+	let key = rpc_request(handlers, &request)
+		.await?
+		.ok_or_else(|| Error::Rpc("expected offchain nonce key response".into()))?;
 
-	let key: Vec<u8> = jsonrpc_core::serde_json::from_value(result).map_err(Error::Serde)?;
+	log::trace!(target: "nonce-monitor", "Got offchain nonce key: {:?}", key);
 
 	Ok(key)
 }
