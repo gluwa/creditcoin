@@ -25,7 +25,6 @@ pub use pallet_grandpa::{
 };
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
-use pallet_pos_switch::InitialValidator;
 use pallet_session::historical as session_historical;
 use pallet_staking::UseValidatorsMap;
 pub use pallet_staking_substrate::{self, StakerStatus};
@@ -428,63 +427,6 @@ parameter_types! {
 	pub MinAnnualInflation : Perquintill = Perquintill::from_rational(25u64, 1000u64);
 }
 
-pub struct InitPosPallets;
-
-impl pallet_pos_switch::OnSwitch for InitPosPallets {
-	type Config = Runtime;
-
-	fn on_switch(initial_validators: pallet_pos_switch::InitialValidators<Runtime>) {
-		fn make_session_keys(
-			grandpa: GrandpaId,
-			babe: BabeId,
-			im_online: ImOnlineId,
-		) -> SessionKeys {
-			SessionKeys { grandpa, babe, im_online }
-		}
-
-		log::info!("Initial validators: {:?}", initial_validators);
-
-		let keys = initial_validators
-			.iter()
-			.map(|InitialValidator { stash, controller, grandpa, babe, im_online, .. }| {
-				(
-					stash.clone(),
-					controller.clone(),
-					make_session_keys(grandpa.clone(), babe.clone(), im_online.clone()),
-				)
-			})
-			.collect::<sp_std::vec::Vec<_>>();
-
-		let config = pallet_staking_substrate::InitConfig {
-			validator_count: initial_validators.len() as u32,
-			minimum_validator_count: 1,
-			stakers: initial_validators
-				.iter()
-				// The staking pallet assumes that all `stakers` listed here are not yet bonded (and will panic otherwise).
-				// So here we filter out validators that are already bonded.
-				.filter(|validator| Staking::bonded(&validator.stash).is_none())
-				.map(|validator| {
-					(
-						validator.stash.clone(),
-						validator.controller.clone(),
-						validator.bonded,
-						pallet_staking_substrate::StakerStatus::Validator,
-					)
-				})
-				.collect(),
-			invulnerables: initial_validators
-				.iter()
-				.filter_map(|validator| validator.invulnerable.then_some(validator.stash.clone()))
-				.collect(),
-			force_era: pallet_staking_substrate::Forcing::NotForcing,
-			slash_reward_fraction: Perbill::from_percent(10),
-			..Default::default()
-		};
-		Session::genesis_init(&keys);
-		Staking::genesis_init(config);
-	}
-}
-
 pub struct InitBabe;
 
 impl OnRuntimeUpgrade for InitBabe {
@@ -684,8 +626,6 @@ impl pallet_rewards::Config for Runtime {
 
 impl pallet_pos_switch::Config for Runtime {
 	type RuntimeBlockNumber = BlockNumber;
-	type OnSwitch = InitPosPallets;
-	type Balance = Balance;
 }
 
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
