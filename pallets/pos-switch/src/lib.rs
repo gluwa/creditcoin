@@ -1,65 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-use parity_scale_codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_std::vec::Vec;
-pub type InitialValidators<T> = Vec<InitialValidator<T>>;
-
-#[derive(Encode, Decode, PartialEq, Eq, TypeInfo)]
-#[codec(encode_bound(T: ))]
-#[codec(decode_bound(T: ))]
-#[codec(mel_bound(T: ))]
-#[scale_info(skip_type_params(T))]
-pub struct InitialValidator<T: pallet::Config> {
-	pub stash: T::AccountId,
-	pub controller: T::AccountId,
-	pub bonded: T::Balance,
-	pub controller_balance: T::Balance,
-	pub babe: sp_consensus_babe::AuthorityId,
-	pub grandpa: sp_consensus_grandpa::AuthorityId,
-	pub im_online: pallet_im_online::sr25519::AuthorityId,
-	pub invulnerable: bool,
-}
-
-impl<T: pallet::Config> sp_std::fmt::Debug for InitialValidator<T>
-where
-	T::AccountId: sp_std::fmt::Debug,
-	T::Balance: sp_std::fmt::Debug,
-{
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		f.debug_struct("InitialValidator")
-			.field("stash", &self.stash)
-			.field("controller", &self.controller)
-			.field("bonded", &self.bonded)
-			.field("controller_balance", &self.controller_balance)
-			.field("babe", &self.babe)
-			.field("grandpa", &self.grandpa)
-			.field("im_online", &self.im_online)
-			.field("invulnerable", &self.invulnerable)
-			.finish()
-	}
-}
-
-impl<T: pallet::Config> Clone for InitialValidator<T> {
-	fn clone(&self) -> Self {
-		Self {
-			stash: self.stash.clone(),
-			controller: self.controller.clone(),
-			bonded: self.bonded.clone(),
-			babe: self.babe.clone(),
-			grandpa: self.grandpa.clone(),
-			im_online: self.im_online.clone(),
-			controller_balance: self.controller_balance.clone(),
-			invulnerable: self.invulnerable,
-		}
-	}
-}
-
-pub trait OnSwitch {
-	type Config: pallet::Config;
-	fn on_switch(initial_validators: InitialValidators<Self::Config>);
-}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -72,9 +13,6 @@ pub mod pallet {
 		type RuntimeBlockNumber: IsType<<Self as frame_system::Config>::BlockNumber>
 			+ Clone
 			+ Into<sp_core::U256>;
-		type OnSwitch: OnSwitch<Config = Self>;
-
-		type Balance: Parameter;
 	}
 
 	#[pallet::storage]
