@@ -136,10 +136,6 @@ import type {
     PalletOffchainTaskSchedulerError,
     PalletOffchainTaskSchedulerEvent,
     PalletOffencesEvent,
-    PalletPosSwitchCall,
-    PalletPosSwitchError,
-    PalletPosSwitchEvent,
-    PalletPosSwitchInitialValidator,
     PalletProxyAnnouncement,
     PalletProxyCall,
     PalletProxyError,
@@ -355,10 +351,6 @@ declare module '@polkadot/types/types/registry' {
         PalletOffchainTaskSchedulerError: PalletOffchainTaskSchedulerError;
         PalletOffchainTaskSchedulerEvent: PalletOffchainTaskSchedulerEvent;
         PalletOffencesEvent: PalletOffencesEvent;
-        PalletPosSwitchCall: PalletPosSwitchCall;
-        PalletPosSwitchError: PalletPosSwitchError;
-        PalletPosSwitchEvent: PalletPosSwitchEvent;
-        PalletPosSwitchInitialValidator: PalletPosSwitchInitialValidator;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
         PalletProxyError: PalletProxyError;
