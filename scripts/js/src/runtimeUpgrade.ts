@@ -103,6 +103,7 @@ async function doRuntimeUpgrade(
                         console.log('Runtime upgrade successfully scheduled');
                         finish(resolve);
                     } else if (result.isError) {
+                        // eslint-disable-next-line @typescript-eslint/no-base-to-string
                         const error = new Error(`Failed to schedule runtime upgrade: ${result.toString()}`);
                         finish(() => reject(error));
                     }
