@@ -72,9 +72,6 @@ pub mod pallet {
 		type RuntimeBlockNumber: IsType<<Self as frame_system::Config>::BlockNumber>
 			+ Clone
 			+ Into<sp_core::U256>;
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
 		type OnSwitch: OnSwitch<Config = Self>;
 
 		type Balance: Parameter;
@@ -86,19 +83,6 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
-
-	// Pallets use events to inform users when important changes are made.
-	// https://substrate.dev/docs/en/knowledgebase/runtime/events
-	#[pallet::event]
-	pub enum Event<T: Config> {
-		/// Switched to PoS. []
-		Switched,
-	}
-
-	#[pallet::error]
-	pub enum Error<T> {
-		AlreadySwitched,
-	}
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
