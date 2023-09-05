@@ -52,6 +52,7 @@ describe('Creditcoin RPC', (): void => {
                 ws.send(JSON.stringify(rpc));
             })
                 .on('message', (data) => {
+                    // eslint-disable-next-line @typescript-eslint/no-base-to-string
                     const utf8Str = data.toString('utf-8');
 
                     const error = JSON.parse(utf8Str).error;
