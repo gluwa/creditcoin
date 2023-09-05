@@ -89,9 +89,9 @@ mod tests {
 				&tx_id,
 			);
 
-			let address: [u8; 20] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+			let address: [u8; 20] = [1; 20];
 
-			let to = AddressId::new::<crate::mock::Test>(&crate::Blockchain::Ethereum, &address);
+			let to = AddressId::new::<Test>(&crate::Blockchain::Ethereum, &address);
 			let old = OldCollectedCoinsStruct { to, amount: 100, tx_id };
 
 			OldCollectedCoinsStorage::insert(&storage_id, &old);
