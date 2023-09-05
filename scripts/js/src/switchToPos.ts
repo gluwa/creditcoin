@@ -125,6 +125,7 @@ async function doSwitchToPos(wsUrl: string, sudoKeyUri: string): Promise<void> {
                         console.log('switchToPos called');
                         finish(resolve);
                     } else if (result.isError) {
+                        // eslint-disable-next-line @typescript-eslint/no-base-to-string
                         const error = new Error(`Failed calling switchToPos: ${result.toString()}`);
                         finish(() => reject(error));
                     }
