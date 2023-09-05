@@ -683,7 +683,6 @@ impl pallet_rewards::Config for Runtime {
 }
 
 impl pallet_pos_switch::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
 	type RuntimeBlockNumber = BlockNumber;
 	type OnSwitch = InitPosPallets;
 	type Balance = Balance;
