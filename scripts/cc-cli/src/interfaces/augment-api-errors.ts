@@ -3,14 +3,13 @@
 
 // import type lookup before we augment - in some environments
 // this is required to allow for ambient/previous definitions
-import "@polkadot/api-base/types/errors";
+import '@polkadot/api-base/types/errors';
 
-import type { ApiTypes, AugmentedError } from "@polkadot/api-base/types";
+import type { ApiTypes, AugmentedError } from '@polkadot/api-base/types';
 
-export type __AugmentedError<ApiType extends ApiTypes> =
-  AugmentedError<ApiType>;
+export type __AugmentedError<ApiType extends ApiTypes> = AugmentedError<ApiType>;
 
-declare module "@polkadot/api-base/types/errors" {
+declare module '@polkadot/api-base/types/errors' {
   interface AugmentedErrors<ApiType extends ApiTypes> {
     babe: {
       /**
@@ -150,6 +149,14 @@ declare module "@polkadot/api-base/types/errors" {
        **/
       DuplicateOffer: AugmentedError<ApiType>;
       /**
+       * A valid external address could not be generated for the specified blockchain and recovered public key
+       **/
+      EthSignExternalAddressGenerationFailed: AugmentedError<ApiType>;
+      /**
+       * ECDSA public key recovery failed for an ownership proof using EthSign
+       **/
+      EthSignPublicKeyRecoveryFailed: AugmentedError<ApiType>;
+      /**
        * The specified guid has already been used and cannot be re-used.
        **/
       GuidAlreadyUsed: AugmentedError<ApiType>;
@@ -250,6 +257,14 @@ declare module "@polkadot/api-base/types/errors" {
        * The address retrieved from the proof-of-ownership signature did not match the external address being registered.
        **/
       OwnershipNotSatisfied: AugmentedError<ApiType>;
+      /**
+       * A valid external address could not be generated for the specified blockchain and recovered public key
+       **/
+      PersonalSignExternalAddressGenerationFailed: AugmentedError<ApiType>;
+      /**
+       * ECDSA public key recovery failed for an ownership proof using PersonalSign
+       **/
+      PersonalSignPublicKeyRecoveryFailed: AugmentedError<ApiType>;
       RepaymentOrderNonZeroGain: AugmentedError<ApiType>;
       /**
        * Repayment orders are not currently supported.
@@ -285,6 +300,10 @@ declare module "@polkadot/api-base/types/errors" {
        **/
       TransferDealOrderMismatch: AugmentedError<ApiType>;
       /**
+       * An unsupported blockchain was specified to register_address_v2
+       **/
+      UnsupportedBlockchain: AugmentedError<ApiType>;
+      /**
        * The specified transfer type is not currently supported by
        * the blockchain the loan is executed on.
        **/
@@ -318,7 +337,7 @@ declare module "@polkadot/api-base/types/errors" {
       CallNotAllowed: AugmentedError<ApiType>;
       /**
        * The provided Controller account was not found.
-       *
+       * 
        * This means that the given account is not bonded.
        **/
       NotController: AugmentedError<ApiType>;
@@ -533,7 +552,7 @@ declare module "@polkadot/api-base/types/errors" {
       MetadataExceedsMaxLen: AugmentedError<ApiType>;
       /**
        * The amount does not meet the minimum bond to either join or create a pool.
-       *
+       * 
        * The depositor can never unbond to a value less than
        * `Pallet::depositor_min_bond`. The caller does not have nominating
        * permissions for the pool. Members can never unbond to a value below `MinJoinBond`.
@@ -821,7 +840,7 @@ declare module "@polkadot/api-base/types/errors" {
       CallFiltered: AugmentedError<ApiType>;
       /**
        * Failed to extract the runtime version from the new runtime.
-       *
+       * 
        * Either calling `Core_version` or decoding `RuntimeVersion` failed.
        **/
       FailedToExtractRuntimeVersion: AugmentedError<ApiType>;

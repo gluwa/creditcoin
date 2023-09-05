@@ -20,7 +20,17 @@ export function makeCollectCoinsCmd() {
     .description("Swap GCRE for CTC")
     .addOption(externalAddressOpt)
     .addOption(burnTxHashOpt)
-    .action(collectCoinsAction);
+    .action(collectCoinsActionSync);
+}
+
+function collectCoinsActionSync(options: OptionValues) {
+  collectCoinsAction(options).then((result) => {
+    console.log("Success");
+    process.exit(0);
+  }).catch((reason) => {
+    console.log(reason);
+    process.exit(1)
+  })
 }
 
 async function collectCoinsAction(options: OptionValues) {
@@ -31,9 +41,8 @@ async function collectCoinsAction(options: OptionValues) {
   } = await newApi(options.url);
   const signer = await initCallerKeyring(options);
 
-  requestCollectCoins(options.externalAddress, signer, options.burnTxHash)
-    .then(handleSuccess)
-    .catch(handleError);
+  const event = await requestCollectCoins(options.externalAddress, signer, options.burnTxHash);
+  await event.waitForVerification(800_000);
 }
 
 function validateOptsOrExit(options: OptionValues) {
@@ -53,8 +62,7 @@ function validateOptsOrExit(options: OptionValues) {
 
   if (!isExternalAddressValid(options.externalAddress)) {
     fatalErr(
-      `ERROR: The external address is invalid: ${
-        options.externalAddress as string
+      `ERROR: The external address is invalid: ${options.externalAddress as string
       }`,
     );
   }
@@ -67,8 +75,7 @@ async function handleSuccess(value: CollectCoinsEvent) {
 
 function handleError(reason: any) {
   fatalErr(
-    `ERROR: The call to request_collect_coins was unsuccessful: ${
-      reason as string
+    `ERROR: The call to request_collect_coins was unsuccessful: ${reason as string
     }`,
   );
 }
