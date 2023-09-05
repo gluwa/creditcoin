@@ -616,13 +616,6 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
-        posSwitch: {
-            AlreadySwitched: AugmentedError<ApiType>;
-            /**
-             * Generic error
-             **/
-            [key: string]: AugmentedError<ApiType>;
-        };
         proxy: {
             /**
              * Account is already a proxy.
