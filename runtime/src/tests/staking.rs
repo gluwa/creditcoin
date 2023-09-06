@@ -4,13 +4,13 @@ use crate::mock::runtime::{
 };
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use pallet_staking::Error;
-use pallet_staking::RewardDestination;
-use pallet_staking::StakingInterface;
+use pallet_staking_substrate::Error;
+use pallet_staking_substrate::RewardDestination;
+use sp_staking::StakingInterface;
 use runtime_utils::{ExtBuilder, RollTo, Trivial};
 use std::default::Default;
 
-type Staking = pallet_staking::Pallet<Runtime>;
+type Staking = pallet_staking_substrate::Pallet<Runtime>;
 
 const BLOCKS_UNTIL_UNBONDED: u32 = BlocksPerEra::get() * BondingDuration::get();
 

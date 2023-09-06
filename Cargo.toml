@@ -10,7 +10,6 @@ members = [
     'pallets/creditcoin',
     'pallets/offchain-task-scheduler/runtime-api',
     'pallets/offchain-task-scheduler',
-    'pallets/staking',
     'pallets/pos-switch',
     'runtime',
     "sha3pow",
@@ -53,7 +52,6 @@ pallet-creditcoin = { path = "pallets/creditcoin", default-features = false }
 pallet-difficulty = { path = "pallets/difficulty", default-features = false }
 pallet-offchain-task-scheduler = { path = "pallets/offchain-task-scheduler", default-features = false }
 pallet-rewards = { path = "pallets/rewards", default-features = false }
-pallet-staking = { path = "pallets/staking", default-features = false }
 primitives = { path = "primitives", default-features = false }
 runtime-utils = { package = "test-runtime-utils", path = "test/runtime-utils", default-features = false }
 task-scheduler-runtime-api = { path = "pallets/offchain-task-scheduler/runtime-api", default-features = false }
