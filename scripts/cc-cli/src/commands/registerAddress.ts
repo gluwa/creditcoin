@@ -52,7 +52,7 @@ async function registerAddressAction(options: OptionValues) {
 function handleSuccess(addressRegistered: AddressRegistered) {
   console.log(
     chalk.green(
-      'Address Registered Successfully!',
+      `Address Registered Successfully!: ${addressRegistered.itemId}`,
     ),
   );
   process.exit(0);
