@@ -2,8 +2,6 @@ import { Command, Option, OptionValues } from "commander";
 import { fatalErr } from "./registerAddress";
 import { newApi } from "../api";
 import { initCallerKeyring } from "../utils/account";
-import { CollectCoinsEvent } from "creditcoin-js/lib/extrinsics/request-collect-coins";
-import chalk from "chalk";
 import { isAddress } from "web3-validator";
 import { utils } from "ethers";
 
@@ -24,13 +22,15 @@ export function makeCollectCoinsCmd() {
 }
 
 function collectCoinsActionSync(options: OptionValues) {
-  collectCoinsAction(options).then((result) => {
-    console.log("Success");
-    process.exit(0);
-  }).catch((reason) => {
-    console.log(reason);
-    process.exit(1)
-  })
+  collectCoinsAction(options)
+    .then(() => {
+      console.log("Success");
+      process.exit(0);
+    })
+    .catch((reason) => {
+      console.log(reason);
+      process.exit(1);
+    });
 }
 
 async function collectCoinsAction(options: OptionValues) {
@@ -41,7 +41,11 @@ async function collectCoinsAction(options: OptionValues) {
   } = await newApi(options.url);
   const signer = await initCallerKeyring(options);
 
-  const event = await requestCollectCoins(options.externalAddress, signer, options.burnTxHash);
+  const event = await requestCollectCoins(
+    options.externalAddress,
+    signer,
+    options.burnTxHash,
+  );
   await event.waitForVerification(800_000);
 }
 
@@ -62,22 +66,11 @@ function validateOptsOrExit(options: OptionValues) {
 
   if (!isExternalAddressValid(options.externalAddress)) {
     fatalErr(
-      `ERROR: The external address is invalid: ${options.externalAddress as string
+      `ERROR: The external address is invalid: ${
+        options.externalAddress as string
       }`,
     );
   }
-}
-
-async function handleSuccess(value: CollectCoinsEvent) {
-  await value.waitForVerification(800_000);
-  console.log(chalk.green("Success!"));
-}
-
-function handleError(reason: any) {
-  fatalErr(
-    `ERROR: The call to request_collect_coins was unsuccessful: ${reason as string
-    }`,
-  );
 }
 
 export function isTxHashValid(hash: string): boolean {
