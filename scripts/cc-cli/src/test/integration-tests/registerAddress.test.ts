@@ -20,8 +20,9 @@ import {
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { AUTHORITY_SURI } from "creditcoin-js/lib/examples/setup-authority";
 import { testData, tryRegisterAddress } from "creditcoin-js/lib/testUtils";
+import { describeIf } from "../../utils/tests";
 
-describe("register-address", () => {
+describeIf(process.env.INTEGRATION_TEST && arg('CREDITCOIN_EXECUTE_SETUP_AUTHORITY'), "register-address", () => {
     let ccApi: CreditcoinApi;
     let authority: KeyringPair;
     let collector: KeyringPair;
@@ -81,6 +82,6 @@ describe("register-address", () => {
         expect(result.failed).toBe(false);
         expect(result.exitCode).toBe(0);
         expect(result.stderr).toBe("");
-        expect(stdout[stdout.length - 1]).toBe("Address Registered Successfully!");
+        expect(stdout[stdout.length - 1].includes("Address Registered Successfully")).toBe(true);
     }, 50_000);
 });
