@@ -93,7 +93,6 @@ const setup = async () => {
     if ((global as any).CREDITCOIN_CTC_BURN_TX_HASH === undefined) {
         // Note: burn is always called inside deployCtcContract() !!!
         (global as any).CREDITCOIN_CTC_BURN_TX_HASH = process.env.CREDITCOIN_CTC_BURN_TX_HASH;
-
     }
 
     const api = await ApiPromise.create({
