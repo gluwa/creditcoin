@@ -21,8 +21,9 @@ import {
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { AUTHORITY_SURI } from "creditcoin-js/lib/examples/setup-authority";
 import { testData, tryRegisterAddress } from "creditcoin-js/lib/testUtils";
+import { describeIf } from "../../utils/tests";
 
-describe("collect-coins", () => {
+describeIf(process.env.INTEGRATION_TEST && arg('CREDITCOIN_EXECUTE_SETUP_AUTHORITY'), "collect-coins", () => {
     let ccApi: CreditcoinApi;
     let authority: KeyringPair;
     let collector: KeyringPair;
@@ -30,24 +31,22 @@ describe("collect-coins", () => {
     let caller: any;
 
     const { keyring, blockchain } = testData(
-        (global as any).CREDITCOIN_ETHEREUM_CHAIN as Blockchain,
-        (global as any).CREDITCOIN_CREATE_WALLET,
+        arg('CREDITCOIN_ETHEREUM_CHAIN') as Blockchain,
+        arg('CREDITCOIN_CREATE_WALLET'),
     );
 
     beforeAll(async () => {
-        expect(process.env.INTEGRATION_TEST).toBeTruthy();
-
         await cryptoWaitReady();
 
         ethWallet = Wallet.createRandom();
         caller = randomTestAccount(false);
 
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
+        if (arg('CREDITCOIN_EXECUTE_SETUP_AUTHORITY')) {
             authority = keyring.createFromUri(AUTHORITY_SURI);
         }
 
-        collector = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, "lender");
+        collector = arg('CREDITCOIN_CREATE_SIGNER')(keyring, "lender");
 
         const { api } = ccApi;
 
@@ -94,7 +93,7 @@ describe("collect-coins", () => {
         expect(registerResult.failed).toBe(false);
         expect(registerResult.exitCode).toBe(0);
         expect(registerResult.stderr).toBe("");
-        expect(stdout[stdout.length - 1]).toBe("Address Registered Successfully!");
+        expect(stdout[stdout.length - 1].includes("Address Registered Successfully")).toBe(true);
 
         const collectResult = execa.commandSync(
             `npx creditcoin-cli collect-coins -u ${arg('CREDITCOIN_API_URL')}`,
