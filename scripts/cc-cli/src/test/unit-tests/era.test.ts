@@ -1,4 +1,4 @@
-import { eraIsInHistory } from "../utils/era";
+import { eraIsInHistory } from "../../utils/era";
 
 const historyDepth = 84;
 
