@@ -9,7 +9,7 @@
   "scripts": {
     "test": "yarn test:unit",
     "test:unit": "jest --silent --verbose --runInBand --coverage --collectCoverageFrom=src/**/*.ts src/test/unit-tests",
-    "test:integration": "INTEGRATION_TEST=true jest --silent --verbose --runInBand --coverage --collectCoverageFrom=src/**/*.ts --forceExit src/test/integration-tests",
+    "test:integration": "jest --silent --verbose --runInBand --coverage --collectCoverageFrom=src/**/*.ts --forceExit src/test/integration-tests",
     "lint": "eslint -c .eslintrc.js --max-warnings 0 --ext .ts ./src",
     "format": "prettier --write \"src/**/*.ts\"",
     "build:types": "yarn generate:defs && yarn generate:meta",
