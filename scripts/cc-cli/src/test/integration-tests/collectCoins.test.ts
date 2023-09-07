@@ -96,7 +96,8 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
     await signSendAndWatch(fundTx, api, sudo);
 
     const registerResult = execa.commandSync(
-      `npx creditcoin-cli register-address -u ${arg("CREDITCOIN_API_URL") as string
+      `npx creditcoin-cli register-address -u ${
+        arg("CREDITCOIN_API_URL") as string
       }`,
       {
         env: {
@@ -116,7 +117,8 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
     ).toBe(true);
 
     const collectResult = execa.commandSync(
-      `npx creditcoin-cli collect-coins -u ${arg("CREDITCOIN_API_URL") as string
+      `npx creditcoin-cli collect-coins -u ${
+        arg("CREDITCOIN_API_URL") as string
       }`,
       {
         env: {
