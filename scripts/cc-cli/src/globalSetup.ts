@@ -21,7 +21,7 @@ const createSigner = (
   }
 };
 
-async function deployCtcToken(existingAddress: string | undefined) {
+export async function deployCtcToken(existingAddress: string | undefined) {
   const provider = new JsonRpcProvider(
     (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
   );
@@ -58,11 +58,11 @@ async function deployCtcToken(existingAddress: string | undefined) {
   process.env.CREDITCOIN_CTC_BURN_TX_HASH = txHash;
 }
 
-function setArg(key: string, value: any) {
+export function setArg(key: string, value: any) {
   (global as any)[key] = value;
 }
 
-function setArgIfUndef(key: string, value: any) {
+export function setArgIfUndef(key: string, value: any) {
   if ((global as any)[key] === undefined) {
     setArg(key, value);
   }
@@ -88,7 +88,7 @@ export function arg(key: string) {
   return (global as any)[key];
 }
 
-async function setAuthorities() {
+export async function setAuthorities() {
   const api = await ApiPromise.create({
     provider: new WsProvider((global as any).CREDITCOIN_API_URL),
     throwOnConnect: true,
@@ -101,7 +101,7 @@ async function setAuthorities() {
   await api.disconnect();
 }
 
-function retry(retries: any, executor: any): any {
+export function retry(retries: any, executor: any): any {
   console.log(`${retries as string} retries left!`);
 
   if (typeof retries !== "number") {
@@ -113,7 +113,7 @@ function retry(retries: any, executor: any): any {
   );
 }
 
-async function setup() {
+function setup() {
   process.env.NODE_ENV = "test";
 
   // Makes console output look better
@@ -121,28 +121,6 @@ async function setup() {
 
   globalDefaults.forEach((value: any, key: string) => {
     setArgIfUndef(key, value);
-  });
-
-  if (process.env.INTEGRATION_TEST === undefined) {
-    console.log("Skipping token deployment and authority setup");
-    return;
-  }
-
-  await deployCtcToken((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS);
-  setArg(
-    "CREDITCOIN_CTC_CONTRACT_ADDRESS",
-    process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS,
-  );
-  setArgIfUndef(
-    "CREDITCOIN_CTC_BURN_TX_HASH",
-    process.env.CREDITCOIN_CTC_BURN_TX_HASH,
-  );
-
-  await retry(5, async (resolve: any, reject: any) => {
-    await setAuthorities().then(resolve).catch(reject);
-  }).catch(() => {
-    console.log("Could not setup testing authorities");
-    process.exit(1);
   });
 }
 
