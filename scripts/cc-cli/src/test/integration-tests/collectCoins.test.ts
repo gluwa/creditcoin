@@ -54,8 +54,6 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
 
     caller = randomTestAccount(false);
 
-    console.log(caller.address);
-
     ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
     sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "sudo");
 
