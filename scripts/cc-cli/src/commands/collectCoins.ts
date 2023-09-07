@@ -4,6 +4,7 @@ import { newApi } from "../api";
 import { initCallerKeyring } from "../utils/account";
 import { isAddress } from "web3-validator";
 import { utils } from "ethers";
+import chalk from "chalk";
 
 export function makeCollectCoinsCmd() {
   const externalAddressOpt = new Option(
@@ -24,12 +25,15 @@ export function makeCollectCoinsCmd() {
 function collectCoinsActionSync(options: OptionValues) {
   collectCoinsAction(options)
     .then(() => {
-      console.log("Success");
+      console.log(chalk.green("Success!"));
       process.exit(0);
     })
     .catch((reason) => {
-      console.log(reason);
-      process.exit(1);
+      fatalErr(
+        `ERROR: The call to request_collect_coins was unsuccessful: ${
+          reason as string
+        }`,
+      );
     });
 }
 

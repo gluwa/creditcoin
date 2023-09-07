@@ -1,69 +1,76 @@
-import { initKeyringPair } from "../../utils/account";
 import { parseAmountInternal } from "../../utils/parsing";
 import { signSendAndWatch } from "../../utils/tx";
 import { fundFromSudo, randomTestAccount } from "./helpers";
 import { arg } from "../../globalSetup";
 import execa from "execa";
-import { CreditcoinApi, Wallet, creditcoinApi } from "creditcoin-js";
+import {
+  Blockchain,
+  CreditcoinApi,
+  KeyringPair,
+  Wallet,
+  creditcoinApi,
+} from "creditcoin-js";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
-import { describeIf } from "../../utils/tests";
+import { testData } from "creditcoin-js/lib/testUtils";
 
-describeIf(
-  process.env.INTEGRATION_TEST && arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"),
-  "register-address",
-  () => {
-    let ccApi: CreditcoinApi;
-    let ethWallet: Wallet;
-    let caller: any;
+describe("register-address", () => {
+  let ccApi: CreditcoinApi;
+  let ethWallet: Wallet;
+  let caller: any;
+  let sudo: KeyringPair;
 
-    beforeAll(async () => {
-      expect(process.env.INTEGRATION_TEST).toBeTruthy();
+  beforeAll(async () => {
+    await cryptoWaitReady();
 
-      await cryptoWaitReady();
+    ethWallet = Wallet.createRandom();
+    caller = randomTestAccount(false);
 
-      ethWallet = Wallet.createRandom();
-      caller = randomTestAccount(false);
+    ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
 
-      ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-    });
+    const { keyring } = testData(
+      arg("CREDITCOIN_ETHEREUM_CHAIN") as Blockchain,
+      arg("CREDITCOIN_CREATE_WALLET"),
+    );
 
-    afterAll(async () => {
-      await ccApi.api.disconnect();
-    });
+    sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "lender");
+  });
 
-    test("e2e", async () => {
-      const { api } = ccApi;
+  afterAll(async () => {
+    await ccApi.api.disconnect();
+  });
 
-      const fundTx = await fundFromSudo(
-        caller.address,
-        parseAmountInternal("1000000"),
-        arg("CREDITCOIN_API_URL"),
-      );
-      await signSendAndWatch(fundTx, api, initKeyringPair("//Alice"));
+  test("e2e", async () => {
+    const { api } = ccApi;
 
-      const result = execa.commandSync(
-        `npx creditcoin-cli register-address -u ${
-          arg("CREDITCOIN_API_URL") as string
-        }`,
-        {
-          env: {
-            // eslint-disable-next-line @typescript-eslint/naming-convention
-            BLOCKCHAIN: "Ethereum",
-            // eslint-disable-next-line @typescript-eslint/naming-convention
-            PRIVATE_KEY: ethWallet.privateKey,
-            CC_SECRET: caller.secret,
-          },
+    const fundTx = await fundFromSudo(
+      caller.address,
+      parseAmountInternal("1000000"),
+      arg("CREDITCOIN_API_URL"),
+    );
+    await signSendAndWatch(fundTx, api, sudo);
+
+    const result = execa.commandSync(
+      `npx creditcoin-cli register-address -u ${
+        arg("CREDITCOIN_API_URL") as string
+      }`,
+      {
+        env: {
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          BLOCKCHAIN: "Ethereum",
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          PRIVATE_KEY: ethWallet.privateKey,
+          CC_SECRET: caller.secret,
         },
-      );
+      },
+    );
 
-      const stdout = result.stdout.split("\n");
+    const stdout = result.stdout.split("\n");
 
-      expect(result.failed).toBe(false);
-      expect(result.exitCode).toBe(0);
-      expect(result.stderr).toBe("");
-      expect(
-        stdout[stdout.length - 1].includes("Address Registered Successfully"),
-      ).toBe(true);
-    }, 50_000);
-  },
-);
+    expect(result.failed).toBe(false);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(
+      stdout[stdout.length - 1].includes("Address Registered Successfully"),
+    ).toBe(true);
+  }, 50_000);
+});
