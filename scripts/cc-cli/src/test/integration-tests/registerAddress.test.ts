@@ -32,7 +32,7 @@ describe("register-address", () => {
       arg("CREDITCOIN_CREATE_WALLET"),
     );
 
-    sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "lender");
+    sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "sudo");
   });
 
   afterAll(async () => {

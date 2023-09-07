@@ -19,7 +19,7 @@ import {
   providers,
 } from "creditcoin-js";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
-import { testData } from "creditcoin-js/lib/testUtils";
+import { testData, tryRegisterAddress } from "creditcoin-js/lib/testUtils";
 import { describeIf } from "../../utils/tests";
 
 describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
@@ -54,8 +54,10 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
 
     caller = randomTestAccount(false);
 
+    console.log(caller.address);
+
     ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-    sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "lender");
+    sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "sudo");
 
     const { api } = ccApi;
 
@@ -78,7 +80,10 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
   });
 
   test("e2e", async () => {
-    const { api } = ccApi;
+    const {
+      api,
+      utils: { signAccountId },
+    } = ccApi;
 
     const provider = new providers.JsonRpcProvider(
       arg("CREDITCOIN_ETHEREUM_NODE_URL"),
@@ -90,31 +95,19 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
 
     const fundTx = await fundFromSudo(
       caller.address,
-      parseAmountInternal("1000000"),
+      parseAmountInternal("10"),
       arg("CREDITCOIN_API_URL"),
     );
     await signSendAndWatch(fundTx, api, sudo);
 
-    const registerResult = execa.commandSync(
-      `npx creditcoin-cli register-address -u ${
-        arg("CREDITCOIN_API_URL") as string
-      }`,
-      {
-        env: {
-          BLOCKCHAIN: "Ethereum",
-          PRIVATE_KEY: arg("CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY"),
-          CC_SECRET: caller.secret,
-        },
-      },
+    await tryRegisterAddress(
+      ccApi,
+      deployerWallet.address,
+      blockchain,
+      signAccountId(deployerWallet, caller.address),
+      caller.keyring,
+      (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
     );
-
-    const stdout = registerResult.stdout.split("\n");
-    expect(registerResult.failed).toBe(false);
-    expect(registerResult.exitCode).toBe(0);
-    expect(registerResult.stderr).toBe("");
-    expect(
-      stdout[stdout.length - 1].includes("Address Registered Successfully"),
-    ).toBe(true);
 
     const collectResult = execa.commandSync(
       `npx creditcoin-cli collect-coins -u ${
