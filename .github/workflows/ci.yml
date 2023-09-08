@@ -358,12 +358,6 @@ jobs:
           name: creditcoin-node
           path: target/release
 
-      - name: Download runtime
-        uses: actions/download-artifact@v3
-        with:
-          name: creditcoin_node_runtime.compact.compressed.wasm
-          path: target/release
-
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
