@@ -417,6 +417,120 @@ jobs:
           # dangling processes
           killall -9 creditcoin-node
 
+  build-creditcoin-transaction-producer:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+          repository: gluwa/creditcoin-transaction-producer
+          path: creditcoin-transaction-producer
+
+      - name: Configure rustc version
+        run: |
+          source creditcoin-transaction-producer/ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build creditcoin-transaction-producer
+        run: |
+          pushd creditcoin-transaction-producer/
+
+          cargo install just
+          just install
+          just build
+
+          popd
+
+          # archive the entire directory, together with binary artifacts and FE artifacts
+          tar -czvf creditcoin-transaction-producer.tar.gz creditcoin-transaction-producer/
+
+      - name: Upload creditcoin-transaction-producer archive
+        uses: actions/upload-artifact@v3
+        with:
+          path: creditcoin-transaction-producer.tar.gz
+          name: creditcoin-transaction-producer.tar.gz
+
+  tools-creditcoin-transaction-producer:
+    runs-on: ubuntu-latest
+    needs:
+      - build-creditcoin-node
+      - build-creditcoin-transaction-producer
+
+    steps:
+      - name: Start local Ethereum node
+        run: |
+          docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
+
+      - name: Download creditcoin-node binary
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin-node
+          path: target/release
+
+      - name: Start creditcoin-node
+        run: |
+          chmod a+x ./target/release/creditcoin-node
+          ./target/release/creditcoin-node --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+
+      - uses: actions/checkout@v4
+
+      - name: Wait for creditcoin-node to start
+        run: |
+          ./integration-tests/wait-for-creditcoin.sh
+
+      - name: Download creditcoin-transaction-producer archive
+        uses: actions/download-artifact@v3
+        with:
+          name: creditcoin-transaction-producer.tar.gz
+
+      - name: Start creditcoin-transaction-producer
+        run: |
+          tar -xzvf creditcoin-transaction-producer.tar.gz
+          pushd creditcoin-transaction-producer/
+
+          # Deployer Seed is Private Key for Account #0 in hardhat
+          # Funded Account Seed is Alice
+          ./target/release/creditcoin-transaction-producer --max-accounts 20 --max-chain-apis 25 \
+              --funded-account-seed '0xe5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a' \
+              --deployer-seed '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe' \
+              --setup --frontend ./dist  >~/creditcoin-transaction-producer.log 2>&1 &
+
+          popd
+
+      - name: Sanity check that creditcoin-transaction-producer started
+        run: |
+          sleep 20
+          ./scripts/check-transaction-producer.sh
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: transaction-producer-logs
+          path: ~/creditcoin-*.log
+
+      - name: Kill SUT
+        if: always()
+        continue-on-error: true
+        run: |
+          killall -9 creditcoin-node
+          killall -9 creditcoin-transaction-producer
+
   integration-test-loan-cycle:
     needs:
       - build-creditcoin-node
