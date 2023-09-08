@@ -21,6 +21,7 @@ import {
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { testData, tryRegisterAddress } from "creditcoin-js/lib/testUtils";
 import { describeIf } from "../../utils/tests";
+import { getBalance } from "../../utils/balance";
 
 describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
   let ccApi: CreditcoinApi;
@@ -107,9 +108,11 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
       (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
     );
 
+    // Read balance after register address call but prior to collect coins
+    const starting = await getBalance(caller.address, api);
+
     const collectResult = execa.commandSync(
-      `npx creditcoin-cli collect-coins -u ${
-        arg("CREDITCOIN_API_URL") as string
+      `npx creditcoin-cli collect-coins -u ${arg("CREDITCOIN_API_URL") as string
       }`,
       {
         env: {
@@ -125,5 +128,13 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
     expect(collectResult.exitCode).toBe(0);
     expect(collectResult.stderr).toBe("");
     expect(collectOutput[collectOutput.length - 1]).toBe("Success!");
+
+    // read the balance after collect coins
+    const ending = await getBalance(caller.address, api);
+    expect(ending.total.sub(starting.total).toNumber()).toBe(1);
+    // expect(ending.transferable.sub(starting.transferable).toNumber()).toBe(1);
+
+    console.log(ending.transferable.toString())
+    console.log(starting.transferable.toString())
   }, 900_000);
 });
