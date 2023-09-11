@@ -2,7 +2,13 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { ContractFactory, Wallet } from "ethers";
 import { GluwaCreditVestingToken } from "./test/integration-tests/ethereum/ctc/typechain";
 import CtcArtifact from "./test/integration-tests/ethereum/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json";
-import { ApiPromise, Keyring, KeyringPair, WsProvider } from "creditcoin-js";
+import {
+  ApiPromise,
+  Keyring,
+  KeyringPair,
+  WsProvider,
+  CREDO_PER_CTC,
+} from "creditcoin-js";
 import { setupAuthority } from "creditcoin-js/lib/examples/setup-authority";
 
 const createSigner = (
@@ -50,7 +56,8 @@ export async function deployCtcToken(existingAddress: string | undefined) {
 
   process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS = ctcToken.address;
 
-  const tx = await ctcToken.burn(1);
+  // burn 3 CTC
+  const tx = await ctcToken.burn((3 * CREDO_PER_CTC).toString());
   const txHash = tx.hash;
   await tx.wait();
 
