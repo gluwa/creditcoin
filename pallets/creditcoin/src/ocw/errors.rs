@@ -19,6 +19,7 @@ pub enum SchedulerError {
 	NoRpcUrl(RpcUrlError),
 	RpcError(RpcError),
 	IncorrectChainId,
+	Unschedulable,
 }
 
 pub type VerificationResult<T> = Result<T, OffchainError>;
