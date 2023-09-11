@@ -36,7 +36,7 @@ impl UnverifiedCollectedCoins {
 pub struct CollectedCoinsId<Hash>(Hash);
 
 impl<H> CollectedCoinsId<H> {
-	fn inner_hash<Hasher>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> H
+	pub fn inner_hash<Hasher>(blockchain: &Blockchain, blockchain_tx_id: &[u8]) -> H
 	where
 		Hasher: Hash<Output = H>,
 	{
