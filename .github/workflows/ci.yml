@@ -274,7 +274,7 @@ jobs:
       - uses: codecov/codecov-action@v3
         with:
           files: ${{ steps.coverage.outputs.report }}
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
   unit-test-cli:
@@ -300,7 +300,7 @@ jobs:
       - uses: codecov/codecov-action@v3
         with:
           files: scripts/cc-cli/coverage/lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
   build-creditcoin-node:
@@ -405,7 +405,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           files: scripts/cc-cli/coverage/lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
       - name: Kill nodes
