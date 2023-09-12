@@ -15,5 +15,6 @@ export { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 export type { EventRecord } from '@polkadot/types/interfaces/system';
 export * as common from './extrinsics/common';
 
-export const CREDO_PER_CTC = 1_000_000_000_000_000_000;
+import { CREDO_PER_CTC } from './ctc-deploy';
+export { CREDO_PER_CTC };
 export const POINT_01_CTC = 0.01 * CREDO_PER_CTC;
