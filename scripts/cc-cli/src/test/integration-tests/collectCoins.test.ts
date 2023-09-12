@@ -1,14 +1,7 @@
 import { parseAmountInternal } from "../../utils/parsing";
 import { signSendAndWatch } from "../../utils/tx";
 import { fundFromSudo, randomTestAccount } from "./helpers";
-import {
-  arg,
-  deployCtcToken,
-  retry,
-  setArg,
-  setArgIfUndef,
-  setAuthorities,
-} from "../../globalSetup";
+import { arg, retry, setArgIfUndef, setAuthorities } from "../../globalSetup";
 import execa from "execa";
 import {
   Blockchain,
@@ -19,6 +12,7 @@ import {
   providers,
 } from "creditcoin-js";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
+import { deployCtcContract, CREDO_PER_CTC } from "creditcoin-js/lib/ctc-deploy";
 import { testData, tryRegisterAddress } from "creditcoin-js/lib/testUtils";
 import { describeIf } from "../../utils/tests";
 import { getBalance } from "../../utils/balance";
@@ -34,8 +28,14 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
   );
 
   beforeAll(async () => {
-    await deployCtcToken((global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS);
-    setArg(
+    // will deploy the contract and burn 3 CTC
+    await deployCtcContract(
+      (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
+      (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
+      (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
+      (3 * CREDO_PER_CTC).toString(),
+    );
+    setArgIfUndef(
       "CREDITCOIN_CTC_CONTRACT_ADDRESS",
       process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS,
     );

@@ -1,14 +1,4 @@
-import { JsonRpcProvider } from "@ethersproject/providers";
-import { ContractFactory, Wallet } from "ethers";
-import { GluwaCreditVestingToken } from "./test/integration-tests/ethereum/ctc/typechain";
-import CtcArtifact from "./test/integration-tests/ethereum/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json";
-import {
-  ApiPromise,
-  Keyring,
-  KeyringPair,
-  WsProvider,
-  CREDO_PER_CTC,
-} from "creditcoin-js";
+import { ApiPromise, Keyring, KeyringPair, WsProvider } from "creditcoin-js";
 import { setupAuthority } from "creditcoin-js/lib/examples/setup-authority";
 
 const createSigner = (
@@ -26,44 +16,6 @@ const createSigner = (
       throw new Error(`Unexpected value "${who}"`); // eslint-disable-line
   }
 };
-
-export async function deployCtcToken(existingAddress: string | undefined) {
-  const provider = new JsonRpcProvider(
-    (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
-  );
-  const deployer = new Wallet(
-    (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
-    provider,
-  );
-
-  const factory = new ContractFactory(
-    CtcArtifact.abi,
-    CtcArtifact.bytecode,
-    deployer,
-  );
-
-  let ctcToken: GluwaCreditVestingToken;
-
-  if (existingAddress !== undefined) {
-    ctcToken = factory.attach(existingAddress) as GluwaCreditVestingToken;
-  } else {
-    const deployerAddress = await deployer.getAddress();
-    ctcToken = (await factory.deploy(
-      deployerAddress,
-      deployerAddress,
-    )) as GluwaCreditVestingToken;
-  }
-
-  process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS = ctcToken.address;
-
-  // burn 3 CTC
-  const tx = await ctcToken.burn((3 * CREDO_PER_CTC).toString());
-  const txHash = tx.hash;
-  await tx.wait();
-
-  console.log("Burn Tx Hash", txHash);
-  process.env.CREDITCOIN_CTC_BURN_TX_HASH = txHash;
-}
 
 export function setArg(key: string, value: any) {
   (global as any)[key] = value;
