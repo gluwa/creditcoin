@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider, Keyring, KeyringPair, Wallet, POINT_01_CTC } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
-import { main as deployCtcContract } from 'creditcoin-js/lib/ctc-deploy';
+import { deployCtcContract } from 'creditcoin-js/lib/ctc-deploy';
 
 const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
     switch (who) {
