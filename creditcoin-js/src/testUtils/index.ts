@@ -7,11 +7,11 @@ import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { PalletCreditcoinAddress } from '@polkadot/types/lookup';
 
-import { Blockchain, LoanTerms, DealOrderId } from './model';
-import { CreditcoinApi } from './types';
-import { createAddress } from './transforms';
-import { EthConnection } from './examples/ethereum';
-import { AddressRegistered, createAddressId } from './extrinsics/register-address';
+import { Blockchain, LoanTerms, DealOrderId } from '../model';
+import { CreditcoinApi } from '../types';
+import { createAddress } from '../transforms';
+import { EthConnection } from '../examples/ethereum';
+import { AddressRegistered, createAddressId } from '../extrinsics/register-address';
 
 type CreateWalletFunc = (who: string) => Wallet;
 
