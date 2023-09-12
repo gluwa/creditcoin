@@ -1,10 +1,12 @@
-use super::Migrate;
 use super::{vec, Vec};
+use super::{AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf, PhantomData};
 
 use crate::types::CollectedCoinsStruct;
 
-use crate::{AddressId, Config};
+use super::v6::Task as OldTask;
+use crate::{AddressId, Config, TaskId, UnverifiedCollectedCoins, UnverifiedTransfer};
 use crate::{CollectedCoinsId, ExternalTxId};
+use frame_support::storage_alias;
 use frame_support::weights::Weight;
 use frame_support::{pallet_prelude::*, traits::Get};
 use parity_scale_codec::{Decode, Encode};
@@ -22,6 +24,33 @@ impl<Runtime: Config> Migration<Runtime> {
 	pub(super) fn new() -> Self {
 		Self(PhantomData)
 	}
+}
+
+#[storage_alias]
+pub type PendingTasks<T: Config> = StorageDoubleMap<
+	TaskScheduler,
+	Identity,
+	BlockNumberOf<T>,
+	Identity,
+	TaskId<HashOf<T>>,
+	OldTask<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
+>;
+
+mod new {
+
+	use crate::Task;
+
+	use super::*;
+
+	#[storage_alias]
+	pub type PendingTasks<T: Config> = StorageDoubleMap<
+		TaskScheduler, // the prefix for the storage item, which is generally the name of the pallet that defines the storage. We use an identifier instead of a string here because that's what the macro expects.
+		Identity,
+		BlockNumberOf<T>,
+		Identity,
+		TaskId<HashOf<T>>,
+		Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>, // the `Task` we copied into this migration
+	>;
 }
 
 impl<T: Config> Migrate for Migration<T> {
@@ -54,16 +83,51 @@ impl<T: Config> Migrate for Migration<T> {
 			},
 		);
 
-		weight
+		new::PendingTasks::<T>::translate(
+			|_: BlockNumberOf<T>,
+			 _: TaskId<HashOf<T>>,
+			 z: OldTask<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>| {
+				weight = weight.saturating_add(weight_each);
+
+				match z {
+					OldTask::VerifyTransfer(pending) => {
+						let new = UnverifiedTransfer {
+							transfer: pending.transfer,
+							from_external: pending.from_external,
+							to_external: pending.to_external,
+							deadline: pending.deadline,
+						};
+
+						return Some(crate::types::Task::VerifyTransfer(new));
+					},
+					OldTask::CollectCoins(pending) => {
+						let new = UnverifiedCollectedCoins {
+							to: pending.to,
+							tx_id: pending.tx_id,
+							contract: pending.contract,
+							contract_type: crate::types::ContractType::GCRE,
+						};
+
+						return Some(crate::types::Task::CollectCoins(new));
+					},
+				}
+			},
+		);
+		return weight;
 	}
 }
 
 #[cfg(test)]
 mod tests {
+	use crate::helpers::extensions::IntoBounded;
+	use pallet_offchain_task_scheduler::tasks::TaskV2;
+
 	use super::*;
 	use crate::{
+		migrations::v6::OldUnverifiedCollectedCoins,
 		mock::{self, ExtBuilder, Test},
-		types::ContractType,
+		types::{test::create_unverified_transfer, ContractType},
+		Task,
 	};
 
 	#[frame_support::storage_alias]
@@ -105,5 +169,64 @@ mod tests {
 			assert_eq!(old.tx_id, new.tx_id);
 			assert_eq!(new.contract_type, ContractType::GCRE);
 		})
+	}
+
+	#[test]
+	fn migrate_collect_coins() {
+		ExtBuilder::default().build_and_execute(|| {
+			let pending = OldUnverifiedCollectedCoins {
+				to: [0u8; 256].into_bounded(),
+				tx_id: [0u8; 256].into_bounded(),
+				contract: Default::default(),
+			};
+			let id = TaskId::CollectCoins(crate::types::CollectedCoinsId::from(
+				TaskV2::<Test>::to_id(&pending),
+			));
+
+			PendingTasks::<Test>::insert(1u64, id.clone(), OldTask::from(pending.clone()));
+
+			super::Migration::<Test>::new().migrate();
+
+			let migrated_pending = {
+				if let Task::CollectCoins(pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
+				{
+					pending
+				} else {
+					unreachable!()
+				}
+			};
+
+			assert_eq!(pending.to, migrated_pending.to);
+			assert_eq!(pending.tx_id, migrated_pending.tx_id);
+			assert_eq!(pending.contract, migrated_pending.contract);
+			assert_eq!(migrated_pending.contract_type, ContractType::GCRE);
+		});
+	}
+
+	#[test]
+	fn migrate_verify_transfer() {
+		ExtBuilder::default().build_and_execute(|| {
+			let pending = create_unverified_transfer();
+
+			let id = TaskId::VerifyTransfer(crate::types::TransferId::from(TaskV2::<Test>::to_id(
+				&pending,
+			)));
+
+			PendingTasks::<Test>::insert(1u64, id.clone(), OldTask::from(pending.clone()));
+
+			super::Migration::<Test>::new().migrate();
+
+			let migrated_pending = {
+				if let Task::VerifyTransfer(pending) =
+					new::PendingTasks::<Test>::get(1, id).unwrap()
+				{
+					pending
+				} else {
+					unreachable!()
+				}
+			};
+
+			assert_eq!(pending, migrated_pending);
+		});
 	}
 }
