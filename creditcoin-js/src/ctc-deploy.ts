@@ -3,6 +3,8 @@ import { GluwaCreditVestingToken } from './examples/ctc/typechain';
 import CtcArtifact from './examples/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
+export const CREDO_PER_CTC = 1_000_000_000_000_000_000;
+
 const deployCtcToken = async (deployer: Signer, existingAddress: string | undefined) => {
     const factory = new ContractFactory(CtcArtifact.abi, CtcArtifact.bytecode, deployer);
     let ctcToken: GluwaCreditVestingToken;
@@ -21,9 +23,8 @@ const deployCtcToken = async (deployer: Signer, existingAddress: string | undefi
     return ctcToken;
 };
 
-const burnCtc = async (ctcToken: GluwaCreditVestingToken) => {
-    // Burn 1 Credo == 10^-18 CTC
-    const tx = await ctcToken.burn(1);
+const burnCtc = async (ctcToken: GluwaCreditVestingToken, howMuch: string) => {
+    const tx = await ctcToken.burn(howMuch);
     const txHash = tx.hash;
 
     // wait for tx to be mined and get receipt
@@ -33,14 +34,15 @@ const burnCtc = async (ctcToken: GluwaCreditVestingToken) => {
     process.env.CREDITCOIN_CTC_BURN_TX_HASH = txHash;
 };
 
-export const main = async (
+export const deployCtcContract = async (
     existingAddress: string | undefined,
     ethereumUrl: string | undefined,
     deployerPrivateKey: string,
+    howMuchToBurn: string = (1 * CREDO_PER_CTC).toString(), // 1 CTC
 ) => {
     const provider = new JsonRpcProvider(ethereumUrl);
     const deployer = new Wallet(deployerPrivateKey, provider);
     const ctcToken = await deployCtcToken(deployer, existingAddress);
 
-    await burnCtc(ctcToken);
+    await burnCtc(ctcToken, howMuchToBurn);
 };
