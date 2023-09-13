@@ -115,12 +115,10 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
     // Read balance after register address call but prior to collect coins
     const starting = await getBalance(caller.address, api);
 
+    const url = arg("CREDITCOIN_API_URL") as string;
+    const txHash = arg("CREDITCOIN_CTC_BURN_TX_HASH") as string;
     const collectResult = execa.commandSync(
-      `node dist/index.js collect-coins --url ${
-        arg("CREDITCOIN_API_URL") as string
-      }
-            -e ${deployerWallet.address}
-            -b ${arg("CREDITCOIN_CTC_BURN_TX_HASH") as string}`,
+      `node dist/index.js collect-coins --url ${url} --external-address ${deployerWallet.address} --burn-tx-hash ${txHash}`,
       {
         env: {
           CC_SECRET: caller.secret,
