@@ -13,7 +13,11 @@ import {
 } from "creditcoin-js";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { deployCtcContract, CREDO_PER_CTC } from "creditcoin-js/lib/ctc-deploy";
-import { testData, tryRegisterAddress } from "creditcoin-js/lib/testUtils";
+import {
+  forElapsedBlocks,
+  testData,
+  tryRegisterAddress,
+} from "creditcoin-js/lib/testUtils";
 import { describeIf } from "../../utils/tests";
 import { getBalance } from "../../utils/balance";
 
@@ -130,8 +134,8 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
     expect(collectResult.stderr).toBe("");
     expect(collectOutput[collectOutput.length - 1]).toBe("Success!");
 
-    // note: wait before fetching the balance again. Otherwise we get bogus values
-    await new Promise((f) => setTimeout(f, 3000));
+    // wait for 2 more blocks
+    await forElapsedBlocks(api);
 
     // read the balance after collect coins
     const ending = await getBalance(caller.address, api);
