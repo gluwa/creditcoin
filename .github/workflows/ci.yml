@@ -86,6 +86,27 @@ jobs:
         run: |
           ./scripts/check-for-used-forks.sh
 
+  sanity-test-cli:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm install -g yarn
+
+      - name: Install creditcoin-js & creditcoin-cli
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && yarn build && npm install -g . && popd
+
+      - name: Execute creditcoin-cli command
+        run: |
+          # this makes sure we have a creditcoin-cli entrypoint in the standard PATH
+          creditcoin-cli help
+
   audit:
     name: cargo audit
     runs-on: ubuntu-latest
@@ -366,12 +387,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run: npm install -g yarn && npm install -g jest
+      - run: npm install -g yarn
 
-      - name: Install Creditcoin CLI
+      - name: Install creditcoin-js & creditcoin-cli
         run: |
           pushd creditcoin-js/ && yarn install && yarn pack && popd
-          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && yarn build && npm install -g . && popd
+          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && yarn build && popd
 
       - name: Start Node 1
         run: |
