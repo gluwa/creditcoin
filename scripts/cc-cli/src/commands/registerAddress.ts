@@ -15,8 +15,8 @@ export function makeRegisterAddressCmd() {
   ).choices(blockchains);
 
   const privateKeyOpt = new Option(
-    "-p, --private-key <key> The private key for the address that you want to register.",
-  ).env("PRIVATE_KEY");
+    "-p, --private-key <key> The private key for the Ethereum address that you want to register.",
+  ).env("ETH_PRIVATE_KEY");
 
   return new Command("register-address")
     .description(

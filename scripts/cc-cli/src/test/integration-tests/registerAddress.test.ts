@@ -49,14 +49,13 @@ describe("register-address", () => {
     );
     await signSendAndWatch(fundTx, api, sudo);
 
+    const url = arg("CREDITCOIN_API_URL") as string;
     const result = execa.commandSync(
-      `node dist/index.js register-address -u ${
-        arg("CREDITCOIN_API_URL") as string
-      } -b Ethereum`,
+      `node dist/index.js register-address --url ${url} --blockchain Ethereum`,
       {
         env: {
           // eslint-disable-next-line @typescript-eslint/naming-convention
-          PRIVATE_KEY: ethWallet.privateKey,
+          ETH_PRIVATE_KEY: ethWallet.privateKey,
           CC_SECRET: caller.secret,
         },
       },
