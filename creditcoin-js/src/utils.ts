@@ -53,3 +53,16 @@ export const utils = (api: ApiPromise) => {
         createOverrideWeight: () => createOverrideWeight(api),
     };
 };
+
+
+// block time in seconds
+export const BLOCK_TIME = 15;
+
+// We currently guarantee that a given collect coins will be dealt with in 60 blocks
+// After that the task expires and you'd have to re-submit the transaction.
+export const OCW_BLOCK_DEADLINE = 60;
+
+// An OCW task is guaranteed to be completed or rejected within this deadline (secon)
+export function OCWDeadline(): number {
+    return BLOCK_TIME * OCW_BLOCK_DEADLINE;
+}
