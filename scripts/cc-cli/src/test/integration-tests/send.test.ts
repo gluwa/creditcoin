@@ -23,7 +23,7 @@ describe("Send command", () => {
       await signSendAndWatch(fundTx, api, initKeyringPair("//Alice"));
 
       const result = execa.commandSync(
-        `creditcoin-cli send --to 5HDRB6edmWwwh6aCDKrRSbisV8iFHdP7jDy18U2mt9w2wEkq --amount 10 ${
+        `node dist/index.js send --to 5HDRB6edmWwwh6aCDKrRSbisV8iFHdP7jDy18U2mt9w2wEkq --amount 10 ${
           ecdsa ? "--ecdsa" : ""
         }`,
         {

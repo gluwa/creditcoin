@@ -14,7 +14,7 @@ describe("Show address command", () => {
       const caller = randomTestAccount(ecdsa);
 
       const result = execa.commandSync(
-        `creditcoin-cli show-address ${ecdsa ? "--ecdsa" : ""}`,
+        `node dist/index.js show-address ${ecdsa ? "--ecdsa" : ""}`,
         {
           env: {
             CC_SECRET: caller.secret,
