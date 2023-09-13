@@ -116,7 +116,7 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
     const starting = await getBalance(caller.address, api);
 
     const collectResult = execa.commandSync(
-      `npx creditcoin-cli collect-coins -u ${
+      `node dist/index.js collect-coins -u ${
         arg("CREDITCOIN_API_URL") as string
       }`,
       {
