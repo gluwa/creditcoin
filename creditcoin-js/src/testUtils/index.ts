@@ -1,7 +1,7 @@
 import { Wallet } from 'ethers';
 import { Guid } from 'js-guid';
 
-import { Keyring } from '@polkadot/api';
+import { ApiPromise, Keyring } from '@polkadot/api';
 import { Option } from '@polkadot/types';
 import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -156,4 +156,28 @@ export const tryRegisterAddress = async (
     }
 
     return registerAddress(externalAddress, blockchain, ownershipProof, signer);
+};
+
+export const getCreditcoinBlockNumber = async (api: ApiPromise): Promise<number> => {
+    const response = await api.rpc.chain.getBlock();
+    return response.block.header.number.toNumber();
+};
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// wait until a certain amount of blocks have elapsed
+export const forElapsedBlocks = async (api: ApiPromise, opts?: { minBlocks?: number; maxRetries?: number }) => {
+    const { maxRetries = 10, minBlocks = 2 } = opts ?? {};
+    const initialCreditcoinBlockNumber = await getCreditcoinBlockNumber(api);
+
+    let retriesCount = 0;
+    let creditcoinBlockNumber = await getCreditcoinBlockNumber(api);
+
+    // wait a min amount of blocks since the initial call to give time to any pending
+    // transactions, e.g. test setup to make it into a block
+    while (retriesCount < maxRetries && creditcoinBlockNumber <= initialCreditcoinBlockNumber + minBlocks) {
+        await sleep(5000);
+        creditcoinBlockNumber = await getCreditcoinBlockNumber(api);
+        retriesCount++;
+    }
 };
