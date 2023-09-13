@@ -53,7 +53,7 @@ async function collectCoinsAction(options: OptionValues) {
     signer,
     options.burnTxHash,
   );
-  await event.waitForVerification(OCWDeadline());
+  await event.waitForVerification(BLOCK_TIME * OCW_BLOCK_DEADLINE);
 }
 
 function validateOptsOrExit(options: OptionValues) {
