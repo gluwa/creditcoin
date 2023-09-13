@@ -1,7 +1,9 @@
 # Creditcoin zombienet
 
 This is a template for using the [zombienet](https://github.com/paritytech/zombienet) tool for spawning and testing
-ephemeral networks.
+ephemeral networks. Zombienet will launch a local blockchain instance with multiple nodes and parameters
+specified in a text file. You can then use this local blockchain to run experiments
+against it or use the Zombienet DSL language to assert against the spawned network!
 
 ## Prerequisites
 
@@ -13,6 +15,31 @@ ephemeral networks.
 
 Build `creditcoin-node` using `--features "fast-runtime zombienet"`!
 That affects block time and epoch duration!
+
+## Hardware requirements
+
+Launching multiple Creditcoin nodes on a single machine would put a strain on it.
+Mostly it needs lots of memory in order to fit all of the separate creditcoin-node
+processes. It also needs CPU because block finalization is computationally intensive.
+
+A small network, e.g. 5 validators should spawn comfortably within 16 GiB of RAM,
+see `network.yaml`.
+Experiments have shown that launching 200 validator nodes natively requires around
+64 GiB of RAM and leaves very little memory to spare. Realistic experiments have been
+executed on machines with 128 GiB of RAM. For example a `D32s_v3` VM in Azure will
+utilize most of its memory and load all of its 32 CPU cores to nearly 100% in a 200
+validator scenario.
+
+## Architecture
+
+Zombinet will launch nodes in accordance with the configuration passed to it.
+All of them will be listening on localhost and their port numbers will be assigned randomly.
+Informnation about spawned nodes is printed on the terminal.
+
+For more information check-out the
+[upstream documentation](https://paritytech.github.io/zombienet/). See
+[Chapter 5. Guide (examples)](https://paritytech.github.io/zombienet/guide.html) for
+practical examples.
 
 ### How to use
 
@@ -90,14 +117,36 @@ There is a base network specification ([docs](https://paritytech.github.io/zombi
 
 ### Using native provider on a VM
 
-In case you are using the native provider (on a VM) you will have to reverse proxy the
-WebSockets RPC because Polakdot JS Apps will refuse plain/text connections outside of
-`127.0.0.1`.
+This is an easier way of using Zombienet without having to setup a Kubernetes cluster.
+Just execute the command:
 
-- (Possibly) adjust DNS configuration for the domain name used to access your VM
+```bash
+zombienet spawn tests/0001-load-test-with-200-validators.yaml
+```
+
+and observe the terminal output for the names, URLs and log locations of the launched nodes.
+It may be useful to utilize the `--dir /path/to/directory` command line option if you want
+log filenames to be more deterministic.
+
+
+#### Reverse proxy internal ports to the outside world
+
+In case you are using the native provider (on a VM) you will have to reverse proxy the
+WebSockets RPC because Polakdot JS Apps will refuse plain/text connections over the Internet.
+
+Select an arbitrary node and search in its log file, e.g. `first.log` lines similar to
+
+```
+2023-09-13 16:31:40 Running JSON-RPC HTTP server: addr=0.0.0.0:32943, allowed origins=["*"]
+2023-09-13 16:31:40 Running JSON-RPC WS server: addr=0.0.0.0:37271, allowed origins=["*"]
+```
 - Edit the port mappings [and domain name] in `Caddyfile.rpc-proxy`
 - Execute `caddy`
 
   ```bash
   sudo caddy run --config Caddyfile.rpc-proxy
   ```
+- (Possibly) adjust DNS configuration for the domain name used to access your VM. We've got
+  `zombienet.creditcoin.network` operated by DevOps and pointing to one of our test VMs
+- Go to https://polkadot.js.org/apps/?rpc=wss://zombienet.creditcoin.network:8443#/explorer
+  and explore the newly spawned chain!
