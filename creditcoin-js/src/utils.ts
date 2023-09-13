@@ -54,7 +54,6 @@ export const utils = (api: ApiPromise) => {
     };
 };
 
-
 // block time in seconds
 export const BLOCK_TIME = 15;
 
