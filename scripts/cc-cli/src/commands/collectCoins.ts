@@ -9,11 +9,11 @@ import chalk from "chalk";
 export function makeCollectCoinsCmd() {
   const externalAddressOpt = new Option(
     "-e, --external-address <addr> The previously registered external address that called the burn tx",
-  ).env("EXTERNAL_ADDR");
+  );
 
   const burnTxHashOpt = new Option(
     "-b, --burn-tx-hash <hash> The hash of the burn transaction",
-  ).env("BURN_TX_HASH");
+  );
 
   return new Command("collect-coins")
     .description("Swap GCRE for CTC")
