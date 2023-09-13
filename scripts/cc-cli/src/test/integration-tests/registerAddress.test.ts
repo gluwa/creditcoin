@@ -50,7 +50,7 @@ describe("register-address", () => {
     await signSendAndWatch(fundTx, api, sudo);
 
     const result = execa.commandSync(
-      `npx creditcoin-cli register-address -u ${
+      `node dist/index.js register-address -u ${
         arg("CREDITCOIN_API_URL") as string
       }`,
       {
