@@ -46,11 +46,11 @@ describe("integration test: validator manual setup", () => {
       } else {
         // Creating two accounts using `new` should return two valid mnemonic seeds
         stashSecret = execa
-          .commandSync("creditcoin-cli new")
+          .commandSync("node dist/index.js new")
           .stdout.split("Seed phrase: ")[1];
 
         controllerSecret = execa
-          .commandSync("creditcoin-cli new")
+          .commandSync("node dist/index.js new")
           .stdout.split("Seed phrase: ")[1];
 
         expect(mnemonicValidate(stashSecret)).toBe(true);
@@ -63,7 +63,7 @@ describe("integration test: validator manual setup", () => {
       // Getting the addresses using `show-address` should return two valid addresses
       const stashAddress = parseAddressInternal(
         execa
-          .commandSync(`creditcoin-cli show-address ${ecdsaFlag}`, {
+          .commandSync(`node dist/index.js show-address ${ecdsaFlag}`, {
             env: {
               CC_SECRET: stashSecret,
             },
@@ -73,7 +73,7 @@ describe("integration test: validator manual setup", () => {
 
       const controllerAddress = parseAddressInternal(
         execa
-          .commandSync(`creditcoin-cli show-address ${ecdsaFlag}`, {
+          .commandSync(`node dist/index.js show-address ${ecdsaFlag}`, {
             env: {
               CC_SECRET: controllerSecret,
             },
@@ -94,7 +94,7 @@ describe("integration test: validator manual setup", () => {
       const sendAmount = "1000";
       execa.commandSync(
         // CLI commands are sent through Bob's node
-        `creditcoin-cli send --amount ${sendAmount} --to ${controllerAddress} --url ${BOB_NODE_URL} ${ecdsaFlag}`,
+        `node dist/index.js send --amount ${sendAmount} --to ${controllerAddress} --url ${BOB_NODE_URL} ${ecdsaFlag}`,
         {
           env: {
             CC_SECRET: stashSecret,
@@ -113,7 +113,7 @@ describe("integration test: validator manual setup", () => {
       // - make controller's stash be the stash address
       const bondAmount = "1000";
       execa.commandSync(
-        `creditcoin-cli bond --controller ${controllerAddress} --amount ${bondAmount} --url ${BOB_NODE_URL} ${ecdsaFlag}`,
+        `node dist/index.js bond --controller ${controllerAddress} --amount ${bondAmount} --url ${BOB_NODE_URL} ${ecdsaFlag}`,
         {
           env: {
             CC_STASH_SECRET: stashSecret,
@@ -140,7 +140,7 @@ describe("integration test: validator manual setup", () => {
       // Rotating session keys for the node should return a valid hex string
       const newKeys = parseHexStringInternal(
         execa
-          .commandSync(`creditcoin-cli rotate-keys --url ${BOB_NODE_URL}`)
+          .commandSync(`node dist/index.js rotate-keys --url ${BOB_NODE_URL}`)
           .stdout.split("New keys: ")[1],
       );
 
@@ -148,7 +148,7 @@ describe("integration test: validator manual setup", () => {
       // - make the validator (stash) next session keys equal to the new keys
       // - make the new keys appear as the node's session keys
       execa.commandSync(
-        `creditcoin-cli set-keys --keys ${newKeys} --url ${BOB_NODE_URL} ${ecdsaFlag}`,
+        `node dist/index.js set-keys --keys ${newKeys} --url ${BOB_NODE_URL} ${ecdsaFlag}`,
         {
           env: {
             CC_CONTROLLER_SECRET: controllerSecret,
@@ -167,7 +167,7 @@ describe("integration test: validator manual setup", () => {
 
       // Signaling intention to validate should make the validator (stash) appear as waiting
       execa.commandSync(
-        `creditcoin-cli validate --commission 1 --url ${BOB_NODE_URL} ${ecdsaFlag}`,
+        `node dist/index.js validate --commission 1 --url ${BOB_NODE_URL} ${ecdsaFlag}`,
         {
           env: {
             CC_CONTROLLER_SECRET: controllerSecret,
@@ -216,7 +216,7 @@ describe("integration test: validator manual setup", () => {
       console.log(balanceBeforeRewards.bonded.toString());
 
       execa.commandSync(
-        `creditcoin-cli distribute-rewards --url ${BOB_NODE_URL} --validator-id ${stashAddress} --era ${startingEra} ${ecdsaFlag}`,
+        `node dist/index.js distribute-rewards --url ${BOB_NODE_URL} --validator-id ${stashAddress} --era ${startingEra} ${ecdsaFlag}`,
         {
           env: {
             CC_SECRET: stashSecret,
@@ -235,7 +235,7 @@ describe("integration test: validator manual setup", () => {
 
       // After executing the chill commmand, the validator should no longer be active nor waiting
       execa.commandSync(
-        `creditcoin-cli chill --url ${BOB_NODE_URL} ${ecdsaFlag}`,
+        `node dist/index.js chill --url ${BOB_NODE_URL} ${ecdsaFlag}`,
         {
           env: {
             CC_CONTROLLER_SECRET: controllerSecret,
@@ -254,7 +254,7 @@ describe("integration test: validator manual setup", () => {
       // After unbonding, the validator should no longer be bonded
       execa.commandSync(
         // Unbonding defaults to max if it exceeds the bonded amount
-        `creditcoin-cli unbond --url ${BOB_NODE_URL} -a 100000 ${ecdsaFlag}`,
+        `node dist/index.js unbond --url ${BOB_NODE_URL} -a 100000 ${ecdsaFlag}`,
         {
           env: {
             CC_CONTROLLER_SECRET: controllerSecret,
@@ -281,7 +281,7 @@ describe("integration test: validator manual setup", () => {
       await waitEras(unbondingPeriod + 1, aliceApi, true);
 
       execa.commandSync(
-        `creditcoin-cli withdraw-unbonded --url ${BOB_NODE_URL} ${ecdsaFlag}`,
+        `node dist/index.js withdraw-unbonded --url ${BOB_NODE_URL} ${ecdsaFlag}`,
         {
           env: {
             CC_CONTROLLER_SECRET: controllerSecret,

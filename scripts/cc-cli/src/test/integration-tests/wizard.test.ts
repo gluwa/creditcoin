@@ -31,7 +31,7 @@ describe("integration test: validator wizard setup", () => {
 
       // Run wizard setup with 1k ctc ang to pair with node Bob
       execa.commandSync(
-        `creditcoin-cli wizard --amount 1000 --url ${BOB_NODE_URL} ${
+        `node dist/index.js wizard --amount 1000 --url ${BOB_NODE_URL} ${
           ecdsa ? "--ecdsa" : ""
         }`,
         {
