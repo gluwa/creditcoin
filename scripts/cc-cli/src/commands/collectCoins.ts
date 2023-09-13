@@ -2,17 +2,20 @@ import { Command, Option, OptionValues } from "commander";
 import { fatalErr } from "./registerAddress";
 import { newApi } from "../api";
 import { initCallerKeyring } from "../utils/account";
+import { requiredInput } from "../utils/parsing";
 import { isAddress } from "web3-validator";
 import { utils } from "ethers";
 import chalk from "chalk";
 
 export function makeCollectCoinsCmd() {
   const externalAddressOpt = new Option(
-    "-e, --external-address <addr> The previously registered external address that called the burn tx",
+    "-e, --external-address <addr>",
+    "The previously registered external address that called the burn tx",
   );
 
   const burnTxHashOpt = new Option(
-    "-b, --burn-tx-hash <hash> The hash of the burn transaction",
+    "-b, --burn-tx-hash <hash>",
+    "The hash of the burn transaction",
   );
 
   return new Command("collect-coins")
@@ -54,26 +57,21 @@ async function collectCoinsAction(options: OptionValues) {
 }
 
 function validateOptsOrExit(options: OptionValues) {
-  if (options.externalAddress === undefined) {
-    fatalErr(`ERROR: No external address specified`);
+  const externalAddress = requiredInput(
+    options.externalAddress.trim(),
+    "ERROR: externalAddress is required",
+  );
+  const burnTxHash = requiredInput(
+    options.burnTxHash.trim(),
+    "ERROR: Burn transaction hash is required",
+  );
+
+  if (!isTxHashValid(burnTxHash)) {
+    fatalErr(`ERROR: The transaction hash is invalid: ${burnTxHash}`);
   }
 
-  if (options.burnTxHash === undefined) {
-    fatalErr("ERROR: No burn transaction hash specified");
-  }
-
-  if (!isTxHashValid(options.burnTxHash)) {
-    fatalErr(
-      `ERROR: The transaction hash is invalid: ${options.burnTxHash as string}`,
-    );
-  }
-
-  if (!isExternalAddressValid(options.externalAddress)) {
-    fatalErr(
-      `ERROR: The external address is invalid: ${
-        options.externalAddress as string
-      }`,
-    );
+  if (!isExternalAddressValid(externalAddress)) {
+    fatalErr(`ERROR: The external address is invalid: ${externalAddress}`);
   }
 }
 
