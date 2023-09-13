@@ -116,13 +116,13 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
     const starting = await getBalance(caller.address, api);
 
     const collectResult = execa.commandSync(
-      `node dist/index.js collect-coins -u ${
+      `node dist/index.js collect-coins --url ${
         arg("CREDITCOIN_API_URL") as string
-      }`,
+      }
+            -e ${deployerWallet.address}
+            -b ${arg("CREDITCOIN_CTC_BURN_TX_HASH") as string}`,
       {
         env: {
-          EXTERNAL_ADDR: deployerWallet.address,
-          BURN_TX_HASH: arg("CREDITCOIN_CTC_BURN_TX_HASH"),
           CC_SECRET: caller.secret,
         },
       },

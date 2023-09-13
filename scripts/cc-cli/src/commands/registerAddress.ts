@@ -12,9 +12,7 @@ const blockchains = ["Ethereum", "Rinkeby", "Luniverse", "Bitcoin", "Other"];
 export function makeRegisterAddressCmd() {
   const blockchainOpt = new Option(
     "-b, --blockchain <chain> The blockchain that this external address belongs to",
-  )
-    .choices(blockchains)
-    .env("BLOCKCHAIN");
+  ).choices(blockchains);
 
   const privateKeyOpt = new Option(
     "-p, --private-key <key> The private key for the address that you want to register.",
