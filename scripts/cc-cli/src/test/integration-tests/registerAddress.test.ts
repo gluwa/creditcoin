@@ -52,11 +52,9 @@ describe("register-address", () => {
     const result = execa.commandSync(
       `node dist/index.js register-address -u ${
         arg("CREDITCOIN_API_URL") as string
-      }`,
+      } -b Ethereum`,
       {
         env: {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
-          BLOCKCHAIN: "Ethereum",
           // eslint-disable-next-line @typescript-eslint/naming-convention
           PRIVATE_KEY: ethWallet.privateKey,
           CC_SECRET: caller.secret,
