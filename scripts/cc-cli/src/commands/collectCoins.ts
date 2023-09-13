@@ -6,7 +6,7 @@ import { requiredInput } from "../utils/parsing";
 import { isAddress } from "web3-validator";
 import { utils } from "ethers";
 import chalk from "chalk";
-import { BLOCK_TIME, OCWDeadline, OCW_BLOCK_DEADLINE } from "creditcoin-js/lib/utils";
+import { BLOCK_TIME, OCW_BLOCK_DEADLINE } from "creditcoin-js/lib/utils";
 
 export function makeCollectCoinsCmd() {
   const externalAddressOpt = new Option(
@@ -34,7 +34,8 @@ function collectCoinsActionSync(options: OptionValues) {
     })
     .catch((reason) => {
       fatalErr(
-        `ERROR: The call to request_collect_coins was unsuccessful: ${reason as string
+        `ERROR: The call to request_collect_coins was unsuccessful: ${
+          reason as string
         }`,
       );
     });

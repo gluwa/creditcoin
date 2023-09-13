@@ -48,12 +48,12 @@ describeIf(arg("CREDITCOIN_EXECUTE_SETUP_AUTHORITY"), "collect-coins", () => {
       process.env.CREDITCOIN_CTC_BURN_TX_HASH,
     );
 
-    await retry(5, async (resolve: any, reject: any) => {
-      await setAuthorities().then(resolve).catch(reject);
-    }).catch(() => {
-      console.log("Could not setup testing authorities");
+    try {
+      await retry(5, setAuthorities);
+    } catch (reason: any) {
+      console.log(`Could not setup testing authorities: ${reason as string}`);
       process.exit(1);
-    });
+    }
 
     await cryptoWaitReady();
 
