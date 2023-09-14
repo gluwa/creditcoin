@@ -38,12 +38,12 @@ A bunch.
 
 These pallets are all part of substrate and aren't maintained by the creditcoin developers:
 
-- [Balances](https://paritytech.github.io/substrate/master/pallet_balances/index.html)
-- [FRAME System](https://paritytech.github.io/substrate/master/frame_system/index.html)
-- [Scheduler](https://paritytech.github.io/substrate/master/pallet_scheduler/index.html)
-- [Sudo](https://paritytech.github.io/substrate/master/pallet_sudo/index.html)
-- [Timestamp](https://paritytech.github.io/substrate/master/pallet_timestamp/index.html)
-- [Transaction Payment](https://paritytech.github.io/substrate/master/pallet_transaction_payment/index.html)
+- [Balances](https://paritytech.github.io/polkadot-sdk/master/pallet_balances/index.html)
+- [FRAME System](https://paritytech.github.io/polkadot-sdk/master/frame_system/index.html)
+- [Scheduler](https://paritytech.github.io/polkadot-sdk/master/pallet_scheduler/index.html)
+- [Sudo](https://paritytech.github.io/polkadot-sdk/master/pallet_sudo/index.html)
+- [Timestamp](https://paritytech.github.io/polkadot-sdk/master/pallet_timestamp/index.html)
+- [Transaction Payment](https://paritytech.github.io/polkadot-sdk/master/pallet_transaction_payment/index.html)
 
 ### Internal Pallets
 
