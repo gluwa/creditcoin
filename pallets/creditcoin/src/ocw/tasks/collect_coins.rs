@@ -122,8 +122,12 @@ impl<T: CreditcoinConfig> Pallet<T> {
 		u_cc: &UnverifiedCollectedCoins,
 	) -> VerificationResult<T::Balance> {
 		log::debug!("verifying OCW Collect Coins");
-		let UnverifiedCollectedCoins { to, tx_id, contract: DeployedContract { address, chain } } =
-			u_cc;
+		let UnverifiedCollectedCoins {
+			to,
+			tx_id,
+			contract: DeployedContract { address, chain },
+			contract_type: _,
+		} = u_cc;
 		let rpc_url = &chain.rpc_url()?;
 		let tx = ocw::eth_get_transaction(tx_id, rpc_url)?;
 		let tx_receipt = rpc::eth_get_transaction_receipt(tx_id, rpc_url)?;
@@ -149,6 +153,7 @@ pub(crate) mod tests {
 
 	use super::*;
 	use crate::mock::{PendingRequestExt, RuntimeCall};
+	use crate::types::ContractType;
 	use std::collections::HashMap;
 
 	// txn.from has been overriden by 'generate_address_with_proof("collector")'
@@ -445,6 +450,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id =
 				crate::CollectedCoinsId::new::<crate::mock::Test>(&CHAIN, &collected_coins.tx_id);
@@ -546,6 +552,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
@@ -589,6 +596,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -631,6 +639,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &pcc.to[..]),
 				amount: u128::MAX,
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 
 			assert_noop!(
@@ -680,6 +689,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -807,6 +817,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -853,6 +864,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -887,6 +899,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -954,6 +967,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: RPC_RESPONSE_AMOUNT.as_u128(),
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -1059,6 +1073,7 @@ pub(crate) mod tests {
 				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
 				amount: 1u128,
 				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
 			};
 			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
 
@@ -1094,6 +1109,7 @@ pub(crate) mod tests {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
 				contract: DeployedContract::default(),
+				contract_type: ContractType::GCRE,
 			};
 			assert_matches!(
 				Creditcoin::<Test>::verify_collect_coins_ocw(&cc),
@@ -1118,6 +1134,7 @@ pub(crate) mod tests {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
 				contract: DeployedContract::default(),
+				contract_type: ContractType::GCRE,
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);
@@ -1156,6 +1173,7 @@ pub(crate) mod tests {
 				to: addr,
 				tx_id: TX_HASH.hex_to_address(),
 				contract: DeployedContract::default(),
+				contract_type: ContractType::GCRE,
 			};
 
 			let id = TaskV2::<Test>::to_id(&cc);

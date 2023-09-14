@@ -1,14 +1,82 @@
 use super::{vec, Vec};
 use super::{AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf, PhantomData};
+use crate::ocw::errors::SchedulerError;
+use crate::ocw::tasks::collect_coins::DeployedContract;
+use crate::ocw::tasks::OffchainVerification;
+use crate::ocw::{VerificationFailureCause, VerificationResult};
 use crate::pallet::WeightInfo;
-use crate::types::{Task, TaskId};
-use crate::Config;
-use crate::StorageVersion;
+use crate::{CollectedCoinsId, StorageVersion, TaskId, UnverifiedTransfer};
+use crate::{Config, ExternalAddress, ExternalTxId};
 use frame_support::weights::Weight;
+use frame_support::RuntimeDebug;
 use frame_support::{storage_alias, Identity};
-use pallet_offchain_task_scheduler::tasks::TaskScheduler;
+use pallet_offchain_task_scheduler::tasks::error::TaskError;
 use pallet_offchain_task_scheduler::tasks::TaskV2;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 use sp_runtime::traits::UniqueSaturatedInto;
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct OldUnverifiedCollectedCoins {
+	pub to: ExternalAddress,
+	pub tx_id: ExternalTxId,
+	pub contract: DeployedContract,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum Task<AccountId, BlockNum, Hash, Moment> {
+	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
+	CollectCoins(OldUnverifiedCollectedCoins),
+}
+
+impl<T: Config> TaskV2<T> for OldUnverifiedCollectedCoins
+where
+	OldUnverifiedCollectedCoins: OffchainVerification<T>,
+	<OldUnverifiedCollectedCoins as OffchainVerification<T>>::Output: Into<T::Balance>,
+{
+	type Call = crate::pallet::Call<T>;
+	type EvaluationError = VerificationFailureCause;
+	type SchedulerError = SchedulerError;
+	fn to_id(&self) -> T::Hash {
+		CollectedCoinsId::inner_hash::<T::Hashing>(&self.contract.chain, self.tx_id.as_slice())
+	}
+
+	fn persistence_call(
+		&self,
+		_deadline: T::BlockNumber,
+		_id: &T::Hash,
+	) -> Result<Self::Call, TaskError<Self::EvaluationError, Self::SchedulerError>> {
+		unreachable!("")
+	}
+
+	fn is_persisted(_id: &T::Hash) -> bool {
+		unreachable!("")
+	}
+}
+
+impl<AccountId, BlockNum, Hash, Moment> From<OldUnverifiedCollectedCoins>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(coins: OldUnverifiedCollectedCoins) -> Self {
+		Task::CollectCoins(coins)
+	}
+}
+
+impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
+	for Task<AccountId, BlockNum, Hash, Moment>
+{
+	fn from(transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+		Task::VerifyTransfer(transfer)
+	}
+}
+
+impl<T: Config> OffchainVerification<T> for OldUnverifiedCollectedCoins {
+	type Output = T::Balance;
+
+	fn verify(&self) -> VerificationResult<Self::Output> {
+		unreachable!("")
+	}
+}
 
 #[storage_alias]
 pub type PendingTasks<T: Config> = StorageDoubleMap<
@@ -19,6 +87,21 @@ pub type PendingTasks<T: Config> = StorageDoubleMap<
 	TaskId<HashOf<T>>,
 	Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>,
 >;
+
+mod new {
+
+	use super::*;
+
+	#[storage_alias]
+	pub type PendingTasks<T: Config> = StorageDoubleMap<
+		TaskScheduler, // the prefix for the storage item, which is generally the name of the pallet that defines the storage. We use an identifier instead of a string here because that's what the macro expects.
+		Identity,
+		BlockNumberOf<T>,
+		Identity,
+		TaskId<HashOf<T>>,
+		Task<AccountIdOf<T>, BlockNumberOf<T>, HashOf<T>, MomentOf<T>>, // the `Task` we copied into this migration
+	>;
+}
 
 pub(crate) struct Migration<Runtime>(PhantomData<Runtime>);
 
@@ -37,12 +120,15 @@ impl<T: Config> Migrate for Migration<T> {
 		let mut n = 0u32;
 		for (i, (k1, _, v)) in PendingTasks::<T>::drain().enumerate() {
 			n = i.unique_saturated_into();
-			let id: T::Hash = match &v {
-				Task::CollectCoins(pending) => TaskV2::<T>::to_id(pending),
-				Task::VerifyTransfer(pending) => TaskV2::<T>::to_id(pending),
+			let id: TaskId<T::Hash> = match &v {
+				Task::CollectCoins(pending) => TaskId::CollectCoins(
+					crate::types::CollectedCoinsId::from(TaskV2::<T>::to_id(pending)),
+				),
+				Task::VerifyTransfer(pending) => TaskId::VerifyTransfer(
+					crate::types::TransferId::from(TaskV2::<T>::to_id(pending)),
+				),
 			};
-
-			T::TaskScheduler::insert(&k1, &id, v);
+			new::PendingTasks::<T>::insert(k1, id, v);
 		}
 		crate::weights::WeightInfo::<T>::migration_v6(n)
 	}
@@ -63,32 +149,25 @@ pub mod tests {
 	use crate::mock::ExtBuilder;
 	use crate::mock::Test;
 	use crate::test::create_unverified_transfer;
-	use crate::types;
-	use crate::CollectedCoinsId;
-	use crate::TransferId;
 
 	#[test]
 	fn migrate_collect_coins() {
 		ExtBuilder::default().build_and_execute(|| {
-			let pending = types::UnverifiedCollectedCoins {
+			let pending = OldUnverifiedCollectedCoins {
 				to: [0u8; 256].into_bounded(),
 				tx_id: [0u8; 256].into_bounded(),
 				contract: Default::default(),
 			};
-			let id = TaskV2::<Test>::to_id(&pending);
+			let id = TaskId::CollectCoins(crate::types::CollectedCoinsId::from(
+				TaskV2::<Test>::to_id(&pending),
+			));
 
-			PendingTasks::<Test>::insert(
-				1u64,
-				crate::TaskId::from(CollectedCoinsId::from(id)),
-				Task::from(pending.clone()),
-			);
+			PendingTasks::<Test>::insert(1u64, id.clone(), Task::from(pending.clone()));
 
 			super::Migration::<Test>::new().migrate();
 
 			let migrated_pending = {
-				if let Task::CollectCoins(pending) =
-					pallet_offchain_task_scheduler::pallet::PendingTasks::<Test>::get(1, id)
-						.unwrap()
+				if let Task::CollectCoins(pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
 				{
 					pending
 				} else {
@@ -104,20 +183,17 @@ pub mod tests {
 		ExtBuilder::default().build_and_execute(|| {
 			let pending = create_unverified_transfer();
 
-			let id = TaskV2::<Test>::to_id(&pending);
+			let id = TaskId::VerifyTransfer(crate::types::TransferId::from(TaskV2::<Test>::to_id(
+				&pending,
+			)));
 
-			PendingTasks::<Test>::insert(
-				1u64,
-				crate::TaskId::from(TransferId::from(id)),
-				Task::from(pending.clone()),
-			);
+			PendingTasks::<Test>::insert(1u64, id.clone(), Task::from(pending.clone()));
 
 			super::Migration::<Test>::new().migrate();
 
 			let migrated_pending = {
 				if let Task::VerifyTransfer(pending) =
-					pallet_offchain_task_scheduler::pallet::PendingTasks::<Test>::get(1, id)
-						.unwrap()
+					new::PendingTasks::<Test>::get(1, id).unwrap()
 				{
 					pending
 				} else {
