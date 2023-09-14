@@ -7,7 +7,7 @@ use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::Pallet as Creditcoin;
 use crate::{
-	types::{Blockchain, OwnershipProof},
+	types::{Blockchain, ContractType, OwnershipProof},
 	Duration,
 };
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
@@ -44,6 +44,7 @@ benchmarks! {
 			to: [0u8; 256].into_bounded(),
 			tx_id: [0u8; 256].into_bounded(),
 			contract: Default::default(),
+			contract_type: ContractType::GCRE,
 		};
 		for t in 0..t {
 			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
@@ -322,7 +323,7 @@ benchmarks! {
 		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
 		let amount = T::Balance::unique_saturated_from(Balances::<T>::minimum_balance());
 		let collected_coins =
-			crate::types::CollectedCoinsStruct::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id };
+			crate::types::CollectedCoinsStruct::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id, contract_type: ContractType::GCRE};
 		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
 		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
 	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
@@ -359,6 +360,7 @@ benchmarks! {
 		let root = RawOrigin::Root;
 		let addr: T::AccountId = lender_account::<T>(false);
 	}: _(root, addr)
+
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
