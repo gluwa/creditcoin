@@ -128,7 +128,7 @@ impl<T: Config> Migrate for Migration<T> {
 					crate::types::TransferId::from(TaskV2::<T>::to_id(pending)),
 				),
 			};
-			new::PendingTasks::<T>::insert(&k1, id, v);
+			new::PendingTasks::<T>::insert(k1, id, v);
 		}
 		crate::weights::WeightInfo::<T>::migration_v6(n)
 	}

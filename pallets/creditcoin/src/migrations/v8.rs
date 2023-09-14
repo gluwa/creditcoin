@@ -67,7 +67,6 @@ impl<T: Config> Migrate for Migration<T> {
 	}
 	fn migrate(&self) -> Weight {
 		let mut weight: Weight = Weight::zero();
-
 		let weight_each = T::DbWeight::get().reads_writes(1, 1);
 
 		crate::CollectedCoins::<T>::translate::<OldCollectedCoinsStruct<T::Hash, T::Balance>, _>(
@@ -98,7 +97,7 @@ impl<T: Config> Migrate for Migration<T> {
 							deadline: pending.deadline,
 						};
 
-						return Some(crate::types::Task::VerifyTransfer(new));
+						Some(crate::types::Task::VerifyTransfer(new))
 					},
 					OldTask::CollectCoins(pending) => {
 						let new = UnverifiedCollectedCoins {
@@ -108,12 +107,13 @@ impl<T: Config> Migrate for Migration<T> {
 							contract_type: crate::types::ContractType::GCRE,
 						};
 
-						return Some(crate::types::Task::CollectCoins(new));
+						Some(crate::types::Task::CollectCoins(new))
 					},
 				}
 			},
 		);
-		return weight;
+
+		weight
 	}
 }
 
@@ -187,13 +187,9 @@ mod tests {
 
 			super::Migration::<Test>::new().migrate();
 
-			let migrated_pending = {
-				if let Task::CollectCoins(pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
-				{
-					pending
-				} else {
-					unreachable!()
-				}
+			let Task::CollectCoins(migrated_pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
+			else {
+				unreachable!()
 			};
 
 			assert_eq!(pending.to, migrated_pending.to);
@@ -216,14 +212,9 @@ mod tests {
 
 			super::Migration::<Test>::new().migrate();
 
-			let migrated_pending = {
-				if let Task::VerifyTransfer(pending) =
-					new::PendingTasks::<Test>::get(1, id).unwrap()
-				{
-					pending
-				} else {
-					unreachable!()
-				}
+			let Task::VerifyTransfer(migrated_pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
+			else {
+				unreachable!()
 			};
 
 			assert_eq!(pending, migrated_pending);
