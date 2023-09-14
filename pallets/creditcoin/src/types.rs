@@ -10,6 +10,8 @@ pub use collect_coins::{
 pub use loan_terms::*;
 pub use transfer::*;
 
+pub use collect_coins::{BurnDetails, ContractType};
+
 use crate::ocw::tasks::collect_coins::DeployedContract;
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
@@ -668,6 +670,7 @@ pub(crate) mod test {
 			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
 			amount: 1000,
 			tx_id: TX_HASH.hex_to_address(),
+			contract_type: types::ContractType::GCRE,
 		}
 	}
 
@@ -676,6 +679,7 @@ pub(crate) mod test {
 			to: b"baba".to_vec().try_into().unwrap(),
 			tx_id: TX_HASH.hex_to_address(),
 			contract: Default::default(),
+			contract_type: types::ContractType::GCRE,
 		}
 	}
 
