@@ -19,7 +19,7 @@ export async function signSendAndWatch(
       resolve(result);
     };
     // Sign and send with callback
-    tx.signAndSend(signer, ({ status, dispatchError }) => {
+    tx.signAndSend(signer, { nonce: -1 }, ({ status, dispatchError }) => {
       // Called every time the status changes
       if (status.isFinalized) {
         const result = {

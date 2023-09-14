@@ -1,7 +1,7 @@
 {
     "name": "creditcoin-js",
     "version": "0.9.5",
-    "author": "Jeremy Frank <jeremy.frank@gluwa.com>",
+    "author": "Jeremy Frank <support@gluwa.com>",
     "license": "MIT",
     "main": "lib/index.js",
     "files": [
@@ -24,9 +24,9 @@
         "@polkadot/typegen": "9.14.2",
         "@typescript-eslint/eslint-plugin": "^5.59.2",
         "@typescript-eslint/parser": "^5.62.0",
-        "eslint": "^8.44.0",
+        "eslint": "^8.48.0",
         "eslint-config-prettier": "^9.0.0",
-        "prettier": "^2.8.0",
+        "prettier": "^3.0.3",
         "ts-node": "^10.9.1",
         "tsconfig-paths": "^4.2.0",
         "typescript": "^5.1.3"

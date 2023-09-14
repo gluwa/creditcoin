@@ -534,16 +534,6 @@ declare module '@polkadot/api-base/types/events' {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
-        posSwitch: {
-            /**
-             * Switched to PoS. []
-             **/
-            Switched: AugmentedEvent<ApiType, []>;
-            /**
-             * Generic event
-             **/
-            [key: string]: AugmentedEvent<ApiType>;
-        };
         proxy: {
             /**
              * An announcement was placed to make a call in the future.

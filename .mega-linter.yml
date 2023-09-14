@@ -8,10 +8,9 @@ DISABLE_LINTERS:
   - RUST_CLIPPY
   - SPELL_CSPELL
   - SPELL_MISSPELL
-  # https://gluwa.atlassian.net/browse/CSUB-459
-  - MARKDOWN_MARKDOWN_LINK_CHECK
   # https://gluwa.atlassian.net/browse/CSUB-460
   - REPOSITORY_TRIVY
   # https://gluwa.atlassian.net/browse/CSUB-461
   - REPOSITORY_SECRETLINT
+  - REPOSITORY_GRYPE
 JSON_JSONLINT_ARGUMENTS: --comments

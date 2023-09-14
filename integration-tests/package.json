@@ -15,7 +15,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "@polkadot/keyring": "12.3.2",
+        "@polkadot/keyring": "12.4.2",
         "@types/ws": "^8.5.3",
         "axios": "^1.0.0",
         "creditcoin-js": "file:../creditcoin-js/creditcoin-js-v0.9.5.tgz",
@@ -23,7 +23,7 @@
     },
     "devDependencies": {
         "@types/jest": "^29.0.1",
-        "@typescript-eslint/eslint-plugin": "^5.27.0",
+        "@typescript-eslint/eslint-plugin": "^6.5.0",
         "@typescript-eslint/parser": "^6.3.0",
         "eslint": "^8.16.0",
         "eslint-config-prettier": "^9.0.0",

@@ -162,13 +162,7 @@ export default {
         _enum: ['LimitReached', 'NoLayer'],
     },
     /**
-     * Lookup29: pallet_pos_switch::pallet::Event<T>
-     **/
-    PalletPosSwitchEvent: {
-        _enum: ['Switched'],
-    },
-    /**
-     * Lookup30: pallet_balances::pallet::Event<T, I>
+     * Lookup29: pallet_balances::pallet::Event<T, I>
      **/
     PalletBalancesEvent: {
         _enum: {
@@ -219,13 +213,13 @@ export default {
         },
     },
     /**
-     * Lookup31: frame_support::traits::tokens::misc::BalanceStatus
+     * Lookup30: frame_support::traits::tokens::misc::BalanceStatus
      **/
     FrameSupportTokensMiscBalanceStatus: {
         _enum: ['Free', 'Reserved'],
     },
     /**
-     * Lookup32: pallet_staking::pallet::pallet::Event<T>
+     * Lookup31: pallet_staking::pallet::pallet::Event<T>
      **/
     PalletStakingPalletEvent: {
         _enum: {
@@ -285,20 +279,20 @@ export default {
         },
     },
     /**
-     * Lookup34: pallet_staking::ValidatorPrefs
+     * Lookup33: pallet_staking::ValidatorPrefs
      **/
     PalletStakingValidatorPrefs: {
         commission: 'Compact<Perbill>',
         blocked: 'bool',
     },
     /**
-     * Lookup37: pallet_staking::Forcing
+     * Lookup36: pallet_staking::Forcing
      **/
     PalletStakingForcing: {
         _enum: ['NotForcing', 'ForceNew', 'ForceNone', 'ForceAlways'],
     },
     /**
-     * Lookup38: pallet_offences::pallet::Event
+     * Lookup37: pallet_offences::pallet::Event
      **/
     PalletOffencesEvent: {
         _enum: {
@@ -309,7 +303,7 @@ export default {
         },
     },
     /**
-     * Lookup40: pallet_session::pallet::Event
+     * Lookup39: pallet_session::pallet::Event
      **/
     PalletSessionEvent: {
         _enum: {
@@ -319,7 +313,7 @@ export default {
         },
     },
     /**
-     * Lookup41: pallet_grandpa::pallet::Event
+     * Lookup40: pallet_grandpa::pallet::Event
      **/
     PalletGrandpaEvent: {
         _enum: {
@@ -331,15 +325,15 @@ export default {
         },
     },
     /**
-     * Lookup44: sp_consensus_grandpa::app::Public
+     * Lookup43: sp_consensus_grandpa::app::Public
      **/
     SpConsensusGrandpaAppPublic: 'SpCoreEd25519Public',
     /**
-     * Lookup45: sp_core::ed25519::Public
+     * Lookup44: sp_core::ed25519::Public
      **/
     SpCoreEd25519Public: '[u8;32]',
     /**
-     * Lookup46: pallet_im_online::pallet::Event<T>
+     * Lookup45: pallet_im_online::pallet::Event<T>
      **/
     PalletImOnlineEvent: {
         _enum: {
@@ -353,15 +347,15 @@ export default {
         },
     },
     /**
-     * Lookup47: pallet_im_online::sr25519::app_sr25519::Public
+     * Lookup46: pallet_im_online::sr25519::app_sr25519::Public
      **/
     PalletImOnlineSr25519AppSr25519Public: 'SpCoreSr25519Public',
     /**
-     * Lookup48: sp_core::sr25519::Public
+     * Lookup47: sp_core::sr25519::Public
      **/
     SpCoreSr25519Public: '[u8;32]',
     /**
-     * Lookup51: pallet_staking::Exposure<sp_core::crypto::AccountId32, Balance>
+     * Lookup50: pallet_staking::Exposure<sp_core::crypto::AccountId32, Balance>
      **/
     PalletStakingExposure: {
         total: 'Compact<u128>',
@@ -369,14 +363,14 @@ export default {
         others: 'Vec<PalletStakingIndividualExposure>',
     },
     /**
-     * Lookup54: pallet_staking::IndividualExposure<sp_core::crypto::AccountId32, Balance>
+     * Lookup53: pallet_staking::IndividualExposure<sp_core::crypto::AccountId32, Balance>
      **/
     PalletStakingIndividualExposure: {
         who: 'AccountId32',
         value: 'Compact<u128>',
     },
     /**
-     * Lookup55: pallet_bags_list::pallet::Event<T, I>
+     * Lookup54: pallet_bags_list::pallet::Event<T, I>
      **/
     PalletBagsListEvent: {
         _enum: {
@@ -392,7 +386,7 @@ export default {
         },
     },
     /**
-     * Lookup56: pallet_transaction_payment::pallet::Event<T>
+     * Lookup55: pallet_transaction_payment::pallet::Event<T>
      **/
     PalletTransactionPaymentEvent: {
         _enum: {
@@ -404,7 +398,7 @@ export default {
         },
     },
     /**
-     * Lookup57: pallet_sudo::pallet::Event<T>
+     * Lookup56: pallet_sudo::pallet::Event<T>
      **/
     PalletSudoEvent: {
         _enum: {
@@ -420,7 +414,7 @@ export default {
         },
     },
     /**
-     * Lookup61: pallet_creditcoin::pallet::Event<T>
+     * Lookup60: pallet_creditcoin::pallet::Event<T>
      **/
     PalletCreditcoinEvent: {
         _enum: {
@@ -444,7 +438,7 @@ export default {
         },
     },
     /**
-     * Lookup63: pallet_creditcoin::types::Address<sp_core::crypto::AccountId32>
+     * Lookup62: pallet_creditcoin::types::Address<sp_core::crypto::AccountId32>
      **/
     PalletCreditcoinAddress: {
         blockchain: 'PalletCreditcoinBlockchain',
@@ -452,7 +446,7 @@ export default {
         owner: 'AccountId32',
     },
     /**
-     * Lookup64: pallet_creditcoin::types::Blockchain
+     * Lookup63: pallet_creditcoin::types::Blockchain
      **/
     PalletCreditcoinBlockchain: {
         _enum: {
@@ -464,7 +458,7 @@ export default {
         },
     },
     /**
-     * Lookup67: pallet_creditcoin::types::collect_coins::UnverifiedCollectedCoins
+     * Lookup66: pallet_creditcoin::types::collect_coins::UnverifiedCollectedCoins
      **/
     PalletCreditcoinCollectCoinsUnverifiedCollectedCoins: {
         to: 'Bytes',
@@ -473,7 +467,7 @@ export default {
         contractType: 'PalletCreditcoinCollectCoinsContractType',
     },
     /**
-     * Lookup68: pallet_creditcoin::ocw::tasks::collect_coins::DeployedContract
+     * Lookup67: pallet_creditcoin::ocw::tasks::collect_coins::DeployedContract
      **/
     PalletCreditcoinOcwTasksCollectCoinsDeployedContract: {
         address: 'H160',

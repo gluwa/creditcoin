@@ -75,10 +75,11 @@ import type {
   PalletCreditcoinLoanTermsInterestRate,
   PalletCreditcoinLoanTermsInterestType,
   PalletCreditcoinOcwErrorsVerificationFailureCause,
-  PalletCreditcoinOcwTasksCollectCoinsGCreContract,
+  PalletCreditcoinOcwTasksCollectCoinsDeployedContract,
   PalletCreditcoinOffer,
   PalletCreditcoinOfferId,
   PalletCreditcoinOrderId,
+  PalletCreditcoinOwnershipProof,
   PalletCreditcoinRepaymentOrderId,
   PalletCreditcoinTask,
   PalletCreditcoinTaskId,
@@ -138,6 +139,7 @@ import type {
   PalletPosSwitchCall,
   PalletPosSwitchError,
   PalletPosSwitchEvent,
+  PalletPosSwitchInitialValidator,
   PalletProxyAnnouncement,
   PalletProxyCall,
   PalletProxyError,
@@ -292,10 +294,11 @@ declare module "@polkadot/types/types/registry" {
     PalletCreditcoinLoanTermsInterestRate: PalletCreditcoinLoanTermsInterestRate;
     PalletCreditcoinLoanTermsInterestType: PalletCreditcoinLoanTermsInterestType;
     PalletCreditcoinOcwErrorsVerificationFailureCause: PalletCreditcoinOcwErrorsVerificationFailureCause;
-    PalletCreditcoinOcwTasksCollectCoinsGCreContract: PalletCreditcoinOcwTasksCollectCoinsGCreContract;
+    PalletCreditcoinOcwTasksCollectCoinsDeployedContract: PalletCreditcoinOcwTasksCollectCoinsDeployedContract;
     PalletCreditcoinOffer: PalletCreditcoinOffer;
     PalletCreditcoinOfferId: PalletCreditcoinOfferId;
     PalletCreditcoinOrderId: PalletCreditcoinOrderId;
+    PalletCreditcoinOwnershipProof: PalletCreditcoinOwnershipProof;
     PalletCreditcoinRepaymentOrderId: PalletCreditcoinRepaymentOrderId;
     PalletCreditcoinTask: PalletCreditcoinTask;
     PalletCreditcoinTaskId: PalletCreditcoinTaskId;
@@ -355,6 +358,7 @@ declare module "@polkadot/types/types/registry" {
     PalletPosSwitchCall: PalletPosSwitchCall;
     PalletPosSwitchError: PalletPosSwitchError;
     PalletPosSwitchEvent: PalletPosSwitchEvent;
+    PalletPosSwitchInitialValidator: PalletPosSwitchInitialValidator;
     PalletProxyAnnouncement: PalletProxyAnnouncement;
     PalletProxyCall: PalletProxyCall;
     PalletProxyError: PalletProxyError;

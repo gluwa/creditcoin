@@ -18,7 +18,7 @@ jobs:
 
       - name: Sanity check tag name
         run: |
-            git describe --tag | grep -E "mainnet|testnet"
+          git describe --tag | grep -E "mainnet|testnet"
 
   build-native-runtime:
     needs: sanity-check
@@ -140,7 +140,7 @@ jobs:
 
       - name: Build WASM runtime
         id: srtool_build
-        uses: chevdor/srtool-actions@v0.6.0
+        uses: chevdor/srtool-actions@v0.8.0
         with:
           chain: "creditcoin"
           runtime_dir: runtime

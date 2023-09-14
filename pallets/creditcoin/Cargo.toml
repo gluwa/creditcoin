@@ -34,7 +34,7 @@ log = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-timestamp = { workspace = true }
 parity-scale-codec = { workspace = true }
-paste = "1.0.11"
+paste = "1.0.14"
 scale-info = { workspace = true }
 serde = { workspace = true }
 serde_json = { version = "1.0.96", features = [
@@ -45,14 +45,14 @@ sp-core = { workspace = true }
 sp-io = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
-strum = { version = "0.24.1", features = ["derive"], default-features = false }
+strum = { version = "0.25.0", features = ["derive"], default-features = false }
 tracing = { workspace = true }
 pallet-offchain-task-scheduler = { workspace = true }
 
 
 [dev-dependencies]
 assert_matches = { workspace = true }
-bstr = { version = "1.5.0", default-features = false }
+bstr = { version = "1.6.2", default-features = false }
 parking_lot = "0.12.1"
 sp-core = { workspace = true }
 sp-keystore = { workspace = true }
