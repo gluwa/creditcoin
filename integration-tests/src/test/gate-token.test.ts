@@ -3,7 +3,7 @@ import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 
-import { deployGATEToken } from '../ctc-deploy';
+import { deployGATEToken } from 'creditcoin-js/lib/ctc-deploy';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { Wallet } from 'ethers';
 import { mnemonicGenerate } from '@polkadot/util-crypto';
@@ -61,9 +61,7 @@ describe('Test GATE Token', (): void => {
                 address: gateToken.address,
                 chain: testingData.blockchain,
             });
-            await api.tx.sudo
-                .sudo(api.tx.creditcoin.setBurnGateContract(contract))
-                .signAndSend(sudoSigner, { nonce: -1 });
+            await api.tx.sudo.sudo(api.tx.creditcoin.setGateContract(contract)).signAndSend(sudoSigner, { nonce: -1 });
 
             const mintTx = await gateToken.mint(deployer.address, 2500);
             await mintTx.wait(3);
@@ -90,7 +88,7 @@ describe('Test GATE Token', (): void => {
             );
 
             await api.tx.sudo
-                .sudo(api.tx.creditcoin.setBurnGateFaucetAddress(gateFaucet.address))
+                .sudo(api.tx.creditcoin.setGateFaucet(gateFaucet.address))
                 .signAndSend(sudoSigner, { nonce: -1 });
 
             const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);

@@ -2,7 +2,7 @@ import { ContractFactory, Signer, Wallet } from 'ethers';
 import { GluwaCreditVestingToken } from './examples/ctc/typechain';
 import CtcArtifact from './examples/ctc/contracts/GluwaCreditVestingToken.sol/GluwaCreditVestingToken.json';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import GATEArtifact from './ethereum/ctc/contracts/GluwaGateToken.sol/GluwaGateToken.json';
+import GATEArtifact from './examples/ctc/contracts/GluwaGateToken.sol/GluwaGateToken.json';
 
 export const CREDO_PER_CTC = 1_000_000_000_000_000_000;
 
@@ -48,23 +48,25 @@ export const deployCtcContract = async (
     await burnCtc(ctcToken, howMuchToBurn);
 };
 
-if (require.main === module) {
-    main(undefined).catch(console.error);
-}
-
-export const deployGATEToken = async (deployer: Signer, existingAddress: string | undefined) => {
+export const deployGATEToken = async (deployer: Signer, existingAddress: string | undefined): Promise<any> => {
     const factory = new ContractFactory(GATEArtifact.abi, GATEArtifact.bytecode, deployer);
     let gateToken: any;
 
     if (existingAddress !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         gateToken = factory.attach(existingAddress);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         console.log('Using existing contract', gateToken.address);
     } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         gateToken = await factory.deploy();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         console.log('Deployed GATE Token to', gateToken.address);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     process.env.CREDITCOIN_GATE_CONTRACT_ADDRESS = gateToken.address;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return gateToken;
 };

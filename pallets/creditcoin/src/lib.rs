@@ -240,10 +240,6 @@ pub mod pallet {
 	pub type GATEContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn gate_faucet_account)]
-	pub type GATEFaucetAccount<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn gate_faucet_address)]
 	pub type GATEFaucetAddress<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
@@ -1478,14 +1474,6 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			GATEContract::<T>::put(contract);
-			Ok(())
-		}
-
-		#[pallet::call_index(24)]
-		#[pallet::weight(<T as Config>::WeightInfo::set_gate_faucet())]
-		pub fn set_gate_faucet(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
-			ensure_root(origin)?;
-			GATEFaucetAccount::<T>::put(address);
 			Ok(())
 		}
 
