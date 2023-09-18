@@ -41,7 +41,7 @@ async function registerAddressAction(options: OptionValues) {
   // Reads CC_SECRET env variable if it exists or propmpts the user to enter a mnemonic
   const signer = await initCallerKeyring(options);
 
-  // Reads ETH_PRIVATE_KEY env variable if found or prompts the user to enter an ethereum mnemonic 
+  // Reads ETH_PRIVATE_KEY env variable if found or prompts the user to enter an ethereum mnemonic
   const wallet = await initCallerEthWallet(options);
 
   // create the cryptographic proof of ownership
