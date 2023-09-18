@@ -8,7 +8,7 @@ import { signSendAndWatch } from "../../utils/tx";
 import { ApiPromise, BN } from "creditcoin-js";
 import * as secp from "@noble/secp256k1";
 
-export const ALICE_NODE_URL = "ws://localhost:9944";
+export const ALICE_NODE_URL = (global as any).CREDITCOIN_API_URL;
 export const BOB_NODE_URL = "ws://localhost:9945";
 
 export function randomAccount() {
@@ -19,7 +19,7 @@ export function randomAccount() {
 }
 
 export async function fundAccounts(amount: BN) {
-  const { api } = await newApi("ws://localhost:9944");
+  const { api } = await newApi((global as any).CREDITCOIN_API_URL);
   const stash = randomAccount();
   const controller = randomAccount();
   const tx = await fundAddressesFromSudo(
@@ -34,7 +34,7 @@ export async function fundAccounts(amount: BN) {
 export async function fundFromSudo(
   address: string,
   amount: BN,
-  url = "ws://localhost:9944",
+  url = (global as any).CREDITCOIN_API_URL,
 ) {
   const { api } = await newApi(url);
   const call = api.tx.balances.setBalance(address, amount.toString(), "0");
@@ -45,7 +45,7 @@ export async function fundFromSudo(
 export async function fundAddressesFromSudo(
   addresses: string[],
   amount: BN,
-  url = "ws://localhost:9944",
+  url = (global as any).CREDITCOIN_API_URL,
 ) {
   const { api } = await newApi(url);
   const txs = addresses.map((address) => {
