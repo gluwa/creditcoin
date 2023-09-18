@@ -708,10 +708,17 @@ pub(crate) mod tests {
 
 			assert_noop!(
 				Creditcoin::<Test>::request_collect_coins(
-					RuntimeOrigin::signed(acc),
-					addr,
+					RuntimeOrigin::signed(acc.clone()),
+					addr.clone(),
 					TX_HASH.hex_to_address(),
 				),
+				crate::Error::<Test>::CollectCoinsAlreadyRegistered
+			);
+
+			// trying the same with v2
+			let contract = TokenContract::GCRE(addr, TX_HASH.hex_to_address());
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins_v2(RuntimeOrigin::signed(acc), contract,),
 				crate::Error::<Test>::CollectCoinsAlreadyRegistered
 			);
 		});
@@ -759,14 +766,24 @@ pub(crate) mod tests {
 
 			assert_noop!(
 				Creditcoin::<Test>::request_collect_coins(
-					RuntimeOrigin::signed(acc),
-					addr,
+					RuntimeOrigin::signed(acc.clone()),
+					addr.clone(),
 					TX_HASH.hex_to_address(),
 				),
 				crate::Error::<Test>::CollectCoinsAlreadyRegistered
 			);
 
 			assert!(Creditcoin::<Test>::collected_coins(collected_coins_id).is_none());
+
+			// trying the same with v2
+			let contract = TokenContract::GCRE(addr, TX_HASH.hex_to_address());
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins_v2(
+					RuntimeOrigin::signed(acc),
+					contract,
+				),
+				crate::Error::<Test>::CollectCoinsAlreadyRegistered
+			);
 		});
 	}
 
@@ -778,10 +795,17 @@ pub(crate) mod tests {
 
 			assert_noop!(
 				Creditcoin::<Test>::request_collect_coins(
-					RuntimeOrigin::signed(acc),
-					addr,
+					RuntimeOrigin::signed(acc.clone()),
+					addr.clone(),
 					TX_HASH.hex_to_address(),
 				),
+				crate::Error::<Test>::NonExistentAddress
+			);
+
+			// trying the same with v2
+			let contract = TokenContract::GCRE(addr, TX_HASH.hex_to_address());
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins_v2(RuntimeOrigin::signed(acc), contract,),
 				crate::Error::<Test>::NonExistentAddress
 			);
 		});
@@ -803,9 +827,19 @@ pub(crate) mod tests {
 
 			assert_noop!(
 				Creditcoin::<Test>::request_collect_coins(
-					RuntimeOrigin::signed(molly),
-					addr,
+					RuntimeOrigin::signed(molly.clone()),
+					addr.clone(),
 					TX_HASH.hex_to_address(),
+				),
+				crate::Error::<Test>::NotAddressOwner
+			);
+
+			// trying the same with v2
+			let contract = TokenContract::GCRE(addr, TX_HASH.hex_to_address());
+			assert_noop!(
+				Creditcoin::<Test>::request_collect_coins_v2(
+					RuntimeOrigin::signed(molly),
+					contract,
 				),
 				crate::Error::<Test>::NotAddressOwner
 			);
@@ -858,6 +892,54 @@ pub(crate) mod tests {
 				addr.clone(),
 				TX_HASH.hex_to_address()
 			));
+
+			let deadline = Test::unverified_transfer_deadline();
+
+			roll_by_with_ocw(1);
+
+			assert!(!pool.read().transactions.is_empty());
+
+			let collected_coins = CollectedCoinsStruct {
+				to: AddressId::new::<Test>(&CHAIN, &addr[..]),
+				amount: RPC_RESPONSE_AMOUNT.as_u128(),
+				tx_id: TX_HASH.hex_to_address(),
+				contract_type: ContractType::GCRE,
+			};
+			let collected_coins_id = CollectedCoinsId::new::<Test>(&CHAIN, &collected_coins.tx_id);
+
+			let call = crate::Call::<crate::mock::Test>::persist_task_output {
+				task_output: (collected_coins_id, collected_coins).into(),
+				deadline,
+			};
+
+			assert_matches!(pool.write().transactions.pop(), Some(tx) => {
+				let tx = crate::mock::Extrinsic::decode(&mut &*tx).unwrap();
+				assert_eq!(tx.call, crate::mock::RuntimeCall::Creditcoin(call));
+			});
+		});
+	}
+
+	#[test]
+	fn request_collect_coins_v2_will_submit_a_persist_task_output_call() {
+		let mut ext = ExtBuilder::default();
+		ext.generate_authority();
+		ext.build_offchain_and_execute_with_state(|state, pool| {
+			mock_rpc_for_collect_coins(&state);
+
+			let (acc, addr, sign, _) = generate_address_with_proof("collector");
+
+			assert_ok!(Creditcoin::<Test>::register_address(
+				RuntimeOrigin::signed(acc.clone()),
+				CHAIN,
+				addr.clone(),
+				sign
+			));
+
+			let contract = TokenContract::GCRE(addr.clone(), TX_HASH.hex_to_address());
+			assert_ok!(Creditcoin::<Test>::request_collect_coins_v2(
+				RuntimeOrigin::signed(acc),
+				contract,
+			),);
 
 			let deadline = Test::unverified_transfer_deadline();
 
@@ -942,8 +1024,8 @@ pub(crate) mod tests {
 			));
 
 			assert_ok!(Creditcoin::<Test>::request_collect_coins(
-				RuntimeOrigin::signed(acc),
-				addr,
+				RuntimeOrigin::signed(acc.clone()),
+				addr.clone(),
 				TX_HASH.hex_to_address()
 			));
 			let deadline = Test::unverified_transfer_deadline();
@@ -956,6 +1038,21 @@ pub(crate) mod tests {
 
 			roll_by_with_ocw(1);
 
+			assert!(!TaskScheduler::is_scheduled(&deadline, &collected_coins_id));
+
+			// trying the same with v2
+			let contract = TokenContract::GCRE(addr, TX_HASH.hex_to_address());
+			assert_ok!(Creditcoin::<Test>::request_collect_coins_v2(
+				RuntimeOrigin::signed(acc),
+				contract,
+			),);
+
+			roll_by_with_ocw(deadline);
+			let collected_coins_id =
+				CollectedCoinsId::new::<Test>(&CHAIN, TX_HASH.hex_to_address().as_slice())
+					.into_inner();
+
+			roll_by_with_ocw(1);
 			assert!(!TaskScheduler::is_scheduled(&deadline, &collected_coins_id));
 		});
 	}
