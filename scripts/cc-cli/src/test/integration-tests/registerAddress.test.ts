@@ -12,6 +12,7 @@ import {
 } from "creditcoin-js";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { testData } from "creditcoin-js/lib/testUtils";
+import { utils } from "ethers";
 
 describe("register-address", () => {
   let ccApi: CreditcoinApi;
@@ -39,7 +40,18 @@ describe("register-address", () => {
     await ccApi.api.disconnect();
   });
 
-  test("e2e", async () => {
+  it.each([
+    ['using ethereum private key', false],
+    ['Using an ethereum mnemonic', true]
+  ])("should be able to register address", async (text, useMnemonic) => {
+    let ethPrivateKey: string;
+
+    if (useMnemonic) {
+      ethPrivateKey = utils.entropyToMnemonic(utils.randomBytes(32))
+    } else {
+      ethPrivateKey = ethWallet.privateKey;
+    }
+
     const { api } = ccApi;
 
     const fundTx = await fundFromSudo(
@@ -51,11 +63,11 @@ describe("register-address", () => {
 
     const url = arg("CREDITCOIN_API_URL") as string;
     const result = execa.commandSync(
-      `node dist/index.js register-address --url ${url} --blockchain Ethereum`,
+      `node dist/index.js register-address --url ${url} --blockchain Ethereum ${useMnemonic ? "--eth-mnemonic" : ""}`,
       {
         env: {
           // eslint-disable-next-line @typescript-eslint/naming-convention
-          ETH_PRIVATE_KEY: ethWallet.privateKey,
+          ETH_PRIVATE_KEY: ethPrivateKey,
           CC_SECRET: caller.secret,
         },
       },
