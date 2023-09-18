@@ -41,45 +41,51 @@ describe("register-address", () => {
   });
 
   it.each([
-    ['using ethereum private key', false],
-    ['Using an ethereum mnemonic', true]
-  ])("should be able to register address", async (text, useMnemonic) => {
-    let ethPrivateKey: string;
+    ["using ethereum private key", false],
+    ["Using an ethereum mnemonic", true],
+  ])(
+    "should be able to register address",
+    async (text, useMnemonic) => {
+      let ethPrivateKey: string;
 
-    if (useMnemonic) {
-      ethPrivateKey = utils.entropyToMnemonic(utils.randomBytes(32))
-    } else {
-      ethPrivateKey = ethWallet.privateKey;
-    }
+      if (useMnemonic) {
+        ethPrivateKey = utils.entropyToMnemonic(utils.randomBytes(32));
+      } else {
+        ethPrivateKey = ethWallet.privateKey;
+      }
 
-    const { api } = ccApi;
+      const { api } = ccApi;
 
-    const fundTx = await fundFromSudo(
-      caller.address,
-      parseAmountInternal("1000000"),
-      arg("CREDITCOIN_API_URL"),
-    );
-    await signSendAndWatch(fundTx, api, sudo);
+      const fundTx = await fundFromSudo(
+        caller.address,
+        parseAmountInternal("1000000"),
+        arg("CREDITCOIN_API_URL"),
+      );
+      await signSendAndWatch(fundTx, api, sudo);
 
-    const url = arg("CREDITCOIN_API_URL") as string;
-    const result = execa.commandSync(
-      `node dist/index.js register-address --url ${url} --blockchain Ethereum ${useMnemonic ? "--eth-mnemonic" : ""}`,
-      {
-        env: {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
-          ETH_PRIVATE_KEY: ethPrivateKey,
-          CC_SECRET: caller.secret,
+      const url = arg("CREDITCOIN_API_URL") as string;
+      const result = execa.commandSync(
+        `node dist/index.js register-address --url ${url} --blockchain Ethereum ${
+          useMnemonic ? "--eth-mnemonic" : ""
+        }`,
+        {
+          env: {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            ETH_PRIVATE_KEY: ethPrivateKey,
+            CC_SECRET: caller.secret,
+          },
         },
-      },
-    );
+      );
 
-    const stdout = result.stdout.split("\n");
+      const stdout = result.stdout.split("\n");
 
-    expect(result.failed).toBe(false);
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr).toBe("");
-    expect(
-      stdout[stdout.length - 1].includes("Address Registered Successfully"),
-    ).toBe(true);
-  }, 50_000);
+      expect(result.failed).toBe(false);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe("");
+      expect(
+        stdout[stdout.length - 1].includes("Address Registered Successfully"),
+      ).toBe(true);
+    },
+    50_000,
+  );
 });
