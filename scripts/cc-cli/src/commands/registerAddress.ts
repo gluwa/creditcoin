@@ -26,7 +26,10 @@ export function makeRegisterAddressCmd() {
     )
     .addOption(privateKeyOpt)
     .addOption(blockchainOpt)
-    .option("--eth-mnemonic", "Specify the ethereum address using a mnemonic rather than a private key")
+    .option(
+      "--eth-mnemonic",
+      "Specify the ethereum address using a mnemonic rather than a private key",
+    )
     .action(registerAddressAction);
 }
 
@@ -100,25 +103,32 @@ export async function initCallerEthWallet(
   }
 }
 
-async function initWalletFromEnvOrPrompt(envVar: string, options: OptionValues): Promise<Wallet> {
+async function initWalletFromEnvOrPrompt(
+  envVar: string,
+  options: OptionValues,
+): Promise<Wallet> {
   const interactive = options.input;
   const useMnemonic = options.ethMnemonic;
-  const inputName = useMnemonic ? 'mnemonic' : 'private key';
-  const generateWallet = useMnemonic ? newWalletFromMnemonic : newWalletFromPrivateKey;
+  const inputName = useMnemonic ? "mnemonic" : "private key";
+  const generateWallet = useMnemonic
+    ? newWalletFromMnemonic
+    : newWalletFromPrivateKey;
   const validateInput = useMnemonic ? isMnemonicValid : isValidPrivateKey;
 
   if (!interactive && process.env[envVar] === undefined) {
-    throw new Error('Error: Must specify a private key using the environment variable ETH_PRIVATE_KEY or an interactive prompt');
+    throw new Error(
+      "Error: Must specify a private key using the environment variable ETH_PRIVATE_KEY or an interactive prompt",
+    );
   }
 
   if (process.env[envVar] !== undefined) {
     const seed = process.env[envVar] as string;
 
     if (!validateInput(seed)) {
-      throw new Error('Error: Private key is invalid');
+      throw new Error("Error: Private key is invalid");
     }
 
-    return generateWallet(seed)
+    return generateWallet(seed);
   } else if (interactive) {
     const promptResult = await prompts([
       {
@@ -132,13 +142,13 @@ async function initWalletFromEnvOrPrompt(envVar: string, options: OptionValues):
     const seed = promptResult.seed;
 
     if (!seed) {
-      throw new Error('The mnemonic could not be retrieved from the prompt');
+      throw new Error("The mnemonic could not be retrieved from the prompt");
     }
 
     return generateWallet(seed);
   }
 
-  throw new Error('The ethereum wallet could not be')
+  throw new Error("The ethereum wallet could not be");
 }
 
 function newWalletFromMnemonic(mnemonic: string): Wallet {
@@ -147,7 +157,9 @@ function newWalletFromMnemonic(mnemonic: string): Wallet {
   try {
     wallet = Wallet.fromMnemonic(mnemonic);
   } catch (e) {
-    throw new Error(`Error: Could not create wallet from mnemonic: ${e}`);
+    throw new Error(
+      `Error: Could not create wallet from mnemonic: ${getErrorMessage(e)}`,
+    );
   }
 
   return wallet;
@@ -159,12 +171,14 @@ function newWalletFromPrivateKey(pk: string): Wallet {
   try {
     wallet = new Wallet(pk);
   } catch (e) {
-    throw new Error(`Error: Could not create wallet from private key: ${e}`);
+    throw new Error(
+      `Error: Could not create wallet from private key: ${getErrorMessage(e)}`,
+    );
   }
 
   return wallet;
 }
 
 function isMnemonicValid(mnemonic: string): boolean {
-  return utils.isValidMnemonic(mnemonic)
+  return utils.isValidMnemonic(mnemonic);
 }
