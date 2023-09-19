@@ -131,7 +131,7 @@ where
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[allow(clippy::upper_case_acronyms)]
-pub enum TokenContract {
+pub enum BurnDetails {
 	GCRE(ExternalAddress, ExternalTxId),
 	GATE(ExternalAddress, ExternalTxId),
 }
