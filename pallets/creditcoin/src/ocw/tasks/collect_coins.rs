@@ -9,7 +9,7 @@ use crate::{
 	types::{Blockchain, ContractType, UnverifiedCollectedCoins},
 	ExternalAddress, ExternalAmount,
 };
-use core::{default::Default, ops::Div};
+use core::default::Default;
 use ethabi::{Function, Param, ParamType, StateMutability, Token};
 use ethereum_types::U64;
 use frame_support::{ensure, RuntimeDebug};
@@ -137,7 +137,7 @@ impl<T: CreditcoinConfig> Pallet<T> {
 
 		// GATE -> CTC is swapped 2:1
 		if *contract_type == ContractType::GATE {
-			amount = amount.div(sp_core::U256::from_dec_str("2").unwrap());
+			amount /= 2;
 		}
 
 		let amount = amount.saturated_into::<u128>().saturated_into::<T::Balance>();
@@ -1199,7 +1199,6 @@ pub(crate) mod tests {
 	#[test]
 	fn collect_coins_v2_gate_token_persist_is_submitted_and_amount_is_2_to_1() {
 		let mut ext = ExtBuilder::default();
-		ext.generate_authority();
 		let acct_pubkey = ext.generate_authority();
 		let auth = AccountId::from(acct_pubkey.into_account().0);
 		ext.build_offchain_and_execute_with_state(|state, pool| {
@@ -1220,7 +1219,7 @@ pub(crate) mod tests {
 				sign
 			));
 
-			let gate_contract = crate::TokenContract::GATE(addr.clone(), TX_HASH.hex_to_address());
+			let gate_contract = crate::BurnDetails::GATE(addr.clone(), TX_HASH.hex_to_address());
 
 			assert_ok!(Creditcoin::<Test>::request_collect_coins_v2(
 				RuntimeOrigin::signed(acc),
