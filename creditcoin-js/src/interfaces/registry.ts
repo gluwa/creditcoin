@@ -63,6 +63,7 @@ import type {
     PalletCreditcoinCall,
     PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinCollectCoinsContractType,
+    PalletCreditcoinCollectCoinsTokenContract,
     PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
@@ -279,6 +280,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinCall: PalletCreditcoinCall;
         PalletCreditcoinCollectCoinsCollectedCoins: PalletCreditcoinCollectCoinsCollectedCoins;
         PalletCreditcoinCollectCoinsContractType: PalletCreditcoinCollectCoinsContractType;
+        PalletCreditcoinCollectCoinsTokenContract: PalletCreditcoinCollectCoinsTokenContract;
         PalletCreditcoinCollectCoinsUnverifiedCollectedCoins: PalletCreditcoinCollectCoinsUnverifiedCollectedCoins;
         PalletCreditcoinDealOrder: PalletCreditcoinDealOrder;
         PalletCreditcoinDealOrderId: PalletCreditcoinDealOrderId;

@@ -35,6 +35,7 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
+    PalletCreditcoinCollectCoinsTokenContract,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
@@ -416,6 +417,7 @@ declare module '@polkadot/api-base/types/submittable' {
                         | 'InvalidAddress'
                         | 'UnsupportedMethod'
                         | 'TransactionNotFound'
+                        | 'InsufficientFaucetBalance'
                         | number
                         | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
@@ -568,6 +570,17 @@ declare module '@polkadot/api-base/types/submittable' {
                     txId: Bytes | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [Bytes, Bytes]
+            >;
+            requestCollectCoinsV2: AugmentedSubmittable<
+                (
+                    contract:
+                        | PalletCreditcoinCollectCoinsTokenContract
+                        | { GCRE: any }
+                        | { GATE: any }
+                        | string
+                        | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletCreditcoinCollectCoinsTokenContract]
             >;
             setCollectCoinsContract: AugmentedSubmittable<
                 (

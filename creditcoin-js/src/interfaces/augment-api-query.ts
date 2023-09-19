@@ -360,7 +360,7 @@ declare module '@polkadot/api-base/types/storage' {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
-            gateFaucetAccount: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []> &
+            gateFaucetAddress: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             legacyBalanceKeeper: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;

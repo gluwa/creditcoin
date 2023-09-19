@@ -141,3 +141,7 @@ export type Signature = string;
 export type PersonalSign = { kind: 'PersonalSign'; signature: Signature };
 export type EthSign = { kind: 'EthSign'; signature: Signature };
 export type OwnershipProof = PersonalSign | EthSign;
+
+export type GCREContract = { kind: 'GCRE'; evmAddress: ExternalAddress; txHash: string };
+export type GATEContract = { kind: 'GATE'; evmAddress: ExternalAddress; txHash: string };
+export type CollectCoinsContract = GCREContract | GATEContract;
