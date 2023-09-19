@@ -55,7 +55,7 @@ describe("register-address", () => {
     ["Using an ethereum mnemonic", true],
   ])(
     "should be able to register address: %s",
-    async (text, useMnemonic) => {
+    (text, useMnemonic) => {
       let ethPrivateKey: string;
 
       if (useMnemonic) {

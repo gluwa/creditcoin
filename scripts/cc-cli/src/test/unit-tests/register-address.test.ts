@@ -1,5 +1,10 @@
 import { Wallet } from "creditcoin-js";
-import { isValidPrivateKey, newWalletFromMnemonic, newWalletFromPrivateKey } from "../../commands/registerAddress";
+import {
+  isMnemonicValid,
+  isValidPrivateKey,
+  newWalletFromMnemonic,
+  newWalletFromPrivateKey,
+} from "../../commands/registerAddress";
 import { utils } from "ethers";
 
 describe(isValidPrivateKey, () => {
@@ -60,24 +65,29 @@ describe(newWalletFromPrivateKey, () => {
 
   test("should throw error with invalid private key", () => {
     const goodWallet = Wallet.createRandom();
-    const badPk = goodWallet.privateKey.substring(0, goodWallet.privateKey.length - 1);
-    expect(() => { newWalletFromPrivateKey(badPk) }).toThrow('Error: Could not create wallet from private key:');
+    const badPk = goodWallet.privateKey.substring(
+      0,
+      goodWallet.privateKey.length - 1,
+    );
+    expect(() => {
+      newWalletFromPrivateKey(badPk);
+    }).toThrow("Error: Could not create wallet from private key:");
   });
 
   test("should thow error when called with empty string", () => {
     expect(() => {
-      newWalletFromPrivateKey('')
-    }).toThrow('Error: Could not create wallet from private key:')
-  })
-})
+      newWalletFromPrivateKey("");
+    }).toThrow("Error: Could not create wallet from private key:");
+  });
+});
 
 describe(newWalletFromMnemonic, () => {
   test("should return new wallet with valid mnemonic", () => {
-    const mnemonic = utils.entropyToMnemonic(utils.randomBytes(32))
+    const mnemonic = utils.entropyToMnemonic(utils.randomBytes(32));
     const testWallet = newWalletFromMnemonic(mnemonic);
-    expect(testWallet).toBeTruthy()
+    expect(testWallet).toBeTruthy();
     expect(testWallet).toBeInstanceOf(Wallet);
-  })
+  });
 
   test("should throw error when called with bad mnemonic", () => {
     // construct a bad mnemonic by taking a good one and dropping the last word
@@ -85,13 +95,34 @@ describe(newWalletFromMnemonic, () => {
     mnemonic.pop();
     const badMnemonic = mnemonic.join(" ");
     expect(() => {
-      newWalletFromMnemonic(badMnemonic)
-    }).toThrow('Error: Could not create wallet from mnemonic:')
-  })
+      newWalletFromMnemonic(badMnemonic);
+    }).toThrow("Error: Could not create wallet from mnemonic:");
+  });
 
   test("should throw error when called with empty string", () => {
     expect(() => {
-      newWalletFromMnemonic('')
-    }).toThrow('Error: Could not create wallet from mnemonic:')
-  })
-})
+      newWalletFromMnemonic("");
+    }).toThrow("Error: Could not create wallet from mnemonic:");
+  });
+});
+
+describe(isMnemonicValid, () => {
+  test("should return true when called with valid mnemonic", () => {
+    expect(
+      isMnemonicValid(utils.entropyToMnemonic(utils.randomBytes(32))),
+    ).toBe(true);
+  });
+
+  test("should return false when called with empty string", () => {
+    expect(isMnemonicValid("")).toBe(false);
+  });
+
+  test("should return false when called with odd length mnemonic", () => {
+    // construct a bad mnemonic by taking a good one and dropping the last word
+    const mnemonic = utils.entropyToMnemonic(utils.randomBytes(32)).split(" ");
+    mnemonic.pop();
+    const badMnemonic = mnemonic.join(" ");
+
+    expect(isMnemonicValid(badMnemonic)).toBe(false);
+  });
+});
