@@ -66,7 +66,8 @@ describe("register-address", () => {
 
       const url = arg("CREDITCOIN_API_URL") as string;
       const result = execa.commandSync(
-        `node dist/index.js register-address --url ${url} --blockchain Ethereum ${useMnemonic ? "--eth-mnemonic" : ""
+        `node dist/index.js register-address --url ${url} --blockchain Ethereum ${
+          useMnemonic ? "--eth-mnemonic" : ""
         }`,
         {
           env: {
