@@ -1,4 +1,6 @@
-import { isValidPrivateKey } from "../../commands/registerAddress";
+import { Wallet } from "creditcoin-js";
+import { isValidPrivateKey, newWalletFromMnemonic, newWalletFromPrivateKey } from "../../commands/registerAddress";
+import { utils } from "ethers";
 
 describe(isValidPrivateKey, () => {
   test("should return true when called with valid private key", () => {
@@ -45,3 +47,51 @@ describe(isValidPrivateKey, () => {
     ).toBe(false);
   });
 });
+
+describe(newWalletFromPrivateKey, () => {
+  test("should return new wallet with valid private key", () => {
+    const goodWallet = Wallet.createRandom();
+
+    const testWallet = newWalletFromPrivateKey(goodWallet.privateKey);
+    expect(testWallet).toBeTruthy();
+    expect(testWallet.privateKey).toEqual(goodWallet.privateKey);
+    expect(testWallet).toBeInstanceOf(Wallet);
+  });
+
+  test("should throw error with invalid private key", () => {
+    const goodWallet = Wallet.createRandom();
+    const badPk = goodWallet.privateKey.substring(0, goodWallet.privateKey.length - 1);
+    expect(() => { newWalletFromPrivateKey(badPk) }).toThrow('Error: Could not create wallet from private key:');
+  });
+
+  test("should thow error when called with empty string", () => {
+    expect(() => {
+      newWalletFromPrivateKey('')
+    }).toThrow('Error: Could not create wallet from private key:')
+  })
+})
+
+describe(newWalletFromMnemonic, () => {
+  test("should return new wallet with valid mnemonic", () => {
+    const mnemonic = utils.entropyToMnemonic(utils.randomBytes(32))
+    const testWallet = newWalletFromMnemonic(mnemonic);
+    expect(testWallet).toBeTruthy()
+    expect(testWallet).toBeInstanceOf(Wallet);
+  })
+
+  test("should throw error when called with bad mnemonic", () => {
+    // construct a bad mnemonic by taking a good one and dropping the last word
+    const mnemonic = utils.entropyToMnemonic(utils.randomBytes(32)).split(" ");
+    mnemonic.pop();
+    const badMnemonic = mnemonic.join(" ");
+    expect(() => {
+      newWalletFromMnemonic(badMnemonic)
+    }).toThrow('Error: Could not create wallet from mnemonic:')
+  })
+
+  test("should throw error when called with empty string", () => {
+    expect(() => {
+      newWalletFromMnemonic('')
+    }).toThrow('Error: Could not create wallet from mnemonic:')
+  })
+})

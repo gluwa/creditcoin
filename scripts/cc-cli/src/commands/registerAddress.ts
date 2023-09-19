@@ -16,15 +16,10 @@ export function makeRegisterAddressCmd() {
     "-b, --blockchain <chain> The blockchain that this external address belongs to",
   ).choices(blockchains);
 
-  const privateKeyOpt = new Option(
-    "-p, --private-key <key> The private key for the Ethereum address that you want to register.",
-  ).env("ETH_PRIVATE_KEY");
-
   return new Command("register-address")
     .description(
       "Link a CreditCoin address to an address from another blockchain",
     )
-    .addOption(privateKeyOpt)
     .addOption(blockchainOpt)
     .option(
       "--eth-mnemonic",
@@ -125,7 +120,7 @@ async function initWalletFromEnvOrPrompt(
     const seed = process.env[envVar] as string;
 
     if (!validateInput(seed)) {
-      throw new Error("Error: Private key is invalid");
+      throw new Error(`Error: ${inputName} is invalid`);
     }
 
     return generateWallet(seed);
@@ -142,43 +137,37 @@ async function initWalletFromEnvOrPrompt(
     const seed = promptResult.seed;
 
     if (!seed) {
-      throw new Error("The mnemonic could not be retrieved from the prompt");
+      throw new Error(`The ${inputName} could not be retrieved from the prompt`);
     }
 
     return generateWallet(seed);
   }
 
-  throw new Error("The ethereum wallet could not be");
+  throw new Error("The ethereum wallet could not be generated");
 }
 
-function newWalletFromMnemonic(mnemonic: string): Wallet {
-  let wallet: Wallet;
-
+export function newWalletFromMnemonic(mnemonic: string): Wallet {
   try {
-    wallet = Wallet.fromMnemonic(mnemonic);
+    return Wallet.fromMnemonic(mnemonic);
   } catch (e) {
     throw new Error(
       `Error: Could not create wallet from mnemonic: ${getErrorMessage(e)}`,
     );
   }
-
-  return wallet;
 }
 
-function newWalletFromPrivateKey(pk: string): Wallet {
-  let wallet: Wallet;
-
+export function newWalletFromPrivateKey(pk: string): Wallet {
   try {
-    wallet = new Wallet(pk);
+    return new Wallet(pk);
   } catch (e) {
     throw new Error(
       `Error: Could not create wallet from private key: ${getErrorMessage(e)}`,
     );
   }
-
-  return wallet;
 }
 
+// This wrapper function is needed to ensure comaptibility with the validate function in the prompt call
+// see initWalletFromEnvOrPrompt for details
 function isMnemonicValid(mnemonic: string): boolean {
   return utils.isValidMnemonic(mnemonic);
 }
