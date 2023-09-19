@@ -33,8 +33,18 @@ describe("register-address", () => {
       arg("CREDITCOIN_CREATE_WALLET"),
     );
 
+    // this arg call returns a function
     sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "sudo");
-  });
+
+    const { api } = ccApi;
+
+    const fundTx = await fundFromSudo(
+      caller.address,
+      parseAmountInternal("1000000"),
+      arg("CREDITCOIN_API_URL"),
+    );
+    await signSendAndWatch(fundTx, api, sudo);
+  }, 100_000);
 
   afterAll(async () => {
     await ccApi.api.disconnect();
@@ -44,7 +54,7 @@ describe("register-address", () => {
     ["using ethereum private key", false],
     ["Using an ethereum mnemonic", true],
   ])(
-    "should be able to register address",
+    "should be able to register address: %s",
     async (text, useMnemonic) => {
       let ethPrivateKey: string;
 
@@ -54,19 +64,9 @@ describe("register-address", () => {
         ethPrivateKey = ethWallet.privateKey;
       }
 
-      const { api } = ccApi;
-
-      const fundTx = await fundFromSudo(
-        caller.address,
-        parseAmountInternal("1000000"),
-        arg("CREDITCOIN_API_URL"),
-      );
-      await signSendAndWatch(fundTx, api, sudo);
-
       const url = arg("CREDITCOIN_API_URL") as string;
       const result = execa.commandSync(
-        `node dist/index.js register-address --url ${url} --blockchain Ethereum ${
-          useMnemonic ? "--eth-mnemonic" : ""
+        `node dist/index.js register-address --url ${url} --blockchain Ethereum ${useMnemonic ? "--eth-mnemonic" : ""
         }`,
         {
           env: {
