@@ -8,7 +8,7 @@ pub use collect_coins::{
 pub use loan_terms::*;
 pub use transfer::*;
 
-pub use collect_coins::{BurnDetails, ContractType};
+pub use collect_coins::{ContractType, TokenContract};
 
 use crate::ocw::tasks::collect_coins::DeployedContract;
 use crate::ocw::VerificationFailureCause;
