@@ -137,7 +137,9 @@ async function initWalletFromEnvOrPrompt(
     const seed = promptResult.seed;
 
     if (!seed) {
-      throw new Error(`The ${inputName} could not be retrieved from the prompt`);
+      throw new Error(
+        `The ${inputName} could not be retrieved from the prompt`,
+      );
     }
 
     return generateWallet(seed);
@@ -168,6 +170,6 @@ export function newWalletFromPrivateKey(pk: string): Wallet {
 
 // This wrapper function is needed to ensure comaptibility with the validate function in the prompt call
 // see initWalletFromEnvOrPrompt for details
-function isMnemonicValid(mnemonic: string): boolean {
+export function isMnemonicValid(mnemonic: string): boolean {
   return utils.isValidMnemonic(mnemonic);
 }
