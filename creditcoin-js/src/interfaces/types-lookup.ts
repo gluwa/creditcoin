@@ -2142,7 +2142,7 @@ declare module '@polkadot/types/lookup' {
         } & Struct;
         readonly isRequestCollectCoinsV2: boolean;
         readonly asRequestCollectCoinsV2: {
-            readonly contract: PalletCreditcoinCollectCoinsTokenContract;
+            readonly contract: PalletCreditcoinCollectCoinsBurnDetails;
         } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
@@ -2225,8 +2225,8 @@ declare module '@polkadot/types/lookup' {
         readonly type: 'PersonalSign' | 'EthSign';
     }
 
-    /** @name PalletCreditcoinCollectCoinsTokenContract (269) */
-    interface PalletCreditcoinCollectCoinsTokenContract extends Enum {
+    /** @name PalletCreditcoinCollectCoinsBurnDetails (269) */
+    interface PalletCreditcoinCollectCoinsBurnDetails extends Enum {
         readonly isGcre: boolean;
         readonly asGcre: ITuple<[Bytes, Bytes]>;
         readonly isGate: boolean;

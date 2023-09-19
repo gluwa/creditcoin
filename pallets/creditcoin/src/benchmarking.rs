@@ -11,7 +11,7 @@ use crate::test_utils::{
 };
 use crate::Pallet as Creditcoin;
 use crate::{
-	types::{Blockchain, ContractType, OwnershipProof, TokenContract},
+	types::{Blockchain, BurnDetails, ContractType, OwnershipProof},
 	Duration,
 };
 use crate::types::{Blockchain, OwnershipProof};
@@ -376,7 +376,7 @@ benchmarks! {
 			.as_bytes()
 			.into_bounded();
 
-		let contract = TokenContract::GCRE(address.value, tx_id);
+		let contract = BurnDetails::GCRE(address.value, tx_id);
 	}: _( RawOrigin::Signed(collector), contract)
 }
 
