@@ -7,7 +7,7 @@ use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::Pallet as Creditcoin;
 use crate::{
-	types::{Blockchain, ContractType, OwnershipProof},
+	types::{Blockchain, ContractType, OwnershipProof, TokenContract},
 	Duration,
 };
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
@@ -361,6 +361,17 @@ benchmarks! {
 		let addr: T::AccountId = lender_account::<T>(false);
 	}: _(root, addr)
 
+	request_collect_coins_v2 {
+		<Timestamp<T>>::set_timestamp(1u32.into());
+		let collector: T::AccountId = lender_account::<T>(true);
+		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
+		let address = Creditcoin::<T>::addresses(collector_addr_id).unwrap();
+		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
+			.as_bytes()
+			.into_bounded();
+
+		let contract = TokenContract::GCRE(address.value, tx_id);
+	}: _( RawOrigin::Signed(collector), contract)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);

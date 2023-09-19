@@ -105,6 +105,14 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             BidOrderExpired: AugmentedError<ApiType>;
             /**
+             * The onchain faucet address for the GATE swap mechanism has not been set using the set_burn_gate_faucet_address extrinsic
+             **/
+            BurnGATEFaucetNotSet: AugmentedError<ApiType>;
+            /**
+             * The faucet has insufficient funds to complete this swap, please retry when the faucet has been reloaded
+             **/
+            BurnGATEInsufficientFaucetBalance: AugmentedError<ApiType>;
+            /**
              * The coin collection has already been registered.
              **/
             CollectCoinsAlreadyRegistered: AugmentedError<ApiType>;
