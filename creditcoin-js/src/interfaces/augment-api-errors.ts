@@ -105,7 +105,7 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             BidOrderExpired: AugmentedError<ApiType>;
             /**
-             * The onchain faucet address for the GATE swap mechanism has not been set using the set_burn_gate_faucet_address extrinsic
+             * The onchain faucet address for the GATE swap mechanism has not been set using the set_gate_faucet_address extrinsic
              **/
             BurnGATEFaucetNotSet: AugmentedError<ApiType>;
             /**
