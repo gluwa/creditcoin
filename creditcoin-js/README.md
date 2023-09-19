@@ -19,6 +19,64 @@ yarn add creditcoin-js
 
 This will install the latest release version, which should allow you to interact with Creditcoin's main network and your own local chains that use the latest Creditcoin binaries.
 
+## Usage
+
+### Import
+
+Importing the library into your project:
+
+```typescript
+import { creditcoinApi } from 'creditcoin-js';
+
+const { api } = await CreditcoinApi('ws://localhost:9944');
+```
+
+### Using the API
+
+The API is a collection of modules that provide access to the various functions of the Creditcoin blockchain.
+
+```typescript
+const { api, extrinsics, utils } = await CreditcoinApi('ws://localhost:9944');
+```
+
+### Creating transactions
+
+```typescript
+const { api } = await CreditcoinApi('ws://localhost:9944');
+
+const tx = api.
+    .tx
+    .balances
+    .transfer(
+        "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "1000000000000000"  // CTC amount in microunits
+                            // (1 CTC = 1e18 microunits)
+    )
+```
+
+### Signing & sending
+
+```typescript
+import { Keyring } from 'creditcoin-js';
+
+const keyring = new Keyring({ type: 'sr25519' });
+const alice = keyring.addFromUri('//Alice');
+
+await tx.signAndSend(alice);
+```
+
+### Batching transactions
+
+```typescript
+const tx1 = api.tx.balances.transfer(addrBob, 10);
+const tx2 = api.tx.balances.transfer(addrCharlie, 10);
+const txs = [tx1, tx2];
+
+const batch_tx = api.tx.utility.batch(txs);
+
+await batch_tx.signAndSend(alice);
+```
+
 ## Development
 
 ### Build
