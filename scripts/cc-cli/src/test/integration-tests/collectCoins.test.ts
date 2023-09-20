@@ -13,9 +13,11 @@ import {
 } from "creditcoin-js";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { deployCtcContract, CREDO_PER_CTC } from "creditcoin-js/lib/ctc-deploy";
-import { testData, tryRegisterAddress } from "creditcoin-js/lib/testUtils";
-
-import { forElapsedBlocks } from "creditcoin-js/lib/testUtils";
+import {
+  testData,
+  tryRegisterAddress,
+  forElapsedBlocks,
+} from "creditcoin-js/lib/testUtils";
 import { describeIf } from "../../utils/tests";
 import { getBalance } from "../../utils/balance";
 
