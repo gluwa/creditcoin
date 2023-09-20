@@ -127,7 +127,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --features "fast-runtime try-runtime"
+          args: --release --features "try-runtime"
 
       - name: Upload creditcoin-node binary
         uses: actions/upload-artifact@v3
