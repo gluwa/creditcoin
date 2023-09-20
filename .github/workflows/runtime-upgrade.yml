@@ -384,7 +384,6 @@ jobs:
       # TODO: wait & confirm wasm upgrade has finished, incl. migrations
       - name: Execute integration tests
         run: |
-          cp fork-last-block-json.log ./integration-tests/
           yarn --cwd ./integration-tests/ test --config creditcoin-fork.config.ts
 
       - name: Upload logs
