@@ -384,11 +384,11 @@ parameter_types! {
 pub struct StakingBenchmarkingConfig;
 impl pallet_staking_substrate::BenchmarkingConfig for StakingBenchmarkingConfig {
 	type MaxValidators = ConstU32<1000>;
-	type MaxNominators = ConstU32<1000>;
+	type MaxNominators = ConstU32<16>;
 }
 
 impl pallet_staking_substrate::Config for Runtime {
-	type MaxNominations = ConstU32<1000>;
+	type MaxNominations = ConstU32<16>;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
 	type UnixTime = Timestamp;
