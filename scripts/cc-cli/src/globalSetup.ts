@@ -37,8 +37,7 @@ const globalDefaults = new Map<string, any>([
   ],
   [
     "CREDITCOIN_API_URL",
-    `ws://127.0.0.1:${
-      process.env.CREDITCOIN_WS_PORT ? process.env.CREDITCOIN_WS_PORT : "9944"
+    `ws://127.0.0.1:${process.env.CREDITCOIN_WS_PORT ? process.env.CREDITCOIN_WS_PORT : "9944"
     }`,
   ],
 ]);
@@ -60,17 +59,21 @@ export async function setAuthorities() {
   await api.disconnect();
 }
 
-export function retry(retries: any, executor: any): any {
-  console.log(`${retries as string} retries left!`);
-
-  if (typeof retries !== "number") {
-    throw new TypeError("retries is not a number");
+export async function retry<T>(
+  retries: number,
+  func: () => PromiseLike<T>,
+): Promise<T> {
+  console.log(`${retries} retries left!`);
+  try {
+    return await func();
+  } catch (error) {
+    if (retries > 0) {
+      return await retry(retries - 1, func);
+    }
+    throw error;
   }
-
-  return new Promise(executor).catch((error) =>
-    retries > 0 ? retry(retries - 1, executor) : Promise.reject(error),
-  );
 }
+
 
 function setup() {
   process.env.NODE_ENV = "test";
