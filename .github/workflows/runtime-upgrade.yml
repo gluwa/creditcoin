@@ -424,47 +424,6 @@ jobs:
           name: creditcoin-node
           path: target/release
 
-      - name: Start creditcoin-node from current PR
-        run: |
-          # see https://opensource.com/article/18/5/how-find-ip-address-linux
-          IP_ADDRESS=$(curl https://ifconfig.me)
-          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
-
-          chmod a+x ./target/release/creditcoin-node
-          ./target/release/creditcoin-node --version
-
-          ./target/release/creditcoin-node \
-            --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
-            --chain ${{ needs.setup.outputs.target_chain }} \
-            --pruning archive \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
-            --bootnodes "${{ needs.setup.outputs.boot_node }}" \
-            --prometheus-external \
-            --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
-            --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
-            --port 50555 >creditcoin-node-disconnected-paritydb-sync.log 2>&1 &
-
-      - name: Wait for blockchain to start
-        run: |
-          ./integration-tests/wait-for-creditcoin.sh
-
-      # wait again because of RocksDB -> ParityDB switch !
-      - name: Wait for creditcoin-node to sync past block number ${{ needs.setup.outputs.last_block_number }}
-        run: |
-          ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
-
-      - name: TERM creditcoin-node
-        continue-on-error: true
-        run: |
-          killall -TERM creditcoin-node
-          sleep 30
-
-      - name: KILL creditcoin-node
-        continue-on-error: true
-        run: |
-          killall -KILL creditcoin-node
-          sleep 30
-
       - name: Start a disconnected creditcoin-node
         run: |
           chmod a+x ./target/release/creditcoin-node
@@ -485,6 +444,11 @@ jobs:
       - name: Wait for blockchain to start
         run: |
           ./integration-tests/wait-for-creditcoin.sh
+
+      # check this eventhough it should be true unless live-sync screws up!
+      - name: Check if creditcoin-node is past block number ${{ needs.setup.outputs.last_block_number }}
+        run: |
+          ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
 
       - name: Install Docker engine
         run: |
