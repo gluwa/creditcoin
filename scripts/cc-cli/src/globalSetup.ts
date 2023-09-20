@@ -37,7 +37,8 @@ const globalDefaults = new Map<string, any>([
   ],
   [
     "CREDITCOIN_API_URL",
-    `ws://127.0.0.1:${process.env.CREDITCOIN_WS_PORT ? process.env.CREDITCOIN_WS_PORT : "9944"
+    `ws://127.0.0.1:${
+      process.env.CREDITCOIN_WS_PORT ? process.env.CREDITCOIN_WS_PORT : "9944"
     }`,
   ],
 ]);
@@ -73,7 +74,6 @@ export async function retry<T>(
     throw error;
   }
 }
-
 
 function setup() {
   process.env.NODE_ENV = "test";
