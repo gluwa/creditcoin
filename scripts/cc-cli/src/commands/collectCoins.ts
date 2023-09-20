@@ -6,6 +6,7 @@ import { requiredInput } from "../utils/parsing";
 import { isAddress } from "web3-validator";
 import { utils } from "ethers";
 import chalk from "chalk";
+import { U64 } from "@polkadot/types-codec";
 
 export function makeCollectCoinsCmd() {
   const externalAddressOpt = new Option(
@@ -44,6 +45,7 @@ async function collectCoinsAction(options: OptionValues) {
   validateOptsOrExit(options);
 
   const {
+    api,
     extrinsics: { requestCollectCoins },
   } = await newApi(options.url);
   const signer = await initCallerKeyring(options);
@@ -53,7 +55,13 @@ async function collectCoinsAction(options: OptionValues) {
     signer,
     options.burnTxHash,
   );
-  await event.waitForVerification(800_000);
+
+  const blockTime = (api.consts.babe.expectedBlockTime as U64).toNumber();
+  const unverifiedTaskTimeout = Number(
+    api.consts.creditcoin.unverifiedTaskTimeout.toString(),
+  );
+
+  await event.waitForVerification(blockTime * unverifiedTaskTimeout);
 }
 
 function validateOptsOrExit(options: OptionValues) {
