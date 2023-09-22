@@ -136,6 +136,17 @@ const unverifiedTaskTimeout = (api.consts.creditcoin.unverifiedTaskTimeout as u3
 const taskTimeout = expectedBlockTime * unverifiedTaskTimeout;
 ```
 
+
+### Setting Offchain Local Storage (Ethereum RPC URI)
+```typescript
+function u8aToHex = (bytes: Uint8Array): string {
+    return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+};
+
+const rpcUri = u8aToHex(api.createType('String', 'http://localhost:8545').toU8a());
+await api.rpc.offchain.localStorageSet('PERSISTENT', 'ethereum-rpc-uri', rpcUri);
+```
+
 ## Development
 
 ### Build
