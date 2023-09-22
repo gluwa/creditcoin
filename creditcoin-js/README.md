@@ -29,6 +29,9 @@ Importing the library into your project:
 import { creditcoinApi } from 'creditcoin-js';
 
 const { api } = await CreditcoinApi('ws://localhost:9944');
+
+// don't forget to disconnect when you are done
+await api.disconnect();
 ```
 
 ### Using the API
@@ -75,6 +78,49 @@ const txs = [tx1, tx2];
 const batch_tx = api.tx.utility.batch(txs);
 
 await batch_tx.signAndSend(alice);
+```
+
+### Registering External Addresses
+```typescript
+import { personalSignSignature } from 'creditcoin-js/lib/extrinsics/register-address-v2';
+import { personalSignAccountId } from 'creditcoin-js/lib/utils';
+import { Wallet } from "creditcoin-js";
+
+const { extrinsics: { registerAddressV2 }} = ccApi;
+
+// The ethers wallet that we will be registering
+const ethSigner = Wallet.random();
+const externalAddress = ethSigner.address;
+
+// Assume creditcoinAddress is a keyring pair
+const accountId = creditcoinAddress.addressRaw;
+
+// Create a proof of ownership by signing your creditcoin address with your ethereum private key
+const signature = await personalSignAccountId(api, ethSigner, creditcoinAddress);
+const proof = personalSignSignature(signature);
+
+// The blockchain that the external address belongs to
+const blockchain = "Ethereum";
+
+const result = await registerAddressV2(externalAddress, blockchain, proof, lender);
+```
+
+### Swap GCRE -> CTC
+```typescript
+import { GCREContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
+
+// Create a wrapper that holds the details for the burned tokens
+// externalAddress is the address of the burner and must be previously registered
+const burnDetails = GCREContract(externalAddress, burnTxHash);
+
+// Submit the swap request, adding it to the task queue of the off chain worker
+const collectCoins = await requestCollectCoinsV2(burnDetails, creditcoinSigner);
+
+// Wait for the offchain worker to finish processing this request
+// Under the hood waitForVerification tracks CollectedCoinsMinted and CollectedCoinsFailedVerification events using the TaskId as a unique key
+
+// 900_000 (milliseconds) comes from an assumed 60 block task timeout deadline and assumed 15 second blocktime (check the constants provided by the runtime in production code)
+const collectCoinVerified = await collectCoins.waitForVerification(900_000);
 ```
 
 ## Development
