@@ -181,11 +181,17 @@ jobs:
       - name: Build docker image
         run: |
           docker build -t gluwa/creditcoin:${{ env.TAG_NAME }} .
-          docker tag gluwa/creditcoin:${{ env.TAG_NAME }} gluwa/creditcoin:latest
 
           echo "${{ secrets.DOCKER_PUSH_PASSWORD }}" | docker login -u="${{ secrets.DOCKER_PUSH_USERNAME }}" --password-stdin
           docker push gluwa/creditcoin:${{ env.TAG_NAME }}
-          docker push gluwa/creditcoin:latest
+
+          # only -mainnet images are tagged as :latest
+          # shellcheck disable=SC2046,SC2143
+          if [ $(echo "${{ env.TAG_NAME}}" | grep "mainnet") ]; then
+              docker tag gluwa/creditcoin:${{ env.TAG_NAME }} gluwa/creditcoin:latest
+              docker push gluwa/creditcoin:latest
+          fi
+
           docker logout
 
   build-creditcoin-js:
