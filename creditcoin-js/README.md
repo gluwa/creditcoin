@@ -147,6 +147,25 @@ const rpcUri = u8aToHex(api.createType('String', 'http://localhost:8545').toU8a(
 await api.rpc.offchain.localStorageSet('PERSISTENT', 'ethereum-rpc-uri', rpcUri);
 ```
 
+### Submitting Sudo Calls (Set CollectCoins Contract)
+```typescript
+// The blockchain the contract lives one
+const blockchain = "Ethereum";
+
+// Address for Ethereum Gluwa Creditcoin Vesting Token 
+const contractAddress = "0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419";
+
+const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
+    address: contractAddress
+    chain: blockchain,
+});
+
+// sudoSigner is a keyring pair with sudo privileges
+await api.tx.sudo
+    .sudo(api.tx.creditcoin.setCollectCoinsContract(contract))
+    .signAndSend(sudoSigner, { nonce: -1 });
+```
+
 ## Development
 
 ### Build
