@@ -109,6 +109,8 @@ const result = await registerAddressV2(externalAddress, blockchain, proof, lende
 ```typescript
 import { GCREContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
 
+const { extrinsics: { requestCollectCoinsV2 } } = ccApi;
+
 // Create a wrapper that holds the details for the burned tokens
 // externalAddress is the address of the burner and must be previously registered
 const burnDetails = GCREContract(externalAddress, burnTxHash);
@@ -118,9 +120,20 @@ const collectCoins = await requestCollectCoinsV2(burnDetails, creditcoinSigner);
 
 // Wait for the offchain worker to finish processing this request
 // Under the hood waitForVerification tracks CollectedCoinsMinted and CollectedCoinsFailedVerification events using the TaskId as a unique key
-
 // 900_000 (milliseconds) comes from an assumed 60 block task timeout deadline and assumed 15 second blocktime (check the constants provided by the runtime in production code)
 const collectCoinVerified = await collectCoins.waitForVerification(900_000);
+```
+
+### Reading Runtime Constants
+```typescript
+import { U64, U32 } from "@polkadot/types-codec";
+
+const { api } = ccApi;
+
+const expectedBlockTime = (api.consts.babe.expectedBlockTime as U64).toNumber()
+const unverifiedTaskTimeout = (api.consts.creditcoin.unverifiedTaskTimeout as u32).toNumber();
+
+const taskTimeout = expectedBlockTime * unverifiedTaskTimeout;
 ```
 
 ## Development
