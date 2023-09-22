@@ -34,7 +34,8 @@ function collectCoinsActionSync(options: OptionValues) {
     })
     .catch((reason) => {
       fatalErr(
-        `ERROR: The call to request_collect_coins was unsuccessful: ${reason as string
+        `ERROR: The call to request_collect_coins was unsuccessful: ${
+          reason as string
         }`,
       );
     });
