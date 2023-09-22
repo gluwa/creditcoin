@@ -6,7 +6,7 @@ import { requiredInput } from "../utils/parsing";
 import { isAddress } from "web3-validator";
 import { utils } from "ethers";
 import chalk from "chalk";
-import { U64 } from "@polkadot/types-codec";
+import { U64, U32 } from "@polkadot/types-codec";
 
 export function makeCollectCoinsCmd() {
   const externalAddressOpt = new Option(
@@ -34,8 +34,7 @@ function collectCoinsActionSync(options: OptionValues) {
     })
     .catch((reason) => {
       fatalErr(
-        `ERROR: The call to request_collect_coins was unsuccessful: ${
-          reason as string
+        `ERROR: The call to request_collect_coins was unsuccessful: ${reason as string
         }`,
       );
     });
@@ -57,9 +56,9 @@ async function collectCoinsAction(options: OptionValues) {
   );
 
   const blockTime = (api.consts.babe.expectedBlockTime as U64).toNumber();
-  const unverifiedTaskTimeout = Number(
-    api.consts.creditcoin.unverifiedTaskTimeout.toString(),
-  );
+  const unverifiedTaskTimeout = (
+    api.consts.creditcoin.unverifiedTaskTimeout as U32
+  ).toNumber();
 
   await event.waitForVerification(blockTime * unverifiedTaskTimeout);
 }
