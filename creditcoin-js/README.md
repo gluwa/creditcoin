@@ -161,6 +161,8 @@ const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedCon
 });
 
 // sudoSigner is a keyring pair with sudo privileges
+// This key sets the default contract that will be used for G-GCRE swaps
+// The equivalent call for the GATE contract is setGateContract
 await api.tx.sudo
     .sudo(api.tx.creditcoin.setCollectCoinsContract(contract))
     .signAndSend(sudoSigner, { nonce: -1 });
