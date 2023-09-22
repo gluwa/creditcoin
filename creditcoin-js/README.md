@@ -152,7 +152,7 @@ await api.rpc.offchain.localStorageSet('PERSISTENT', 'ethereum-rpc-uri', rpcUri)
 // The blockchain the contract lives one
 const blockchain = "Ethereum";
 
-// Address for Ethereum Gluwa Creditcoin Vesting Token 
+// Address for Ethereum Gluwa Creditcoin Vesting Token
 const contractAddress = "0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419";
 
 const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
