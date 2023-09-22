@@ -77,6 +77,16 @@ const batch_tx = api.tx.utility.batch(txs);
 await batch_tx.signAndSend(alice);
 ```
 
+### Running examples
+
+For more examples, see the Examples folder in `src/examples`. You can execute each one by running `yarn example ./src/examples/<name>.ts` from the root directory.
+
+Try running the transfer example:
+
+```shell
+yarn example ./src/examples/transfer.ts
+```
+
 ## Development
 
 ### Build

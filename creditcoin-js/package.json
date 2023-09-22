@@ -9,7 +9,7 @@
     ],
     "scripts": {
         "build": "tsc",
-        "example": "ts-node --files ./src/examples/loan-cycle.ts",
+        "example": "ts-node --files",
         "build:types": "yarn generate:defs && yarn generate:meta",
         "generate:defs": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package creditcoin-js/interfaces --input ./src/interfaces --endpoint ./creditcoin.json",
         "generate:meta": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --package creditcoin-js/interfaces  --endpoint ./creditcoin.json --output ./src/interfaces",
