@@ -38,7 +38,20 @@ describe('Test GATE Token', (): void => {
         if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
             sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
         }
-    });
+
+        const { api } = ccApi;
+
+        await api.tx.sudo
+            .sudo(api.tx.balances.setBalance(gateFaucet.address, 1000, 0))
+            .signAndSend(sudoSigner, { nonce: -1 });
+
+        // Set the on chain location for the burn contract to be the address of the deployer wallet
+        const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
+            address: gateToken.address,
+            chain: testingData.blockchain,
+        });
+        await api.tx.sudo.sudo(api.tx.creditcoin.setGateContract(contract)).signAndSend(sudoSigner, { nonce: -1 });
+    }, 900_000);
 
     afterAll(async () => {
         await ccApi.api.disconnect();
@@ -52,17 +65,6 @@ describe('Test GATE Token', (): void => {
                 api,
                 extrinsics: { requestCollectCoinsV2 },
             } = ccApi;
-
-            await api.tx.sudo
-                .sudo(api.tx.balances.setBalance(gateFaucet.address, 1000, 0))
-                .signAndSend(sudoSigner, { nonce: -1 });
-
-            // Set the on chain location for the burn contract to be the address of the deployer wallet
-            const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
-                address: gateToken.address,
-                chain: testingData.blockchain,
-            });
-            await api.tx.sudo.sudo(api.tx.creditcoin.setGateContract(contract)).signAndSend(sudoSigner, { nonce: -1 });
 
             const mintTx = await gateToken.mint(deployer.address, 2500);
             await mintTx.wait(3);
@@ -92,7 +94,9 @@ describe('Test GATE Token', (): void => {
                 .sudo(api.tx.creditcoin.setGateFaucet(gateFaucet.address))
                 .signAndSend(sudoSigner, { nonce: -1 });
 
-            const swapGATEVerified = await collectCoinsV2Example(ccApi, gateContract, sudoSigner);
+
+            const swapGATE = await requestCollectCoinsV2(gateContract, sudoSigner);
+            const swapGATEVerified = await swapGATE.waitForVerification(900_000);
 
             // Test #2: This is a successful transfer and should proceed normally
             expect(swapGATEVerified).toBeTruthy();
@@ -104,6 +108,41 @@ describe('Test GATE Token', (): void => {
             await expect(requestCollectCoinsV2(gateContract, sudoSigner)).rejects.toThrow(
                 'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
             );
+        },
+        900_000,
+    );
+
+    // This test must run after the end to end test
+    // We are relying on the gate contract already being set, acceptable assumption since we run tests with --runInBand
+    testIf(
+        (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY,
+        'collectCoinsV2Example',
+        async () => {
+            const {
+                api,
+            } = ccApi;
+
+            const mintTx = await gateToken.mint(deployer.address, 2500);
+            await mintTx.wait(3);
+
+            const burnTx = await gateToken.burn(burnAmount);
+            await burnTx.wait(3);
+
+            // We are using the same deployer address as GCRE so the address may already be registered
+            await tryRegisterAddress(
+                ccApi,
+                deployer.address,
+                testingData.blockchain,
+                signAccountId(api, deployer, sudoSigner.address),
+                sudoSigner,
+                (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
+            );
+
+            const gateContract = GATEContract(deployer.address, burnTx.hash);
+            const swapGATEVerified = await collectCoinsV2Example(ccApi, gateContract, sudoSigner);
+
+            expect(swapGATEVerified).toBeTruthy();
+            expect(swapGATEVerified.amount.toNumber()).toEqual(burnAmount / 2);
         },
         900_000,
     );

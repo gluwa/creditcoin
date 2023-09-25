@@ -3,10 +3,11 @@ import {
     createAddressId,
     ethSignSignature,
     createCreditCoinOwnershipProof,
+    personalSignSignature,
 } from 'creditcoin-js/lib/extrinsics/register-address-v2';
 import { checkAddress, testData } from 'creditcoin-js/lib/testUtils';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
-import { signAccountId } from 'creditcoin-js/lib/utils';
+import { personalSignAccountId, signAccountId } from 'creditcoin-js/lib/utils';
 import { extractFee } from '../utils';
 import { registerAddressV2Example } from 'creditcoin-js/lib/examples/register-address-v2';
 
@@ -70,10 +71,31 @@ describe('RegisterAddressV2', () => {
     it('registerAddressV2 PersonalSign works as expected', async (): Promise<void> => {
         const lenderWallet = Wallet.createRandom();
 
-        const lenderRegAddr = await registerAddressV2Example(ccApi, lenderWallet, lender, blockchain);
+        const { api, extrinsics: { registerAddressV2 } } = ccApi;
+
+        const accountId = lender.addressRaw;
+        const externalAddress = lenderWallet.address;
+
+        const signature = await personalSignAccountId(api, lenderWallet, accountId);
+        const proof = personalSignSignature(signature);
+
+        const lenderRegAddr = await registerAddressV2(externalAddress, blockchain, proof, lender);
 
         // manually constructed address is the same as returned by Creditcoin
         const addressId = createAddressId(blockchain, lenderWallet.address);
+        expect(addressId).toBe(lenderRegAddr.itemId);
+
+        // manually constructed address should be reported as registered
+        const result = await checkAddress(ccApi, addressId);
+        expect(result).toBeDefined();
+    });
+
+    it('registerAddressV2Example works as expected', async () => {
+        const ethSigner = Wallet.createRandom();
+        const lenderRegAddr = await registerAddressV2Example(ccApi, ethSigner, lender, blockchain);
+
+        // manually constructed address is the same as returned by Creditcoin
+        const addressId = createAddressId(blockchain, ethSigner.address);
         expect(addressId).toBe(lenderRegAddr.itemId);
 
         // manually constructed address should be reported as registered
