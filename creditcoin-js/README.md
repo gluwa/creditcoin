@@ -82,46 +82,62 @@ await batch_tx.signAndSend(alice);
 
 ### Registering External Addresses
 ```typescript
-import { personalSignSignature } from 'creditcoin-js/lib/extrinsics/register-address-v2';
-import { personalSignAccountId } from 'creditcoin-js/lib/utils';
-import { Wallet } from "creditcoin-js";
+import { CreditcoinApi } from '../types';
+import { Wallet } from 'ethers';
+import { Blockchain } from '../model';
+import { personalSignAccountId } from '../utils';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { personalSignSignature } from '../extrinsics/register-address-v2';
 
-const { extrinsics: { registerAddressV2 }} = ccApi;
+export async function registerAddressV2Example(
+    ccApi: CreditcoinApi,
+    ethSigner: Wallet,
+    creditcoinAddress: KeyringPair,
+    blockchain: Blockchain,
+) {
+    const {
+        api,
+        extrinsics: { registerAddressV2 },
+    } = ccApi;
 
-// The ethers wallet that we will be registering
-const ethSigner = Wallet.random();
-const externalAddress = ethSigner.address;
+    const accountId = creditcoinAddress.addressRaw;
+    const externalAddress = ethSigner.address;
 
-// Assume creditcoinAddress is a keyring pair
-const accountId = creditcoinAddress.addressRaw;
+    const signature = await personalSignAccountId(api, ethSigner, accountId);
+    const proof = personalSignSignature(signature);
 
-// Create a proof of ownership by signing your creditcoin address with your ethereum private key
-const signature = await personalSignAccountId(api, ethSigner, creditcoinAddress);
-const proof = personalSignSignature(signature);
-
-// The blockchain that the external address belongs to
-const blockchain = "Ethereum";
-
-const result = await registerAddressV2(externalAddress, blockchain, proof, lender);
+    return registerAddressV2(externalAddress, blockchain, proof, creditcoinAddress);
+}
 ```
 
 ### Swap GCRE -> CTC
 ```typescript
 import { GCREContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
 
-const { extrinsics: { requestCollectCoinsV2 } } = ccApi;
-
 // Create a wrapper that holds the details for the burned tokens
 // externalAddress is the address of the burner and must be previously registered
+// The GCREContract refers to ethereum mainnet CTC, we could also use a GATEContract here for Gluwa Gate Token
 const burnDetails = GCREContract(externalAddress, burnTxHash);
 
-// Submit the swap request, adding it to the task queue of the off chain worker
-const collectCoins = await requestCollectCoinsV2(burnDetails, creditcoinSigner);
+export async function CollectCoinsV2Example(
+    ccApi: CreditcoinApi,
+    burnDetails: CollectCoinsContract,
+    creditcoinSigner: KeyringPair,
+) {
+    const {
+        extrinsics: { requestCollectCoinsV2 },
+    } = ccApi;
 
-// Wait for the offchain worker to finish processing this request
-// Under the hood waitForVerification tracks CollectedCoinsMinted and CollectedCoinsFailedVerification events using the TaskId as a unique key
-// 900_000 (milliseconds) comes from an assumed 60 block task timeout deadline and assumed 15 second blocktime (check the constants provided by the runtime in production code)
-const collectCoinVerified = await collectCoins.waitForVerification(900_000);
+    // Submit the swap request, adding it to the task queue of the off chain worker
+    const collectCoins = await requestCollectCoinsV2(burnDetails, creditcoinSigner);
+
+    // Wait for the offchain worker to finish processing this request
+    // Under the hood waitForVerification tracks CollectedCoinsMinted and CollectedCoinsFailedVerification events using the TaskId as a unique key
+    // 900_000 (milliseconds) comes from an assumed 60 block task timeout deadline and assumed 15 second blocktime (check the constants provided by the runtime in production code)
+    return await collectCoins.waitForVerification(900_000);
+}
+
+const result = await CollectCoinsV2Example(ccApi, burnDetails, creditcoinAddress);
 ```
 
 ### Reading Runtime Constants
@@ -155,17 +171,27 @@ const blockchain = "Ethereum";
 // Address for Ethereum Gluwa Creditcoin Vesting Token
 const contractAddress = "0xa3EE21C306A700E682AbCdfe9BaA6A08F3820419";
 
-const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
-    address: contractAddress
-    chain: blockchain,
-});
+import { KeyringPair } from '@polkadot/keyring/types';
+import { Blockchain } from 'src/model';
+import { CreditcoinApi } from 'src/types';
 
-// sudoSigner is a keyring pair with sudo privileges
-// This key sets the default contract that will be used for G-GCRE swaps
-// The equivalent call for the GATE contract is setGateContract
-await api.tx.sudo
-    .sudo(api.tx.creditcoin.setCollectCoinsContract(contract))
-    .signAndSend(sudoSigner, { nonce: -1 });
+export async function setCollectCoinsContractExample(
+    ccApi: CreditcoinApi,
+    contractAddress: string,
+    blockchain: Blockchain,
+    sudoSigner: KeyringPair,
+) {
+    const { api } = ccApi;
+
+    const contract = api.createType('PalletCreditcoinOcwTasksCollectCoinsDeployedContract', {
+        address: contractAddress,
+        chain: blockchain,
+    });
+
+    await api.tx.sudo.sudo(api.tx.creditcoin.setCollectCoinsContract(contract)).signAndSend(sudoSigner, { nonce: -1 });
+}
+
+await setCollectCoinsContractExample(ccApi, contractAddress, blockchain, sudoSigner);
 ```
 
 ## Development

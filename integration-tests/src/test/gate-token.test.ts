@@ -10,6 +10,7 @@ import { mnemonicGenerate } from '@polkadot/util-crypto';
 import { signAccountId } from 'creditcoin-js/lib/utils';
 import { GATEContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
 import { testIf } from '../utils';
+import { collectCoinsV2Example } from 'creditcoin-js/lib/examples/collect-coins-v2';
 
 describe('Test GATE Token', (): void => {
     let ccApi: CreditcoinApi;
@@ -91,8 +92,7 @@ describe('Test GATE Token', (): void => {
                 .sudo(api.tx.creditcoin.setGateFaucet(gateFaucet.address))
                 .signAndSend(sudoSigner, { nonce: -1 });
 
-            const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);
-            const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
+            const swapGATEVerified = await collectCoinsV2Example(ccApi, gateContract, sudoSigner);
 
             // Test #2: This is a successful transfer and should proceed normally
             expect(swapGATEVerified).toBeTruthy();
