@@ -64,6 +64,13 @@ declare module '@polkadot/api-base/types/consts' {
              **/
             [key: string]: Codec;
         };
+        creditcoin: {
+            unverifiedTaskTimeout: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         fastUnstake: {
             /**
              * Deposit to take for unstaking, to make sure we're able to slash the it in order to cover
