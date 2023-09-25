@@ -107,6 +107,7 @@ pub mod pallet {
 			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
 			+ Clone;
 
+		#[pallet::constant]
 		type UnverifiedTaskTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
