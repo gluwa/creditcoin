@@ -38,11 +38,10 @@ mod types;
 use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, CollectedCoinsId, CollectedCoinsStruct, ContractType, DealOrder, DealOrderId,
-	Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType,
-	LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput,
-	TokenContract, Transfer, TransferId, TransferKind, UnverifiedCollectedCoins,
-	UnverifiedTransfer,
+	Blockchain, BurnDetails, CollectedCoinsId, CollectedCoinsStruct, ContractType, DealOrder,
+	DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate,
+	InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId,
+	TaskOutput, Transfer, TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
@@ -108,6 +107,7 @@ pub mod pallet {
 			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
 			+ Clone;
 
+		#[pallet::constant]
 		type UnverifiedTaskTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
@@ -240,8 +240,8 @@ pub mod pallet {
 	pub type GATEContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn gate_faucet_address)]
-	pub type GATEFaucetAddress<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
+	#[pallet::getter(fn gate_faucet_account)]
+	pub type GATEFaucetAccount<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -523,7 +523,7 @@ pub mod pallet {
 		/// An unsupported blockchain was specified to register_address_v2
 		UnsupportedBlockchain,
 
-		/// The onchain faucet address for the GATE swap mechanism has not been set using the set_burn_gate_faucet_address extrinsic
+		/// The onchain faucet address for the GATE swap mechanism has not been set using the set_gate_faucet_address extrinsic
 		BurnGATEFaucetNotSet,
 
 		/// The faucet has insufficient funds to complete this swap, please retry when the faucet has been reloaded
@@ -1281,7 +1281,7 @@ pub mod pallet {
 							)
 						},
 						ContractType::GATE => {
-							let faucet_address = Self::gate_faucet_address()
+							let faucet_address = Self::gate_faucet_account()
 								.ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
 
 							let dest = Self::addresses(&collected_coins.to)
@@ -1477,21 +1477,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[transactional]
 		#[pallet::call_index(24)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_gate_faucet())]
 		pub fn set_gate_faucet(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
 			ensure_root(origin)?;
-			GATEFaucetAddress::<T>::put(address);
+			GATEFaucetAccount::<T>::put(address);
 			Ok(())
 		}
 
-		#[transactional]
 		#[pallet::call_index(25)]
 		#[pallet::weight(<T as Config>::WeightInfo::request_collect_coins_v2())]
 		pub fn request_collect_coins_v2(
 			origin: OriginFor<T>,
-			contract: TokenContract,
+			contract: BurnDetails,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let contract_type;
@@ -1500,18 +1498,18 @@ pub mod pallet {
 			let evm_address;
 
 			match contract {
-				TokenContract::GCRE(ext_addr, tx_hash) => {
+				BurnDetails::GCRE(ext_addr, tx_hash) => {
 					deployed_contract = Self::collect_coins_contract();
 					contract_type = ContractType::GCRE;
 					tx_id = tx_hash;
 					evm_address = ext_addr;
 				},
-				TokenContract::GATE(ext_addr, tx_hash) => {
+				BurnDetails::GATE(ext_addr, tx_hash) => {
 					deployed_contract = Self::gate_contract();
 					contract_type = ContractType::GATE;
 					tx_id = tx_hash;
 					evm_address = ext_addr;
-					Self::gate_faucet_address().ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
+					Self::gate_faucet_account().ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
 				},
 			}
 

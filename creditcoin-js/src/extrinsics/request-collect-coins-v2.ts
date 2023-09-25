@@ -3,13 +3,13 @@ import { ExternalAddress, CollectCoinsContract } from '../model';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { handleTransaction } from './common';
 import { TxCallback, TxFailureCallback } from '..';
-import { PalletCreditcoinCollectCoinsTokenContract } from '@polkadot/types/lookup';
+import { PalletCreditcoinCollectCoinsBurnDetails } from '@polkadot/types/lookup';
 import { CollectCoinsEvent, createCollectCoinsRegisteredEvent } from './request-collect-coins';
 
 export const createTokenContract = (
     api: ApiPromise,
     contract: CollectCoinsContract,
-): PalletCreditcoinCollectCoinsTokenContract => {
+): PalletCreditcoinCollectCoinsBurnDetails => {
     const toType = () => {
         switch (contract.kind) {
             case 'GCRE':
@@ -21,7 +21,7 @@ export const createTokenContract = (
         }
     };
 
-    return api.createType('PalletCreditcoinCollectCoinsTokenContract', toType());
+    return api.createType('PalletCreditcoinCollectCoinsBurnDetails', toType());
 };
 
 // eslint-disable-next-line @typescript-eslint/naming-convention

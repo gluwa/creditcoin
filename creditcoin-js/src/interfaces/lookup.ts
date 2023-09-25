@@ -1877,7 +1877,7 @@ export default {
                 address: 'AccountId32',
             },
             request_collect_coins_v2: {
-                contract: 'PalletCreditcoinCollectCoinsTokenContract',
+                contract: 'PalletCreditcoinCollectCoinsBurnDetails',
             },
         },
     },
@@ -1937,9 +1937,9 @@ export default {
         },
     },
     /**
-     * Lookup269: pallet_creditcoin::types::collect_coins::TokenContract
+     * Lookup269: pallet_creditcoin::types::collect_coins::BurnDetails
      **/
-    PalletCreditcoinCollectCoinsTokenContract: {
+    PalletCreditcoinCollectCoinsBurnDetails: {
         _enum: {
             GCRE: '(Bytes,Bytes)',
             GATE: '(Bytes,Bytes)',
