@@ -71,7 +71,10 @@ describe('RegisterAddressV2', () => {
     it('registerAddressV2 PersonalSign works as expected', async (): Promise<void> => {
         const lenderWallet = Wallet.createRandom();
 
-        const { api, extrinsics: { registerAddressV2 } } = ccApi;
+        const {
+            api,
+            extrinsics: { registerAddressV2 },
+        } = ccApi;
 
         const accountId = lender.addressRaw;
         const externalAddress = lenderWallet.address;

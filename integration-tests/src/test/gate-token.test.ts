@@ -94,7 +94,6 @@ describe('Test GATE Token', (): void => {
                 .sudo(api.tx.creditcoin.setGateFaucet(gateFaucet.address))
                 .signAndSend(sudoSigner, { nonce: -1 });
 
-
             const swapGATE = await requestCollectCoinsV2(gateContract, sudoSigner);
             const swapGATEVerified = await swapGATE.waitForVerification(900_000);
 
@@ -119,9 +118,7 @@ describe('Test GATE Token', (): void => {
         (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY,
         '001 - collectCoinsV2Example',
         async () => {
-            const {
-                api,
-            } = ccApi;
+            const { api } = ccApi;
 
             const mintTx = await gateToken.mint(deployer.address, 2500);
             await mintTx.wait(3);
