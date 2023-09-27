@@ -59,7 +59,7 @@ describe('Test GATE Token', (): void => {
 
     testIf(
         (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY,
-        'End to end',
+        '000 - End to end',
         async () => {
             const {
                 api,
@@ -113,10 +113,11 @@ describe('Test GATE Token', (): void => {
     );
 
     // This test must run after the end to end test
-    // We are relying on the gate contract already being set, acceptable assumption since we run tests with --runInBand
+    // We are relying on the gate contract already being set and the faucet account being set prior to this test running
+    // This is an acceptable assumption since we run tests with --runInBand
     testIf(
         (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY,
-        'collectCoinsV2Example',
+        '001 - collectCoinsV2Example',
         async () => {
             const {
                 api,

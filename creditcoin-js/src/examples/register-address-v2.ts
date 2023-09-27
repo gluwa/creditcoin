@@ -1,20 +1,22 @@
-import { CreditcoinApi } from '../types';
 import { Wallet } from 'ethers';
-import { Blockchain } from '../model';
 import { personalSignAccountId } from '../utils';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { personalSignSignature } from '../extrinsics/register-address-v2';
+import { createAddressId, personalSignSignature } from '../extrinsics/register-address-v2';
+import { Keyring, creditcoinApi } from '../index';
 
 export async function registerAddressV2Example(
-    ccApi: CreditcoinApi,
-    ethSigner: Wallet,
-    creditcoinAddress: KeyringPair,
-    blockchain: Blockchain,
 ) {
+    // Create a keyring with Alice
+    const creditcoinAddress = new Keyring({
+        type: 'sr25519',
+    }).addFromUri('//Alice');
+
     const {
         api,
         extrinsics: { registerAddressV2 },
-    } = ccApi;
+    } = await creditcoinApi('ws://127.0.0.1:9944');
+
+    const ethSigner = Wallet.createRandom();
+    const blockchain = "Ethereum";
 
     const accountId = creditcoinAddress.addressRaw;
     const externalAddress = ethSigner.address;
@@ -22,5 +24,10 @@ export async function registerAddressV2Example(
     const signature = await personalSignAccountId(api, ethSigner, accountId);
     const proof = personalSignSignature(signature);
 
-    return registerAddressV2(externalAddress, blockchain, proof, creditcoinAddress);
+    const lenderRegAddr = await registerAddressV2(externalAddress, blockchain, proof, creditcoinAddress);
+    const addressId = createAddressId(blockchain, ethSigner.address);
+
+    await api.disconnect()
+
+    return { lenderRegAddr, addressId }
 }

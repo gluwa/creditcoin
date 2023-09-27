@@ -91,11 +91,9 @@ describe('RegisterAddressV2', () => {
     });
 
     it('registerAddressV2Example works as expected', async () => {
-        const ethSigner = Wallet.createRandom();
-        const lenderRegAddr = await registerAddressV2Example(ccApi, ethSigner, lender, blockchain);
+        const { lenderRegAddr, addressId } = await registerAddressV2Example();
 
         // manually constructed address is the same as returned by Creditcoin
-        const addressId = createAddressId(blockchain, ethSigner.address);
         expect(addressId).toBe(lenderRegAddr.itemId);
 
         // manually constructed address should be reported as registered
