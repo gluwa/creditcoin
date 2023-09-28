@@ -6,8 +6,8 @@ use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use pallet_staking_substrate::Error;
 use pallet_staking_substrate::RewardDestination;
-use sp_staking::StakingInterface;
 use runtime_utils::{ExtBuilder, RollTo, Trivial};
+use sp_staking::StakingInterface;
 use std::default::Default;
 
 type Staking = pallet_staking_substrate::Pallet<Runtime>;

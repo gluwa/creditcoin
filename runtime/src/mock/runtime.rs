@@ -1,18 +1,20 @@
 pub use crate::AccountId;
+use crate::OnChainSeqPhragmen;
 use crate::{
 	opaque, AccountIdLookup, Address, AuthorityId, Balance, BlakeTwo256, BlockHashCount,
 	BlockLength, BlockNumber, BlockWeights, ExistentialDeposit, Hash, Index, MaxLocks,
-	MinimumPeriod, Moment, ParityDbWeight, SS58Prefix, Signature, Version,
+	MinimumPeriod, Moment, ParityDbWeight, SS58Prefix, Signature, Version, VoterList,
 };
+use frame_election_provider_support::onchain::OnChainExecution;
 use frame_support::pallet_prelude::*;
 use frame_support::traits::U128CurrencyToVote;
 use frame_support::{construct_runtime, parameter_types};
 use frame_system::EnsureRoot;
 use pallet_session::PeriodicSessions;
-use pallet_staking::{DefaultElection, NoKeys, StakingAuthorship};
-use pallet_staking::{EmptyList, TrivialTargetList};
-use pallet_staking::{TestBenchmarkingConfig, TrivialSessionHandler};
+use pallet_staking_substrate::TestBenchmarkingConfig;
+use pallet_staking_substrate::UseValidatorsMap;
 use sp_runtime::generic;
+use sp_runtime::traits::OpaqueKeys;
 use sp_runtime::traits::Verify;
 use sp_runtime::MultiAddress;
 use sp_runtime::Perbill;
@@ -45,7 +47,7 @@ construct_runtime!(
 		System: frame_system,
 		Timestamp: pallet_timestamp,
 		Balances: pallet_balances,
-		Staking: pallet_staking::pallet,
+		Staking: pallet_staking_substrate,
 		Session: pallet_session,
 		TaskScheduler: pallet_offchain_task_scheduler,
 	}
@@ -110,7 +112,7 @@ pub const MaxNominatorRewardedPerValidator: u32 = 0;
 pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(0);
 }
 
-impl pallet_staking::Config for Runtime {
+impl pallet_staking_substrate::Config for Runtime {
 	type BondingDuration = BondingDuration;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
@@ -123,7 +125,7 @@ impl pallet_staking::Config for Runtime {
 	type Slash = ();
 	type SlashDeferDuration = SlashDeferDuration;
 	type UnixTime = Timestamp;
-	type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_staking_substrate::weights::SubstrateWeight<Runtime>;
 	type BenchmarkingConfig = TestBenchmarkingConfig;
 	type MaxNominations = MaxNominations;
 	type CurrencyToVote = U128CurrencyToVote;
@@ -131,10 +133,10 @@ impl pallet_staking::Config for Runtime {
 	type SessionsPerEra = BlocksPerEra;
 	type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
 	type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
-	type ElectionProvider = DefaultElection<(AccountId, Self::BlockNumber, Staking)>;
-	type GenesisElectionProvider = DefaultElection<(AccountId, Self::BlockNumber, Staking)>;
-	type VoterList = EmptyList<Self>;
-	type TargetList = TrivialTargetList<Self>;
+	type ElectionProvider = OnChainExecution<OnChainSeqPhragmen>;
+	type GenesisElectionProvider = Self::ElectionProvider;
+	type VoterList = VoterList;
+	type TargetList = UseValidatorsMap<Self>;
 	type SessionInterface = ();
 	type NextNewSession = Session;
 	type AdminOrigin = EnsureRoot<AccountId>;
@@ -147,8 +149,8 @@ impl pallet_session::Config for Runtime {
 	type ShouldEndSession = PeriodicSessions<ConstU32<1>, ConstU32<0>>;
 	type NextSessionRotation = ();
 	type SessionManager = Staking;
-	type SessionHandler = TrivialSessionHandler<Self>;
-	type Keys = NoKeys;
+	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = opaque::SessionKeys;
 	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
@@ -159,7 +161,7 @@ impl pallet_offchain_task_scheduler::Config for Runtime {
 	type TaskCall = RuntimeCall;
 	type WeightInfo = pallet_offchain_task_scheduler::weights::WeightInfo<Runtime>;
 	type Task = pallet_offchain_task_scheduler::mocked_task::MockTask<u32>;
-	type Authorship = StakingAuthorship<Self>;
+	type Authorship = TaskScheduler;
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {

@@ -5,9 +5,9 @@ use frame_support::{
 	traits::{tokens::currency::Currency, GenesisBuild},
 };
 use pallet_balances::GenesisConfig as BalancesGenesisConfig;
-use pallet_staking::StakingInterface;
-use pallet_staking::{GenesisConfig, StakerStatus};
+use pallet_staking_substrate::{GenesisConfig, StakerStatus};
 use runtime_utils::{ExtBuilder, RollTo, SyncCryptoStore, WithWorkerHook};
+use sp_staking::StakingInterface;
 
 fn generate_bonded_stash(
 	builder: &mut ExtBuilder,
