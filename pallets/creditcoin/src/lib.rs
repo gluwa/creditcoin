@@ -560,9 +560,9 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			log::debug!("Cleaning up expired entries");
 
-			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
-			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
-			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).backend;
+			let ask_count = AskOrders::<T>::clear_prefix(T::BlockNumber::from(1_000_000u32), u32::MAX, None).backend;
+			let bid_count = BidOrders::<T>::clear_prefix(T::BlockNumber::from(1_000_000u32), u32::MAX, None).backend;
+			let offer_count = Offers::<T>::clear_prefix(T::BlockNumber::from(1_000_000u32), u32::MAX, None).backend;
 
 			<T as Config>::WeightInfo::on_initialize(ask_count, bid_count, offer_count, 0, 0)
 		}
