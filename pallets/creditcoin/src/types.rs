@@ -1,7 +1,9 @@
+mod cleanup;
 mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 
+pub use cleanup::{StorageCleanupState, StorageItemCleanupState};
 pub use collect_coins::{
 	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
 };
