@@ -26,6 +26,8 @@ export type TestData = {
 export const testData = (ethereumChain: Blockchain, createWalletF: CreateWalletFunc): TestData => {
     return {
         blockchain: ethereumChain,
+        // WARNING: don't hard-code this, see examples/loan-cycle.ts
+        // NOTICE: this function is only used during testing before the Creditcoin API has been initialized
         expirationBlock: 10_000_000,
         createWallet: createWalletF,
         keyring: new Keyring({ type: 'sr25519' }),
