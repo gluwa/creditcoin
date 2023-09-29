@@ -114,6 +114,8 @@ impl pallet_creditcoin::Config for Test {
 	type WeightInfo = super::weights::WeightInfo<Test>;
 
 	type TaskScheduler = TaskScheduler;
+
+	type PerBlockCleanupLimit = ConstU32<30>;
 }
 
 impl pallet_offchain_task_scheduler::Config for Test {

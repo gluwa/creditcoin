@@ -118,6 +118,9 @@ pub mod pallet {
 				Hash = Self::Hash,
 				Task = Task<Self::AccountId, Self::BlockNumber, Self::Hash, Self::Moment>,
 			> + AuthorityController<AccountId = Self::AccountId>;
+
+		#[pallet::constant]
+		type PerBlockCleanupLimit: Get<u32>;
 	}
 
 	pub trait WeightInfo {
@@ -569,11 +572,12 @@ pub mod pallet {
 			let mut current =
 				CleanupState::<T>::get().unwrap_or_else(|| StorageCleanupState::new(block_number));
 
-			const LIMIT: u32 = 20_000;
-			const TOTAL_LIMIT: u32 = 60_000;
+			let total_limit = T::PerBlockCleanupLimit::get();
+			let limit = total_limit.saturating_div(3);
 			let mut ask_count = 0u32;
 			let mut bid_count = 0u32;
 			let mut offer_count = 0u32;
+			let mut total_count = 0u32;
 
 			loop {
 				let StorageCleanupState { ask_orders, bid_orders, offers } = current;
@@ -582,26 +586,32 @@ pub mod pallet {
 				let ask_cleanup = (ask_orders.on_block <= block_number).then(|| {
 					let ask_cleanup = AskOrders::<T>::clear_prefix(
 						ask_orders.on_block,
-						LIMIT,
+						limit.saturating_sub(total_count),
 						ask_orders.cursor(),
 					);
 					ask_count = ask_count.saturating_add(ask_cleanup.backend);
+					total_count = total_count.saturating_add(ask_cleanup.backend);
 					ask_cleanup
 				});
 
 				let bid_cleanup = (bid_orders.on_block <= block_number).then(|| {
 					let bid_cleanup = BidOrders::<T>::clear_prefix(
 						bid_orders.on_block,
-						LIMIT,
+						limit.saturating_sub(total_count),
 						bid_orders.cursor(),
 					);
 					bid_count = bid_count.saturating_add(bid_cleanup.backend);
+					total_count = total_count.saturating_add(bid_cleanup.backend);
 					bid_cleanup
 				});
 				let offer_cleanup = (offers.on_block <= block_number).then(|| {
-					let offer_cleanup =
-						Offers::<T>::clear_prefix(offers.on_block, LIMIT, offers.cursor());
+					let offer_cleanup = Offers::<T>::clear_prefix(
+						offers.on_block,
+						limit.saturating_sub(total_count),
+						offers.cursor(),
+					);
 					offer_count = offer_count.saturating_add(offer_cleanup.backend);
+					total_count = total_count.saturating_add(offer_cleanup.backend);
 					offer_cleanup
 				});
 
@@ -611,9 +621,7 @@ pub mod pallet {
 					offers: offers.updated_with(offer_cleanup),
 				};
 
-				if ask_count.saturating_add(bid_count).saturating_add(offer_count)
-					>= TOTAL_LIMIT / 2 || current.latest_block() > block_number
-				{
+				if total_count >= total_limit || current.latest_block() > block_number {
 					break;
 				}
 			}
@@ -621,7 +629,7 @@ pub mod pallet {
 			CleanupState::<T>::put(current);
 
 			log::debug!(
-				"Done, did {} ask orders, {} bid orders, {} offers",
+				"Done, cleaned up {} ask orders, {} bid orders, {} offers",
 				ask_count,
 				bid_count,
 				offer_count
