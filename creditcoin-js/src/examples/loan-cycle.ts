@@ -80,7 +80,9 @@ export const fullLoanCycleExample = async (
         };
     };
 
-    const expBlock = 100_000_000;
+    // AskOrder/BidOrder/Offer will expire 1M blocks from the current one
+    const lastHeader = await api.rpc.chain.getHeader();
+    const expBlock = lastHeader.number.toNumber() + 1_000_000;
     const loanTerms: LoanTerms = {
         amount: new BN(100),
         interestRate: {
