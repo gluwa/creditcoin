@@ -61,6 +61,7 @@ const tx = api.
 import { Keyring } from 'creditcoin-js';
 
 const keyring = new Keyring({ type: 'sr25519' });
+// const fromSeed = keyring.addFromUri("bottom drive obey lake curtain smoke basket hold race lonely fit walk");
 const alice = keyring.addFromUri('//Alice');
 
 await tx.signAndSend(alice);
