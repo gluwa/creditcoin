@@ -8,10 +8,11 @@ Creditcoin-js requires the following to be installed:
 
 -   [Node.js](https://nodejs.org/en/)
 -   [TypeScript](https://www.typescriptlang.org/)
+-   [Yarn](https://yarnpkg.com/)
 
 ### Install
 
-Adding Creditcoin-JS to your project is easy. Install it by using your favorite package manager:
+Adding Creditcoin-JS to your project is easy. Install it by using a JavaScript package manager like `npm` or `yarn`:
 
 ```shell
 yarn add creditcoin-js
