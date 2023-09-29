@@ -71,6 +71,7 @@ pub mod pallet {
 	use pallet_offchain_task_scheduler::tasks::{TaskScheduler, TaskV2};
 	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
 	use tracing as log;
+	use types::StorageCleanupState;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -241,6 +242,10 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn gate_faucet_account)]
 	pub type GATEFaucetAccount<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
+
+	#[pallet::storage]
+	pub type CleanupState<T: Config> =
+		StorageValue<_, StorageCleanupState<T::BlockNumber>, OptionQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -557,11 +562,69 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
-			log::debug!("Cleaning up expired entries");
+			let block_number = block_number + T::BlockNumber::from(999_995u32);
+			log::debug!("Cleaning up expired entries: {block_number:?}");
 
-			let ask_count = AskOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
-			let bid_count = BidOrders::<T>::clear_prefix(block_number, u32::MAX, None).backend;
-			let offer_count = Offers::<T>::clear_prefix(block_number, u32::MAX, None).backend;
+			let mut current =
+				CleanupState::<T>::get().unwrap_or_else(|| StorageCleanupState::new(block_number));
+
+			const LIMIT: u32 = 20_000;
+			const TOTAL_LIMIT: u32 = 60_000;
+			let mut ask_count = 0u32;
+			let mut bid_count = 0u32;
+			let mut offer_count = 0u32;
+
+			loop {
+				let StorageCleanupState { ask_orders, bid_orders, offers } = current;
+				log::debug!("ask orders block: {:?}, cursor: {}; bid orders block: {:?}, cursor: {}; offers block: {:?}, cursor: {}",
+					ask_orders.on_block,ask_orders.cursor.is_some(), bid_orders.on_block, bid_orders.cursor.is_some(),offers.on_block, offers.cursor.is_some(),);
+				let ask_cleanup = (ask_orders.on_block <= block_number).then(|| {
+					let ask_cleanup = AskOrders::<T>::clear_prefix(
+						ask_orders.on_block,
+						LIMIT,
+						ask_orders.cursor(),
+					);
+					ask_count = ask_count.saturating_add(ask_cleanup.backend);
+					ask_cleanup
+				});
+
+				let bid_cleanup = (bid_orders.on_block <= block_number).then(|| {
+					let bid_cleanup = BidOrders::<T>::clear_prefix(
+						bid_orders.on_block,
+						LIMIT,
+						bid_orders.cursor(),
+					);
+					bid_count = bid_count.saturating_add(bid_cleanup.backend);
+					bid_cleanup
+				});
+				let offer_cleanup = (offers.on_block <= block_number).then(|| {
+					let offer_cleanup =
+						Offers::<T>::clear_prefix(offers.on_block, LIMIT, offers.cursor());
+					offer_count = offer_count.saturating_add(offer_cleanup.backend);
+					offer_cleanup
+				});
+
+				current = StorageCleanupState {
+					ask_orders: ask_orders.updated_with(ask_cleanup),
+					bid_orders: bid_orders.updated_with(bid_cleanup),
+					offers: offers.updated_with(offer_cleanup),
+				};
+
+				if ask_count.saturating_add(bid_count).saturating_add(offer_count)
+					>= TOTAL_LIMIT / 2 || current.latest_block() > block_number
+				{
+					break;
+				}
+			}
+
+			CleanupState::<T>::put(current);
+
+			log::debug!(
+				"Done, did {} ask orders, {} bid orders, {} offers",
+				ask_count,
+				bid_count,
+				offer_count
+			);
 
 			<T as Config>::WeightInfo::on_initialize(ask_count, bid_count, offer_count, 0, 0)
 		}
