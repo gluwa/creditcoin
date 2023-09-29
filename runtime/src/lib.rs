@@ -165,6 +165,8 @@ pub fn native_version() -> NativeVersion {
 }
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+const EXPECTED_BLOCK_WEIGHT: Weight =
+	Weight::from_parts(5u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX);
 
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
@@ -183,7 +185,7 @@ parameter_types! {
 	pub MaximumMultiplier: Multiplier = Multiplier::max_value();
 	/// We allow for 5 seconds of compute with a 15 second average block time.
 	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(Weight::from_parts(5u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX), NORMAL_DISPATCH_RATIO);
+		::with_sensible_defaults(EXPECTED_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO);
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
@@ -594,6 +596,18 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 }
 
+pub const PER_BLOCK_CLEANUP_LIMIT: u32 = {
+	// Maximum weight allowed per block
+	let max_block = EXPECTED_BLOCK_WEIGHT.ref_time();
+	let db_weight = <Runtime as frame_system::Config>::DbWeight::get();
+	// Weight to cleanup a single storage entry (deletion is technically a read + write)
+	let weight_per_cleanup = db_weight.read.saturating_add(db_weight.write);
+	// Maximum cleanup operations that could fit in a block
+	let absolute_max = max_block.saturating_div(weight_per_cleanup);
+	// Leave some headroom to be safe
+	absolute_max.saturating_div(2) as u32
+};
+
 impl pallet_creditcoin::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Call = RuntimeCall;
@@ -603,6 +617,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
 	type TaskScheduler = TaskScheduler;
+	type PerBlockCleanupLimit = ConstU32<1>;
 }
 
 impl pallet_difficulty::Config for Runtime {
