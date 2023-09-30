@@ -1,10 +1,10 @@
-use frame_system::pallet_prelude::BlockNumberFor;
-use frame_system::Config as SystemConfig;
-use frame_system::Pallet as System;
-
 use crate::types::DoubleMapExt;
 use crate::types::{AddressId, AskOrderId, AskTerms, BidOrderId, BidTerms, Blockchain, OfferId};
 use crate::{Config, Duration, InterestRate, InterestType, LoanTerms};
+use alloc::format;
+use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::Config as SystemConfig;
+use frame_system::Pallet as System;
 
 pub(crate) fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
 	let address = format!("somefakeaddress{seed}");
