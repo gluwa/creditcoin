@@ -1,3 +1,5 @@
+mod cleanup;
+
 use crate::{
 	helpers::{
 		eth_message,
