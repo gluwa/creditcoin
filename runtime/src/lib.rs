@@ -675,7 +675,7 @@ impl pallet_creditcoin::Config for Runtime {
 	type UnverifiedTaskTimeout = ConstU32<60>;
 	type WeightInfo = pallet_creditcoin::weights::WeightInfo<Runtime>;
 	type TaskScheduler = TaskScheduler;
-	type PerBlockCleanupLimit = ConstU32<1>;
+	type PerBlockCleanupLimit = ConstU32<PER_BLOCK_CLEANUP_LIMIT>;
 }
 
 impl pallet_difficulty::Config for Runtime {
