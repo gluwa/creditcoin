@@ -11,7 +11,7 @@ use crate::test_utils::{
 };
 use crate::types::{Blockchain, BurnDetails, ContractType, OwnershipProof};
 use crate::Pallet as Creditcoin;
-use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
+use crate::{AskOrderId, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
 	pallet_prelude::*,
