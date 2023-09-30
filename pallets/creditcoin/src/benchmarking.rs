@@ -5,11 +5,12 @@ use crate::helpers::{extensions::IntoBounded, EVMAddress, PublicToAddress};
 use crate::migrations::Migrate;
 use crate::ocw::errors::VerificationFailureCause as Cause;
 use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
-use crate::Pallet as Creditcoin;
-use crate::{
-	types::{Blockchain, BurnDetails, ContractType, OwnershipProof},
-	Duration,
+use crate::test_utils::{
+	fake_address_id, fake_ask_id, fake_bid_id, fake_loan_terms, fake_offer_id, insert_fake_ask,
+	insert_fake_bid, insert_fake_offer,
 };
+use crate::types::{Blockchain, BurnDetails, ContractType, OwnershipProof};
+use crate::Pallet as Creditcoin;
 use crate::{AskOrderId, InterestRate, InterestType, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
 use frame_support::{
@@ -88,7 +89,7 @@ benchmarks! {
 		let lender = lender_account::<T>(false);
 		let borrower = borrower_account::<T>(false);
 
-		let terms = get_all_fit_terms();
+		let terms = fake_loan_terms();
 
 		let expiration_block = T::BlockNumber::one();
 		//generate this many filler asks
@@ -153,7 +154,7 @@ benchmarks! {
 	add_ask_order {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = lender_account::<T>(true);
-		let terms = get_all_fit_terms();
+		let terms = fake_loan_terms();
 		let expiration_block = T::BlockNumber::one();
 
 		let (address_id,ask_id,guid) = generate_ask::<T>(&who,&terms,&expiration_block,false,0).unwrap();
@@ -164,7 +165,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let who:T::AccountId = borrower_account::<T>(true);
 
-		let loan_terms = get_all_fit_terms();
+		let loan_terms = fake_loan_terms();
 
 		let expiration_block = T::BlockNumber::one();
 
@@ -175,7 +176,7 @@ benchmarks! {
 	add_offer {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender: T::AccountId = lender_account::<T>(true);
-		let loan_terms = get_all_fit_terms();
+		let loan_terms = fake_loan_terms();
 		let expiration_block = T::BlockNumber::one();
 
 		let (_, ask_id, bid_id) = generate_offer::<T>(&lender,&loan_terms,&expiration_block,false,0u8).unwrap();
@@ -186,7 +187,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender = lender_account::<T>(false);
 		let borrower= borrower_account::<T>(true);
-		let loan_terms = get_all_fit_terms();
+		let loan_terms = fake_loan_terms();
 		let expiration_block = T::BlockNumber::one();
 
 		let (offer_id,ask_id,bid_id) = generate_offer::<T>(&lender, &loan_terms, &expiration_block, true,0u8).unwrap();
@@ -269,7 +270,7 @@ benchmarks! {
 		<Timestamp<T>>::set_timestamp(1u32.into());
 		let lender:T::AccountId = lender_account::<T>(true);
 		let lender_addr_id = register_eth_addr::<T>(&lender,"lender");
-		let terms = get_all_fit_terms();
+		let terms = fake_loan_terms();
 		let expiry = T::BlockNumber::one();
 		let ask_guid = "ask_guid".as_bytes();
 		let bid_guid = "bid_guid".as_bytes();
@@ -375,18 +376,6 @@ benchmarks! {
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
-fn get_all_fit_terms() -> LoanTerms {
-	LoanTerms {
-		amount: 10u64.into(),
-		interest_rate: InterestRate {
-			rate_per_period: 1,
-			decimals: 1,
-			period: Duration::from_millis(100),
-			interest_type: InterestType::Simple,
-		},
-		term_length: Duration::new(1u64, 0u32),
-	}
-}
 
 fn generate_funded_deal<T: Config>(
 	fund: bool,
@@ -508,7 +497,7 @@ fn generate_deal<T: Config>(
 	seed: u8,
 ) -> Result<DealOrderId<T::BlockNumber, T::Hash>, crate::Error<T>> {
 	let lender = lender_account::<T>(true);
-	let terms = get_all_fit_terms();
+	let terms = fake_loan_terms();
 	let expiration_block = T::BlockNumber::one();
 
 	let borrower = borrower_account::<T>(false);
@@ -632,86 +621,6 @@ fn generate_bid<T: Config>(
 	Ok((address_id, bid_order_id, guid.to_vec()))
 }
 
-fn fake_address_id<T: Config>(seed: u32) -> AddressId<T::Hash> {
-	let address = format!("somefakeaddress{seed}");
-	crate::AddressId::new::<T>(&Blockchain::Ethereum, address.as_bytes())
-}
-
-fn fake_ask_id<T: Config>(
-	seed: u32,
-	expiration_block: BlockNumberFor<T>,
-) -> AskOrderId<T::BlockNumber, T::Hash> {
-	let guid = format!("somefakeaskguid{seed}");
-	crate::AskOrderId::new::<T>(expiration_block, guid.as_bytes())
-}
-
-fn insert_fake_ask<T: Config>(who: &T::AccountId, expiration_block: BlockNumberFor<T>, seed: u32) {
-	let address_id = fake_address_id::<T>(seed);
-	let ask_id = fake_ask_id::<T>(seed, expiration_block);
-	let ask = crate::AskOrder {
-		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
-		expiration_block,
-		lender: who.clone(),
-		lender_address_id: address_id,
-		terms: AskTerms::try_from(get_all_fit_terms()).unwrap(),
-	};
-
-	crate::AskOrders::<T>::insert_id(ask_id, ask);
-}
-
-pub(crate) fn fake_bid_id<T: SystemConfig>(
-	seed: u32,
-	expiration_block: BlockNumberFor<T>,
-) -> BidOrderId<T::BlockNumber, T::Hash> {
-	let guid = format!("somefakebidguid{seed}");
-	crate::BidOrderId::new::<T>(expiration_block, guid.as_bytes())
-}
-
-fn insert_fake_bid<T: Config>(who: &T::AccountId, expiration_block: BlockNumberFor<T>, seed: u32) {
-	let address_id = fake_address_id::<T>(seed);
-	let bid_id = fake_bid_id::<T>(seed, expiration_block);
-	let bid = crate::BidOrder {
-		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
-		expiration_block,
-		borrower: who.clone(),
-		borrower_address_id: address_id,
-		terms: BidTerms::try_from(get_all_fit_terms()).unwrap(),
-	};
-
-	crate::BidOrders::<T>::insert_id(bid_id, bid);
-}
-
-fn fake_offer_id<T: SystemConfig>(
-	expiration_block: BlockNumberFor<T>,
-	ask_id: &AskOrderId<T::BlockNumber, T::Hash>,
-	bid_id: &BidOrderId<T::BlockNumber, T::Hash>,
-) -> OfferId<T::BlockNumber, T::Hash> {
-	OfferId::new::<T>(expiration_block, ask_id, bid_id)
-}
-
-fn insert_fake_offer<T: Config>(
-	who: &T::AccountId,
-	expiration_block: BlockNumberFor<T>,
-	seed: u32,
-) {
-	let ask_id = fake_ask_id::<T>(seed, expiration_block);
-	let bid_id = fake_bid_id::<T>(seed, expiration_block);
-
-	let offer_id = fake_offer_id::<T>(expiration_block, &ask_id, &bid_id);
-	let offer = crate::Offer {
-		ask_id,
-		bid_id,
-		block: System::<T>::block_number(),
-		blockchain: Blockchain::Ethereum,
-		expiration_block,
-		lender: who.clone(),
-	};
-
-	crate::Offers::<T>::insert_id(offer_id, offer);
-}
-
 pub(crate) fn fake_deal_id<T: SystemConfig>(
 	expiration_block: BlockNumberFor<T>,
 	offer_id: &OfferId<T::BlockNumber, T::Hash>,
@@ -749,7 +658,7 @@ fn insert_fake_deal<T: Config>(
 		},
 		offer_id,
 		repayment_transfer_id: None,
-		terms: get_all_fit_terms(),
+		terms: fake_loan_terms(),
 		timestamp: pallet_timestamp::Pallet::<T>::now(),
 	};
 
