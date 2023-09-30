@@ -99,6 +99,8 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
+pub(crate) const CLEANUP_LIMIT: u32 = 30;
+
 impl pallet_creditcoin::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 
@@ -115,7 +117,7 @@ impl pallet_creditcoin::Config for Test {
 
 	type TaskScheduler = TaskScheduler;
 
-	type PerBlockCleanupLimit = ConstU32<30>;
+	type PerBlockCleanupLimit = ConstU32<CLEANUP_LIMIT>;
 }
 
 impl pallet_offchain_task_scheduler::Config for Test {
