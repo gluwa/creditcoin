@@ -35,6 +35,9 @@ pub mod migrations;
 pub mod ocw;
 mod types;
 
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+pub mod test_utils;
+
 use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
@@ -566,14 +569,12 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
-			let block_number = block_number + T::BlockNumber::from(999_995u32);
 			log::debug!("Cleaning up expired entries: {block_number:?}");
 
 			let mut current =
 				CleanupState::<T>::get().unwrap_or_else(|| StorageCleanupState::new(block_number));
 
-			let total_limit = T::PerBlockCleanupLimit::get();
-			let limit = total_limit.saturating_div(3);
+			let limit = T::PerBlockCleanupLimit::get();
 			let mut ask_count = 0u32;
 			let mut bid_count = 0u32;
 			let mut offer_count = 0u32;
@@ -594,34 +595,35 @@ pub mod pallet {
 					ask_cleanup
 				});
 
-				let bid_cleanup = (bid_orders.on_block <= block_number).then(|| {
-					let bid_cleanup = BidOrders::<T>::clear_prefix(
-						bid_orders.on_block,
-						limit.saturating_sub(total_count),
-						bid_orders.cursor(),
-					);
-					bid_count = bid_count.saturating_add(bid_cleanup.backend);
-					total_count = total_count.saturating_add(bid_cleanup.backend);
-					bid_cleanup
-				});
-				let offer_cleanup = (offers.on_block <= block_number).then(|| {
-					let offer_cleanup = Offers::<T>::clear_prefix(
-						offers.on_block,
-						limit.saturating_sub(total_count),
-						offers.cursor(),
-					);
-					offer_count = offer_count.saturating_add(offer_cleanup.backend);
-					total_count = total_count.saturating_add(offer_cleanup.backend);
-					offer_cleanup
-				});
+				let bid_cleanup = (bid_orders.on_block <= block_number && total_count < limit)
+					.then(|| {
+						let bid_cleanup = BidOrders::<T>::clear_prefix(
+							bid_orders.on_block,
+							limit.saturating_sub(total_count),
+							bid_orders.cursor(),
+						);
+						bid_count = bid_count.saturating_add(bid_cleanup.backend);
+						total_count = total_count.saturating_add(bid_cleanup.backend);
+						bid_cleanup
+					});
+				let offer_cleanup =
+					(offers.on_block <= block_number && total_count < limit).then(|| {
+						let offer_cleanup = Offers::<T>::clear_prefix(
+							offers.on_block,
+							limit.saturating_sub(total_count),
+							offers.cursor(),
+						);
+						offer_count = offer_count.saturating_add(offer_cleanup.backend);
+						total_count = total_count.saturating_add(offer_cleanup.backend);
+						offer_cleanup
+					});
 
 				current = StorageCleanupState {
 					ask_orders: ask_orders.updated_with(ask_cleanup),
 					bid_orders: bid_orders.updated_with(bid_cleanup),
 					offers: offers.updated_with(offer_cleanup),
 				};
-
-				if total_count >= total_limit || current.latest_block() > block_number {
+				if total_count >= limit || current.earliest_block() > block_number {
 					break;
 				}
 			}
