@@ -10,11 +10,14 @@ use sp_std::cmp;
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct StorageItemCleanupState<BlockNumber> {
 	pub on_block: BlockNumber,
-	// pub cursor: Option<Vec<u8>>,
-	pub cursor: Option<WeakBoundedVec<u8, ConstU32<256>>>,
+	pub cursor: Option<WeakBoundedVec<u8, ConstU32<MAX_CURSOR_LEN>>>,
 }
 
+const MAX_CURSOR_LEN: u32 = 256;
+
 impl<BlockNumber> StorageItemCleanupState<BlockNumber> {
+	pub const MAX_CURSOR_LEN: u32 = MAX_CURSOR_LEN;
+
 	pub fn new(on_block: BlockNumber) -> Self {
 		Self { on_block, cursor: None }
 	}
@@ -68,9 +71,9 @@ where
 		}
 	}
 
-	pub fn latest_block(&self) -> BlockNumber {
-		cmp::max(
-			cmp::max(self.ask_orders.on_block.clone(), self.bid_orders.on_block.clone()),
+	pub fn earliest_block(&self) -> BlockNumber {
+		cmp::min(
+			cmp::min(self.ask_orders.on_block.clone(), self.bid_orders.on_block.clone()),
 			self.offers.on_block.clone(),
 		)
 	}
