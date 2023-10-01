@@ -18,7 +18,7 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Build docker image
         run: |
@@ -69,7 +69,7 @@ jobs:
   sanity-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for parity between extrinsics, benchmarks and weights
         run: |
@@ -89,7 +89,7 @@ jobs:
   sanity-test-cli:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -111,7 +111,7 @@ jobs:
     name: cargo audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -155,7 +155,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Configure rustc version
         run: |
@@ -180,7 +180,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -215,7 +215,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -247,7 +247,7 @@ jobs:
   unit-test-creditcoin:
     runs-on: macos-12
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         env:
@@ -301,7 +301,7 @@ jobs:
   unit-test-cli:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -327,7 +327,7 @@ jobs:
   build-creditcoin-node:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -371,7 +371,7 @@ jobs:
       - build-creditcoin-node
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Start local Ethereum node
         run: |
@@ -559,7 +559,7 @@ jobs:
     # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
     permissions: write-all
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 10
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -662,7 +662,7 @@ jobs:
           [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -688,7 +688,7 @@ jobs:
           [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -714,7 +714,7 @@ jobs:
           [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -739,7 +739,7 @@ jobs:
   benchmark:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Inspect benchmark CI config
         run: |
@@ -802,7 +802,7 @@ jobs:
     name: "🐚 Shellcheck"
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
         env:
