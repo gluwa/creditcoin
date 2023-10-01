@@ -20,7 +20,7 @@ jobs:
     outputs:
       needs-bench: ${{ steps.version-check.outputs.needs_bench }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -34,7 +34,7 @@ jobs:
     needs: check-if-needed
     if: needs.check-if-needed.outputs.needs-bench == 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Inspect benchmark CI config
         run: |
@@ -89,7 +89,7 @@ jobs:
       resource_group: ${{ steps.get-env.outputs.resource_group }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install azure-cli
         run: |
@@ -155,7 +155,7 @@ jobs:
     needs:
       - deploy-github-runner
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 10
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -245,7 +245,7 @@ jobs:
     if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Evaluate env vars
         id: get-env
