@@ -566,16 +566,17 @@ pub mod pallet {
 				let StorageCleanupState { ask_orders, bid_orders, offers } = current;
 				log::debug!("ask orders block: {:?}, cursor: {}; bid orders block: {:?}, cursor: {}; offers block: {:?}, cursor: {}",
 					ask_orders.on_block,ask_orders.cursor.is_some(), bid_orders.on_block, bid_orders.cursor.is_some(),offers.on_block, offers.cursor.is_some(),);
-				let ask_cleanup = (ask_orders.on_block <= block_number).then(|| {
-					let ask_cleanup = AskOrders::<T>::clear_prefix(
-						ask_orders.on_block,
-						limit.saturating_sub(total_count),
-						ask_orders.cursor(),
-					);
-					ask_count = ask_count.saturating_add(ask_cleanup.backend);
-					total_count = total_count.saturating_add(ask_cleanup.backend);
-					ask_cleanup
-				});
+				let ask_cleanup = (ask_orders.on_block <= block_number && total_count < limit)
+					.then(|| {
+						let ask_cleanup = AskOrders::<T>::clear_prefix(
+							ask_orders.on_block,
+							limit.saturating_sub(total_count),
+							ask_orders.cursor(),
+						);
+						ask_count = ask_count.saturating_add(ask_cleanup.backend);
+						total_count = total_count.saturating_add(ask_cleanup.backend);
+						ask_cleanup
+					});
 
 				let bid_cleanup = (bid_orders.on_block <= block_number && total_count < limit)
 					.then(|| {
