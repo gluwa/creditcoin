@@ -1,8 +1,11 @@
+use frame_support::pallet_prelude::StorageDoubleMap;
 use frame_support::storage::generator::StorageDoubleMap as DoubleMapGen;
 use frame_support::traits::Hooks;
 use frame_support::weights::Weight;
+use frame_support::IterableStorageDoubleMap;
+use parity_scale_codec::{EncodeLike, FullCodec};
 use sp_core::ConstU32;
-use sp_io::TestExternalities;
+use sp_io::{MultiRemovalResults, TestExternalities};
 use sp_runtime::WeakBoundedVec;
 
 use crate::mock::{self, Creditcoin, ExtBuilder};
@@ -115,6 +118,23 @@ impl TestExternalities {
 	fn then_run(&mut self, f: impl FnOnce()) -> &mut TestExternalities {
 		self.run(f);
 		self
+	}
+}
+
+#[extend::ext]
+impl<Prefix, Hasher1, Key1, Hasher2, Key2, Value>
+	StorageDoubleMap<Prefix, Hasher1, Key1, Hasher2, Key2, Value>
+where
+	Key1: FullCodec,
+	Key2: FullCodec,
+	Value: FullCodec,
+	Self: IterableStorageDoubleMap<Key1, Key2, Value>,
+{
+	fn count_at(prefix: impl EncodeLike<Key1>) -> usize {
+		Self::iter_prefix(prefix).count()
+	}
+	fn count() -> usize {
+		Self::iter().count()
 	}
 }
 
@@ -286,4 +306,101 @@ fn cleans_up_to_limit() {
 				})
 			);
 		});
+}
+
+#[test]
+fn catches_up_on_blocks() {
+	let count = LIMIT * 2;
+	let exp = 5;
+
+	StorageBuilder::new()
+		.ask_orders(count, exp)
+		.ask_orders(1, exp + 1)
+		.bid_orders(1, exp + 1)
+		.offers(1, exp + 1)
+		.ask_orders(1, exp + 2)
+		.bid_orders(1, exp + 2)
+		.offers(1, exp + 2)
+		.finish()
+		.then_run(|| {
+			assert_eq!(AskOrders::count_at(exp), count);
+			assert_eq!(AskOrders::count_at(exp + 1), 1);
+			assert_eq!(AskOrders::count_at(exp + 2), 1);
+			assert_eq!(BidOrders::count_at(exp + 1), 1);
+			assert_eq!(BidOrders::count_at(exp + 2), 1);
+			assert_eq!(Offers::count_at(exp + 1), 1);
+			assert_eq!(Offers::count_at(exp + 2), 1);
+
+			cleanup(exp);
+
+			assert_eq!(AskOrders::count_at(exp), count / 2);
+			assert_eq!(BidOrders::count(), 2);
+			assert_eq!(Offers::count(), 2);
+
+			assert_eq!(
+				cleanup_state(),
+				Some(StorageCleanupState {
+					ask_orders: StorageItemCleanupState {
+						on_block: exp,
+						cursor: cursor_for::<AskOrders>(exp)
+					},
+					..StorageCleanupState::new(exp)
+				})
+			)
+		})
+		.then_run(|| {
+			cleanup(exp + 1);
+
+			assert_eq!(AskOrders::count_at(exp), 0);
+			assert_eq!(AskOrders::count_at(exp + 1), 1);
+			assert_eq!(AskOrders::count_at(exp + 2), 1);
+			assert_eq!(BidOrders::count(), 2);
+			assert_eq!(Offers::count(), 2);
+
+			assert_eq!(
+				cleanup_state(),
+				Some(StorageCleanupState {
+					ask_orders: StorageItemCleanupState::new(exp + 1),
+					..StorageCleanupState::new(exp)
+				})
+			)
+		})
+		.then_run(|| {
+			cleanup(exp + 2);
+
+			assert_eq!(AskOrders::count(), 0);
+			assert_eq!(BidOrders::count(), 0);
+			assert_eq!(Offers::count(), 0);
+
+			assert_eq!(cleanup_state(), Some(StorageCleanupState::new(exp + 3)))
+		});
+}
+
+#[test]
+fn cleanup_state_transitions() {
+	let block = 5;
+	let initial_state = StorageItemCleanupState::new(block);
+
+	// No results => no change
+	assert_eq!(initial_state.clone().updated_with(None), initial_state);
+
+	// did some work, but no work left to do (cursor is None) => go on to next block
+	let results = MultiRemovalResults { backend: 1, loops: 1, unique: 1, maybe_cursor: None };
+	assert_eq!(
+		initial_state.clone().updated_with(Some(results)),
+		StorageItemCleanupState::new(block + 1)
+	);
+
+	// did some work, but there's more to do (cursor is Some) => stay on same block, but update cursor
+	let resume_cursor = vec![1, 2, 3];
+	let results = MultiRemovalResults {
+		backend: 1,
+		loops: 1,
+		unique: 1,
+		maybe_cursor: Some(resume_cursor.clone()),
+	};
+	assert_eq!(
+		initial_state.updated_with(Some(results)),
+		StorageItemCleanupState { on_block: block, cursor: Some(weak_bounded(resume_cursor)) }
+	);
 }
