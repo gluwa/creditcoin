@@ -55,8 +55,10 @@ export async function getControllerStatus(
 }
 
 export async function getValidatorStatus(address: string, api: ApiPromise) {
+  // Check if address is a controller and get its stash
   const controllerStatus = await getControllerStatus(address, api);
 
+  // If it is a controller, set the stash to its stash address
   let stash;
   if (controllerStatus.isController && controllerStatus.stash) {
     console.log(
@@ -68,13 +70,17 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     stash = address;
   }
 
+  // Get the staking information for the stash
   const res = await api.derive.staking.account(stash);
 
+  // Get the controller address
   const controller = res.controllerId ? res.controllerId.toString() : undefined;
 
+  // Get the total staked amount
   const totalStaked = readAmount(res.stakingLedger.total.toString());
   const bonded = totalStaked.gt(new BN(0));
 
+  // Get information about any unbonding tokens and unlocked chunks
   const unlockingRes = res.stakingLedger.unlocking;
   const currentEra = (await api.query.staking.currentEra()).unwrap();
   const unlocking = unlockingRes
@@ -85,6 +91,8 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     ? readAmountFromHex(res.redeemable.toString())
     : new BN(0);
 
+  // Get the unlocked chunks that are ready for withdrawal
+  // by comparing the era of each chunk to the current era
   const readyForWithdraw = res.stakingLedger.unlocking
     .map((u: any) => {
       const chunk: UnlockChunk = {
@@ -103,15 +111,14 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
   const nextUnbondingAmount =
     unlocking.length > 0 ? unlocking[0].value.toBn() : null;
 
+  // Get lists of all validators, active validators, and waiting validators
   const validatorEntries = await api.query.staking.validators
     .entries()
     .then((r) => r.map((v) => v[0].toHuman()?.toString()));
-
   const activeValidatorsRes = await api.derive.staking.validators();
   const activeValidators: string[] = activeValidatorsRes.validators.map((v) =>
     v.toString()
   );
-
   const waitingValidators = validatorEntries.filter((v) => {
     if (v !== undefined) {
       return !activeValidators.includes(v);
@@ -120,13 +127,18 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     }
   });
 
+  // Check if the validator is validating, waiting, or active
+  const validating = validatorEntries.includes(stash);
+  const waiting = waitingValidators.includes(stash);
+  const active = activeValidators.includes(stash);
+
   const validatorStatus: Status = {
     bonded,
     stash,
     controller,
-    validating: validatorEntries.includes(stash),
-    waiting: waitingValidators.includes(stash),
-    active: activeValidators.includes(stash),
+    validating,
+    waiting,
+    active,
     canWithdraw,
     readyForWithdraw,
     nextUnbondingDate,
