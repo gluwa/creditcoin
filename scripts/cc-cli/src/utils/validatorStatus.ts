@@ -130,7 +130,7 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     canWithdraw,
     readyForWithdraw,
     nextUnbondingDate,
-    nextUnbondingAmount: nextUnbondingAmount ? nextUnbondingAmount : new BN(0),
+    nextUnbondingAmount: nextUnbondingAmount || new BN(0),
     redeemable,
   };
 
@@ -154,8 +154,8 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
       table.push([`Unlocked since era ${chunk.era}`, toCTCString(chunk.value)]);
     });
   }
-  let nextUnlocking = "None";
-  if (status.nextUnbondingAmount && status.nextUnbondingAmount.eq(new BN(0))) {
+  let nextUnlocking;
+  if (status.nextUnbondingAmount?.eq(new BN(0))) {
     nextUnlocking = "None";
   } else if (status.nextUnbondingAmount && status.nextUnbondingDate) {
     const nextUnbondingAmount = toCTCString(status.nextUnbondingAmount);
@@ -176,9 +176,8 @@ export function requireStatus(
 ) {
   if (!status[condition]) {
     console.error(
-      message
-        ? message
-        : `Cannot perform action, validator is not ${condition.toString()}`
+      message ||
+        `Cannot perform action, validator is not ${condition.toString()}`
     );
     process.exit(1);
   }
