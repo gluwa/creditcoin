@@ -32,7 +32,7 @@ export interface ControllerStatus {
 
 export async function getControllerStatus(
   address: string,
-  api: ApiPromise
+  api: ApiPromise,
 ): Promise<ControllerStatus> {
   const stashRes = await api.query.staking.ledger(address);
   const stash = stashRes.isSome
@@ -62,7 +62,7 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
   let stash;
   if (controllerStatus.isController && controllerStatus.stash) {
     console.log(
-      `Address belongs to the Controller account for validator ${controllerStatus.stash}`
+      `Address belongs to the Controller account for validator ${controllerStatus.stash}`,
     );
     console.log(`Showing status for ${controllerStatus.stash}...`);
     stash = controllerStatus.stash;
@@ -117,7 +117,7 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     .then((r) => r.map((v) => v[0].toHuman()?.toString()));
   const activeValidatorsRes = await api.derive.staking.validators();
   const activeValidators: string[] = activeValidatorsRes.validators.map((v) =>
-    v.toString()
+    v.toString(),
   );
   const waitingValidators = validatorEntries.filter((v) => {
     if (v !== undefined) {
@@ -173,7 +173,7 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
     const nextUnbondingAmount = toCTCString(status.nextUnbondingAmount);
     const nextUnbondingDate = await timeTillEra(api, status.nextUnbondingDate);
     nextUnlocking = `${nextUnbondingAmount} in ${formatDaysHoursMinutes(
-      nextUnbondingDate.toNumber()
+      nextUnbondingDate.toNumber(),
     )}`;
   }
   table.push(["Next unlocking", nextUnlocking]);
@@ -184,12 +184,12 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
 export function requireStatus(
   status: Status,
   condition: keyof Status,
-  message?: string
+  message?: string,
 ) {
   if (!status[condition]) {
     console.error(
       message ||
-        `Cannot perform action, validator is not ${condition.toString()}`
+        `Cannot perform action, validator is not ${condition.toString()}`,
     );
     process.exit(1);
   }
