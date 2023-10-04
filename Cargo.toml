@@ -16,6 +16,7 @@ members = [
     "sha3pow",
     "primitives",
     "test/client",
+    "test/fuzzer",
     "test/runtime-utils",
     "test/traced-test",
 ]
