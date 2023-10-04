@@ -20,17 +20,60 @@ function formatDaysHoursMinutes(ms: number) {
   return `${daysString}${hoursString}${minutesString}${secString}`;
 }
 
-export async function getValidatorStatus(address: string, api: ApiPromise) {
-  const res = await api.derive.staking.account(address);
-  const totalStaked = readAmount(res.stakingLedger.total.toString());
-  const bonded = totalStaked.gt(new BN(0));
+export interface StashControllerPair {
+  stash: string;
+  controller?: string;
+}
 
-  const controller = res.controllerId ? res.controllerId.toString() : "None";
+export interface ControllerStatus {
+  isController: boolean;
+  stash?: string;
+}
 
+export async function getControllerStatus(
+  address: string,
+  api: ApiPromise
+): Promise<ControllerStatus> {
   const stashRes = await api.query.staking.ledger(address);
   const stash = stashRes.isSome
     ? stashRes.unwrap().stash.toString()
     : undefined;
+
+  let status;
+  if (stash) {
+    status = {
+      isController: true,
+      stash,
+    };
+  } else {
+    status = {
+      isController: false,
+      stash: undefined,
+    };
+  }
+  return status;
+}
+
+export async function getValidatorStatus(address: string, api: ApiPromise) {
+  const controllerStatus = await getControllerStatus(address, api);
+
+  let stash;
+  if (controllerStatus.isController && controllerStatus.stash) {
+    console.log(
+      `Address belongs to the Controller account for validator ${controllerStatus.stash}`
+    );
+    console.log(`Showing status for ${controllerStatus.stash}...`);
+    stash = controllerStatus.stash;
+  } else {
+    stash = address;
+  }
+
+  const res = await api.derive.staking.account(stash);
+
+  const controller = res.controllerId ? res.controllerId.toString() : undefined;
+
+  const totalStaked = readAmount(res.stakingLedger.total.toString());
+  const bonded = totalStaked.gt(new BN(0));
 
   const unlockingRes = res.stakingLedger.unlocking;
   const currentEra = (await api.query.staking.currentEra()).unwrap();
@@ -66,7 +109,7 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
 
   const activeValidatorsRes = await api.derive.staking.validators();
   const activeValidators: string[] = activeValidatorsRes.validators.map((v) =>
-    v.toString(),
+    v.toString()
   );
 
   const waitingValidators = validatorEntries.filter((v) => {
@@ -81,9 +124,9 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     bonded,
     stash,
     controller,
-    validating: validatorEntries.includes(address),
-    waiting: waitingValidators.includes(address),
-    active: activeValidators.includes(address),
+    validating: validatorEntries.includes(stash),
+    waiting: waitingValidators.includes(stash),
+    active: activeValidators.includes(stash),
     canWithdraw,
     readyForWithdraw,
     nextUnbondingDate,
@@ -118,7 +161,7 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
     const nextUnbondingAmount = toCTCString(status.nextUnbondingAmount);
     const nextUnbondingDate = await timeTillEra(api, status.nextUnbondingDate);
     nextUnlocking = `${nextUnbondingAmount} in ${formatDaysHoursMinutes(
-      nextUnbondingDate.toNumber(),
+      nextUnbondingDate.toNumber()
     )}`;
   }
   table.push(["Next unlocking", nextUnlocking]);
@@ -129,13 +172,13 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
 export function requireStatus(
   status: Status,
   condition: keyof Status,
-  message?: string,
+  message?: string
 ) {
   if (!status[condition]) {
     console.error(
       message
         ? message
-        : `Cannot perform action, validator is not ${condition.toString()}`,
+        : `Cannot perform action, validator is not ${condition.toString()}`
     );
     process.exit(1);
   }
@@ -144,7 +187,7 @@ export function requireStatus(
 export interface Status {
   bonded: boolean;
   stash?: string;
-  controller: string;
+  controller?: string;
   validating: boolean;
   waiting: boolean;
   active: boolean;
