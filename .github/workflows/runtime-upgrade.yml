@@ -631,6 +631,7 @@ jobs:
       - build-sut
       - setup
       - setup-self-hosted
+      - live-sync-creditcoin
       - deploy-github-runner
     steps:
       - uses: actions/checkout@v4
@@ -663,6 +664,9 @@ jobs:
           echo "INFO: IP_ADDRESS=$IP_ADDRESS"
 
           ./target/release/creditcoin-node --version
+
+          # node should be reusing the database from the
+          # live-sync-creditcoin CI job listed as dependency above
           ./target/release/creditcoin-node \
             --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
@@ -670,7 +674,7 @@ jobs:
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --rpc-max-request-size  200000 \
             --rpc-max-response-size 200000 \
-            --prometheus-external \
+            --prometheus-external --pruning archive \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
             --base-path /mnt \
             --public-addr "/dns4/$IP_ADDRESS/tcp/30333" >creditcoin-node-used-for-try-runtime.log 2>&1 &
