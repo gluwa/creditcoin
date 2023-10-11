@@ -3108,10 +3108,10 @@ declare module '@polkadot/types/lookup' {
         readonly balance: u128;
     }
 
-    /** @name FrameSupportPalletId (388) */
+    /** @name FrameSupportPalletId (387) */
     interface FrameSupportPalletId extends U8aFixed {}
 
-    /** @name PalletNominationPoolsError (389) */
+    /** @name PalletNominationPoolsError (388) */
     interface PalletNominationPoolsError extends Enum {
         readonly isPoolNotFound: boolean;
         readonly isPoolMemberNotFound: boolean;
@@ -3177,7 +3177,7 @@ declare module '@polkadot/types/lookup' {
             | 'BondExtraRestricted';
     }
 
-    /** @name PalletNominationPoolsDefensiveError (390) */
+    /** @name PalletNominationPoolsDefensiveError (389) */
     interface PalletNominationPoolsDefensiveError extends Enum {
         readonly isNotEnoughSpaceInUnbondPool: boolean;
         readonly isPoolNotFound: boolean;
@@ -3192,27 +3192,27 @@ declare module '@polkadot/types/lookup' {
             | 'BondedStashKilledPrematurely';
     }
 
-    /** @name FrameSystemExtensionsCheckNonZeroSender (393) */
+    /** @name FrameSystemExtensionsCheckNonZeroSender (392) */
     type FrameSystemExtensionsCheckNonZeroSender = Null;
 
-    /** @name FrameSystemExtensionsCheckSpecVersion (394) */
+    /** @name FrameSystemExtensionsCheckSpecVersion (393) */
     type FrameSystemExtensionsCheckSpecVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckTxVersion (395) */
+    /** @name FrameSystemExtensionsCheckTxVersion (394) */
     type FrameSystemExtensionsCheckTxVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckGenesis (396) */
+    /** @name FrameSystemExtensionsCheckGenesis (395) */
     type FrameSystemExtensionsCheckGenesis = Null;
 
-    /** @name FrameSystemExtensionsCheckNonce (399) */
+    /** @name FrameSystemExtensionsCheckNonce (398) */
     interface FrameSystemExtensionsCheckNonce extends Compact<u32> {}
 
-    /** @name FrameSystemExtensionsCheckWeight (400) */
+    /** @name FrameSystemExtensionsCheckWeight (399) */
     type FrameSystemExtensionsCheckWeight = Null;
 
-    /** @name PalletTransactionPaymentChargeTransactionPayment (401) */
+    /** @name PalletTransactionPaymentChargeTransactionPayment (400) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name CreditcoinNodeRuntimeRuntime (402) */
+    /** @name CreditcoinNodeRuntimeRuntime (401) */
     type CreditcoinNodeRuntimeRuntime = Null;
 } // declare module
