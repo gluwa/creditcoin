@@ -2,7 +2,7 @@ import { BN, Keyring, creditcoinApi } from 'src';
 
 export const transferExample = async () => {
     // Connect to a local node
-    const { api } = await creditcoinApi('ws://localhost:9944');
+    const { api } = await creditcoinApi((global as any).CREDITCOIN_API_URL);
 
     // Create a keyring with Alice
     const alice = new Keyring({
