@@ -15,7 +15,7 @@ Creditcoin-js requires the following to be installed:
 Adding Creditcoin-JS to your project is easy. Install it by using a JavaScript package manager like `npm` or `yarn`:
 
 ```shell
-yarn add creditcoin-js
+yarn add @gluwa/creditcoin-js
 ```
 
 This will install the latest release version, which should allow you to interact with Creditcoin's main network and your own local chains that use the latest Creditcoin binaries.
@@ -27,7 +27,7 @@ This will install the latest release version, which should allow you to interact
 Importing the library into your project:
 
 ```typescript
-import { creditcoinApi } from 'creditcoin-js';
+import { creditcoinApi } from '@gluwa/creditcoin-js';
 
 const { api } = await CreditcoinApi('ws://localhost:9944');
 ```
@@ -58,7 +58,7 @@ const tx = api.
 ### Signing & sending
 
 ```typescript
-import { Keyring } from 'creditcoin-js';
+import { Keyring } from '@gluwa/creditcoin-js';
 
 const keyring = new Keyring({ type: 'sr25519' });
 // const fromSeed = keyring.addFromUri("bottom drive obey lake curtain smoke basket hold race lonely fit walk");
