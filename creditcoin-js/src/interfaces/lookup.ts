@@ -2788,11 +2788,11 @@ export default {
         balance: 'u128',
     },
     /**
-     * Lookup388: frame_support::PalletId
+     * Lookup387: frame_support::PalletId
      **/
     FrameSupportPalletId: '[u8;8]',
     /**
-     * Lookup389: pallet_nomination_pools::pallet::Error<T>
+     * Lookup388: pallet_nomination_pools::pallet::Error<T>
      **/
     PalletNominationPoolsError: {
         _enum: {
@@ -2829,7 +2829,7 @@ export default {
         },
     },
     /**
-     * Lookup390: pallet_nomination_pools::pallet::DefensiveError
+     * Lookup389: pallet_nomination_pools::pallet::DefensiveError
      **/
     PalletNominationPoolsDefensiveError: {
         _enum: [
@@ -2841,35 +2841,35 @@ export default {
         ],
     },
     /**
-     * Lookup393: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T>
+     * Lookup392: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T>
      **/
     FrameSystemExtensionsCheckNonZeroSender: 'Null',
     /**
-     * Lookup394: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
+     * Lookup393: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
      **/
     FrameSystemExtensionsCheckSpecVersion: 'Null',
     /**
-     * Lookup395: frame_system::extensions::check_tx_version::CheckTxVersion<T>
+     * Lookup394: frame_system::extensions::check_tx_version::CheckTxVersion<T>
      **/
     FrameSystemExtensionsCheckTxVersion: 'Null',
     /**
-     * Lookup396: frame_system::extensions::check_genesis::CheckGenesis<T>
+     * Lookup395: frame_system::extensions::check_genesis::CheckGenesis<T>
      **/
     FrameSystemExtensionsCheckGenesis: 'Null',
     /**
-     * Lookup399: frame_system::extensions::check_nonce::CheckNonce<T>
+     * Lookup398: frame_system::extensions::check_nonce::CheckNonce<T>
      **/
     FrameSystemExtensionsCheckNonce: 'Compact<u32>',
     /**
-     * Lookup400: frame_system::extensions::check_weight::CheckWeight<T>
+     * Lookup399: frame_system::extensions::check_weight::CheckWeight<T>
      **/
     FrameSystemExtensionsCheckWeight: 'Null',
     /**
-     * Lookup401: pallet_transaction_payment::ChargeTransactionPayment<T>
+     * Lookup400: pallet_transaction_payment::ChargeTransactionPayment<T>
      **/
     PalletTransactionPaymentChargeTransactionPayment: 'Compact<u128>',
     /**
-     * Lookup402: creditcoin_node_runtime::Runtime
+     * Lookup401: creditcoin_node_runtime::Runtime
      **/
     CreditcoinNodeRuntimeRuntime: 'Null',
 };
