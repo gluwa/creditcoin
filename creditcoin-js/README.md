@@ -64,6 +64,7 @@ const keyring = new Keyring({ type: 'sr25519' });
 // const fromSeed = keyring.addFromUri("bottom drive obey lake curtain smoke basket hold race lonely fit walk");
 const alice = keyring.addFromUri('//Alice');
 
+// Sign and send a previously created transaction
 await tx.signAndSend(alice);
 ```
 
