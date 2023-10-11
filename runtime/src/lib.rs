@@ -30,12 +30,12 @@ use pallet_staking::UseValidatorsMap;
 pub use pallet_staking_substrate::{self, StakerStatus};
 use sp_api::impl_runtime_apis;
 use sp_consensus_babe as babe_primitives;
-use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata, U256};
 use sp_runtime::{
 	generic, impl_opaque_keys,
 	traits::{
-		AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, NumberFor,
-		OpaqueKeys, Verify,
+		AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, Convert, IdentifyAccount,
+		NumberFor, OpaqueKeys, Verify,
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
@@ -1035,7 +1035,6 @@ parameter_types! {
 	pub const MaxPending: u32 = 64;
 	pub const AnnouncementDepositBase: u128 = 500;
 	pub const AnnouncementDepositFactor: u128 = 500;
-
 }
 
 impl pallet_proxy::Config for Runtime {
@@ -1077,6 +1076,22 @@ parameter_types! {
 	pub const PostUnbondingPoolsWindow: u32 = 10;
 }
 
+pub struct BalanceToU256;
+
+impl Convert<Balance, U256> for BalanceToU256 {
+	fn convert(x: Balance) -> U256 {
+		x.into()
+	}
+}
+
+pub struct U256ToBalance;
+
+impl Convert<U256, Balance> for U256ToBalance {
+	fn convert(x: U256) -> Balance {
+		x.saturated_into()
+	}
+}
+
 impl pallet_nomination_pools::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
@@ -1084,11 +1099,11 @@ impl pallet_nomination_pools::Config for Runtime {
 	type RewardCounter = sp_runtime::FixedU128;
 	type PalletId = NomPoolsPalletId;
 	type MaxPointsToBalance = MaxPointsToBalance;
-	type BalanceToU256 = ();
-	type U256ToBalance = ();
+	type BalanceToU256 = BalanceToU256;
+	type U256ToBalance = U256ToBalance;
 	type Staking = Staking;
 	type PostUnbondingPoolsWindow = PostUnbondingPoolsWindow;
-	type MaxMetadataLen = ();
+	type MaxMetadataLen = ConstU32<256>;
 	type MaxUnbonding = MaxUnbonding;
 }
 
