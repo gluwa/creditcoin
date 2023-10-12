@@ -129,4 +129,6 @@ You need to have the following:
 
 Execute like so:
 
-    $ node dist/index.js collect-coins -k 0xAccount0privateKey --seed //Alice --debug
+```bash
+node dist/index.js collect-coins -k 0xAccount0privateKey --seed //Alice --debug
+```
