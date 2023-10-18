@@ -11,8 +11,10 @@ use frame_election_provider_support::{
 };
 pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
-	traits::{ConstU32, ConstU8, OnRuntimeUpgrade, U128CurrencyToVote},
-	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+	traits::{ConstU128, ConstU32, ConstU8, OnRuntimeUpgrade, U128CurrencyToVote},
+	weights::{
+		ConstantMultiplier, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+	},
 	PalletId,
 };
 use frame_system::EnsureRoot;
@@ -585,7 +587,7 @@ impl pallet_transaction_payment::Config for Runtime {
 	type WeightToFee = WeightToCtcFee;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 	type OperationalFeeMultiplier = ConstU8<1u8>;
-	type LengthToFee = LengthToCtcFee;
+	type LengthToFee = ConstantMultiplier<u128, ConstU128<1_500_000_000u128>>;
 	type RuntimeEvent = RuntimeEvent;
 }
 
