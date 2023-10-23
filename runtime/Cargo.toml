@@ -61,6 +61,7 @@ sp-staking = { workspace = true }
 pallet-staking-reward-fn = { workspace = true }
 pallet-offences = { workspace = true }
 log = { workspace = true }
+sp-io = { workspace = true }
 
 # Pallets necessary for use with the Staking Dashboard
 # CSUB-503 https://gluwa.atlassian.net/browse/CSUB-503?atlOrigin=eyJpIjoiODY0NGFjOTkzZjE1NGFkYTg1OTNkZmYxZGU1NjlmYjIiLCJwIjoiaiJ9
@@ -132,6 +133,7 @@ std = [
     'sp-block-builder/std',
     'sp-core/std',
     'sp-inherents/std',
+    'sp-io/std',
     'sp-offchain/std',
     'sp-runtime/std',
     'sp-session/std',
