@@ -30,6 +30,7 @@ use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use pallet_session::historical as session_historical;
 use pallet_staking::UseValidatorsMap;
 pub use pallet_staking_substrate::{self, StakerStatus};
+use parity_scale_codec::Decode;
 use sp_api::impl_runtime_apis;
 use sp_consensus_babe as babe_primitives;
 use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata, U256};
@@ -77,6 +78,8 @@ pub use sp_runtime::{Perbill, Permill};
 mod mock;
 #[cfg(test)]
 mod tests;
+
+mod output;
 
 mod version;
 pub use version::VERSION;
@@ -431,20 +434,24 @@ parameter_types! {
 	pub MinAnnualInflation : Perquintill = Perquintill::from_rational(25u64, 1000u64);
 }
 
-pub struct InitBabe;
+// NOTE: this should be removed once the runtime has been upgraded on mainnet
+// (though there is a check in case we forget)
+pub struct MigrateBags;
 
-impl OnRuntimeUpgrade for InitBabe {
+impl OnRuntimeUpgrade for MigrateBags {
 	fn on_runtime_upgrade() -> Weight {
-		if Babe::epoch_config().is_none() {
-			log::debug!("Initializing BABE");
-			let babe_config = pallet_babe::InitConfig {
-				authorities: Vec::new(),
-				epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
-			};
-			Babe::genesis_init(babe_config);
-			<Runtime as frame_system::Config>::DbWeight::get().writes(3)
-		} else {
+		const BAGS_LIST_MIGRATION: &[u8] = b"ctc:bags_list_thresholds_migrated";
+		const OLD_THRESHOLDS: &[u64] = &[];
+		let key = sp_core::hashing::blake2_256(BAGS_LIST_MIGRATION);
+		if let Some(_v) = sp_io::storage::get(&key) {
 			Weight::zero()
+		} else {
+			let num_accts_affected =
+				pallet_bags_list::List::<Runtime, VoterBagsListInstance>::migrate(OLD_THRESHOLDS);
+			let each = ParityDbWeight::get().reads_writes(2, 2);
+			let weight = each.saturating_mul(num_accts_affected as u64);
+			sp_io::storage::set(&key, &true.encode());
+			weight
 		}
 	}
 }
@@ -488,12 +495,16 @@ impl onchain::Config for OnChainSeqPhragmen {
 	type TargetsBound = MaxElectableTargets;
 }
 
+parameter_types! {
+	pub const BagThresholds: &'static [u64] = &output::THRESHOLDS;
+}
+
 type VoterBagsListInstance = pallet_bags_list::Instance1;
 impl pallet_bags_list::Config<VoterBagsListInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ScoreProvider = Staking;
 	type WeightInfo = ();
-	type BagThresholds = ();
+	type BagThresholds = BagThresholds;
 	type Score = u64;
 }
 
@@ -702,7 +713,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
-	(InitBabe,),
+	(MigrateBags,),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
