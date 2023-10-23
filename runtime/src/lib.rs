@@ -535,21 +535,6 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
-pub struct LengthToCtcFee;
-
-impl WeightToFeePolynomial for LengthToCtcFee {
-	type Balance = Balance;
-
-	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		smallvec::smallvec![WeightToFeeCoefficient {
-			coeff_integer: 1,
-			coeff_frac: Perbill::zero(),
-			negative: false,
-			degree: 1,
-		}]
-	}
-}
-
 pub const TARGET_FEE_CREDO: Balance = 10_000_000_000_000_000;
 
 pub const CTC: Balance = 1_000_000_000_000_000_000;
