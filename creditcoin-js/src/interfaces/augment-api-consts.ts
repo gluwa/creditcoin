@@ -65,6 +65,7 @@ declare module '@polkadot/api-base/types/consts' {
             [key: string]: Codec;
         };
         creditcoin: {
+            perBlockCleanupLimit: u32 & AugmentedConst<ApiType>;
             unverifiedTaskTimeout: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
