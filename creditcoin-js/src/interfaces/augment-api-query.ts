@@ -38,6 +38,7 @@ import type {
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinBidOrder,
+    PalletCreditcoinCleanupStorageCleanupState,
     PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinLegacySighash,
@@ -333,6 +334,12 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            cleanupState: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<PalletCreditcoinCleanupStorageCleanupState>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             collectCoinsContract: AugmentedQuery<
                 ApiType,
                 () => Observable<PalletCreditcoinOcwTasksCollectCoinsDeployedContract>,
