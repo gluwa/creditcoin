@@ -705,8 +705,8 @@ jobs:
             --chain ${{ needs.setup.outputs.target_chain }} \
             --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
-            --rpc-max-request-size 100000 \
-            --rpc-max-response-size 100000 \
+            --rpc-max-request-size  200000 \
+            --rpc-max-response-size 200000 \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
             --base-path /mnt \
