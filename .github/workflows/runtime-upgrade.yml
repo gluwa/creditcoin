@@ -214,7 +214,7 @@ jobs:
 
           ./creditcoin-fork --bin ./creditcoin-node --orig ${{ needs.setup.outputs.target_chain }} \
                             --base dev --name Development \
-                            -o creditcoin-fork.json --rpc ws://127.0.0.1:9944
+                            -o creditcoin-fork.json --rpc ws://127.0.0.1:9944 --exclude-pallets PosSwitch
 
       - name: TERM creditcoin-node
         continue-on-error: true
