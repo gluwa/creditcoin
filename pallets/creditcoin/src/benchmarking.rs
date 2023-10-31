@@ -9,12 +9,7 @@ use crate::test_utils::{
 	fake_address_id, fake_ask_id, fake_bid_id, fake_loan_terms, fake_offer_id, insert_fake_ask,
 	insert_fake_bid, insert_fake_offer,
 };
-use crate::Pallet as Creditcoin;
-use crate::{
-	types::{Blockchain, BurnDetails, ContractType, OwnershipProof},
-	Duration,
-};
-use crate::types::{Blockchain, OwnershipProof};
+use crate::types::{Blockchain, BurnDetails, ContractType, OwnershipProof};
 use crate::Pallet as Creditcoin;
 use crate::{AskOrderId, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
