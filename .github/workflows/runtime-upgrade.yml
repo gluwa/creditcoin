@@ -141,9 +141,22 @@ jobs:
           name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
 
+  setup-self-hosted:
+    needs:
+      - setup
+      - deploy-github-runner
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
+
+    steps:
+      - name: Grant everyone permissions on /mnt
+        run: |
+          sudo chmod a+rwx /mnt
+
   fork-creditcoin:
     needs:
       - setup
+      - setup-self-hosted
       - live-sync-creditcoin
       - deploy-github-runner
     runs-on:
@@ -231,6 +244,7 @@ jobs:
   live-sync-creditcoin:
     needs:
       - setup
+      - setup-self-hosted
       - deploy-github-runner
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
@@ -267,6 +281,7 @@ jobs:
             --prometheus-external --pruning archive \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
             --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
+            --base-path /mnt \
             --port 50555 >creditcoin-node-initial-live-sync.log 2>&1 &
 
       - name: Wait for creditcoin-node to sync past block number ${{ needs.setup.outputs.last_block_number }}
@@ -295,6 +310,7 @@ jobs:
   test-against-fork:
     needs:
       - setup
+      - setup-self-hosted
       - build-sut
       - fork-creditcoin
       - deploy-github-runner
@@ -321,6 +337,7 @@ jobs:
           ./target/release/creditcoin-node --version
           ./target/release/creditcoin-node --chain ./creditcoin-fork.json --validator --alice --pruning archive \
                             --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+                            --base-path /mnt \
                             --monitor-nonce auto >creditcoin-node-with-forked-chain.log 2>&1 &
 
       - name: Wait for blockchain to start
@@ -411,6 +428,7 @@ jobs:
     needs:
       - build-sut
       - setup
+      - setup-self-hosted
       - live-sync-creditcoin
       - deploy-github-runner
     runs-on:
@@ -439,6 +457,7 @@ jobs:
             --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --base-path /mnt \
             --monitor-nonce auto >creditcoin-node-disconnected-live-node.log 2>&1 &
 
       - name: Wait for blockchain to start
@@ -611,6 +630,7 @@ jobs:
     needs:
       - build-sut
       - setup
+      - setup-self-hosted
       - deploy-github-runner
     steps:
       - uses: actions/checkout@v4
@@ -652,6 +672,7 @@ jobs:
             --rpc-max-response-size 100000 \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --base-path /mnt \
             --public-addr "/dns4/$IP_ADDRESS/tcp/30333" >creditcoin-node-used-for-try-runtime.log 2>&1 &
 
       - name: Wait for creditcoin-node to initialize
