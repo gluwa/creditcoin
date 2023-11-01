@@ -24,7 +24,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = '2.234.0'
+version = '2.235.0'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2021'
 license = 'Unlicense'
@@ -153,4 +153,4 @@ pallet-proxy = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://gi
 pallet-fast-unstake = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-nomination-pools = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 pallet-identity = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
-generate-bags = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" } # Utils
+generate-bags = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }                                     # Utils
