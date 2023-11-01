@@ -336,7 +336,7 @@ jobs:
           sudo docker run --name hardhat-dev --rm -p 8545:8545 -d gluwa/hardhat-dev
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 16
       - run: npm install -g yarn
@@ -459,7 +459,7 @@ jobs:
           sudo docker run --name hardhat-dev --rm -p 8545:8545 -d gluwa/hardhat-dev
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 16
       - run: npm install -g yarn
