@@ -442,7 +442,7 @@ impl OnRuntimeUpgrade for MigrateBags {
 	fn on_runtime_upgrade() -> Weight {
 		const BAGS_LIST_MIGRATION: &[u8] = b"ctc:bags_list_thresholds_migrated";
 		const OLD_THRESHOLDS: &[u64] = &[];
-		let key = sp_core::hashing::blake2_256(BAGS_LIST_MIGRATION);
+		let key = sp_io::hashing::twox_256(BAGS_LIST_MIGRATION);
 		if let Some(_v) = sp_io::storage::get(&key) {
 			Weight::zero()
 		} else {
