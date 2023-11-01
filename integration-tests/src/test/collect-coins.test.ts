@@ -122,7 +122,7 @@ describe('CollectCoins', (): void => {
                 (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
             );
 
-            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(800_000).catch();
+            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(800_000);
             expect(collectCoinsVerified).toBeTruthy();
 
             // try again - should fail
