@@ -201,6 +201,7 @@ jobs:
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --base-path /mnt
             --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
             --port 50555 >creditcoin-node-used-for-fork.log 2>&1 &
 
