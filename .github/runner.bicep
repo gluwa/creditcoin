@@ -861,6 +861,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
       adminUsername: adminUsername
       adminPassword: adminPasswordOrKey
       linuxConfiguration: linuxConfiguration
+      allowExtensionOperations: false
     }
   }
 }
