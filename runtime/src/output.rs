@@ -219,6 +219,7 @@ pub const THRESHOLDS: [u64; 198] = [
 ];
 
 /// Upper thresholds delimiting the bag list.
+#[allow(dead_code)]
 pub const THRESHOLDS_BALANCES: [u128; 198] = [
 	1,
 	2,

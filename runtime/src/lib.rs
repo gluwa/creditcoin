@@ -30,7 +30,6 @@ use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use pallet_session::historical as session_historical;
 use pallet_staking::UseValidatorsMap;
 pub use pallet_staking_substrate::{self, StakerStatus};
-use parity_scale_codec::Decode;
 use sp_api::impl_runtime_apis;
 use sp_consensus_babe as babe_primitives;
 use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata, U256};
