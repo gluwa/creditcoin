@@ -14,6 +14,7 @@ pub const EXISTENTIAL_WEIGHT: u64 = 1;
 /// Constant ratio between bags for this runtime.
 #[cfg(any(test, feature = "std"))]
 #[allow(unused)]
+#[allow(clippy::excessive_precision)]
 pub const CONSTANT_RATIO: f64 = 1.2497227245028870;
 
 /// Upper thresholds delimiting the bag list.
