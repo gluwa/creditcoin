@@ -24,7 +24,7 @@ creditcoin-node-rpc = { path = "./rpc" }
 creditcoin-node-runtime = { workspace = true }
 frame-benchmarking = { features = ["std"], workspace = true }
 frame-benchmarking-cli = { workspace = true }
-futures-lite = "1.13.0"
+futures-lite = "2.0.1"
 hex = { workspace = true }
 jsonrpc-core = { workspace = true }
 log = { workspace = true }
