@@ -44,7 +44,7 @@ parity-scale-codec = { version = "3.2.1", default-features = false, features = [
     "derive",
 ] }
 serde = { version = "1.0.163", default-features = false, features = ["derive"] }
-scale-info = { version = "2.7", default-features = false, features = [
+scale-info = { version = "2.10", default-features = false, features = [
     "derive",
 ] }
 
