@@ -1,7 +1,7 @@
 import { creditcoinApi, Keyring } from 'creditcoin-js';
 import { createOverrideWeight } from 'creditcoin-js/lib/utils';
 import * as fs from 'fs';
-import * as child_process from 'child_process';
+import * as childProcess from 'child_process';
 import { promisify } from 'util';
 import { u8aToHex } from './common';
 
@@ -27,7 +27,7 @@ type WasmRuntimeInfo = {
 
 // these normally use callbacks, but promises are more convenient
 const readFile = promisify(fs.readFile);
-const exec = promisify(child_process.exec);
+const exec = promisify(childProcess.exec);
 
 /**
  * Performs an upgrade to the runtime at the provided path.
