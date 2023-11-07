@@ -17,6 +17,7 @@ const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): Ke
 };
 
 declare global {
+    // eslint-disable-next-line no-var
     var CREDITCOIN_CTC_CONTRACT: GluwaCreditVestingToken;
 }
 
