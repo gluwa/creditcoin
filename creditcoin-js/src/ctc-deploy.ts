@@ -24,7 +24,7 @@ const deployCtcToken = async (deployer: Signer, existingAddress: string | undefi
     return ctcToken;
 };
 
-const burnCtc = async (ctcToken: GluwaCreditVestingToken, howMuch: string) => {
+export const burnCtc = async (ctcToken: GluwaCreditVestingToken, howMuch: string, writeToEnv = false) => {
     const tx = await ctcToken.burn(howMuch);
     const txHash = tx.hash;
 
@@ -32,7 +32,10 @@ const burnCtc = async (ctcToken: GluwaCreditVestingToken, howMuch: string) => {
     await tx.wait();
 
     console.log('Burn Tx hash', txHash);
-    process.env.CREDITCOIN_CTC_BURN_TX_HASH = txHash;
+    if (writeToEnv) {
+        process.env.CREDITCOIN_CTC_BURN_TX_HASH = txHash;
+    }
+    return txHash;
 };
 
 export const deployCtcContract = async (
@@ -45,7 +48,9 @@ export const deployCtcContract = async (
     const deployer = new Wallet(deployerPrivateKey, provider);
     const ctcToken = await deployCtcToken(deployer, existingAddress);
 
-    await burnCtc(ctcToken, howMuchToBurn);
+    await burnCtc(ctcToken, howMuchToBurn, true);
+
+    return ctcToken;
 };
 
 export const deployGATEToken = async (deployer: Signer, existingAddress: string | undefined): Promise<any> => {
