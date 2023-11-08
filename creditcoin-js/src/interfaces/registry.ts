@@ -60,6 +60,7 @@ import type {
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
+    PalletCreditcoinBurnInfo,
     PalletCreditcoinCall,
     PalletCreditcoinCleanupStorageCleanupState,
     PalletCreditcoinCleanupStorageItemCleanupState,
@@ -279,6 +280,7 @@ declare module '@polkadot/types/types/registry' {
         PalletCreditcoinBidOrder: PalletCreditcoinBidOrder;
         PalletCreditcoinBidOrderId: PalletCreditcoinBidOrderId;
         PalletCreditcoinBlockchain: PalletCreditcoinBlockchain;
+        PalletCreditcoinBurnInfo: PalletCreditcoinBurnInfo;
         PalletCreditcoinCall: PalletCreditcoinCall;
         PalletCreditcoinCleanupStorageCleanupState: PalletCreditcoinCleanupStorageCleanupState;
         PalletCreditcoinCleanupStorageItemCleanupState: PalletCreditcoinCleanupStorageItemCleanupState;

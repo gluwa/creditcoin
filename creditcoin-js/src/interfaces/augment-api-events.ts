@@ -136,6 +136,7 @@ declare module '@polkadot/api-base/types/events' {
              * [bid_order_id, bid_order]
              **/
             BidOrderAdded: AugmentedEvent<ApiType, [PalletCreditcoinBidOrderId, PalletCreditcoinBidOrder]>;
+            Burned: AugmentedEvent<ApiType, [u64]>;
             /**
              * exchanging vested ERC-20 CC for native CC failed.
              * [collected_coins_id, cause]
