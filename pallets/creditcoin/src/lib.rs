@@ -38,17 +38,17 @@ mod types;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub mod test_utils;
 
+use crate::types::{BurnId, BurnInfo};
 use helpers::{burn_and_settle, can_burn_amount};
 use ocw::tasks::collect_coins::DeployedContract;
-use sp_runtime::SaturatedConversion;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, BurnDetails, BurnId, BurnInfo, CollectedCoinsId, CollectedCoinsStruct,
-	ContractType, DealOrder, DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId,
-	Guid, InterestRate, InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
-	RatePerPeriod, Task, TaskId, TaskOutput, Transfer, TransferId, TransferKind,
-	UnverifiedCollectedCoins, UnverifiedTransfer,
+	Blockchain, BurnDetails, CollectedCoinsId, CollectedCoinsStruct, ContractType, DealOrder,
+	DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate,
+	InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId,
+	TaskOutput, Transfer, TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
 };
+
 pub(crate) use types::{DoubleMapExt, Id};
 
 #[cfg(test)]
@@ -259,6 +259,7 @@ pub mod pallet {
 		StorageValue<_, StorageCleanupState<T::BlockNumber>, OptionQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn burned_funds)]
 	pub type BurnedFunds<T: Config> = CountedStorageMap<
 		_,
 		Identity,
@@ -1654,9 +1655,8 @@ pub mod pallet {
 
 			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
 
-			let burn_id = crate::types::BurnId(u64::from(BurnedFunds::<T>::count()));
-			let burn_info =
-				crate::types::BurnInfo::<T::AccountId, T::Balance> { account: who, balance };
+			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
+			let burn_info = BurnInfo::<T::AccountId, T::Balance> { account: who, balance };
 
 			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
 
@@ -1675,11 +1675,8 @@ pub mod pallet {
 
 			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
 
-			let burn_id = crate::types::BurnId(u64::from(BurnedFunds::<T>::count()));
-			let burn_info = crate::types::BurnInfo::<T::AccountId, T::Balance> {
-				account: who,
-				balance: amount,
-			};
+			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
+			let burn_info = BurnInfo::<T::AccountId, T::Balance> { account: who, balance: amount };
 
 			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
 
