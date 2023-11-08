@@ -7,6 +7,7 @@ import { Blockchain } from 'creditcoin-js/lib/model';
 import { CreditcoinApi } from 'creditcoin-js/lib/types';
 import { testData, tryRegisterAddress } from 'creditcoin-js/lib/testUtils';
 import { testIf } from '../utils';
+import { CREDO_PER_CTC, burnCtc } from 'creditcoin-js/lib/ctc-deploy';
 
 describe('CollectCoins', (): void => {
     let ccApi: CreditcoinApi;
@@ -35,6 +36,8 @@ describe('CollectCoins', (): void => {
         let collector: KeyringPair;
         let deployerWallet: Wallet;
         let deployerRegAddr: AddressRegistered;
+        let failBurnTxHash: string;
+        let persistBurnTxHash: string;
 
         beforeAll(async () => {
             const {
@@ -64,6 +67,9 @@ describe('CollectCoins', (): void => {
                 collector,
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             );
+            const oneCtc = (1 * CREDO_PER_CTC).toString();
+            failBurnTxHash = await burnCtc(global.CREDITCOIN_CTC_CONTRACT, oneCtc);
+            persistBurnTxHash = await burnCtc(global.CREDITCOIN_CTC_CONTRACT, oneCtc);
         }, 300_000);
 
         testIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'fee is min 0.01 CTC', async (): Promise<void> => {
@@ -100,7 +106,7 @@ describe('CollectCoins', (): void => {
             const collectCoinsEvent = await requestCollectCoins(
                 secondRegAddr.item.externalAddress,
                 collector,
-                (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
+                failBurnTxHash,
             );
 
             // eventhough collector (a Creditcoin account) has control over both Ethereum wallets
@@ -119,19 +125,15 @@ describe('CollectCoins', (): void => {
             const collectCoinsEvent = await requestCollectCoins(
                 deployerRegAddr.item.externalAddress,
                 collector,
-                (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
+                persistBurnTxHash,
             );
 
-            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(800_000).catch();
+            const collectCoinsVerified = await collectCoinsEvent.waitForVerification(800_000);
             expect(collectCoinsVerified).toBeTruthy();
 
             // try again - should fail
             await expect(
-                requestCollectCoins(
-                    deployerRegAddr.item.externalAddress,
-                    collector,
-                    (global as any).CREDITCOIN_CTC_BURN_TX_HASH,
-                ),
+                requestCollectCoins(deployerRegAddr.item.externalAddress, collector, persistBurnTxHash),
             ).rejects.toThrow(
                 'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
             );
