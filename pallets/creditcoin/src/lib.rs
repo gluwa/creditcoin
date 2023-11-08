@@ -38,15 +38,17 @@ mod types;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub mod test_utils;
 
+use helpers::{burn_and_settle, can_burn_amount};
 use ocw::tasks::collect_coins::DeployedContract;
+use sp_runtime::SaturatedConversion;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, BurnDetails, CollectedCoinsId, CollectedCoinsStruct, ContractType, DealOrder,
-	DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate,
-	InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId,
-	TaskOutput, Transfer, TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+	Blockchain, BurnDetails, BurnId, BurnInfo, CollectedCoinsId, CollectedCoinsStruct,
+	ContractType, DealOrder, DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId,
+	Guid, InterestRate, InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
+	RatePerPeriod, Task, TaskId, TaskOutput, Transfer, TransferId, TransferKind,
+	UnverifiedCollectedCoins, UnverifiedTransfer,
 };
-
 pub(crate) use types::{DoubleMapExt, Id};
 
 #[cfg(test)]
@@ -155,6 +157,8 @@ pub mod pallet {
 		fn set_gate_contract() -> Weight;
 		fn set_gate_faucet() -> Weight;
 		fn request_collect_coins_v2() -> Weight;
+		fn burn_all() -> Weight;
+		fn burn() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -254,6 +258,14 @@ pub mod pallet {
 	pub type CleanupState<T: Config> =
 		StorageValue<_, StorageCleanupState<T::BlockNumber>, OptionQuery>;
 
+	#[pallet::storage]
+	pub type BurnedFunds<T: Config> = CountedStorageMap<
+		_,
+		Identity,
+		crate::types::BurnId,
+		crate::types::BurnInfo<T::AccountId, T::Balance>,
+	>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -349,6 +361,8 @@ pub mod pallet {
 		/// exchanging vested ERC-20 CC for native CC failed.
 		/// [collected_coins_id, cause]
 		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
+
+		Burned(BurnId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -539,6 +553,12 @@ pub mod pallet {
 
 		/// The faucet has insufficient funds to complete this swap, please retry when the faucet has been reloaded
 		BurnGATEInsufficientFaucetBalance,
+
+		/// During a call to burn or burn_all the settlement of the account balances failed
+		BurnSettlementError,
+
+		/// A call to burn specified more free funds than the account has access to
+		BurnInsufficientFunds,
 	}
 
 	#[pallet::genesis_config]
@@ -1619,6 +1639,51 @@ pub mod pallet {
 				pending,
 			));
 
+			Ok(())
+		}
+
+		#[pallet::call_index(26)]
+		#[pallet::weight(<T as Config>::WeightInfo::burn_all())]
+		pub fn burn_all(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let balance =
+				<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::free_balance(&who);
+
+			let settlement_result = burn_and_settle::<T>(who.clone(), balance);
+
+			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
+
+			let burn_id = crate::types::BurnId(u64::from(BurnedFunds::<T>::count()));
+			let burn_info =
+				crate::types::BurnInfo::<T::AccountId, T::Balance> { account: who, balance };
+
+			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
+
+			Self::deposit_event(Event::<T>::Burned(burn_id));
+			Ok(())
+		}
+
+		#[pallet::call_index(27)]
+		#[pallet::weight(<T as Config>::WeightInfo::burn())]
+		pub fn burn(origin: OriginFor<T>, amount: T::Balance) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			ensure!(can_burn_amount::<T>(who.clone(), amount), Error::<T>::BurnInsufficientFunds);
+
+			let settlement_result = burn_and_settle::<T>(who.clone(), amount);
+
+			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
+
+			let burn_id = crate::types::BurnId(u64::from(BurnedFunds::<T>::count()));
+			let burn_info = crate::types::BurnInfo::<T::AccountId, T::Balance> {
+				account: who,
+				balance: amount,
+			};
+
+			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
+
+			Self::deposit_event(Event::<T>::Burned(burn_id));
 			Ok(())
 		}
 	}

@@ -53,6 +53,15 @@ pub enum Blockchain {
 	Other(OtherChain),
 }
 
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct BurnId(pub u64);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct BurnInfo<AccountId, Balance> {
+	pub account: AccountId,
+	pub balance: Balance,
+}
+
 impl Blockchain {
 	pub fn as_bytes(&self) -> &[u8] {
 		match self {
