@@ -82,6 +82,11 @@ describe('Test GATE Token', (): void => {
             );
             const gateContract = GATEContract(deployer.address, burnTx.hash);
 
+            // Make sure gate contract is unset
+            await api.tx.sudo
+                .sudo(api.tx.system.killStorage(['0xd766358cca00233e6155d7c14e2c085f09d6ade1839fafee2303010e35dfd1a5']))
+                .signAndSend(sudoSigner, { nonce: -1 });
+
             // Test #1: The extrinsic should erorr when the faucet address has not been set
             await expect(requestCollectCoinsV2(gateContract, sudoSigner)).rejects.toThrow(
                 'creditcoin.BurnGATEFaucetNotSet',
