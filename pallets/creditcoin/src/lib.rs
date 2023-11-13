@@ -260,12 +260,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn burned_funds)]
-	pub type BurnedFunds<T: Config> = CountedStorageMap<
-		_,
-		Identity,
-		crate::types::BurnId,
-		crate::types::BurnInfo<T::AccountId, T::Balance>,
-	>;
+	pub type BurnedFunds<T: Config> =
+		CountedStorageMap<_, Identity, BurnId, BurnInfo<T::AccountId, T::Balance>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -1645,7 +1641,7 @@ pub mod pallet {
 
 		#[pallet::call_index(26)]
 		#[pallet::weight(<T as Config>::WeightInfo::burn_all())]
-		pub fn burn_all(origin: OriginFor<T>) -> DispatchResult {
+		pub fn burn_all(origin: OriginFor<T>, collector: ExternalAddress) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let balance =
@@ -1656,7 +1652,8 @@ pub mod pallet {
 			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
 
 			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
-			let burn_info = BurnInfo::<T::AccountId, T::Balance> { account: who, balance };
+			let burn_info =
+				BurnInfo::<T::AccountId, T::Balance> { account: who, balance, collector };
 
 			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
 
@@ -1666,7 +1663,11 @@ pub mod pallet {
 
 		#[pallet::call_index(27)]
 		#[pallet::weight(<T as Config>::WeightInfo::burn())]
-		pub fn burn(origin: OriginFor<T>, amount: T::Balance) -> DispatchResult {
+		pub fn burn(
+			origin: OriginFor<T>,
+			amount: T::Balance,
+			collector: ExternalAddress,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			ensure!(can_burn_amount::<T>(who.clone(), amount), Error::<T>::BurnInsufficientFunds);
@@ -1676,7 +1677,8 @@ pub mod pallet {
 			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
 
 			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
-			let burn_info = BurnInfo::<T::AccountId, T::Balance> { account: who, balance: amount };
+			let burn_info =
+				BurnInfo::<T::AccountId, T::Balance> { account: who, balance: amount, collector };
 
 			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
 
