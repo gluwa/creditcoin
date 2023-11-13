@@ -370,10 +370,16 @@ declare module '@polkadot/api-base/types/submittable' {
                 [PalletCreditcoinAskOrderId, PalletCreditcoinBidOrderId, u32]
             >;
             burn: AugmentedSubmittable<
-                (amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [u128]
+                (
+                    amount: u128 | AnyNumber | Uint8Array,
+                    collector: Bytes | string | Uint8Array,
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, Bytes]
             >;
-            burnAll: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            burnAll: AugmentedSubmittable<
+                (collector: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
             /**
              * Claims legacy wallet and transfers the balance to the sender's account.
              **/

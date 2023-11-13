@@ -2148,9 +2148,13 @@ declare module '@polkadot/types/lookup' {
             readonly contract: PalletCreditcoinCollectCoinsBurnDetails;
         } & Struct;
         readonly isBurnAll: boolean;
+        readonly asBurnAll: {
+            readonly collector: Bytes;
+        } & Struct;
         readonly isBurn: boolean;
         readonly asBurn: {
             readonly amount: u128;
+            readonly collector: Bytes;
         } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
@@ -2764,6 +2768,7 @@ declare module '@polkadot/types/lookup' {
     interface PalletCreditcoinBurnInfo extends Struct {
         readonly account: AccountId32;
         readonly balance: u128;
+        readonly collector: Bytes;
     }
 
     /** @name PalletCreditcoinError (335) */
