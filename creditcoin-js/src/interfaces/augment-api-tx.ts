@@ -372,13 +372,13 @@ declare module '@polkadot/api-base/types/submittable' {
             burn: AugmentedSubmittable<
                 (
                     amount: u128 | AnyNumber | Uint8Array,
-                    collector: Bytes | string | Uint8Array,
+                    collector: AccountId32 | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
-                [u128, Bytes]
+                [u128, AccountId32]
             >;
             burnAll: AugmentedSubmittable<
-                (collector: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Bytes]
+                (collector: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
             >;
             /**
              * Claims legacy wallet and transfers the balance to the sender's account.

@@ -1881,11 +1881,11 @@ export default {
                 contract: 'PalletCreditcoinCollectCoinsBurnDetails',
             },
             burn_all: {
-                collector: 'Bytes',
+                collector: 'AccountId32',
             },
             burn: {
                 amount: 'u128',
-                collector: 'Bytes',
+                collector: 'AccountId32',
             },
         },
     },
@@ -2523,7 +2523,7 @@ export default {
     PalletCreditcoinBurnInfo: {
         account: 'AccountId32',
         balance: 'u128',
-        collector: 'Bytes',
+        collector: 'AccountId32',
     },
     /**
      * Lookup335: pallet_creditcoin::pallet::Error<T>
