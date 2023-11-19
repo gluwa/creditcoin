@@ -1641,7 +1641,7 @@ pub mod pallet {
 
 		#[pallet::call_index(26)]
 		#[pallet::weight(<T as Config>::WeightInfo::burn_all())]
-		pub fn burn_all(origin: OriginFor<T>, collector: ExternalAddress) -> DispatchResult {
+		pub fn burn_all(origin: OriginFor<T>, collector: T::AccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let balance =
@@ -1666,7 +1666,7 @@ pub mod pallet {
 		pub fn burn(
 			origin: OriginFor<T>,
 			amount: T::Balance,
-			collector: ExternalAddress,
+			collector: T::AccountId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 

@@ -60,7 +60,7 @@ pub struct BurnId(pub u64);
 pub struct BurnInfo<AccountId, Balance> {
 	pub account: AccountId,
 	pub balance: Balance,
-	pub collector: ExternalAddress,
+	pub collector: AccountId,
 }
 
 impl Blockchain {
