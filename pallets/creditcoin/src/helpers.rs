@@ -265,14 +265,12 @@ pub fn burn_and_settle<T: Config>(
 	let imbalance: pallet_balances::PositiveImbalance<T> =
 		<pallet_balances::Pallet<T>>::burn(amount);
 
-	let settlement_result = <pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::settle(
+	<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::settle(
 		&who,
 		imbalance,
 		WithdrawReasons::TRANSFER,
 		AllowDeath,
-	);
-
-	settlement_result
+	)
 }
 
 pub fn can_burn_amount<T: Config>(who: T::AccountId, amount: T::Balance) -> bool {

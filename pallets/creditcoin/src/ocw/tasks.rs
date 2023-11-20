@@ -4,7 +4,7 @@ pub mod verify_transfer;
 use crate::ocw::errors::VerificationResult;
 use crate::types::Task;
 use crate::Config;
-pub use sp_runtime::offchain::storage_lock::{BlockAndTime, Lockable, StorageLock};
+
 
 pub(crate) trait OffchainVerification<T: Config> {
 	type Output;
