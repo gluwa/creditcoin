@@ -5,7 +5,6 @@ use crate::ocw::errors::VerificationResult;
 use crate::types::Task;
 use crate::Config;
 
-
 pub(crate) trait OffchainVerification<T: Config> {
 	type Output;
 	fn verify(&self) -> VerificationResult<Self::Output>;
