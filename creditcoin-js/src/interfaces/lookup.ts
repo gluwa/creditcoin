@@ -2522,7 +2522,7 @@ export default {
      **/
     PalletCreditcoinBurnInfo: {
         account: 'AccountId32',
-        balance: 'u128',
+        amount: 'u128',
         collector: 'AccountId32',
     },
     /**

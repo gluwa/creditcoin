@@ -2767,7 +2767,7 @@ declare module '@polkadot/types/lookup' {
     /** @name PalletCreditcoinBurnInfo (334) */
     interface PalletCreditcoinBurnInfo extends Struct {
         readonly account: AccountId32;
-        readonly balance: u128;
+        readonly amount: u128;
         readonly collector: AccountId32;
     }
 
