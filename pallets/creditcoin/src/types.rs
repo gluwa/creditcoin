@@ -59,7 +59,7 @@ pub struct BurnId(pub u64);
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct BurnInfo<AccountId, Balance> {
 	pub account: AccountId,
-	pub balance: Balance,
+	pub amount: Balance,
 	pub collector: AccountId,
 }
 

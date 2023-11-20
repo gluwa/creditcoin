@@ -1653,7 +1653,7 @@ pub mod pallet {
 
 			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
 			let burn_info =
-				BurnInfo::<T::AccountId, T::Balance> { account: who, balance, collector };
+				BurnInfo::<T::AccountId, T::Balance> { account: who, amount: balance, collector };
 
 			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
 
@@ -1678,7 +1678,7 @@ pub mod pallet {
 
 			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
 			let burn_info =
-				BurnInfo::<T::AccountId, T::Balance> { account: who, balance: amount, collector };
+				BurnInfo::<T::AccountId, T::Balance> { account: who, amount, collector };
 
 			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
 
