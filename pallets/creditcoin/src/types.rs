@@ -3,7 +3,7 @@ mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 
-pub use cleanup::{StorageCleanupState, StorageItemCleanupState};
+pub use cleanup::StorageCleanupState;
 pub use collect_coins::{
 	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
 };
@@ -51,6 +51,16 @@ pub enum Blockchain {
 	Luniverse,
 	Bitcoin,
 	Other(OtherChain),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct BurnId(pub u64);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct BurnInfo<AccountId, Balance> {
+	pub account: AccountId,
+	pub amount: Balance,
+	pub collector: AccountId,
 }
 
 impl Blockchain {

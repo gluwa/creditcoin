@@ -491,4 +491,12 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+
+	fn burn_all() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+
+	fn burn() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }

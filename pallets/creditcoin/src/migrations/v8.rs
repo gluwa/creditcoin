@@ -187,7 +187,8 @@ mod tests {
 
 			super::Migration::<Test>::new().migrate();
 
-			let Task::CollectCoins(migrated_pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
+			let Task::CollectCoins(migrated_pending) =
+				new::PendingTasks::<Test>::get(1, id).unwrap()
 			else {
 				unreachable!()
 			};
@@ -212,7 +213,8 @@ mod tests {
 
 			super::Migration::<Test>::new().migrate();
 
-			let Task::VerifyTransfer(migrated_pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
+			let Task::VerifyTransfer(migrated_pending) =
+				new::PendingTasks::<Test>::get(1, id).unwrap()
 			else {
 				unreachable!()
 			};
