@@ -2949,6 +2949,12 @@ fn exercise_weightinfo_functions() {
 
 	let result = super::weights::WeightInfo::<Test>::request_collect_coins_v2();
 	assert!(result.ref_time() > 0);
+
+	let result = super::weights::WeightInfo::<Test>::burn();
+	assert!(result.ref_time() > 0);
+
+	let result = super::weights::WeightInfo::<Test>::burn_all();
+	assert!(result.ref_time() > 0);
 }
 
 #[test]
