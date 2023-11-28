@@ -493,10 +493,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	}
 
 	fn burn_all() -> Weight {
-		Weight::from_parts(0, 0)
+		Weight::from_parts(1, 1)
 	}
 
 	fn burn() -> Weight {
-		Weight::from_parts(0,0)
+		Weight::from_parts(1, 1)
 	}
 }
