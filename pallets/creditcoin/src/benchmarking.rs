@@ -375,16 +375,16 @@ benchmarks! {
 	}: _( RawOrigin::Signed(collector), contract)
 
 	burn_all {
-		let origin = RawOrigin::Root;
 		let collector: T::AccountId = lender_account::<T>(true);
-	}: _(origin, collector)
+		let who = collector.clone();
+	}: _(RawOrigin::Signed(who), collector)
 
 	burn {
-		let origin = RawOrigin::Root;
 		let collector: T::AccountId = lender_account::<T>(true);
+		let who = collector.clone();
 		<Balances<T> as Currency<T::AccountId>>::make_free_balance_be(&collector, 100u32.into());
 		let balance = 100u32.into();
-	}: _(origin, balance, collector)
+	}: _(RawOrigin::Signed(who), balance, collector)
 }
 
 //impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
