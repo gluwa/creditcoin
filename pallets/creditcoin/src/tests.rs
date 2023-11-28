@@ -3329,3 +3329,46 @@ fn gate_faucet_account_storage_should_return_none_when_not_set() {
 		assert!(gate_faucet.is_none());
 	});
 }
+
+#[test]
+fn burn_all_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let account_on_cc3: AccountId = AccountId::new([0; 32]);
+
+		assert_noop!(Creditcoin::burn_all(Origin::none(), account_on_cc3), BadOrigin);
+	});
+}
+
+#[test]
+fn burn_all_should_emit_event_and_update_storage_when_ok() {
+	let account_on_cc2: AccountId = AccountId::new([0; 32]);
+	let all_funds = 999_999_999;
+
+	let mut ext = ExtBuilder::default();
+	ext.fund(account_on_cc2.clone(), all_funds);
+
+	ext.build_and_execute(|| {
+		System::set_block_number(1);
+
+		let account_on_cc3: AccountId = AccountId::new([1; 32]);
+
+		// no funds have been burned
+		assert_eq!(crate::BurnedFunds::<Test>::count(), 0);
+
+		assert_ok!(Creditcoin::burn_all(
+			Origin::signed(account_on_cc2.clone()),
+			account_on_cc3.clone()
+		));
+		assert_eq!(crate::BurnedFunds::<Test>::count(), 1); // burn has been registered
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
+		assert_matches!(event, crate::mock::RuntimeEvent::Creditcoin(crate::Event::Burned(burn_id))=>{
+				let burn_info = crate::BurnedFunds::<Test>::try_get(burn_id).unwrap();
+				assert_eq!(burn_info.account, account_on_cc2);
+				assert_eq!(burn_info.amount, all_funds);
+				assert_eq!(burn_info.collector, account_on_cc3);
+		});
+	});
+}
