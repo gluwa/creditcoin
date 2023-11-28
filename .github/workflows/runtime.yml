@@ -66,8 +66,8 @@ jobs:
       - name: Update WASM
         working-directory: scripts/js
         env:
-          CTCQA_URL: ${{ secrets.CTCQA_URL }}
-          QA_SUDO_KEY: ${{ secrets.QA_SUDO_KEY }}
+          DEVNET_URL: wss://rpc.devnet.creditcoin.network/ws
+          SUDO_KEY: ${{ secrets.QA_SUDO_KEY }}
         run: |
-          yarn runtimeUpgrade "$CTCQA_URL" \
-          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm "$QA_SUDO_KEY"
+          yarn runtimeUpgrade "$DEVNET_URL" \
+          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm "$SUDO_KEY"
