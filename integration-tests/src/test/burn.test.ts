@@ -18,7 +18,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
-        wallet = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, "borrower");
+        wallet = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'borrower');
     });
 
     afterAll(async () => await ccApi.api.disconnect());
@@ -26,7 +26,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
     it('burn_all works as expected', async (): Promise<void> => {
         const {
             api,
-            extrinsics: { },
+            extrinsics: {},
         } = ccApi;
 
         await api.tx.sudo
@@ -42,7 +42,6 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
 
         const ending = await api.derive.balances.all(wallet.address as string);
         expect(ending.freeBalance.isZero()).toBe(true);
-
     }, 100_000);
 
     it('burn works as expected', async (): Promise<void> => {
@@ -50,7 +49,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
 
         const {
             api,
-            extrinsics: { },
+            extrinsics: {},
         } = ccApi;
 
         await api.tx.sudo
@@ -73,7 +72,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
 
         const {
             api,
-            extrinsics: { },
+            extrinsics: {},
         } = ccApi;
 
         await api.tx.sudo
