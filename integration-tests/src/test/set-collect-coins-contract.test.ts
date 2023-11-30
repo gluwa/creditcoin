@@ -17,7 +17,7 @@ describe('SetCollectCoinsContract', (): void => {
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
         if ((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY) {
-            sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+            sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo');
         }
     });
 
