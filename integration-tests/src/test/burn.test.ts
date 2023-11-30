@@ -34,13 +34,13 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
             .signAndSend(sudoSigner, { nonce: -1 });
         await forElapsedBlocks(api);
 
-        const starting = await api.derive.balances.all(wallet.address as string);
+        const starting = await api.derive.balances.all(wallet.address);
         expect(starting.freeBalance.isZero()).toBe(false);
 
         await api.tx.creditcoin.burnAll(sudoSigner.address).signAndSend(wallet);
         await forElapsedBlocks(api);
 
-        const ending = await api.derive.balances.all(wallet.address as string);
+        const ending = await api.derive.balances.all(wallet.address);
         expect(ending.freeBalance.isZero()).toBe(true);
     }, 100_000);
 
@@ -57,17 +57,40 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
             .signAndSend(sudoSigner, { nonce: -1 });
         await forElapsedBlocks(api);
 
-        const starting = await api.derive.balances.all(burner.address as string);
+        const starting = await api.derive.balances.all(burner.address);
         expect(starting.freeBalance.isZero()).toBe(false);
 
         await api.tx.creditcoin.burn(100, sudoSigner.address).signAndSend(burner);
         await forElapsedBlocks(api);
 
-        const ending = await api.derive.balances.all(burner.address as string);
+        const ending = await api.derive.balances.all(burner.address);
         expect(starting.freeBalance.gt(ending.freeBalance)).toBe(true);
     }, 100_000);
 
-    it('fee is min 0.01 CTC', async (): Promise<void> => {
+    it('burn_all fee is min 0.01 CTC', async (): Promise<void> => {
+        const {
+            api,
+            extrinsics: {},
+        } = ccApi;
+
+        await api.tx.sudo
+            .sudo(api.tx.balances.setBalance(sudoSigner.address, new BN('1000000000000000000', 10), 0))
+            .signAndSend(sudoSigner, { nonce: -1 });
+        await forElapsedBlocks(api);
+
+        return new Promise((resolve, reject): void => {
+            const unsubscribe = api.tx.sudo
+                .sudo(api.tx.creditcoin.burnAll(sudoSigner.address))
+                .signAndSend(sudoSigner, { nonce: -1 }, async ({ dispatchError, events, status }) => {
+                    await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
+                })
+                .catch((error) => reject(error));
+        }).then((fee) => {
+            expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
+        });
+    }, 150_000);
+
+    it('burn fee is min 0.01 CTC', async (): Promise<void> => {
         const burner = keyring.addFromMnemonic(mnemonicGenerate(12));
 
         const {
@@ -76,19 +99,19 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
         } = ccApi;
 
         await api.tx.sudo
-            .sudo(api.tx.balances.setBalance(burner.address, new BN('1000000000000000000', 10), 0))
+            .sudo(api.tx.balances.setBalance(sudoSigner.address, new BN('1000000000000000000', 10), 0))
             .signAndSend(sudoSigner, { nonce: -1 });
         await forElapsedBlocks(api);
 
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.sudo
-                .sudo(api.tx.creditcoin.burnAll(burner.address))
-                .signAndSend(burner, { nonce: -1 }, async ({ dispatchError, events, status }) => {
+                .sudo(api.tx.creditcoin.burn(100, burner.address))
+                .signAndSend(sudoSigner, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
                 .catch((error) => reject(error));
         }).then((fee) => {
             expect(fee).toBeGreaterThanOrEqual((global as any).CREDITCOIN_MINIMUM_TXN_FEE);
         });
-    }, 100_000);
+    }, 150_000);
 });
