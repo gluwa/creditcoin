@@ -16,7 +16,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'SetGateFaucet', 
 
     beforeAll(async () => {
         ccApi = await creditcoinApi((global as any).CREDITCOIN_API_URL);
-        sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');
+        sudoSigner = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'sudo');
     });
 
     afterAll(async () => {
