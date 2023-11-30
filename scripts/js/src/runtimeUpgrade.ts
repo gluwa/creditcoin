@@ -92,7 +92,7 @@ async function doRuntimeUpgrade(
         await new Promise<void>((resolve, reject) => {
             const unsubscribe = api.tx.sudo
                 .sudoUncheckedWeight(callback, overrideWeight)
-                .signAndSend(keyring, { nonce: -1 }, ({ dispatchError, events, status }) => {
+                .signAndSend(keyring, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     const finish = (fn: () => void) => {
                         unsubscribe
                             .then((unsub) => {
@@ -112,7 +112,12 @@ async function doRuntimeUpgrade(
                     }
 
                     if (status.isInBlock) {
-                        console.log(`Runtime upgrade successfully scheduled at block ${status.asInBlock.toString()}`);
+                        const header = await api.rpc.chain.getHeader(status.asInBlock);
+                        const blockNumber = header.number.toNumber();
+
+                        console.log(
+                            `Runtime upgrade successfully scheduled at block ${blockNumber}, hash ${status.asInBlock.toString()}`,
+                        );
                         finish(resolve);
                     }
                 });
