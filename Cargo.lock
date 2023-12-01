@@ -1228,7 +1228,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "creditcoin-node-rpc",
  "creditcoin-node-runtime",
@@ -1296,7 +1296,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-rpc"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "assert_matches",
  "creditcoin-node-runtime",
@@ -1315,7 +1315,7 @@ dependencies = [
 
 [[package]]
 name = "creditcoin-node-runtime"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "assert_matches",
  "frame-benchmarking",
@@ -1346,7 +1346,7 @@ dependencies = [
  "pallet-rewards",
  "pallet-scheduler",
  "pallet-session",
- "pallet-staking 2.236.0",
+ "pallet-staking 2.237.1",
  "pallet-staking 4.0.0-dev",
  "pallet-staking-reward-fn",
  "pallet-sudo",
@@ -4982,7 +4982,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-creditcoin"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "assert_matches",
  "base58",
@@ -5020,7 +5020,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-difficulty"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5210,7 +5210,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-pos-switch"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5244,7 +5244,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-rewards"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5301,7 +5301,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-staking"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -5859,7 +5859,7 @@ dependencies = [
 
 [[package]]
 name = "primitives"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "merlin",
  "num",
@@ -6370,6 +6370,12 @@ name = "regex-syntax"
 version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
+
+[[package]]
+name = "regex-syntax"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "regex-syntax"
@@ -8018,7 +8024,7 @@ dependencies = [
 
 [[package]]
 name = "sha3pow"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "assert_matches",
  "pallet-difficulty",
@@ -9240,7 +9246,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test-client"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "creditcoin-node-runtime",
  "sc-chain-spec",
@@ -9254,7 +9260,7 @@ dependencies = [
 
 [[package]]
 name = "test-runtime-utils"
-version = "2.236.0"
+version = "2.237.1"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -9607,6 +9613,17 @@ name = "tracing-log"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f751112709b4e791d8ce53e32c4ed2d353565a795ce84da2285393f41557bdf2"
+dependencies = [
+ "log",
+ "once_cell",
+ "tracing-core",
+]
+
+[[package]]
+name = "tracing-log"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee855f1f400bd0e5c02d150ae5de3840039a3f54b025156404e34c23c03f47c3"
 dependencies = [
  "log",
  "once_cell",

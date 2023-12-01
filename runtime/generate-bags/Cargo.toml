@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 creditcoin-node-runtime = { path = "../" }
 generate-bags = { workspace = true }
-clap = { version = "4.4.6", features = ["derive"] }
+clap = { version = "4.4.10", features = ["derive"] }

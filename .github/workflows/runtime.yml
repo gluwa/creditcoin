@@ -70,4 +70,4 @@ jobs:
           SUDO_KEY: ${{ secrets.QA_SUDO_KEY }}
         run: |
           yarn runtimeUpgrade "$DEVNET_URL" \
-          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm "$SUDO_KEY"
+          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm "$SUDO_KEY" 0
