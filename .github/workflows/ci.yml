@@ -101,7 +101,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Install creditcoin-js & creditcoin-cli
@@ -313,7 +313,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Execute tests
@@ -393,7 +393,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Install creditcoin-js & creditcoin-cli
@@ -464,7 +464,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -591,7 +591,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Prepare for integration tests
@@ -675,7 +675,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Run tools
@@ -701,7 +701,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Run tools
@@ -727,7 +727,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Run tools
