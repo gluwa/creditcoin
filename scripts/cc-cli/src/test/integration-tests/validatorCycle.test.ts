@@ -157,9 +157,8 @@ describe("integration test: validator manual setup", () => {
       );
       // wait 5 seconds for nodes to sync
       await new Promise((resolve) => setTimeout(resolve, 5000));
-      const validatorSessionKeys = await aliceApi.query.session.nextKeys(
-        stashAddress,
-      );
+      const validatorSessionKeys =
+        await aliceApi.query.session.nextKeys(stashAddress);
       expect(validatorSessionKeys.toHex()).toBe(newKeys);
       const nodeHasKeys = (await bobApi.rpc.author.hasSessionKeys(newKeys))
         .isTrue;
