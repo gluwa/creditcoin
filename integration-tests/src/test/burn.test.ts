@@ -39,7 +39,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
 
         expect(starting.freeBalance.isZero()).toBe(false);
 
-        await api.tx.creditcoin.burnAll(sudoSigner.address).signAndSend(wallet);
+        await api.tx.creditcoin.burnAll(wallet.address).signAndSend(wallet);
         await forElapsedBlocks(api);
 
         const ending = await api.derive.balances.all(wallet.address);
@@ -59,7 +59,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
         const starting = await api.derive.balances.all(burner.address);
         expect(starting.freeBalance.isZero()).toBe(false);
 
-        await api.tx.creditcoin.burn(BURN_AMOUNT, sudoSigner.address).signAndSend(burner);
+        await api.tx.creditcoin.burn(BURN_AMOUNT, burner.address).signAndSend(burner);
         await forElapsedBlocks(api);
 
         const ending = await api.derive.balances.all(burner.address);
@@ -78,7 +78,7 @@ describeIf((global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY, 'burn', () => {
 
         return new Promise((resolve, reject): void => {
             const unsubscribe = api.tx.creditcoin
-                .burnAll(sudoSigner.address)
+                .burnAll(burner.address)
                 .signAndSend(burner, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     await extractFee(resolve, reject, unsubscribe, api, dispatchError, events, status);
                 })
