@@ -197,7 +197,6 @@ jobs:
           ./creditcoin-node \
             --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
@@ -277,7 +276,6 @@ jobs:
           ./creditcoin-node \
             --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --prometheus-external --pruning archive \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
@@ -337,7 +335,6 @@ jobs:
 
           ./target/release/creditcoin-node --version
           ./target/release/creditcoin-node --chain ./creditcoin-fork.json --validator --alice --pruning archive \
-                            --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
                             --base-path /mnt \
                             --monitor-nonce auto >creditcoin-node-with-forked-chain.log 2>&1 &
 
@@ -455,7 +452,6 @@ jobs:
             --name "test-node-disconnected-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
             --validator --alice --pruning archive \
-            --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
             --base-path /mnt \
@@ -671,7 +667,6 @@ jobs:
           ./target/release/creditcoin-node \
             --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --rpc-max-request-size  200000 \
             --rpc-max-response-size 200000 \

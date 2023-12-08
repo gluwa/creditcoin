@@ -28,7 +28,7 @@ This test suite is built with creditcoin-js, Polkadot.js and Jest!
    for more information:
 
 ```bash
-cargo run --release --bin creditcoin-node -- --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto
+cargo run --release --bin creditcoin-node -- --dev --monitor-nonce auto
 ```
 
 1. Execute a local Ethereum node:

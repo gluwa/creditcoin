@@ -32,7 +32,6 @@ jobs:
 
           docker run -d -p 9933:9933 -p 30333:30333 gluwa/creditcoin   \
               --validator --chain mainnet                                   \
-              --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
               --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
               --public-addr "/dns4/$IP_ADDRESS/tcp/30333" \
               --prometheus-external \
@@ -507,7 +506,7 @@ jobs:
       - name: Start creditcoin-node
         run: |
           chmod a+x ./target/release/creditcoin-node
-          ./target/release/creditcoin-node --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          ./target/release/creditcoin-node --dev --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - uses: actions/checkout@v4
 
@@ -575,7 +574,7 @@ jobs:
       - name: Start SUT
         run: |
           chmod a+x ./target/release/creditcoin-node
-          ./target/release/creditcoin-node --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          ./target/release/creditcoin-node --dev --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
