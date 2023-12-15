@@ -30,7 +30,7 @@ jobs:
           IP_ADDRESS=$(curl https://ifconfig.me)
           echo "INFO: IP_ADDRESS=$IP_ADDRESS"
 
-          docker run -d -p 9933:9933 -p 30333:30333 gluwa/creditcoin   \
+          docker run --rm --name creditcoin-validator -d -p 9933:9933 -p 30333:30333 gluwa/creditcoin   \
               --validator --chain mainnet                                   \
               --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
               --public-addr "/dns4/$IP_ADDRESS/tcp/30333" \
@@ -44,6 +44,11 @@ jobs:
         run: |
           sleep 60
           ./scripts/check-health.sh
+
+      - name: Sanity test creditcoin-cli inside the container
+        run: |
+          docker exec creditcoin-validator which creditcoin-cli
+          docker exec creditcoin-validator creditcoin-cli wizard --help
 
       - name: Kill the container
         run: |
