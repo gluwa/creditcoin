@@ -16,7 +16,7 @@ use crate::{
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, BoundedVec};
+use frame_support::{assert_noop, assert_ok, traits::Currency, BoundedVec};
 use frame_system::RawOrigin;
 use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
@@ -24,7 +24,7 @@ use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
-	AccountId32, MultiSigner,
+	AccountId32, MultiSigner, SaturatedConversion,
 };
 use std::convert::{TryFrom, TryInto};
 
@@ -3370,5 +3370,138 @@ fn burn_all_should_emit_event_and_update_storage_when_ok() {
 				assert_eq!(burn_info.amount, all_funds);
 				assert_eq!(burn_info.collector, account_on_cc3);
 		});
+	});
+}
+
+#[test]
+fn burn_should_error_when_not_signed() {
+	ExtBuilder::default().build_and_execute(|| {
+		System::set_block_number(1);
+
+		let account_on_cc3: AccountId = AccountId::new([1; 32]);
+
+		assert_noop!(Creditcoin::burn(Origin::none(), 1_000_000, account_on_cc3), BadOrigin);
+	});
+}
+
+#[test]
+fn burn_should_error_when_balance_is_less_than_requested_amount() {
+	let account_on_cc2: AccountId = AccountId::new([0; 32]);
+	let all_funds = 9_999;
+
+	let mut ext = ExtBuilder::default();
+	ext.fund(account_on_cc2.clone(), all_funds);
+
+	ext.build_and_execute(|| {
+		System::set_block_number(1);
+		let account_on_cc3: AccountId = AccountId::new([1; 32]);
+
+		// doesn't have enough funds on CC2 to burn that much
+		assert_noop!(
+			Creditcoin::burn(Origin::signed(account_on_cc2), 99_000_000, account_on_cc3),
+			crate::Error::<Test>::BurnInsufficientFunds
+		);
+	});
+}
+
+#[test]
+fn burn_should_error_when_requested_second_time_with_insufficient_amount() {
+	let account_on_cc2: AccountId = AccountId::new([0; 32]);
+	let all_funds = 999_999_999;
+	let some_funds = 899_999_999;
+
+	let mut ext = ExtBuilder::default();
+	ext.fund(account_on_cc2.clone(), all_funds);
+
+	ext.build_offchain_and_execute_with_state(|_, _| {
+		System::set_block_number(1);
+
+		let account_on_cc3: AccountId = AccountId::new([1; 32]);
+
+		assert_ok!(Creditcoin::burn(
+			Origin::signed(account_on_cc2.clone()),
+			some_funds,
+			account_on_cc3.clone()
+		));
+
+		roll_by_with_ocw(10);
+
+		// call again, some_funds > remaining balance
+		assert_noop!(
+			Creditcoin::burn(Origin::signed(account_on_cc2), some_funds, account_on_cc3),
+			crate::Error::<Test>::BurnInsufficientFunds
+		);
+	});
+}
+
+#[test]
+fn burn_should_work_when_requested_second_time_with_smaller_amount() {
+	let account_on_cc2: AccountId = AccountId::new([0; 32]);
+	let all_funds = 1_000_000;
+	let some_funds = 500_000;
+
+	let mut ext = ExtBuilder::default();
+	ext.fund(account_on_cc2.clone(), all_funds);
+
+	ext.build_offchain_and_execute_with_state(|_, _| {
+		System::set_block_number(1);
+
+		let account_on_cc3: AccountId = AccountId::new([1; 32]);
+
+		assert_ok!(Creditcoin::burn(
+			Origin::signed(account_on_cc2.clone()),
+			some_funds,
+			account_on_cc3.clone()
+		));
+
+		roll_by_with_ocw(10);
+
+		// call aagain, some_funds <= remaining balance
+		// actually some_funds == remaining balance in this example
+		assert_ok!(Creditcoin::burn(
+			Origin::signed(account_on_cc2.clone()),
+			some_funds,
+			account_on_cc3
+		));
+	});
+}
+
+#[test]
+fn burn_should_emit_event_and_update_storage_when_ok() {
+	let account_on_cc2: AccountId = AccountId::new([0; 32]);
+	let all_funds = 999_999_999;
+	let some_funds = 899_999_999;
+
+	let mut ext = ExtBuilder::default();
+	ext.fund(account_on_cc2.clone(), all_funds);
+
+	ext.build_and_execute(|| {
+		System::set_block_number(1);
+
+		let account_on_cc3: AccountId = AccountId::new([1; 32]);
+
+		// no funds have been burned
+		assert_eq!(crate::BurnedFunds::<Test>::count(), 0);
+
+		assert_ok!(Creditcoin::burn(
+			Origin::signed(account_on_cc2.clone()),
+			some_funds,
+			account_on_cc3.clone()
+		));
+		assert_eq!(crate::BurnedFunds::<Test>::count(), 1); // burn has been registered
+
+		let event = <frame_system::Pallet<Test>>::events().pop().expect("expected an event").event;
+		assert_matches!(event, crate::mock::RuntimeEvent::Creditcoin(crate::Event::Burned(burn_id))=>{
+				let burn_info = crate::BurnedFunds::<Test>::try_get(burn_id).unwrap();
+				assert_eq!(burn_info.account, account_on_cc2);
+				assert_eq!(burn_info.amount, some_funds);
+				assert_eq!(burn_info.collector, account_on_cc3);
+		});
+
+		// remaining balance is exactly the difference between the 2 amounts
+		let remaining_balance =
+			<pallet_balances::Pallet<Test> as Currency<AccountId>>::free_balance(&account_on_cc2);
+		let remaining_balance = remaining_balance.saturated_into::<u128>();
+		assert_eq!(remaining_balance, all_funds - some_funds);
 	});
 }
