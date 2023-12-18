@@ -55,6 +55,9 @@ jobs:
         run: |
           # this will also kill the parent container
           sudo killall -9 creditcoin-node
+          sleep 10
+          docker rm -f creditcoin-validator
+          sleep 10
 
       - name: Start docker-compose
         run: |
