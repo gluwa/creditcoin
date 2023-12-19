@@ -59,8 +59,8 @@ const setup = async () => {
     (global as any).CREDITCOIN_METRICS_BASE = 'http://test-rpc-creditcoin-rpc-2.eastus.cloudapp.azure.com:9615';
     (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES = true;
 
-    // This is on Goerli, https://goerli.etherscan.io/address/0x833cc7c2598D80d327767De33B22ac426f4248e2
-    (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = '0x833cc7c2598D80d327767De33B22ac426f4248e2';
+    // This is on Goerli, https://sepolia.etherscan.io/address/0x47c30768e4c153b40d55b90f58472bb2291971e6
+    (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = '0x47c30768e4c153b40d55b90f58472bb2291971e6';
     // we need a new tx hash every time so we call .burn() in globalSetup()! See ctc-deploy.ts
     (global as any).CREDITCOIN_CTC_BURN_TX_HASH = undefined;
 
