@@ -96,7 +96,7 @@ yarn install
 2. Execute the test suite:
 
 ```bash
-export ETHEREUM_NODE_URL=https://goerli.infura.io/v3/abcdef
+export ETHEREUM_NODE_URL=https://sepolia.infura.io/v3/abcdef
 export LENDER_PRIVATE_KEY=XXXXXX
 export BORROWER_PRIVATE_KEY=YYYY
 
