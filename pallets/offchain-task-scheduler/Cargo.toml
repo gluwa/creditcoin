@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0.190", features = ["derive"], default-features = false }
-serde_json = { version = "1.0.108", features = [
+serde_json = { version = "1.0.109", features = [
     "alloc",
 ], default-features = false }
 frame-support = { workspace = true }
