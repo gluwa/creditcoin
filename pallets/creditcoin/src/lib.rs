@@ -39,7 +39,6 @@ mod types;
 pub mod test_utils;
 
 use crate::types::{BurnId, BurnInfo};
-use helpers::{burn_and_settle, can_burn_amount};
 use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
@@ -157,8 +156,6 @@ pub mod pallet {
 		fn set_gate_contract() -> Weight;
 		fn set_gate_faucet() -> Weight;
 		fn request_collect_coins_v2() -> Weight;
-		fn burn_all() -> Weight;
-		fn burn() -> Weight;
 	}
 
 	#[pallet::pallet]

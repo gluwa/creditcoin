@@ -257,27 +257,3 @@ pub fn blockchain_is_supported(blockchain: &Blockchain) -> bool {
 		Blockchain::Other(_) => false,
 	}
 }
-
-pub fn burn_and_settle<T: Config>(
-	who: T::AccountId,
-	amount: T::Balance,
-) -> Result<(), PositiveImbalance<T>> {
-	let imbalance: pallet_balances::PositiveImbalance<T> =
-		<pallet_balances::Pallet<T>>::burn(amount);
-
-	<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::settle(
-		&who,
-		imbalance,
-		WithdrawReasons::TRANSFER,
-		AllowDeath,
-	)
-}
-
-pub fn can_burn_amount<T: Config>(who: T::AccountId, amount: T::Balance) -> bool {
-	let balance = <pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::free_balance(&who);
-
-	let res = balance.saturated_into::<u128>();
-	let amount_128 = amount.saturated_into::<u128>();
-
-	res >= amount_128
-}
