@@ -167,7 +167,7 @@ jobs:
           echo "HOME=/home/actions" >> "$GITHUB_ENV"
 
       - name: Download benchmark binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
           path: target/release

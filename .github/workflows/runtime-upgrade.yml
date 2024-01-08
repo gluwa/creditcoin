@@ -319,13 +319,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download creditcoin-node from current PR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
           path: target/release
 
       - name: Download creditcoin-fork.json
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin-fork.json
 
@@ -387,7 +387,7 @@ jobs:
 
       - name: Download WASM runtime from current PR
         id: download-wasm
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
 
@@ -435,7 +435,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download creditcoin-node from current PR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
           path: target/release
@@ -511,7 +511,7 @@ jobs:
 
       - name: Download WASM runtime
         id: download-wasm
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
 
@@ -634,13 +634,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download creditcoin-node binary from current PR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin-node
           path: target/release
 
       - name: Download WASM runtime
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release
