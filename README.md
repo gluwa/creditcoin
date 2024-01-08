@@ -27,7 +27,7 @@ you terminate the process. After the project has been built, there are other way
 node.
 
 ```sh
-cargo run --release -- --dev --tmp --mining-key <your mining key>
+cargo run --release -- --dev --tmp
 ```
 
 ### Explore Node Options
@@ -92,7 +92,7 @@ Devnet bootnodes:
 This command will start the single-node development chain with persistent state:
 
 ```bash
-./target/release/creditcoin-node --dev --mining-key <your mining key>
+./target/release/creditcoin-node --dev
 ```
 
 Purge the development chain's state:
@@ -104,7 +104,7 @@ Purge the development chain's state:
 Start the development chain with detailed logging:
 
 ```bash
-RUST_BACKTRACE=1 ./target/release/creditcoin-node -ldebug --dev --mining-key <your mining key>
+RUST_BACKTRACE=1 ./target/release/creditcoin-node -ldebug --dev
 ```
 
 ### Connect with Polkadot-JS Apps Front-end
