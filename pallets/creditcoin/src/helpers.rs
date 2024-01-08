@@ -4,7 +4,6 @@ mod register_transfer;
 pub use external_address::{address_is_well_formed, generate_external_address};
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub use external_address::{EVMAddress, PublicToAddress};
-use pallet_balances::PositiveImbalance;
 
 use crate::{
 	pallet::*,
@@ -12,11 +11,7 @@ use crate::{
 	Blockchain, DealOrderId, Error, ExternalAddress, Guid, Id, TransferId,
 };
 use frame_support::ensure;
-use frame_support::traits::tokens::currency::Currency as CurrencyT;
-use frame_support::traits::ExistenceRequirement::AllowDeath;
-use frame_support::traits::WithdrawReasons;
 use frame_system::pallet_prelude::*;
-use sp_runtime::SaturatedConversion;
 use sp_std::prelude::*;
 
 #[allow(unused_macros)]
