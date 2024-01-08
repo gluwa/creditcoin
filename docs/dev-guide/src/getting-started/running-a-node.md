@@ -5,7 +5,7 @@
 Now that you've built a `creditcoin-node` from source, you can get a minimal development node running with:
 
 ```bash
-./target/release/creditcoin-node --dev --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --mining-threads 1
+./target/release/creditcoin-node --dev
 ```
 
 The node should start running and produce output similar to below:
@@ -42,5 +42,5 @@ By default this is a temporary chain, so when you stop your development node the
 chain that is persistent, you can use the `local` chain specification:
 
 ```bash
-./target/release/creditcoin-node --chain local --validator --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --mining-threads 2
+./target/release/creditcoin-node --chain local --validator
 ```
