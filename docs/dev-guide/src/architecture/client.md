@@ -24,7 +24,6 @@ the client.
 This is where we put together all of the pieces of the client - configuring storage, kicking off networking,
 setting up the RPC server,
 connecting to telemetry, setting up the block import pipeline (and consensus, which is part of the import pipeline), and more.
-This is also the entrypoint to mining (we just spawn a bunch of threads which are tasked with mining and submitting results).
 
 This code lives in [`node/src/service.rs`](https://github.com/gluwa/creditcoin/tree/dev/node/src/service.rs).
 
@@ -43,4 +42,4 @@ The client also contains consensus-related code.
 
 Creditcoin uses Nominated Proof of Stake (NPoS), a variation of the Proof of Stake (PoS) consensus algorithm. NPoS introduces a nominator-validator model where nominators can select and back validators. Nominators delegate their stake to validators, and in return, they can receive a portion of the validator's rewards. This system allows token holders, who may not have enough stake or technical expertise to become a validator, to nonetheless participate in the network and earn rewards by supporting trusted validators instead. Thereby, it promotes a more inclusive and secure network, as the nomination process enables a broader set of token holders to participate in consensus and governance than under a traditional PoS model.
 
-Read more about the NPoS system in the [Creditcoin Docs](https://docs.creditcoin.org/staking).
+Read more about the Nominated Proof of Stake system in the [Creditcoin Docs](https://docs.creditcoin.org/staking).
