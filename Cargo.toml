@@ -24,7 +24,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = '2.237.1'
+version = '2.237.2'
 authors = ['Gluwa Inc.', 'Nathan Whitaker <nathan.whitaker@gluwa.com>']
 edition = '2021'
 license = 'Unlicense'
