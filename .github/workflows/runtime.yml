@@ -30,7 +30,7 @@ jobs:
           cat creditcoin-srtool-digest.json
           echo "Runtime location: ${{ steps.srtool_build.outputs.wasm }}"
       - name: Archive Runtime
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-runtime-${{ github.sha }}
           path: |

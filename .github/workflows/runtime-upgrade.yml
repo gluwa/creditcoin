@@ -91,7 +91,7 @@ jobs:
           HTTPS_RPC_URL: ${{ steps.testnet-env.outputs.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
 
       - name: Upload last block info
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: last-block-info
           path: "last-block*"
@@ -130,13 +130,13 @@ jobs:
           args: --release --features "try-runtime"
 
       - name: Upload creditcoin-node binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-node
           path: target/release/creditcoin-node
 
       - name: Upload WASM runtime
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
@@ -229,14 +229,14 @@ jobs:
           sleep 120
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
           path: "*.log"
 
       - name: Upload creditcoin-fork.json
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-fork.json
           path: creditcoin-fork.json
@@ -300,7 +300,7 @@ jobs:
           sleep 120
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
@@ -402,7 +402,7 @@ jobs:
           yarn --cwd ./integration-tests/ test --config creditcoin-fork.config.ts
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
@@ -534,7 +534,7 @@ jobs:
           BORROWER_SEED: "${{ secrets.TESTNET_BORROWER_SEED }}"
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
@@ -702,7 +702,7 @@ jobs:
           sleep 600
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
@@ -742,7 +742,7 @@ jobs:
           az group delete --yes -n "${{ steps.get-env.outputs.resource_group }}"
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "Azure resources"

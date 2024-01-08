@@ -359,13 +359,13 @@ jobs:
           args: --release --features fast-runtime
 
       - name: Upload creditcoin-node binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-node
           path: target/release/creditcoin-node
 
       - name: Upload WASM runtime
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
@@ -486,7 +486,7 @@ jobs:
           tar -czvf creditcoin-transaction-producer.tar.gz creditcoin-transaction-producer/
 
       - name: Upload creditcoin-transaction-producer archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: creditcoin-transaction-producer.tar.gz
           name: creditcoin-transaction-producer.tar.gz
@@ -544,7 +544,7 @@ jobs:
           ./scripts/check-transaction-producer.sh
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: transaction-producer-logs
@@ -645,7 +645,7 @@ jobs:
           github_token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
