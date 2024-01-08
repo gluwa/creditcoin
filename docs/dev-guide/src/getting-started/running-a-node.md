@@ -39,8 +39,8 @@ The node should start running and produce output similar to below:
 ```
 
 By default this is a temporary chain, so when you stop your development node the chain will be wiped out. If you want a local development
-chain that is persistent, you can use the `local` chain specification:
+chain that is persistent, you can use the `--base-path` flag to specify a directory where the chain's data will be stored:
 
 ```bash
-./target/release/creditcoin-node --chain local --validator
+./target/release/creditcoin-node --dev --base-path persistent-chain
 ```
