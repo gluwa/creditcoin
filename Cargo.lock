@@ -1344,8 +1344,7 @@ dependencies = [
  "pallet-rewards",
  "pallet-scheduler",
  "pallet-session",
- "pallet-staking 2.237.2",
- "pallet-staking 4.0.0-dev",
+ "pallet-staking",
  "pallet-staking-reward-fn",
  "pallet-sudo",
  "pallet-timestamp",
@@ -2703,7 +2702,7 @@ dependencies = [
  "frame-system",
  "git2",
  "num-format",
- "pallet-staking 4.0.0-dev",
+ "pallet-staking",
 ]
 
 [[package]]
@@ -5240,27 +5239,6 @@ dependencies = [
 
 [[package]]
 name = "pallet-staking"
-version = "2.237.2"
-dependencies = [
- "frame-benchmarking",
- "frame-election-provider-support",
- "frame-support",
- "frame-system",
- "log",
- "pallet-offchain-task-scheduler",
- "pallet-session",
- "pallet-staking 4.0.0-dev",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-arithmetic",
- "sp-runtime",
- "sp-staking",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-staking"
 version = "4.0.0-dev"
 source = "git+https://github.com/gluwa/substrate.git?branch=pos-keep-history-polkadot-v0.9.41#4e22d40dc55ca0a2a7e85037bbcd73de45afcd80"
 dependencies = [
@@ -5272,7 +5250,6 @@ dependencies = [
  "pallet-authorship",
  "pallet-session",
  "parity-scale-codec",
- "rand_chacha 0.2.2",
  "scale-info",
  "serde",
  "sp-application-crypto",

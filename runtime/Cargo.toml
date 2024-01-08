@@ -29,7 +29,6 @@ pallet-offchain-task-scheduler = { workspace = true }
 pallet-rewards = { workspace = true }
 pallet-scheduler = { workspace = true }
 pallet-session = { workspace = true }
-pallet-staking = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
@@ -101,7 +100,6 @@ runtime-benchmarks = [
     'pallet-balances/runtime-benchmarks',
     'pallet-rewards/runtime-benchmarks',
     'pallet-difficulty/runtime-benchmarks',
-    'pallet-staking/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'pallet-offchain-task-scheduler/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
@@ -121,7 +119,6 @@ std = [
     'pallet-difficulty/std',
     'pallet-scheduler/std',
     'pallet-session/std',
-    'pallet-staking/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
@@ -167,7 +164,6 @@ try-runtime = [
     "pallet-offchain-task-scheduler/try-runtime",
     "pallet-rewards/try-runtime",
     "pallet-scheduler/try-runtime",
-    "pallet-staking/try-runtime",
     "pallet-sudo/try-runtime",
     "pallet-session/try-runtime",
     "pallet-staking-substrate/try-runtime",
