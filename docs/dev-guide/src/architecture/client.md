@@ -38,7 +38,7 @@ The code for _defining_ new RPC methods is currently located in [`node/rpc`](htt
 
 ## Consensus / NPoS
 
-The client also contains consensus-related code. 
+The client also contains consensus-related code.
 
 Creditcoin uses Nominated Proof of Stake (NPoS), a variation of the Proof of Stake (PoS) consensus algorithm. NPoS introduces a nominator-validator model where nominators can select and back validators. Nominators delegate their stake to validators, and in return, they can receive a portion of the validator's rewards. This system allows token holders, who may not have enough stake or technical expertise to become a validator, to nonetheless participate in the network and earn rewards by supporting trusted validators instead. Thereby, it promotes a more inclusive and secure network, as the nomination process enables a broader set of token holders to participate in consensus and governance than under a traditional PoS model.
 
