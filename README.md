@@ -10,7 +10,6 @@ For more information, see [creditcoin.org](https://creditcoin.org), or read the 
 
 ## Getting Started
 
-- [Miner Setup](./docs/miner-setup.md)
 - [Using PolkadotJs](./docs/using-polkadotjs.md)
 
 ## Developer Setup
