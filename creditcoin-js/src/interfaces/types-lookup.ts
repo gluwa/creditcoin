@@ -2147,15 +2147,6 @@ declare module '@polkadot/types/lookup' {
         readonly asRequestCollectCoinsV2: {
             readonly contract: PalletCreditcoinCollectCoinsBurnDetails;
         } & Struct;
-        readonly isBurnAll: boolean;
-        readonly asBurnAll: {
-            readonly collector: AccountId32;
-        } & Struct;
-        readonly isBurn: boolean;
-        readonly asBurn: {
-            readonly amount: u128;
-            readonly collector: AccountId32;
-        } & Struct;
         readonly type:
             | 'ClaimLegacyWallet'
             | 'RegisterAddress'
@@ -2179,9 +2170,7 @@ declare module '@polkadot/types/lookup' {
             | 'RegisterAddressV2'
             | 'SetGateContract'
             | 'SetGateFaucet'
-            | 'RequestCollectCoinsV2'
-            | 'BurnAll'
-            | 'Burn';
+            | 'RequestCollectCoinsV2';
     }
 
     /** @name SpCoreEcdsaPublic (261) */
