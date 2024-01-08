@@ -16,7 +16,7 @@ use crate::{
 use assert_matches::assert_matches;
 use bstr::B;
 use ethereum_types::{BigEndianHash, H256, U256};
-use frame_support::{assert_noop, assert_ok, traits::Currency, BoundedVec};
+use frame_support::{assert_noop, assert_ok, BoundedVec};
 use frame_system::RawOrigin;
 use pallet_offchain_task_scheduler::authority::AuthorityController;
 use parity_scale_codec::Encode;
@@ -24,7 +24,7 @@ use sp_core::Pair;
 use sp_runtime::{
 	offchain::storage::StorageValueRef,
 	traits::{BadOrigin, IdentifyAccount},
-	AccountId32, MultiSigner, SaturatedConversion,
+	AccountId32, MultiSigner,
 };
 use std::convert::{TryFrom, TryInto};
 
