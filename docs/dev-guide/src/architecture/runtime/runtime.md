@@ -41,9 +41,11 @@ These pallets are all part of substrate and aren't maintained by the creditcoin 
 - [Balances](https://paritytech.github.io/polkadot-sdk/master/pallet_balances/index.html)
 - [FRAME System](https://paritytech.github.io/polkadot-sdk/master/frame_system/index.html)
 - [Scheduler](https://paritytech.github.io/polkadot-sdk/master/pallet_scheduler/index.html)
+- [Staking](https://paritytech.github.io/polkadot-sdk/master/pallet_staking/index.html)
 - [Sudo](https://paritytech.github.io/polkadot-sdk/master/pallet_sudo/index.html)
 - [Timestamp](https://paritytech.github.io/polkadot-sdk/master/pallet_timestamp/index.html)
 - [Transaction Payment](https://paritytech.github.io/polkadot-sdk/master/pallet_transaction_payment/index.html)
+- [Utility](https://paritytech.github.io/polkadot-sdk/master/pallet_utility/index.html)
 
 ### Internal Pallets
 
