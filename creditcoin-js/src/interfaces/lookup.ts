@@ -1880,13 +1880,6 @@ export default {
             request_collect_coins_v2: {
                 contract: 'PalletCreditcoinCollectCoinsBurnDetails',
             },
-            burn_all: {
-                collector: 'AccountId32',
-            },
-            burn: {
-                amount: 'u128',
-                collector: 'AccountId32',
-            },
         },
     },
     /**

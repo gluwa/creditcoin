@@ -39,7 +39,6 @@ mod types;
 pub mod test_utils;
 
 use crate::types::{BurnId, BurnInfo};
-use helpers::{burn_and_settle, can_burn_amount};
 use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
@@ -157,8 +156,6 @@ pub mod pallet {
 		fn set_gate_contract() -> Weight;
 		fn set_gate_faucet() -> Weight;
 		fn request_collect_coins_v2() -> Weight;
-		fn burn_all() -> Weight;
-		fn burn() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -1636,53 +1633,6 @@ pub mod pallet {
 				pending,
 			));
 
-			Ok(())
-		}
-
-		#[pallet::call_index(26)]
-		#[pallet::weight(<T as Config>::WeightInfo::burn_all())]
-		pub fn burn_all(origin: OriginFor<T>, collector: T::AccountId) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let balance =
-				<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::free_balance(&who);
-
-			let settlement_result = burn_and_settle::<T>(who.clone(), balance);
-
-			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
-
-			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
-			let burn_info =
-				BurnInfo::<T::AccountId, T::Balance> { account: who, amount: balance, collector };
-
-			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
-
-			Self::deposit_event(Event::<T>::Burned(burn_id));
-			Ok(())
-		}
-
-		#[pallet::call_index(27)]
-		#[pallet::weight(<T as Config>::WeightInfo::burn())]
-		pub fn burn(
-			origin: OriginFor<T>,
-			amount: T::Balance,
-			collector: T::AccountId,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			ensure!(can_burn_amount::<T>(who.clone(), amount), Error::<T>::BurnInsufficientFunds);
-
-			let settlement_result = burn_and_settle::<T>(who.clone(), amount);
-
-			ensure!(settlement_result.is_ok(), Error::<T>::BurnSettlementError);
-
-			let burn_id = BurnId(u64::from(BurnedFunds::<T>::count()));
-			let burn_info =
-				BurnInfo::<T::AccountId, T::Balance> { account: who, amount, collector };
-
-			BurnedFunds::<T>::insert(burn_id.clone(), burn_info);
-
-			Self::deposit_event(Event::<T>::Burned(burn_id));
 			Ok(())
 		}
 	}
