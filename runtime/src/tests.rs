@@ -11,9 +11,6 @@ use runtime_utils::{generate_account, ExtBuilder, RollTo, Trivial};
 use sp_runtime::traits::BadOrigin;
 use std::default::Default;
 
-mod staking;
-mod task_scheduling;
-
 #[test]
 fn pallet_scheduler_works() {
 	ExtBuilder::default().build_sans_config().execute_with(|| {
