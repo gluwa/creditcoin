@@ -73,8 +73,6 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
 #[cfg(test)]
-mod mock;
-#[cfg(test)]
 mod tests;
 
 mod output;
