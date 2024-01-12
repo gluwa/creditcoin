@@ -12,6 +12,6 @@ all of the material in the [Learn section](https://docs.substrate.io/learn/).
 
 That should give you a rough understanding of substrate's architecture, and how the pieces fit together.
 
-For learning about FRAME and best practices, the [substrate repository](https://github.com/paritytech/polkadot-sdk/tree/master/substrate) has a bunch of pallets of varying complexity that serve as good reference points.
-For starters, the [sudo pallet](https://github.com/paritytech/polkadot-sdk/tree/master/substrate/frame/sudo) is fairly small and
+For learning about FRAME and best practices, the [substrate repository](https://github.com/gluwa/substrate) has a bunch of pallets of varying complexity that serve as good reference points.
+For starters, the [sudo pallet](https://github.com/gluwa/substrate/tree/master/frame/sudo) is fairly small and
 digestible.
