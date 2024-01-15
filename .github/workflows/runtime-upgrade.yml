@@ -466,14 +466,6 @@ jobs:
         run: |
           ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
 
-      - name: Install Docker engine
-        run: |
-          ./scripts/install-docker-engine-from-upstream.sh
-
-      - name: Start local Ethereum node
-        run: |
-          sudo docker run --name hardhat-dev --rm -p 8545:8545 -d gluwa/hardhat-dev
-
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -542,11 +534,6 @@ jobs:
         with:
           name: logs
           path: "*.log"
-
-      - name: Kill hardhat-dev
-        if: always()
-        run: |
-          sudo docker kill hardhat-dev
 
       - name: Kill creditcoin-node
         run: |
