@@ -2,7 +2,7 @@
 
 Install Node.js and Yarn. You can do so from here: <https://nodejs.org/en/download>
 
-**WARNING:** Node.js 14.x || 16.x is required
+**WARNING:** Node.js 20.x is required
 
 Alternatively, a convenient tool to manage Node/npm installations is `nvm`.
 You can get it here: <https://github.com/nvm-sh/nvm#installing-and-updating>
@@ -10,9 +10,9 @@ You can get it here: <https://github.com/nvm-sh/nvm#installing-and-updating>
 And then install the required version as follows.
 
 ```bash
-nvm install 16
-nvm alias default 16
-nvm use 16
+nvm install 20
+nvm alias default 20
+nvm use 20
 ```
 
 We use Yarn for our package management and build scripts. To install Yarn enter:
