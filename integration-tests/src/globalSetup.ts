@@ -21,6 +21,10 @@ declare global {
     var CREDITCOIN_CTC_CONTRACT: GluwaCreditVestingToken;
 }
 
+export const creditcoinApiUrl = (defaultUrl: string) => {
+    return process.env.CREDITCOIN_API_URL || defaultUrl;
+};
+
 const setup = async () => {
     process.env.NODE_ENV = 'test';
 
@@ -39,7 +43,7 @@ const setup = async () => {
 
     if ((global as any).CREDITCOIN_API_URL === undefined) {
         const wsPort = process.env.CREDITCOIN_WS_PORT || '9944';
-        (global as any).CREDITCOIN_API_URL = `ws://127.0.0.1:${wsPort}`;
+        (global as any).CREDITCOIN_API_URL = creditcoinApiUrl(`ws://127.0.0.1:${wsPort}`);
     }
 
     if ((global as any).CREDITCOIN_METRICS_BASE === undefined) {
