@@ -79,8 +79,8 @@ options replace `test` with `jest`. For example:
 yarn jest src/test/collect-coins.test.ts
 ```
 
-You can use `CREDITCOIN_WS_PORT` and `CREDITCOIN_METRICS_PORT` environment variables
-to adjust the port values when running this test suite against a local node. That's mainly
+You can use `CREDITCOIN_API_URL`, `CREDITCOIN_WS_PORT` and `CREDITCOIN_METRICS_PORT` environment variables
+to adjust the some values when running this test suite against a local node. That's mainly
 useful for executing the loan cycle against a Zombienet chain running locally.
 
 
