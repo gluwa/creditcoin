@@ -522,6 +522,7 @@ jobs:
         run: |
           yarn --cwd ./integration-tests/ test --config testnet.config.ts
         env:
+          CREDITCOIN_API_URL: ws://127.0.0.1:9944
           ETHEREUM_NODE_URL: ${{ secrets.TESTNET_ETHEREUM_NODE_URL }}
           LENDER_PRIVATE_KEY: ${{ secrets.TESTNET_LENDER_PRIVATE_KEY }}
           LENDER_SEED: "${{ secrets.TESTNET_LENDER_SEED }}"
