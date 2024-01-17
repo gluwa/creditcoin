@@ -119,6 +119,7 @@ jobs:
           exclusions: "creditcoin-node.d"
 
       - name: Upload binary
+        if: matrix.operating-system != 'windows-2022'
         uses: actions/upload-artifact@v4
         with:
           path: "creditcoin-${{ env.TAG_NAME }}-*.zip"
