@@ -2,7 +2,7 @@
 # Building the `creditcoin-node` from source
 
 _Note on development platforms: development is easiest from a unix environment (whether that be linux, macOS, or WSL). It should be possible to
-develop natively in windows but you'll most likely be on your own._
+develop natively on Windows, [however that is unsupported](https://github.com/gluwa/creditcoin/security/advisories/GHSA-cx5c-xwcv-vhmq)._
 
 ## Build prerequisites
 

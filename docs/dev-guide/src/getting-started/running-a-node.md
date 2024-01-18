@@ -1,5 +1,8 @@
 # Running a Creditcoin node
 
+_Note on runtime platforms: running a Creditcoin node is easiest on a Unix-like environment (whether that be Linux, MacOS, or WSL).
+Running natively on Windows [is unsupported](https://github.com/gluwa/creditcoin/security/advisories/GHSA-cx5c-xwcv-vhmq)._
+
 ## Running a development node
 
 Now that you've built a `creditcoin-node` from source, you can get a minimal development node running with:
