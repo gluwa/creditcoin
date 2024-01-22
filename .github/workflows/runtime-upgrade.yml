@@ -232,7 +232,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: fork-creditcoin-logs
           path: "*.log"
 
       - name: Upload creditcoin-fork.json
@@ -303,7 +303,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: live-sync-creditcoin-logs
           path: "*.log"
 
   test-against-fork:
@@ -405,7 +405,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: test-against-fork-logs
           path: "*.log"
 
       - name: Kill hardhat-dev
@@ -533,7 +533,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: test-against-disconnected-live-node-logs
           path: "*.log"
 
       - name: Kill creditcoin-node
@@ -696,7 +696,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: test-migrations-via-try-runtime-logs
           path: "*.log"
 
   remove-github-runner:
