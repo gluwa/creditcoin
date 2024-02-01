@@ -299,7 +299,7 @@ jobs:
         with:
           config: .grcov.yml
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           files: ${{ steps.coverage.outputs.report }}
           fail_ci_if_error: false
@@ -325,7 +325,7 @@ jobs:
           yarn test:unit
           popd
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           files: scripts/cc-cli/coverage/lcov.info
           fail_ci_if_error: false
@@ -431,7 +431,7 @@ jobs:
           popd
 
       - name: Upload code coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: scripts/cc-cli/coverage/lcov.info
           fail_ci_if_error: false
