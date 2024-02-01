@@ -58,7 +58,7 @@ sp-timestamp = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 task-scheduler-runtime-api = { workspace = true }
-thiserror = "1.0.53"
+thiserror = "1.0.56"
 try-runtime-cli = { workspace = true, optional = true }
 jsonrpsee = { workspace = true, features = ["server"] }
 serde_json = "1.0.113"
