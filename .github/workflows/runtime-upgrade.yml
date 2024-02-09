@@ -20,7 +20,7 @@ jobs:
       target_chain: ${{ steps.testnet-env.outputs.target_chain || steps.mainnet-env.outputs.target_chain }}
       boot_node: ${{ steps.testnet-env.outputs.boot_node || steps.mainnet-env.outputs.boot_node }}
       rpc_url: ${{ steps.testnet-env.outputs.rpc_url || steps.mainnet-env.outputs.rpc_url }}
-      https_rpc_url: ${{ steps.testnet-env.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
+      https_rpc_url: ${{ steps.testnet-env.outputs.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
       release_tag: ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
       artifact_name: ${{ steps.testnet-env.outputs.artifact_name || steps.mainnet-env.outputs.artifact_name }}
       last_block_hash: ${{ steps.last-block-info.outputs.last_block_hash }}
