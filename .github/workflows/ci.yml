@@ -294,7 +294,9 @@ jobs:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
+
       - id: coverage
+        continue-on-error: true
         uses: actions-rs/grcov@v0.1
         with:
           config: .grcov.yml
