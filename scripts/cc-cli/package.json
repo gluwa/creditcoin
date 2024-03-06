@@ -27,7 +27,7 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.3",
-    "commander": "^11.1.0",
+    "commander": "^12.0.0",
     "creditcoin-js": "file:../../creditcoin-js/creditcoin-js-v0.10.4.tgz",
     "prompts": "^2.4.2",
     "web3-validator": "^2.0.1"
