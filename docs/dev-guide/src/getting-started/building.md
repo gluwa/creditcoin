@@ -11,6 +11,8 @@ develop natively on Windows, [however that is unsupported](https://github.com/gl
 You'll need a working Rust installation, if you don't have one already available (NOTE: you'll want to install and manage your Rust toolchain with `rustup`,
 not by installing your distro's `rust` package which will most likely be too old).
 
+See [rust installation guide](https://www.rust-lang.org/tools/install)
+
 ### System build dependencies
 
 You'll need a few system dependencies (some extra dependencies may be required depending on the platform, but
