@@ -11,32 +11,12 @@ develop natively on Windows, [however that is unsupported](https://github.com/gl
 You'll need a working Rust installation, if you don't have one already available (NOTE: you'll want to install and manage your Rust toolchain with `rustup`,
 not by installing your distro's `rust` package which will most likely be too old).
 
-For the installation you can refer to [these instructions](https://www.rust-lang.org/tools/install).
-
-Once you have a working rust installation, you'll need to add the `wasm32-unknown-unknown` target and install the nightly toolchain
-
-```bash
-rustup update
-rustup toolchain install nightly
-rustup target add wasm32-unknown-unknown --nightly
-```
-
-Note: So that you don't have to specify the toolchain every build, you can set `nightly` as your default toolchain while working on creditcoin.
-
-You can also check
-[./ci/env](https://github.com/gluwa/creditcoin/blob/dev/ci/env)
-for the toolchain being used in our CI in case you run into issues with newer version before we notice them.
-
-```bash
-# set nightly as default for your creditcoin checkout
-rustup override set nightly
-```
-
 ### System build dependencies
 
 You'll need a few system dependencies (some extra dependencies may be required depending on the platform, but
 all platforms require the following):
 
+- Gcc12
 - Clang
 - Protobuf compiler
 - CMake
