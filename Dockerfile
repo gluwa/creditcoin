@@ -1,6 +1,6 @@
 # hadolint global ignore=DL3008,DL3009,DL3016,SC3044,SC3046,DL4006,SC2086,SC3009
 
-FROM ubuntu:22.04 as runtime-base
+FROM ubuntu:24.04 as runtime-base
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get upgrade -y && \
