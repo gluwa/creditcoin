@@ -82,7 +82,7 @@ serde = { workspace = true }
 sc-chain-spec = { workspace = true }
 
 [dependencies.tokio]
-version = "1.35.1"
+version = "1.38.0"
 default-features = false
 features = ["time"]
 
