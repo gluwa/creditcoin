@@ -15,7 +15,7 @@ jobs:
   check-if-needed:
     # To avoid endless loop in CI skip this job on the commit which
     # auto-updates the weights and is generated further below.
-    if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'notaturkey' }}
+    if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'gluwa-bot' }}
     runs-on: ubuntu-22.04
     outputs:
       needs-bench: ${{ steps.version-check.outputs.needs_bench }}
