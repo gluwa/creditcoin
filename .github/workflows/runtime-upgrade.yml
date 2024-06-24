@@ -700,7 +700,7 @@ jobs:
 
       - name: Try-runtime migrations
         run: |
-          ./target/release/creditcoin-node try-runtime \
+          try-runtime \
               --runtime ./target/release/creditcoin_node_runtime.compact.compressed.wasm \
               --dev on-runtime-upgrade live --uri ws://127.0.0.1:9944 \
               --at ${{ needs.setup.outputs.last_block_hash }}
