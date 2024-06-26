@@ -26,10 +26,6 @@ rustup target add wasm32-unknown-unknown --nightly
 
 Note: So that you don't have to specify the toolchain every build, you can set `nightly` as your default toolchain while working on creditcoin.
 
-```bash
-rustup default nightly-2024-02-04
-```
-
 You can also check
 [./ci/env](https://github.com/gluwa/creditcoin/blob/dev/ci/env)
 for the toolchain being used in our CI in case you run into issues with newer version before we notice them.
