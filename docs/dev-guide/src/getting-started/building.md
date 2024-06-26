@@ -13,7 +13,7 @@ not by installing your distro's `rust` package which will most likely be too old
 
 For the installation you can refer to [these instructions](https://www.rust-lang.org/tools/install).
 
-Once you have rustup, you'll need to do the following. 
+Once you have rustup, you'll need to do the following.
 1. Install rust version 1.76.0. Creditcoin uses the feature `stdsimd` which was removed in later Rust versions.
 2. Default to using the nightly toolchain corresponding to Rust version 1.76.0 as shown below.
 3. Add the `wasm32-unknown-unknown` target
