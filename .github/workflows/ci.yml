@@ -24,6 +24,11 @@ jobs:
         run: |
           docker build -t gluwa/creditcoin .
 
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
       - name: Start a container from image
         run: |
           # see https://opensource.com/article/18/5/how-find-ip-address-linux
