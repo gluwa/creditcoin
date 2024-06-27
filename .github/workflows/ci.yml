@@ -20,14 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build docker image
-        run: |
-          docker build -t gluwa/creditcoin .
-
       - name: Configure rustc version
         run: |
           RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Build docker image
+        run: |
+          docker build -t gluwa/creditcoin .
 
       - name: Start a container from image
         run: |
