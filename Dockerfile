@@ -30,11 +30,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | /bin/sh -s -- -y
 COPY --chown=creditcoin:creditcoin . /creditcoin-node/
 # shellcheck source=/dev/null
 RUN source ~/.cargo/env && \
-    source ./ci/env && \
-    rustup default $RUSTC_VERSION && \
-    rustup update $RUSTC_VERSION && \
-    rustup target add wasm32-unknown-unknown --toolchain $RUSTC_VERSION && \
-    source ~/.cargo/env && \
     cargo build --release
 
 
