@@ -13,18 +13,9 @@ not by installing your distro's `rust` package which will most likely be too old
 
 For the installation you can refer to [these instructions](https://www.rust-lang.org/tools/install).
 
-Once you have rustup, you'll need to do the following.
-1. Install and the nightly rust toolchain specified in [./ci/env](https://github.com/gluwa/creditcoin/blob/dev/ci/env). Creditcoin uses the feature `stdsimd` which was removed in later nightly versions.
-2. Set the newly installed toolchain as the default for your creditcoin checkout
-3. Add the `wasm32-unknown-unknown` target
-
-```bash
-# In place of `nightly-2023-06-06, use the version specified in ci/env
-rustup install nightly-2023-06-06
-# Set the newly installed toolchain as default for your creditcoin checkout
-rustup override set nightly-2023-06-06
-rustup target add wasm32-unknown-unknown --nightly
-```
+Once you have rustup, you don't need to do anymore setup because this repository uses a
+[rust-toolchain.toml](https://github.com/gluwa/creditcoin/blob/dev/rust-toolchain.toml) file.
+**NOTE:** Creditcoin uses the feature `stdsimd` which has been removed in later nightly versions.
 
 ### System build dependencies
 
