@@ -97,7 +97,6 @@ impl TestLogs {
 ///
 /// # Example
 /// ```
-/// #[test]
 /// fn my_cool_test() {
 ///     let logs = traced_test::trace();
 ///     tracing::info!("Hello");
