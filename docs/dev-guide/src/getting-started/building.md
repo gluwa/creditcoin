@@ -19,10 +19,10 @@ Once you have rustup, you'll need to do the following.
 3. Add the `wasm32-unknown-unknown` target
 
 ```bash
-# In place of `nightly-2024-02-04, use the version specified in ci/env
-rustup install nightly-2024-02-04
+# In place of `nightly-2023-06-06, use the version specified in ci/env
+rustup install nightly-2023-06-06
 # Set the newly installed toolchain as default for your creditcoin checkout
-rustup override set nightly-2024-02-04
+rustup override set nightly-2023-06-06
 rustup target add wasm32-unknown-unknown --nightly
 ```
 
