@@ -61,7 +61,7 @@ task-scheduler-runtime-api = { workspace = true }
 thiserror = "1.0.57"
 try-runtime-cli = { workspace = true, optional = true }
 jsonrpsee = { workspace = true, features = ["server"] }
-serde_json = "1.0.117"
+serde_json = "1.0.119"
 frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 sp-io = { workspace = true, optional = true }
