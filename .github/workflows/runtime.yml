@@ -58,7 +58,7 @@ jobs:
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
 
       - name: Install Subwasm
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: install
           args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1

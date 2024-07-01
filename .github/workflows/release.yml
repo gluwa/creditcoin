@@ -51,7 +51,7 @@ jobs:
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -60,7 +60,7 @@ jobs:
 
       - name: Install MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: aarch64-apple-darwin
@@ -87,14 +87,14 @@ jobs:
           echo "Tag & Platform is '${{ env.TAG_NAME }}-${{ env.PLATFORM }}'"
 
       - name: Build
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release
 
       - name: Build MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release --target aarch64-apple-darwin

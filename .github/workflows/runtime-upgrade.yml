@@ -115,7 +115,7 @@ jobs:
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -124,7 +124,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build SUT
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release --features "try-runtime"
@@ -373,14 +373,14 @@ jobs:
           sudo apt install -y gcc
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
           override: true
 
       - name: Install Subwasm
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: install
           args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1
@@ -489,14 +489,14 @@ jobs:
           sudo apt install -y gcc
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
           override: true
 
       - name: Install Subwasm
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: install
           args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1
