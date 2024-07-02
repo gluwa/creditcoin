@@ -117,7 +117,7 @@ async function initWalletFromEnvOrPrompt(
   }
 
   if (process.env[envVar] !== undefined) {
-    const seed = process.env[envVar] as string;
+    const seed = process.env[envVar];
 
     if (!validateInput(seed)) {
       throw new Error(`Error: ${inputName} is invalid`);
