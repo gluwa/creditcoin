@@ -1635,5 +1635,13 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		#[pallet::call_index(30)]
+		#[pallet::weight(<T as Config>::WeightInfo::set_gate_faucet())]
+		pub fn set_gate_faucet_experimental(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
+			ensure_root(origin)?;
+			GATEFaucetAccount::<T>::put(address);
+			Ok(())
+		}
 	}
 }
