@@ -1,18 +1,18 @@
 mod cleanup;
-mod collect_coins;
+//mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 
 pub use cleanup::{StorageCleanupState, StorageItemCleanupState};
-pub use collect_coins::{
-	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
-};
+// pub use collect_coins::{
+// 	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
+// };
 pub use loan_terms::*;
 pub use transfer::*;
 
-pub use collect_coins::{BurnDetails, ContractType};
+//pub use collect_coins::{BurnDetails, ContractType};
 
-use crate::ocw::tasks::collect_coins::DeployedContract;
+//use crate::ocw::tasks::collect_coins::DeployedContract;
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
 use extend::ext;
@@ -473,7 +473,7 @@ impl<'de> serde::Deserialize<'de> for LegacySighash {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum Task<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(UnverifiedCollectedCoins),
+	//CollectCoins(UnverifiedCollectedCoins),
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -501,18 +501,18 @@ impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, Block
 	}
 }
 
-impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCollectedCoins>
-	for Task<AccountId, BlockNum, Hash, Moment>
-{
-	fn from(coins: UnverifiedCollectedCoins) -> Self {
-		Task::CollectCoins(coins)
-	}
-}
+// impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCollectedCoins>
+// 	for Task<AccountId, BlockNum, Hash, Moment>
+// {
+// 	fn from(coins: UnverifiedCollectedCoins) -> Self {
+// 		Task::CollectCoins(coins)
+// 	}
+// }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskId<Hash> {
 	VerifyTransfer(TransferId<Hash>),
-	CollectCoins(CollectedCoinsId<Hash>),
+	//CollectCoins(CollectedCoinsId<Hash>),
 }
 
 impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
@@ -521,21 +521,21 @@ impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
 	}
 }
 
-impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
-	fn from(id: CollectedCoinsId<Hash>) -> Self {
-		TaskId::CollectCoins(id)
-	}
-}
+// impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
+// 	fn from(id: CollectedCoinsId<Hash>) -> Self {
+// 		TaskId::CollectCoins(id)
+// 	}
+// }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
+pub enum TaskOutput<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>),
+	//CollectCoins(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>),
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment>
+impl<AccountId, BlockNum, Hash, Moment>
 	From<(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>)>
-	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+	for TaskOutput<AccountId, BlockNum, Hash, Moment>
 {
 	fn from(
 		(id, transfer): (TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
@@ -544,14 +544,14 @@ impl<AccountId, Balance, BlockNum, Hash, Moment>
 	}
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment>
-	From<(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)>
-	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
-{
-	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)) -> Self {
-		Self::CollectCoins(id, coins)
-	}
-}
+// impl<AccountId, Balance, BlockNum, Hash, Moment>
+// 	From<(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)>
+// 	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+// {
+// 	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)) -> Self {
+// 		Self::CollectCoins(id, coins)
+// 	}
+// }
 
 #[cfg(test)]
 pub(crate) mod test {
