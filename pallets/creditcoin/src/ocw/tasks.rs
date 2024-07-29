@@ -1,4 +1,4 @@
-pub mod collect_coins;
+//pub mod collect_coins;
 pub mod verify_transfer;
 
 use crate::ocw::errors::VerificationResult;
@@ -34,9 +34,9 @@ where
 			VerifyTransfer(unverified) => {
 				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
 			},
-			CollectCoins(unverified) => {
-				unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
-			},
+			// CollectCoins(unverified) => {
+			// 	unverified.forward_task(deadline).map(|c: crate::pallet::Call<T>| c.into())
+			// },
 		}
 	}
 }
