@@ -556,9 +556,12 @@ impl<AccountId, BlockNum, Hash, Moment>
 #[cfg(test)]
 pub(crate) mod test {
 	use crate::{
-		helpers::extensions::HexToAddress, loan_terms::InvalidTermLengthError, mock,
+		helpers::extensions::HexToAddress,
+		loan_terms::InvalidTermLengthError,
+		mock,
 		// ocw::tasks::collect_coins::tests::TX_HASH,
-		tests::TestInfo, *,
+		tests::TestInfo,
+		*,
 	};
 	use frame_support::BoundedVec;
 	use parity_scale_codec::{Decode, Encode};

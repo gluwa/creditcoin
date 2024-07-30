@@ -42,10 +42,12 @@ use crate::types::{BurnId, BurnInfo};
 use ocw::tasks::verify_transfer::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, /*BurnDetails, CollectedCoinsId, CollectedCoinsStruct, ContractType,*/ DealOrder,
+	Blockchain,
+	/*BurnDetails, CollectedCoinsId, CollectedCoinsStruct, ContractType,*/ DealOrder,
 	DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate,
 	InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId,
-	TaskOutput, Transfer, TransferId, TransferKind, /*UnverifiedCollectedCoins,*/ UnverifiedTransfer,
+	TaskOutput, Transfer, TransferId, TransferKind,
+	/*UnverifiedCollectedCoins,*/ UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
@@ -270,7 +272,6 @@ pub mod pallet {
 		// /// Collecting coins from Eth ERC-20 has been registered and will be verified.
 		// /// [collected_coins_id, registered_collect_coins]
 		//CollectCoinsRegistered(CollectedCoinsId<T::Hash>, types::UnverifiedCollectedCoins),
-
 		/// An external transfer has been registered and will be verified.
 		/// [registered_transfer_id, registered_transfer]
 		TransferRegistered(
@@ -288,7 +289,6 @@ pub mod pallet {
 		// 	types::CollectedCoinsId<T::Hash>,
 		// 	types::CollectedCoinsStruct<T::Hash, T::Balance>,
 		// ),
-
 		/// An external transfer has been processed and marked as part of a loan.
 		/// [processed_transfer_id]
 		TransferProcessed(TransferId<T::Hash>),
@@ -355,7 +355,6 @@ pub mod pallet {
 		// /// exchanging vested ERC-20 CC for native CC failed.
 		// /// [collected_coins_id, cause]
 		// CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
-
 		Burned(BurnId),
 	}
 
