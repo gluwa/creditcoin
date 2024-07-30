@@ -7,7 +7,7 @@ use crate::{
 		non_paying_error, EVMAddress, PublicToAddress,
 	},
 	mock::{RuntimeOrigin as Origin, *},
-	ocw::tasks::collect_coins::DeployedContract,
+	ocw::tasks::verify_transfer::DeployedContract,
 	types::{DoubleMapExt, OwnershipProof},
 	AddressId, AskOrder, AskOrderId, BidOrder, BidOrderId, Blockchain, DealOrder, DealOrderId,
 	DealOrders, Duration, ExternalAddress, ExternalAmount, Guid, Id, LegacySighash, LoanTerms,

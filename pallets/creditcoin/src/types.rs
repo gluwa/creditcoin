@@ -557,7 +557,8 @@ impl<AccountId, BlockNum, Hash, Moment>
 pub(crate) mod test {
 	use crate::{
 		helpers::extensions::HexToAddress, loan_terms::InvalidTermLengthError, mock,
-		ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
+		// ocw::tasks::collect_coins::tests::TX_HASH,
+		tests::TestInfo, *,
 	};
 	use frame_support::BoundedVec;
 	use parity_scale_codec::{Decode, Encode};
@@ -665,23 +666,23 @@ pub(crate) mod test {
 		test_info.create_funding_transfer(&deal_order_id)
 	}
 
-	fn create_collected_coins() -> CollectedCoinsStruct<Hash, Balance> {
-		CollectedCoinsStruct {
-			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
-			amount: 1000,
-			tx_id: TX_HASH.hex_to_address(),
-			contract_type: types::ContractType::GCRE,
-		}
-	}
+	// fn create_collected_coins() -> CollectedCoinsStruct<Hash, Balance> {
+	// 	CollectedCoinsStruct {
+	// 		to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
+	// 		amount: 1000,
+	// 		tx_id: TX_HASH.hex_to_address(),
+	// 		contract_type: types::ContractType::GCRE,
+	// 	}
+	// }
 
-	fn create_unverified_collected_coins() -> UnverifiedCollectedCoins {
-		UnverifiedCollectedCoins {
-			to: b"baba".to_vec().try_into().unwrap(),
-			tx_id: TX_HASH.hex_to_address(),
-			contract: Default::default(),
-			contract_type: types::ContractType::GCRE,
-		}
-	}
+	// fn create_unverified_collected_coins() -> UnverifiedCollectedCoins {
+	// 	UnverifiedCollectedCoins {
+	// 		to: b"baba".to_vec().try_into().unwrap(),
+	// 		tx_id: TX_HASH.hex_to_address(),
+	// 		contract: Default::default(),
+	// 		contract_type: types::ContractType::GCRE,
+	// 	}
+	// }
 
 	pub(crate) fn create_unverified_transfer(
 	) -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
@@ -711,9 +712,9 @@ pub(crate) mod test {
 	blockchain: Blockchain : Blockchain::Bitcoin,
 	transfer_kind: TransferKind : TransferKind::Native,
 	address: Address<AccountId> : create_address(),
-	collected_coins: CollectedCoinsStruct<Hash, Balance> : create_collected_coins(),
+	//collected_coins: CollectedCoinsStruct<Hash, Balance> : create_collected_coins(),
 	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
-	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
+	//unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
 	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
 	offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().1,
 	ask_order: AskOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().1,
@@ -726,11 +727,11 @@ pub(crate) mod test {
 	order_id: OrderId<BlockNum, Hash> : OrderId::Deal(TestInfo::new_defaults().create_deal_order().0),
 	offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
 	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
-	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
+	//collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
 	legacy_sighash: LegacySighash : LegacySighash::default(),
-	task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
+	//task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
 	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().0),
-	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
+	task_output: TaskOutput<AccountId, BlockNum, Hash, Moment> : TaskOutput::<AccountId, BlockNum, Hash, Moment>::from(
 		create_funding_transfer()
 	),
 
