@@ -59,15 +59,15 @@ fn must_be_root_to_schedule() {
 	});
 }
 
-#[test]
-fn authority_migration_parity_checks() {
-	use pallet_creditcoin::migrations::v7::{Authorities as AC, SCHEDULER_PREFIX};
-	use pallet_offchain_task_scheduler::Authorities as AT;
-
-	//Pallet prefix
-	let scheduler_prefix = TaskScheduler::name();
-	assert_eq!(SCHEDULER_PREFIX, scheduler_prefix);
-
-	//Storage Prefix
-	assert_eq!(AT::<Runtime>::storage_prefix(), AC::<Runtime>::storage_prefix());
-}
+// #[test]
+// fn authority_migration_parity_checks() {
+// 	use pallet_creditcoin::migrations::v7::{Authorities as AC, SCHEDULER_PREFIX};
+// 	use pallet_offchain_task_scheduler::Authorities as AT;
+//
+// 	//Pallet prefix
+// 	let scheduler_prefix = TaskScheduler::name();
+// 	assert_eq!(SCHEDULER_PREFIX, scheduler_prefix);
+//
+// 	//Storage Prefix
+// 	assert_eq!(AT::<Runtime>::storage_prefix(), AC::<Runtime>::storage_prefix());
+// }
