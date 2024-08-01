@@ -52,7 +52,7 @@ pallet-offchain-task-scheduler = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
-bstr = { version = "1.9.1", default-features = false }
+bstr = { version = "1.10.0", default-features = false }
 parking_lot = "0.12.2"
 sp-core = { workspace = true }
 sp-keystore = { workspace = true }
