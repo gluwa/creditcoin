@@ -10,7 +10,7 @@ repository.workspace = true
 
 [dependencies]
 frame-support = { workspace = true }
-parking_lot = "0.12.2"
+parking_lot = "0.12.3"
 frame-system = { workspace = true }
 sp-io.workspace = true
 sp-keystore.workspace = true
