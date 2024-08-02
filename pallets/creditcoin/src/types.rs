@@ -508,7 +508,6 @@ impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskOutput<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
-	//CollectCoins(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>),
 }
 
 impl<AccountId, BlockNum, Hash, Moment>
