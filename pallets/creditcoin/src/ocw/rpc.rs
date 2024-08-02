@@ -251,14 +251,6 @@ pub struct EthTransaction {
 }
 
 impl EthTransaction {
-	pub fn selector(&self) -> &[u8] {
-		&self.input.0[..4]
-	}
-
-	pub fn is_input_empty(&self) -> bool {
-		self.input.0.len() <= 4
-	}
-
 	pub fn input(&self) -> &[u8] {
 		&self.input.0[4..]
 	}

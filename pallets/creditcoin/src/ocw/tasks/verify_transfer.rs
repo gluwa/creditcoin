@@ -41,28 +41,6 @@ impl Default for DeployedContract {
 	}
 }
 
-impl DeployedContract {
-	///exchange has been deprecated, use burn instead
-	fn burn_vested_cc_abi() -> Function {
-		#[allow(deprecated)]
-		Function {
-			name: "burn".into(),
-			inputs: vec![Param {
-				name: "value".into(),
-				kind: ParamType::Uint(256),
-				internal_type: None,
-			}],
-			outputs: vec![Param {
-				name: "success".into(),
-				kind: ParamType::Bool,
-				internal_type: None,
-			}],
-			constant: Some(false),
-			state_mutability: StateMutability::NonPayable,
-		}
-	}
-}
-
 pub(crate) fn ethless_transfer_function_abi() -> Function {
 	#[allow(deprecated)]
 	Function {
