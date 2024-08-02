@@ -1,18 +1,12 @@
 mod cleanup;
-//mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 
 pub use cleanup::{StorageCleanupState, StorageItemCleanupState};
-// pub use collect_coins::{
-// 	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
-// };
+
 pub use loan_terms::*;
 pub use transfer::*;
 
-//pub use collect_coins::{BurnDetails, ContractType};
-
-//use crate::ocw::tasks::collect_coins::DeployedContract;
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
 use extend::ext;
