@@ -451,10 +451,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
-          repository: gluwa/creditcoin-transaction-producer
-          path: creditcoin-transaction-producer
 
       - name: Configure rustc version
         run: |
