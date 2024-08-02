@@ -7,15 +7,16 @@ pub trait Authorship {
 	type Public: From<Self::RuntimePublic> + IdentifyAccount<AccountId = Self::AccountId>;
 	type AccountId;
 	fn find_authorized<'a>(
-		keys: impl Iterator<Item = &'a Self::RuntimePublic>,
+		mut keys: impl Iterator<Item = &'a Self::RuntimePublic>,
 	) -> Option<Self::RuntimePublic>
 	where
 		Self::RuntimePublic: 'a,
 	{
-		keys.cloned().find(|pkey| {
+		keys.find(|&pkey| {
 			let auth = Self::Public::from(pkey.clone()).into_account();
 			Self::is_authorized(&auth)
 		})
+		.cloned()
 	}
 
 	fn is_authorized(who: &Self::AccountId) -> bool;
