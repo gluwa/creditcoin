@@ -2923,19 +2923,7 @@ fn exercise_weightinfo_functions() {
 	let result = super::weights::WeightInfo::<Test>::register_deal_order();
 	assert!(result.ref_time() > 0);
 
-	let result = super::weights::WeightInfo::<Test>::request_collect_coins();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::fail_collect_coins();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
-	assert!(result.ref_time() > 0);
-
 	let result = super::weights::WeightInfo::<Test>::remove_authority();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
 	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::register_address_v2();
@@ -2945,9 +2933,6 @@ fn exercise_weightinfo_functions() {
 	assert!(result.ref_time() > 0);
 
 	let result = super::weights::WeightInfo::<Test>::set_gate_faucet();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::request_collect_coins_v2();
 	assert!(result.ref_time() > 0);
 }
 
