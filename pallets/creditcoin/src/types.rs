@@ -1,5 +1,5 @@
 mod cleanup;
-mod collect_coins;
+pub mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 

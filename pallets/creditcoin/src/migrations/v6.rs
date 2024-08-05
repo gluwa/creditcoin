@@ -26,7 +26,6 @@ pub struct OldUnverifiedCollectedCoins {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum Task<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(OldUnverifiedCollectedCoins),
 }
 
 impl<T: Config> TaskV2<T> for OldUnverifiedCollectedCoins
@@ -51,14 +50,6 @@ where
 
 	fn is_persisted(_id: &T::Hash) -> bool {
 		unreachable!("")
-	}
-}
-
-impl<AccountId, BlockNum, Hash, Moment> From<OldUnverifiedCollectedCoins>
-	for Task<AccountId, BlockNum, Hash, Moment>
-{
-	fn from(coins: OldUnverifiedCollectedCoins) -> Self {
-		Task::CollectCoins(coins)
 	}
 }
 
@@ -121,9 +112,6 @@ impl<T: Config> Migrate for Migration<T> {
 		for (i, (k1, _, v)) in PendingTasks::<T>::drain().enumerate() {
 			n = i.unique_saturated_into();
 			let id: TaskId<T::Hash> = match &v {
-				Task::CollectCoins(pending) => TaskId::CollectCoins(
-					crate::types::CollectedCoinsId::from(TaskV2::<T>::to_id(pending)),
-				),
 				Task::VerifyTransfer(pending) => TaskId::VerifyTransfer(
 					crate::types::TransferId::from(TaskV2::<T>::to_id(pending)),
 				),
@@ -145,38 +133,9 @@ impl<T: Config> Migrate for Migration<T> {
 pub mod tests {
 	use super::Migrate;
 	use super::*;
-	use crate::helpers::extensions::IntoBounded;
 	use crate::mock::ExtBuilder;
 	use crate::mock::Test;
-	use crate::test::create_unverified_transfer;
-
-	#[test]
-	fn migrate_collect_coins() {
-		ExtBuilder::default().build_and_execute(|| {
-			let pending = OldUnverifiedCollectedCoins {
-				to: [0u8; 256].into_bounded(),
-				tx_id: [0u8; 256].into_bounded(),
-				contract: Default::default(),
-			};
-			let id = TaskId::CollectCoins(crate::types::CollectedCoinsId::from(
-				TaskV2::<Test>::to_id(&pending),
-			));
-
-			PendingTasks::<Test>::insert(1u64, id.clone(), Task::from(pending.clone()));
-
-			super::Migration::<Test>::new().migrate();
-
-			let migrated_pending = {
-				if let Task::CollectCoins(pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
-				{
-					pending
-				} else {
-					unreachable!()
-				}
-			};
-			assert_eq!(pending, migrated_pending);
-		});
-	}
+	use crate::types::test::create_unverified_transfer;
 
 	#[test]
 	fn migrate_verify_transfer() {
@@ -192,13 +151,8 @@ pub mod tests {
 			super::Migration::<Test>::new().migrate();
 
 			let migrated_pending = {
-				if let Task::VerifyTransfer(pending) =
-					new::PendingTasks::<Test>::get(1, id).unwrap()
-				{
-					pending
-				} else {
-					unreachable!()
-				}
+				let Task::VerifyTransfer(pending) = new::PendingTasks::<Test>::get(1, id).unwrap();
+				pending
 			};
 			assert_eq!(pending, migrated_pending);
 		});
