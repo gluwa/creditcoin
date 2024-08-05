@@ -1,4 +1,5 @@
 mod cleanup;
+mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 
@@ -9,6 +10,7 @@ pub use transfer::*;
 
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
+pub use collect_coins::{CollectedCoins as CollectedCoinsStruct, CollectedCoinsId};
 use extend::ext;
 use frame_support::{
 	storage::types::QueryKindTrait,
@@ -680,6 +682,7 @@ pub(crate) mod test {
 	order_id: OrderId<BlockNum, Hash> : OrderId::Deal(TestInfo::new_defaults().create_deal_order().0),
 	offer_id: OfferId<BlockNum, Hash> : TestInfo::new_defaults().create_offer().0,
 	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
+	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
 	legacy_sighash: LegacySighash : LegacySighash::default(),
 	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().0),
 	task_output: TaskOutput<AccountId, BlockNum, Hash, Moment> : TaskOutput::<AccountId, BlockNum, Hash, Moment>::from(

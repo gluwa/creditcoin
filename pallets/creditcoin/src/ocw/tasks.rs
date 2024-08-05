@@ -1,3 +1,4 @@
+pub mod collect_coins;
 pub mod verify_transfer;
 
 use crate::ocw::errors::VerificationResult;
