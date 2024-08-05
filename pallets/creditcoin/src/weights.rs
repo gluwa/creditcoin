@@ -35,6 +35,39 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `crate`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
+	/// Storage: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1 w:0)
+	/// Proof Skipped: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1 w:0)
+	/// The range of component `t` is `[0, 1024]`.
+	fn migration_v6(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `117`
+		//  Estimated: `3566`
+		// Minimum execution time: 13_600_000 picoseconds.
+		Weight::from_parts(16_590_351, 0)
+			.saturating_add(Weight::from_parts(0, 3566))
+			// Standard Error: 822
+			.saturating_add(Weight::from_parts(4_996, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+	}
+	/// Storage: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1025 w:1024)
+	/// Proof Skipped: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1025 w:1024)
+	/// Storage: TaskScheduler Authorities (r:0 w:1024)
+	/// Proof: TaskScheduler Authorities (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+	/// The range of component `t` is `[0, 1024]`.
+	fn migration_v7(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `153 + t * (53 ±0)`
+		//  Estimated: `3600 + t * (2529 ±0)`
+		// Minimum execution time: 13_700_000 picoseconds.
+		Weight::from_parts(13_801_000, 0)
+			.saturating_add(Weight::from_parts(0, 3600))
+			// Standard Error: 112_297
+			.saturating_add(Weight::from_parts(11_274_786, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2529).saturating_mul(t.into()))
+	}
 	/// Storage: Creditcoin AskOrders (r:255 w:255)
 	/// Proof: Creditcoin AskOrders (max_values: None, max_size: Some(448), added: 2923, mode: MaxEncodedLen)
 	/// Storage: Creditcoin BidOrders (r:255 w:255)
