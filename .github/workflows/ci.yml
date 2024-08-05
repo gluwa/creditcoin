@@ -450,13 +450,17 @@ jobs:
 
   build-creditcoin-transaction-producer:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+          repository: gluwa/creditcoin-transaction-producer
+          path: creditcoin-transaction-producer
+          ref: chore/update-rustc-version
 
       - name: Configure rustc version
         run: |
-          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          source creditcoin-transaction-producer/ci/env
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Node.js
