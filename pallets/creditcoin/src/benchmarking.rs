@@ -2,6 +2,7 @@
 use super::*;
 use crate::benchmarking::alloc::format;
 use crate::helpers::{extensions::IntoBounded, EVMAddress, PublicToAddress};
+use crate::migrations::Migrate;
 use crate::test_utils::{
 	fake_address_id, fake_ask_id, fake_bid_id, fake_loan_terms, fake_offer_id, insert_fake_ask,
 	insert_fake_bid, insert_fake_offer,
@@ -31,28 +32,6 @@ enum DealKind {
 }
 
 benchmarks! {
-		migration_v6 {
-		let t in 0..1024;
-
-		let pending = types::UnverifiedCollectedCoins {
-			to: [0u8; 256].into_bounded(),
-			tx_id: [0u8; 256].into_bounded(),
-			contract: Default::default(),
-			contract_type: ContractType::GCRE,
-		};
-		for t in 0..t {
-			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
-			T::TaskScheduler::insert(
-				&T::BlockNumber::one(),
-				&collected_coins_id.into_inner(),
-				crate::Task::from(pending.clone()),
-			);
-		}
-
-		let m = crate::migrations::v7::Migration::<T>::new();
-
-	 }: {m.migrate()}
-
 	migration_v7 {
 		let t in 0..1024;
 
