@@ -31,6 +31,40 @@ enum DealKind {
 }
 
 benchmarks! {
+		migration_v6 {
+		let t in 0..1024;
+
+		let pending = types::UnverifiedCollectedCoins {
+			to: [0u8; 256].into_bounded(),
+			tx_id: [0u8; 256].into_bounded(),
+			contract: Default::default(),
+			contract_type: ContractType::GCRE,
+		};
+		for t in 0..t {
+			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
+			T::TaskScheduler::insert(
+				&T::BlockNumber::one(),
+				&collected_coins_id.into_inner(),
+				crate::Task::from(pending.clone()),
+			);
+		}
+
+		let m = crate::migrations::v7::Migration::<T>::new();
+
+	 }: {m.migrate()}
+
+	migration_v7 {
+		let t in 0..1024;
+
+		for t in 0..t {
+			let account:T::AccountId = account("Authority",1,t);
+			crate::migrations::v7::Authorities::<T>::insert(account,());
+		}
+
+		let m = crate::migrations::v7::Migration::<T>::new();
+
+	 }: {m.migrate()}
+
 	on_initialize {
 		//insert a askorders
 		let a in 0..255;
