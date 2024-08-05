@@ -41,13 +41,13 @@ mod types;
 pub mod test_utils;
 
 use crate::types::{BurnId, BurnInfo};
-use ocw::tasks::verify_transfer::DeployedContract;
+use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, DealOrder, DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId,
-	Guid, InterestRate, InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId,
-	RatePerPeriod, Task, TaskId, TaskOutput, Transfer, TransferId, TransferKind,
-	UnverifiedTransfer,
+	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
+	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
+	TransferId, TransferKind, UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
@@ -221,6 +221,19 @@ pub mod pallet {
 		TransferId<T::Hash>,
 		Transfer<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn collected_coins)]
+	pub type CollectedCoins<T: Config> = StorageMap<
+		_,
+		Identity,
+		CollectedCoinsId<T::Hash>,
+		types::CollectedCoinsStruct<T::Hash, T::Balance>,
+	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn collect_coins_contract)]
+	pub type CollectCoinsContract<T: Config> = StorageValue<_, DeployedContract, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn gate_contract)]
