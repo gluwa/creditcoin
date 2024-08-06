@@ -3,6 +3,8 @@ use super::{AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf, PhantomData};
 
 use crate::types::CollectedCoinsStruct;
 
+use crate::migrations::v6::Task as OldTask;
+
 use crate::{AddressId, Config, TaskId, UnverifiedTransfer};
 use crate::{CollectedCoinsId, ExternalTxId};
 use frame_support::storage_alias;
@@ -10,18 +12,18 @@ use frame_support::weights::Weight;
 use frame_support::{pallet_prelude::*, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum OldTask<AccountId, BlockNum, Hash, Moment> {
-	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
-}
-
-impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
-	for OldTask<AccountId, BlockNum, Hash, Moment>
-{
-	fn from(transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>) -> Self {
-		OldTask::VerifyTransfer(transfer)
-	}
-}
+// #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+// pub enum OldTask<AccountId, BlockNum, Hash, Moment> {
+// 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
+// }
+//
+// impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>>
+// 	for OldTask<AccountId, BlockNum, Hash, Moment>
+// {
+// 	fn from(transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>) -> Self {
+// 		OldTask::VerifyTransfer(transfer)
+// 	}
+// }
 
 #[derive(Clone, Encode, Decode)]
 pub struct OldCollectedCoinsStruct<Hash, Balance> {
