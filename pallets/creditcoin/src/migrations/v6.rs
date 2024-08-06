@@ -4,9 +4,9 @@ use crate::ocw::errors::SchedulerError;
 use crate::ocw::tasks::collect_coins::DeployedContract;
 use crate::ocw::tasks::OffchainVerification;
 use crate::ocw::{VerificationFailureCause, VerificationResult};
-use crate::pallet::WeightInfo;
 use crate::{CollectedCoinsId, StorageVersion, TaskId, UnverifiedTransfer};
 use crate::{Config, ExternalAddress, ExternalTxId};
+use frame_support::traits::Get;
 use frame_support::weights::Weight;
 use frame_support::RuntimeDebug;
 use frame_support::{storage_alias, Identity};
@@ -108,9 +108,9 @@ impl<T: Config> Migrate for Migration<T> {
 	}
 
 	fn migrate(&self) -> Weight {
-		let mut n = 0u32;
+		let mut _n = 0u32;
 		for (i, (k1, _, v)) in PendingTasks::<T>::drain().enumerate() {
-			n = i.unique_saturated_into();
+			_n = i.unique_saturated_into();
 			let id: TaskId<T::Hash> = match &v {
 				Task::VerifyTransfer(pending) => TaskId::VerifyTransfer(
 					crate::types::TransferId::from(TaskV2::<T>::to_id(pending)),
@@ -118,7 +118,7 @@ impl<T: Config> Migrate for Migration<T> {
 			};
 			new::PendingTasks::<T>::insert(k1, id, v);
 		}
-		crate::weights::WeightInfo::<T>::migration_v6(n)
+		T::DbWeight::get().reads_writes(1, 1)
 	}
 	fn post_upgrade(&self, _ctx: Vec<u8>) {
 		assert_eq!(
