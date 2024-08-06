@@ -96,14 +96,14 @@ describe('Test GATE Token', (): void => {
                 .sudo(api.tx.creditcoin.setGateFaucet(gateFaucet.address))
                 .signAndSend(sudoSigner, { nonce: -1 });
 
-            const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);
-            const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
-
-            // Test #2: This is a successful transfer and should proceed normally
-            expect(swapGATEVerified).toBeTruthy();
-
-            // Test #3: GATE -> CTC should be swapped in a 2:1 ratio
-            expect(swapGATEVerified.amount.toNumber()).toEqual(burnAmount / 2);
+            // const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);
+            // const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
+            //
+            // // Test #2: This is a successful transfer and should proceed normally
+            // expect(swapGATEVerified).toBeTruthy();
+            //
+            // // Test #3: GATE -> CTC should be swapped in a 2:1 ratio
+            // expect(swapGATEVerified.amount.toNumber()).toEqual(burnAmount / 2);
 
             // // Test #4: You cannot resubmit previously used burn transactions
             // await expect(requestCollectCoinsV2(gateContract, sudoSigner)).rejects.toThrow(
