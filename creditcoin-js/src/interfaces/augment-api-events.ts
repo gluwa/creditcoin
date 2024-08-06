@@ -17,8 +17,6 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrder,
     PalletCreditcoinBidOrderId,
-    PalletCreditcoinCollectCoinsCollectedCoins,
-    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
     PalletCreditcoinDealOrder,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLegacySighash,
@@ -137,27 +135,6 @@ declare module '@polkadot/api-base/types/events' {
              **/
             BidOrderAdded: AugmentedEvent<ApiType, [PalletCreditcoinBidOrderId, PalletCreditcoinBidOrder]>;
             Burned: AugmentedEvent<ApiType, [u64]>;
-            /**
-             * exchanging vested ERC-20 CC for native CC failed.
-             * [collected_coins_id, cause]
-             **/
-            CollectCoinsFailedVerification: AugmentedEvent<
-                ApiType,
-                [H256, PalletCreditcoinOcwErrorsVerificationFailureCause]
-            >;
-            /**
-             * Collecting coins from Eth ERC-20 has been registered and will be verified.
-             * [collected_coins_id, registered_collect_coins]
-             **/
-            CollectCoinsRegistered: AugmentedEvent<
-                ApiType,
-                [H256, PalletCreditcoinCollectCoinsUnverifiedCollectedCoins]
-            >;
-            /**
-             * CollectCoins has been successfully verified and minted.
-             * [collected_coins_id, collected_coins]
-             **/
-            CollectedCoinsMinted: AugmentedEvent<ApiType, [H256, PalletCreditcoinCollectCoinsCollectedCoins]>;
             /**
              * A deal order has been added by a borrower. This indicates that the borrower
              * has accepted a lender's offer and intends to enter the loan.
