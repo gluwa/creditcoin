@@ -35,20 +35,6 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `crate`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
-	/// Storage: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1 w:0)
-	/// Proof Skipped: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1 w:0)
-	/// The range of component `t` is `[0, 1024]`.
-	fn migration_v6(t: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `117`
-		//  Estimated: `3566`
-		// Minimum execution time: 13_600_000 picoseconds.
-		Weight::from_parts(16_590_351, 0)
-			.saturating_add(Weight::from_parts(0, 3566))
-			// Standard Error: 822
-			.saturating_add(Weight::from_parts(4_996, 0).saturating_mul(t.into()))
-			.saturating_add(T::DbWeight::get().reads(1))
-	}
 	/// Storage: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1025 w:1024)
 	/// Proof Skipped: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1025 w:1024)
 	/// Storage: TaskScheduler Authorities (r:0 w:1024)

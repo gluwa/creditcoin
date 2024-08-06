@@ -49,7 +49,7 @@ describe('Test GATE Token', (): void => {
         async () => {
             const {
                 api,
-                extrinsics: { requestCollectCoinsV2 },
+                extrinsics: { _requestCollectCoinsV2 },
             } = ccApi;
 
             await api.tx.sudo
@@ -80,7 +80,7 @@ describe('Test GATE Token', (): void => {
                 sudoSigner,
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             );
-            const gateContract = GATEContract(deployer.address, burnTx.hash);
+            const _gateContract = GATEContract(deployer.address, burnTx.hash);
 
             // Make sure gate contract is unset
             await api.tx.sudo
