@@ -32,6 +32,8 @@ enum DealKind {
 }
 
 benchmarks! {
+	migration_v6 {T::DbWeight::get().reads_writes(1, 1);}: {}
+
 	migration_v7 {
 		let t in 0..1024;
 
