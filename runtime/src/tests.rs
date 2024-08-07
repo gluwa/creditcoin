@@ -1,6 +1,8 @@
 use super::*;
 use crate::{Runtime, RuntimeCall as Call, RuntimeEvent as Event, System};
 use assert_matches::assert_matches;
+use frame_support::traits::PalletInfoAccess;
+use frame_support::StoragePrefixedMap;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::EventRecord;
 use frame_system::RawOrigin;
@@ -58,4 +60,17 @@ fn must_be_root_to_schedule() {
 		let boxed = Box::new(call);
 		assert_noop!(Scheduler::schedule(RawOrigin::None.into(), 4, None, 0, boxed), BadOrigin);
 	});
+}
+
+#[test]
+fn authority_migration_parity_checks() {
+	use pallet_creditcoin::migrations::v7::{Authorities as AC, SCHEDULER_PREFIX};
+	use pallet_offchain_task_scheduler::Authorities as AT;
+
+	//Pallet prefix
+	let scheduler_prefix = TaskScheduler::name();
+	assert_eq!(SCHEDULER_PREFIX, scheduler_prefix);
+
+	//Storage Prefix
+	assert_eq!(AT::<Runtime>::storage_prefix(), AC::<Runtime>::storage_prefix());
 }

@@ -454,7 +454,6 @@ jobs:
           token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
           repository: gluwa/creditcoin-transaction-producer
           path: creditcoin-transaction-producer
-          ref: chore/update-rustc-version
 
       - name: Configure rustc version
         run: |

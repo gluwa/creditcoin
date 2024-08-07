@@ -127,7 +127,7 @@ pub mod pallet {
 	}
 
 	pub trait WeightInfo {
-		fn migration_v6() -> Weight;
+		fn migration_v6(t: u32) -> Weight;
 		fn migration_v7(t: u32) -> Weight;
 		fn on_initialize(a: u32, b: u32, o: u32, d: u32, f: u32) -> Weight;
 		fn register_address() -> Weight;
