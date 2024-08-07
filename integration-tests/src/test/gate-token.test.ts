@@ -8,7 +8,6 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import { Wallet } from 'ethers';
 import { mnemonicGenerate } from '@polkadot/util-crypto';
 import { signAccountId } from 'creditcoin-js/lib/utils';
-import { GATEContract } from 'creditcoin-js/lib/extrinsics/request-collect-coins-v2';
 import { testIf } from '../utils';
 
 describe('Test GATE Token', (): void => {
@@ -48,8 +47,7 @@ describe('Test GATE Token', (): void => {
         'End to end',
         async () => {
             const {
-                api,
-                extrinsics: { _requestCollectCoinsV2 },
+                api
             } = ccApi;
 
             await api.tx.sudo
@@ -80,35 +78,15 @@ describe('Test GATE Token', (): void => {
                 sudoSigner,
                 (global as any).CREDITCOIN_REUSE_EXISTING_ADDRESSES,
             );
-            const _gateContract = GATEContract(deployer.address, burnTx.hash);
 
             // Make sure gate contract is unset
             await api.tx.sudo
                 .sudo(api.tx.system.killStorage(['0xd766358cca00233e6155d7c14e2c085f09d6ade1839fafee2303010e35dfd1a5']))
                 .signAndSend(sudoSigner, { nonce: -1 });
 
-            // // Test #1: The extrinsic should erorr when the faucet address has not been set
-            // await expect(requestCollectCoinsV2(gateContract, sudoSigner)).rejects.toThrow(
-            //     'creditcoin.BurnGATEFaucetNotSet',
-            // );
-
             await api.tx.sudo
                 .sudo(api.tx.creditcoin.setGateFaucet(gateFaucet.address))
                 .signAndSend(sudoSigner, { nonce: -1 });
-
-            // const swapGATEEvent = await requestCollectCoinsV2(gateContract, sudoSigner);
-            // const swapGATEVerified = await swapGATEEvent.waitForVerification(800_000).catch();
-            //
-            // // Test #2: This is a successful transfer and should proceed normally
-            // expect(swapGATEVerified).toBeTruthy();
-            //
-            // // Test #3: GATE -> CTC should be swapped in a 2:1 ratio
-            // expect(swapGATEVerified.amount.toNumber()).toEqual(burnAmount / 2);
-
-            // // Test #4: You cannot resubmit previously used burn transactions
-            // await expect(requestCollectCoinsV2(gateContract, sudoSigner)).rejects.toThrow(
-            //     'creditcoin.CollectCoinsAlreadyRegistered: The coin collection has already been registered',
-            // );
         },
         900_000,
     );
