@@ -35,7 +35,7 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `crate`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
-	fn migration_v6() -> Weight {
+	fn migration_v6(_t: u32) -> Weight {
 		T::DbWeight::get().reads_writes(1, 1)
 	}
 	/// Storage: unknown `0xd766358cca00233e6155d7c14e2c085f5e0621c4869aa60c02be9adcc98a0d1d` (r:1025 w:1024)
