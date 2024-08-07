@@ -46,9 +46,7 @@ describe('Test GATE Token', (): void => {
         (global as any).CREDITCOIN_EXECUTE_SETUP_AUTHORITY,
         'End to end',
         async () => {
-            const {
-                api
-            } = ccApi;
+            const { api } = ccApi;
 
             await api.tx.sudo
                 .sudo(api.tx.balances.setBalance(gateFaucet.address, 1000, 0))
