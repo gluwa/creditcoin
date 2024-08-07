@@ -12,7 +12,6 @@ import {
     PalletCreditcoinTransfer,
     PalletCreditcoinTransferKind,
     PalletCreditcoinCollectCoinsCollectedCoins,
-    PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
 } from '@polkadot/types/lookup';
 import {
     Address,
@@ -29,7 +28,6 @@ import {
     DealOrderId,
     Transfer,
     TransferKind,
-    UnverifiedCollectedCoins,
     CollectedCoins,
 } from './model';
 
@@ -196,16 +194,6 @@ export const createTransfer = (transfer: PalletCreditcoinTransfer): Transfer => 
         processed: isProcessed.isTrue,
         accountId: accountId.toString(),
         timestamp: timestamp.isSome ? new Date(timestamp.unwrap().toNumber()) : undefined,
-    };
-};
-
-export const createUnverifiedCollectedCoins = (
-    collectedCoins: PalletCreditcoinCollectCoinsUnverifiedCollectedCoins,
-): UnverifiedCollectedCoins => {
-    const { to, txId } = collectedCoins;
-    return {
-        to: to.toString(),
-        txHash: txId.toString(),
     };
 };
 
