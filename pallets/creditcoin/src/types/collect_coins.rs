@@ -1,6 +1,5 @@
-use crate::types::{AddressId, Blockchain, ExternalAddress, ExternalTxId, SystemConfig};
+use crate::types::{AddressId, Blockchain, ExternalTxId, SystemConfig};
 use frame_support::RuntimeDebug;
-use ocw::tasks::collect_coins::DeployedContract;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -9,14 +8,6 @@ pub struct CollectedCoins<Hash, Balance> {
 	pub to: AddressId<Hash>,
 	pub amount: Balance,
 	pub tx_id: ExternalTxId,
-	pub contract_type: ContractType,
-}
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct UnverifiedCollectedCoins {
-	pub to: ExternalAddress,
-	pub tx_id: ExternalTxId,
-	pub contract: DeployedContract,
 	pub contract_type: ContractType,
 }
 
@@ -53,7 +44,6 @@ impl<H> From<H> for CollectedCoinsId<H> {
 		Self(hash)
 	}
 }
-use crate::ocw;
 use crate::types::concatenate;
 use sp_runtime::traits::Hash;
 

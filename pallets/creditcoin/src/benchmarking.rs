@@ -285,16 +285,6 @@ benchmarks! {
 		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 		let proof = OwnershipProof::EthSign(signature);
 	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address, proof)
-
-	set_gate_contract {
-		let root = RawOrigin::Root;
-		let contract = DeployedContract::default();
-	}: _(root, contract)
-
-	set_gate_faucet {
-		let root = RawOrigin::Root;
-		let addr: T::AccountId = lender_account::<T>(false);
-	}: _(root, addr)
 }
 
 fn generate_funded_deal<T: Config>(
