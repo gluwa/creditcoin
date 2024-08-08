@@ -10,7 +10,6 @@ For more information, see [creditcoin.org](https://creditcoin.org), or read the 
 
 ## Getting Started
 
-- [Miner Setup](./docs/miner-setup.md)
 - [Using PolkadotJs](./docs/using-polkadotjs.md)
 
 ## Developer Setup
@@ -27,8 +26,10 @@ you terminate the process. After the project has been built, there are other way
 node.
 
 ```sh
-cargo run --release -- --dev --tmp --mining-key <your mining key>
+cargo run --release -- --dev --tmp
 ```
+
+_WARNING: running natively on Windows [is unsupported](https://github.com/gluwa/creditcoin/security/advisories/GHSA-cx5c-xwcv-vhmq)._
 
 ### Explore Node Options
 
@@ -92,7 +93,7 @@ Devnet bootnodes:
 This command will start the single-node development chain with persistent state:
 
 ```bash
-./target/release/creditcoin-node --dev --mining-key <your mining key>
+./target/release/creditcoin-node --dev
 ```
 
 Purge the development chain's state:
@@ -104,7 +105,7 @@ Purge the development chain's state:
 Start the development chain with detailed logging:
 
 ```bash
-RUST_BACKTRACE=1 ./target/release/creditcoin-node -ldebug --dev --mining-key <your mining key>
+RUST_BACKTRACE=1 ./target/release/creditcoin-node -ldebug --dev
 ```
 
 ### Connect with Polkadot-JS Apps Front-end
@@ -124,4 +125,4 @@ If you want to see the multi-node consensus algorithm in action, refer to our
 - [Legacy Creditcoin 1.x Account Migration](./docs/legacy-account-migration.md)
 - [Legacy Creditcoin 1.x Repos](https://github.com/gluwa?q=legacy)
 
-### Testing
+Removing `collect_coins` 08.03.24
