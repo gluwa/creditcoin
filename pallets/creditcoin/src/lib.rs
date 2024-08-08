@@ -148,8 +148,6 @@ pub mod pallet {
 		fn register_deal_order() -> Weight;
 		fn remove_authority() -> Weight;
 		fn register_address_v2() -> Weight;
-		fn set_gate_contract() -> Weight;
-		fn set_gate_faucet() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -1398,27 +1396,6 @@ pub mod pallet {
 					fail!(e)
 				},
 			}
-		}
-
-		/// Set the onchain details for the Gluwa GATE Contract, including its address and the blockchain where it is deployed.
-		/// This extrinsic expects the caller to have root permissions.
-		#[pallet::call_index(23)]
-		#[pallet::weight(<T as Config>::WeightInfo::set_gate_contract())]
-		pub fn set_gate_contract(
-			origin: OriginFor<T>,
-			contract: DeployedContract,
-		) -> DispatchResult {
-			ensure_root(origin)?;
-			GATEContract::<T>::put(contract);
-			Ok(())
-		}
-
-		#[pallet::call_index(24)]
-		#[pallet::weight(<T as Config>::WeightInfo::set_gate_faucet())]
-		pub fn set_gate_faucet(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
-			ensure_root(origin)?;
-			GATEFaucetAccount::<T>::put(address);
-			Ok(())
 		}
 	}
 }
