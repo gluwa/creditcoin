@@ -377,26 +377,4 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: Creditcoin GATEContract (r:0 w:1)
-	/// Proof: Creditcoin GATEContract (max_values: Some(1), max_size: Some(279), added: 774, mode: MaxEncodedLen)
-	fn set_gate_contract() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 6_100_000 picoseconds.
-		Weight::from_parts(6_600_000, 0)
-			.saturating_add(Weight::from_parts(0, 0))
-			.saturating_add(T::DbWeight::get().writes(1))
-	}
-	/// Storage: Creditcoin GATEFaucetAccount (r:0 w:1)
-	/// Proof: Creditcoin GATEFaucetAccount (max_values: Some(1), max_size: Some(32), added: 527, mode: MaxEncodedLen)
-	fn set_gate_faucet() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 6_000_000 picoseconds.
-		Weight::from_parts(6_700_000, 0)
-			.saturating_add(Weight::from_parts(0, 0))
-			.saturating_add(T::DbWeight::get().writes(1))
-	}
 }
