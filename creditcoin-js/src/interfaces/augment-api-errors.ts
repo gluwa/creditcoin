@@ -113,6 +113,14 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             BurnGATEInsufficientFaucetBalance: AugmentedError<ApiType>;
             /**
+             * A call to burn specified more free funds than the account has access to
+             **/
+            BurnInsufficientFunds: AugmentedError<ApiType>;
+            /**
+             * During a call to burn or burn_all the settlement of the account balances failed
+             **/
+            BurnSettlementError: AugmentedError<ApiType>;
+            /**
              * The coin collection has already been registered.
              **/
             CollectCoinsAlreadyRegistered: AugmentedError<ApiType>;
