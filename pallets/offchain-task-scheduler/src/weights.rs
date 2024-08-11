@@ -4,7 +4,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2024-08-11, STEPS: `50`, REPEAT: `30`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `github-runner-10342269946-attempt-1`, CPU: `AMD EPYC 7452 32-Core Processor`
+//! HOSTNAME: `github-runner-10342397553-attempt-1`, CPU: `AMD EPYC 7452 32-Core Processor`
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
@@ -42,11 +42,11 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `136 + t * (69 ±0)`
 		//  Estimated: `990 + t * (3987 ±0)`
-		// Minimum execution time: 5_800_000 picoseconds.
-		Weight::from_parts(5_901_000, 0)
+		// Minimum execution time: 5_700_000 picoseconds.
+		Weight::from_parts(6_000_000, 0)
 			.saturating_add(Weight::from_parts(0, 990))
-			// Standard Error: 713
-			.saturating_add(Weight::from_parts(1_331_368, 0).saturating_mul(t.into()))
+			// Standard Error: 614
+			.saturating_add(Weight::from_parts(1_287_261, 0).saturating_mul(t.into()))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(t.into())))
 			.saturating_add(Weight::from_parts(0, 3987).saturating_mul(t.into()))
