@@ -134,6 +134,7 @@ declare module '@polkadot/api-base/types/events' {
              * [bid_order_id, bid_order]
              **/
             BidOrderAdded: AugmentedEvent<ApiType, [PalletCreditcoinBidOrderId, PalletCreditcoinBidOrder]>;
+            Burned: AugmentedEvent<ApiType, [u64]>;
             /**
              * A deal order has been added by a borrower. This indicates that the borrower
              * has accepted a lender's offer and intends to enter the loan.
