@@ -1,9 +1,11 @@
-import { creditcoinApi, Keyring } from 'creditcoin-js';
+import { creditcoinApi, common, Keyring } from 'creditcoin-js';
 import { createOverrideWeight } from 'creditcoin-js/lib/utils';
 import * as fs from 'fs';
-import * as child_process from 'child_process';
+import * as childProcess from 'child_process';
 import { promisify } from 'util';
 import { u8aToHex } from './common';
+
+const { expectNoDispatchError, expectNoEventError } = common;
 
 // From https://github.com/chevdor/subwasm/blob/c2e5b62384537875bfd0497c2b2d706265699798/lib/src/runtime_info.rs#L8-L20
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -27,7 +29,7 @@ type WasmRuntimeInfo = {
 
 // these normally use callbacks, but promises are more convenient
 const readFile = promisify(fs.readFile);
-const exec = promisify(child_process.exec);
+const exec = promisify(childProcess.exec);
 
 /**
  * Performs an upgrade to the runtime at the provided path.
@@ -90,7 +92,7 @@ async function doRuntimeUpgrade(
         await new Promise<void>((resolve, reject) => {
             const unsubscribe = api.tx.sudo
                 .sudoUncheckedWeight(callback, overrideWeight)
-                .signAndSend(keyring, { nonce: -1 }, (result) => {
+                .signAndSend(keyring, { nonce: -1 }, async ({ dispatchError, events, status }) => {
                     const finish = (fn: () => void) => {
                         unsubscribe
                             .then((unsub) => {
@@ -99,13 +101,24 @@ async function doRuntimeUpgrade(
                             })
                             .catch(reject);
                     };
-                    if (result.isInBlock && !result.isError) {
-                        console.log('Runtime upgrade successfully scheduled');
-                        finish(resolve);
-                    } else if (result.isError) {
-                        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                        const error = new Error(`Failed to schedule runtime upgrade: ${result.toString()}`);
+
+                    // these two will throw exceptions in case of errors
+                    try {
+                        expectNoDispatchError(api, dispatchError);
+                        if (events) events.forEach((event) => expectNoEventError(api, event));
+                    } catch (err) {
+                        const error = new Error(`Failed to schedule runtime upgrade: ${err.toString()}`);
                         finish(() => reject(error));
+                    }
+
+                    if (status.isInBlock) {
+                        const header = await api.rpc.chain.getHeader(status.asInBlock);
+                        const blockNumber = header.number.toNumber();
+
+                        console.log(
+                            `Runtime upgrade successfully scheduled at block ${blockNumber}, hash ${status.asInBlock.toString()}`,
+                        );
+                        finish(resolve);
                     }
                 });
         });

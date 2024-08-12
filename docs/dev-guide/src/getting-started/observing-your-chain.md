@@ -15,6 +15,6 @@ In the newly opened menu, expand the `Development` section at the bottom, then s
 Finally click the Switch button at the top of the chain selection menu:
 !["Switch"](../img/switch-chain.png)
 
-The explorer should now show the chain running on your local node, and new blocks should be appearing regularly (every 5-30 seconds):
+The explorer should now show the chain running on your local node, and new blocks should be appearing regularly (every 15 seconds):
 
 ![It should look something like this](../img/local-node-explorer.png)

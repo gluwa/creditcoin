@@ -30,7 +30,6 @@ node dist/index.js
 - **balance**:            Get balance of an account
 - **bond**:               Bond CTC from a Stash account
 - **chill**:              Signal intention to stop validating from a Controller account
-- **collect-coins**:      Swap GCRE for CTC
 - **distribute-rewards**: Distribute all pending rewards for all validators
 - **new**:                Create new seed phrase
 - **register-address**:   Link a CreditCoin address to an address from another blockchain
@@ -129,4 +128,6 @@ You need to have the following:
 
 Execute like so:
 
-    $ node dist/index.js collect-coins -k 0xAccount0privateKey --seed //Alice --debug
+```bash
+node dist/index.js collect-coins -k 0xAccount0privateKey --seed //Alice --debug
+```

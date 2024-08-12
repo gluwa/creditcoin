@@ -1,6 +1,7 @@
 import { ApiPromise, WsProvider, Keyring, KeyringPair, Wallet, POINT_01_CTC } from 'creditcoin-js';
 import { setupAuthority } from 'creditcoin-js/lib/examples/setup-authority';
 import { deployCtcContract } from 'creditcoin-js/lib/ctc-deploy';
+import { GluwaCreditVestingToken } from 'creditcoin-js/lib/examples/ctc/typechain';
 
 const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): KeyringPair => {
     switch (who) {
@@ -13,6 +14,15 @@ const createSigner = (keyring: Keyring, who: 'lender' | 'borrower' | 'sudo'): Ke
         default:
             throw new Error(`Unexpected value "${who}"`); // eslint-disable-line
     }
+};
+
+declare global {
+    // eslint-disable-next-line no-var
+    var CREDITCOIN_CTC_CONTRACT: GluwaCreditVestingToken;
+}
+
+export const creditcoinApiUrl = (defaultUrl: string) => {
+    return process.env.CREDITCOIN_API_URL || defaultUrl;
 };
 
 const setup = async () => {
@@ -33,7 +43,7 @@ const setup = async () => {
 
     if ((global as any).CREDITCOIN_API_URL === undefined) {
         const wsPort = process.env.CREDITCOIN_WS_PORT || '9944';
-        (global as any).CREDITCOIN_API_URL = `ws://127.0.0.1:${wsPort}`;
+        (global as any).CREDITCOIN_API_URL = creditcoinApiUrl(`ws://127.0.0.1:${wsPort}`);
     }
 
     if ((global as any).CREDITCOIN_METRICS_BASE === undefined) {
@@ -87,11 +97,12 @@ const setup = async () => {
     }
 
     // Note: in case address is defined will attach to already deployed contract
-    await deployCtcContract(
+    const contract = await deployCtcContract(
         (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS,
         (global as any).CREDITCOIN_ETHEREUM_NODE_URL,
         (global as any).CREDITCOIN_CTC_DEPLOYER_PRIVATE_KEY,
     );
+    global.CREDITCOIN_CTC_CONTRACT = contract;
     (global as any).CREDITCOIN_CTC_CONTRACT_ADDRESS = process.env.CREDITCOIN_CTC_CONTRACT_ADDRESS;
 
     if ((global as any).CREDITCOIN_CTC_BURN_TX_HASH === undefined) {

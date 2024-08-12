@@ -12,6 +12,7 @@ import {
 } from "creditcoin-js";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { testData } from "creditcoin-js/lib/testUtils";
+import { utils } from "ethers";
 
 describe("register-address", () => {
   let ccApi: CreditcoinApi;
@@ -32,14 +33,9 @@ describe("register-address", () => {
       arg("CREDITCOIN_CREATE_WALLET"),
     );
 
+    // this arg call returns a function
     sudo = arg("CREDITCOIN_CREATE_SIGNER")(keyring, "sudo");
-  });
 
-  afterAll(async () => {
-    await ccApi.api.disconnect();
-  });
-
-  test("e2e", async () => {
     const { api } = ccApi;
 
     const fundTx = await fundFromSudo(
@@ -48,26 +44,49 @@ describe("register-address", () => {
       arg("CREDITCOIN_API_URL"),
     );
     await signSendAndWatch(fundTx, api, sudo);
+  }, 100_000);
 
-    const url = arg("CREDITCOIN_API_URL") as string;
-    const result = execa.commandSync(
-      `node dist/index.js register-address --url ${url} --blockchain Ethereum`,
-      {
-        env: {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
-          ETH_PRIVATE_KEY: ethWallet.privateKey,
-          CC_SECRET: caller.secret,
+  afterAll(async () => {
+    await ccApi.api.disconnect();
+  });
+
+  it.each([
+    ["using ethereum private key", false],
+    ["Using an ethereum mnemonic", true],
+  ])(
+    "should be able to register address: %s",
+    (text, useMnemonic) => {
+      let ethPrivateKey: string;
+
+      if (useMnemonic) {
+        ethPrivateKey = utils.entropyToMnemonic(utils.randomBytes(32));
+      } else {
+        ethPrivateKey = ethWallet.privateKey;
+      }
+
+      const url = arg("CREDITCOIN_API_URL") as string;
+      const result = execa.commandSync(
+        `node dist/index.js register-address --url ${url} --blockchain Ethereum ${
+          useMnemonic ? "--eth-mnemonic" : ""
+        }`,
+        {
+          env: {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            ETH_PRIVATE_KEY: ethPrivateKey,
+            CC_SECRET: caller.secret,
+          },
         },
-      },
-    );
+      );
 
-    const stdout = result.stdout.split("\n");
+      const stdout = result.stdout.split("\n");
 
-    expect(result.failed).toBe(false);
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr).toBe("");
-    expect(
-      stdout[stdout.length - 1].includes("Address Registered Successfully"),
-    ).toBe(true);
-  }, 50_000);
+      expect(result.failed).toBe(false);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe("");
+      expect(
+        stdout[stdout.length - 1].includes("Address Registered Successfully"),
+      ).toBe(true);
+    },
+    50_000,
+  );
 });

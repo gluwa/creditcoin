@@ -92,12 +92,6 @@ impl<T: Config> Migrate for Migration<T> {
 			PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(transfer));
 		}
 
-		for (deadline, id, collect_coins) in UnverifiedCollectedCoins::<T>::iter() {
-			weight = weight.saturating_add(weight_each);
-
-			PendingTasks::<T>::insert(deadline, TaskId::from(id), Task::from(collect_coins));
-		}
-
 		let _results = UnverifiedTransfers::<T>::clear(u32::MAX, None);
 		let _results = UnverifiedCollectedCoins::<T>::clear(u32::MAX, None);
 		weight
@@ -182,16 +176,11 @@ mod tests {
 				<Test as frame_system::Config>::Hashing::hash(&tx_id),
 			);
 
-			UnverifiedCollectedCoins::<Test>::insert(deadline, &collect_coins_id, &collect_coins);
+			UnverifiedCollectedCoins::<Test>::insert(deadline, &collect_coins_id, collect_coins);
 
 			assert!(UnverifiedCollectedCoins::<Test>::contains_key(deadline, &collect_coins_id));
 
 			super::Migration::<Test>::new().migrate();
-
-			assert_eq!(
-				PendingTasks::<Test>::get(deadline, TaskId::CollectCoins(collect_coins_id.clone())),
-				Some(Task::CollectCoins(collect_coins))
-			);
 
 			assert!(
 				UnverifiedCollectedCoins::<Test>::contains_key(deadline, collect_coins_id).not()

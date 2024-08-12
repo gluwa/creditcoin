@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Srtool build
         id: srtool_build
         uses: chevdor/srtool-actions@v0.8.0
@@ -30,7 +30,7 @@ jobs:
           cat creditcoin-srtool-digest.json
           echo "Runtime location: ${{ steps.srtool_build.outputs.wasm }}"
       - name: Archive Runtime
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-runtime-${{ github.sha }}
           path: |
@@ -42,23 +42,23 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/dev'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: creditcoin-runtime-${{ github.sha }}
           path: wasm
 
       - name: Install JS Dependencies
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: |
           npm install -g yarn
           pushd ./creditcoin-js && yarn install && yarn pack && popd
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
 
       - name: Install Subwasm
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: install
           args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1
@@ -66,8 +66,8 @@ jobs:
       - name: Update WASM
         working-directory: scripts/js
         env:
-          CTCQA_URL: ${{ secrets.CTCQA_URL }}
-          QA_SUDO_KEY: ${{ secrets.QA_SUDO_KEY }}
+          DEVNET_URL: wss://rpc.devnet.creditcoin.network/ws
+          SUDO_KEY: ${{ secrets.QA_SUDO_KEY }}
         run: |
-          yarn runtimeUpgrade "$CTCQA_URL" \
-          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm "$QA_SUDO_KEY"
+          yarn runtimeUpgrade "$DEVNET_URL" \
+          ../../wasm/runtime/target/srtool/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm "$SUDO_KEY" 0

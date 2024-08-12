@@ -20,14 +20,14 @@ jobs:
       target_chain: ${{ steps.testnet-env.outputs.target_chain || steps.mainnet-env.outputs.target_chain }}
       boot_node: ${{ steps.testnet-env.outputs.boot_node || steps.mainnet-env.outputs.boot_node }}
       rpc_url: ${{ steps.testnet-env.outputs.rpc_url || steps.mainnet-env.outputs.rpc_url }}
-      https_rpc_url: ${{ steps.testnet-env.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
+      https_rpc_url: ${{ steps.testnet-env.outputs.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
       release_tag: ${{ steps.testnet-env.outputs.release_tag || steps.mainnet-env.outputs.release_tag }}
       artifact_name: ${{ steps.testnet-env.outputs.artifact_name || steps.mainnet-env.outputs.artifact_name }}
       last_block_hash: ${{ steps.last-block-info.outputs.last_block_hash }}
       last_block_number: ${{ steps.last-block-info.outputs.last_block_number }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -91,7 +91,7 @@ jobs:
           HTTPS_RPC_URL: ${{ steps.testnet-env.outputs.https_rpc_url || steps.mainnet-env.outputs.https_rpc_url }}
 
       - name: Upload last block info
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: last-block-info
           path: "last-block*"
@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -111,11 +111,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -124,33 +124,46 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build SUT
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
-          args: --release --features "fast-runtime try-runtime"
+          args: --release --features "try-runtime"
 
       - name: Upload creditcoin-node binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-node
           path: target/release/creditcoin-node
 
       - name: Upload WASM runtime
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
 
+  setup-self-hosted:
+    needs:
+      - setup
+      - deploy-github-runner
+    runs-on:
+      [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
+
+    steps:
+      - name: Grant everyone permissions on /mnt
+        run: |
+          sudo chmod a+rwx /mnt
+
   fork-creditcoin:
     needs:
       - setup
+      - setup-self-hosted
       - live-sync-creditcoin
       - deploy-github-runner
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download creditcoin-node for release ${{ needs.setup.outputs.release_tag }}
         uses: i3h/download-release-asset@v1
@@ -184,10 +197,10 @@ jobs:
           ./creditcoin-node \
             --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --base-path /mnt \
             --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
             --port 50555 >creditcoin-node-used-for-fork.log 2>&1 &
 
@@ -201,7 +214,7 @@ jobs:
 
           ./creditcoin-fork --bin ./creditcoin-node --orig ${{ needs.setup.outputs.target_chain }} \
                             --base dev --name Development \
-                            -o creditcoin-fork.json --rpc ws://127.0.0.1:9944
+                            -o creditcoin-fork.json --rpc ws://127.0.0.1:9944 --exclude-pallets PosSwitch
 
       - name: TERM creditcoin-node
         continue-on-error: true
@@ -216,14 +229,14 @@ jobs:
           sleep 120
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: fork-creditcoin-logs
           path: "*.log"
 
       - name: Upload creditcoin-fork.json
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-fork.json
           path: creditcoin-fork.json
@@ -231,12 +244,13 @@ jobs:
   live-sync-creditcoin:
     needs:
       - setup
+      - setup-self-hosted
       - deploy-github-runner
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download creditcoin-node for release ${{ needs.setup.outputs.release_tag }}
         uses: i3h/download-release-asset@v1
@@ -262,11 +276,11 @@ jobs:
           ./creditcoin-node \
             --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
             --prometheus-external --pruning archive \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
             --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
+            --base-path /mnt \
             --port 50555 >creditcoin-node-initial-live-sync.log 2>&1 &
 
       - name: Wait for creditcoin-node to sync past block number ${{ needs.setup.outputs.last_block_number }}
@@ -286,31 +300,32 @@ jobs:
           sleep 120
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: live-sync-creditcoin-logs
           path: "*.log"
 
   test-against-fork:
     needs:
       - setup
+      - setup-self-hosted
       - build-sut
       - fork-creditcoin
       - deploy-github-runner
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download creditcoin-node from current PR
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-node
           path: target/release
 
       - name: Download creditcoin-fork.json
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-fork.json
 
@@ -320,7 +335,7 @@ jobs:
 
           ./target/release/creditcoin-node --version
           ./target/release/creditcoin-node --chain ./creditcoin-fork.json --validator --alice --pruning archive \
-                            --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
+                            --base-path /mnt \
                             --monitor-nonce auto >creditcoin-node-with-forked-chain.log 2>&1 &
 
       - name: Wait for blockchain to start
@@ -336,9 +351,9 @@ jobs:
           sudo docker run --name hardhat-dev --rm -p 8545:8545 -d gluwa/hardhat-dev
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Prepare for integration tests
@@ -353,26 +368,26 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
           sudo apt install -y gcc
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
           override: true
 
       - name: Install Subwasm
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: install
           args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1
 
       - name: Download WASM runtime from current PR
         id: download-wasm
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
 
@@ -387,10 +402,10 @@ jobs:
           yarn --cwd ./integration-tests/ test --config creditcoin-fork.config.ts
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: test-against-fork-logs
           path: "*.log"
 
       - name: Kill hardhat-dev
@@ -411,59 +426,19 @@ jobs:
     needs:
       - build-sut
       - setup
+      - setup-self-hosted
       - live-sync-creditcoin
       - deploy-github-runner
     runs-on:
       [self-hosted, "${{ needs.deploy-github-runner.outputs.runner_vm_name }}"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download creditcoin-node from current PR
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-node
           path: target/release
-
-      - name: Start creditcoin-node from current PR
-        run: |
-          # see https://opensource.com/article/18/5/how-find-ip-address-linux
-          IP_ADDRESS=$(curl https://ifconfig.me)
-          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
-
-          chmod a+x ./target/release/creditcoin-node
-          ./target/release/creditcoin-node --version
-
-          ./target/release/creditcoin-node \
-            --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
-            --chain ${{ needs.setup.outputs.target_chain }} \
-            --pruning archive \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
-            --bootnodes "${{ needs.setup.outputs.boot_node }}" \
-            --prometheus-external \
-            --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
-            --public-addr "/dns4/$IP_ADDRESS/tcp/50555" \
-            --port 50555 >creditcoin-node-disconnected-paritydb-sync.log 2>&1 &
-
-      - name: Wait for blockchain to start
-        run: |
-          ./integration-tests/wait-for-creditcoin.sh
-
-      # wait again because of RocksDB -> ParityDB switch !
-      - name: Wait for creditcoin-node to sync past block number ${{ needs.setup.outputs.last_block_number }}
-        run: |
-          ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
-
-      - name: TERM creditcoin-node
-        continue-on-error: true
-        run: |
-          killall -TERM creditcoin-node
-          sleep 30
-
-      - name: KILL creditcoin-node
-        continue-on-error: true
-        run: |
-          killall -KILL creditcoin-node
-          sleep 30
 
       - name: Start a disconnected creditcoin-node
         run: |
@@ -477,27 +452,24 @@ jobs:
             --name "test-node-disconnected-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
             --validator --alice --pruning archive \
-            --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --prometheus-external \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --base-path /mnt \
             --monitor-nonce auto >creditcoin-node-disconnected-live-node.log 2>&1 &
 
       - name: Wait for blockchain to start
         run: |
           ./integration-tests/wait-for-creditcoin.sh
 
-      - name: Install Docker engine
+      # check this eventhough it should be true unless live-sync screws up!
+      - name: Check if creditcoin-node is past block number ${{ needs.setup.outputs.last_block_number }}
         run: |
-          ./scripts/install-docker-engine-from-upstream.sh
-
-      - name: Start local Ethereum node
-        run: |
-          sudo docker run --name hardhat-dev --rm -p 8545:8545 -d gluwa/hardhat-dev
+          ./scripts/wait-for-sync.sh ${{ needs.setup.outputs.last_block_number }}
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Prepare for integration tests
@@ -512,37 +484,37 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
           sudo apt install -y gcc
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
           override: true
 
       - name: Install Subwasm
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: install
           args: --locked --git https://github.com/chevdor/subwasm --tag v0.17.1
 
       - name: Download WASM runtime
         id: download-wasm
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
 
       - name: Upgrade WASM
-        if: env.LENDER_SEED
+        if: env.LENDER_PRIVATE_KEY
         run: |
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
-          yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm "${{ env.LENDER_SEED }}" 0
+          yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm "${{ env.LENDER_PRIVATE_KEY }}" 0
           sleep 10
         env:
-          LENDER_SEED: ${{ secrets.TESTNET_LENDER_SEED }}
+          LENDER_PRIVATE_KEY: ${{ secrets.TESTNET_LENDER_PRIVATE_KEY }}
 
       # TODO: wait & confirm wasm upgrade has finished, incl. migrations
       - name: Execute integration tests
@@ -550,6 +522,7 @@ jobs:
         run: |
           yarn --cwd ./integration-tests/ test --config testnet.config.ts
         env:
+          CREDITCOIN_API_URL: ws://127.0.0.1:9944
           ETHEREUM_NODE_URL: ${{ secrets.TESTNET_ETHEREUM_NODE_URL }}
           LENDER_PRIVATE_KEY: ${{ secrets.TESTNET_LENDER_PRIVATE_KEY }}
           LENDER_SEED: "${{ secrets.TESTNET_LENDER_SEED }}"
@@ -557,16 +530,11 @@ jobs:
           BORROWER_SEED: "${{ secrets.TESTNET_BORROWER_SEED }}"
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: test-against-disconnected-live-node-logs
           path: "*.log"
-
-      - name: Kill hardhat-dev
-        if: always()
-        run: |
-          sudo docker kill hardhat-dev
 
       - name: Kill creditcoin-node
         run: |
@@ -582,7 +550,7 @@ jobs:
       resource_group: ${{ steps.get-env.outputs.resource_group }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install azure-cli
         run: |
@@ -650,18 +618,20 @@ jobs:
     needs:
       - build-sut
       - setup
+      - setup-self-hosted
+      - live-sync-creditcoin
       - deploy-github-runner
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download creditcoin-node binary from current PR
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-node
           path: target/release
 
       - name: Download WASM runtime
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release
@@ -682,15 +652,18 @@ jobs:
           echo "INFO: IP_ADDRESS=$IP_ADDRESS"
 
           ./target/release/creditcoin-node --version
+
+          # node should be reusing the database from the
+          # live-sync-creditcoin CI job listed as dependency above
           ./target/release/creditcoin-node \
             --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
             --chain ${{ needs.setup.outputs.target_chain }} \
-            --validator --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
             --bootnodes "${{ needs.setup.outputs.boot_node }}" \
-            --rpc-max-request-size 100000 \
-            --rpc-max-response-size 100000 \
-            --prometheus-external \
+            --rpc-max-request-size  200000 \
+            --rpc-max-response-size 200000 \
+            --prometheus-external --pruning archive \
             --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+            --base-path /mnt \
             --public-addr "/dns4/$IP_ADDRESS/tcp/30333" >creditcoin-node-used-for-try-runtime.log 2>&1 &
 
       - name: Wait for creditcoin-node to initialize
@@ -703,6 +676,7 @@ jobs:
           ./target/release/creditcoin-node try-runtime \
               --runtime ./target/release/creditcoin_node_runtime.compact.compressed.wasm \
               --dev on-runtime-upgrade live --uri ws://127.0.0.1:9944 \
+              --pallet Creditcoin \
               --at ${{ needs.setup.outputs.last_block_hash }}
 
       - name: TERM creditcoin-node
@@ -719,10 +693,10 @@ jobs:
           sleep 600
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs
+          name: test-migrations-via-try-runtime-logs
           path: "*.log"
 
   remove-github-runner:
@@ -735,7 +709,7 @@ jobs:
     if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Evaluate env vars
         id: get-env
@@ -759,7 +733,7 @@ jobs:
           az group delete --yes -n "${{ steps.get-env.outputs.resource_group }}"
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "Azure resources"

@@ -2923,31 +2923,10 @@ fn exercise_weightinfo_functions() {
 	let result = super::weights::WeightInfo::<Test>::register_deal_order();
 	assert!(result.ref_time() > 0);
 
-	let result = super::weights::WeightInfo::<Test>::request_collect_coins();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::fail_collect_coins();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::persist_collect_coins();
-	assert!(result.ref_time() > 0);
-
 	let result = super::weights::WeightInfo::<Test>::remove_authority();
 	assert!(result.ref_time() > 0);
 
-	let result = super::weights::WeightInfo::<Test>::set_collect_coins_contract();
-	assert!(result.ref_time() > 0);
-
 	let result = super::weights::WeightInfo::<Test>::register_address_v2();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::set_gate_contract();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::set_gate_faucet();
-	assert!(result.ref_time() > 0);
-
-	let result = super::weights::WeightInfo::<Test>::request_collect_coins_v2();
 	assert!(result.ref_time() > 0);
 }
 
@@ -3258,60 +3237,6 @@ fn gate_contract_storage_should_return_default_goerli_contract_when_not_set() {
 		let contract: DeployedContract = Creditcoin::gate_contract();
 
 		assert_eq!(contract, DeployedContract::default());
-	});
-}
-
-#[test]
-fn set_gate_contract_should_fail_when_not_signed_by_root() {
-	ExtBuilder::default().build_and_execute(|| {
-		let acct: AccountId = AccountId::new([0; 32]);
-		let gate_contract = DeployedContract::default();
-
-		assert_noop!(Creditcoin::set_gate_contract(Origin::signed(acct), gate_contract), BadOrigin);
-	});
-}
-
-#[test]
-fn set_gate_contract_passes_and_storage_is_updated() {
-	ExtBuilder::default().build_and_execute(|| {
-		let fake_address =
-			sp_core::H160([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
-
-		let gate_contract =
-			DeployedContract { address: fake_address, chain: Blockchain::Luniverse };
-
-		assert_ne!(gate_contract, DeployedContract::default());
-		assert_eq!(Creditcoin::gate_contract(), DeployedContract::default());
-		assert_ok!(Creditcoin::set_gate_contract(RawOrigin::Root.into(), gate_contract));
-
-		let stored_contract = Creditcoin::gate_contract();
-
-		assert_eq!(stored_contract.address, fake_address);
-		assert_eq!(stored_contract.chain, Blockchain::Luniverse);
-	});
-}
-
-#[test]
-fn set_gate_faucet_should_fail_when_not_signed_by_root() {
-	ExtBuilder::default().build_and_execute(|| {
-		let acct: AccountId = AccountId::new([0; 32]);
-
-		assert_noop!(Creditcoin::set_gate_faucet(Origin::signed(acct.clone()), acct), BadOrigin);
-	});
-}
-
-#[test]
-fn set_gate_faucet_passes_and_storage_is_updated() {
-	ExtBuilder::default().build_and_execute(|| {
-		let addr: AccountId = AccountId::new([0; 32]);
-
-		assert!(Creditcoin::gate_faucet_account().is_none());
-		assert_ok!(Creditcoin::set_gate_faucet(RawOrigin::Root.into(), addr.clone()));
-
-		let faucet_addr: Option<AccountId32> = Creditcoin::gate_faucet_account();
-
-		assert!(faucet_addr.is_some());
-		assert_eq!(faucet_addr.unwrap(), addr)
 	});
 }
 

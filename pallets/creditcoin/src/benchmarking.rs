@@ -3,32 +3,26 @@ use super::*;
 use crate::benchmarking::alloc::format;
 use crate::helpers::{extensions::IntoBounded, EVMAddress, PublicToAddress};
 use crate::migrations::Migrate;
-use crate::ocw::errors::VerificationFailureCause as Cause;
-use crate::ocw::tasks::collect_coins::testing_constants::CHAIN;
 use crate::test_utils::{
 	fake_address_id, fake_ask_id, fake_bid_id, fake_loan_terms, fake_offer_id, insert_fake_ask,
 	insert_fake_bid, insert_fake_offer,
 };
-use crate::types::{Blockchain, BurnDetails, ContractType, OwnershipProof};
+use crate::types::{Blockchain, OwnershipProof};
 use crate::Pallet as Creditcoin;
 use crate::{AskOrderId, LoanTerms};
 use frame_benchmarking::{account, benchmarks, whitelist_account, Zero};
-use frame_support::{
-	pallet_prelude::*,
-	traits::{Currency, Get},
-};
+use frame_support::{pallet_prelude::*, traits::Currency};
 use frame_system::pallet_prelude::*;
 use frame_system::Config as SystemConfig;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use pallet_balances::Pallet as Balances;
-use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 use pallet_timestamp::Config as TimestampConfig;
 use pallet_timestamp::Pallet as Timestamp;
 use sp_core::ecdsa;
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign};
+use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::One;
-use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom};
 use sp_runtime::KeyTypeId;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -39,26 +33,9 @@ enum DealKind {
 
 benchmarks! {
 	migration_v6 {
-		let t in 0..1024;
-
-		let pending = types::UnverifiedCollectedCoins {
-			to: [0u8; 256].into_bounded(),
-			tx_id: [0u8; 256].into_bounded(),
-			contract: Default::default(),
-			contract_type: ContractType::GCRE,
-		};
-		for t in 0..t {
-			let collected_coins_id = CollectedCoinsId::new::<T>(&CHAIN, &t.encode());
-			T::TaskScheduler::insert(
-				&T::BlockNumber::one(),
-				&collected_coins_id.into_inner(),
-				crate::Task::from(pending.clone()),
-			);
-		}
-
-		let m = crate::migrations::v7::Migration::<T>::new();
-
-	 }: {m.migrate()}
+		let t in 0..1;
+		T::DbWeight::get().reads_writes(1, 1);
+	}: {}
 
 	migration_v7 {
 		let t in 0..1024;
@@ -292,53 +269,11 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(lender),lender_addr_id,borrower_addr_id,terms,expiry,ask_guid.into_bounded(),bid_guid.into_bounded(),pkey.into(),signature.into())
 
-	request_collect_coins {
-		<Timestamp<T>>::set_timestamp(1u32.into());
-		let collector: T::AccountId = lender_account::<T>(true);
-		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
-		let address = Creditcoin::<T>::addresses(collector_addr_id).unwrap();
-		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
-			.as_bytes()
-			.into_bounded();
-	}: _( RawOrigin::Signed(collector), address.value, tx_id)
-
-	fail_collect_coins {
-		<Timestamp<T>>::set_timestamp(1u32.into());
-		let authority = authority_account::<T>(true);
-		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
-		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab".as_bytes();
-		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, tx_id);
-		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
-		let task_id = crate::TaskId::from(collected_coins_id);
-	}: fail_task(RawOrigin::Signed(authority), deadline, task_id, Cause::AbiMismatch)
-
-	persist_collect_coins {
-		<Timestamp<T>>::set_timestamp(1u32.into());
-		let authority = authority_account::<T>(true);
-		<Creditcoin<T>>::add_authority(RawOrigin::Root.into(), authority.clone()).unwrap();
-		let collector: T::AccountId = lender_account::<T>(true);
-		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
-		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
-			.as_bytes()
-			.into_bounded();
-		let collected_coins_id = crate::CollectedCoinsId::new::<T>(&CHAIN, &tx_id);
-		let amount = T::Balance::unique_saturated_from(Balances::<T>::minimum_balance());
-		let collected_coins =
-			crate::types::CollectedCoinsStruct::<T::Hash, T::Balance> { to: collector_addr_id, amount, tx_id, contract_type: ContractType::GCRE};
-		let deadline = System::<T>::block_number() + <<T as crate::Config>::UnverifiedTaskTimeout as Get<T::BlockNumber>>::get();
-		let task_output = crate::TaskOutput::from((collected_coins_id, collected_coins));
-	}: persist_task_output(RawOrigin::Signed(authority), deadline, task_output)
-
 	remove_authority {
 		let root = RawOrigin::Root;
 		let who = authority_account::<T>(false);
 		<Creditcoin<T>>::add_authority(root.clone().into(), who.clone()).unwrap();
 	}: _(root, who)
-
-	set_collect_coins_contract {
-		let root = RawOrigin::Root;
-		let contract = DeployedContract::default();
-	}: _(root, contract)
 
 	register_address_v2 {
 		let who: T::AccountId = lender_account::<T>(false);
@@ -350,32 +285,7 @@ benchmarks! {
 		let signature = ecdsa_sign(ktypeid, &pkey, &message).expect("ecdsa signature");
 		let proof = OwnershipProof::EthSign(signature);
 	}: _(RawOrigin::Signed(who), Blockchain::Ethereum, address, proof)
-
-	set_gate_contract {
-		let root = RawOrigin::Root;
-		let contract = DeployedContract::default();
-	}: _(root, contract)
-
-
-	set_gate_faucet {
-		let root = RawOrigin::Root;
-		let addr: T::AccountId = lender_account::<T>(false);
-	}: _(root, addr)
-
-	request_collect_coins_v2 {
-		<Timestamp<T>>::set_timestamp(1u32.into());
-		let collector: T::AccountId = lender_account::<T>(true);
-		let collector_addr_id = register_eth_addr::<T>(&collector, "collector");
-		let address = Creditcoin::<T>::addresses(collector_addr_id).unwrap();
-		let tx_id = "40be73b6ea10ef3da3ab33a2d5184c8126c5b64b21ae1e083ee005f18e3f5fab"
-			.as_bytes()
-			.into_bounded();
-
-		let contract = BurnDetails::GCRE(address.value, tx_id);
-	}: _( RawOrigin::Signed(collector), contract)
 }
-
-//impl_benchmark_test_suite!(Creditcoin, crate::mock::new_test_ext(), crate::mock::Test);
 
 fn generate_funded_deal<T: Config>(
 	fund: bool,
