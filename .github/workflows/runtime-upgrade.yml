@@ -508,13 +508,13 @@ jobs:
           name: creditcoin_node_runtime.compact.compressed.wasm
 
       - name: Upgrade WASM
-        if: env.LENDER_PRIVATE_KEY
+        if: env.LENDER_SEED
         run: |
           yarn --cwd ./scripts/js upgrade 'creditcoin-js'
-          yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm "${{ env.LENDER_PRIVATE_KEY }}" 0
+          yarn --cwd ./scripts/js runtimeUpgrade ws://127.0.0.1:9944 ../../creditcoin_node_runtime.compact.compressed.wasm "${{ env.LENDER_SEED }}" 0
           sleep 10
         env:
-          LENDER_PRIVATE_KEY: ${{ secrets.TESTNET_LENDER_PRIVATE_KEY }}
+          LENDER_SEED: "${{ secrets.TESTNET_LENDER_SEED }}"
 
       # TODO: wait & confirm wasm upgrade has finished, incl. migrations
       - name: Execute integration tests
