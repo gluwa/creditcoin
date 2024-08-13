@@ -43,7 +43,7 @@ practical examples.
 
 ### How to use
 
-The folowing is intended as a quick-start guide.
+The following is intended as a quick-start guide.
 For more detailed instructions, take a look at the [zombienet docs](https://paritytech.github.io/zombienet/intro.html).
 
 There is a base network specification ([docs](https://paritytech.github.io/zombienet/network-definition-spec.html)) here to start off with, you can edit it as needed. To spawn a network:
