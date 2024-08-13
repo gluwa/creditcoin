@@ -5,6 +5,8 @@ param vmName string = toLower('github-runner-${uniqueString(resourceGroup().id, 
 @description('Username for the Virtual Machine.')
 param adminUsername string = 'ubuntu'
 
+var authenticationType = 'sshPublicKey'
+
 @description('SSH Key value for the Virtual Machine.')
 @secure()
 param adminPasswordOrKey string
@@ -826,6 +828,8 @@ resource publicIP 'Microsoft.Network/publicIPAddresses@2021-05-01' = {
 }
 
 resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
+  // checkov:skip=CKV_AZURE_97:'Microsoft.Compute/EncryptionAtHost' feature is not enabled for this subscription.
+  // checkov:skip=CKV_AZURE_151:Now a Windows VM and EncryptionAtHost feature not enabled for this subscription.
   name: vmName
   location: location
   properties: {
@@ -859,6 +863,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
       adminUsername: adminUsername
       adminPassword: adminPasswordOrKey
       linuxConfiguration: linuxConfiguration
+      allowExtensionOperations: false
     }
   }
 }

@@ -10,6 +10,8 @@ const setup = async () => {
 
     (global as any).CREDITCOIN_SWITCH_TO_POS_ALREADY_CALLED = process.env.SWITCH_TO_POS_ALREADY_CALLED === '1';
 
+    (global as any).CREDITCOIN_USES_FAST_RUNTIME = false;
+
     await globalSetup();
 };
 

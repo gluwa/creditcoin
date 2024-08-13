@@ -3,8 +3,9 @@ use super::{AccountIdOf, BlockNumberOf, HashOf, Migrate, MomentOf, PhantomData};
 
 use crate::types::CollectedCoinsStruct;
 
-use super::v6::Task as OldTask;
-use crate::{AddressId, Config, TaskId, UnverifiedCollectedCoins, UnverifiedTransfer};
+use crate::migrations::v6::Task as OldTask;
+
+use crate::{AddressId, Config, TaskId, UnverifiedTransfer};
 use crate::{CollectedCoinsId, ExternalTxId};
 use frame_support::storage_alias;
 use frame_support::weights::Weight;
@@ -77,7 +78,7 @@ impl<T: Config> Migrate for Migration<T> {
 					to: y.to,
 					amount: y.amount,
 					tx_id: y.tx_id,
-					contract_type: crate::types::ContractType::GCRE,
+					contract_type: crate::types::collect_coins::ContractType::GCRE,
 				})
 			},
 		);
@@ -99,16 +100,6 @@ impl<T: Config> Migrate for Migration<T> {
 
 						Some(crate::types::Task::VerifyTransfer(new))
 					},
-					OldTask::CollectCoins(pending) => {
-						let new = UnverifiedCollectedCoins {
-							to: pending.to,
-							tx_id: pending.tx_id,
-							contract: pending.contract,
-							contract_type: crate::types::ContractType::GCRE,
-						};
-
-						Some(crate::types::Task::CollectCoins(new))
-					},
 				}
 			},
 		);
@@ -119,14 +110,12 @@ impl<T: Config> Migrate for Migration<T> {
 
 #[cfg(test)]
 mod tests {
-	use crate::helpers::extensions::IntoBounded;
 	use pallet_offchain_task_scheduler::tasks::TaskV2;
 
 	use super::*;
 	use crate::{
-		migrations::v6::OldUnverifiedCollectedCoins,
 		mock::{self, ExtBuilder, Test},
-		types::{test::create_unverified_transfer, ContractType},
+		types::{collect_coins::ContractType, test::create_unverified_transfer},
 		Task,
 	};
 
@@ -172,34 +161,6 @@ mod tests {
 	}
 
 	#[test]
-	fn migrate_collect_coins() {
-		ExtBuilder::default().build_and_execute(|| {
-			let pending = OldUnverifiedCollectedCoins {
-				to: [0u8; 256].into_bounded(),
-				tx_id: [0u8; 256].into_bounded(),
-				contract: Default::default(),
-			};
-			let id = TaskId::CollectCoins(crate::types::CollectedCoinsId::from(
-				TaskV2::<Test>::to_id(&pending),
-			));
-
-			PendingTasks::<Test>::insert(1u64, id.clone(), OldTask::from(pending.clone()));
-
-			super::Migration::<Test>::new().migrate();
-
-			let Task::CollectCoins(migrated_pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
-			else {
-				unreachable!()
-			};
-
-			assert_eq!(pending.to, migrated_pending.to);
-			assert_eq!(pending.tx_id, migrated_pending.tx_id);
-			assert_eq!(pending.contract, migrated_pending.contract);
-			assert_eq!(migrated_pending.contract_type, ContractType::GCRE);
-		});
-	}
-
-	#[test]
 	fn migrate_verify_transfer() {
 		ExtBuilder::default().build_and_execute(|| {
 			let pending = create_unverified_transfer();
@@ -212,10 +173,8 @@ mod tests {
 
 			super::Migration::<Test>::new().migrate();
 
-			let Task::VerifyTransfer(migrated_pending) = new::PendingTasks::<Test>::get(1, id).unwrap()
-			else {
-				unreachable!()
-			};
+			let Task::VerifyTransfer(migrated_pending) =
+				new::PendingTasks::<Test>::get(1, id).unwrap();
 
 			assert_eq!(pending, migrated_pending);
 		});

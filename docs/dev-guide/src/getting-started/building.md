@@ -2,7 +2,7 @@
 # Building the `creditcoin-node` from source
 
 _Note on development platforms: development is easiest from a unix environment (whether that be linux, macOS, or WSL). It should be possible to
-develop natively in windows but you'll most likely be on your own._
+develop natively on Windows, [however that is unsupported](https://github.com/gluwa/creditcoin/security/advisories/GHSA-cx5c-xwcv-vhmq)._
 
 ## Build prerequisites
 
@@ -13,24 +13,9 @@ not by installing your distro's `rust` package which will most likely be too old
 
 For the installation you can refer to [these instructions](https://www.rust-lang.org/tools/install).
 
-Once you have a working rust installation, you'll need to add the `wasm32-unknown-unknown` target and install the nightly toolchain
-
-```bash
-rustup update
-rustup toolchain install nightly
-rustup target add wasm32-unknown-unknown --nightly
-```
-
-Note: So that you don't have to specify the toolchain every build, you can set `nightly` as your default toolchain while working on creditcoin.
-
-You can also check
-[./ci/env](https://github.com/gluwa/creditcoin/blob/dev/ci/env)
-for the toolchain being used in our CI in case you run into issues with newer version before we notice them.
-
-```bash
-# set nightly as default for your creditcoin checkout
-rustup override set nightly
-```
+Once you have rustup, you don't need to do anymore setup because this repository uses a
+[rust-toolchain.toml](https://github.com/gluwa/creditcoin/blob/dev/rust-toolchain.toml) file.
+**NOTE:** Creditcoin uses the feature `stdsimd` which has been removed in later nightly versions.
 
 ### System build dependencies
 

@@ -65,6 +65,39 @@ describe('Creditcoin RPC', (): void => {
 
     testIf(
         (global as any).CREDITCOIN_API_URL === 'ws://127.0.0.1:9944',
+        'after 5:00 mins of inactivity connection will still be open and able to transmit messages',
+        (done: any): void => {
+            const ws = new WebSocket((global as any).CREDITCOIN_API_URL);
+
+            ws.on('open', () => {
+                setTimeout(() => {
+                    const rpc = {
+                        id: 1,
+                        jsonrpc: '2.0',
+                        method: 'task_getOffchainNonceKey',
+                        params: ['0xThisIsNotValid'],
+                    };
+                    // connection is still open
+                    expect(ws.readyState).toEqual(WebSocket.OPEN);
+
+                    ws.send(JSON.stringify(rpc));
+                }, 300_000); // wait for 5 min before sending a message
+            })
+                .on('message', (data) => {
+                    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                    const utf8Str = data.toString('utf-8');
+
+                    const error = JSON.parse(utf8Str).error;
+                    expect(error.message).toContain('Not a valid hex-string or SS58 address');
+                    ws.close();
+                })
+                .on('close', () => done());
+        },
+        350_000,
+    );
+
+    testIf(
+        (global as any).CREDITCOIN_API_URL === 'ws://127.0.0.1:9944',
         'getOffchainNonceKey() should work when passed a valid AccountId',
         async () => {
             const lender = (global as any).CREDITCOIN_CREATE_SIGNER(keyring, 'lender');

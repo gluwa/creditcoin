@@ -17,7 +17,6 @@ import { makeDistributeRewardsCommand } from "./commands/distributeRewards";
 import { makeUnbondCommand } from "./commands/unbond";
 import { makeStatusCommand } from "./commands/status";
 import { makeWithdrawUnbondedCommand } from "./commands/withdrawUnbonded";
-import { makeCollectCoinsCmd } from "./commands/collectCoins";
 import { makeRegisterAddressCmd } from "./commands/registerAddress";
 
 const program = new Command();
@@ -32,7 +31,6 @@ program
   .addCommand(makeBalanceCommand())
   .addCommand(makeBondCommand())
   .addCommand(makeChillCommand())
-  .addCommand(makeCollectCoinsCmd())
   .addCommand(makeDistributeRewardsCommand())
   .addCommand(makeNewSeedCommand())
   .addCommand(makeRegisterAddressCmd())

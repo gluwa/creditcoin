@@ -1,0 +1,10 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "https://creditcoin.org/white-paper"
+    }
+  ],
+  "retryOn429": true,
+  "retryCount": 5,
+  "aliveStatusCodes": [200, 203]
+}

@@ -20,18 +20,67 @@ function formatDaysHoursMinutes(ms: number) {
   return `${daysString}${hoursString}${minutesString}${secString}`;
 }
 
-export async function getValidatorStatus(address: string, api: ApiPromise) {
-  const res = await api.derive.staking.account(address);
-  const totalStaked = readAmount(res.stakingLedger.total.toString());
-  const bonded = totalStaked.gt(new BN(0));
+export interface StashControllerPair {
+  stash: string;
+  controller?: string;
+}
 
-  const controller = res.controllerId ? res.controllerId.toString() : "None";
+export interface ControllerStatus {
+  isController: boolean;
+  stash?: string;
+}
 
+export async function getControllerStatus(
+  address: string,
+  api: ApiPromise,
+): Promise<ControllerStatus> {
   const stashRes = await api.query.staking.ledger(address);
   const stash = stashRes.isSome
     ? stashRes.unwrap().stash.toString()
     : undefined;
 
+  let status;
+  if (stash) {
+    status = {
+      isController: true,
+      stash,
+    };
+  } else {
+    status = {
+      isController: false,
+      stash: undefined,
+    };
+  }
+  return status;
+}
+
+export async function getValidatorStatus(address: string, api: ApiPromise) {
+  // Check if address is a controller and get its stash
+  const controllerStatus = await getControllerStatus(address, api);
+
+  // If it is a controller, set the stash to its stash address
+  let stash;
+  if (controllerStatus.isController && controllerStatus.stash) {
+    console.log(
+      `Address belongs to the Controller account for validator ${controllerStatus.stash}`,
+    );
+    console.log(`Showing status for ${controllerStatus.stash}...`);
+    stash = controllerStatus.stash;
+  } else {
+    stash = address;
+  }
+
+  // Get the staking information for the stash
+  const res = await api.derive.staking.account(stash);
+
+  // Get the controller address
+  const controller = res.controllerId ? res.controllerId.toString() : undefined;
+
+  // Get the total staked amount
+  const totalStaked = readAmount(res.stakingLedger.total.toString());
+  const bonded = totalStaked.gt(new BN(0));
+
+  // Get information about any unbonding tokens and unlocked chunks
   const unlockingRes = res.stakingLedger.unlocking;
   const currentEra = (await api.query.staking.currentEra()).unwrap();
   const unlocking = unlockingRes
@@ -42,6 +91,8 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     ? readAmountFromHex(res.redeemable.toString())
     : new BN(0);
 
+  // Get the unlocked chunks that are ready for withdrawal
+  // by comparing the era of each chunk to the current era
   const readyForWithdraw = res.stakingLedger.unlocking
     .map((u: any) => {
       const chunk: UnlockChunk = {
@@ -60,15 +111,14 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
   const nextUnbondingAmount =
     unlocking.length > 0 ? unlocking[0].value.toBn() : null;
 
+  // Get lists of all validators, active validators, and waiting validators
   const validatorEntries = await api.query.staking.validators
     .entries()
     .then((r) => r.map((v) => v[0].toHuman()?.toString()));
-
   const activeValidatorsRes = await api.derive.staking.validators();
   const activeValidators: string[] = activeValidatorsRes.validators.map((v) =>
     v.toString(),
   );
-
   const waitingValidators = validatorEntries.filter((v) => {
     if (v !== undefined) {
       return !activeValidators.includes(v);
@@ -77,17 +127,22 @@ export async function getValidatorStatus(address: string, api: ApiPromise) {
     }
   });
 
+  // Check if the validator is validating, waiting, or active
+  const validating = validatorEntries.includes(stash);
+  const waiting = waitingValidators.includes(stash);
+  const active = activeValidators.includes(stash);
+
   const validatorStatus: Status = {
     bonded,
     stash,
     controller,
-    validating: validatorEntries.includes(address),
-    waiting: waitingValidators.includes(address),
-    active: activeValidators.includes(address),
+    validating,
+    waiting,
+    active,
     canWithdraw,
     readyForWithdraw,
     nextUnbondingDate,
-    nextUnbondingAmount: nextUnbondingAmount ? nextUnbondingAmount : new BN(0),
+    nextUnbondingAmount: nextUnbondingAmount || new BN(0),
     redeemable,
   };
 
@@ -111,8 +166,8 @@ export async function printValidatorStatus(status: Status, api: ApiPromise) {
       table.push([`Unlocked since era ${chunk.era}`, toCTCString(chunk.value)]);
     });
   }
-  let nextUnlocking = "None";
-  if (status.nextUnbondingAmount && status.nextUnbondingAmount.eq(new BN(0))) {
+  let nextUnlocking;
+  if (status.nextUnbondingAmount?.eq(new BN(0))) {
     nextUnlocking = "None";
   } else if (status.nextUnbondingAmount && status.nextUnbondingDate) {
     const nextUnbondingAmount = toCTCString(status.nextUnbondingAmount);
@@ -133,9 +188,8 @@ export function requireStatus(
 ) {
   if (!status[condition]) {
     console.error(
-      message
-        ? message
-        : `Cannot perform action, validator is not ${condition.toString()}`,
+      message ||
+        `Cannot perform action, validator is not ${condition.toString()}`,
     );
     process.exit(1);
   }
@@ -144,7 +198,7 @@ export function requireStatus(
 export interface Status {
   bonded: boolean;
   stash?: string;
-  controller: string;
+  controller?: string;
   validating: boolean;
   waiting: boolean;
   active: boolean;

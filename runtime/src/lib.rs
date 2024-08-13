@@ -11,8 +11,10 @@ use frame_election_provider_support::{
 };
 pub use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
-	traits::{ConstU32, ConstU8, OnRuntimeUpgrade, U128CurrencyToVote},
-	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+	traits::{ConstU128, ConstU32, ConstU8, OnRuntimeUpgrade, U128CurrencyToVote},
+	weights::{
+		ConstantMultiplier, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+	},
 	PalletId,
 };
 use frame_system::EnsureRoot;
@@ -26,16 +28,15 @@ pub use pallet_grandpa::{
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_offchain_task_scheduler::crypto::AuthorityId;
 use pallet_session::historical as session_historical;
-use pallet_staking::UseValidatorsMap;
-pub use pallet_staking_substrate::{self, StakerStatus};
+pub use pallet_staking_substrate::{self, StakerStatus, UseValidatorsMap};
 use sp_api::impl_runtime_apis;
 use sp_consensus_babe as babe_primitives;
-use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, ConstU64, Encode, OpaqueMetadata, U256};
 use sp_runtime::{
 	generic, impl_opaque_keys,
 	traits::{
-		AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, NumberFor,
-		OpaqueKeys, Verify,
+		AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, Convert, IdentifyAccount,
+		NumberFor, OpaqueKeys, Verify,
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, MultiAddress, MultiSignature, Perquintill,
@@ -72,9 +73,9 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
 #[cfg(test)]
-mod mock;
-#[cfg(test)]
 mod tests;
+
+mod output;
 
 mod version;
 pub use version::VERSION;
@@ -284,7 +285,7 @@ type MaxAuthorities = ConstU32<100_000>;
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
-	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
+	type KeyOwnerProof = sp_session::MembershipProof;
 
 	type EquivocationReportSystem =
 		pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
@@ -319,7 +320,7 @@ impl pallet_babe::Config for Runtime {
 	type EpochDuration = EpochDuration;
 	type ExpectedBlockTime = ExpectedBlockTime;
 	type EpochChangeTrigger = pallet_babe::ExternalTrigger;
-	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
+	type KeyOwnerProof = sp_session::MembershipProof;
 	type EquivocationReportSystem =
 		pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 	type WeightInfo = ();
@@ -429,20 +430,24 @@ parameter_types! {
 	pub MinAnnualInflation : Perquintill = Perquintill::from_rational(25u64, 1000u64);
 }
 
-pub struct InitBabe;
+// NOTE: this should be removed once the runtime has been upgraded on mainnet
+// (though there is a check in case we forget)
+pub struct MigrateBags;
 
-impl OnRuntimeUpgrade for InitBabe {
+impl OnRuntimeUpgrade for MigrateBags {
 	fn on_runtime_upgrade() -> Weight {
-		if Babe::epoch_config().is_none() {
-			log::debug!("Initializing BABE");
-			let babe_config = pallet_babe::InitConfig {
-				authorities: Vec::new(),
-				epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
-			};
-			Babe::genesis_init(babe_config);
-			<Runtime as frame_system::Config>::DbWeight::get().writes(3)
-		} else {
+		const BAGS_LIST_MIGRATION: &[u8] = b"ctc:bags_list_thresholds_migrated";
+		const OLD_THRESHOLDS: &[u64] = &[];
+		let key = sp_io::hashing::twox_256(BAGS_LIST_MIGRATION);
+		if let Some(_v) = sp_io::storage::get(&key) {
 			Weight::zero()
+		} else {
+			let num_accts_affected =
+				pallet_bags_list::List::<Runtime, VoterBagsListInstance>::migrate(OLD_THRESHOLDS);
+			let each = ParityDbWeight::get().reads_writes(2, 2);
+			let weight = each.saturating_mul(num_accts_affected as u64);
+			sp_io::storage::set(&key, &true.encode());
+			weight
 		}
 	}
 }
@@ -486,12 +491,16 @@ impl onchain::Config for OnChainSeqPhragmen {
 	type TargetsBound = MaxElectableTargets;
 }
 
+parameter_types! {
+	pub const BagThresholds: &'static [u64] = &output::THRESHOLDS;
+}
+
 type VoterBagsListInstance = pallet_bags_list::Instance1;
 impl pallet_bags_list::Config<VoterBagsListInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ScoreProvider = Staking;
 	type WeightInfo = ();
-	type BagThresholds = ();
+	type BagThresholds = BagThresholds;
 	type Score = u64;
 }
 
@@ -535,21 +544,6 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
-pub struct LengthToCtcFee;
-
-impl WeightToFeePolynomial for LengthToCtcFee {
-	type Balance = Balance;
-
-	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		smallvec::smallvec![WeightToFeeCoefficient {
-			coeff_integer: 1,
-			coeff_frac: Perbill::zero(),
-			negative: false,
-			degree: 1,
-		}]
-	}
-}
-
 pub const TARGET_FEE_CREDO: Balance = 10_000_000_000_000_000;
 
 pub const CTC: Balance = 1_000_000_000_000_000_000;
@@ -587,7 +581,7 @@ impl pallet_transaction_payment::Config for Runtime {
 	type WeightToFee = WeightToCtcFee;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 	type OperationalFeeMultiplier = ConstU8<1u8>;
-	type LengthToFee = LengthToCtcFee;
+	type LengthToFee = ConstantMultiplier<u128, ConstU128<1_500_000_000u128>>;
 	type RuntimeEvent = RuntimeEvent;
 }
 
@@ -715,7 +709,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
-	(InitBabe,),
+	(MigrateBags,),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -1050,7 +1044,6 @@ parameter_types! {
 	pub const MaxPending: u32 = 64;
 	pub const AnnouncementDepositBase: u128 = 500;
 	pub const AnnouncementDepositFactor: u128 = 500;
-
 }
 
 impl pallet_proxy::Config for Runtime {
@@ -1092,6 +1085,22 @@ parameter_types! {
 	pub const PostUnbondingPoolsWindow: u32 = 10;
 }
 
+pub struct BalanceToU256;
+
+impl Convert<Balance, U256> for BalanceToU256 {
+	fn convert(x: Balance) -> U256 {
+		x.into()
+	}
+}
+
+pub struct U256ToBalance;
+
+impl Convert<U256, Balance> for U256ToBalance {
+	fn convert(x: U256) -> Balance {
+		x.saturated_into()
+	}
+}
+
 impl pallet_nomination_pools::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
@@ -1099,11 +1108,11 @@ impl pallet_nomination_pools::Config for Runtime {
 	type RewardCounter = sp_runtime::FixedU128;
 	type PalletId = NomPoolsPalletId;
 	type MaxPointsToBalance = MaxPointsToBalance;
-	type BalanceToU256 = ();
-	type U256ToBalance = ();
+	type BalanceToU256 = BalanceToU256;
+	type U256ToBalance = U256ToBalance;
 	type Staking = Staking;
 	type PostUnbondingPoolsWindow = PostUnbondingPoolsWindow;
-	type MaxMetadataLen = ();
+	type MaxMetadataLen = ConstU32<256>;
 	type MaxUnbonding = MaxUnbonding;
 }
 

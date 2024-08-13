@@ -13,7 +13,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -25,11 +25,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           components: llvm-tools-preview
@@ -39,7 +39,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2.17.8
+        uses: taiki-e/install-action@v2.42.14
         with:
           tool: cargo-llvm-cov
 
@@ -69,7 +69,7 @@ jobs:
         if: env.GITHUB_TOKEN
         env:
           GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           allow-no-subscriptions: true
@@ -96,7 +96,7 @@ jobs:
           allow-repeats: false
 
       - name: Upload coverage report as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: target/llvm-cov/html/

@@ -136,7 +136,7 @@ WebSockets RPC because Polakdot JS Apps will refuse plain/text connections over 
 
 Select an arbitrary node and search in its log file, e.g. `first.log` lines similar to
 
-```
+```text
 2023-09-13 16:31:40 Running JSON-RPC HTTP server: addr=0.0.0.0:32943, allowed origins=["*"]
 2023-09-13 16:31:40 Running JSON-RPC WS server: addr=0.0.0.0:37271, allowed origins=["*"]
 ```
@@ -148,5 +148,5 @@ Select an arbitrary node and search in its log file, e.g. `first.log` lines simi
   ```
 - (Possibly) adjust DNS configuration for the domain name used to access your VM. We've got
   `zombienet.creditcoin.network` operated by DevOps and pointing to one of our test VMs
-- Go to https://polkadot.js.org/apps/?rpc=wss://zombienet.creditcoin.network:8443#/explorer
+- Go to <https://polkadot.js.org/apps/?rpc=wss://zombienet.creditcoin.network:8443#/explorer>
   and explore the newly spawned chain!

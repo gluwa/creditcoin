@@ -35,11 +35,9 @@ import type {
     PalletCreditcoinAskOrderId,
     PalletCreditcoinBidOrderId,
     PalletCreditcoinBlockchain,
-    PalletCreditcoinCollectCoinsBurnDetails,
     PalletCreditcoinDealOrderId,
     PalletCreditcoinLoanTerms,
     PalletCreditcoinOcwErrorsVerificationFailureCause,
-    PalletCreditcoinOcwTasksCollectCoinsDeployedContract,
     PalletCreditcoinOfferId,
     PalletCreditcoinOwnershipProof,
     PalletCreditcoinTaskId,
@@ -390,12 +388,7 @@ declare module '@polkadot/api-base/types/submittable' {
             failTask: AugmentedSubmittable<
                 (
                     deadline: u32 | AnyNumber | Uint8Array,
-                    taskId:
-                        | PalletCreditcoinTaskId
-                        | { VerifyTransfer: any }
-                        | { CollectCoins: any }
-                        | string
-                        | Uint8Array,
+                    taskId: PalletCreditcoinTaskId | { VerifyTransfer: any } | string | Uint8Array,
                     cause:
                         | PalletCreditcoinOcwErrorsVerificationFailureCause
                         | 'TaskNonexistent'
@@ -437,12 +430,7 @@ declare module '@polkadot/api-base/types/submittable' {
             persistTaskOutput: AugmentedSubmittable<
                 (
                     deadline: u32 | AnyNumber | Uint8Array,
-                    taskOutput:
-                        | PalletCreditcoinTaskOutput
-                        | { VerifyTransfer: any }
-                        | { CollectCoins: any }
-                        | string
-                        | Uint8Array,
+                    taskOutput: PalletCreditcoinTaskOutput | { VerifyTransfer: any } | string | Uint8Array,
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, PalletCreditcoinTaskOutput]
             >;
@@ -562,52 +550,6 @@ declare module '@polkadot/api-base/types/submittable' {
             >;
             removeAuthority: AugmentedSubmittable<
                 (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [AccountId32]
-            >;
-            requestCollectCoins: AugmentedSubmittable<
-                (
-                    evmAddress: Bytes | string | Uint8Array,
-                    txId: Bytes | string | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [Bytes, Bytes]
-            >;
-            requestCollectCoinsV2: AugmentedSubmittable<
-                (
-                    contract:
-                        | PalletCreditcoinCollectCoinsBurnDetails
-                        | { GCRE: any }
-                        | { GATE: any }
-                        | string
-                        | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinCollectCoinsBurnDetails]
-            >;
-            setCollectCoinsContract: AugmentedSubmittable<
-                (
-                    contract:
-                        | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
-                        | { address?: any; chain?: any }
-                        | string
-                        | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
-            >;
-            /**
-             * Set the onchain details for the Gluwa GATE Contract, including its address and the blockchain where it is deployed.
-             * This extrinsic expects the caller to have root permissions.
-             **/
-            setGateContract: AugmentedSubmittable<
-                (
-                    contract:
-                        | PalletCreditcoinOcwTasksCollectCoinsDeployedContract
-                        | { address?: any; chain?: any }
-                        | string
-                        | Uint8Array,
-                ) => SubmittableExtrinsic<ApiType>,
-                [PalletCreditcoinOcwTasksCollectCoinsDeployedContract]
-            >;
-            setGateFaucet: AugmentedSubmittable<
-                (address: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [AccountId32]
             >;
             /**

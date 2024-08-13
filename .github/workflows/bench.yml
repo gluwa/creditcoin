@@ -15,12 +15,12 @@ jobs:
   check-if-needed:
     # To avoid endless loop in CI skip this job on the commit which
     # auto-updates the weights and is generated further below.
-    if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'notaturkey' }}
+    if: ${{ github.event_name == 'pull_request' && github.triggering_actor != 'gluwa-bot' }}
     runs-on: ubuntu-22.04
     outputs:
       needs-bench: ${{ steps.version-check.outputs.needs_bench }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -34,7 +34,7 @@ jobs:
     needs: check-if-needed
     if: needs.check-if-needed.outputs.needs-bench == 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Inspect benchmark CI config
         run: |
@@ -57,11 +57,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -70,13 +70,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build benchmarks
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release --features runtime-benchmarks
 
       - name: Upload benchmark binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-node
           path: target/release/creditcoin-node
@@ -89,7 +89,7 @@ jobs:
       resource_group: ${{ steps.get-env.outputs.resource_group }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install azure-cli
         run: |
@@ -155,7 +155,7 @@ jobs:
     needs:
       - deploy-github-runner
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 10
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -167,7 +167,7 @@ jobs:
           echo "HOME=/home/actions" >> "$GITHUB_ENV"
 
       - name: Download benchmark binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-node
           path: target/release
@@ -245,7 +245,7 @@ jobs:
     if: ${{ always() && needs.deploy-github-runner.result != 'skipped' }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Evaluate env vars
         id: get-env
@@ -269,7 +269,7 @@ jobs:
           az group delete --yes -n "${{ steps.get-env.outputs.resource_group }}"
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "Azure resources"

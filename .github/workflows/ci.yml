@@ -18,7 +18,7 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Build docker image
         run: |
@@ -32,7 +32,6 @@ jobs:
 
           docker run --rm --name creditcoin-validator -d -p 9933:9933 -p 30333:30333 gluwa/creditcoin   \
               --validator --chain mainnet                                   \
-              --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 \
               --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
               --public-addr "/dns4/$IP_ADDRESS/tcp/30333" \
               --prometheus-external \
@@ -59,9 +58,9 @@ jobs:
           docker rm -f creditcoin-validator
           sleep 10
 
-      - name: Start docker-compose
+      - name: Start container via compose
         run: |
-          docker-compose up -d
+          docker compose up -d
 
       - name: Sanity check for persistently mounted directory
         run: |
@@ -77,7 +76,7 @@ jobs:
   sanity-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for parity between extrinsics, benchmarks and weights
         run: |
@@ -97,12 +96,12 @@ jobs:
   sanity-test-cli:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Install creditcoin-js & creditcoin-cli
@@ -119,7 +118,7 @@ jobs:
     name: cargo audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -128,11 +127,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -163,15 +162,15 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           profile: minimal
@@ -179,7 +178,7 @@ jobs:
           components: rustfmt
 
       - name: Check formatting
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: fmt
           args: -- --check
@@ -188,7 +187,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -197,11 +196,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -211,7 +210,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Run Clippy
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: clippy
           args: --all-targets --all-features -- -D warnings -A clippy::too_many_arguments -A clippy::type_complexity
@@ -223,7 +222,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -232,11 +231,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -255,7 +254,7 @@ jobs:
   unit-test-creditcoin:
     runs-on: macos-12
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         env:
@@ -267,11 +266,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -287,7 +286,7 @@ jobs:
           echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
 
       - name: Run tests
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: test
           args: --features=try-runtime -- --test-threads 1
@@ -295,12 +294,14 @@ jobs:
           CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
           RUSTFLAGS: ${{ env.RUSTFLAGS }}
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
+
       - id: coverage
+        continue-on-error: true
         uses: actions-rs/grcov@v0.1
         with:
           config: .grcov.yml
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           files: ${{ steps.coverage.outputs.report }}
           fail_ci_if_error: false
@@ -309,12 +310,12 @@ jobs:
   unit-test-cli:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Execute tests
@@ -326,7 +327,7 @@ jobs:
           yarn test:unit
           popd
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           files: scripts/cc-cli/coverage/lcov.info
           fail_ci_if_error: false
@@ -335,7 +336,7 @@ jobs:
   build-creditcoin-node:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set-Up
         run: |
@@ -344,11 +345,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -357,19 +358,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build SUT
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release --features fast-runtime
 
       - name: Upload creditcoin-node binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin-node
           path: target/release/creditcoin-node
 
       - name: Upload WASM runtime
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: creditcoin_node_runtime.compact.compressed.wasm
           path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
@@ -379,22 +380,22 @@ jobs:
       - build-creditcoin-node
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Start local Ethereum node
         run: |
           docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
 
       - name: Download creditcoin-node binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-node
           path: target/release
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Install creditcoin-js & creditcoin-cli
@@ -417,7 +418,8 @@ jobs:
             --chain local \
             --validator --bob --pruning archive \
             --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWKEKymnBDKfa8MkMWiLE6DYbC4aAUciqmYucm7xFKK3Au \
-            --port 30335 --ws-port 9945 --rpc-port 9935 &
+            --port 30335 --ws-port 9945 --rpc-port 9935 \
+            --base-path ./bob-data &
 
       - name: Wait for nodes to start
         run: |
@@ -431,7 +433,7 @@ jobs:
           popd
 
       - name: Upload code coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: scripts/cc-cli/coverage/lcov.info
           fail_ci_if_error: false
@@ -448,7 +450,6 @@ jobs:
 
   build-creditcoin-transaction-producer:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -462,12 +463,12 @@ jobs:
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -489,7 +490,7 @@ jobs:
           tar -czvf creditcoin-transaction-producer.tar.gz creditcoin-transaction-producer/
 
       - name: Upload creditcoin-transaction-producer archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: creditcoin-transaction-producer.tar.gz
           name: creditcoin-transaction-producer.tar.gz
@@ -506,7 +507,7 @@ jobs:
           docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
 
       - name: Download creditcoin-node binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-node
           path: target/release
@@ -514,7 +515,7 @@ jobs:
       - name: Start creditcoin-node
         run: |
           chmod a+x ./target/release/creditcoin-node
-          ./target/release/creditcoin-node --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          ./target/release/creditcoin-node --dev --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - uses: actions/checkout@v4
 
@@ -523,7 +524,7 @@ jobs:
           ./integration-tests/wait-for-creditcoin.sh
 
       - name: Download creditcoin-transaction-producer archive
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-transaction-producer.tar.gz
 
@@ -547,7 +548,7 @@ jobs:
           ./scripts/check-transaction-producer.sh
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: transaction-producer-logs
@@ -567,14 +568,14 @@ jobs:
     # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
     permissions: write-all
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 10
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Download creditcoin-node binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: creditcoin-node
           path: target/release
@@ -582,16 +583,16 @@ jobs:
       - name: Start SUT
         run: |
           chmod a+x ./target/release/creditcoin-node
-          ./target/release/creditcoin-node --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+          ./target/release/creditcoin-node --dev --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
 
       - name: Start local Ethereum node
         run: |
           docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Prepare for integration tests
@@ -648,7 +649,7 @@ jobs:
           github_token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
@@ -670,12 +671,12 @@ jobs:
           [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Run tools
@@ -696,12 +697,12 @@ jobs:
           [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Run tools
@@ -722,12 +723,12 @@ jobs:
           [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Run tools
@@ -747,7 +748,7 @@ jobs:
   benchmark:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Inspect benchmark CI config
         run: |
@@ -770,11 +771,11 @@ jobs:
 
       - name: Configure rustc version
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -783,7 +784,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build benchmarks
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release --features runtime-benchmarks
@@ -801,7 +802,7 @@ jobs:
 
       # check if automatically generated weights compile
       - name: Rebuild SUT with newly generated weights
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release
@@ -810,7 +811,7 @@ jobs:
     name: "🐚 Shellcheck"
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
         env:
