@@ -12,7 +12,7 @@ jobs:
   sanity-check:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -40,18 +40,18 @@ jobs:
           sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
       - name: Install protobuf
-        uses: arduino/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure rustc version
         shell: bash
         run: |
-          source ci/env
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
           echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: wasm32-unknown-unknown
@@ -60,7 +60,7 @@ jobs:
 
       - name: Install MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
-        uses: actions-rs/toolchain@v1
+        uses: gluwa/toolchain@dev
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           target: aarch64-apple-darwin
@@ -87,20 +87,20 @@ jobs:
           echo "Tag & Platform is '${{ env.TAG_NAME }}-${{ env.PLATFORM }}'"
 
       - name: Build
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release
 
       - name: Build MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
-        uses: actions-rs/cargo@v1
+        uses: gluwa/cargo@dev
         with:
           command: build
           args: --release --target aarch64-apple-darwin
 
       - name: Compress
-        uses: thedoctor0/zip-release@0.7.1
+        uses: thedoctor0/zip-release@0.7.6
         with:
           type: "zip"
           directory: "target/release/"
@@ -110,7 +110,7 @@ jobs:
 
       - name: Compress MacOS aarch64 target
         if: matrix.operating-system == 'macos-11'
-        uses: thedoctor0/zip-release@0.7.1
+        uses: thedoctor0/zip-release@0.7.6
         with:
           type: "zip"
           directory: "target/aarch64-apple-darwin/release/"
@@ -119,8 +119,10 @@ jobs:
           exclusions: "creditcoin-node.d"
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        if: matrix.operating-system != 'windows-2022'
+        uses: actions/upload-artifact@v4
         with:
+          name: binary-for-${{ matrix.operating-system }}
           path: "creditcoin-${{ env.TAG_NAME }}-*.zip"
           if-no-files-found: error
 
@@ -128,7 +130,7 @@ jobs:
     needs: sanity-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -159,8 +161,9 @@ jobs:
           mv ${{ steps.srtool_build.outputs.wasm }} creditcoin-${{ env.TAG_NAME }}-runtime.wasm
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: binary-for-wasm
           path: "*.wasm"
           if-no-files-found: error
 
@@ -168,7 +171,7 @@ jobs:
     needs: sanity-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -181,25 +184,31 @@ jobs:
       - name: Build docker image
         run: |
           docker build -t gluwa/creditcoin:${{ env.TAG_NAME }} .
-          docker tag gluwa/creditcoin:${{ env.TAG_NAME }} gluwa/creditcoin:latest
 
           echo "${{ secrets.DOCKER_PUSH_PASSWORD }}" | docker login -u="${{ secrets.DOCKER_PUSH_USERNAME }}" --password-stdin
           docker push gluwa/creditcoin:${{ env.TAG_NAME }}
-          docker push gluwa/creditcoin:latest
+
+          # only -mainnet images are tagged as :latest
+          # shellcheck disable=SC2046,SC2143
+          if [ $(echo "${{ env.TAG_NAME}}" | grep "mainnet") ]; then
+              docker tag gluwa/creditcoin:${{ env.TAG_NAME }} gluwa/creditcoin:latest
+              docker push gluwa/creditcoin:latest
+          fi
+
           docker logout
 
   build-creditcoin-js:
     needs: sanity-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - run: npm install -g yarn
 
       - name: Figure out tag name
@@ -221,8 +230,9 @@ jobs:
           popd
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: binary-for-creditcoin-js
           path: "creditcoin-js/creditcoin-js-v${{ env.TAG_NAME }}.tgz"
           if-no-files-found: error
 
@@ -235,7 +245,7 @@ jobs:
       - build-wasm-runtime
       - build-creditcoin-js
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -246,7 +256,11 @@ jobs:
           echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
 
       - name: Download binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          path: artifact
+          pattern: binary-for-*
+          merge-multiple: true
 
       - name: DEBUG
         shell: bash
@@ -254,7 +268,7 @@ jobs:
           ls -lR
 
       - name: Make the release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: "artifact/creditcoin-*${{ env.TAG_NAME }}*"
           fail_on_unmatched_files: true

@@ -14,11 +14,11 @@ jobs:
     # checkov:skip=CKV2_GHA_1:We need this for the git push command below
     permissions: write-all
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install mdbook
-        uses: taiki-e/install-action@v2.17.8
+        uses: taiki-e/install-action@v2.42.14
         with:
           tool: mdbook,mdbook-mermaid
       - name: Deploy GitHub Pages

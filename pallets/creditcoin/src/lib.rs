@@ -31,26 +31,26 @@ mod tests;
 
 #[macro_use]
 mod helpers;
+
 pub mod migrations;
+
 pub mod ocw;
 mod types;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub mod test_utils;
 
+use crate::types::{BurnId, BurnInfo};
 use ocw::tasks::collect_coins::DeployedContract;
 pub use types::{
 	loan_terms, Address, AddressId, AskOrder, AskOrderId, AskTerms, BidOrder, BidOrderId, BidTerms,
-	Blockchain, BurnDetails, CollectedCoinsId, CollectedCoinsStruct, ContractType, DealOrder,
-	DealOrderId, Duration, ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate,
-	InterestType, LegacySighash, LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId,
-	TaskOutput, Transfer, TransferId, TransferKind, UnverifiedCollectedCoins, UnverifiedTransfer,
+	Blockchain, CollectedCoinsId, CollectedCoinsStruct, DealOrder, DealOrderId, Duration,
+	ExternalAddress, ExternalAmount, ExternalTxId, Guid, InterestRate, InterestType, LegacySighash,
+	LoanTerms, Offer, OfferId, OrderId, RatePerPeriod, Task, TaskId, TaskOutput, Transfer,
+	TransferId, TransferKind, UnverifiedTransfer,
 };
 
 pub(crate) use types::{DoubleMapExt, Id};
-
-#[cfg(test)]
-pub(crate) use types::test;
 
 pub type BalanceFor<T> = <T as pallet_balances::Config>::Balance;
 
@@ -65,13 +65,13 @@ pub mod pallet {
 		dispatch::{DispatchResult, PostDispatchInfo},
 		fail,
 		pallet_prelude::*,
-		traits::tokens::{currency::Currency as CurrencyT, fungible::Mutate, ExistenceRequirement},
+		traits::tokens::{currency::Currency as CurrencyT, ExistenceRequirement},
 		transactional,
 	};
 	use frame_system::{ensure_signed, offchain::CreateSignedTransaction, pallet_prelude::*};
 	use ocw::errors::VerificationFailureCause;
 	use pallet_offchain_task_scheduler::authority::AuthorityController;
-	use pallet_offchain_task_scheduler::tasks::{TaskScheduler, TaskV2};
+	use pallet_offchain_task_scheduler::tasks::TaskScheduler;
 	use sp_runtime::traits::{IdentifyAccount, UniqueSaturatedFrom, UniqueSaturatedInto, Verify};
 	use tracing as log;
 	use types::StorageCleanupState;
@@ -111,6 +111,7 @@ pub mod pallet {
 			+ ethereum_types::BigEndianHash<Uint = sp_core::U256>
 			+ Clone;
 
+		#[pallet::constant]
 		type UnverifiedTaskTimeout: Get<<Self as frame_system::Config>::BlockNumber>;
 
 		type WeightInfo: WeightInfo;
@@ -145,15 +146,8 @@ pub mod pallet {
 		fn close_deal_order() -> Weight;
 		fn exempt() -> Weight;
 		fn register_deal_order() -> Weight;
-		fn request_collect_coins() -> Weight;
-		fn persist_collect_coins() -> Weight;
-		fn fail_collect_coins() -> Weight;
 		fn remove_authority() -> Weight;
-		fn set_collect_coins_contract() -> Weight;
 		fn register_address_v2() -> Weight;
-		fn set_gate_contract() -> Weight;
-		fn set_gate_faucet() -> Weight;
-		fn request_collect_coins_v2() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -253,16 +247,17 @@ pub mod pallet {
 	pub type CleanupState<T: Config> =
 		StorageValue<_, StorageCleanupState<T::BlockNumber>, OptionQuery>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn burned_funds)]
+	pub type BurnedFunds<T: Config> =
+		CountedStorageMap<_, Identity, BurnId, BurnInfo<T::AccountId, T::Balance>>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// An address on an external chain has been registered.
 		/// [registered_address_id, registered_address]
 		AddressRegistered(AddressId<T::Hash>, Address<T::AccountId>),
-
-		/// Collecting coins from Eth ERC-20 has been registered and will be verified.
-		/// [collected_coins_id, registered_collect_coins]
-		CollectCoinsRegistered(CollectedCoinsId<T::Hash>, types::UnverifiedCollectedCoins),
 
 		/// An external transfer has been registered and will be verified.
 		/// [registered_transfer_id, registered_transfer]
@@ -274,13 +269,6 @@ pub mod pallet {
 		/// An external transfer has been successfully verified.
 		/// [verified_transfer_id]
 		TransferVerified(TransferId<T::Hash>),
-
-		/// CollectCoins has been successfully verified and minted.
-		/// [collected_coins_id, collected_coins]
-		CollectedCoinsMinted(
-			types::CollectedCoinsId<T::Hash>,
-			types::CollectedCoinsStruct<T::Hash, T::Balance>,
-		),
 
 		/// An external transfer has been processed and marked as part of a loan.
 		/// [processed_transfer_id]
@@ -345,9 +333,7 @@ pub mod pallet {
 
 		TransferFailedVerification(TransferId<T::Hash>, VerificationFailureCause),
 
-		/// exchanging vested ERC-20 CC for native CC failed.
-		/// [collected_coins_id, cause]
-		CollectCoinsFailedVerification(CollectedCoinsId<T::Hash>, VerificationFailureCause),
+		Burned(BurnId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -538,6 +524,12 @@ pub mod pallet {
 
 		/// The faucet has insufficient funds to complete this swap, please retry when the faucet has been reloaded
 		BurnGATEInsufficientFaucetBalance,
+
+		/// During a call to burn or burn_all the settlement of the account balances failed
+		BurnSettlementError,
+
+		/// A call to burn specified more free funds than the account has access to
+		BurnInsufficientFunds,
 	}
 
 	#[pallet::genesis_config]
@@ -1152,53 +1144,6 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
-		#[pallet::weight(<T as Config>::WeightInfo::request_collect_coins())]
-		pub fn request_collect_coins(
-			origin: OriginFor<T>,
-			evm_address: ExternalAddress,
-			tx_id: ExternalTxId,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let contract = Self::collect_coins_contract();
-
-			let pending = types::UnverifiedCollectedCoins {
-				to: evm_address,
-				tx_id,
-				contract,
-				contract_type: crate::types::ContractType::GCRE,
-			};
-
-			let collect_coins_id = TaskV2::<T>::to_id(&pending);
-
-			ensure!(
-				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&collect_coins_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let deadline = T::TaskScheduler::deadline();
-
-			ensure!(
-				!T::TaskScheduler::is_scheduled(&deadline, &collect_coins_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
-			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;
-			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
-
-			T::TaskScheduler::insert(&deadline, &collect_coins_id, Task::from(pending.clone()));
-
-			Self::deposit_event(Event::<T>::CollectCoinsRegistered(
-				collect_coins_id.into(),
-				pending,
-			));
-
-			Ok(())
-		}
-
-		#[transactional]
 		#[pallet::call_index(11)]
 		#[pallet::weight(<T as Config>::WeightInfo::register_funding_transfer())]
 		pub fn register_funding_transfer(
@@ -1305,14 +1250,11 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::call_index(16)]
-		#[pallet::weight(match &task_output {
-			crate::TaskOutput::CollectCoins(..) => <T as Config>::WeightInfo::persist_collect_coins(),
-			crate::TaskOutput::VerifyTransfer(..) => <T as Config>::WeightInfo::persist_transfer(),
-		})]
+		#[pallet::weight(<T as Config>::WeightInfo::persist_transfer())]
 		pub fn persist_task_output(
 			origin: OriginFor<T>,
 			deadline: T::BlockNumber,
-			task_output: TaskOutput<T::AccountId, T::Balance, T::BlockNumber, T::Hash, T::Moment>,
+			task_output: TaskOutput<T::AccountId, T::BlockNumber, T::Hash, T::Moment>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
@@ -1331,62 +1273,6 @@ pub mod pallet {
 					Transfers::<T>::insert(&id, transfer);
 					(id.clone().into_inner(), Event::<T>::TransferVerified(id))
 				},
-				TaskOutput::CollectCoins(id, collected_coins) => {
-					ensure!(
-						!CollectedCoins::<T>::contains_key(&id),
-						non_paying_error(Error::<T>::CollectCoinsAlreadyRegistered)
-					);
-
-					let address = Self::addresses(&collected_coins.to)
-						.ok_or(Error::<T>::NonExistentAddress)?;
-
-					match collected_coins.contract_type {
-						ContractType::GCRE => {
-							<pallet_balances::Pallet<T> as Mutate<T::AccountId>>::mint_into(
-								&address.owner,
-								collected_coins.amount,
-							)?;
-
-							CollectedCoins::<T>::insert(&id, collected_coins.clone());
-							(
-								id.clone().into_inner(),
-								Event::<T>::CollectedCoinsMinted(id, collected_coins),
-							)
-						},
-						ContractType::GATE => {
-							let faucet_address = Self::gate_faucet_account()
-								.ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
-
-							let dest = Self::addresses(&collected_coins.to)
-								.ok_or(Error::<T>::NonExistentAddress)?;
-
-							let transfer =
-								<pallet_balances::Pallet<T> as CurrencyT<T::AccountId>>::transfer(
-									&faucet_address,
-									&dest.owner,
-									collected_coins.amount,
-									ExistenceRequirement::AllowDeath,
-								);
-
-							match transfer {
-								Ok(_) => {
-									CollectedCoins::<T>::insert(&id, collected_coins.clone());
-									(
-										id.clone().into_inner(),
-										Event::<T>::CollectedCoinsMinted(id, collected_coins),
-									)
-								},
-								Err(_) => (
-									id.clone().into_inner(),
-									Event::<T>::CollectCoinsFailedVerification(
-										id,
-										VerificationFailureCause::InsufficientFaucetBalance,
-									),
-								),
-							}
-						},
-					}
-				},
 			};
 			T::TaskScheduler::remove(&deadline, &task_id);
 
@@ -1396,10 +1282,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(17)]
-		#[pallet::weight(match &task_id {
-			crate::TaskId::VerifyTransfer(..) => <T as Config>::WeightInfo::fail_transfer(),
-			crate::TaskId::CollectCoins(..) => <T as Config>::WeightInfo::fail_collect_coins(),
-		})]
+		#[pallet::weight(<T as Config>::WeightInfo::fail_transfer())]
 		pub fn fail_task(
 			origin: OriginFor<T>,
 			deadline: T::BlockNumber,
@@ -1419,16 +1302,6 @@ pub mod pallet {
 					(
 						transfer_id.clone().into_inner(),
 						Event::<T>::TransferFailedVerification(transfer_id, cause),
-					)
-				},
-				TaskId::CollectCoins(collected_coins_id) => {
-					ensure!(
-						!CollectedCoins::<T>::contains_key(&collected_coins_id),
-						Error::<T>::CollectCoinsAlreadyRegistered
-					);
-					(
-						collected_coins_id.clone().into_inner(),
-						Event::<T>::CollectCoinsFailedVerification(collected_coins_id, cause),
 					)
 				},
 			};
@@ -1451,18 +1324,6 @@ pub mod pallet {
 			T::TaskScheduler::insert_authority(&who);
 
 			Ok(PostDispatchInfo { actual_weight: None, pays_fee: Pays::No })
-		}
-
-		#[transactional]
-		#[pallet::call_index(20)]
-		#[pallet::weight(<T as Config>::WeightInfo::set_collect_coins_contract())]
-		pub fn set_collect_coins_contract(
-			origin: OriginFor<T>,
-			contract: DeployedContract,
-		) -> DispatchResult {
-			ensure_root(origin)?;
-			CollectCoinsContract::<T>::put(contract);
-			Ok(())
 		}
 
 		#[transactional]
@@ -1535,90 +1396,6 @@ pub mod pallet {
 					fail!(e)
 				},
 			}
-		}
-
-		/// Set the onchain details for the Gluwa GATE Contract, including its address and the blockchain where it is deployed.
-		/// This extrinsic expects the caller to have root permissions.
-		#[pallet::call_index(23)]
-		#[pallet::weight(<T as Config>::WeightInfo::set_gate_contract())]
-		pub fn set_gate_contract(
-			origin: OriginFor<T>,
-			contract: DeployedContract,
-		) -> DispatchResult {
-			ensure_root(origin)?;
-			GATEContract::<T>::put(contract);
-			Ok(())
-		}
-
-		#[pallet::call_index(24)]
-		#[pallet::weight(<T as Config>::WeightInfo::set_gate_faucet())]
-		pub fn set_gate_faucet(origin: OriginFor<T>, address: T::AccountId) -> DispatchResult {
-			ensure_root(origin)?;
-			GATEFaucetAccount::<T>::put(address);
-			Ok(())
-		}
-
-		#[pallet::call_index(25)]
-		#[pallet::weight(<T as Config>::WeightInfo::request_collect_coins_v2())]
-		pub fn request_collect_coins_v2(
-			origin: OriginFor<T>,
-			contract: BurnDetails,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			let contract_type;
-			let deployed_contract;
-			let tx_id;
-			let evm_address;
-
-			match contract {
-				BurnDetails::GCRE(ext_addr, tx_hash) => {
-					deployed_contract = Self::collect_coins_contract();
-					contract_type = ContractType::GCRE;
-					tx_id = tx_hash;
-					evm_address = ext_addr;
-				},
-				BurnDetails::GATE(ext_addr, tx_hash) => {
-					deployed_contract = Self::gate_contract();
-					contract_type = ContractType::GATE;
-					tx_id = tx_hash;
-					evm_address = ext_addr;
-					Self::gate_faucet_account().ok_or(Error::<T>::BurnGATEFaucetNotSet)?;
-				},
-			}
-
-			let pending = types::UnverifiedCollectedCoins {
-				to: evm_address,
-				tx_id,
-				contract: deployed_contract,
-				contract_type,
-			};
-
-			let collect_coins_id = TaskV2::<T>::to_id(&pending);
-
-			ensure!(
-				!<UnverifiedCollectedCoins as TaskV2<T>>::is_persisted(&collect_coins_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let deadline = T::TaskScheduler::deadline();
-
-			ensure!(
-				!T::TaskScheduler::is_scheduled(&deadline, &collect_coins_id),
-				Error::<T>::CollectCoinsAlreadyRegistered
-			);
-
-			let address_id = AddressId::new::<T>(&pending.contract.chain, &pending.to);
-			let address = Self::addresses(address_id).ok_or(Error::<T>::NonExistentAddress)?;
-			ensure!(address.owner == who, Error::<T>::NotAddressOwner);
-
-			T::TaskScheduler::insert(&deadline, &collect_coins_id, Task::from(pending.clone()));
-
-			Self::deposit_event(Event::<T>::CollectCoinsRegistered(
-				collect_coins_id.into(),
-				pending,
-			));
-
-			Ok(())
 		}
 	}
 }

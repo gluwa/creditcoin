@@ -29,7 +29,6 @@ pallet-offchain-task-scheduler = { workspace = true }
 pallet-rewards = { workspace = true }
 pallet-scheduler = { workspace = true }
 pallet-session = { workspace = true }
-pallet-staking = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
@@ -37,7 +36,7 @@ pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-pos-switch = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
-smallvec = "1.10.0"
+smallvec = "1.13.2"
 sp-block-builder = { workspace = true }
 sp-consensus-pow = { workspace = true }
 sp-core = { workspace = true }
@@ -61,6 +60,7 @@ sp-staking = { workspace = true }
 pallet-staking-reward-fn = { workspace = true }
 pallet-offences = { workspace = true }
 log = { workspace = true }
+sp-io = { workspace = true }
 
 # Pallets necessary for use with the Staking Dashboard
 # CSUB-503 https://gluwa.atlassian.net/browse/CSUB-503?atlOrigin=eyJpIjoiODY0NGFjOTkzZjE1NGFkYTg1OTNkZmYxZGU1NjlmYjIiLCJwIjoiaiJ9
@@ -100,7 +100,6 @@ runtime-benchmarks = [
     'pallet-balances/runtime-benchmarks',
     'pallet-rewards/runtime-benchmarks',
     'pallet-difficulty/runtime-benchmarks',
-    'pallet-staking/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'pallet-offchain-task-scheduler/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
@@ -120,7 +119,6 @@ std = [
     'pallet-difficulty/std',
     'pallet-scheduler/std',
     'pallet-session/std',
-    'pallet-staking/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
@@ -132,6 +130,7 @@ std = [
     'sp-block-builder/std',
     'sp-core/std',
     'sp-inherents/std',
+    'sp-io/std',
     'sp-offchain/std',
     'sp-runtime/std',
     'sp-session/std',
@@ -165,7 +164,6 @@ try-runtime = [
     "pallet-offchain-task-scheduler/try-runtime",
     "pallet-rewards/try-runtime",
     "pallet-scheduler/try-runtime",
-    "pallet-staking/try-runtime",
     "pallet-sudo/try-runtime",
     "pallet-session/try-runtime",
     "pallet-staking-substrate/try-runtime",

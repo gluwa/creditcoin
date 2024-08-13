@@ -24,7 +24,7 @@ creditcoin-node-rpc = { path = "./rpc" }
 creditcoin-node-runtime = { workspace = true }
 frame-benchmarking = { features = ["std"], workspace = true }
 frame-benchmarking-cli = { workspace = true }
-futures-lite = "1.13.0"
+futures-lite = "2.3.0"
 hex = { workspace = true }
 jsonrpc-core = { workspace = true }
 log = { workspace = true }
@@ -58,15 +58,15 @@ sp-timestamp = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 task-scheduler-runtime-api = { workspace = true }
-thiserror = "1.0.38"
+thiserror = "1.0.63"
 try-runtime-cli = { workspace = true, optional = true }
 jsonrpsee = { workspace = true, features = ["server"] }
-serde_json = "1.0.96"
+serde_json = "1.0.119"
 frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 sp-io = { workspace = true, optional = true }
 sp-keyring = { workspace = true }
-futures = "0.3.26"
+futures = "0.3.30"
 sc-consensus-babe = { workspace = true }
 sp-consensus-babe = { workspace = true }
 sp-consensus = { workspace = true }
@@ -82,7 +82,7 @@ serde = { workspace = true }
 sc-chain-spec = { workspace = true }
 
 [dependencies.tokio]
-version = "1.28.2"
+version = "1.39.2"
 default-features = false
 features = ["time"]
 

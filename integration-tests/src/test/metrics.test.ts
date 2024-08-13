@@ -27,4 +27,19 @@ testIf((global as any).CREDITCOIN_API_URL === 'ws://127.0.0.1:9944', 'Nonce metr
 
     expect(data).toContain('authority_offchain_nonce');
     expect(data).toContain('authority_onchain_nonce');
+
+    const shortName: string = (global as any).CREDITCOIN_NETWORK_SHORT_NAME;
+    ['authority_onchain_nonce', 'authority_offchain_nonce'].forEach((metricName) => {
+        const re = new RegExp(`${metricName}\\{chain="${shortName}"\\} (\\d+)`);
+
+        const match = data.match(re);
+        expect(match).not.toBeNull();
+        if (match) {
+            // so TS sees the match is non-null
+            const value = parseInt(match[1], 10);
+            // WARNING: for this metric to be >0 the node needs to have
+            // processed some extrinsics related to the off-chain worker
+            expect(value).toBeGreaterThan(0);
+        }
+    });
 });

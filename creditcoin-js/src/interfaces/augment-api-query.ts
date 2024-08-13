@@ -38,6 +38,7 @@ import type {
     PalletCreditcoinAddress,
     PalletCreditcoinAskOrder,
     PalletCreditcoinBidOrder,
+    PalletCreditcoinBurnInfo,
     PalletCreditcoinCleanupStorageCleanupState,
     PalletCreditcoinCollectCoinsCollectedCoins,
     PalletCreditcoinDealOrder,
@@ -334,6 +335,12 @@ declare module '@polkadot/api-base/types/storage' {
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
+            burnedFunds: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletCreditcoinBurnInfo>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
             cleanupState: AugmentedQuery<
                 ApiType,
                 () => Observable<Option<PalletCreditcoinCleanupStorageCleanupState>>,
@@ -352,6 +359,11 @@ declare module '@polkadot/api-base/types/storage' {
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * Counter for the related counted storage map
+             **/
+            counterForBurnedFunds: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+                QueryableStorageEntry<ApiType, []>;
             dealOrders: AugmentedQuery<
                 ApiType,
                 (
