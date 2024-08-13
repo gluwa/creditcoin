@@ -148,7 +148,7 @@ for funded Creditcoin accounts which will be used for testing!
 **WARNING:**
 when running this test-suite against `mainnet` make sure that the
 source code matches the version of mainnet running on the nodes. Try
-branching the tests from the relavant branch/tag before executing them.
+branching the tests from the relevant branch/tag before executing them.
 
 Running a test-suite from `dev` against downstream branches is not supported and
 will generally fail. The most likely failures will be missing extrinsics, different
