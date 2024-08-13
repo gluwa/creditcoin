@@ -1,20 +1,16 @@
 mod cleanup;
-mod collect_coins;
+pub mod collect_coins;
 pub mod loan_terms;
 mod transfer;
 
 pub use cleanup::{StorageCleanupState, StorageItemCleanupState};
-pub use collect_coins::{
-	CollectedCoins as CollectedCoinsStruct, CollectedCoinsId, UnverifiedCollectedCoins,
-};
+
 pub use loan_terms::*;
 pub use transfer::*;
 
-pub use collect_coins::{BurnDetails, ContractType};
-
-use crate::ocw::tasks::collect_coins::DeployedContract;
 use crate::ocw::VerificationFailureCause;
 use crate::ocw::VerificationResult;
+pub use collect_coins::{CollectedCoins as CollectedCoinsStruct, CollectedCoinsId};
 use extend::ext;
 use frame_support::{
 	storage::types::QueryKindTrait,
@@ -51,6 +47,16 @@ pub enum Blockchain {
 	Luniverse,
 	Bitcoin,
 	Other(OtherChain),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct BurnId(pub u64);
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct BurnInfo<AccountId, Balance> {
+	pub account: AccountId,
+	pub amount: Balance,
+	pub collector: AccountId,
 }
 
 impl Blockchain {
@@ -473,7 +479,6 @@ impl<'de> serde::Deserialize<'de> for LegacySighash {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum Task<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(UnverifiedTransfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(UnverifiedCollectedCoins),
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -501,18 +506,9 @@ impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedTransfer<AccountId, Block
 	}
 }
 
-impl<AccountId, BlockNum, Hash, Moment> From<UnverifiedCollectedCoins>
-	for Task<AccountId, BlockNum, Hash, Moment>
-{
-	fn from(coins: UnverifiedCollectedCoins) -> Self {
-		Task::CollectCoins(coins)
-	}
-}
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TaskId<Hash> {
 	VerifyTransfer(TransferId<Hash>),
-	CollectCoins(CollectedCoinsId<Hash>),
 }
 
 impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
@@ -521,21 +517,14 @@ impl<Hash> From<TransferId<Hash>> for TaskId<Hash> {
 	}
 }
 
-impl<Hash> From<CollectedCoinsId<Hash>> for TaskId<Hash> {
-	fn from(id: CollectedCoinsId<Hash>) -> Self {
-		TaskId::CollectCoins(id)
-	}
-}
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> {
+pub enum TaskOutput<AccountId, BlockNum, Hash, Moment> {
 	VerifyTransfer(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
-	CollectCoins(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>),
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment>
+impl<AccountId, BlockNum, Hash, Moment>
 	From<(TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>)>
-	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
+	for TaskOutput<AccountId, BlockNum, Hash, Moment>
 {
 	fn from(
 		(id, transfer): (TransferId<Hash>, Transfer<AccountId, BlockNum, Hash, Moment>),
@@ -544,27 +533,14 @@ impl<AccountId, Balance, BlockNum, Hash, Moment>
 	}
 }
 
-impl<AccountId, Balance, BlockNum, Hash, Moment>
-	From<(CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)>
-	for TaskOutput<AccountId, Balance, BlockNum, Hash, Moment>
-{
-	fn from((id, coins): (CollectedCoinsId<Hash>, CollectedCoinsStruct<Hash, Balance>)) -> Self {
-		Self::CollectCoins(id, coins)
-	}
-}
-
 #[cfg(test)]
 pub(crate) mod test {
-	use crate::{
-		helpers::extensions::HexToAddress, loan_terms::InvalidTermLengthError, mock,
-		ocw::tasks::collect_coins::tests::TX_HASH, tests::TestInfo, *,
-	};
+	use crate::{loan_terms::InvalidTermLengthError, mock, tests::TestInfo, *};
 	use frame_support::BoundedVec;
 	use parity_scale_codec::{Decode, Encode};
 	use sp_runtime::testing::H256;
 
 	type AccountId = mock::AccountId;
-	type Balance = mock::Balance;
 	type BlockNum = mock::BlockNumber;
 	type Hash = H256;
 	type Moment = u64;
@@ -665,24 +641,6 @@ pub(crate) mod test {
 		test_info.create_funding_transfer(&deal_order_id)
 	}
 
-	fn create_collected_coins() -> CollectedCoinsStruct<Hash, Balance> {
-		CollectedCoinsStruct {
-			to: AddressId::new::<mock::Test>(&Blockchain::Rinkeby, b"tester"),
-			amount: 1000,
-			tx_id: TX_HASH.hex_to_address(),
-			contract_type: types::ContractType::GCRE,
-		}
-	}
-
-	fn create_unverified_collected_coins() -> UnverifiedCollectedCoins {
-		UnverifiedCollectedCoins {
-			to: b"baba".to_vec().try_into().unwrap(),
-			tx_id: TX_HASH.hex_to_address(),
-			contract: Default::default(),
-			contract_type: types::ContractType::GCRE,
-		}
-	}
-
 	pub(crate) fn create_unverified_transfer(
 	) -> UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> {
 		let test_info = TestInfo::new_defaults();
@@ -711,9 +669,7 @@ pub(crate) mod test {
 	blockchain: Blockchain : Blockchain::Bitcoin,
 	transfer_kind: TransferKind : TransferKind::Native,
 	address: Address<AccountId> : create_address(),
-	collected_coins: CollectedCoinsStruct<Hash, Balance> : create_collected_coins(),
 	transfer: Transfer<AccountId, BlockNum, Hash, Moment> : create_funding_transfer().1,
-	unverified_collected_coins: UnverifiedCollectedCoins : create_unverified_collected_coins(),
 	unverified_transfer: UnverifiedTransfer<AccountId, BlockNum, Hash, Moment> : create_unverified_transfer(),
 	offer: Offer<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_offer().1,
 	ask_order: AskOrder<AccountId, BlockNum, Hash> : TestInfo::new_defaults().create_ask_order().1,
@@ -728,9 +684,8 @@ pub(crate) mod test {
 	transfer_id: TransferId<Hash> : TransferId::new::<mock::Test>(&Blockchain::Rinkeby, b"0"),
 	collected_coins_id: CollectedCoinsId<Hash> : CollectedCoinsId::new::<mock::Test>(&Blockchain::Rinkeby, &[0]),
 	legacy_sighash: LegacySighash : LegacySighash::default(),
-	task: Task<AccountId, BlockNum, Hash, Moment> : Task::<AccountId, BlockNum, Hash, Moment>::from(create_unverified_collected_coins()),
 	task_id: TaskId<Hash> : TaskId::from(create_funding_transfer().0),
-	task_output: TaskOutput<AccountId, Balance, BlockNum, Hash, Moment> : TaskOutput::<AccountId, Balance, BlockNum, Hash, Moment>::from(
+	task_output: TaskOutput<AccountId, BlockNum, Hash, Moment> : TaskOutput::<AccountId, BlockNum, Hash, Moment>::from(
 		create_funding_transfer()
 	),
 

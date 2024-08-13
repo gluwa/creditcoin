@@ -2,7 +2,7 @@
 
 Install Node.js and Yarn. You can do so from here: <https://nodejs.org/en/download>
 
-**WARNING:** Node.js 14.x || 16.x is required
+**WARNING:** Node.js 20.x is required
 
 Alternatively, a convenient tool to manage Node/npm installations is `nvm`.
 You can get it here: <https://github.com/nvm-sh/nvm#installing-and-updating>
@@ -10,9 +10,9 @@ You can get it here: <https://github.com/nvm-sh/nvm#installing-and-updating>
 And then install the required version as follows.
 
 ```bash
-nvm install 16
-nvm alias default 16
-nvm use 16
+nvm install 20
+nvm alias default 20
+nvm use 20
 ```
 
 We use Yarn for our package management and build scripts. To install Yarn enter:
@@ -28,7 +28,7 @@ This test suite is built with creditcoin-js, Polkadot.js and Jest!
    for more information:
 
 ```bash
-cargo run --release -- --dev --mining-key 5DkPYq8hFiCeGxFBkz6DAwnTrvKevAJfTYrzFtr9hpDsEAU1 --monitor-nonce auto
+cargo run --release --bin creditcoin-node -- --dev --monitor-nonce auto
 ```
 
 1. Execute a local Ethereum node:
@@ -79,8 +79,8 @@ options replace `test` with `jest`. For example:
 yarn jest src/test/collect-coins.test.ts
 ```
 
-You can use `CREDITCOIN_WS_PORT` and `CREDITCOIN_METRICS_PORT` environment variables
-to adjust the port values when running this test suite against a local node. That's mainly
+You can use `CREDITCOIN_API_URL`, `CREDITCOIN_WS_PORT` and `CREDITCOIN_METRICS_PORT` environment variables
+to adjust the some values when running this test suite against a local node. That's mainly
 useful for executing the loan cycle against a Zombienet chain running locally.
 
 

@@ -1,11 +1,14 @@
 # Running a Creditcoin node
 
+_Note on runtime platforms: running a Creditcoin node is easiest on a Unix-like environment (whether that be Linux, MacOS, or WSL).
+Running natively on Windows [is unsupported](https://github.com/gluwa/creditcoin/security/advisories/GHSA-cx5c-xwcv-vhmq)._
+
 ## Running a development node
 
 Now that you've built a `creditcoin-node` from source, you can get a minimal development node running with:
 
 ```bash
-./target/release/creditcoin-node --dev --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --mining-threads 1
+./target/release/creditcoin-node --dev
 ```
 
 The node should start running and produce output similar to below:
@@ -39,8 +42,8 @@ The node should start running and produce output similar to below:
 ```
 
 By default this is a temporary chain, so when you stop your development node the chain will be wiped out. If you want a local development
-chain that is persistent, you can use the `local` chain specification:
+chain that is persistent, you can use the `--base-path` flag to specify a directory where the chain's data will be stored:
 
 ```bash
-./target/release/creditcoin-node --chain local --validator --mining-key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY --mining-threads 2
+./target/release/creditcoin-node --dev --base-path persistent-chain
 ```

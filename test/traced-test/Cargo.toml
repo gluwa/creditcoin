@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tracing-core = "0.1.31"
-tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+tracing-core = "0.1.32"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 [dev-dependencies]
 tracing.workspace = true

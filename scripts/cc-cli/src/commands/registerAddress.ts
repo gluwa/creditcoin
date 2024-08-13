@@ -6,6 +6,8 @@ import { Wallet } from "ethers";
 import { signAccountId } from "creditcoin-js/lib/utils";
 import { AddressRegistered } from "creditcoin-js/lib/extrinsics/register-address";
 import { utils } from "ethers";
+import { getErrorMessage } from "../utils/error";
+import prompts from "prompts";
 
 const blockchains = ["Ethereum", "Rinkeby", "Luniverse", "Bitcoin", "Other"];
 
@@ -14,16 +16,15 @@ export function makeRegisterAddressCmd() {
     "-b, --blockchain <chain> The blockchain that this external address belongs to",
   ).choices(blockchains);
 
-  const privateKeyOpt = new Option(
-    "-p, --private-key <key> The private key for the Ethereum address that you want to register.",
-  ).env("ETH_PRIVATE_KEY");
-
   return new Command("register-address")
     .description(
       "Link a CreditCoin address to an address from another blockchain",
     )
-    .addOption(privateKeyOpt)
     .addOption(blockchainOpt)
+    .option(
+      "--eth-mnemonic",
+      "Specify the ethereum address using a mnemonic rather than a private key",
+    )
     .action(registerAddressAction);
 }
 
@@ -35,9 +36,11 @@ async function registerAddressAction(options: OptionValues) {
     extrinsics: { registerAddress },
   } = await newApi(options.url);
 
-  // Reads CC_SECRET env variable if it exists or propmpts the user to enter a mneumonic
+  // Reads CC_SECRET env variable if it exists or propmpts the user to enter a mnemonic
   const signer = await initCallerKeyring(options);
-  const wallet = new Wallet(options.privateKey);
+
+  // Reads ETH_PRIVATE_KEY env variable if found or prompts the user to enter an ethereum mnemonic
+  const wallet = await initCallerEthWallet(options);
 
   // create the cryptographic proof of ownership
   const proof = signAccountId(api, wallet, signer.address);
@@ -68,14 +71,6 @@ function validateOptsOrExit(options: OptionValues) {
       `ERROR: A blockchain must be specified (possible values: ${blockchains.toString()})`,
     );
   }
-
-  if (options.privateKey === undefined) {
-    fatalErr("ERROR: No external address specified");
-  }
-
-  if (!isValidPrivateKey(options.privateKey)) {
-    fatalErr(`ERROR: Invalid private key: ${options.privateKey as string}`);
-  }
 }
 
 export function fatalErr(s: string) {
@@ -90,4 +85,91 @@ function errorMsg(s: string) {
 // https://github.com/ethers-io/ethers.js/discussions/2939
 export function isValidPrivateKey(pk: string): boolean {
   return utils.isHexString(pk, 32);
+}
+
+export async function initCallerEthWallet(
+  options: OptionValues,
+): Promise<Wallet> {
+  try {
+    return await initWalletFromEnvOrPrompt("ETH_PRIVATE_KEY", options);
+  } catch (e) {
+    console.error(getErrorMessage(e));
+    process.exit(1);
+  }
+}
+
+async function initWalletFromEnvOrPrompt(
+  envVar: string,
+  options: OptionValues,
+): Promise<Wallet> {
+  const interactive = options.input;
+  const useMnemonic = options.ethMnemonic;
+  const inputName = useMnemonic ? "mnemonic" : "private key";
+  const generateWallet = useMnemonic
+    ? newWalletFromMnemonic
+    : newWalletFromPrivateKey;
+  const validateInput = useMnemonic ? isMnemonicValid : isValidPrivateKey;
+
+  if (!interactive && process.env[envVar] === undefined) {
+    throw new Error(
+      "Error: Must specify a private key using the environment variable ETH_PRIVATE_KEY or an interactive prompt",
+    );
+  }
+
+  if (process.env[envVar] !== undefined) {
+    const seed = process.env[envVar];
+
+    if (!validateInput(seed)) {
+      throw new Error(`Error: ${inputName} is invalid`);
+    }
+
+    return generateWallet(seed);
+  } else if (interactive) {
+    const promptResult = await prompts([
+      {
+        type: "password",
+        name: "seed",
+        message: `Specify the ${inputName} for the ethereum address`,
+        validate: validateInput,
+      },
+    ]);
+
+    const seed = promptResult.seed;
+
+    if (!seed) {
+      throw new Error(
+        `The ${inputName} could not be retrieved from the prompt`,
+      );
+    }
+
+    return generateWallet(seed);
+  }
+
+  throw new Error("The ethereum wallet could not be generated");
+}
+
+export function newWalletFromMnemonic(mnemonic: string): Wallet {
+  try {
+    return Wallet.fromMnemonic(mnemonic);
+  } catch (e) {
+    throw new Error(
+      `Error: Could not create wallet from mnemonic: ${getErrorMessage(e)}`,
+    );
+  }
+}
+
+export function newWalletFromPrivateKey(pk: string): Wallet {
+  try {
+    return new Wallet(pk);
+  } catch (e) {
+    throw new Error(
+      `Error: Could not create wallet from private key: ${getErrorMessage(e)}`,
+    );
+  }
+}
+
+// This wrapper function is needed to ensure comaptibility with the validate function in the prompt call
+// see initWalletFromEnvOrPrompt for details
+export function isMnemonicValid(mnemonic: string): boolean {
+  return utils.isValidMnemonic(mnemonic);
 }

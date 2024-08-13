@@ -6,7 +6,7 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends ca-certificates curl && \
     update-ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs --no-install-recommends && \
     npm install -g yarn
 
@@ -30,11 +30,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | /bin/sh -s -- -y
 COPY --chown=creditcoin:creditcoin . /creditcoin-node/
 # shellcheck source=/dev/null
 RUN source ~/.cargo/env && \
-    source ./ci/env && \
-    rustup default $RUSTC_VERSION && \
-    rustup update $RUSTC_VERSION && \
-    rustup target add wasm32-unknown-unknown --toolchain $RUSTC_VERSION && \
-    source ~/.cargo/env && \
     cargo build --release
 
 
