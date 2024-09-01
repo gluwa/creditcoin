@@ -38,7 +38,7 @@ hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 hex-literal = { version = "0.3.4" }
 jsonrpc-core = { version = "18.0.0" }
 jsonrpsee = { version = "0.16.3" }
-log = { version = "0.4.21" }
+log = { version = "0.4.22" }
 parity-scale-codec = { version = "3.2.1", default-features = false, features = [
     "derive",
 ] }
