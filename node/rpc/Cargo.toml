@@ -23,7 +23,7 @@ task-scheduler-runtime-api = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 test-client = { path = "../../test/client" }
-tokio = { version = "1.39.2", features = ["full"] }
+tokio = { version = "1.40.0", features = ["full"] }
 
 
 [features]
