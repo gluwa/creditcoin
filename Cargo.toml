@@ -127,7 +127,7 @@ tracing = { package = "sp-tracing", branch = "pos-keep-history-polkadot-v0.9.41"
 frame-try-runtime = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 sp-externalities = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
 substrate-wasm-builder = "10.0.0"
-try-runtime-cli = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
+try-runtime-cli = { tag = "v0.7.0", git = "https://github.com/paritytech/try-runtime-cli.git" }
 sp-keyring = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 sc-consensus-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git" }
 sp-consensus-babe = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
