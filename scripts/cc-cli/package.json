@@ -33,7 +33,7 @@
     "web3-validator": "^2.0.1"
   },
   "devDependencies": {
-    "@polkadot/typegen": "9.14.2",
+    "@polkadot/typegen": "13.2.1",
     "@types/jest": "^29.5.12",
     "@types/prompts": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
