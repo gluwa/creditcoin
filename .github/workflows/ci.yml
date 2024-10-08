@@ -1,0 +1,818 @@
+---
+name: CI
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [main, testnet, dev]
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions: read-all
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build docker image
+        run: |
+          docker build -t gluwa/creditcoin .
+
+      - name: Start a container from image
+        run: |
+          # see https://opensource.com/article/18/5/how-find-ip-address-linux
+          IP_ADDRESS=$(curl https://ifconfig.me)
+          echo "INFO: IP_ADDRESS=$IP_ADDRESS"
+
+          docker run --rm --name creditcoin-validator -d -p 9933:9933 -p 30333:30333 gluwa/creditcoin   \
+              --validator --chain mainnet                                   \
+              --name "test-node-$GITHUB_RUN_ID-attempt-$GITHUB_RUN_ATTEMPT" \
+              --public-addr "/dns4/$IP_ADDRESS/tcp/30333" \
+              --prometheus-external \
+              --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+              --telemetry-url "wss://telemetry.creditcoin.network/submit/ 0" \
+              --bootnodes "/dns4/bootnode.creditcoin.network/tcp/30333/p2p/12D3KooWAEgDL126EUFxFfdQKiUhmx3BJPdszQHu9PsYsLCuavhb" "/dns4/bootnode2.creditcoin.network/tcp/30333/p2p/12D3KooWSQye3uN3bZQRRC4oZbpiAZXkP2o5UZh6S8pqyh24bF3k" "/dns4/bootnode3.creditcoin.network/tcp/30333/p2p/12D3KooWFrsEZ2aSfiigAxs6ir2kU6en4BewotyCXPhrJ7T1AzjN" \
+              --port 30333 --unsafe-rpc-external
+
+      - name: Healtcheck
+        run: |
+          sleep 60
+          ./scripts/check-health.sh
+
+      - name: Sanity test creditcoin-cli inside the container
+        run: |
+          docker exec creditcoin-validator which creditcoin-cli
+          docker exec creditcoin-validator creditcoin-cli wizard --help
+
+      - name: Kill the container
+        run: |
+          # this will also kill the parent container
+          sudo killall -9 creditcoin-node
+          sleep 10
+          docker rm -f creditcoin-validator
+          sleep 10
+
+      - name: Start container via compose
+        run: |
+          docker compose up -d
+
+      - name: Sanity check for persistently mounted directory
+        run: |
+          sleep 60
+          docker exec creditcoin-validator ls -ld /creditcoin-node/data
+          docker exec creditcoin-validator ls -la /creditcoin-node/data
+
+      - name: Kill the container
+        run: |
+          # this will also kill the parent container
+          sudo killall -9 creditcoin-node
+
+  sanity-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for parity between extrinsics, benchmarks and weights
+        run: |
+          echo "INFO: active pallets are"
+          ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets
+          echo "========================"
+          ./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh
+
+      - name: Check migrations
+        run: |
+          ./scripts/check-usage-of-log-warn.sh
+
+      - name: Check if Cargo.toml specifies dependencies from forks
+        run: |
+          ./scripts/check-for-used-forks.sh
+
+  sanity-test-cli:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g yarn
+
+      - name: Install creditcoin-js & creditcoin-cli
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && yarn build && npm install -g . && popd
+
+      - name: Execute creditcoin-cli command
+        run: |
+          # this makes sure we have a creditcoin-cli entrypoint in the standard PATH
+          creditcoin-cli help
+
+  audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo audit
+        run: |
+          cargo install cargo-audit --features=fix
+
+      - name: Run cargo audit
+        run: |
+          cargo audit --ignore RUSTSEC-2020-0071
+          CC_MATCH=$(cargo audit --ignore RUSTSEC-2020-0071 --color never | grep -E "^.── creditcoin" || true)
+
+          # fail for anything which is a 1st level dependency of Creditcoin
+          if [ -n "$CC_MATCH" ]; then
+              echo "FAIL: Direct dependencies of Creditcoin found in audit report"
+              echo "INFO: Inspect the output above for more information"
+              exit 1
+          else
+              echo "INFO: No direct dependencies of Creditcoin found in audit report"
+              exit 0
+          fi
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          profile: minimal
+          override: true
+          components: rustfmt
+
+      - name: Check formatting
+        uses: gluwa/cargo@dev
+        with:
+          command: fmt
+          args: -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run Clippy
+        uses: gluwa/cargo@dev
+        with:
+          command: clippy
+          args: --all-targets --all-features -- -D warnings -A clippy::too_many_arguments -A clippy::type_complexity
+
+  check:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check Build
+        run: |
+          SKIP_WASM_BUILD=1 cargo check --release
+
+      - name: Check Build for Benchmarking
+        run: |
+          SKIP_WASM_BUILD=1 cargo check --features=runtime-benchmarks --release
+
+  unit-test-creditcoin:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set-Up
+        env:
+          HOMEBREW_NO_INSTALL_CLEANUP: true
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
+        run: |
+          brew update
+          brew install cmake openssl protobuf
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Configure flags for collecting coverage
+        run: |
+          # shellcheck disable=SC2129
+          echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
+          echo "RUSTDOCFLAGS=-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests" >> "$GITHUB_ENV"
+
+      - name: Run tests
+        uses: gluwa/cargo@dev
+        with:
+          command: test
+          args: --features=try-runtime -- --test-threads 1
+        env:
+          CARGO_INCREMENTAL: ${{ env.CARGO_INCREMENTAL }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }}
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }}
+
+      - id: coverage
+        continue-on-error: true
+        uses: actions-rs/grcov@v0.1
+        with:
+          config: .grcov.yml
+
+      - uses: codecov/codecov-action@v4
+        with:
+          files: ${{ steps.coverage.outputs.report }}
+          fail_ci_if_error: false
+          verbose: true
+
+  unit-test-cli:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g yarn
+
+      - name: Execute tests
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd scripts/cc-cli
+
+          yarn upgrade 'creditcoin-js'
+          yarn test:unit
+          popd
+
+      - uses: codecov/codecov-action@v4
+        with:
+          files: scripts/cc-cli/coverage/lcov.info
+          fail_ci_if_error: false
+          verbose: true
+
+  build-creditcoin-node:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build SUT
+        uses: gluwa/cargo@dev
+        with:
+          command: build
+          args: --release --features fast-runtime
+
+      - name: Upload creditcoin-node binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: creditcoin-node
+          path: target/release/creditcoin-node
+
+      - name: Upload WASM runtime
+        uses: actions/upload-artifact@v4
+        with:
+          name: creditcoin_node_runtime.compact.compressed.wasm
+          path: target/release/wbuild/creditcoin-node-runtime/creditcoin_node_runtime.compact.compressed.wasm
+
+  integration-test-cli:
+    needs:
+      - build-creditcoin-node
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start local Ethereum node
+        run: |
+          docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
+
+      - name: Download creditcoin-node binary
+        uses: actions/download-artifact@v4
+        with:
+          name: creditcoin-node
+          path: target/release
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g yarn
+
+      - name: Install creditcoin-js & creditcoin-cli
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd scripts/cc-cli && yarn upgrade 'creditcoin-js' && yarn build && popd
+
+      - name: Start Node 1
+        run: |
+          chmod a+x ./target/release/creditcoin-node
+          ./target/release/creditcoin-node \
+            --chain local \
+            --validator --alice  --pruning archive \
+            --node-key d182d503b7dd97e7c055f33438c7717145840fd66b2a055284ee8d768241a463 \
+            --base-path ./alice-data &
+
+      - name: Start Node 2
+        run: |
+          ./target/release/creditcoin-node \
+            --chain local \
+            --validator --bob --pruning archive \
+            --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWKEKymnBDKfa8MkMWiLE6DYbC4aAUciqmYucm7xFKK3Au \
+            --port 30335 --ws-port 9945 --rpc-port 9935 \
+            --base-path ./bob-data &
+
+      - name: Wait for nodes to start
+        run: |
+          ./integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9933'
+          ./integration-tests/wait-for-creditcoin.sh 'http://127.0.0.1:9935'
+
+      - name: Run integration tests
+        run: |
+          pushd scripts/cc-cli
+          yarn test:integration
+          popd
+
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: scripts/cc-cli/coverage/lcov.info
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Kill nodes
+        if: always()
+        continue-on-error: true
+        run: |
+          # if all went well kill the node. Otherwise GitHub Actions would exit on the
+          # previous step killing everything and we don't have to worry about
+          # dangling processes
+          killall -9 creditcoin-node
+
+  build-creditcoin-transaction-producer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+          repository: gluwa/creditcoin-transaction-producer
+          path: creditcoin-transaction-producer
+
+      - name: Configure rustc version
+        run: |
+          source creditcoin-transaction-producer/ci/env
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build creditcoin-transaction-producer
+        run: |
+          pushd creditcoin-transaction-producer/
+
+          cargo install just
+          just install
+          just build
+
+          popd
+
+          # archive the entire directory, together with binary artifacts and FE artifacts
+          tar -czvf creditcoin-transaction-producer.tar.gz creditcoin-transaction-producer/
+
+      - name: Upload creditcoin-transaction-producer archive
+        uses: actions/upload-artifact@v4
+        with:
+          path: creditcoin-transaction-producer.tar.gz
+          name: creditcoin-transaction-producer.tar.gz
+
+  tools-creditcoin-transaction-producer:
+    runs-on: ubuntu-latest
+    needs:
+      - build-creditcoin-node
+      - build-creditcoin-transaction-producer
+
+    steps:
+      - name: Start local Ethereum node
+        run: |
+          docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
+
+      - name: Download creditcoin-node binary
+        uses: actions/download-artifact@v4
+        with:
+          name: creditcoin-node
+          path: target/release
+
+      - name: Start creditcoin-node
+        run: |
+          chmod a+x ./target/release/creditcoin-node
+          ./target/release/creditcoin-node --dev --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+
+      - uses: actions/checkout@v4
+
+      - name: Wait for creditcoin-node to start
+        run: |
+          ./integration-tests/wait-for-creditcoin.sh
+
+      - name: Download creditcoin-transaction-producer archive
+        uses: actions/download-artifact@v4
+        with:
+          name: creditcoin-transaction-producer.tar.gz
+
+      - name: Start creditcoin-transaction-producer
+        run: |
+          tar -xzvf creditcoin-transaction-producer.tar.gz
+          pushd creditcoin-transaction-producer/
+
+          # Deployer Seed is Private Key for Account #0 in hardhat
+          # Funded Account Seed is Alice
+          ./target/release/creditcoin-transaction-producer --max-accounts 20 --max-chain-apis 25 \
+              --funded-account-seed '0xe5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a' \
+              --deployer-seed '0xabf82ff96b463e9d82b83cb9bb450fe87e6166d4db6d7021d0c71d7e960d5abe' \
+              --setup --frontend ./dist  >~/creditcoin-transaction-producer.log 2>&1 &
+
+          popd
+
+      - name: Sanity check that creditcoin-transaction-producer started
+        run: |
+          sleep 20
+          ./scripts/check-transaction-producer.sh
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transaction-producer-logs
+          path: ~/creditcoin-*.log
+
+      - name: Kill SUT
+        if: always()
+        continue-on-error: true
+        run: |
+          killall -9 creditcoin-node
+          killall -9 creditcoin-transaction-producer
+
+  integration-test-loan-cycle:
+    needs:
+      - build-creditcoin-node
+    runs-on: ubuntu-22.04
+    # checkov:skip=CKV2_GHA_1:We need this for creditcoin-js typedefs auto-commit
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Download creditcoin-node binary
+        uses: actions/download-artifact@v4
+        with:
+          name: creditcoin-node
+          path: target/release
+
+      - name: Start SUT
+        run: |
+          chmod a+x ./target/release/creditcoin-node
+          ./target/release/creditcoin-node --dev --monitor-nonce auto >~/creditcoin-node.log 2>&1 &
+
+      - name: Start local Ethereum node
+        run: |
+          docker run --rm -p 8545:8545 -d gluwa/hardhat-dev
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g yarn
+
+      - name: Prepare for integration tests
+        run: |
+          pushd integration-tests/
+
+          # wait for creditcoin-node to initialize
+          ./yarn-install-and-wait-for-creditcoin.sh
+          git checkout yarn.lock
+
+          popd
+
+      - name: Auto-update typedefs
+        id: update_typedefs
+        run: |
+          pushd creditcoin-js/
+
+          ./get-metadata.sh
+          yarn build:types
+          yarn format
+
+          echo "========== DEBUG DEBUG DEBUG =========="
+          git status --short
+          git diff
+          echo "======================================="
+
+          if [ -n "$(git status --short)" ]; then
+              git diff
+              echo "git_diff=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          popd
+
+      - name: Execute integration tests
+        run: |
+          pushd integration-tests/
+
+          yarn test
+
+          popd
+
+      - name: Git diff in case of failure
+        if: failure()
+        run: |
+          git diff
+
+      - name: Commit changes for typedefs
+        if: ${{ success() && steps.update_typedefs.outputs.git_diff == 'true' }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: gluwa-bot
+          author_email: creditcoin@gluwa.com
+          message: "Auto-update creditcoin-js type definitions"
+          github_token: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs
+          path: ~/creditcoin-node.log
+
+      - name: Kill SUT
+        run: |
+          # if all went well kill the node. Otherwise GitHub Actions would exit on the
+          # previous step killing everything and we don't have to worry about
+          # dangling processes
+          killall -9 creditcoin-node
+
+  javascript-lint:
+    name: javascript-lint / ${{ matrix.directory }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        directory:
+          [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g yarn
+
+      - name: Run tools
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd ${{ matrix.directory }}
+
+          yarn upgrade 'creditcoin-js'
+          yarn lint
+          popd
+
+  javascript-typecheck:
+    name: javascript-typecheck / ${{ matrix.directory }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        directory:
+          [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g yarn
+
+      - name: Run tools
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd ${{ matrix.directory }}
+
+          yarn upgrade 'creditcoin-js'
+          yarn typecheck
+          popd
+
+  javascript-format:
+    name: javascript-format / ${{ matrix.directory }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        directory:
+          [creditcoin-js, integration-tests, scripts/js, scripts/cc-cli]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g yarn
+
+      - name: Run tools
+        run: |
+          pushd creditcoin-js/ && yarn install && yarn pack && popd
+          pushd ${{ matrix.directory }}
+
+          yarn upgrade 'creditcoin-js'
+          if ! yarn check-format; then
+              echo "FAIL: JavaScript is not formatted properly!"
+              echo "HELP: Execute 'yarn format' and commit the changes to fix this"
+              exit 1
+          fi
+
+          popd
+
+  benchmark:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inspect benchmark CI config
+        run: |
+          # WARNING: Command below may differ depending on which workflow config file
+          # your job is defined in !!! Don't copy&paste it blindly !!!
+          PALLETS_IN_CI_CONFIG=$(grep "./scripts/bench.sh -p" .github/workflows/ci.yml | grep -v PALLETS_IN_CI_CONFIG | tr -s ' ' | cut -d' ' -f4 | sort | xargs)
+
+          PALLETS_IN_SOURCE=$(./scripts/check-parity-bw-extrinsics-benchmarks-weights.sh --show-pallets)
+          if [ "$PALLETS_IN_CI_CONFIG" != "$PALLETS_IN_SOURCE" ]; then
+              echo "FAIL: Pallet mismatch between source code and benchmark CI config"
+              echo "INFO: in source: '$PALLETS_IN_SOURCE'"
+              echo "INFO: CI config: '$PALLETS_IN_CI_CONFIG'"
+              exit 1
+          fi
+
+      - name: Set-Up
+        run: |
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build benchmarks
+        uses: gluwa/cargo@dev
+        with:
+          command: build
+          args: --release --features runtime-benchmarks
+
+      - name: Check if runner machine meets chain's requirements
+        continue-on-error: true
+        run: |
+          ./scripts/check-hardware.sh
+
+      - name: Run benchmarks to generate dummy weights
+        run: |
+          ./scripts/bench.sh -p creditcoin -b -r 1 -s 2
+          ./scripts/bench.sh -p offchain_task_scheduler -b -r 1 -s 2
+          ./scripts/bench.sh -p rewards -b -r 1 -s 2
+
+      # check if automatically generated weights compile
+      - name: Rebuild SUT with newly generated weights
+        uses: gluwa/cargo@dev
+        with:
+          command: build
+          args: --release
+
+  shellcheck:
+    name: "🐚 Shellcheck"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        env:
+          SHELLCHECK_OPTS: -e SC2002 # allow useless cat commands

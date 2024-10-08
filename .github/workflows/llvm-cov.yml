@@ -1,0 +1,102 @@
+---
+name: llvm-cov
+
+# Controls when the action will run.
+on:
+  pull_request:
+
+permissions: read-all
+
+jobs:
+  upload-coverage-info:
+    runs-on: ubuntu-22.04
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set-Up
+        run: |
+          # https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt#option-1-install-with-one-command
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+          sudo apt-get update
+          sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl protobuf-compiler
+
+      - name: Configure rustc version
+        run: |
+          RUSTC_VERSION=$(grep channel rust-toolchain.toml | tail -n1 | tr -d " " | cut -f2 -d'"')
+          echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install Rust toolchain
+        uses: gluwa/toolchain@dev
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+          components: llvm-tools-preview
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2.44.15
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Run tests
+        if: env.GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+        id: coverage
+        run: |
+          PR_NUMBER=$(echo "$GITHUB_REF" | sed "s|refs/pull/||" | sed "s|/merge||")
+          export PR_NUMBER
+          echo "**For full LLVM coverage report [click here](https://staticsitellvmhtml.z13.web.core.windows.net/$PR_NUMBER/html/)!**" > uncovered-lines.log
+
+          cargo llvm-cov --features=try-runtime \
+              --workspace --html --show-missing-lines --hide-instantiations \
+              --ignore-filename-regex "(tests.rs|mock.rs)"
+
+          UNCOVERED_LINES=$(sed "s|$(pwd)|.|" uncovered-lines.log)
+          # workaround the fact that GitHub Actions doesn't support multi-line output
+          # https://trstringer.com/github-actions-multiline-strings/
+          UNCOVERED_LINES="${UNCOVERED_LINES//'%'/'%25'}"
+          UNCOVERED_LINES="${UNCOVERED_LINES//$'\n'/'%0A'}"
+          UNCOVERED_LINES="${UNCOVERED_LINES//$'\r'/'%0D'}"
+          echo "uncovered_lines=$UNCOVERED_LINES" >> "$GITHUB_OUTPUT"
+
+      - name: Azure login
+        if: env.GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          allow-no-subscriptions: true
+
+      - name: Upload coverage report to Azure Storage
+        if: env.GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+        run: |
+          AZURE_STORAGE_KEY=${{ secrets.LLVM_AZURE_STORAGE_KEY }}
+          export AZURE_STORAGE_KEY
+          PR_NUMBER=$(echo "$GITHUB_REF" | sed "s|refs/pull/||" | sed "s|/merge||")
+          export PR_NUMBER
+
+          az storage blob upload-batch --account-name staticsitellvmhtml --auth-mode key -d "\$web" --destination-path "$PR_NUMBER" --overwrite -s ./target/llvm-cov
+
+      - name: Post comment to PR
+        if: env.GITHUB_TOKEN
+        uses: mshick/add-pr-comment@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREDITCOIN_GITHUB_API_TOKEN }}
+        with:
+          message: ${{ steps.coverage.outputs.uncovered_lines }}
+          allow-repeats: false
+
+      - name: Upload coverage report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: target/llvm-cov/html/

@@ -1,0 +1,275 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Runtime - Creditcoin Dev Guide</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../highlight.css">
+        <link rel="stylesheet" href="../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../../getting-started.html"><strong aria-hidden="true">1.</strong> Getting started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../getting-started/building.html"><strong aria-hidden="true">1.1.</strong> Building from source</a></li><li class="chapter-item expanded "><a href="../../getting-started/running-a-node.html"><strong aria-hidden="true">1.2.</strong> Running a development node</a></li><li class="chapter-item expanded "><a href="../../getting-started/observing-your-chain.html"><strong aria-hidden="true">1.3.</strong> Observing your development chain</a></li><li class="chapter-item expanded "><a href="../../getting-started/substrate-resources.html"><strong aria-hidden="true">1.4.</strong> Learning about substrate</a></li></ol></li><li class="chapter-item expanded "><a href="../../architecture.html"><strong aria-hidden="true">2.</strong> Architecture and Repo Layout</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../architecture/client.html"><strong aria-hidden="true">2.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="../../architecture/runtime/runtime.html" class="active"><strong aria-hidden="true">2.2.</strong> Runtime</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../architecture/runtime/pallet-creditcoin.html"><strong aria-hidden="true">2.2.1.</strong> Creditcoin pallet</a></li><li class="chapter-item expanded "><a href="../../architecture/runtime/pallet-difficulty.html"><strong aria-hidden="true">2.2.2.</strong> Difficulty pallet</a></li></ol></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Creditcoin Dev Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="runtime"><a class="header" href="#runtime">Runtime</a></h1>
+<h2 id="what-is-a-runtime"><a class="header" href="#what-is-a-runtime">What is a runtime?</a></h2>
+<p>At a high level, the runtime is the "business logic" of the chain.
+More precisely, the runtime primarily acts as the state transition function for the blockchain. Roughly you can think of each block
+as containing a set of operations to perform (transactions) and a snapshot of the state of the world after those operations
+have been carried out. Then, to link a series of blocks together each block has a pointer to its predecessor.
+The runtime, then, is what dictates how to actually execute those operations and how the state of the world is
+modified in the process. You may also see the runtime and its components referred to as the on-chain logic. On-chain in this context means
+an execution environment that can modify the state of the chain, and all modifications to state will be tracked and recorded.</p>
+<h2 id="how-is-the-runtime-organized"><a class="header" href="#how-is-the-runtime-organized">How is the runtime organized?</a></h2>
+<p>Substrate (which creditcoin builds on) uses the FRAME framework to define independent modules (called <em>pallets</em>)
+which can be composed to build up the runtime. So, for instance, you might have a <a href="https://github.com/paritytech/substrate/tree/master/frame/balances">pallet</a>
+which maintains balances for a set of accounts and provides operations on those balances (transfer funds, deposit funds, withdrawals, etc.).</p>
+<p>The <code>creditcoin-node-runtime</code> crate (found in the <code>runtime</code> directory) is where we glue together all of the pieces of on-chain logic, and
+basically consists of configuring all of the pallets we use and incorporating them into the runtime.</p>
+<p>For each pallet, you'll probably have a <code>Config</code> trait which allows pallets to be generic over certain types
+that can be configured at the runtime level. For instance, here is where we decide that block numbers are
+represented by a <code>u32</code> and balances by a <code>u128</code>. For each pallet the runtime has to implement the <code>Config</code> trait.</p>
+<p>Some pallets also define runtime APIs. For the most part you can ignore these, but for context runtime APIs are essentially an interface
+for the outer node/client to call into the runtime. So, for instance, if you wanted to expose an RPC that needed some information from the runtime,
+you would define a runtime API, implement the logic in the runtime, and then call your runtime API from the RPC handler.</p>
+<p>Pretty much the entirety of the runtime is in <a href="https://github.com/gluwa/creditcoin/tree/dev/runtime/src/lib.rs"><code>lib.rs</code></a>. If you need to increase the runtime version
+(required after non-backwards-compatible changes to the runtime, i.e. any consensus-affecting change) that's in <a href="https://github.com/gluwa/creditcoin/tree/dev/runtime/src/version.rs"><code>version.rs</code></a></p>
+<h2 id="what-pallets-do-we-use"><a class="header" href="#what-pallets-do-we-use">What pallets do we use?</a></h2>
+<p>A bunch.</p>
+<h3 id="external-pallets"><a class="header" href="#external-pallets">External Pallets</a></h3>
+<p>These pallets are all part of substrate and aren't maintained by the creditcoin developers:</p>
+<ul>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/pallet_balances/index.html">Balances</a></li>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/frame_system/index.html">FRAME System</a></li>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/pallet_scheduler/index.html">Scheduler</a></li>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/pallet_staking/index.html">Staking</a></li>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/pallet_sudo/index.html">Sudo</a></li>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/pallet_timestamp/index.html">Timestamp</a></li>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/pallet_transaction_payment/index.html">Transaction Payment</a></li>
+<li><a href="https://paritytech.github.io/polkadot-sdk/master/pallet_utility/index.html">Utility</a></li>
+</ul>
+<h3 id="internal-pallets"><a class="header" href="#internal-pallets">Internal Pallets</a></h3>
+<p>These pallets are written and maintained by the creditcoin developers:</p>
+<ul>
+<li><a href="./pallet-creditcoin.html">Creditcoin</a></li>
+<li><a href="pallet-difficulty.html">Difficulty</a></li>
+<li><a href="https://github.com/gluwa/creditcoin/tree/dev/pallets/rewards">Rewards</a></li>
+<li><a href="https://github.com/gluwa/creditcoin/tree/dev/pallets/offchain-task-scheduler">Offchain Task Scheduler</a></li>
+</ul>
+<p>The majority of the creditcoin developers' work is spent developing these pallets (and probably more in the future).</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../architecture/client.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../architecture/runtime/pallet-creditcoin.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../architecture/client.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../architecture/runtime/pallet-creditcoin.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../mermaid.min.js"></script>
+        <script src="../../mermaid-init.js"></script>
+
+
+    </div>
+    </body>
+</html>
