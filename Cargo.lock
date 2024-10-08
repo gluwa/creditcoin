@@ -1225,6 +1225,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "creditcoin-fuzzer"
+version = "2.231.0"
+dependencies = [
+ "creditcoin-node-runtime",
+ "frame-support",
+ "frame-system",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-creditcoin",
+ "pallet-grandpa",
+ "pallet-offchain-task-scheduler",
+ "pallet-rewards",
+ "pallet-staking 2.231.0",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sp-consensus-babe",
+ "sp-core",
+ "sp-keyring",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-transaction-storage-proof",
+ "ziggy",
+]
+
+[[package]]
 name = "creditcoin-node"
 version = "2.240.0"
 dependencies = [
@@ -10943,6 +10968,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.48",
+]
+
+[[package]]
+name = "ziggy"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba6b87f59c24d4dd82291ec621acc9c2b33dad5393abef8c819e6e42b2e502d6"
+dependencies = [
+ "libc",
+ "rand 0.8.5",
 ]
 
 [[package]]
