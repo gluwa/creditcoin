@@ -129,7 +129,7 @@ jobs:
 
   build-wasm-runtime:
     needs: sanity-check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -170,7 +170,7 @@ jobs:
 
   docker-build:
     needs: sanity-check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -200,7 +200,7 @@ jobs:
 
   build-creditcoin-js:
     needs: sanity-check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -240,7 +240,7 @@ jobs:
   create-release:
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build-native-runtime
       - build-wasm-runtime

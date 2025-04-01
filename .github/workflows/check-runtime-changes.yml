@@ -9,7 +9,7 @@ permissions: read-all
 
 jobs:
   check-version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,7 +20,7 @@ jobs:
           ./scripts/check-version.sh "remotes/origin/$GITHUB_BASE_REF" "$GITHUB_SHA"
   # dangerous conditions that will brick the blockchain
   danger-will-brick-the-blockchain:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
