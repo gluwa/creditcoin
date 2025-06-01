@@ -32,7 +32,7 @@
         "typescript": "^5.8.2"
     },
     "dependencies": {
-        "@polkadot/api": "9.14.2",
+        "@polkadot/api": "16.1.1",
         "ethers": "^5.7.1",
         "js-guid": "^1.0.0"
     }
