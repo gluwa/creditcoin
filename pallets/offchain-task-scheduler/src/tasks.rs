@@ -56,7 +56,7 @@ pub trait TaskV2<Runtime: SystemConfig> {
 	//A task will know how to check onchain storage persistence.
 	fn is_persisted(id: &Runtime::Hash) -> bool;
 	/// A call to persist state is expected after successfully processing a task.
-	/// This does not mean that the task result was successful. A succesful task's result may be a failure that needs state persistance.
+	/// This does not mean that the task result was successful. A successful task's result may be a failure that needs state persistence.
 	fn persistence_call(
 		&self,
 		deadline: Runtime::BlockNumber,

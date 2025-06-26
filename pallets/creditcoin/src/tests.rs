@@ -2262,7 +2262,7 @@ fn close_deal_order_should_succeed() {
 		let (transfer_id, _) =
 			test_info.create_repayment_transfer(&deal_order_id, deal_order.terms.amount + 1u64);
 
-		// modify transfer to make sure we have transfered enough funds
+		// modify transfer to make sure we have transferred enough funds
 		crate::Transfers::<Test>::mutate(&transfer_id, |transfer_storage| {
 			let ts = transfer_storage.as_mut().unwrap();
 

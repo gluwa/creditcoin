@@ -232,7 +232,7 @@ describe("integration test: validator manual setup", () => {
       );
       expect(balanceIncreased).toBe(true);
 
-      // After executing the chill commmand, the validator should no longer be active nor waiting
+      // After executing the chill command, the validator should no longer be active nor waiting
       execa.commandSync(
         `node dist/index.js chill --url ${BOB_NODE_URL} ${ecdsaFlag}`,
         {

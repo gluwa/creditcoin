@@ -168,7 +168,7 @@ export function newWalletFromPrivateKey(pk: string): Wallet {
   }
 }
 
-// This wrapper function is needed to ensure comaptibility with the validate function in the prompt call
+// This wrapper function is needed to ensure compatibility with the validate function in the prompt call
 // see initWalletFromEnvOrPrompt for details
 export function isMnemonicValid(mnemonic: string): boolean {
   return utils.isValidMnemonic(mnemonic);
