@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install mdbook
-        uses: taiki-e/install-action@v2.52.4
+        uses: taiki-e/install-action@v2.57.5
         with:
           tool: mdbook,mdbook-mermaid
       - name: Deploy GitHub Pages
