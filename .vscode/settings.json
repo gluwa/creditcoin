@@ -1,0 +1,6 @@
+{
+    "editor.formatOnSave": true,
+    "rust-analyzer.server.extraEnv": {
+        "SKIP_WASM_BUILD": "1"
+    }
+}

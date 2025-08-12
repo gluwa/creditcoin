@@ -1,0 +1,14 @@
+#cloud-config
+
+users:
+  - default
+  - name: ubuntu
+    shell: /bin/bash
+    lock_passwd: true
+    groups:
+      - sudo
+    sudo:
+      - ALL=(ALL) NOPASSWD:ALL
+    # WARNING: always keep this line at the end
+    # b/c runner provisioning appends the actual keys
+    ssh_authorized_keys:

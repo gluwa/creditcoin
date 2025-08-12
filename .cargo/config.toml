@@ -1,0 +1,5 @@
+[env]
+# Required for rust toolchains 1.70.0+ until this commit
+# https://github.com/paritytech/substrate/commit/dd45632f298db02f6946c906296bbf86a74f4f46
+# is included in a release and we update to depend on it for the substrate-wasm-builder
+WASM_BUILD_RUSTFLAGS = "-C target-cpu=mvp -C target-feature=-sign-ext"
