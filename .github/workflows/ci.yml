@@ -16,7 +16,7 @@ permissions: read-all
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   docker-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -74,7 +74,7 @@ jobs:
           sudo killall -9 creditcoin-node
 
   sanity-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -116,7 +116,7 @@ jobs:
 
   audit:
     name: cargo audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -160,7 +160,7 @@ jobs:
 
   fmt:
     name: Rustfmt
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -185,7 +185,7 @@ jobs:
 
   clippy:
     name: Clippy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -449,7 +449,7 @@ jobs:
           killall -9 creditcoin-node
 
   build-creditcoin-transaction-producer:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -496,7 +496,7 @@ jobs:
           name: creditcoin-transaction-producer.tar.gz
 
   tools-creditcoin-transaction-producer:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build-creditcoin-node
       - build-creditcoin-transaction-producer
