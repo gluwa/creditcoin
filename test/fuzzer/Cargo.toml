@@ -1,0 +1,51 @@
+[package]
+name = "creditcoin-fuzzer"
+description = 'Fuzz testing for Creditcoin'
+
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+
+[dependencies]
+ziggy = { version = "0.6", default-features = false }
+parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"], default-features = false, package = "parity-scale-codec" }
+
+creditcoin-node-runtime = { workspace = true }
+
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-state-machine = { workspace = true }
+sp-keyring = { workspace = true }
+sp-consensus-babe = { workspace = true }
+sp-transaction-storage-proof = { branch = "pos-keep-history-polkadot-v0.9.41", git = "https://github.com/gluwa/substrate.git", default-features = false }
+
+pallet-babe = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-grandpa = { workspace = true }
+pallet-timestamp = { workspace = true }
+
+pallet-creditcoin = { workspace = true }
+pallet-offchain-task-scheduler = { workspace = true }
+pallet-rewards = { workspace = true }
+pallet-staking = { workspace = true }
+
+[features]
+default = ["std", "try-runtime"]
+std = [
+	"creditcoin-node-runtime/std",
+	"sp-runtime/std",
+	"frame-support/std",
+	"pallet-creditcoin/std",
+	"sp-state-machine/std",
+]
+try-runtime = [
+	"creditcoin-node-runtime/try-runtime",
+	"frame-support/try-runtime",
+	"pallet-creditcoin/try-runtime",
+]
