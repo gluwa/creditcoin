@@ -20,7 +20,7 @@ export async function validate(
     blocked: false,
   };
 
-  console.log(`Comission: ${preferences.commission}`);
+  console.log(`Commission: ${preferences.commission}`);
   console.log(`Blocked for new nominators: ${preferences.blocked.toString()}`);
 
   const validateTx = api.tx.staking.validate(preferences);

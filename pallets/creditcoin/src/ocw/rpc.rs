@@ -244,7 +244,7 @@ pub struct EthTransaction {
 	/// Recipient (None when contract creation)
 	#[serde(rename = "to")]
 	pub recipient: Option<Address>,
-	/// Transfered value
+	/// Transferred value
 	pub value: U256,
 	/// Input data
 	input: Bytes,
