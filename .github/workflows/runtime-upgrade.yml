@@ -29,7 +29,7 @@ jobs:
       last_block_number: ${{ steps.last-block-info.outputs.last_block_number }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set-Up
         run: |
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set-Up
         run: |
@@ -167,7 +167,7 @@ jobs:
       [self-hosted, "workflow-${{ github.run_id }}", "type-runtime-upgrade"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download creditcoin-node for release ${{ needs.setup.outputs.release_tag }}
         uses: i3h/download-release-asset@v1
@@ -254,7 +254,7 @@ jobs:
       [self-hosted, "workflow-${{ github.run_id }}", "type-runtime-upgrade"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install azure-cli
         run: |
@@ -346,7 +346,7 @@ jobs:
       [self-hosted, "workflow-${{ github.run_id }}", "type-runtime-upgrade"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download creditcoin-node from current PR
         uses: actions/download-artifact@v4
@@ -466,7 +466,7 @@ jobs:
       [self-hosted, "workflow-${{ github.run_id }}", "type-runtime-upgrade"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download creditcoin-node from current PR
         uses: actions/download-artifact@v4
@@ -588,7 +588,7 @@ jobs:
     name: deploy-github-runner / type=${{ matrix.proxy_type }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # See https://github.com/actions/runner/issues/1879#issuecomment-1123196869
       - name: Create matrix.txt
@@ -629,7 +629,7 @@ jobs:
       - live-sync-creditcoin
       - deploy-github-runner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download creditcoin-node binary from current PR
         uses: actions/download-artifact@v4
@@ -723,7 +723,7 @@ jobs:
     name: remove-github-runner / type=${{ matrix.proxy_type }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # See https://github.com/actions/runner/issues/1879#issuecomment-1123196869
       - name: Create matrix.txt
