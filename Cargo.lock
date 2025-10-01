@@ -1234,7 +1234,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "frame-system",
  "futures",
- "futures-lite 2.5.0",
+ "futures-lite 2.6.1",
  "hex",
  "jsonrpc-core",
  "jsonrpsee",
@@ -2604,9 +2604,9 @@ dependencies = [
 
 [[package]]
 name = "futures-lite"
-version = "2.5.0"
+version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cef40d21ae2c515b51041df9ed313ed21e572df340ea58a922a0aefe7e8891a1"
+checksum = "f78e10609fe0e0b3f4157ffab1876319b5b0db102a2c60dc4626306dc46b44ad"
 dependencies = [
  "fastrand 2.0.1",
  "futures-core",
