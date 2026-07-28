@@ -24,6 +24,24 @@ jobs:
         run: |
           docker build -t gluwa/creditcoin .
 
+      # DO-2336/DO-2340: informational only, never fails the build. docker/scout-action
+      # authenticates to the Scout backend even for a local:// image and hard-fails
+      # ("no credential found") without a real DockerHub login (see DO-2338) — uses the
+      # read-only gluwabot org secret, never a push-capable credential, since PR builds
+      # run untrusted PR content. Posts as a PR comment via a dedicated gluwa-bot PAT
+      # (GLUWA_BOT_PR) rather than elevating GITHUB_TOKEN's own permissions.
+      - name: Docker Scout - CVE scan (gluwa/creditcoin)
+        continue-on-error: true
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: local://gluwa/creditcoin
+          dockerhub-user: ${{ secrets.DOCKERHUB_SCOUT_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_SCOUT_TOKEN }}
+          exit-code: false
+          write-comment: true
+          github-token: ${{ secrets.GLUWA_BOT_PR }}
+
       - name: Start a container from image
         run: |
           # see https://opensource.com/article/18/5/how-find-ip-address-linux
